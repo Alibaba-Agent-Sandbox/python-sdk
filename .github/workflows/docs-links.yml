@@ -21,7 +21,7 @@ jobs:
     name: Markdown links
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check relative links offline (pull requests)
         if: github.event_name == 'pull_request'
