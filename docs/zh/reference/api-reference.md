@@ -1,0 +1,603 @@
+# API 参考
+
+本文档列出 Easy Sandbox Python SDK 的全部公开 API 签名、参数、返回值和异常。
+
+---
+
+## Sandbox 类
+
+```python
+from easy_sandbox.api.sandbox import Sandbox
+```
+
+### 类方法
+
+#### `Sandbox.create()`
+
+```python
+@classmethod
+async def create(
+    cls,
+    template: str = "base",
+    *,
+    timeout: int = 300,
+    request_timeout: float | None = None,
+    metadata: dict[str, str] | None = None,
+    envs: dict[str, str] | None = None,
+    cpu: int | None = None,
+    memory: int | None = None,
+    disk: int | None = None,
+    gpu: str | None = None,
+    description: str | None = None,
+    secure: bool = True,
+    api_key: str | None = None,
+    api_url: str | None = None,
+    domain: str | None = None,
+    access_key_id: str | None = None,
+    access_key_secret: str | None = None,
+) -> Sandbox
+```
+
+创建新沙箱。当提供 `description` 且 `template` 保持默认值 `"base"` 时，SDK 将其记录为 hint 日志条目。通过 LLM 推断模板发生在 **CLI / Agent 层**，而非 `Sandbox.create()` 自身。
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `template` | `str` | `"base"` | 沙箱模板名称 |
+| `timeout` | `int` | `300` | 沙箱生存时长（TTL）秒数（1~86400）；非 HTTP 请求超时 |
+| `request_timeout` | `float` | `None` | 仅针对本次创建请求的 HTTP 超时（秒）。为 `None` 时使用 `SANDBOX_HTTP_TIMEOUT` / `http_timeout`。与 E2B SDK 对齐。调大它无法绕过平台侧创建挂起。 |
+| `metadata` | `dict` | `None` | 任意元数据键值对 |
+| `envs` | `dict` | `None` | 注入的环境变量 |
+| `cpu` | `int` | `None` | CPU 核数 |
+| `memory` | `int` | `None` | 内存 MB |
+| `disk` | `int` | `None` | 磁盘 MB |
+| `gpu` | `str` | `None` | GPU 规格（如 `"A10"`） |
+| `description` | `str` | `None` | 自然语言提示（记录为日志条目；LLM 推断发生在 CLI / Agent 层，而非 `create()` 内部） |
+| `secure` | `bool` | `True` | 安全模式（端口访问需 token） |
+| `api_key` | `str` | `None` | API Key 覆盖 |
+| `api_url` | `str` | `None` | 平台 API URL 覆盖 |
+| `domain` | `str` | `None` | 域名覆盖 |
+| `access_key_id` | `str` | `None` | 阿里云 AK |
+| `access_key_secret` | `str` | `None` | 阿里云 SK |
+
+**返回**：`Sandbox` 实例
+
+**同步版**：`Sandbox.create_sync(...)`
+
+#### `Sandbox.connect()`
+
+```python
+@classmethod
+async def connect(
+    cls,
+    sandbox_id: str,
+    *,
+    api_key: str | None = None,
+    api_url: str | None = None,
+    domain: str | None = None,
+    access_key_id: str | None = None,
+    access_key_secret: str | None = None,
+) -> Sandbox
+```
+
+连接到已有沙箱。
+
+**返回**：`Sandbox` 实例
+
+**同步版**：`Sandbox.connect_sync(...)`
+
+#### `Sandbox.list()`
+
+```python
+@classmethod
+async def list(
+    cls,
+    *,
+    status: SandboxStatus | None = None,
+    limit: int = 100,
+    offset: int = 0,
+    api_key: str | None = None,
+    api_url: str | None = None,
+    access_key_id: str | None = None,
+    access_key_secret: str | None = None,
+) -> list[SandboxInfo]
+```
+
+列出沙箱（类方法，不需要实例）。
+
+**返回**：`list[SandboxInfo]`
+
+**同步版**：`Sandbox.list_sync(...)`
+
+#### `Sandbox.kill_by_id()`
+
+```python
+@classmethod
+async def kill_by_id(
+    cls,
+    sandbox_id: str,
+    *,
+    api_key: str | None = None,
+    api_url: str | None = None,
+    access_key_id: str | None = None,
+    access_key_secret: str | None = None,
+) -> None
+```
+
+按 ID 销毁沙箱（类方法，不需要先连接）。
+
+**同步版**：`Sandbox.kill_by_id_sync(...)`
+
+#### `Sandbox.deploy()`
+
+```python
+@classmethod
+async def deploy(
+    cls,
+    project_path: str,
+    description: str,
+    *,
+    max_wall_time: str = "10m",
+    max_session_turns: int = 100,
+    llm_api_key: str | None = None,
+    openai_base_url: str | None = None,
+    openai_model: str | None = None,
+    timeout: int = 900,
+    envs: dict[str, str] | None = None,
+    cpu: int | None = None,
+    memory: int | None = None,
+    on_progress: Callable[[str], None] | None = None,
+    api_key: str | None = None,
+    api_url: str | None = None,
+    domain: str | None = None,
+    access_key_id: str | None = None,
+    access_key_secret: str | None = None,
+) -> Sandbox
+```
+
+使用 qwen-code agent 自动部署项目。创建 `qwen-code` 模板沙箱，上传项目并自动分析、安装依赖、构建和启动服务。
+
+**返回**：`Sandbox` 实例（仍在运行），`_deploy_result` 属性包含部署结果。
+
+**同步版**：`Sandbox.deploy_sync(...)`
+
+### 实例方法
+
+| 方法 | 签名 | 说明 | 同步版 |
+|------|------|------|--------|
+| `kill()` | `async def kill() -> None` | 销毁沙箱并释放资源 | `kill_sync()` |
+| `set_timeout()` | `async def set_timeout(timeout: int) -> None` | 更新超时时间 | `set_timeout_sync()` |
+| `is_running()` | `async def is_running() -> bool` | 检查运行状态（发起 API 调用） | `is_running_sync()` |
+| `pause()` | `async def pause() -> None` | 暂停沙箱 | `pause_sync()` |
+| `resume()` | `async def resume() -> None` | 恢复暂停的沙箱 | `resume_sync()` |
+| `refresh_info()` | `async def refresh_info() -> SandboxInfo` | 刷新沙箱信息 | `refresh_info_sync()` |
+
+#### `run_code()`
+
+```python
+async def run_code(
+    self,
+    code: str,
+    *,
+    language: str = "python",
+    timeout: int = 30,
+    envs: dict[str, str] | None = None,
+    on_stdout: Callable[[str], None] | None = None,
+    on_stderr: Callable[[str], None] | None = None,
+    on_result: Callable[..., None] | None = None,
+) -> CodeResult
+```
+
+通过 Code Interpreter 执行代码。需要 `code` 能力。
+
+**返回**：`CodeResult`（含 `text`、`stdout`、`stderr`、`exit_code`、`execution_time`、`output_files`）
+
+**异常**：`CapabilityNotSupportedError`（E3004）— 若 `code` 能力未启用
+
+**同步版**：`run_code_sync()`
+
+#### `get_terminal()`
+
+```python
+async def get_terminal(
+    self,
+    *,
+    cols: int = 80,
+    rows: int = 24,
+    shell: str = "/bin/bash",
+) -> TerminalSession
+```
+
+打开交互式 PTY 终端会话。逻辑上关联 `terminal` 能力（无运行时门控）。
+
+**返回**：`TerminalSession`（WebSocket 连接）
+
+**同步版**：`get_terminal_sync()`
+
+#### `list_commands()`
+
+```python
+async def list_commands(
+    self,
+    *,
+    server_port: int = 9000,
+) -> list[dict[str, Any]]
+```
+
+返回合并的命令目录（模板 + server）。将模板 `custom_commands`（source `"template"`）与 SandboxServer `/commands`（source `"server"`）合并。同名时模板优先，server 条目标记 `shadowed=True`。
+
+**返回**：列表，每项包含 `name`、`description`、`args`、`source`、`shadowed`
+
+#### `run()`
+
+```python
+async def run(
+    self,
+    cmd: str,
+    *,
+    timeout: int = 60,
+    env: dict[str, str] | None = None,
+    cwd: str = "",
+    user: str = "",
+    background: bool = False,
+) -> ProcessResult | StreamReader[ProcessChunk]
+```
+
+执行裸 shell 命令。`sandbox.commands.run(cmd, ...)` 的快捷方式。这**不是**命名命令派发，请使用 `custom()`。
+
+**返回**：`ProcessResult`（`background=True` 时返回 `StreamReader`）
+
+#### `custom()`
+
+```python
+async def custom(
+    self,
+    name: str,
+    *,
+    server_port: int = 9000,
+    **kwargs: Any,
+) -> CommandResult
+```
+
+执行命名命令，A→B 解析：先查找模板 `custom_commands`（机制 A），然后回退到 SandboxServer `POST /commands/{name}`（机制 B）。
+
+**返回**：`CommandResult`（含 `value`、`stdout`、`stderr`、`exit_code`、`execution_time`、`source`）
+
+**同步版**：`custom_sync()`
+
+#### `run_command()` *（已弃用）*
+
+```python
+async def run_command(
+    self,
+    name: str,
+    *,
+    server_port: int = 9000,
+    **kwargs: Any,
+) -> Any
+```
+
+`custom()` 的**已弃用**别名。仅返回 `CommandResult.value` 而非完整的 `CommandResult`。新代码应使用 `custom()`。
+
+**同步版**：`run_command_sync()` *（同样已弃用）*
+
+### 属性
+
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| `id` | `str` | 沙箱 ID |
+| `status` | `SandboxStatus` | 当前状态（缓存值，调用 `refresh_info()` 更新） |
+| `url` | `str` | envd URL |
+| `info` | `SandboxInfo` | 完整沙箱信息 |
+| `capabilities` | `frozenset[str]` | 有效能力集 |
+
+### 子模块
+
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| `commands` | `CommandsModule` | Shell 命令执行 |
+| `files` | `FilesModule` | 文件系统操作 |
+| `network` | `NetworkModule` | 端口 URL 计算 |
+| `code` | `CodeContextModule` | Code Interpreter 操作 |
+
+### Context Manager
+
+```python
+async with await Sandbox.create() as sandbox:
+    ...  # 退出时自动 kill()
+```
+
+---
+
+## CommandsModule
+
+```python
+sandbox.commands  # CommandsModule 实例
+```
+
+| 方法 | 签名 | 说明 |
+|------|------|------|
+| `run()` | `async def run(cmd, *, timeout=60, env=None, cwd="", user="", background=False) -> ProcessResult \| StreamReader` | 执行命令并等待。`background=True` 时返回 `StreamReader` |
+| `stream()` | `async def stream(cmd, *, timeout=60, env=None, cwd="", user="") -> AsyncIterator[ProcessChunk]` | 流式输出命令结果 |
+| `start()` | `async def start(cmd, *, timeout=60, env=None, cwd="", user="") -> StreamReader[ProcessChunk]` | 后台启动命令，返回 StreamReader |
+| `list()` | `async def list() -> list[ProcessInfo]` | 列出运行中的进程 |
+| `kill()` | `async def kill(pid: int) -> None` | 终止进程 |
+| `send_input()` | `async def send_input(pid: int, data: str) -> None` | 向进程 stdin 发送数据 |
+| `send_stdin()` | `async def send_stdin(pid: int, data: str) -> None` | （已弃用）同 `send_input()` |
+| `send_signal()` | `async def send_signal(pid: int, signal: int = 15) -> None` | 向进程发送 SIGTERM（15）或 SIGKILL（9）；其他信号值抛出 `ValueError`（envd 仅支持这两种） |
+
+逻辑上关联 `shell` 能力（在 `template.yaml` 中声明；无运行时门控——请求会直接转发到沙箱）。每个异步方法都有 `_sync` 后缀的同步版本（如 `run_sync()`）。
+
+---
+
+## FilesModule
+
+```python
+sandbox.files  # FilesModule 实例
+```
+
+| 方法 | 签名 | 说明 |
+|------|------|------|
+| `read()` | `async def read(path, *, encoding="utf-8") -> str` | 读取文本文件 |
+| `read_bytes()` | `async def read_bytes(path) -> bytes` | 读取二进制文件 |
+| `write()` | `async def write(path, content: str \| bytes) -> None` | 写入文件 |
+| `list()` | `async def list(path="/") -> list[FileInfo]` | 列出目录 |
+| `remove()` | `async def remove(path) -> None` | 删除文件/目录 |
+| `exists()` | `async def exists(path) -> bool` | 检查路径是否存在 |
+| `make_dir()` | `async def make_dir(path) -> None` | 创建目录（含父目录） |
+| `upload()` | `async def upload(local_path, remote_path) -> None` | 上传本地文件到沙箱 |
+| `download()` | `async def download(remote_path, local_path) -> None` | 下载沙箱文件到本地 |
+| `watch()` | `async def watch(path) -> StreamReader[WatchEvent]` | 监听目录变更 |
+| `move()` | `async def move(source, destination) -> None` | 移动/重命名 |
+| `rename()` | `async def rename(old_path, new_path) -> None` | （已弃用）同 `move()` |
+| `get_info()` | `async def get_info(path) -> FileInfo` | 获取文件信息 |
+| `upload_url()` | `async def upload_url(path) -> str` | 获取上传 URL（兼容用） |
+| `download_url()` | `async def download_url(path) -> str` | 获取下载 URL（兼容用） |
+
+逻辑上关联 `files` 能力（在 `template.yaml` 中声明；无运行时门控）。每个异步方法都有 `_sync` 后缀的同步版本。
+
+---
+
+## NetworkModule
+
+```python
+sandbox.network  # NetworkModule 实例
+```
+
+所有方法均为本地计算，不涉及网络请求。逻辑上关联 `ports` 能力（无运行时门控）。
+
+| 方法 | 签名 | 说明 |
+|------|------|------|
+| `get_host()` | `def get_host(port: int) -> str` | 返回 `{port}-{sandbox_id}.{domain}` |
+| `get_url()` | `def get_url(port: int) -> str` | 返回 `https://{port}-{sandbox_id}.{domain}` |
+| `get_access_headers()` | `def get_access_headers() -> dict[str, str]` | 返回端口访问所需 HTTP 头 |
+
+---
+
+## CodeContextModule
+
+```python
+sandbox.code  # CodeContextModule 实例
+```
+
+| 方法 | 签名 | 说明 |
+|------|------|------|
+| `run()` | `async def run(code, *, language="python", timeout=30, context_id=None, envs=None, on_stdout=None, on_stderr=None, on_result=None) -> CodeResult` | 执行代码 |
+| `create_context()` | `async def create_context(*, language="python") -> dict` | 创建执行上下文 |
+| `list_contexts()` | `async def list_contexts() -> list[dict]` | 列出所有上下文 |
+| `restart_context()` | `async def restart_context(context_id) -> dict` | 重启上下文 |
+| `remove_context()` | `async def remove_context(context_id) -> None` | 删除上下文 |
+
+所有方法均需 `code` 能力并在运行时强制校验——若沙箱未启用 `code` 能力，调用任何方法均抛出 `CapabilityNotSupportedError`（E3004）。每个异步方法都有 `_sync` 后缀的同步版本。
+
+---
+
+## Image 类
+
+```python
+from easy_sandbox.api.image import Image
+```
+
+链式镜像构建器（Modal 风格）。
+
+### 工厂方法
+
+| 方法 | 签名 | 说明 |
+|------|------|------|
+| `from_template()` | `@classmethod def from_template(template: str) -> Image` | 基于已有模板创建 |
+| `from_image()` | `@classmethod def from_image(image: str) -> Image` | 基于 Docker 镜像创建 |
+| `official_base()` | `@classmethod def official_base(variant: str = "base", *, region=None, tag=None) -> Image` | 基于阿里云 Agent Sandbox 官方基础镜像创建 |
+
+### 链式方法
+
+| 方法 | 签名 | 说明 |
+|------|------|------|
+| `pip_install()` | `def pip_install(*packages: str) -> Image` | 安装 pip 包 |
+| `apt_install()` | `def apt_install(*packages: str) -> Image` | 安装系统包 |
+| `copy_local()` | `def copy_local(src: str, dst: str) -> Image` | 复制本地文件 |
+| `env()` | `def env(**kwargs: str) -> Image` | 设置环境变量 |
+| `run_command()` | `def run_command(cmd: str) -> Image` | 构建时执行命令 |
+| `workdir()` | `def workdir(path: str) -> Image` | 设置工作目录 |
+| `expose()` | `def expose(*ports: int) -> Image` | 暴露端口 |
+| `entrypoint()` | `def entrypoint(cmd: str) -> Image` | 设置入口命令 |
+
+### 输出方法
+
+| 方法 | 签名 | 说明 |
+|------|------|------|
+| `to_dockerfile()` | `def to_dockerfile() -> str` | 生成 Dockerfile 文本 |
+| `build()` | `async def build(*, alias=None, api_key=None, ..., timeout=600) -> TemplateInfo` | 构建为平台模板 |
+
+---
+
+## ServerClient（沙箱内 SandboxServer）
+
+```python
+from easy_sandbox.api import ServerClient, ServerCapabilities
+from easy_sandbox.api.base_image import official_base_image, scaffold_dockerfile, lint_dockerfile
+```
+
+面向模板作者自带 SandboxServer（端口 9000，PTY WebSocket 为 9001）的类型化客户端。它与基于 envd 的
+`sandbox.files` / `sandbox.commands` 相互独立：当模板自带服务端、需要按策略/scope 受控访问，或需要 envd 没有的端点
+（`files.search`、`files.archive`、`files.watch`、`process.output`、git、浏览器）时使用 `Sandbox.server`。每个协程都有
+`*_sync` 孪生方法；异步生成器（`files.watch`、`process.shell_stream`、`process.follow`）没有同步孪生，改用收集型协程
+（`files.watch_for`、`process.run_stream`）。模型位于 `easy_sandbox.models.server`。
+
+| 成员 | 签名 | 说明 |
+|------|------|------|
+| `ServerClient()` | `(base_url, *, token=None, headers=None, pty_url=None, timeout=30.0, http_client=None)` | `token` 以 `Authorization: Bearer` 发送；`headers` 携带网关的 `X-Access-Token` |
+| `Sandbox.server` | `cached_property -> ServerClient` | 9000 端口客户端，自动带上沙箱网关头 |
+| `Sandbox.server_at()` | `(port=9000, *, token=None, pty_port=9001, timeout=30.0) -> ServerClient` | 为其他端口/令牌创建新客户端 |
+| `Sandbox.start_server()` | `async (*, port=9000, commands=None, policy=None, token=None, env=None, command=None, wait=True, timeout=30.0) -> ServerClient` | 以 envd 后台命令启动 `easy-sandbox-server serve` 并轮询 `/health`；`policy` 为字典（`EBX_SERVER_POLICY`）或预设名；超时抛 `ConnectionError_` |
+| `health()` | `async -> bool` | `GET /health`，服务端不可达时返回 `False` 而不抛异常 |
+| `discover()` | `async -> ServerCapabilities` | `GET /capabilities`；结果缓存在 `client.capabilities`，并启用快速失败的预检查 |
+| `forget_discovery()` | `() -> None` | 丢弃缓存（策略变更后） |
+| `check()` | `async (endpoint, path=None, op=None) -> PathDecision` | `POST /capabilities/check` |
+| `with_token()` | `(token) -> ServerClient` | 同一服务端、另一个身份 |
+| `aclose()` | `async` | 关闭 HTTP 会话 |
+
+子 API（均返回类型化模型；线上格式见[服务端 HTTP API](./server-http-api.md)）：
+
+| 子 API | 方法 |
+|--------|------|
+| `files` | `list`、`stat`、`exists`、`mkdir`、`delete`、`move`、`search`、`archive`、`watch`/`watch_for`、`upload`、`download`、`read_text`、`upload_file`、`download_file`、`upload_legacy`、`download_legacy` |
+| `process` | `shell`、`shell_stream`/`run_stream`、`start`、`list`、`get`、`signal`、`terminate`、`kill`、`send_stdin`、`close_stdin`、`output`、`follow`、`wait` |
+| `pty` | `create`、`list`、`get`、`resize`、`delete`、`connect`（WebSocket `PtyConnection`） |
+| `system` | `info`、`metrics`、`env`、`set_env`、`ports`、`packages` |
+| `devtools` | `run_code`、`git_status`、`git_diff` |
+| `browser` | `navigate`、`screenshot`、`content`、`click`、`type`、`evaluate`、`pdf`、`console` |
+| `commands` | `list`、`run` |
+
+`ServerClient.ENDPOINT_METHODS` 把每个服务端端点 id 映射到对应的客户端方法（有测试保证服务端默认路由表中的每条路由都在其中）。
+
+### ServerCapabilities
+
+由 `discover()` 返回。服务端不支持逐端点发现时 `legacy` 为 `True`（只做能力组级别检查）。
+
+| 成员 | 说明 |
+|------|------|
+| `can(endpoint)` | 端点存在、已启用且当前身份可调用时为 `True` |
+| `denial(endpoint)` | 原因字符串（`endpoint_disabled`、`group_disabled`、`unknown_endpoint`、`missing_scope`）或 `None` |
+| `require(endpoint)` | 抛出 `EndpointNotAvailableError` / `PolicyDeniedError`；否则返回 `EndpointInfo` |
+| `info(endpoint)` | `EndpointInfo`（`method`、`path`、`group`、`enabled`、`allowed`、`scopes`、`limits`、`paths`、`params`） |
+| `limit(endpoint, key, default=None)` / `param(...)` | 已配置的限制 / 参数 |
+| `paths(endpoint)` | `EndpointPaths`（`allow`、`read_only`、`deny_count`、`symlinks`） |
+| `endpoints_for(scope)` / `available()` | 某 scope 授予的端点 id / 当前可调用的端点 id |
+| `check_path(endpoint, path, op=None)`（及 `_sync`） | 服务端给出的权威路径判定（不会成为存在性探测口） |
+| `identity_id`、`scopes`、`preset`、`revision`、`warnings`、`api_version`、`server_version`、`configured` | 文档元数据 |
+
+### 错误（E9xxx）
+
+`ServerAPIError`（E9000）-> `ServerAuthError`（E9001，同时是 `AuthenticationError`）、`PolicyDeniedError`（E9002；`scope`）->
+`FilePolicyDeniedError`（同时是 `PermissionDeniedError`）、`EndpointNotAvailableError`（E9003，同时是 `CapabilityNotSupportedError`）、
+`PayloadTooLargeError`（E9004；`limit`）、`RateLimitedError`（E9005；`retry_after`）。详见[错误码](./error-codes.md)。
+
+### 基础镜像辅助（`easy_sandbox.api.base_image`）
+
+| 名称 | 说明 |
+|------|------|
+| `official_base_image(*, region=None, variant="base", tag=None)` | `fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/<variant>:<tag>`；环境变量 `EBX_BASE_IMAGE_REGION` / `EBX_BASE_IMAGE_TAG`；格式非法抛 `ValueError` |
+| `is_official_base_image(ref)` | *ref* 是否位于官方镜像仓库命名空间 |
+| `lint_dockerfile(text)` | 建议性检查：`B001`（非官方基础镜像）、`B002`（`ENTRYPOINT`）、`B003`（末尾 `USER root`）、`B004`（保留端口）、`B005`（缺少 `FROM`） |
+| `scaffold_dockerfile(...)` | 在官方基础镜像之上安装 `easy-sandbox-server`（wheel 或固定版本的 PyPI）的 Dockerfile |
+| `BaseImageContract` | 常量：用户、家目录、应用目录、端口、启动/就绪命令 |
+| `Image.official_base(variant="base", *, region=None, tag=None)` | 以官方基础镜像为起点的 `Image`（默认 `Image()` 的基础镜像不变） |
+
+`Image.build()` 与 `DockerBuilder.build()` 会把 lint 结果以警告形式记录，永不使构建失败。`SandboxTemplate.server` 保存声明式服务端策略块
+（做结构校验，见[模板 YAML 规范](./template-yaml-spec.md)）。
+
+---
+
+## 数据模型
+
+### SandboxStatus
+
+```python
+from easy_sandbox.models.sandbox import SandboxStatus
+
+class SandboxStatus(str, Enum):
+    CREATING = "creating"
+    RUNNING  = "running"
+    PAUSED   = "paused"
+    STOPPING = "stopping"
+    STOPPED  = "stopped"
+    ERROR    = "error"
+```
+
+### SandboxInfo
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `sandbox_id` | `str` | 沙箱 ID |
+| `template` | `str` | 模板名称 |
+| `status` | `SandboxStatus` | 当前状态 |
+| `envd_url` | `str \| None` | envd 数据平面 URL |
+| `envd_access_token` | `str \| None` | envd 认证令牌 |
+| `metadata` | `dict` | 用户元数据 |
+| `started_at` | `datetime \| None` | 创建时间 |
+
+### CodeResult
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `text` | `str` | stdout（去除尾部空白） |
+| `stdout` | `str` | 原始 stdout |
+| `stderr` | `str` | 原始 stderr |
+| `exit_code` | `int` | 退出码 |
+| `execution_time` | `float` | 执行耗时（秒） |
+| `output_files` | `list` | 输出文件列表 |
+
+### CommandResult
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `value` | `Any` | 返回值 — 模板命令为 `stdout.strip()`，server 命令为 JSON 返回值 |
+| `stdout` | `str` | 标准输出（server 命令为空） |
+| `stderr` | `str` | 标准错误（server 命令为空） |
+| `exit_code` | `int` | 退出码（server 命令成功为 0，失败为 1） |
+| `execution_time` | `float` | 执行耗时（秒） |
+| `source` | `str` | `"template"` 或 `"server"` |
+| `success` | `bool` | `exit_code == 0`（属性） |
+
+### OutputFile
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `name` | `str` | 文件名 |
+| `path` | `str` | 文件路径 |
+| `size` | `int` | 文件大小（字节，默认 0） |
+| `mime_type` | `str` | MIME 类型（默认 `"application/octet-stream"`） |
+
+### ProcessResult
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `stdout` | `str` | 标准输出 |
+| `stderr` | `str` | 标准错误 |
+| `exit_code` | `int` | 退出码 |
+| `execution_time` | `float` | 执行耗时（秒） |
+| `success` | `bool` | `exit_code == 0`（属性） |
+
+### ProcessChunk
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `type` | `ProcessChunkType` | `stdout` / `stderr` / `exit` |
+| `data` | `str` | 数据内容 |
+| `exit_code` | `int \| None` | 退出码（仅 `exit` 类型） |
+
+### FileInfo
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `name` | `str` | 文件名 |
+| `path` | `str` | 绝对路径 |
+| `type` | `FileType` | `file` / `directory` |
+| `size` | `int` | 文件大小（字节） |
+
+---
+
+## 异常层级
+
+所有异常继承自 `SandboxError`，携带 `code`、`message`、`suggestion`、`docs_url` 属性。
+
+详细错误码列表参见 [错误码参考](./error-codes.md)。

@@ -1,0 +1,701 @@
+# Template server HTTP API
+
+A generated template ships `Dockerfile`, `commands.py`, and `template.yaml`. After the sandbox starts, callers reach it over HTTP. `commands.py` is the container's main process: it builds a route table, registers commands, and calls `SandboxServer.serve(port=9000)`.
+
+The `FROM` image in the Dockerfile varies by template. This HTTP API does not. Every template that starts `easy_sandbox.server` exposes the routes below. The server is the Python standard library only (`ThreadingHTTPServer`). It accepts `GET`, `POST`, and `DELETE`. A trailing slash is stripped before matching (`/health/` is `/health`).
+
+A short client for a server that is already running is [`examples/templates/python-hello/call_api.py`](../../examples/templates/python-hello/call_api.py).
+
+---
+
+## Reaching the sandbox
+
+Inside the container the server binds `0.0.0.0:9000` (the `serve` default). From outside, ask the SDK for the public URL of that port:
+
+```python
+url = sandbox.network.get_url(9000)
+# https://{port}-{sandbox_id}.{domain}
+host = sandbox.network.get_host(9000)
+```
+
+`{domain}` comes from the provider that created the sandbox. The same call with `9001` is the PTY WebSocket port when the `terminal` group is on (`EBX_PTY_PORT`, default `9001`).
+
+On a machine where you started `python3 commands.py` yourself, the base URL is `http://127.0.0.1:9000`.
+
+`template.yaml` `ports` must include `9000` (and `9001` when you use the terminal) or the platform will not publish the port. `sandbox.network.get_url` only builds the host string; something in the container has to be listening.
+
+In secure mode the platform gateway asks for its own access header:
+
+```python
+headers = sandbox.network.get_access_headers()  # may include X-Access-Token
+```
+
+That gateway header is separate from the token the process inside the container checks. Both use the header name `X-Access-Token`. The next section is the in-container check.
+
+---
+
+## Authentication
+
+`SandboxServer` reads `EBX_SERVER_TOKEN` once at startup.
+
+- Unset or empty: every route is accepted. This is local mode.
+- Set: routes registered with `auth_required=True` (the default) require the header `X-Access-Token` to match the variable, compared with `hmac.compare_digest`. A missing or wrong token is `401`:
+
+```json
+{"error": "unauthorized", "type": "AuthError"}
+```
+
+`GET /health` is the only built-in route registered with `auth_required=False`. It stays open when a token is set.
+
+`GET /capabilities` and `POST /capabilities/check` are registered with `auth_required=True`. They answer without a header only while `EBX_SERVER_TOKEN` is unset. With a token set, send `X-Access-Token`.
+
+The `agents` group also accepts `Authorization: Bearer <token>` on its `/v1/agents/...` routes. Every other route reads only `X-Access-Token`. Errors from those `/v1/` handlers use the OpenAI envelope `{"error": {"message", "type", "param", "code"}}`.
+
+Do not put the token in `commands.py`. Pass it as an environment variable. `POST /env` refuses to overwrite `EBX_SERVER_TOKEN` and any name whose uppercase form starts with `EBX_`.
+
+The PTY WebSocket (port 9001, path `/pty`) uses the same variable. With no policy engine it requires `?token=` equal to `EBX_SERVER_TOKEN`. With a policy engine it accepts `Authorization: Bearer`, `X-Access-Token`, or `?token=`.
+
+---
+
+## Capability groups
+
+Each route belongs to one group. A disabled group answers `404`:
+
+```json
+{"error": "Built-in route '<name>' is disabled", "type": "ValueError"}
+```
+
+`core` is always on. `RouteTable.disable_group(CapabilityGroup.CORE)` raises `ValueError`. Other groups start from this set (`_DEFAULT_DISABLED`):
+
+| Group | Default | What it turns on |
+|-------|---------|------------------|
+| `core` | on, cannot disable | `GET /health`, `GET /capabilities`, `POST /capabilities/check` |
+| `commands` | on | `GET /commands`, `POST /commands/{name}` |
+| `file_ops` | on | `POST /upload`, `GET /download`, and `/files/*` |
+| `process` | on | `POST /shell`, `POST /shell/stream`, `/process/*` |
+| `terminal` | on | `/pty/sessions*` and the WebSocket on port 9001 |
+| `system` | on | `/system/info`, `/system/metrics`, `/env`, `/ports`, `/packages` |
+| `dev_tools` | off | `POST /code/run`, `GET /git/status`, `GET /git/diff` |
+| `browser` | off | `/browser/*` (Playwright; `503` if Playwright is not installed) |
+| `agents` | off | `/v1/agents/...`, `/v1/vaults`, `/v1/responses`, `/v1/models`, `/v1/files` and `/v1/webhook_endpoints` as local operations on Codex and Qwen Code. Stays off until `EBX_SERVER_ENABLED_GROUPS` includes `agents` |
+
+`commands.py` turns a group on with `default_table().enable_group(CapabilityGroup.FILE_OPS)` (the name you need). `EBX_SERVER_DISABLED_GROUPS` is a comma-separated list of group values applied when the table is created (`core` is ignored). `EBX_SERVER_ENABLED_GROUPS` is applied when `SandboxServer` starts and can turn the opt-in groups back on.
+
+`template.yaml` `capabilities` (`shell`, `files`, `code`, `terminal`, `ports`) are template metadata. They do not toggle these routes. Generated templates line them up as `files` ↔ `file_ops`, `shell` ↔ `process`, `code` ↔ `dev_tools`, `terminal` ↔ `terminal`, `ports` ↔ `system`.
+
+---
+
+## Common response rules
+
+Success and error bodies are JSON (`Content-Type: application/json; charset=utf-8`). Handler errors use:
+
+```json
+{"error": "<message>", "type": "<ExceptionName>"}
+```
+
+An unknown path is `404` `{"error": "Not found: <path>", "type": "ValueError"}`. An uncaught handler exception is `500` with `error` and `type`. A policy denial (only when a `ServerPolicy` is loaded) adds `code` and sometimes `endpoint`.
+
+`POST` and `DELETE` read a JSON object body. The raw body limit is 10 MiB (`413`, `code` `payload_too_large`). An empty body becomes `{}`. Invalid JSON is `400`.
+
+Streaming routes (`streaming=True`) return `text/event-stream`. Each chunk is `event: <name>\ndata: <json>\n\n`.
+
+File routes resolve paths under `EBX_SERVER_BASE_DIR` (default `/home/user`). A path that escapes that directory is `400` `Path escapes base directory`. Decoded upload size defaults to 100 MiB (`EBX_MAX_UPLOAD_SIZE`). The 10 MiB JSON body cap applies first, so a base64 body cannot actually reach 100 MiB.
+
+`POST /shell` and process start split the command with `shlex.split` and run it with `shell=False`. Pipes, redirects, and `$VAR` are not interpreted. Use `bash -c '...'` when you need a shell.
+
+---
+
+## Built-in routes
+
+### `core`
+
+#### `GET /health`
+
+No auth. Always `200`.
+
+```json
+{"status": "ok"}
+```
+
+#### `GET /capabilities`
+
+Discovery document. With no policy loaded, `policy.configured` is `false` and `identity` is `{"id": "anonymous", "scopes": ["*"]}`.
+
+```json
+{
+  "api_version": 2,
+  "server_version": "<package version>",
+  "groups": {"core": true, "commands": true, "file_ops": true, "process": true, "terminal": true, "system": true, "dev_tools": false, "browser": false, "agents": false},
+  "identity": {"id": "anonymous", "scopes": ["*"]},
+  "policy": {"preset": "default", "revision": "<16 hex chars>", "configured": false},
+  "endpoints": {
+    "health": {
+      "method": "GET",
+      "path": "/health",
+      "group": "core",
+      "streaming": false,
+      "enabled": true,
+      "allowed": true,
+      "reason": null,
+      "scopes": [],
+      "limits": {},
+      "params": {}
+    }
+  },
+  "warnings": []
+}
+```
+
+`groups` is every `CapabilityGroup` value and whether it is enabled. `endpoints` is keyed by route name and also includes `pty_connect` (`method` `WS`, path `/pty`), which is the WebSocket on port 9001, not an HTTP route on port 9000. When the caller is not allowed, `reason` is `group_disabled`, `endpoint_disabled`, or `missing_scope`, and `limits` / `params` are omitted. With no policy file and no `EBX_SERVER_POLICY`, `preset` is `default`, `revision` is the hash of an empty policy, and `configured` is `false`. A loaded policy sets `configured` to `true` and fills `preset` / `revision` from that document.
+
+#### `POST /capabilities/check`
+
+Body:
+
+| Field | Required | Meaning |
+|-------|----------|---------|
+| `endpoint` | yes | Route name, such as `upload` or `shell` |
+| `path` | no | One path to test |
+| `paths` | no | List of paths |
+| `op` | no | `read`, `write`, `delete`, or `exec` |
+
+Does not report whether a path exists. `200`:
+
+```json
+{"endpoint": "upload", "allowed": true, "code": null, "reason": null}
+```
+
+A refusal sets `allowed` to `false` and fills `code` (`unknown_endpoint`, `endpoint_disabled`, or a path-policy code). A bad body is `400`.
+
+### `commands`
+
+#### `GET /commands`
+
+Visible commands from the `CommandRegistry` passed to `SandboxServer` (hidden commands are omitted). `200`:
+
+```json
+{
+  "commands": [
+    {
+      "name": "hello",
+      "description": "Say hello.",
+      "args": [
+        {"name": "name", "type": "string", "required": false, "default": "World", "description": ""}
+      ]
+    }
+  ]
+}
+```
+
+`type` is `string`, `integer`, `float`, or `boolean`.
+
+#### `POST /commands/{name}`
+
+Body is a JSON object of arguments. `200`:
+
+```json
+{"result": "Hello, World!"}
+```
+
+`result` is whatever the function returned (must be JSON-serialisable; non-JSON values are stringified by the encoder).
+
+| Status | Body |
+|--------|------|
+| `400` | Missing required arg, unexpected arg, or a value that cannot be coerced. `type` is `ValueError` or `TypeError` |
+| `404` | `Unknown command '<name>'; available: <sorted names>` — the available list includes hidden commands |
+| `500` | The function raised. `error` is `str(exc)`, `type` is the exception class name |
+
+Coercion: `integer` via `int`, `float` via `float`, `boolean` from `true`/`false`/`yes`/`no`/`1`/`0` (case-insensitive). Anything else is `str`. A default is applied only when the field is omitted and the registered default is not `None`.
+
+### `file_ops`
+
+Paths are query parameters or body fields as noted. Timestamps are ISO 8601 UTC.
+
+#### `POST /upload`
+
+```json
+{"path": "/home/user/note.txt", "content_base64": "<standard base64>"}
+```
+
+`200`: `{"path": "<resolved>", "bytes": <int>}`.
+
+| Status | When |
+|--------|------|
+| `400` | Missing `path` or `content_base64`, invalid base64, or the path escapes the base directory |
+| `413` | Decoded size exceeds `EBX_MAX_UPLOAD_SIZE` (default 104857600). With a policy, the body also has `code: "payload_too_large"` and `limit` |
+| `500` | The write failed |
+
+Parent directories are created. With a policy, `allow_extensions` / `deny_extensions` can reject the suffix (`extension_not_allowed`) and `overwrite: false` returns `409` if the file exists.
+
+#### `GET /download?path=`
+
+`200`:
+
+```json
+{"path": "<resolved>", "content_base64": "<standard base64>"}
+```
+
+`400` missing or escaping path, `404` not a file, `413` larger than the same byte limit, `500` on read errors.
+
+#### `GET /files/list?path=`
+
+| Query | Default | Meaning |
+|-------|---------|---------|
+| `path` | — | Directory (required) |
+| `recursive` | `false` | `true` / `yes` / `1` walks subdirectories |
+| `max_entries` | `1000` | Cap, also capped by a policy `max_entries` |
+
+`200`: `{"entries": [{"name", "type", "size", "modified"}]}`. `type` is `directory` or `file` (`follow_symlinks=False`, so a symlink is `file`). Recursive depth stops at 3 (`max_depth` when a policy sets it). `404` if the path is not a directory.
+
+#### `GET /files/stat?path=`
+
+`200` even when the path is missing:
+
+```json
+{
+  "name": "note.txt",
+  "path": "/home/user/note.txt",
+  "type": "file",
+  "size": 12,
+  "permissions": "644",
+  "modified": "2026-10-12T00:00:00+00:00",
+  "accessed": "2026-10-12T00:00:00+00:00",
+  "created": "2026-10-12T00:00:00+00:00",
+  "exists": true
+}
+```
+
+`type` is `file`, `directory`, `symlink`, or `unknown` (with empty times and `exists: false`) when nothing is there. `permissions` is the last three octal digits of `st_mode`.
+
+#### `POST /files/mkdir`
+
+`{"path": "/home/user/out"}`. `200`: `{"path": "<resolved>", "created": true}`. `exist_ok` is true. `400` bad path, `500` on `OSError`.
+
+#### `DELETE /files?path=`
+
+Deletes a file or a directory tree. `200`: `{"path": "<resolved>", "deleted": true}`. `404` if it does not exist. With a policy, deleting the base directory itself, or a tree that contains a denied path, is rejected.
+
+#### `POST /files/move`
+
+`{"source": "/home/user/a", "destination": "/home/user/b"}`. `200`: `{"source": "<resolved>", "destination": "<resolved>"}`. `400` if either field is missing (the message is prefixed `source:` or `destination:`), `404` if the source is missing. The destination parent is created.
+
+#### `POST /files/search`
+
+```json
+{"path": "/home/user", "pattern": "*.py", "max_depth": 5, "max_results": 100}
+```
+
+`pattern` is a `fnmatch` on the file name. Defaults: depth 5, 100 results, 10 second walk. `200`:
+
+```json
+{"results": [{"name": "a.py", "path": "/home/user/a.py"}], "timed_out": false}
+```
+
+`404` if `path` is not a directory. Non-integer limits are `400`.
+
+#### `POST /files/upload-stream`
+
+Same body and success shape as `POST /upload` (`path`, `bytes`). The handler still receives one JSON body; it writes the decoded bytes in 64 KiB chunks.
+
+#### `GET /files/download-stream?path=`
+
+Same as `GET /download`, plus `bytes`:
+
+```json
+{"path": "<resolved>", "content_base64": "...", "bytes": 12}
+```
+
+#### `POST /files/archive`
+
+```json
+{"paths": ["/home/user/proj"], "format": "tar.gz"}
+```
+
+`format` is `tar.gz` (default) or `zip`. `200`:
+
+```json
+{"content_base64": "...", "format": "tar.gz", "bytes": 1200}
+```
+
+Limits: 10000 files and 100 MiB of archive bytes (policy `max_files` / `max_bytes` can lower them). Too many files is `400`. An oversized archive is `413`. A missing input path is `404`. Symlinks that point outside the base directory are skipped.
+
+#### `GET /files/watch?path=`
+
+SSE. Query: `recursive` (`false`), `interval` seconds (default `0.5`, clamped to `0.1`–`5`), `timeout` seconds (default `300`, minimum `0.1`, capped by policy `max_duration_seconds`).
+
+| Event | Data |
+|-------|------|
+| `ready` | `{"path": "<resolved>"}` |
+| `change` | `{"type": "created"\|"modified"\|"deleted", "path": "...", "is_dir": false}` |
+| `end` | `{"reason": "timeout"}` |
+
+`400` for a bad interval or timeout, `404` if `path` is not a directory. The walk is polled; it is not an inotify stream. At most 5000 entries are tracked.
+
+### `process`
+
+`cwd`, `env`, and `timeout` on the shell and process-start bodies are optional. `cwd` must be a string and an existing directory (resolved under the base directory when a policy is loaded). `env` must be an object of strings. `timeout` defaults to 300 seconds; a non-positive or non-numeric value is replaced with 300. A policy can lower the timeout (`timeout_seconds`) and cap output (`max_output_bytes`, which sets `"truncated": true` on `/shell`).
+
+#### `POST /shell`
+
+```json
+{"command": "ls -la /tmp", "cwd": "/tmp", "env": {"A": "1"}, "timeout": 30}
+```
+
+`200`:
+
+```json
+{"stdout": "...", "stderr": "", "exit_code": 0}
+```
+
+`exit_code` is the process return code, including non-zero. `400` if `command` is missing or `cwd`/`env` is the wrong type. `shlex` failure is `500`. A timeout is `500` `{"error": "Command timed out after <n>s", "type": "TimeoutError"}`.
+
+#### `POST /shell/stream`
+
+Same body. SSE lines, one per output line (trailing newline stripped):
+
+| Event | Data |
+|-------|------|
+| `stdout` | `{"data": "<line>"}` |
+| `stderr` | `{"data": "<line>"}` |
+| `error` | `{"error": "timeout"}` or `{"error": "output_limit"}` or `{"error": "<message>"}` |
+| `exit` | `{"exit_code": 0}` |
+
+`shlex` failure here is `400`, not `500`.
+
+#### `POST /process/start`
+
+```json
+{"command": "sleep 30", "cwd": "/tmp", "env": {}, "capture_output": false, "stdin": false}
+```
+
+`200`: `{"pid": 123, "command": "sleep 30"}`. The server keeps at most 100 live processes (`429` `ResourceError` when full; already-exited rows are dropped first). `capture_output: true` stores stdout and stderr (default cap 1 MiB; older chunks are dropped). `stdin: true` leaves stdin open for `/process/{pid}/stdin`. `400` bad command or `shlex` error, `500` if `Popen` fails.
+
+#### `GET /process/list`
+
+`200`: `{"processes": [{"pid", "command", "state", "started_at"}]}`. `state` is `running` (exited processes are removed by this call). `started_at` is a Unix timestamp (`time.time()`).
+
+#### `GET /process/{pid}`
+
+`200`:
+
+```json
+{"pid": 123, "command": "sleep 30", "state": "running", "started_at": 1700000000.0, "exit_code": null}
+```
+
+`state` is `running` or `exited`. `exit_code` is `null` until it exits. `400` if `pid` is not an integer, `404` if this server did not start that pid.
+
+#### `POST /process/{pid}/signal`
+
+`{"signal": 15}`. Allowed signals: `2` (SIGINT), `9` (SIGKILL), `15` (SIGTERM), `18` (SIGCONT), `20` (SIGTSTP). `200`: `{"pid": 123, "signal": 15}`. Other signals are `400`. Pid 1 and the server's own pid are `403`. Unknown pid is `404`.
+
+#### `POST /process/{pid}/stdin`
+
+For a process started with `stdin: true`.
+
+```json
+{"data": "hello\n", "eof": false}
+```
+
+`data` is UTF-8 text. `data_base64` is an alternative. `eof: true` closes stdin. At least one of `data`, `data_base64`, or `eof` is required. `200`: `{"pid": 123, "written": 6, "closed": false}`. `409` if stdin was not enabled or is already closed. `400` for bad base64 or a non-string `data`.
+
+#### `GET /process/{pid}/output?since=0&wait=0`
+
+Only when `capture_output` was true (`409` otherwise). `since` is a sequence number (default `0`). `wait` seconds (default `0`, max `30`) blocks until new data or the process ends. `200`:
+
+```json
+{
+  "pid": 123,
+  "events": [{"seq": 0, "stream": "stdout", "data": "hi"}],
+  "next": 1,
+  "state": "running",
+  "exit_code": null,
+  "dropped": false
+}
+```
+
+`dropped: true` means the capture buffer discarded older events.
+
+### `terminal`
+
+The HTTP routes manage sessions. Keystrokes go over a WebSocket on `EBX_PTY_PORT` (default `9001`), started only while this group is enabled. Shells allowed at create time: `/bin/bash`, `/bin/sh`, `/bin/zsh`, `/usr/bin/bash`, `/usr/bin/zsh`. At most 10 sessions. A session idle for 1800 seconds is reaped when the manager next creates or lists sessions.
+
+#### `POST /pty/sessions`
+
+```json
+{"shell": "/bin/bash", "cols": 80, "rows": 24, "env": {"LANG": "C.UTF-8"}}
+```
+
+`200`:
+
+```json
+{"session_id": "<12 hex chars>", "ws_url": "ws://localhost:9001/pty?session_id=<id>", "pid": 123}
+```
+
+`ws_url` is built with `localhost` and, when `EBX_SERVER_TOKEN` is set and the server is not using per-identity tokens, `&token=<url-encoded token>`. From outside the sandbox, open the WebSocket on `sandbox.network.get_url(9001)` at path `/pty` with the same query. `429` when the session limit is hit. `400` for a shell outside the list or a non-integer size. `LD_PRELOAD`, `LD_LIBRARY_PATH`, and `DYLD_INSERT_LIBRARIES` are stripped from `env`.
+
+#### `GET /pty/sessions`
+
+`200`: `{"sessions": [{"id", "pid", "created_at", "cols", "rows", "alive"}]}`.
+
+#### `GET /pty/sessions/{id}`
+
+`200`: one session object (`id`, `pid`, `created_at`, `cols`, `rows`, `alive`). `404` if it is gone.
+
+#### `POST /pty/sessions/{id}/resize`
+
+`{"cols": 120, "rows": 40}`. Both are required integers from 1 to 1000. `200` returns the session object.
+
+#### `DELETE /pty/sessions/{id}`
+
+`200`: `{"status": "closed", "session_id": "<id>"}`. `404` if it does not exist.
+
+#### WebSocket `/pty?session_id=`
+
+Client → server:
+
+```json
+{"type": "input", "data": "ls\n"}
+{"type": "resize", "cols": 120, "rows": 40}
+{"type": "signal", "signal": "SIGINT"}
+```
+
+`signal` accepts `SIGINT`, `SIGTERM`, `SIGKILL`, `SIGHUP`, `SIGQUIT`.
+
+Server → client:
+
+```json
+{"type": "output", "data": "..."}
+{"type": "event", "event": "started", "session_id": "<id>", "pid": 123}
+{"type": "event", "event": "exited", "session_id": "<id>"}
+```
+
+Auth failure closes the socket with code `4001`. A disabled terminal closes with `4003`.
+
+### `system`
+
+#### `GET /system/info`
+
+`200`:
+
+```json
+{
+  "os": "Linux",
+  "arch": "x86_64",
+  "cpu_count": 2,
+  "memory_total_mb": 2048,
+  "memory_available_mb": 1024,
+  "disk_total_gb": 20.0,
+  "disk_free_gb": 10.0,
+  "python_version": "3.11.0",
+  "hostname": "sandbox"
+}
+```
+
+Memory comes from `/proc/meminfo` when present. Disk is `shutil.disk_usage("/")`.
+
+#### `GET /system/metrics`
+
+`200`: `cpu_load_1m`, `cpu_load_5m`, `cpu_load_15m`, `memory_used_mb`, `memory_total_mb`, `memory_percent`, `disk_used_gb`, `disk_total_gb`, `disk_percent`, `uptime_seconds`. Uptime is seconds since the server process imported this module.
+
+#### `GET /env`
+
+`200`: `{"variables": {"HOME": "/home/user"}}`. Names containing `TOKEN`, `SECRET`, `KEY`, `PASSWORD`, or `CREDENTIAL` (any case) are omitted. Query `filter` is a comma-separated allow-list of names. A policy can add `allow_vars` / `deny_vars` globs.
+
+#### `POST /env`
+
+`{"vars": {"LANG": "C.UTF-8"}}`. `200`: `{"updated": ["LANG"]}`. `403` if any key is `PATH`, `HOME`, `USER`, `SHELL`, or starts with `EBX_` (compared in uppercase). `400` if `vars` is not an object. Values are stored with `str()`.
+
+#### `GET /ports`
+
+`200`: `{"listening": [{"port": 9000, "protocol": "tcp", "address": "0.0.0.0", "pid": null}]}`. Read from `/proc/net/tcp` and `/proc/net/tcp6` (listen state only). If both are empty, the handler runs `ss -tlnp`. `pid` is filled only by the `ss` fallback.
+
+#### `GET /packages?manager=pip`
+
+`manager` is `pip` (default) or `npm`. `pip` runs `python -m pip list --format json`. `npm` runs `npm list --json --depth=0`. `200`: `{"manager": "pip", "packages": [{"name": "pip", "version": "24.0"}]}`. An unknown manager is `400`. A missing binary returns an empty `packages` list. Timeout is 10 seconds (`500` `TimeoutError`).
+
+### `dev_tools` (off until enabled)
+
+#### `POST /code/run`
+
+```json
+{"code": "print('hello')", "language": "python", "timeout": 30}
+```
+
+`language` is `python` (`python3 -c`), `node` (`node -e`), or `bash` (`bash -c`). Default timeout 30 seconds, maximum 300. `200`:
+
+```json
+{
+  "stdout": "hello\n",
+  "stderr": "",
+  "exit_code": 0,
+  "language": "python",
+  "execution_time_ms": 12.34,
+  "_security_note": "Security relies on container isolation, not application-level restrictions"
+}
+```
+
+`408` on timeout. `500` if the runtime binary is missing. A policy `languages` list can reject a language.
+
+#### `GET /git/status?path=.`
+
+`200`: `{"branch": "main", "clean": true, "files": [{"path": "a.py", "status": "modified"}]}`. `status` is `modified`, `added`, `deleted`, `renamed`, `untracked`, `copied`, or `unmerged`. `400` `GitError` when git fails (not a repository). `500` if `git` is not installed. `408` on a 30 second timeout. With `EBX_SERVER_BASE_DIR` set, `path` must stay inside it.
+
+#### `GET /git/diff`
+
+Query: `path` (default `.`), `staged` (`true`/`yes`/`1` adds `--staged`), `file` (optional pathspec). `200`:
+
+```json
+{"diff": "<unified diff>", "stats": {"files_changed": 1, "insertions": 2, "deletions": 0}}
+```
+
+Diff text is cut at 1 MiB with a truncation line. Same git errors as status.
+
+### `browser` (off until enabled)
+
+All of these need Playwright. If `import playwright` fails the handler returns `503` `RuntimeError` with the install hint `pip install playwright && playwright install chromium`. One shared headless Chromium page is created on first use. There is no per-request browser id.
+
+| Route | Body or query | `200` body |
+|-------|----------------|------------|
+| `POST /browser/navigate` | `url` (required), `wait_until` default `networkidle`, `timeout` ms default `30000` | `url`, `title`, `status` (HTTP status of the navigation, or `0`) |
+| `POST /browser/screenshot` | `selector` optional, `full_page` default `true`, `format` `png` or `jpeg` | `image_base64`, `width`, `height` |
+| `GET /browser/content` | `type` query `html` (default) or `text` | `content`, `url`, `title` |
+| `POST /browser/click` | `selector` (required), `timeout` ms default `5000` | `clicked: true`, `selector` |
+| `POST /browser/type` | `selector`, `text` (required), `delay` ms default `50`, `clear` default `false` | `typed: true`, `selector`, `text` |
+| `POST /browser/evaluate` | `script` (required), `timeout` ms default `10000` | `result` (the JSON value `page.evaluate` returned) |
+| `POST /browser/pdf` | `format` default `A4`, `landscape` default `false` | `pdf_base64`, `pages` |
+| `GET /browser/console` | none | `logs`: `[{type, text, timestamp}]`, then the buffer is cleared (max 1000) |
+
+`404` from screenshot when `selector` matches nothing. A policy may restrict `url` on navigate (`url_allow`, `url_deny`, `block_private_networks`). Redirects after the first URL are not filtered.
+
+### `agents` (off until enabled)
+
+Turn the group on with `EBX_SERVER_ENABLED_GROUPS=agents` (or `default_table().enable_group(CapabilityGroup.AGENTS)` before `serve()`). This slice hosts the Codex CLI (`codex`) and Qwen Code (`qwen-code`, also `qwen` and `qwencode`). Any other adapter name is `404` `not_found_error` with `x-should-retry: false`. If the body and `agents.default` (`EBX_AGENTS_DEFAULT`) name neither adapter, create calls are `400` `agents.adapter_required`.
+
+Every route here is a local operation. Every response carries `X-Easy-Sandbox-Local: 1` and every object an `x_easy_sandbox` label (`local`, `compute`, `differences`). A field the server cannot honor is `400` with `param`, never accepted and ignored. Objects belong to the caller; a foreign id answers like an unknown id.
+
+| Route | Behavior |
+|------|------|
+| `POST /v1/agents/sessions` | Creates a session from an inline `agent` or an `agent_id`, optional `environment` (`{"id": "env_..."}`) and `vault_ids`. A string `input` queues the first turn. |
+| `GET /v1/agents/sessions` | Lists sessions (`agent_id` filter). |
+| `GET`, `POST`, `DELETE /v1/agents/sessions/{id}` | One session. `POST` updates `metadata` only. |
+| `POST /v1/agents/sessions/{id}/events` | Queues a turn. **HTTP 202, empty body.** The same `Idempotency-Key` replays that 202. |
+| `GET /v1/agents/sessions/{id}/events` | SSE (`Accept: text/event-stream`) of mapped session events. |
+| `GET .../items`, `.../turns`, `.../turns/{turn_id}`, `.../turns/{turn_id}/items` | Items and turns. |
+| `GET .../artifacts`, `GET` and `DELETE .../artifacts/{id}`, `GET .../artifacts/{id}/content` | Immutable copies of the paths the CLI reported. Delete removes the copy only. |
+| `GET .../traces` | Empty unless `EBX_AGENTS_TRACES=1` (timing-only spans). |
+| `GET .../subagents`, `.../subagents/{id}`, `/items`, `/turns`, `/turns/{turn_id}`, `/turns/{turn_id}/items` | Only ids the CLI emitted. |
+| `POST`, `GET /v1/agents`, `GET`, `POST`, `DELETE /v1/agents/{agent_id}` | Agent definitions. Only `mcp` tools. |
+| `POST`, `GET /v1/agents/environments`, `GET /v1/agents/environments/{id}` | Directory bindings. |
+| `POST`, `GET /v1/agents/environments/{id}/files` | Write (never overwrite) and list files under the workspace. |
+| `/v1/agents/environments/templates[...]` | Reduced templates: `{name, env, inline files}`. |
+| `POST /v1/files` | Local `user_data` blobs so `file_id` works (JSON body with base64 `data`). |
+| `/v1/vaults[...]`, `/v1/vaults/{id}/credentials[...]` | Memory-only vaults and write-only `static_bearer` / `mcp_oauth` credentials. |
+| `POST /v1/responses`, `GET`, `DELETE /v1/responses/{id}`, `POST .../cancel`, `GET .../input_items`, `POST /v1/responses/compact` | A labeled one-shot CLI turn. |
+| `GET /v1/models`, `GET /v1/models/{id}` | Definitions and the two adapters. |
+| `/v1/webhook_endpoints[...]`, `GET /v1/webhook_event_types` | Local signed webhook endpoints. |
+| `GET /v1/agents/runtimes` | `codex` and `qwen-code` only. |
+
+No local capability, `404` `not_found_error` (`agents.not_implemented_locally`, `x-should-retry: false`): `POST /v1/responses/input_tokens`, `DELETE /v1/models/{id}`, and executor registration and channel.
+
+The CLIs are not installed until a session uses them. See [Hosted agents](hosted-agents.md) for every refusal, environment variable and difference code. Best practices (Codex and Qwen only, the local header, 404 for Claude, Cursor, and Qoder, and 404 for `input_tokens`) are in [Hosted agents — Best practices](hosted-agents.md#best-practices).
+
+---
+
+## Custom commands and custom routes
+
+### `@registry.command`
+
+```python
+from easy_sandbox.server import CommandRegistry, SandboxServer
+
+registry = CommandRegistry()
+
+@registry.command("hello", description="Say hello.")
+def hello(name: str = "World") -> str:
+    return f"Hello, {name}!"
+
+@registry.command(hidden=True)
+def _debug_info() -> dict:
+    return {"ok": True}
+
+registry.freeze()
+SandboxServer(registry=registry).serve(port=9000)
+```
+
+`GET /commands` lists `hello` and not `_debug_info`. `POST /commands/hello` with `{"name": "Ada"}` returns `{"result": "Hello, Ada!"}`. `POST /commands/_debug_info` with `{}` still runs. The name defaults to the function name. Argument types come from annotations: `int` → `integer`, `float` → `float`, `bool` → `boolean`, anything else → `string`. A parameter with no default is `required: true` and `default: null`. `description` on each arg stays `""` unless you pass an explicit `args` list of `CommandArg`. `hidden=True` omits the command from `GET /commands`. Raise to return `500`. Call `registry.freeze()` before `serve` (`serve` freezes the registry again).
+
+### `@table.route`
+
+```python
+from easy_sandbox.server import CapabilityGroup, ServerResponse, default_table
+
+table = default_table()
+
+@table.route("GET", "/hello/{name}", group=CapabilityGroup.COMMANDS)
+def hello_route(request: object) -> ServerResponse:
+    name = getattr(request, "path_params", {}).get("name", "World")
+    return ServerResponse.ok({"greeting": f"Hello, {name}!"})
+```
+
+The dispatcher calls `GET`, `POST`, and `DELETE` only. The handler receives a request with:
+
+| Attribute | Contents |
+|-----------|----------|
+| `method` | `GET`, `POST`, or `DELETE` |
+| `path` | Path with the trailing slash removed |
+| `query` | `{name: [values]}` from the query string |
+| `headers` | Header name → single value |
+| `body` | Parsed JSON object, or `{}` when the method has no body |
+| `path_params` | `{param: value}` from `{param}` segments (one path segment, no slash) |
+| `context` | `registry` and `route_table` |
+
+Return `ServerResponse.ok({...})` (`200` and that object as the body) or `ServerResponse.error(status, message)` (`{"error", "type"}`, `type` default `ValueError`).
+
+`auth_required=False` leaves the route open when `EBX_SERVER_TOKEN` is set. The default is to require the token. `streaming=True` means return `SSEResponse(event_iterator=...)`; the iterator yields strings `event: <name>\ndata: <json>\n\n`.
+
+The route does not appear in `GET /commands`. It appears in `GET /capabilities` under `endpoints`, keyed by the route `name` (default `"GET /hello/{name}"`). It is served only while its group is enabled. A disabled group is the same `404` as a built-in route.
+
+---
+
+## curl
+
+Set the base URL and, when the server was started with a token, the token. Neither value belongs in the template image.
+
+```bash
+export EBX_TEMPLATE_URL="http://127.0.0.1:9000"   # or the https URL from get_url(9000)
+export EBX_SERVER_TOKEN=""                         # leave empty in local mode
+```
+
+Health (open even when a token is set):
+
+```bash
+curl -sS "$EBX_TEMPLATE_URL/health"
+```
+
+List commands (send the header whenever `EBX_SERVER_TOKEN` is set):
+
+```bash
+curl -sS -H "X-Access-Token: $EBX_SERVER_TOKEN" "$EBX_TEMPLATE_URL/commands"
+```
+
+Run a command registered as `hello`:
+
+```bash
+curl -sS -H "X-Access-Token: $EBX_SERVER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Ada"}' \
+  "$EBX_TEMPLATE_URL/commands/hello"
+```
+
+Upload and download. The path must stay under `EBX_SERVER_BASE_DIR` (default `/home/user`). `file_ops` must be enabled, which it is unless `commands.py` or `EBX_SERVER_DISABLED_GROUPS` turned it off.
+
+```bash
+B64=$(printf 'hello' | base64)
+curl -sS -H "X-Access-Token: $EBX_SERVER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"path\":\"/home/user/note.txt\",\"content_base64\":\"$B64\"}" \
+  "$EBX_TEMPLATE_URL/upload"
+
+curl -sS -H "X-Access-Token: $EBX_SERVER_TOKEN" \
+  "$EBX_TEMPLATE_URL/download?path=/home/user/note.txt"
+```

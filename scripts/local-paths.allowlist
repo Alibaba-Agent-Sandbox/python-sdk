@@ -1,0 +1,23 @@
+# Allowlist for scripts/check-no-local-paths.sh
+#
+# One entry per line:   <path-glob>[|<extended-regex>]
+#   * <path-glob>   matches the repo-relative file path (bash pattern; `*` also matches `/`).
+#   * <regex>       optional; when present the entry only covers lines matching it.
+# Blank lines and lines starting with `#` are ignored. Keep entries as narrow as possible
+# and say why the match is legitimate. Never allowlist a real credential - remove it.
+
+# Repo-health checkers define the very patterns that detect machine-local paths.
+scripts/check-repo-health.sh|/Users/|/tmp/
+
+# Test data for the Windows path parser; not a real user path.
+client-sdk/tests/test_protocol/test_filesystem.py|C:\\\\Users\\\\(test|docs)\\\\
+
+# Historical note that explains the former `anycodes/*` placeholder project URLs.
+.agents/notes/superseded/2026-09-04-pypi-packaging-decisions.md|anycodes
+
+# TEMPORARY: split-audit document quotes the leaks it describes. Remove this entry once
+# the document is scrubbed of the literal paths (re-sweep pending, see the hygiene note).
+docs/en/design/repository-layout.md
+
+# This note describes the patterns the guard rejects.
+.agents/notes/implemented/process/*-open-source-hygiene.md

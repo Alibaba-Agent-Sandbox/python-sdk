@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hygiene:
+    name: No local paths or secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for local paths and credential-like strings
+        run: bash scripts/check-no-local-paths.sh
+
+  client-sdk:
+    name: client-sdk (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    defaults:
+      run:
+        working-directory: client-sdk
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            client-sdk/pyproject.toml
+            server-sdk/pyproject.toml
+
+      - name: Install dependencies
+        run: pip install -e ../server-sdk -e '.[dev]' hatchling
+
+      - name: Ruff check
+        run: ruff check src tests
+
+      - name: Ruff format check
+        run: ruff format --check src tests
+
+      - name: Mypy
+        run: mypy src/easy_sandbox
+
+      - name: Run tests
+        run: pytest -v --tb=short -m 'not integration'
+
+  server-sdk:
+    name: server-sdk (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    defaults:
+      run:
+        working-directory: server-sdk
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: server-sdk/pyproject.toml
+
+      - name: Install dependencies
+        run: pip install -e '.[dev]' hatchling
+
+      - name: Ruff check
+        run: ruff check src tests
+
+      - name: Ruff format check
+        run: ruff format --check src tests
+
+      - name: Mypy
+        run: mypy src/easy_sandbox/server
+
+      - name: Run tests
+        run: pytest -v --tb=short -m 'not integration'
+
+  build:
+    name: Build packages
+    runs-on: ubuntu-latest
+    needs: [client-sdk, server-sdk]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            client-sdk/pyproject.toml
+            server-sdk/pyproject.toml
+
+      - name: Install build tools
+        run: pip install build twine
+
+      - name: Build sdist and wheel (server-sdk)
+        run: python -m build --outdir dist/server-sdk server-sdk
+
+      - name: Build sdist and wheel (client-sdk)
+        run: python -m build --outdir dist/client-sdk client-sdk
+
+      - name: Check distributions
+        run: twine check dist/*/*
+
+      - name: Verify py.typed is in both wheels
+        run: python scripts/check_dists.py py-typed
+
+      - name: Verify client + server install into one virtualenv and import
+        run: python scripts/check_dists.py combined-install
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

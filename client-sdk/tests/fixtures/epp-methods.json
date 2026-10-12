@@ -1,0 +1,609 @@
+{
+  "schema_version": 1,
+  "methods": [
+    {
+      "method": "initialize",
+      "feature": null,
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "protocol": {
+          "type": "string",
+          "required": true
+        },
+        "host": {
+          "type": "object",
+          "required": true
+        },
+        "provider_id": {
+          "type": "string",
+          "required": true
+        },
+        "config": {
+          "type": "object",
+          "required": true
+        },
+        "core": {
+          "type": "object",
+          "required": true
+        },
+        "locale": {
+          "type": "string",
+          "required": true
+        },
+        "data_dir": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "result": "{protocol, plugin:{name,version}, features:[...]}"
+    },
+    {
+      "method": "shutdown",
+      "feature": null,
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {},
+      "result": "{}"
+    },
+    {
+      "method": "sandbox.create",
+      "feature": "sandbox.lifecycle",
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "template": {
+          "type": "string",
+          "required": true
+        },
+        "timeout": {
+          "type": "integer",
+          "required": true
+        },
+        "metadata": {
+          "type": "object",
+          "required": true
+        },
+        "envs": {
+          "type": "object",
+          "required": true
+        },
+        "cpu": {
+          "type": "integer|null",
+          "required": true
+        },
+        "memory": {
+          "type": "integer|null",
+          "required": true
+        },
+        "disk": {
+          "type": "integer|null",
+          "required": true
+        },
+        "gpu": {
+          "type": "string|null",
+          "required": true
+        },
+        "request_timeout": {
+          "type": "number|null",
+          "required": true
+        },
+        "secure": {
+          "type": "boolean",
+          "required": false
+        },
+        "options": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "result": "SandboxRecord",
+      "note": "secure is sent only when the user set it; options = the per-create provider_options minus secret fields"
+    },
+    {
+      "method": "sandbox.get",
+      "feature": "sandbox.lifecycle",
+      "support": "required",
+      "idempotent": true,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "result": "SandboxRecord"
+    },
+    {
+      "method": "sandbox.connect",
+      "feature": "sandbox.lifecycle",
+      "support": "optional",
+      "idempotent": true,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "result": "SandboxRecord",
+      "note": "optional; may resume a paused sandbox. The host falls back to sandbox.get on -32601"
+    },
+    {
+      "method": "sandbox.list",
+      "feature": "sandbox.lifecycle",
+      "support": "required",
+      "idempotent": true,
+      "host_calls": true,
+      "params": {
+        "limit": {
+          "type": "integer",
+          "required": true
+        },
+        "status": {
+          "type": "string",
+          "required": false
+        },
+        "cursor": {
+          "type": "string",
+          "required": false
+        },
+        "metadata": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "result": "{sandboxes:[SandboxRecord], next?}"
+    },
+    {
+      "method": "sandbox.kill",
+      "feature": "sandbox.lifecycle",
+      "support": "required",
+      "idempotent": true,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "result": "{}"
+    },
+    {
+      "method": "sandbox.set_timeout",
+      "feature": "sandbox.timeout",
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "timeout": {
+          "type": "integer",
+          "required": true
+        }
+      },
+      "result": "{}"
+    },
+    {
+      "method": "sandbox.pause",
+      "feature": "sandbox.pause",
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "result": "{}"
+    },
+    {
+      "method": "sandbox.resume",
+      "feature": "sandbox.pause",
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "result": "{}"
+    },
+    {
+      "method": "exec.run",
+      "feature": "exec.run",
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "cmd": {
+          "type": "string",
+          "required": true
+        },
+        "args": {
+          "type": "array",
+          "required": true
+        },
+        "env": {
+          "type": "object",
+          "required": true
+        },
+        "cwd": {
+          "type": "string",
+          "required": true
+        },
+        "user": {
+          "type": "string",
+          "required": true
+        },
+        "timeout": {
+          "type": "integer",
+          "required": true
+        },
+        "stdin": {
+          "type": "string",
+          "required": false
+        }
+      },
+      "result": "{exit_code, stdout, stderr, stdout_b64?, stderr_b64?}"
+    },
+    {
+      "method": "exec.start",
+      "feature": "exec.stream",
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "cmd": {
+          "type": "string",
+          "required": true
+        },
+        "args": {
+          "type": "array",
+          "required": true
+        },
+        "env": {
+          "type": "object",
+          "required": true
+        },
+        "cwd": {
+          "type": "string",
+          "required": true
+        },
+        "user": {
+          "type": "string",
+          "required": true
+        },
+        "timeout": {
+          "type": "integer",
+          "required": true
+        },
+        "stdin": {
+          "type": "string",
+          "required": false
+        },
+        "detached": {
+          "type": "boolean",
+          "required": false
+        }
+      },
+      "result": "{process_id: string}",
+      "note": "followed by notifications exec.output{process_id,stream,data} and exactly one exec.exit{process_id,exit_code}; detached is an optional extension (the host does not send it yet)"
+    },
+    {
+      "method": "process.list",
+      "feature": "process.manage",
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "result": "{processes:[{pid,command,status,...}]}"
+    },
+    {
+      "method": "process.kill",
+      "feature": "process.manage",
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "pid": {
+          "type": "string|integer",
+          "required": true
+        }
+      },
+      "result": "{}",
+      "note": "pid is an opaque id: the integer pid of process.list or the string process_id of exec.start"
+    },
+    {
+      "method": "process.signal",
+      "feature": "process.manage",
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "pid": {
+          "type": "string|integer",
+          "required": true
+        },
+        "signal": {
+          "type": "integer",
+          "required": true
+        }
+      },
+      "result": "{}"
+    },
+    {
+      "method": "process.stdin",
+      "feature": "process.manage",
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "pid": {
+          "type": "string|integer",
+          "required": true
+        },
+        "data": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "result": "{}",
+      "note": "a plugin without stdin support answers -32003"
+    },
+    {
+      "method": "files.read",
+      "feature": "files.rw",
+      "support": "required",
+      "idempotent": true,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "path": {
+          "type": "string",
+          "required": true
+        },
+        "offset": {
+          "type": "integer",
+          "required": false
+        },
+        "length": {
+          "type": "integer",
+          "required": false
+        }
+      },
+      "result": "{content_b64, size}",
+      "note": "offset/length are an optional extension for chunked reads (the host does not send them yet)"
+    },
+    {
+      "method": "files.write",
+      "feature": "files.rw",
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "path": {
+          "type": "string",
+          "required": true
+        },
+        "content_b64": {
+          "type": "string",
+          "required": true
+        },
+        "mode": {
+          "type": "string|integer",
+          "required": false
+        },
+        "append": {
+          "type": "boolean",
+          "required": false
+        }
+      },
+      "result": "{}",
+      "note": "mode and append are optional extensions (the host does not send them yet)"
+    },
+    {
+      "method": "files.list",
+      "feature": "files.rw",
+      "support": "required",
+      "idempotent": true,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "path": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "result": "{entries:[{name,path,type,size,mtime?}]}"
+    },
+    {
+      "method": "files.stat",
+      "feature": "files.rw",
+      "support": "required",
+      "idempotent": true,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "path": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "result": "{name,path,type,size,mtime?}"
+    },
+    {
+      "method": "files.mkdir",
+      "feature": "files.rw",
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "path": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "result": "{}"
+    },
+    {
+      "method": "files.remove",
+      "feature": "files.rw",
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "path": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "result": "{}"
+    },
+    {
+      "method": "files.move",
+      "feature": "files.rw",
+      "support": "required",
+      "idempotent": false,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "source": {
+          "type": "string",
+          "required": true
+        },
+        "destination": {
+          "type": "string",
+          "required": true
+        },
+        "overwrite": {
+          "type": "boolean",
+          "required": false
+        }
+      },
+      "result": "{}",
+      "note": "plugins may additionally accept the legacy aliases src/dest"
+    },
+    {
+      "method": "files.search",
+      "feature": "files.rw",
+      "support": "extension",
+      "idempotent": false,
+      "host_calls": false,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "path": {
+          "type": "string",
+          "required": true
+        },
+        "pattern": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "result": "{entries:[...]}"
+    },
+    {
+      "method": "files.chmod",
+      "feature": "files.rw",
+      "support": "extension",
+      "idempotent": false,
+      "host_calls": false,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "path": {
+          "type": "string",
+          "required": true
+        },
+        "mode": {
+          "type": "string|integer",
+          "required": true
+        }
+      },
+      "result": "{}"
+    },
+    {
+      "method": "ports.url",
+      "feature": "ports.url",
+      "support": "required",
+      "idempotent": true,
+      "host_calls": true,
+      "params": {
+        "sandbox_id": {
+          "type": "string",
+          "required": true
+        },
+        "port": {
+          "type": "integer",
+          "required": true
+        }
+      },
+      "result": "{url, headers?}",
+      "note": "routed through Sandbox.network.resolve()/resolve_url()"
+    }
+  ]
+}

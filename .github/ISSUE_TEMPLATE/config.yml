@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Ask a Question
+    url: https://github.com/Easy-Sandbox/python-sdk/discussions/categories/q-a
+    about: Ask questions and get help from the community
+  - name: 💡 Suggest an Idea
+    url: https://github.com/Easy-Sandbox/python-sdk/discussions/categories/ideas
+    about: Share ideas for new features
+  - name: 🖥️ ebx CLI issues
+    url: https://github.com/Easy-Sandbox/easy-sandbox/issues/new/choose
+    about: The ebx command-line tool lives in the easy-sandbox repository
+  - name: 📗 Node.js SDK issues
+    url: https://github.com/Easy-Sandbox/nodejs-sdk/issues/new/choose
+    about: The Node.js SDK lives in the nodejs-sdk repository
+  - name: 📦 Community Templates
+    url: https://github.com/Easy-Sandbox/awesome-templates
+    about: Browse and contribute sandbox templates

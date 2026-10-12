@@ -1,0 +1,7 @@
+# Replace the placeholder handle when the GitHub team exists.
+*                       @Easy-Sandbox/maintainers
+/client-sdk/            @Easy-Sandbox/maintainers
+/server-sdk/            @Easy-Sandbox/maintainers
+/docs/                  @Easy-Sandbox/maintainers
+/.github/               @Easy-Sandbox/maintainers
+/.agents/               @Easy-Sandbox/maintainers

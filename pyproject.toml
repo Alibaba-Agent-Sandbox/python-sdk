@@ -1,0 +1,7 @@
+# Tooling-only workspace root. This file is never built or published: it has no [project] table.
+# The two distributions are defined in client-sdk/pyproject.toml (easy-sandbox) and
+# server-sdk/pyproject.toml (easy-sandbox-server); per-package pytest, ruff and mypy settings live there.
+# Shared Ruff baseline for root-level tooling: ruff.toml.
+
+[tool.uv.workspace]
+members = ["client-sdk", "server-sdk"]

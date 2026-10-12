@@ -1,0 +1,43 @@
+manifest_version = 1
+
+[provider]
+id          = "local-process"
+name        = "Local Process"
+name_zh     = "本地进程"
+version     = "0.1.0"
+description = "Runs commands directly in a temp directory on this machine (demo, no isolation)."
+license     = "Apache-2.0"
+
+[compat]
+protocol = "epp/1"
+requires = { sdk = ">=0.3", cli = ">=0.3" }
+
+[runtime]
+kind    = "exec"
+command = ["python3", "./provider.py"]
+startup_timeout_ms = 10000
+call_timeout_ms    = 60000
+
+[features]
+supported = ["sandbox.lifecycle", "sandbox.timeout", "exec.run", "exec.stream", "files.rw"]
+
+[security]
+network          = []
+filesystem       = ["data_dir"]
+env_passthrough  = []
+spawns_processes = true
+
+[auth]
+any_of = []
+
+[config.fields.token]
+type           = "string"
+secret         = true
+description    = "Optional demo token (shows how secrets reach a plugin: only through initialize)"
+description_zh = "可选的演示令牌（展示机密仅通过 initialize 传给插件）"
+
+[config.fields.debug]
+type           = "bool"
+default        = false
+description    = "Enable the debug.* methods used by the test-suite"
+description_zh = "启用测试套件使用的 debug.* 方法"

@@ -1,0 +1,38 @@
+manifest_version = 1
+
+[provider]
+id          = "e2b-compatible"
+name        = "E2B-compatible endpoint"
+name_zh     = "E2B 兼容端点"
+version     = "0.1.0"
+description = "Any backend that speaks the E2B REST/envd protocol, selected by URL and API key."
+license     = "Apache-2.0"
+
+[compat]
+protocol = "e2b-rest/1"
+requires = { sdk = ">=0.3", cli = ">=0.3" }
+
+[runtime]
+kind = "rest"
+
+[endpoint]
+base_url = "https://api.e2b.dev"
+domain   = "e2b.dev"
+auth     = { scheme = "header", header = "X-API-Key" }
+
+[features]
+supported = [
+  "sandbox.lifecycle", "sandbox.timeout", "sandbox.pause", "exec.run", "exec.stream",
+  "process.manage", "pty", "files.rw", "files.watch", "files.transfer", "code.interpret", "ports.url",
+]
+
+[security]
+network = ["*"]
+
+# This preset reads the generic sandbox_* keys, so E2B_API_KEY / E2B_API_URL / E2B_DOMAIN keep working.
+# Installing it therefore asks you to consent to sharing them with this provider.
+[core]
+inherit = ["sandbox_api_key", "sandbox_base_url", "sandbox_domain"]
+
+[auth]
+any_of = [["sandbox_api_key"]]

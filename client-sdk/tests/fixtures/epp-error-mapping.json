@@ -1,0 +1,302 @@
+{
+  "schema_version": 1,
+  "vectors": [
+    {
+      "name": "unauthenticated",
+      "error": {
+        "code": -32001,
+        "message": "no key"
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "AuthenticationError",
+        "sdk_code": "E1000",
+        "exit_code": 3,
+        "message": "no key",
+        "suggestion": ""
+      }
+    },
+    {
+      "name": "invalid api key subclass",
+      "error": {
+        "code": -32001,
+        "message": "bad",
+        "data": {
+          "sdk_code": "E1001"
+        }
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "InvalidAPIKeyError",
+        "sdk_code": "E1001",
+        "exit_code": 3,
+        "message": "bad",
+        "suggestion": "Check your E2B_API_KEY environment variable or pass api_key parameter."
+      }
+    },
+    {
+      "name": "not found default",
+      "error": {
+        "code": -32002,
+        "message": "gone"
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "ProviderResourceNotFoundError",
+        "sdk_code": "E8005",
+        "exit_code": 4,
+        "message": "gone",
+        "suggestion": ""
+      }
+    },
+    {
+      "name": "not found with E2000 sdk_code is still resource-not-found",
+      "error": {
+        "code": -32002,
+        "message": "gone",
+        "data": {
+          "sdk_code": "E2000"
+        }
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "ProviderResourceNotFoundError",
+        "sdk_code": "E8005",
+        "exit_code": 4,
+        "message": "gone",
+        "suggestion": ""
+      }
+    },
+    {
+      "name": "template not found",
+      "error": {
+        "code": -32002,
+        "message": "t",
+        "data": {
+          "sdk_code": "E2001"
+        }
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "TemplateNotFoundError",
+        "sdk_code": "E2001",
+        "exit_code": 4,
+        "message": "t",
+        "suggestion": "Run 'ebx template list' to see available templates."
+      }
+    },
+    {
+      "name": "file not found",
+      "error": {
+        "code": -32002,
+        "message": "f",
+        "data": {
+          "sdk_code": "E4001"
+        }
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "FileNotFoundError_",
+        "sdk_code": "E4001",
+        "exit_code": 4,
+        "message": "f",
+        "suggestion": "Use files.list() to check available files, or files.exists() to verify path."
+      }
+    },
+    {
+      "name": "feature unsupported",
+      "error": {
+        "code": -32003,
+        "message": "nope",
+        "data": {
+          "details": {
+            "feature": "pty"
+          }
+        }
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "ProviderFeatureNotSupportedError",
+        "sdk_code": "E8004",
+        "exit_code": 1,
+        "message": "nope",
+        "suggestion": "Run 'ebx provider info prov' to see supported features."
+      }
+    },
+    {
+      "name": "quota",
+      "error": {
+        "code": -32004,
+        "message": "full"
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "QuotaExceededError",
+        "sdk_code": "E2002",
+        "exit_code": 6,
+        "message": "full",
+        "suggestion": "Destroy idle sandboxes or request a quota increase."
+      }
+    },
+    {
+      "name": "timeout",
+      "error": {
+        "code": -32005,
+        "message": "slow"
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "ProviderTimeoutError",
+        "sdk_code": "E8022",
+        "exit_code": 5,
+        "message": "slow",
+        "suggestion": ""
+      }
+    },
+    {
+      "name": "invalid params",
+      "error": {
+        "code": -32006,
+        "message": "bad param"
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "ProviderConfigError",
+        "sdk_code": "E8002",
+        "exit_code": 2,
+        "message": "bad param",
+        "suggestion": ""
+      }
+    },
+    {
+      "name": "other failure",
+      "error": {
+        "code": -32000,
+        "message": "boom"
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "ProviderError",
+        "sdk_code": "E8000",
+        "exit_code": 1,
+        "message": "boom",
+        "suggestion": ""
+      }
+    },
+    {
+      "name": "other failure with sdk_code",
+      "error": {
+        "code": -32000,
+        "message": "denied",
+        "data": {
+          "sdk_code": "E4002"
+        }
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "PermissionDeniedError",
+        "sdk_code": "E4002",
+        "exit_code": 1,
+        "message": "denied",
+        "suggestion": "Check file permissions in the sandbox."
+      }
+    },
+    {
+      "name": "method not found is a protocol error",
+      "error": {
+        "code": -32601,
+        "message": "no such method"
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "ProviderProtocolError",
+        "sdk_code": "E8020",
+        "exit_code": 1,
+        "message": "no such method",
+        "suggestion": ""
+      }
+    },
+    {
+      "name": "parse error is a protocol error",
+      "error": {
+        "code": -32700,
+        "message": "bad json"
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "ProviderProtocolError",
+        "sdk_code": "E8020",
+        "exit_code": 1,
+        "message": "bad json",
+        "suggestion": ""
+      }
+    },
+    {
+      "name": "unknown numeric code",
+      "error": {
+        "code": 42,
+        "message": "?"
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "ProviderProtocolError",
+        "sdk_code": "E8020",
+        "exit_code": 1,
+        "message": "?",
+        "suggestion": ""
+      }
+    },
+    {
+      "name": "suggestion is carried",
+      "error": {
+        "code": -32000,
+        "message": "m",
+        "data": {
+          "suggestion": "try x"
+        }
+      },
+      "provider_id": "prov",
+      "secrets": [],
+      "expect": {
+        "class": "ProviderError",
+        "sdk_code": "E8000",
+        "exit_code": 1,
+        "message": "m",
+        "suggestion": "try x"
+      }
+    },
+    {
+      "name": "secrets and control characters are scrubbed",
+      "error": {
+        "code": -32000,
+        "message": "\u001b[31mfail\u001b[0m with sekret-value-1\u0000"
+      },
+      "provider_id": "prov",
+      "secrets": [
+        "sekret-value-1"
+      ],
+      "expect": {
+        "class": "ProviderError",
+        "sdk_code": "E8000",
+        "exit_code": 1,
+        "message": "fail with ***",
+        "suggestion": ""
+      }
+    }
+  ]
+}

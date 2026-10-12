@@ -1,0 +1,224 @@
+# 编写模板
+
+> **说明：** 本页出现的 `ebx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @easy-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`easy-sandbox`）与容器侧运行时（`easy-sandbox-server`）。
+
+本文档介绍如何创建自定义 Easy Sandbox 模板，包括目录结构、字段参考、能力声明、自定义命令和发布流程。
+
+模板是一个由纯文件组成的目录，可手写也可生成。`ebx template init` 命令有三种生成方式（内置脚手架、一句话描述、适配已有源码的项目）；该工作流记录在 CLI 仓库：[模板编写（CLI）](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/authoring-templates.md)。
+
+---
+
+## 模板目录结构
+
+一个完整的模板目录结构如下：
+
+```text
+my-template/
+├── template.yaml      # 必须 — 模板定义
+├── Dockerfile         # 可选 — 自定义 Docker 构建（优先于 template.yaml 中的构建步骤）
+├── commands.py        # 可选 — 通过 @sandbox.register 注册自定义命令
+└── README.md          # 可选 — 模板说明
+```
+
+`template.yaml` 是唯一必需的文件。
+
+---
+
+## template.yaml 基础示例
+
+```yaml
+name: my-python-template
+version: "1.0.0"
+description: "Python 数据分析环境，预装 pandas 和 matplotlib"
+author: "Your Name"
+tags:
+  - python
+  - data-analysis
+
+env:
+  PYTHONUNBUFFERED: "1"
+  APP_DIR: "/app"
+
+capabilities:
+  - shell
+  - files
+  - code
+  - terminal
+
+ports:
+  - 8080
+```
+
+---
+
+## 字段参考
+
+| 字段 | 类型 | 必须 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `name` | `str` | ✅ | — | 模板名称 |
+| `version` | `str` | ❌ | `"1.0.0"` | 语义版本号 |
+| `description` | `str` | ❌ | `""` | 模板描述 |
+| `env` | `dict[str, str]` | ❌ | `{}` | 环境变量 |
+| `cpu_count` | `int` | ❌ | `None` | 默认 CPU 核数 |
+| `memory_mb` | `int` | ❌ | `None` | 默认内存 MB |
+| `ports` | `list[int]` | ❌ | `[]` | 暴露的端口列表 |
+| `author` | `str` | ❌ | `""` | 作者 |
+| `license` | `str` | ❌ | `""` | 许可证 |
+| `tags` | `list[str]` | ❌ | `[]` | 标签 |
+| `capabilities` | `list[str]` | ❌ | `None` | 能力声明（见下文） |
+| `custom_commands` | `dict` | ❌ | `{}` | 自定义命令（见下文） |
+
+详细的字段定义参见 [template.yaml 规范](../reference/template-yaml-spec.md)。
+
+---
+
+## 能力声明
+
+通过 `capabilities` 字段声明模板支持的运行时能力：
+
+```yaml
+capabilities:
+  - shell      # Shell 命令执行
+  - files      # 文件系统操作
+  - code       # Code Interpreter
+  - terminal   # PTY 终端
+  - ports      # 端口网络访问
+```
+
+**标准能力集**：`shell`、`files`、`code`、`terminal`、`ports`
+
+**默认能力集**（不声明 `capabilities` 时）：`shell`、`files`、`code`
+
+`terminal` 和 `ports` 必须在模板中显式声明才能使用。能力令牌在模板解析层（`resolve_capabilities()`）使用，解析策略为 fail-closed：如果模板 YAML 格式错误或缺失，解析器会抛出 `TemplateParseError`（E2004）而非默认授予能力。所有 API 方法均可调用，不受声明能力限制；能力声明作为元数据用于模板校验和模型推断。
+
+`commands.py` 启动的进程在 9000 端口提供一套固定的 HTTP API。Dockerfile 的基础镜像随模板而变，路由不变。服务器注册九个能力组。`core` 保持开启。`dev_tools`、`browser` 和 `agents` 默认关闭。`agents` 的路由已经注册，在 `EBX_SERVER_ENABLED_GROUPS` 包含 `agents` 之前保持关闭。每个组打开哪些路由、如何调用，见[模板服务器 HTTP API](template-server-api.md)。
+
+---
+
+## 自定义命令
+
+### 在 template.yaml 中声明
+
+```yaml
+custom_commands:
+  dev:
+    cmd: "python -m flask run --host=0.0.0.0 --port={port}"
+    description: "启动开发服务器"
+    cwd: "/app"
+    timeout: 300
+    env:
+      FLASK_ENV: development
+    args:
+      - name: port
+        type: string
+        required: false
+        default: "8080"
+        description: "监听端口"
+
+  test:
+    cmd: "python -m pytest {path} -v"
+    description: "运行测试"
+    cwd: "/app"
+    timeout: 120
+    args:
+      - name: path
+        type: string
+        required: false
+        default: "tests/"
+        description: "测试路径"
+```
+
+**命令字段**：
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `cmd` | `str` | — | Shell 命令模板，用 `{name}` 引用参数 |
+| `description` | `str` | `""` | 命令描述 |
+| `cwd` | `str` | `"/app"` | 工作目录 |
+| `timeout` | `int` | `60` | 超时秒数 |
+| `env` | `dict` | `{}` | 环境变量 |
+| `args` | `list` | `[]` | 参数定义 |
+
+**参数字段**：
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `name` | `str` | — | 参数名（对应 `{placeholder}`） |
+| `type` | `str` | `"string"` | 类型：`string`/`integer`/`float`/`boolean` |
+| `required` | `bool` | `false` | 是否必需 |
+| `default` | `str` | `None` | 默认值 |
+| `description` | `str` | `""` | 参数描述 |
+
+### 通过 @sandbox.register 注册
+
+在 `commands.py` 中通过装饰器注册 Python 函数作为自定义命令：
+
+```python
+from easy_sandbox.declarative import sandbox
+
+@sandbox.register
+def demo(x: int, y: str) -> str:
+    return f"{y}={x}"
+
+# 启用内置路由
+sandbox.register.upload()    # POST /upload
+sandbox.register.download()  # GET  /download
+```
+
+注册的命令通过沙箱内 HTTP server 提供服务，客户端通过 `sandbox.custom()` 或 `ebx run` 调用。
+
+> **注意：** `sandbox.run_command()` 是 `sandbox.custom()` 的已弃用别名。新代码应使用 `sandbox.custom()`，它返回完整的 `CommandResult`。
+
+---
+
+## Dockerfile 自定义
+
+实际构建流程直接使用 `Dockerfile` + 语言原生依赖文件（`requirements.txt` / `package.json`）：
+
+```dockerfile
+FROM python:3.11-slim
+
+RUN apt-get update && apt-get install -y \
+    curl git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir \
+    pandas matplotlib numpy
+
+WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1
+```
+
+模板目录中的 `Dockerfile` 是构建镜像的唯一来源。`template.yaml` 只定义运行时配置（能力、命令、环境变量、资源），不包含构建指令。
+
+## 提供者模板配置
+
+服务端 SDK 不选择沙箱提供者，`easy_sandbox.server` 也不导入提供者。端口 9000 仍是服务端的监听默认值。FC 保留端口（49983、5000、49999）属于 `alicloud-express` 模板配置，不是 HTTP API 的属性。
+
+镜像契约归 CLI。CLI 用 `--provider` / `EBX_PROVIDER` / 默认的 `alicloud-express` 解析提供者，再把这一份配置写进 Dockerfile 和模板提示：
+
+- `alicloud-express`：`FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>`，不写 `CMD` 或 `ENTRYPOINT`，由平台 `start_cmd` / `ready_cmd` 启动，工作目录 `/home/user/app`。
+- 其他提供者：若插件的 `ebx-provider.toml` 没有 `[template]` 表，则使用通用配置（`FROM python:3.12-slim`、`CMD ["python3", "commands.py"]`、`WORKDIR /app`）。缺少配置会被写明，并且不会退回 FC 镜像。
+
+`commands.py` 只导入 `easy_sandbox.server`，并在 `if __name__ == "__main__"` 下调用 `serve(port=9000)`。镜像安装 `easy-sandbox-server`。
+
+---
+
+## 发布与部署模板
+
+在 Python 中，可用 SDK 的模板 API（`DockerBuilder`、`Sandbox.deploy`、`TemplateManager`）构建并注册模板；这需要官方 SDK extra：`pip install "easy-sandbox[alicloud]"`，以及运行中的 Docker daemon 和阿里云 AK/SK 凭证。见[构建与部署](build-and-deploy.md)。
+
+将模板发布到 GitHub、从本地或 registry 安装模板、适配已有项目（`ebx template init --adopt`），或通过命令行构建并注册模板（`ebx deploy`、`ebx template deploy|create`），请使用 `ebx` CLI；见[相关：ebx CLI](#相关ebx-cli)。
+
+## 下一步
+
+- [使用模板](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/using-templates.md) — 安装和使用模板
+- [template.yaml 规范](../reference/template-yaml-spec.md) — 所有字段精确定义
+- [声明式用法](declarative-usage.md) — @sandbox 装饰器
+
+---
+
+## 相关：ebx CLI
+
+模板的命令行工作流记录在 CLI 仓库：[模板编写（CLI）](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/authoring-templates.md)（`ebx template init`、`--adopt`、发布、`template install`）、[部署与构建](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/deploy-and-build.md)（`ebx deploy`、`ebx template deploy|create`）和[模板使用](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/using-templates.md)。

@@ -1,0 +1,82 @@
+"""Helpers: start a real :class:`SandboxServer` on a free port inside a thread."""
+
+from __future__ import annotations
+
+import http.client
+import json
+import socket
+import threading
+import time
+from typing import Any
+
+from easy_sandbox.server.app import SandboxServer
+from easy_sandbox.server.registry import CommandRegistry
+
+
+def free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        port: int = s.getsockname()[1]
+        return port
+
+
+class Live:
+    """A running server plus a tiny HTTP client."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        self._closed = False
+        self.port = free_port()
+        self.registry: CommandRegistry = kwargs.pop("registry", None) or CommandRegistry()
+        kwargs.setdefault("pty_port", free_port())
+        self.pty_port: int = kwargs["pty_port"]
+        self.server = SandboxServer(host="127.0.0.1", registry=self.registry, **kwargs)
+        self.thread = threading.Thread(target=self.server.serve, args=(self.port,), daemon=True)
+        self.thread.start()
+        deadline = time.time() + 5
+        while time.time() < deadline:
+            try:
+                with socket.create_connection(("127.0.0.1", self.port), timeout=0.2):
+                    break
+            except OSError:
+                time.sleep(0.02)
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        self.server.shutdown()
+        if self.thread.is_alive():
+            self.thread.join(timeout=5)
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        body: Any = None,
+        headers: dict[str, str] | None = None,
+        raw_body: bytes | None = None,
+    ) -> tuple[int, Any, dict[str, str]]:
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=15)
+        hdrs = dict(headers or {})
+        data = raw_body
+        if body is not None:
+            data = json.dumps(body).encode()
+            hdrs.setdefault("Content-Type", "application/json")
+        conn.request(method, path, body=data, headers=hdrs)
+        resp = conn.getresponse()
+        payload = resp.read()
+        out_headers = {k.lower(): v for k, v in resp.getheaders()}
+        conn.close()
+        try:
+            parsed: Any = json.loads(payload) if payload else None
+        except json.JSONDecodeError:
+            parsed = payload
+        return resp.status, parsed, out_headers
+
+    def get(self, path: str, **kw: Any) -> tuple[int, Any]:
+        status, body, _ = self.request("GET", path, **kw)
+        return status, body
+
+    def post(self, path: str, body: Any = None, **kw: Any) -> tuple[int, Any]:
+        status, resp, _ = self.request("POST", path, body if body is not None else {}, **kw)
+        return status, resp

@@ -1,0 +1,506 @@
+"""Tests for MCP Server initialization and request handling."""
+
+from __future__ import annotations
+
+import json
+from unittest.mock import AsyncMock, patch
+
+import pytest
+
+from easy_sandbox.agent.mcp import (
+    INVALID_REQUEST,
+    MCP_PROTOCOL_VERSION,
+    METHOD_NOT_FOUND,
+    SERVER_NAME,
+    SERVER_VERSION,
+    SandboxManager,
+    SandboxMCPServer,
+    _jsonrpc_error,
+    _jsonrpc_response,
+)
+
+# ---------------------------------------------------------------------------
+# JSON-RPC helper tests
+# ---------------------------------------------------------------------------
+
+
+class TestJsonRpcHelpers:
+    """Test JSON-RPC response/error builders."""
+
+    def test_jsonrpc_response(self):
+        resp = _jsonrpc_response(1, {"tools": []})
+        assert resp["jsonrpc"] == "2.0"
+        assert resp["id"] == 1
+        assert resp["result"] == {"tools": []}
+        assert "error" not in resp
+
+    def test_jsonrpc_error(self):
+        resp = _jsonrpc_error(2, -32601, "Method not found")
+        assert resp["jsonrpc"] == "2.0"
+        assert resp["id"] == 2
+        assert resp["error"]["code"] == -32601
+        assert resp["error"]["message"] == "Method not found"
+
+    def test_jsonrpc_error_with_data(self):
+        resp = _jsonrpc_error(3, -32603, "Internal error", data={"detail": "boom"})
+        assert resp["error"]["data"]["detail"] == "boom"
+
+
+# ---------------------------------------------------------------------------
+# SandboxManager tests
+# ---------------------------------------------------------------------------
+
+
+class TestSandboxManager:
+    """Test SandboxManager lifecycle management."""
+
+    def test_init(self):
+        mgr = SandboxManager(api_key="test-key", template="python-base")
+        assert mgr._api_key == "test-key"
+        assert mgr._default_template == "python-base"
+        assert mgr._default_sandbox is None
+
+    async def test_create_sandbox(self):
+        mgr = SandboxManager(api_key="k")
+        mock_sb = AsyncMock()
+        mock_sb.id = "sbx-001"
+        with patch(
+            "easy_sandbox.api.sandbox.Sandbox.create",
+            new_callable=AsyncMock,
+            return_value=mock_sb,
+        ):
+            result = await mgr.create_sandbox(template="test-tpl")
+            assert result.id == "sbx-001"
+            assert "sbx-001" in mgr._sandboxes
+
+    async def test_get_sandbox_creates_default(self):
+        mgr = SandboxManager(api_key="k")
+        mock_sb = AsyncMock()
+        mock_sb.id = "sbx-default"
+        mgr.create_sandbox = AsyncMock(return_value=mock_sb)
+
+        result = await mgr.get_sandbox(None)
+        assert result.id == "sbx-default"
+        mgr.create_sandbox.assert_awaited_once()
+        # Second call should reuse
+        result2 = await mgr.get_sandbox(None)
+        assert result2.id == "sbx-default"
+        # Still only one create call
+        assert mgr.create_sandbox.await_count == 1
+
+    async def test_get_sandbox_by_id_from_cache(self):
+        mgr = SandboxManager()
+        mock_sb = AsyncMock()
+        mock_sb.id = "sbx-123"
+        mgr._sandboxes["sbx-123"] = mock_sb
+
+        result = await mgr.get_sandbox("sbx-123")
+        assert result is mock_sb
+
+    async def test_kill_sandbox_default(self):
+        mgr = SandboxManager()
+        mock_sb = AsyncMock()
+        mock_sb.id = "sbx-def"
+        mock_sb.kill = AsyncMock()
+        mgr._default_sandbox = mock_sb
+        mgr._sandboxes["sbx-def"] = mock_sb
+
+        await mgr.kill_sandbox(None)
+        mock_sb.kill.assert_awaited_once()
+        assert mgr._default_sandbox is None
+        assert "sbx-def" not in mgr._sandboxes
+
+    async def test_kill_sandbox_by_id(self):
+        mgr = SandboxManager()
+        mock_sb = AsyncMock()
+        mock_sb.id = "sbx-002"
+        mock_sb.kill = AsyncMock()
+        mgr._sandboxes["sbx-002"] = mock_sb
+
+        await mgr.kill_sandbox("sbx-002")
+        mock_sb.kill.assert_awaited_once()
+        assert "sbx-002" not in mgr._sandboxes
+
+    async def test_shutdown(self):
+        mgr = SandboxManager()
+        sb1 = AsyncMock()
+        sb1.id = "sb1"
+        sb1.kill = AsyncMock()
+        sb2 = AsyncMock()
+        sb2.id = "sb2"
+        sb2.kill = AsyncMock()
+        mgr._sandboxes = {"sb1": sb1, "sb2": sb2}
+        mgr._default_sandbox = sb1
+
+        await mgr.shutdown()
+        sb1.kill.assert_awaited_once()
+        sb2.kill.assert_awaited_once()
+        assert mgr._default_sandbox is None
+        assert len(mgr._sandboxes) == 0
+
+
+# ---------------------------------------------------------------------------
+# SandboxMCPServer tests
+# ---------------------------------------------------------------------------
+
+
+class TestSandboxMCPServer:
+    """Test MCP Server request handling."""
+
+    def test_init(self):
+        server = SandboxMCPServer(api_key="k", template="t")
+        assert not server.initialized
+        assert server.manager is not None
+
+    async def test_initialize(self):
+        server = SandboxMCPServer()
+        resp = await server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {},
+                    "clientInfo": {"name": "test", "version": "0.1"},
+                },
+            }
+        )
+        assert resp is not None
+        assert resp["id"] == 1
+        result = resp["result"]
+        assert result["protocolVersion"] == MCP_PROTOCOL_VERSION
+        assert result["serverInfo"]["name"] == SERVER_NAME
+        assert result["serverInfo"]["version"] == SERVER_VERSION
+        assert "tools" in result["capabilities"]
+        assert server.initialized
+
+    async def test_initialized_notification(self):
+        server = SandboxMCPServer()
+        # Notification (no id)
+        resp = await server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "method": "notifications/initialized",
+                "params": {},
+            }
+        )
+        assert resp is None  # Notifications get no response
+
+    async def test_tools_list(self):
+        server = SandboxMCPServer()
+        resp = await server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "method": "tools/list",
+                "params": {},
+            }
+        )
+        assert resp is not None
+        tools = resp["result"]["tools"]
+        assert len(tools) == 7
+        names = {t["name"] for t in tools}
+        assert "run_code" in names
+        assert "create_sandbox" in names
+
+    async def test_tools_call_unknown_tool(self):
+        server = SandboxMCPServer()
+        resp = await server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 3,
+                "method": "tools/call",
+                "params": {"name": "nonexistent", "arguments": {}},
+            }
+        )
+        assert resp is not None
+        result = resp["result"]
+        assert result["isError"] is True
+        text = json.loads(result["content"][0]["text"])
+        assert "Unknown tool" in text["error"]
+
+    async def test_tools_call_success(self):
+        server = SandboxMCPServer()
+        # Mock the manager's get_sandbox
+        mock_sb = AsyncMock()
+        mock_sb.id = "sbx-t"
+        from easy_sandbox.models.process import CodeResult
+
+        mock_sb.run_code = AsyncMock(
+            return_value=CodeResult(
+                text="ok",
+                stdout="ok\n",
+                stderr="",
+                exit_code=0,
+            )
+        )
+        server._manager.get_sandbox = AsyncMock(return_value=mock_sb)
+
+        resp = await server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 4,
+                "method": "tools/call",
+                "params": {
+                    "name": "run_code",
+                    "arguments": {"code": "print('ok')"},
+                },
+            }
+        )
+        assert resp is not None
+        result = resp["result"]
+        assert result["isError"] is False
+        text = json.loads(result["content"][0]["text"])
+        assert text["stdout"] == "ok\n"
+
+    async def test_unknown_method(self):
+        server = SandboxMCPServer()
+        resp = await server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 5,
+                "method": "unknown/method",
+                "params": {},
+            }
+        )
+        assert resp is not None
+        assert "error" in resp
+        assert resp["error"]["code"] == METHOD_NOT_FOUND
+
+    @pytest.mark.parametrize(
+        "payload",
+        [[], [{"jsonrpc": "2.0", "id": 1, "method": "ping"}]],
+    )
+    async def test_non_object_request_is_rejected(self, payload):
+        server = SandboxMCPServer()
+        resp = await server.handle_request(payload)
+
+        assert resp is not None
+        assert resp["id"] is None
+        assert resp["error"]["code"] == INVALID_REQUEST
+
+    async def test_ping(self):
+        server = SandboxMCPServer()
+        resp = await server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 6,
+                "method": "ping",
+                "params": {},
+            }
+        )
+        assert resp is not None
+        assert resp["result"] == {}
+
+    async def test_unknown_notification_ignored(self):
+        server = SandboxMCPServer()
+        # Unknown notification (no id) should be silently ignored
+        resp = await server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "method": "some/unknown/notification",
+                "params": {},
+            }
+        )
+        assert resp is None
+
+    async def test_shutdown(self):
+        server = SandboxMCPServer()
+        server._manager.shutdown = AsyncMock()
+        await server.shutdown()
+        server._manager.shutdown.assert_awaited_once()
+
+
+# ---------------------------------------------------------------------------
+# Protocol version negotiation (per-transport)
+# ---------------------------------------------------------------------------
+
+
+class TestProtocolVersionNegotiation:
+    """Test initialize protocol version negotiation.
+
+    STDIO keeps its legacy ``2024-11-05`` default; other transports declare
+    their own supported set. Supported requests are echoed; missing or
+    unsupported requests fall back to the preferred (first) version.
+    """
+
+    async def _initialize(self, server, requested=None):
+        params = {
+            "capabilities": {},
+            "clientInfo": {"name": "test", "version": "0.1"},
+        }
+        if requested is not None:
+            params["protocolVersion"] = requested
+        return await server.handle_request(
+            {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": params}
+        )
+
+    @pytest.mark.parametrize(
+        "requested",
+        ["2024-11-05", "2025-06-18", "1999-01-01", None, 1],
+    )
+    async def test_stdio_default_keeps_2024_11_05(self, requested):
+        """STDIO 默认仅支持 2024-11-05 —— 与修复前行为完全一致（无回归）。"""
+        server = SandboxMCPServer()
+        resp = await self._initialize(server, requested)
+        assert resp is not None
+        assert resp["result"]["protocolVersion"] == "2024-11-05"
+        assert resp["result"]["protocolVersion"] == MCP_PROTOCOL_VERSION
+
+    async def test_echo_requested_version_when_transport_supports_it(self):
+        server = SandboxMCPServer(
+            supported_protocol_versions=("2025-06-18", "2024-11-05"),
+        )
+        resp = await self._initialize(server, "2025-06-18")
+        assert resp["result"]["protocolVersion"] == "2025-06-18"
+        resp = await self._initialize(server, "2024-11-05")
+        assert resp["result"]["protocolVersion"] == "2024-11-05"
+
+    async def test_unsupported_version_falls_back_to_preferred(self):
+        """不支持的请求版本 → 回退到首选支持版本（MCP 规范协商规则）。"""
+        server = SandboxMCPServer(supported_protocol_versions=("2025-06-18",))
+        resp = await self._initialize(server, "2024-11-05")
+        assert resp["result"]["protocolVersion"] == "2025-06-18"
+
+    async def test_missing_version_falls_back_to_preferred(self):
+        """请求缺失 protocolVersion → 回退到首选支持版本。"""
+        server = SandboxMCPServer(
+            supported_protocol_versions=("2025-06-18", "2024-11-05"),
+        )
+        resp = await self._initialize(server, None)
+        assert resp["result"]["protocolVersion"] == "2025-06-18"
+
+    def test_empty_supported_versions_rejected(self):
+        with pytest.raises(ValueError, match="at least one version"):
+            SandboxMCPServer(supported_protocol_versions=())
+
+
+# ---------------------------------------------------------------------------
+# Default-sandbox contract the agent workflow depends on
+# ---------------------------------------------------------------------------
+
+
+def _fake_sandbox(sandbox_id: str, template: str = "base") -> AsyncMock:
+    sandbox = AsyncMock()
+    sandbox.id = sandbox_id
+    sandbox.template = template
+    sandbox.status.value = "running"
+    sandbox.url = f"https://{sandbox_id}.example"
+    return sandbox
+
+
+class TestDefaultSandboxContract:
+    """create_sandbox becomes the default; kill of nothing is an error."""
+
+    async def test_explicit_create_is_reused_without_id(self):
+        manager = SandboxManager(template="python-hello")
+        created: list[AsyncMock] = []
+
+        async def _create(**kwargs: object) -> AsyncMock:
+            sandbox = _fake_sandbox(f"sb-{len(created) + 1}", str(kwargs.get("template")))
+            created.append(sandbox)
+            return sandbox
+
+        with patch("easy_sandbox.api.sandbox.Sandbox.create", new=_create):
+            from easy_sandbox.agent.tools import dispatch_tool
+
+            created_result = await dispatch_tool("create_sandbox", {}, manager)
+            written = await dispatch_tool(
+                "write_file",
+                {"path": "/tmp/app.py", "content": "print(1)\n"},
+                manager,
+            )
+            killed = await dispatch_tool("kill_sandbox", {}, manager)
+
+        assert created_result["sandbox_id"] == "sb-1"
+        assert len(created) == 1
+        assert created[0].template == "python-hello"
+        created[0].files.write.assert_awaited_once()
+        assert written["success"] is True
+        assert killed == {"success": True, "sandbox_id": "sb-1"}
+        created[0].kill.assert_awaited_once()
+
+    async def test_kill_without_sandbox_is_an_error(self):
+        manager = SandboxManager()
+        from easy_sandbox.agent.tools import dispatch_tool
+
+        result = await dispatch_tool("kill_sandbox", {}, manager)
+        assert result["success"] is False
+        assert "error" in result
+
+    async def test_concurrent_lazy_create_is_single(self):
+        import asyncio
+
+        manager = SandboxManager(template="python-hello")
+        started = 0
+        release = asyncio.Event()
+
+        async def _create(**kwargs: object) -> AsyncMock:
+            nonlocal started
+            started += 1
+            await release.wait()
+            return _fake_sandbox("sb-shared", str(kwargs.get("template")))
+
+        with patch("easy_sandbox.api.sandbox.Sandbox.create", new=_create):
+            first = asyncio.create_task(manager.get_sandbox(None))
+            second = asyncio.create_task(manager.get_sandbox(None))
+            for _ in range(50):
+                if started:
+                    break
+                await asyncio.sleep(0.01)
+            assert started == 1
+            release.set()
+            left, right = await asyncio.gather(first, second)
+
+        assert left.id == right.id == "sb-shared"
+        assert started == 1
+
+    async def test_nonzero_exit_is_tool_error(self):
+        server = SandboxMCPServer()
+        mock_sb = AsyncMock()
+        mock_sb.id = "sbx-t"
+        from easy_sandbox.models.process import CodeResult
+
+        mock_sb.run_code = AsyncMock(
+            return_value=CodeResult(text="", stdout="", stderr="nope\n", exit_code=1)
+        )
+        server._manager.get_sandbox = AsyncMock(return_value=mock_sb)
+        resp = await server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 4,
+                "method": "tools/call",
+                "params": {"name": "run_code", "arguments": {"code": "raise SystemExit(1)"}},
+            }
+        )
+        assert resp is not None
+        assert resp["result"]["isError"] is True
+
+    async def test_null_params_do_not_crash(self):
+        server = SandboxMCPServer()
+        resp = await server.handle_request(
+            {"jsonrpc": "2.0", "id": 9, "method": "tools/call", "params": None}
+        )
+        assert resp is not None
+        assert "error" not in resp
+        assert resp["result"]["isError"] is True
+
+    async def test_tool_error_drops_httpx_doc_link(self):
+        from easy_sandbox.agent.tools import dispatch_tool
+
+        class _BoomError(Exception):
+            pass
+
+        manager = SandboxManager()
+
+        async def _fail(_sandbox_id: str | None = None) -> None:
+            raise _BoomError(
+                "Server error '500 Internal' for url 'http://127.0.0.1/sandboxes'\n"
+                "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+            )
+
+        manager.get_sandbox = _fail  # type: ignore[method-assign]
+        result = await dispatch_tool("run_code", {"code": "print(1)"}, manager)
+        assert "mozilla" not in result["error"].lower()
+        assert "500" in result["error"]

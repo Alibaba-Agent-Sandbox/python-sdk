@@ -1,0 +1,95 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "easy-sandbox-server"
+dynamic = ["version"]
+description = "Easy Sandbox Server SDK — container-side runtime service for Easy Sandbox templates"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+authors = [
+    { name = "Anycodes" },
+]
+keywords = ["sandbox", "easy", "ai", "agent", "cloud", "e2b", "server"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+# The HTTP server itself is stdlib-only.  ``websockets`` is needed only by the
+# PTY terminal endpoint, which is enabled by default.
+dependencies = [
+    "websockets>=12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
+    "ruff>=0.4",
+    "mypy>=1.0",
+]
+
+[project.scripts]
+easy-sandbox-server = "easy_sandbox.server.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/Easy-Sandbox/python-sdk"
+Documentation = "https://github.com/Easy-Sandbox/python-sdk/tree/main/docs"
+Repository = "https://github.com/Easy-Sandbox/python-sdk"
+Issues = "https://github.com/Easy-Sandbox/python-sdk/issues"
+Changelog = "https://github.com/Easy-Sandbox/python-sdk/blob/main/CHANGELOG.md"
+
+[tool.hatch.version]
+path = "src/easy_sandbox/server/_version.py"
+
+# ``easy_sandbox`` is a shared namespace with the ``easy-sandbox`` (client) distribution: this
+# distribution only ships ``easy_sandbox/server`` and deliberately has no
+# ``easy_sandbox/__init__.py`` of its own.
+[tool.hatch.build.targets.wheel]
+packages = ["src/easy_sandbox"]
+artifacts = ["py.typed"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/easy_sandbox/",
+    "tests/",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "pyproject.toml",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "integration: marks tests requiring real API keys (deselect with '-m \"not integration\"')",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "TCH"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = "src"

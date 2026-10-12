@@ -1,0 +1,6037 @@
+{
+  "schema_version": 1,
+  "description": "Resolve every applicable key of `provider` from `sources`; `expect` lists every key that is set.",
+  "vectors": [
+    {
+      "name": "defaults only",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "EBX_SANDBOX_API_KEY in process env",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "EBX_SANDBOX_API_KEY": "v-EBX_SANDBOX_API_KEY"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "v-EBX_SANDBOX_API_KEY",
+          "source": "environ",
+          "name": "EBX_SANDBOX_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "EBX_SANDBOX_API_KEY in dotenv",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [
+          {
+            "EBX_SANDBOX_API_KEY": "v-EBX_SANDBOX_API_KEY"
+          }
+        ],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "v-EBX_SANDBOX_API_KEY",
+          "source": "dotenv",
+          "name": "EBX_SANDBOX_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "E2B_API_KEY in process env",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "E2B_API_KEY": "v-E2B_API_KEY"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "v-E2B_API_KEY",
+          "source": "environ",
+          "name": "E2B_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "E2B_API_KEY in dotenv",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [
+          {
+            "E2B_API_KEY": "v-E2B_API_KEY"
+          }
+        ],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "v-E2B_API_KEY",
+          "source": "dotenv",
+          "name": "E2B_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "SANDBOX_API_KEY in process env",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "SANDBOX_API_KEY": "v-SANDBOX_API_KEY"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "v-SANDBOX_API_KEY",
+          "source": "environ",
+          "name": "SANDBOX_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "SANDBOX_API_KEY in dotenv",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [
+          {
+            "SANDBOX_API_KEY": "v-SANDBOX_API_KEY"
+          }
+        ],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "v-SANDBOX_API_KEY",
+          "source": "dotenv",
+          "name": "SANDBOX_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "canonical beats compat beats legacy (env)",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "SANDBOX_API_KEY": "l",
+          "E2B_API_KEY": "c",
+          "EBX_SANDBOX_API_KEY": "n"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "n",
+          "source": "environ",
+          "name": "EBX_SANDBOX_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "compat beats legacy (env)",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "SANDBOX_API_KEY": "l",
+          "E2B_API_KEY": "c"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "c",
+          "source": "environ",
+          "name": "E2B_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "layer beats name: legacy env over canonical dotenv",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "SANDBOX_API_KEY": "legacy-env"
+        },
+        "dotenv": [
+          {
+            "EBX_SANDBOX_API_KEY": "canon-dotenv"
+          }
+        ],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "legacy-env",
+          "source": "environ",
+          "name": "SANDBOX_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "override beats env",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {
+          "sandbox_api_key": "ov"
+        },
+        "environ": {
+          "EBX_SANDBOX_API_KEY": "env"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "ov",
+          "source": "override",
+          "name": "sandbox_api_key"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "legacy kwarg api_key override",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {
+          "api_key": "legacy-kw"
+        },
+        "environ": {
+          "EBX_SANDBOX_API_KEY": "env"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "legacy-kw",
+          "source": "override",
+          "name": "api_key"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "blank override falls through",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {
+          "sandbox_api_key": "   "
+        },
+        "environ": {
+          "E2B_API_KEY": "env"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "env",
+          "source": "environ",
+          "name": "E2B_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "blank env falls through to dotenv",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "EBX_SANDBOX_API_KEY": " ",
+          "E2B_API_KEY": ""
+        },
+        "dotenv": [
+          {
+            "SANDBOX_API_KEY": "dot"
+          }
+        ],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "dot",
+          "source": "dotenv",
+          "name": "SANDBOX_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "project dotenv beats home dotenv",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [
+          {
+            "E2B_API_KEY": "project"
+          },
+          {
+            "E2B_API_KEY": "home"
+          }
+        ],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "project",
+          "source": "dotenv",
+          "name": "E2B_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "project dotenv falls through to home dotenv per key",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [
+          {
+            "SANDBOX_REGION": "r-project"
+          },
+          {
+            "E2B_API_KEY": "home-key"
+          }
+        ],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "r-project",
+          "source": "dotenv",
+          "name": "SANDBOX_REGION"
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "home-key",
+          "source": "dotenv",
+          "name": "E2B_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.r-project.e2b.fc.aliyuncs.com",
+          "source": "derived",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "r-project.e2b.fc.aliyuncs.com",
+          "source": "derived",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "dotenv beats toml",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [
+          {
+            "E2B_API_KEY": "dot"
+          }
+        ],
+        "toml": {
+          "transport": {
+            "sandbox_api_key": "toml"
+          }
+        }
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "dot",
+          "source": "dotenv",
+          "name": "E2B_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "toml canonical name",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [],
+        "toml": {
+          "transport": {
+            "sandbox_api_key": "t"
+          }
+        }
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "t",
+          "source": "toml",
+          "name": "transport.sandbox_api_key"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "toml legacy name api_key",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [],
+        "toml": {
+          "transport": {
+            "api_key": "t-legacy"
+          }
+        }
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "t-legacy",
+          "source": "toml",
+          "name": "transport.api_key"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "toml canonical beats toml legacy",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [],
+        "toml": {
+          "transport": {
+            "api_key": "old",
+            "sandbox_api_key": "new"
+          }
+        }
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "new",
+          "source": "toml",
+          "name": "transport.sandbox_api_key"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "flat legacy toml without [transport]",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [],
+        "toml": {
+          "api_url": "https://flat.example",
+          "api_key": "flat"
+        }
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "flat",
+          "source": "toml",
+          "name": "api_key"
+        },
+        "sandbox_base_url": {
+          "value": "https://flat.example",
+          "source": "toml",
+          "name": "api_url"
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "flat legacy toml ignored when [transport] exists",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [],
+        "toml": {
+          "api_url": "https://flat.example",
+          "transport": {
+            "http_timeout": 5
+          }
+        }
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 5.0,
+          "source": "toml",
+          "name": "transport.http_timeout"
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "toml api_base_url alias",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [],
+        "toml": {
+          "transport": {
+            "api_base_url": "https://b.example"
+          }
+        }
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://b.example",
+          "source": "toml",
+          "name": "transport.api_base_url"
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "toml api_url beats api_base_url",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [],
+        "toml": {
+          "transport": {
+            "api_base_url": "https://b.example",
+            "api_url": "https://a.example"
+          }
+        }
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://a.example",
+          "source": "toml",
+          "name": "transport.api_url"
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "scoped toml table beats [transport] for built-in region",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [],
+        "toml": {
+          "transport": {
+            "region": "r-t"
+          },
+          "providers": {
+            "alicloud-express": {
+              "region": "r-s"
+            }
+          }
+        }
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "r-s",
+          "source": "toml",
+          "name": "providers.alicloud-express.region"
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.r-s.e2b.fc.aliyuncs.com",
+          "source": "derived",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "r-s.e2b.fc.aliyuncs.com",
+          "source": "derived",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "region derives url and domain",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {
+          "region": "cn-beijing"
+        },
+        "environ": {},
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-beijing",
+          "source": "override",
+          "name": "region"
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-beijing.e2b.fc.aliyuncs.com",
+          "source": "derived",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-beijing.e2b.fc.aliyuncs.com",
+          "source": "derived",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "region from dotenv derives nothing without explicit env url? derives",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [
+          {
+            "SANDBOX_REGION": "cn-shanghai"
+          }
+        ],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-shanghai",
+          "source": "dotenv",
+          "name": "SANDBOX_REGION"
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-shanghai.e2b.fc.aliyuncs.com",
+          "source": "derived",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-shanghai.e2b.fc.aliyuncs.com",
+          "source": "derived",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "explicit env url suppresses derivation (domain stays default)",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {
+          "region": "cn-beijing"
+        },
+        "environ": {
+          "E2B_API_URL": "https://custom.example"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-beijing",
+          "source": "override",
+          "name": "region"
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://custom.example",
+          "source": "environ",
+          "name": "E2B_API_URL"
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "dotenv url + region keeps dotenv url",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [
+          {
+            "E2B_API_URL": "https://dot.example",
+            "SANDBOX_REGION": "cn-beijing"
+          }
+        ],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-beijing",
+          "source": "dotenv",
+          "name": "SANDBOX_REGION"
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://dot.example",
+          "source": "dotenv",
+          "name": "E2B_API_URL"
+        },
+        "sandbox_domain": {
+          "value": "cn-beijing.e2b.fc.aliyuncs.com",
+          "source": "derived",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "override url suppresses derivation",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {
+          "api_url": "https://ov.example",
+          "region": "cn-beijing"
+        },
+        "environ": {},
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-beijing",
+          "source": "override",
+          "name": "region"
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://ov.example",
+          "source": "override",
+          "name": "api_url"
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "ak/sk native names",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "ALICLOUD_ACCESS_KEY_ID": "ak",
+          "ALICLOUD_ACCESS_KEY_SECRET": "sk"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "access_key_id": {
+          "value": "ak",
+          "source": "environ",
+          "name": "ALICLOUD_ACCESS_KEY_ID"
+        },
+        "access_key_secret": {
+          "value": "sk",
+          "source": "environ",
+          "name": "ALICLOUD_ACCESS_KEY_SECRET"
+        },
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "ak legacy AccessKey",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "AccessKey": "ak-legacy",
+          "AccessSecret": "sk-legacy"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "access_key_id": {
+          "value": "ak-legacy",
+          "source": "environ",
+          "name": "AccessKey"
+        },
+        "access_key_secret": {
+          "value": "sk-legacy",
+          "source": "environ",
+          "name": "AccessSecret"
+        },
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "ak canonical beats native",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID": "canon",
+          "ALICLOUD_ACCESS_KEY_ID": "native"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "access_key_id": {
+          "value": "canon",
+          "source": "environ",
+          "name": "EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID"
+        },
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "acr legacy names and csv",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "ACR_REGISTRY": "reg",
+          "ACR_VSWITCH_IDS": "vsw-1,vsw-2",
+          "ACR_PASSWORD": "pw"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "acr_password": {
+          "value": "pw",
+          "source": "environ",
+          "name": "ACR_PASSWORD"
+        },
+        "acr_registry": {
+          "value": "reg",
+          "source": "environ",
+          "name": "ACR_REGISTRY"
+        },
+        "acr_vswitch_ids": {
+          "value": "vsw-1,vsw-2",
+          "source": "environ",
+          "name": "ACR_VSWITCH_IDS"
+        },
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "typed values",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "EBX_HTTP_TIMEOUT": "12.5",
+          "EBX_MAX_RETRIES": "7",
+          "EBX_HTTP2": "off"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": false,
+          "source": "environ",
+          "name": "EBX_HTTP2"
+        },
+        "http_timeout": {
+          "value": 12.5,
+          "source": "environ",
+          "name": "EBX_HTTP_TIMEOUT"
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 7,
+          "source": "environ",
+          "name": "EBX_MAX_RETRIES"
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "invalid typed values fall through",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "EBX_HTTP_TIMEOUT": "soon",
+          "EBX_HTTP2": "maybe"
+        },
+        "dotenv": [
+          {
+            "SANDBOX_HTTP_TIMEOUT": "9"
+          }
+        ],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 9.0,
+          "source": "dotenv",
+          "name": "SANDBOX_HTTP_TIMEOUT"
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "log level normalised",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "SANDBOX_LOG_LEVEL": "debug"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "DEBUG",
+          "source": "environ",
+          "name": "SANDBOX_LOG_LEVEL"
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "log level invalid ignored",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "EBX_LOG_LEVEL": "loud",
+          "SANDBOX_LOG_LEVEL": "info"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "INFO",
+          "source": "environ",
+          "name": "SANDBOX_LOG_LEVEL"
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "llm key priority",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "OPENAI_API_KEY": "o",
+          "DASHSCOPE_API_KEY": "d"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_api_key": {
+          "value": "d",
+          "source": "environ",
+          "name": "DASHSCOPE_API_KEY"
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "llm canonical beats native",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "OPENAI_API_KEY": "o",
+          "EBX_LLM_API_KEY": "c"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_api_key": {
+          "value": "c",
+          "source": "environ",
+          "name": "EBX_LLM_API_KEY"
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "github token native",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "GITHUB_TOKEN": "gh"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "github_token": {
+          "value": "gh",
+          "source": "environ",
+          "name": "GITHUB_TOKEN"
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "github token canonical beats native",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "GITHUB_TOKEN": "gh",
+          "EBX_GITHUB_TOKEN": "mine"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "github_token": {
+          "value": "mine",
+          "source": "environ",
+          "name": "EBX_GITHUB_TOKEN"
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "template legacy names",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "SANDBOX_TEMPLATE": "py"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "py",
+          "source": "environ",
+          "name": "SANDBOX_TEMPLATE"
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "provider selection is not a resolved key",
+      "provider": "alicloud-express",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "EBX_PROVIDER": "e2b-like"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "non-builtin without inherit gets no generic keys",
+      "provider": "plug",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "E2B_API_KEY": "generic",
+          "E2B_API_URL": "https://g.example"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [],
+        "fields": [
+          {
+            "key": "token",
+            "type": "str",
+            "secret": true,
+            "env": [
+              "PLUG_TOKEN"
+            ]
+          },
+          {
+            "key": "mode",
+            "type": "enum",
+            "choices": [
+              "fast",
+              "safe"
+            ],
+            "default": "safe"
+          },
+          {
+            "key": "retries",
+            "type": "int",
+            "default": 2
+          }
+        ],
+        "derive": {},
+        "endpoint_defaults": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "mode": {
+          "value": "safe",
+          "source": "default",
+          "name": ""
+        },
+        "retries": {
+          "value": 2,
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "non-builtin: builtin scoped keys are absent",
+      "provider": "plug",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "ALICLOUD_ACCESS_KEY_ID": "ak",
+          "SANDBOX_REGION": "r"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [],
+        "fields": [
+          {
+            "key": "token",
+            "type": "str",
+            "secret": true,
+            "env": [
+              "PLUG_TOKEN"
+            ]
+          },
+          {
+            "key": "mode",
+            "type": "enum",
+            "choices": [
+              "fast",
+              "safe"
+            ],
+            "default": "safe"
+          },
+          {
+            "key": "retries",
+            "type": "int",
+            "default": 2
+          }
+        ],
+        "derive": {},
+        "endpoint_defaults": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "mode": {
+          "value": "safe",
+          "source": "default",
+          "name": ""
+        },
+        "retries": {
+          "value": 2,
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "plugin fields: defaults",
+      "provider": "plug",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [],
+        "fields": [
+          {
+            "key": "token",
+            "type": "str",
+            "secret": true,
+            "env": [
+              "PLUG_TOKEN"
+            ]
+          },
+          {
+            "key": "mode",
+            "type": "enum",
+            "choices": [
+              "fast",
+              "safe"
+            ],
+            "default": "safe"
+          },
+          {
+            "key": "retries",
+            "type": "int",
+            "default": 2
+          }
+        ],
+        "derive": {},
+        "endpoint_defaults": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "mode": {
+          "value": "safe",
+          "source": "default",
+          "name": ""
+        },
+        "retries": {
+          "value": 2,
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "plugin field canonical env and native alias",
+      "provider": "plug",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "EBX_PLUG_TOKEN": "c",
+          "PLUG_TOKEN": "n",
+          "EBX_PLUG_MODE": "fast"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [],
+        "fields": [
+          {
+            "key": "token",
+            "type": "str",
+            "secret": true,
+            "env": [
+              "PLUG_TOKEN"
+            ]
+          },
+          {
+            "key": "mode",
+            "type": "enum",
+            "choices": [
+              "fast",
+              "safe"
+            ],
+            "default": "safe"
+          },
+          {
+            "key": "retries",
+            "type": "int",
+            "default": 2
+          }
+        ],
+        "derive": {},
+        "endpoint_defaults": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "mode": {
+          "value": "safe",
+          "source": "default",
+          "name": ""
+        },
+        "retries": {
+          "value": 2,
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "token": {
+          "value": "c",
+          "source": "environ",
+          "name": "EBX_PLUG_TOKEN"
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "plugin field native alias only",
+      "provider": "plug",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "PLUG_TOKEN": "n"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [],
+        "fields": [
+          {
+            "key": "token",
+            "type": "str",
+            "secret": true,
+            "env": [
+              "PLUG_TOKEN"
+            ]
+          },
+          {
+            "key": "mode",
+            "type": "enum",
+            "choices": [
+              "fast",
+              "safe"
+            ],
+            "default": "safe"
+          },
+          {
+            "key": "retries",
+            "type": "int",
+            "default": 2
+          }
+        ],
+        "derive": {},
+        "endpoint_defaults": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "mode": {
+          "value": "safe",
+          "source": "default",
+          "name": ""
+        },
+        "retries": {
+          "value": 2,
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "token": {
+          "value": "n",
+          "source": "environ",
+          "name": "PLUG_TOKEN"
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "plugin field toml table and dotenv",
+      "provider": "plug",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [
+          {
+            "EBX_PLUG_RETRIES": "5"
+          }
+        ],
+        "toml": {
+          "providers": {
+            "plug": {
+              "token": "t",
+              "mode": "fast",
+              "retries": 9
+            }
+          }
+        }
+      },
+      "provider_schema": {
+        "inherit": [],
+        "fields": [
+          {
+            "key": "token",
+            "type": "str",
+            "secret": true,
+            "env": [
+              "PLUG_TOKEN"
+            ]
+          },
+          {
+            "key": "mode",
+            "type": "enum",
+            "choices": [
+              "fast",
+              "safe"
+            ],
+            "default": "safe"
+          },
+          {
+            "key": "retries",
+            "type": "int",
+            "default": 2
+          }
+        ],
+        "derive": {},
+        "endpoint_defaults": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "mode": {
+          "value": "safe",
+          "source": "default",
+          "name": ""
+        },
+        "retries": {
+          "value": 5,
+          "source": "dotenv",
+          "name": "EBX_PLUG_RETRIES"
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "token": {
+          "value": "t",
+          "source": "toml",
+          "name": "providers.plug.token"
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "plugin enum invalid falls to default",
+      "provider": "plug",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "EBX_PLUG_MODE": "turbo"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [],
+        "fields": [
+          {
+            "key": "token",
+            "type": "str",
+            "secret": true,
+            "env": [
+              "PLUG_TOKEN"
+            ]
+          },
+          {
+            "key": "mode",
+            "type": "enum",
+            "choices": [
+              "fast",
+              "safe"
+            ],
+            "default": "safe"
+          },
+          {
+            "key": "retries",
+            "type": "int",
+            "default": 2
+          }
+        ],
+        "derive": {},
+        "endpoint_defaults": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "mode": {
+          "value": "safe",
+          "source": "default",
+          "name": ""
+        },
+        "retries": {
+          "value": 2,
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "plugin option override",
+      "provider": "plug",
+      "sources": {
+        "overrides": {
+          "token": "kw"
+        },
+        "environ": {
+          "EBX_PLUG_TOKEN": "env"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [],
+        "fields": [
+          {
+            "key": "token",
+            "type": "str",
+            "secret": true,
+            "env": [
+              "PLUG_TOKEN"
+            ]
+          },
+          {
+            "key": "mode",
+            "type": "enum",
+            "choices": [
+              "fast",
+              "safe"
+            ],
+            "default": "safe"
+          },
+          {
+            "key": "retries",
+            "type": "int",
+            "default": 2
+          }
+        ],
+        "derive": {},
+        "endpoint_defaults": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "mode": {
+          "value": "safe",
+          "source": "default",
+          "name": ""
+        },
+        "retries": {
+          "value": 2,
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "token": {
+          "value": "kw",
+          "source": "override",
+          "name": "token"
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "other provider's scoped env does not leak",
+      "provider": "plug",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "EBX_OTHER_TOKEN": "x",
+          "EBX_ALICLOUD_EXPRESS_REGION": "r"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [],
+        "fields": [
+          {
+            "key": "token",
+            "type": "str",
+            "secret": true,
+            "env": [
+              "PLUG_TOKEN"
+            ]
+          },
+          {
+            "key": "mode",
+            "type": "enum",
+            "choices": [
+              "fast",
+              "safe"
+            ],
+            "default": "safe"
+          },
+          {
+            "key": "retries",
+            "type": "int",
+            "default": 2
+          }
+        ],
+        "derive": {},
+        "endpoint_defaults": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "mode": {
+          "value": "safe",
+          "source": "default",
+          "name": ""
+        },
+        "retries": {
+          "value": 2,
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "inheritor uses generic keys",
+      "provider": "e2b-like",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "E2B_API_KEY": "generic",
+          "E2B_API_URL": "https://g.example"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [
+          "sandbox_api_key",
+          "sandbox_base_url",
+          "sandbox_domain"
+        ],
+        "fields": [],
+        "derive": {},
+        "endpoint_defaults": {
+          "sandbox_base_url": "https://api.e2b.dev",
+          "sandbox_domain": "e2b.dev"
+        }
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "generic",
+          "source": "environ",
+          "name": "E2B_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://g.example",
+          "source": "environ",
+          "name": "E2B_API_URL"
+        },
+        "sandbox_domain": {
+          "value": "e2b.dev",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "inheritor: scoped env beats generic",
+      "provider": "e2b-like",
+      "sources": {
+        "overrides": {},
+        "environ": {
+          "E2B_API_KEY": "generic",
+          "EBX_E2B_LIKE_SANDBOX_API_KEY": "scoped"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [
+          "sandbox_api_key",
+          "sandbox_base_url",
+          "sandbox_domain"
+        ],
+        "fields": [],
+        "derive": {},
+        "endpoint_defaults": {
+          "sandbox_base_url": "https://api.e2b.dev",
+          "sandbox_domain": "e2b.dev"
+        }
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "scoped",
+          "source": "environ",
+          "name": "EBX_E2B_LIKE_SANDBOX_API_KEY"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.e2b.dev",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "e2b.dev",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "inheritor: scoped toml table beats [transport]",
+      "provider": "e2b-like",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [],
+        "toml": {
+          "providers": {
+            "e2b-like": {
+              "sandbox_api_key": "scoped"
+            }
+          },
+          "transport": {
+            "sandbox_api_key": "plain"
+          }
+        }
+      },
+      "provider_schema": {
+        "inherit": [
+          "sandbox_api_key",
+          "sandbox_base_url",
+          "sandbox_domain"
+        ],
+        "fields": [],
+        "derive": {},
+        "endpoint_defaults": {
+          "sandbox_base_url": "https://api.e2b.dev",
+          "sandbox_domain": "e2b.dev"
+        }
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_api_key": {
+          "value": "scoped",
+          "source": "toml",
+          "name": "providers.e2b-like.sandbox_api_key"
+        },
+        "sandbox_base_url": {
+          "value": "https://api.e2b.dev",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "e2b.dev",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "inheritor: endpoint defaults when nothing set",
+      "provider": "e2b-like",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [
+          "sandbox_api_key",
+          "sandbox_base_url",
+          "sandbox_domain"
+        ],
+        "fields": [],
+        "derive": {},
+        "endpoint_defaults": {
+          "sandbox_base_url": "https://api.e2b.dev",
+          "sandbox_domain": "e2b.dev"
+        }
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.e2b.dev",
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "e2b.dev",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "inheritor: explicit url beats endpoint default",
+      "provider": "e2b-like",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [
+          {
+            "EBX_SANDBOX_BASE_URL": "https://dot.example"
+          }
+        ],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [
+          "sandbox_api_key",
+          "sandbox_base_url",
+          "sandbox_domain"
+        ],
+        "fields": [],
+        "derive": {},
+        "endpoint_defaults": {
+          "sandbox_base_url": "https://api.e2b.dev",
+          "sandbox_domain": "e2b.dev"
+        }
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://dot.example",
+          "source": "dotenv",
+          "name": "EBX_SANDBOX_BASE_URL"
+        },
+        "sandbox_domain": {
+          "value": "e2b.dev",
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "derived endpoint from provider region default",
+      "provider": "regional",
+      "sources": {
+        "overrides": {},
+        "environ": {},
+        "dotenv": [],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [
+          "sandbox_base_url",
+          "sandbox_domain",
+          "sandbox_api_key"
+        ],
+        "fields": [
+          {
+            "key": "region",
+            "type": "str",
+            "default": "r1"
+          }
+        ],
+        "derive": {
+          "sandbox_base_url": "https://api.{region}.example.com",
+          "sandbox_domain": "{region}.example.com"
+        },
+        "endpoint_defaults": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "r1",
+          "source": "default",
+          "name": ""
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "derived endpoint from region override",
+      "provider": "regional",
+      "sources": {
+        "overrides": {
+          "region": "r9"
+        },
+        "environ": {},
+        "dotenv": [],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [
+          "sandbox_base_url",
+          "sandbox_domain",
+          "sandbox_api_key"
+        ],
+        "fields": [
+          {
+            "key": "region",
+            "type": "str",
+            "default": "r1"
+          }
+        ],
+        "derive": {
+          "sandbox_base_url": "https://api.{region}.example.com",
+          "sandbox_domain": "{region}.example.com"
+        },
+        "endpoint_defaults": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "r9",
+          "source": "override",
+          "name": "region"
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://api.r9.example.com",
+          "source": "derived",
+          "name": ""
+        },
+        "sandbox_domain": {
+          "value": "r9.example.com",
+          "source": "derived",
+          "name": ""
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    },
+    {
+      "name": "derived endpoint suppressed by explicit env url",
+      "provider": "regional",
+      "sources": {
+        "overrides": {
+          "region": "r9"
+        },
+        "environ": {
+          "EBX_REGIONAL_SANDBOX_BASE_URL": "https://x.example"
+        },
+        "dotenv": [],
+        "toml": {}
+      },
+      "provider_schema": {
+        "inherit": [
+          "sandbox_base_url",
+          "sandbox_domain",
+          "sandbox_api_key"
+        ],
+        "fields": [
+          {
+            "key": "region",
+            "type": "str",
+            "default": "r1"
+          }
+        ],
+        "derive": {
+          "sandbox_base_url": "https://api.{region}.example.com",
+          "sandbox_domain": "{region}.example.com"
+        },
+        "endpoint_defaults": {}
+      },
+      "expect": {
+        "default_template": {
+          "value": "base",
+          "source": "default",
+          "name": ""
+        },
+        "http2": {
+          "value": true,
+          "source": "default",
+          "name": ""
+        },
+        "http_timeout": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "keepalive_expiry": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        },
+        "llm_base_url": {
+          "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "source": "default",
+          "name": ""
+        },
+        "llm_model": {
+          "value": "qwen3-coder-plus",
+          "source": "default",
+          "name": ""
+        },
+        "log_level": {
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
+        },
+        "max_connections": {
+          "value": 100,
+          "source": "default",
+          "name": ""
+        },
+        "max_keepalive_connections": {
+          "value": 20,
+          "source": "default",
+          "name": ""
+        },
+        "max_retries": {
+          "value": 3,
+          "source": "default",
+          "name": ""
+        },
+        "region": {
+          "value": "r9",
+          "source": "override",
+          "name": "region"
+        },
+        "retry_base_delay": {
+          "value": 1.0,
+          "source": "default",
+          "name": ""
+        },
+        "sandbox_base_url": {
+          "value": "https://x.example",
+          "source": "environ",
+          "name": "EBX_REGIONAL_SANDBOX_BASE_URL"
+        },
+        "ws_ping_interval": {
+          "value": 30.0,
+          "source": "default",
+          "name": ""
+        }
+      }
+    }
+  ]
+}

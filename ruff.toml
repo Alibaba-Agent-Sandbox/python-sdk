@@ -1,0 +1,10 @@
+# Baseline Ruff configuration for tooling run from the repository root
+# (scripts/, client-sdk/benchmarks/, examples/). client-sdk and server-sdk keep their
+# own [tool.ruff] table in pyproject.toml, which takes precedence inside each package;
+# keep the rule set and line length in sync with those tables.
+target-version = "py310"
+line-length = 100
+src = ["client-sdk/src", "server-sdk/src", "client-sdk/tests", "server-sdk/tests"]
+
+[lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "TCH"]

@@ -1,0 +1,58 @@
+"""A real in-process ``SandboxServer`` on a free port for client end-to-end tests."""
+
+from __future__ import annotations
+
+import socket
+import threading
+import time
+from typing import Any
+
+import pytest
+
+pytest.importorskip("easy_sandbox.server", reason="needs the easy-sandbox-server distribution")
+
+from easy_sandbox.server.app import SandboxServer  # noqa: E402
+from easy_sandbox.server.registry import CommandRegistry  # noqa: E402
+
+
+def free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        port: int = s.getsockname()[1]
+        return port
+
+
+class LiveServer:
+    """Runs ``SandboxServer.serve`` in a daemon thread; ``close()`` stops it."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        self.port = free_port()
+        self.pty_port: int = kwargs.setdefault("pty_port", free_port())
+        self.registry: CommandRegistry = kwargs.pop("registry", None) or CommandRegistry()
+        self.server = SandboxServer(host="127.0.0.1", registry=self.registry, **kwargs)
+        self.thread = threading.Thread(target=self.server.serve, args=(self.port,), daemon=True)
+        self.thread.start()
+        deadline = time.time() + 5
+        while time.time() < deadline:
+            try:
+                with socket.create_connection(("127.0.0.1", self.port), timeout=0.2):
+                    break
+            except OSError:
+                time.sleep(0.02)
+        self._closed = False
+
+    @property
+    def url(self) -> str:
+        return f"http://127.0.0.1:{self.port}"
+
+    @property
+    def pty_url(self) -> str:
+        return f"http://127.0.0.1:{self.pty_port}"
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        self.server.shutdown()
+        if self.thread.is_alive():
+            self.thread.join(timeout=5)
