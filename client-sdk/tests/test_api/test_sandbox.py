@@ -647,9 +647,12 @@ class TestSandboxSignedFileUrls:
         expiration = int(query["signature_expiration"][0])
         assert expiration >= int(time.time()) + 50
         assert query["signature"][0].startswith("v1_")
-        assert query["signature"][0] != parse_qs(
-            urlparse(await sandbox.get_upload_url("/app/data.csv")).query
-        )["signature"][0]
+        assert (
+            query["signature"][0]
+            != parse_qs(urlparse(await sandbox.get_upload_url("/app/data.csv")).query)["signature"][
+                0
+            ]
+        )
 
     @pytest.mark.asyncio
     async def test_signed_url_requires_envd_token(self) -> None:

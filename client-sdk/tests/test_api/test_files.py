@@ -221,9 +221,12 @@ class TestFilesUploadDownloadUrls:
         assert url.startswith(f"{TEST_ENVD_URL}/files?")
         assert query["path"] == ["/app/test.txt"]
         assert query["signature"][0].startswith("v1_")
-        assert query["signature"][0] != parse_qs(
-            urlparse(await files_module.upload_url("/app/test.txt")).query
-        )["signature"][0]
+        assert (
+            query["signature"][0]
+            != parse_qs(urlparse(await files_module.upload_url("/app/test.txt")).query)[
+                "signature"
+            ][0]
+        )
 
 
 class TestFilesRename:
