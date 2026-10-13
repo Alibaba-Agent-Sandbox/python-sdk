@@ -11,6 +11,7 @@ from .config import AgentSpec
 from .errors import AgentConfigError, AgentNotFoundError
 
 if TYPE_CHECKING:
+    import builtins
     from collections.abc import Mapping
 
     from .adapters import AdapterRegistry
@@ -35,9 +36,8 @@ class AgentStore:
         canonical = self._adapters.resolve_name(spec.runtime)
         adapter = self._adapters.get(spec.runtime)
         if adapter is None or canonical is None:
-            problems.append(
-                f"runtime: unknown runtime {spec.runtime!r}; available: {', '.join(self._adapters.names())}"
-            )
+            available = ", ".join(self._adapters.names())
+            problems.append(f"runtime: unknown runtime {spec.runtime!r}; available: {available}")
         else:
             spec.runtime = canonical
             if canonical == "command" and not self._allow_command:
@@ -103,7 +103,7 @@ class AgentStore:
 
     def load_config(
         self, source: str | Mapping[str, Any], environ: Mapping[str, str] | None = None
-    ) -> list[str]:
+    ) -> builtins.list[str]:
         """Load definitions from a JSON file path or an already-parsed mapping.
 
         Accepted shapes: one agent object, a list of agents, or ``{"agents": [...]}``.

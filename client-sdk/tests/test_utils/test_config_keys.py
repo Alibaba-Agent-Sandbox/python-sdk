@@ -62,7 +62,8 @@ class TestRegistry:
 
     def test_vendor_official_names_are_the_canonical_env(self):
         assert ck.get_key("access_key_id", "alicloud-express").env == "ALICLOUD_ACCESS_KEY_ID"
-        assert ck.get_key("access_key_secret", "alicloud-express").env == "ALICLOUD_ACCESS_KEY_SECRET"
+        secret = ck.get_key("access_key_secret", "alicloud-express")
+        assert secret.env == "ALICLOUD_ACCESS_KEY_SECRET"
         assert ck.get_key("region", "alicloud-express").env == "ALIBABA_CLOUD_REGION_ID"
         assert ck.get_key("acr_namespace", "alicloud-express").env == "ACR_NAMESPACE"
         assert ck.get_key("acr_password", "alicloud-express").env == "ACR_PASSWORD"

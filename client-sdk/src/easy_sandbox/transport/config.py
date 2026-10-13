@@ -66,6 +66,7 @@ _BUILTIN_DERIVE: dict[str, str] = {
     "sandbox_domain": "{region}.e2b.fc.aliyuncs.com",
 }
 
+
 class TransportConfig(BaseModel):
     """Transport-layer configuration.
 

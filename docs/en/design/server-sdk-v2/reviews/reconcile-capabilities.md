@@ -12,9 +12,9 @@ Rule for everyone: `policy.py`, `guard.py`, `runtime.py` are **frozen** (stabili
 donor code for WP-1/2/3; they are not extended. Legend: **KEEP** = reusable as-is (move/import), **PORT** = reusable
 logic, rename or re-home, **REPLACE** = superseded, delete after WP-5 passes.
 
-Current baseline (verified this turn, `/tmp/venv-new/bin`): server `-m "not integration"` = 581 passed + 1 env-only
-failure (`TestPackages::test_pip_returns_structure`, venv has no pip). `server/__init__` imports; `app.py` no longer
-imports `routes_agents` and `server/agents/` is present (owned by the agents worker). One race fix is uncommitted in
+Current baseline (verified this turn, local virtualenv): server `-m "not integration"` = 581 passed + 1 env-only
+failure (`TestPackages::test_pip_returns_structure`, venv has no pip). `server/__init__` imports; `app.py` imports
+`routes_agents` so the Agents HTTP routes register, and `server/agents/` is present. One race fix is uncommitted in
 `routes_process.py` (`process_output` waits while `capture.readers > 0`); keep it when WP-4b rewrites the handler.
 
 ## 1. Server source

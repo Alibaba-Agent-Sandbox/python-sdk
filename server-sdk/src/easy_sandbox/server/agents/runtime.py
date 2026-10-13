@@ -7,6 +7,7 @@ Pure stdlib.  The runtime is independent of HTTP; the wire mappers
 from __future__ import annotations
 
 import collections
+import contextlib
 import dataclasses
 import json
 import logging
@@ -23,7 +24,6 @@ from typing import TYPE_CHECKING, Any
 
 from .adapters import AdapterRegistry, TurnContext, default_adapters
 from .adapters.base import classify_text
-from .config import McpServerSpec
 from .errors import AgentNotFoundError, AgentRuntimeError, RuntimeFailure
 from .procenv import base_child_env, build_child_env, prepare_workspace, write_invocation_file
 from .redact import Redactor
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Mapping
 
     from .adapters.base import AgentAdapter, EventParser
-    from .config import AgentSpec
+    from .config import AgentSpec, McpServerSpec
     from .events import ParsedEvent
 
 __all__ = [
@@ -464,9 +464,9 @@ class _TurnBuilder:
         elif kind == "tool_start":
             self._tool_start(pe)
         elif kind == "tool_output":
-            item = self._native.get(pe.item_id or "")
-            if item is not None and pe.text:
-                self._push(item, pe.text)
+            tool_item = self._native.get(pe.item_id or "")
+            if tool_item is not None and pe.text:
+                self._push(tool_item, pe.text)
         elif kind == "tool_end":
             self._tool_end(pe)
         elif kind == "subagent":
@@ -1070,10 +1070,8 @@ class AgentRuntime:
 
         prlimit = getattr(resource, "prlimit", None) if resource is not None else None
         if limits.cpu_seconds and prlimit is not None and resource is not None:
-            try:
+            with contextlib.suppress(OSError, ValueError):
                 prlimit(proc.pid, resource.RLIMIT_CPU, (limits.cpu_seconds, limits.cpu_seconds + 5))
-            except (OSError, ValueError):
-                pass
 
         q: queue.Queue[tuple[str, bytes | None]] = queue.Queue()
         stderr_tail = bytearray()
@@ -1099,7 +1097,7 @@ class AgentRuntime:
         def _read_stderr() -> None:
             assert proc.stderr is not None
             try:
-                for raw in iter(lambda: proc.stderr.read1(4096), b""):  # type: ignore[union-attr]
+                for raw in iter(lambda: proc.stderr.read1(4096), b""):  # type: ignore[attr-defined, union-attr]
                     with stderr_lock:
                         stderr_tail.extend(raw)
                         if len(stderr_tail) > _STDERR_KEEP:
@@ -1183,6 +1181,7 @@ class AgentRuntime:
         finally:
             for t in threads:
                 t.join(timeout=2)
+            rc: int | None
             try:
                 rc = proc.wait(timeout=1)
             except subprocess.TimeoutExpired:
@@ -1237,10 +1236,8 @@ class AgentRuntime:
             except (ProcessLookupError, PermissionError):
                 pass
             except OSError:
-                try:
+                with contextlib.suppress(OSError):
                     proc.send_signal(sig)
-                except OSError:
-                    pass
 
         def _wait(seconds: float) -> bool:
             deadline = time.monotonic() + seconds
@@ -1344,9 +1341,9 @@ class AgentRuntime:
                     timeout=timeout,
                     check=False,
                 )
-                log.append(
-                    f"$ {' '.join(step)}\n{(proc.stdout or '')[-2000:]}{(proc.stderr or '')[-2000:]}"
-                )
+                stdout = (proc.stdout or "")[-2000:]
+                stderr = (proc.stderr or "")[-2000:]
+                log.append(f"$ {' '.join(step)}\n{stdout}{stderr}")
                 if proc.returncode != 0:
                     ok = False
                     break
@@ -1395,7 +1392,8 @@ class AgentRuntime:
                     "ok": has_cred,
                     "detail": "configured"
                     if has_cred
-                    else f"set provider.api_key or one of {', '.join(adapter.credential_env_names)}",
+                    else "set provider.api_key or one of "
+                    + ", ".join(adapter.credential_env_names),
                 }
             )
             wd = spec.workspace.path

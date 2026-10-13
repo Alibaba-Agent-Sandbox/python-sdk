@@ -116,9 +116,7 @@ def _same(canonical_name: str, canonical: Any, legacy_name: str, legacy: Any) ->
     return canonical if canonical is not None else legacy
 
 
-def _select_provider(
-    provider: Any, sandbox_id: str | None = None
-) -> tuple[Any | None, str | None]:
+def _select_provider(provider: Any, sandbox_id: str | None = None) -> tuple[Any | None, str | None]:
     """Resolve the effective provider; ``(None, id)`` means the built-in default path.
 
     Also splits a qualified ``provider:sandbox_id`` reference. A qualified prefix that

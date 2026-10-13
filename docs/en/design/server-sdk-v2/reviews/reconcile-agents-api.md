@@ -1,12 +1,12 @@
 # Reconciliation: Agents-API worker output vs Server SDK v2
 
-Status note from the worker that built the agents hosting (branch `cursor/agents-api-hosting-6516`, worktree `/home/ubuntu/wt-agents`, pushed to `origin`). It maps what exists to the v2 work packages in [10](../10-implementation-plan.md) (section 3 and 9b). `v2.1-disposition.md` did not exist when this was written; section 5 lists what must be re-checked against it. This note does not edit the v2 set.
+Status note from the worker that built the agents hosting (branch `cursor/agents-api-hosting-6516`, pushed to `origin`). It maps what exists to the v2 work packages in [10](../10-implementation-plan.md) (section 3 and 9b). `v2.1-disposition.md` did not exist when this was written; section 5 lists what must be re-checked against it. This note does not edit the v2 set.
 
 ## 1. Where the code is
 
 | Location | State |
 |---|---|
-| `origin/cursor/agents-api-hosting-6516` (worktree `/home/ubuntu/wt-agents`) | **Complete flat v1 implementation**, merged with the fine-grained-capabilities branch: `server/agents/*`, `server/routes_agents.py`, client `easy_sandbox/agents/*`, tests, examples, docs. Server suite: all green except the env-only pip test and two timing flakes of the other workstream; client agents tests 133 passed. |
+| `origin/cursor/agents-api-hosting-6516` | **Complete flat v1 implementation**, merged with the fine-grained-capabilities branch: `server/agents/*`, `server/routes_agents.py`, client `easy_sandbox/agents/*`, tests, examples, docs. Server suite: all green except the env-only pip test and two timing flakes of the other workstream; client agents tests 133 passed. |
 | `/workspace` (shared checkout, branch `cursor/e2e-foundation-796d`) | An **orphaned early snapshot** (config, errors, events, procenv, redact, adapters; untracked) without `runtime`, `store`, wires or `routes_agents.py`. `app.py` imported the missing `routes_agents`, which broke `import easy_sandbox.server`. The import line was removed (app.py is byte-identical to HEAD again). The untracked `server/agents/` package is inert (nothing imports it). |
 
 ## 2. File to work-package map

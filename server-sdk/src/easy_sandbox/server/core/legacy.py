@@ -147,9 +147,7 @@ LEGACY_OPS: dict[str, _Spec] = {
     "agents_definitions_get": _s("agents.definitions.get", R, "Get an agent definition."),
     "agents_definitions_update": _s("agents.definitions.update", W, "Update an agent definition."),
     "agents_definitions_list": _s("agents.definitions.list", R, "List agent definitions."),
-    "agents_definitions_delete": _s(
-        "agents.definitions.delete", D, "Delete an agent definition."
-    ),
+    "agents_definitions_delete": _s("agents.definitions.delete", D, "Delete an agent definition."),
     "agents_environments_create": _s(
         "agents.environments.create", W, "Bind a local directory as an environment."
     ),
@@ -225,9 +223,7 @@ LEGACY_OPS: dict[str, _Spec] = {
     ),
     "agents_models_list": _s("agents.models.list", R, "List definitions and adapters as models."),
     "agents_models_get": _s("agents.models.get", R, "Get one model object."),
-    "agents_cannot_models_delete": _s(
-        "agents.models.delete", D, "Refused: model deletion."
-    ),
+    "agents_cannot_models_delete": _s("agents.models.delete", D, "Refused: model deletion."),
     "agents_files_create": _s("files.create", W, "Store a local user_data blob."),
     "agents_webhooks_create": _s("webhooks.create", W, "Register a local webhook endpoint."),
     "agents_webhooks_get": _s("webhooks.get", R, "Get a webhook endpoint."),

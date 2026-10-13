@@ -72,7 +72,10 @@ def tool_start(
     command: str | None = None,
     server: str | None = None,
 ) -> ParsedEvent:
-    """A tool call began.  *kind*: ``command``, ``mcp``, ``file_change``, ``web_search``, ``other``."""
+    """A tool call began.
+
+    *kind* is ``command``, ``mcp``, ``file_change``, ``web_search``, or ``other``.
+    """
     return ParsedEvent(
         "tool_start",
         item_id,

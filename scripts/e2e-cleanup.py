@@ -12,7 +12,7 @@ Credentials come from the environment / ``python-sdk/.env`` and are never printe
 
     python scripts/e2e-cleanup.py                      # dry run, every e2e-tagged sandbox
     python scripts/e2e-cleanup.py --yes --all-tagged   # kill every e2e-tagged sandbox
-    python scripts/e2e-cleanup.py --yes --run-id e2e-20261012070133-bad473 --templates --acr
+    python scripts/e2e-cleanup.py --yes --run-id e2e-<run-id> --templates --acr
     python scripts/e2e-cleanup.py --yes --older-than 30 --templates   # only things older than 30 min
 """
 

@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import pytest
-import tomllib
 
 import easy_sandbox.transport.config as cfgmod
 from easy_sandbox.models.errors import ProviderConfigError
@@ -153,7 +152,9 @@ class TestRegionDerivation:
         assert c.sandbox_domain == "cn-hangzhou.e2b.fc.aliyuncs.com"
 
     def test_dotenv_url_is_kept_as_default_semantics(self, iso):  # noqa: F811
-        iso.write_env("EBX_SANDBOX_BASE_URL=https://dotenv.example\nALIBABA_CLOUD_REGION_ID=cn-beijing\n")
+        iso.write_env(
+            "EBX_SANDBOX_BASE_URL=https://dotenv.example\nALIBABA_CLOUD_REGION_ID=cn-beijing\n"
+        )
         c = load_config()
         assert c.sandbox_base_url == "https://dotenv.example"
 

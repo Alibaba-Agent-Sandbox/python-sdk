@@ -314,7 +314,10 @@ def _ali(
     env_override: str | None = None,
     **kw: Any,
 ) -> ConfigKey:
-    """One provider key. ``env_override`` is the only environment variable when the vendor already has a name."""
+    """One provider key.
+
+    ``env_override`` is the only environment variable when the vendor already has a name.
+    """
     storage1 = phase1 or Storage("toml", key, "providers." + _ALI)
     if env_override and storage1.file == "env":
         storage2 = Storage("env", env_override)

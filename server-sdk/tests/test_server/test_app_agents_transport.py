@@ -169,9 +169,7 @@ class TestMultipartFiles:
         self, live_server: Callable[..., Live], tmp_path: Path
     ) -> None:
         live = live_server()
-        status, blob = self._post(
-            live, multipart({"purpose": "user_data"}, "report.bin", PAYLOAD)
-        )
+        status, blob = self._post(live, multipart({"purpose": "user_data"}, "report.bin", PAYLOAD))
         assert status == 200, blob
         assert blob["object"] == "file" and blob["bytes"] == len(PAYLOAD)
         assert blob["filename"] == "report.bin" and blob["purpose"] == "user_data"

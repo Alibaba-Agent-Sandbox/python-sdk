@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
 
 from . import routes as _routes  # noqa: F401  (import side-effect: registers routes)
+from . import routes_agents as _routes_agents  # noqa: F401
 from . import routes_browser as _routes_browser  # noqa: F401
 from . import routes_devtools as _routes_devtools  # noqa: F401
 from . import routes_files as _routes_files  # noqa: F401

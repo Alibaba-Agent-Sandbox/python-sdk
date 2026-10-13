@@ -29,7 +29,8 @@ __all__ = [
 def sse_frame(event: dict[str, Any], seq: int | None = None) -> str:
     """Encode one SSE frame (``id`` is the runtime sequence number for resume)."""
     head = f"id: {seq}\n" if seq is not None else ""
-    return f"{head}event: {event['type']}\ndata: {json.dumps(event, separators=(',', ':'), default=str)}\n\n"
+    payload = json.dumps(event, separators=(",", ":"), default=str)
+    return f"{head}event: {event['type']}\ndata: {payload}\n\n"
 
 
 def usage_object(usage: dict[str, Any] | None) -> dict[str, Any] | None:
@@ -62,7 +63,10 @@ def _status(status: str) -> str:
 
 
 def item_object(item: Item | dict[str, Any]) -> dict[str, Any]:
-    """Agents-API item for a runtime item (``message``, ``reasoning``, ``command_execution``, ``mcp_call``)."""
+    """Agents-API item for one runtime item.
+
+    Item types are ``message``, ``reasoning``, ``command_execution``, and ``mcp_call``.
+    """
     d = item if isinstance(item, dict) else item.to_dict()
     data = d["data"]
     base = {"id": d["id"], "turn_id": d["turn_id"]}

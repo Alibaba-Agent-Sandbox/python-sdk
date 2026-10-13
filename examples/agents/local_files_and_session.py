@@ -156,7 +156,7 @@ def main() -> int:
         base = given
 
     # The server this script starts uses ``files`` as EBX_SERVER_BASE_DIR.
-    # A server you already started still uses the default base, /home/user.
+    # A server you already started still uses the default base `/home/user`.
     upload_path = str(files / "note.txt") if given is None else "/home/user/ebx-note.txt"
     payload = base64.b64encode(b"hello-from-files\n").decode("ascii")
     status, body, _headers = call(

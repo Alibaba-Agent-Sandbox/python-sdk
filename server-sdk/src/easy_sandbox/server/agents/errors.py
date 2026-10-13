@@ -91,7 +91,7 @@ class LocalApiError(AgentRuntimeError):
         self.status = status
 
 
-class RuntimeFailure(Exception):
+class RuntimeFailure(Exception):  # noqa: N818 — domain name, not an Error suffix
     """A turn-level failure with a stable ``code`` (never contains secrets)."""
 
     def __init__(self, code: str, message: str) -> None:

@@ -74,9 +74,7 @@ class TestEnvRoutes:
         assert status == 200
         live.request("DELETE", f"/pty/sessions/{created['session_id']}")
 
-    def test_denied_env_does_not_run_the_command(
-        self, live_server: Any, tmp_path: Path
-    ) -> None:
+    def test_denied_env_does_not_run_the_command(self, live_server: Any, tmp_path: Path) -> None:
         live: Live = live_server()
         marker = tmp_path / "ran"
         status, body = live.post(
