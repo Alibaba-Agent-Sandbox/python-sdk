@@ -59,10 +59,14 @@ def expect(title: str, status: int, want: int, payload: object) -> None:
 
 
 def turn(adapter: str, needle: str) -> None:
+    workspace = os.environ.get("E2E_WORKSPACE", "/tmp")
     status, created, headers = call(
         "POST",
         "/v1/agents/sessions",
-        {"agent": {"model": adapter}},
+        {
+            "agent": {"model": adapter},
+            "environment": {"type": "self_hosted", "workspace_directory": workspace},
+        },
     )
     expect(f"POST session {adapter}", status, 200, created)
     if headers.get("x-easy-sandbox-local") != "1":
@@ -98,6 +102,8 @@ def turn(adapter: str, needle: str) -> None:
         time.sleep(0.2)
     print(f"[fail] items {adapter} missing {needle} ({status})")
     print(json.dumps(items, ensure_ascii=False)[:800])
+    _status, session, _headers = call("GET", f"/v1/agents/sessions/{session_id}")
+    print(json.dumps(session, ensure_ascii=False)[:800])
     raise SystemExit(1)
 
 
