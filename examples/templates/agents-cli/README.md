@@ -1,5 +1,9 @@
 # agents-cli
 
+> **Fixture**: this directory is an offline example in the SDK repository, not the
+> publishing source. Publishable templates live in
+> [Easy-Sandbox/awesome-templates](https://github.com/Easy-Sandbox/awesome-templates).
+
 Codex 和 Qwen Code 的 Agents API 模板。镜像里**不预装**这两个 CLI。要用哪一个，再安装哪一个。
 
 English follows the Chinese section.

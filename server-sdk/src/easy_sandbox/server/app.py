@@ -184,7 +184,7 @@ class SandboxRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(payload)))
         # One write so a raw ``recv`` sees the JSON body with the headers. ``end_headers``
         # flushes first, and the handshake test reads once.
-        headers = getattr(self, "_headers_buffer")
+        headers = self._headers_buffer  # type: ignore[attr-defined]
         headers.append(b"\r\n")
         if payload:
             headers.append(payload)

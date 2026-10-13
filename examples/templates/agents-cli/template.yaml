@@ -1,3 +1,6 @@
+# FIXTURE — offline example kept in this repository so the Agents API case can be
+# tested without a publish. Publishable templates live in
+# https://github.com/Easy-Sandbox/awesome-templates
 name: agents-cli
 version: "1.0.0"
 description: "Agents API for Codex and Qwen Code. The image does not preinstall either CLI."
