@@ -81,11 +81,9 @@ from easy_sandbox.compat import Sandbox
 
 ### 3. `get_upload_url()` / `get_download_url()`
 
-**E2B**：返回预签名 URL 用于直接上传/下载。
+**E2B**：返回带签名的 URL，浏览器可以直接上传或下载一个文件。
 
-**Easy Sandbox**：这两个方法存在但抛出 `NotImplementedError`，是预留占位符。
-
-**原因**：Easy Sandbox 使用不同的后端架构，文件操作通过 envd 代理完成。推荐使用 `files.write()` / `files.read()` / `files.upload()` / `files.download()`。
+**Easy Sandbox**：同样返回带签名的 envd `/files` URL。签名是 `v1_` 加上 `path:read|write:username:envdAccessToken[:过期时间]` 的 SHA-256（无填充 base64）。URL 里没有访问令牌本身。
 
 ### 4. 能力门禁
 

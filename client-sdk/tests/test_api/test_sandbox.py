@@ -605,24 +605,67 @@ class TestSandboxRunCodeCallbacks:
         assert call_kwargs["on_result"] is None
 
 
-class TestSandboxE2BUrlStubs:
-    """Test get_upload_url / get_download_url raise NotImplementedError."""
+class TestSandboxSignedFileUrls:
+    """Signed envd file URLs for upload and download."""
 
     @pytest.mark.asyncio
-    async def test_get_upload_url_raises_not_implemented(
+    async def test_get_upload_url_signs_write(
         self,
         sandbox: Sandbox,
     ) -> None:
-        with pytest.raises(NotImplementedError, match="get_upload_url is not yet implemented"):
-            await sandbox.get_upload_url("/app/data.csv")
+        from urllib.parse import parse_qs, urlparse
+
+        from easy_sandbox.api.signed_file_url import file_signature
+
+        url = await sandbox.get_upload_url("/app/data.csv")
+        parsed = urlparse(url)
+        query = parse_qs(parsed.query)
+        assert parsed.path == "/files"
+        assert query["path"] == ["/app/data.csv"]
+        assert query["username"] == ["user"]
+        assert "signature_expiration" not in query
+        assert query["signature"] == [
+            file_signature(
+                path="/app/data.csv",
+                operation="write",
+                username="user",
+                access_token=TEST_ENVD_TOKEN,
+            )
+        ]
+        assert TEST_ENVD_TOKEN not in url
 
     @pytest.mark.asyncio
-    async def test_get_download_url_raises_not_implemented(
+    async def test_get_download_url_signs_read_and_expiration(
         self,
         sandbox: Sandbox,
     ) -> None:
-        with pytest.raises(NotImplementedError, match="get_download_url is not yet implemented"):
-            await sandbox.get_download_url("/app/data.csv")
+        import time
+        from urllib.parse import parse_qs, urlparse
+
+        url = await sandbox.get_download_url("/app/data.csv", use_signature_expiration=60)
+        query = parse_qs(urlparse(url).query)
+        expiration = int(query["signature_expiration"][0])
+        assert expiration >= int(time.time()) + 50
+        assert query["signature"][0].startswith("v1_")
+        assert query["signature"][0] != parse_qs(
+            urlparse(await sandbox.get_upload_url("/app/data.csv")).query
+        )["signature"][0]
+
+    @pytest.mark.asyncio
+    async def test_signed_url_requires_envd_token(self) -> None:
+        from easy_sandbox.models.errors import TokenExpiredError
+        from easy_sandbox.transport.auth import EnvdTokenManager
+
+        info = make_sandbox_info()
+        sb = Sandbox(
+            info=info,
+            config=TransportConfig(api_key=TEST_API_KEY),
+            http_client=AsyncMock(spec=HttpClient),
+            auth=AsyncMock(),
+            envd_token=EnvdTokenManager(None),
+        )
+        with pytest.raises(TokenExpiredError, match="envdAccessToken"):
+            await sb.get_upload_url("/app/data.csv")
 
 
 class TestSandboxTerminal:

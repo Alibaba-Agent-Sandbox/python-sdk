@@ -148,8 +148,13 @@ def test_medium_file_roundtrip_matches_remote_checksum(run, base_sandbox, workdi
 
 
 def test_file_urls_point_at_envd_files_endpoint(run, base_sandbox):  # type: ignore[no-untyped-def]
+    from urllib.parse import parse_qs, urlparse
+
     url = run(base_sandbox.files.upload_url("/tmp/x.txt"))
-    assert url.startswith(base_sandbox.url + "/files?path=/tmp/x.txt")
+    parsed = urlparse(url)
+    assert parsed.path == "/files"
+    assert parse_qs(parsed.query)["path"] == ["/tmp/x.txt"]
+    assert parse_qs(parsed.query)["signature"][0].startswith("v1_")
 
 
 @pytest.mark.e2e_slow

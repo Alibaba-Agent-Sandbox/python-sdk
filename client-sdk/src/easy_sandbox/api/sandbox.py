@@ -1609,16 +1609,53 @@ class Sandbox:
 
         return sandbox
 
-    async def get_upload_url(self, path: str) -> str:
-        """Return a pre-signed upload URL. E2B-compatible."""
-        raise NotImplementedError(
-            "get_upload_url is not yet implemented; use files.write() instead"
+    async def get_upload_url(
+        self,
+        path: str,
+        *,
+        user: str = "user",
+        use_signature_expiration: int | None = None,
+    ) -> str:
+        """Return a signed URL for uploading one file.
+
+        POST the URL as ``multipart/form-data`` with a ``file`` field. The URL
+        carries a signature, so the caller does not send ``X-Access-Token``.
+        ``use_signature_expiration`` is how many seconds the signature stays
+        valid; omit it for a signature that does not expire.
+        """
+        from easy_sandbox.api.signed_file_url import signed_file_url
+
+        return signed_file_url(
+            self.url,
+            path=path,
+            operation="write",
+            access_token=self._envd_token.token if self._envd_token else None,
+            username=user,
+            expires_in=use_signature_expiration,
         )
 
-    async def get_download_url(self, path: str) -> str:
-        """Return a pre-signed download URL. E2B-compatible."""
-        raise NotImplementedError(
-            "get_download_url is not yet implemented; use files.read() instead"
+    async def get_download_url(
+        self,
+        path: str,
+        *,
+        user: str = "user",
+        use_signature_expiration: int | None = None,
+    ) -> str:
+        """Return a signed URL for downloading one file.
+
+        GET the URL. The URL carries a signature, so the caller does not send
+        ``X-Access-Token``. ``use_signature_expiration`` is how many seconds
+        the signature stays valid; omit it for a signature that does not expire.
+        """
+        from easy_sandbox.api.signed_file_url import signed_file_url
+
+        return signed_file_url(
+            self.url,
+            path=path,
+            operation="read",
+            access_token=self._envd_token.token if self._envd_token else None,
+            username=user,
+            expires_in=use_signature_expiration,
         )
 
     # ---- Context manager ----
@@ -1647,6 +1684,8 @@ class Sandbox:
     resume_sync = make_sync(resume)
     refresh_info_sync = make_sync(refresh_info)
     get_terminal_sync = make_sync(get_terminal)
+    get_upload_url_sync = make_sync(get_upload_url)
+    get_download_url_sync = make_sync(get_download_url)
     run_sync = make_sync(run)
     custom_sync = make_sync(custom)
     list_commands_sync = make_sync(list_commands)

@@ -22,8 +22,8 @@ Easy Sandbox is designed to maintain a high degree of API compatibility with the
 | `sandbox.files.write(path, d)` | `sandbox.files.write(path, d)` | ✅ Fully compatible |
 | `sandbox.run_code(code)` | `sandbox.run_code(code)` | ✅ Fully compatible |
 | `sandbox.get_host(port)` | `sandbox.network.get_host(port)` | ⚠️ Requires the network submodule |
-| `sandbox.get_upload_url(path)` | `sandbox.get_upload_url(path)` | ❌ Raises NotImplementedError |
-| `sandbox.get_download_url(path)` | `sandbox.get_download_url(path)` | ❌ Raises NotImplementedError |
+| `sandbox.get_upload_url(path)` | `sandbox.get_upload_url(path)` | ✅ Returns a signed upload URL |
+| `sandbox.get_download_url(path)` | `sandbox.get_download_url(path)` | ✅ Returns a signed download URL |
 
 ---
 
@@ -102,18 +102,11 @@ url = sandbox.network.get_url(8080)
 
 > **Note**: `network.get_host()` and `network.get_url()` are local URL-computation helpers. They are logically associated with the `ports` capability but **do not** perform a runtime capability check — calls succeed regardless of the template's capability declaration.
 
-### 3. `get_upload_url()` / `get_download_url()` not implemented
+### 3. `get_upload_url()` / `get_download_url()`
 
-These two methods currently raise `NotImplementedError` and serve as placeholders. Use `files.write()` and `files.read()` instead:
+These methods return a signed envd file URL. Upload with `POST` and a `multipart/form-data` field named `file`. Download with `GET`. The caller does not send `X-Access-Token`. `use_signature_expiration` is how many seconds the signature stays valid; omit it for a signature that does not expire.
 
-```python
-# E2B
-url = await sandbox.get_upload_url("/path/file.txt")
-
-# Easy Sandbox — use files instead
-await sandbox.files.write("/path/file.txt", content)
-text = await sandbox.files.read("/path/file.txt")
-```
+The SDK still moves its own files with `files.write()`, `files.read()`, `files.upload()`, and `files.download()`. The signed URL is for a browser or another client that does not hold the sandbox token.
 
 ### 4. Capability model
 
@@ -163,7 +156,7 @@ sandbox = await Sandbox.create(
    - Recommended: `from easy_sandbox.api.sandbox import Sandbox`
 3. **Replace `Sandbox.kill(id)`**: Change to `Sandbox.kill_by_id(id)`
 4. **Replace `get_host()`**: Change to `sandbox.network.get_host()`
-5. **Replace `get_upload_url` / `get_download_url`**: Use `files.write()` / `files.read()` instead
+5. **`get_upload_url` / `get_download_url`**: The method names match. Optional `use_signature_expiration` is the signature lifetime in seconds
 6. **Set environment variables**: `EBX_SANDBOX_API_KEY` for the sandbox API key. Each setting has one variable; see [Configuration](../reference/configuration.md).
 
 ---

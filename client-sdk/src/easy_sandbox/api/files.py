@@ -223,47 +223,43 @@ class FilesModule:
             path=path,
         )
 
-    async def upload_url(self, path: str) -> str:
-        """Get a pre-signed upload URL for a file.
+    async def upload_url(
+        self,
+        path: str,
+        *,
+        user: str = "user",
+        use_signature_expiration: int | None = None,
+    ) -> str:
+        """Signed URL for uploading one file. Same URL as ``Sandbox.get_upload_url``."""
+        from easy_sandbox.api.signed_file_url import signed_file_url
 
-        Note: Direct file upload via upload()/write() is preferred.
-        This method is kept for backward compatibility.
+        return signed_file_url(
+            self._envd_url,
+            path=path,
+            operation="write",
+            access_token=self._envd_token.token if self._envd_token else None,
+            username=user,
+            expires_in=use_signature_expiration,
+        )
 
-        .. warning::
+    async def download_url(
+        self,
+        path: str,
+        *,
+        user: str = "user",
+        use_signature_expiration: int | None = None,
+    ) -> str:
+        """Signed URL for downloading one file. Same URL as ``Sandbox.get_download_url``."""
+        from easy_sandbox.api.signed_file_url import signed_file_url
 
-            Returns a URL that requires an ``X-Access-Token`` header for
-            access.  The URL alone is **not** sufficient for direct
-            browser access — callers must attach envd authentication
-            headers when making requests to this URL.
-
-        Args:
-            path: Remote file path for the upload destination.
-
-        Returns:
-            The envd file API URL string.
-        """
-        return f"{self._envd_url}/files?path={path}&username=user"
-
-    async def download_url(self, path: str) -> str:
-        """Get a download URL for a file.
-
-        Note: Direct file download via read()/read_bytes() is preferred.
-        This method is kept for backward compatibility.
-
-        .. warning::
-
-            Returns a URL that requires an ``X-Access-Token`` header for
-            access.  The URL alone is **not** sufficient for direct
-            browser access — callers must attach envd authentication
-            headers when making requests to this URL.
-
-        Args:
-            path: Remote file path to download.
-
-        Returns:
-            The envd file API URL string.
-        """
-        return f"{self._envd_url}/files?path={path}&username=user"
+        return signed_file_url(
+            self._envd_url,
+            path=path,
+            operation="read",
+            access_token=self._envd_token.token if self._envd_token else None,
+            username=user,
+            expires_in=use_signature_expiration,
+        )
 
     # Sync variants
     read_sync = make_sync(read)

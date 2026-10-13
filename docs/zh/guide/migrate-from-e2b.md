@@ -22,8 +22,8 @@ Easy Sandbox 设计上与 E2B Python SDK 保持高度 API 兼容。本文档提�
 | `sandbox.files.write(path, d)` | `sandbox.files.write(path, d)` | ✅ 完全兼容 |
 | `sandbox.run_code(code)` | `sandbox.run_code(code)` | ✅ 完全兼容 |
 | `sandbox.get_host(port)` | `sandbox.network.get_host(port)` | ⚠️ 需通过 network 子模块 |
-| `sandbox.get_upload_url(path)` | `sandbox.get_upload_url(path)` | ❌ 抛出 NotImplementedError |
-| `sandbox.get_download_url(path)` | `sandbox.get_download_url(path)` | ❌ 抛出 NotImplementedError |
+| `sandbox.get_upload_url(path)` | `sandbox.get_upload_url(path)` | ✅ 返回带签名的上传 URL |
+| `sandbox.get_download_url(path)` | `sandbox.get_download_url(path)` | ✅ 返回带签名的下载 URL |
 
 ---
 
@@ -102,18 +102,11 @@ url = sandbox.network.get_url(8080)
 
 > **注意**：`network.get_host()` 和 `network.get_url()` 是本地 URL 计算辅助函数。它们在逻辑上关联 `ports` 能力，但**不会**执行运行时能力检查——无论模板是否声明了该能力，调用均会成功。
 
-### 3. `get_upload_url()` / `get_download_url()` 未实现
+### 3. `get_upload_url()` / `get_download_url()`
 
-这两个方法当前抛出 `NotImplementedError`，是预留的占位符。使用 `files.write()` 和 `files.read()` 替代：
+这两个方法返回带签名的 envd 文件 URL。上传对该 URL 发 `POST`，正文是 `multipart/form-data` 的 `file` 字段。下载是 `GET`。调用方不必再带 `X-Access-Token`。`use_signature_expiration` 是签名的有效秒数；不传则签名不过期。
 
-```python
-# E2B
-url = await sandbox.get_upload_url("/path/file.txt")
-
-# Easy Sandbox — 使用 files 替代
-await sandbox.files.write("/path/file.txt", content)
-text = await sandbox.files.read("/path/file.txt")
-```
+SDK 自己传文件仍然用 `files.write()`、`files.read()`、`files.upload()`、`files.download()`。签名 URL 是交给浏览器或其他不持有沙箱令牌的客户端用的。
 
 ### 4. 能力模型
 
@@ -162,7 +155,7 @@ sandbox = await Sandbox.create(
    - 推荐：`from easy_sandbox.api.sandbox import Sandbox`
 3. **替换 `Sandbox.kill(id)`**：改为 `Sandbox.kill_by_id(id)`
 4. **替换 `get_host()`**：改为 `sandbox.network.get_host()`
-5. **替换 `get_upload_url` / `get_download_url`**：改用 `files.write()` / `files.read()`
+5. **`get_upload_url` / `get_download_url`**：方法名相同。可选参数 `use_signature_expiration` 是签名有效秒数
 6. **设置环境变量**：沙箱 API Key 用 `EBX_SANDBOX_API_KEY`。每项设置只有一个变量，见[配置参考](../reference/configuration.md)。
 
 ---

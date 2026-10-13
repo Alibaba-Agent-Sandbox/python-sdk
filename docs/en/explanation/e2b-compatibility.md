@@ -81,11 +81,9 @@ The `compat` module re-exports the `Sandbox` class with no additional wrapping.
 
 ### 3. `get_upload_url()` / `get_download_url()`
 
-**E2B**: Returns pre-signed URLs for direct upload/download.
+**E2B**: Returns a signed URL so a browser can upload or download one file.
 
-**Easy Sandbox**: These methods exist but raise `NotImplementedError` — they are reserved placeholders.
-
-**Rationale**: Easy Sandbox uses a different backend architecture where file operations are proxied through envd. Use `files.write()` / `files.read()` / `files.upload()` / `files.download()` instead.
+**Easy Sandbox**: Returns a signed envd `/files` URL the same way. The signature is `v1_` plus the unpadded base64 SHA-256 of `path:read|write:username:envdAccessToken[:expiration]`. The access token itself is not in the URL.
 
 ### 4. Capability Gating
 
