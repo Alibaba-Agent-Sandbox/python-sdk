@@ -28,6 +28,7 @@ Easy Sandbox is a cloud sandbox SDK built on Alibaba Cloud Function Compute, pro
 
 | Guide | Description |
 |-------|-------------|
+| [Agents API](guide/agents-api.md) | HTTP sessions for Codex and Qwen Code. Not the built-in agent sugar. CLIs install on demand. Includes the complete case |
 | [Getting Started](guide/getting-started.md) | Install, configure, first sandbox *(coming soon)* |
 | [Authentication](guide/authentication.md) | API Key / AK-SK authentication *(coming soon)* |
 | [SDK Usage](guide/sdk-usage.md) | Python SDK complete usage *(coming soon)* |
