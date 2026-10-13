@@ -24,13 +24,13 @@ E2B SDK                            easy_sandbox
 ``sandbox.files.write(path, d)``   ``sandbox.files.write(path, d)``
 ``sandbox.run_code(code)``         ``sandbox.run_code(code)``
 ``sandbox.get_host(port)``         ``sandbox.network.get_host(port)``  [1]_
-``sandbox.get_upload_url(path)``   ``sandbox.get_upload_url(path)``
-``sandbox.get_download_url(path)`` ``sandbox.get_download_url(path)``
+``sandbox.get_upload_url(path)``   raises ``FileOperationError``          [2]_
+``sandbox.get_download_url(path)`` raises ``FileOperationError``          [2]_
 =================================  ====================================
 
-``get_upload_url`` and ``get_download_url`` return a signed envd ``/files``
-URL. POST (upload) or GET (download) that URL without ``X-Access-Token``.
-Optional ``use_signature_expiration`` is a lifetime in seconds.
+.. [2] The current envd data plane requires ``X-Access-Token`` on ``/files``
+   and does not accept a signature-only URL. Use ``files.write`` /
+   ``files.read`` / ``files.upload`` / ``files.download``.
 
 .. [1] ``network.get_host()`` / ``get_url()`` / ``get_access_headers()``
    are local URL-computation helpers logically associated with the

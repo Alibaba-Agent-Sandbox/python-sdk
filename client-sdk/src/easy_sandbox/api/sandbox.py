@@ -18,7 +18,7 @@ import json
 import re
 import shlex
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NoReturn
 
 import httpx
 
@@ -193,6 +193,23 @@ def _endpoint_overrides(
     return overrides
 
 
+def _reject_signature_only_file_url(method: str) -> NoReturn:
+    """The default envd refuses ``/files`` unless ``X-Access-Token`` is set.
+
+    A browser-only signed URL was requested against a live sandbox. The data
+    plane answered 403 ``AccessDenied``: ``X-Access-Token header is required``,
+    and ignored the ``signature`` query parameter.
+    """
+    from easy_sandbox.models.errors import FileOperationError
+
+    raise FileOperationError(
+        f"{method} cannot return a URL that authorizes a file by itself. "
+        "The sandbox data plane requires the X-Access-Token header on /files "
+        "and does not accept a signature-only request.",
+        suggestion="Use files.write(), files.read(), files.upload(), or files.download().",
+    )
+
+
 class Sandbox:
     """Primary user-facing class for sandbox lifecycle management.
 
@@ -225,6 +242,7 @@ class Sandbox:
         if not self._info.envd_url and self._info.sandbox_id:
             self._info.envd_url = self._config.build_envd_url(self._info.sandbox_id)
         self._http_client = http_client
+        self._killed = False
         self._auth = auth
         self._envd_token = envd_token
         self._domain = domain
@@ -966,9 +984,16 @@ class Sandbox:
     # ---- Lifecycle ----
 
     async def kill(self) -> None:
-        """Kill the sandbox and release resources."""
+        """Kill the sandbox and release resources.
+
+        A second call is a no-op. The first call closes the client, so retrying
+        the provider would otherwise see a dead plugin process.
+        """
+        if self._killed:
+            return
         try:
             await self._sandbox_protocol.kill(self.id)
+            self._killed = True
             logger.info("Sandbox killed: %s", self.id)
         finally:
             await self._http_client.close()
@@ -1609,54 +1634,15 @@ class Sandbox:
 
         return sandbox
 
-    async def get_upload_url(
-        self,
-        path: str,
-        *,
-        user: str = "user",
-        use_signature_expiration: int | None = None,
-    ) -> str:
-        """Return a signed URL for uploading one file.
+    async def get_upload_url(self, path: str, **_kwargs: object) -> str:
+        """Not available: this data plane does not accept a signature-only upload URL."""
+        _ = path
+        _reject_signature_only_file_url("get_upload_url")
 
-        POST the URL as ``multipart/form-data`` with a ``file`` field. The URL
-        carries a signature, so the caller does not send ``X-Access-Token``.
-        ``use_signature_expiration`` is how many seconds the signature stays
-        valid; omit it for a signature that does not expire.
-        """
-        from easy_sandbox.api.signed_file_url import signed_file_url
-
-        return signed_file_url(
-            self.url,
-            path=path,
-            operation="write",
-            access_token=self._envd_token.token if self._envd_token else None,
-            username=user,
-            expires_in=use_signature_expiration,
-        )
-
-    async def get_download_url(
-        self,
-        path: str,
-        *,
-        user: str = "user",
-        use_signature_expiration: int | None = None,
-    ) -> str:
-        """Return a signed URL for downloading one file.
-
-        GET the URL. The URL carries a signature, so the caller does not send
-        ``X-Access-Token``. ``use_signature_expiration`` is how many seconds
-        the signature stays valid; omit it for a signature that does not expire.
-        """
-        from easy_sandbox.api.signed_file_url import signed_file_url
-
-        return signed_file_url(
-            self.url,
-            path=path,
-            operation="read",
-            access_token=self._envd_token.token if self._envd_token else None,
-            username=user,
-            expires_in=use_signature_expiration,
-        )
+    async def get_download_url(self, path: str, **_kwargs: object) -> str:
+        """Not available: this data plane does not accept a signature-only download URL."""
+        _ = path
+        _reject_signature_only_file_url("get_download_url")
 
     # ---- Context manager ----
 

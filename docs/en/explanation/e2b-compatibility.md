@@ -83,7 +83,7 @@ The `compat` module re-exports the `Sandbox` class with no additional wrapping.
 
 **E2B**: Returns a signed URL so a browser can upload or download one file.
 
-**Easy Sandbox**: Returns a signed envd `/files` URL the same way. The signature is `v1_` plus the unpadded base64 SHA-256 of `path:read|write:username:envdAccessToken[:expiration]`. The access token itself is not in the URL.
+**Easy Sandbox**: The methods of the same name raise `FileOperationError`. A request to a live Express sandbox showed that envd ignores a query signature and requires `X-Access-Token`. The SDK does not return a URL that would get 403.
 
 ### 4. Capability Gating
 

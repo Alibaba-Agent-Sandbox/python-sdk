@@ -22,8 +22,8 @@ Easy Sandbox 设计上与 E2B Python SDK 保持高度 API 兼容。本文档提�
 | `sandbox.files.write(path, d)` | `sandbox.files.write(path, d)` | ✅ 完全兼容 |
 | `sandbox.run_code(code)` | `sandbox.run_code(code)` | ✅ 完全兼容 |
 | `sandbox.get_host(port)` | `sandbox.network.get_host(port)` | ⚠️ 需通过 network 子模块 |
-| `sandbox.get_upload_url(path)` | `sandbox.get_upload_url(path)` | ✅ 返回带签名的上传 URL |
-| `sandbox.get_download_url(path)` | `sandbox.get_download_url(path)` | ✅ 返回带签名的下载 URL |
+| `sandbox.get_upload_url(path)` | `sandbox.get_upload_url(path)` | 调用会失败。当前数据面要求 `X-Access-Token`，不接受只靠签名的 URL |
+| `sandbox.get_download_url(path)` | `sandbox.get_download_url(path)` | 同上 |
 
 ---
 
@@ -104,9 +104,9 @@ url = sandbox.network.get_url(8080)
 
 ### 3. `get_upload_url()` / `get_download_url()`
 
-这两个方法返回带签名的 envd 文件 URL。上传对该 URL 发 `POST`，正文是 `multipart/form-data` 的 `file` 字段。下载是 `GET`。调用方不必再带 `X-Access-Token`。`use_signature_expiration` 是签名的有效秒数；不传则签名不过期。
+E2B 的这两个方法返回一个浏览器可以直接打开的签名 URL。当前极速版 envd 不接受这种请求：不带 `X-Access-Token` 时返回 403，正文是 `X-Access-Token header is required`。因此 Easy Sandbox 的同名方法会抛出 `FileOperationError`，不会返回一个打不开的链接。
 
-SDK 自己传文件仍然用 `files.write()`、`files.read()`、`files.upload()`、`files.download()`。签名 URL 是交给浏览器或其他不持有沙箱令牌的客户端用的。
+传文件用 `files.write()`、`files.read()`、`files.upload()`、`files.download()`。这些调用由 SDK 带上访问令牌。
 
 ### 4. 能力模型
 
@@ -155,7 +155,7 @@ sandbox = await Sandbox.create(
    - 推荐：`from easy_sandbox.api.sandbox import Sandbox`
 3. **替换 `Sandbox.kill(id)`**：改为 `Sandbox.kill_by_id(id)`
 4. **替换 `get_host()`**：改为 `sandbox.network.get_host()`
-5. **`get_upload_url` / `get_download_url`**：方法名相同。可选参数 `use_signature_expiration` 是签名有效秒数
+5. **`get_upload_url` / `get_download_url`**：改用 `files.write()` / `files.read()`。当前数据面不接受只靠签名的 URL
 6. **设置环境变量**：沙箱 API Key 用 `EBX_SANDBOX_API_KEY`。每项设置只有一个变量，见[配置参考](../reference/configuration.md)。
 
 ---

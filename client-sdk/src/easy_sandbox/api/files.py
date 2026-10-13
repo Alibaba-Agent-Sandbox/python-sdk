@@ -223,43 +223,21 @@ class FilesModule:
             path=path,
         )
 
-    async def upload_url(
-        self,
-        path: str,
-        *,
-        user: str = "user",
-        use_signature_expiration: int | None = None,
-    ) -> str:
-        """Signed URL for uploading one file. Same URL as ``Sandbox.get_upload_url``."""
-        from easy_sandbox.api.signed_file_url import signed_file_url
+    async def upload_url(self, path: str) -> str:
+        """envd file URL for an upload. The request must send ``X-Access-Token``.
 
-        return signed_file_url(
-            self._envd_url,
-            path=path,
-            operation="write",
-            access_token=self._envd_token.token if self._envd_token else None,
-            username=user,
-            expires_in=use_signature_expiration,
-        )
+        This is not a signature-only URL. A client that only has the URL is
+        denied by the data plane.
+        """
+        return f"{self._envd_url}/files?path={path}&username=user"
 
-    async def download_url(
-        self,
-        path: str,
-        *,
-        user: str = "user",
-        use_signature_expiration: int | None = None,
-    ) -> str:
-        """Signed URL for downloading one file. Same URL as ``Sandbox.get_download_url``."""
-        from easy_sandbox.api.signed_file_url import signed_file_url
+    async def download_url(self, path: str) -> str:
+        """envd file URL for a download. The request must send ``X-Access-Token``.
 
-        return signed_file_url(
-            self._envd_url,
-            path=path,
-            operation="read",
-            access_token=self._envd_token.token if self._envd_token else None,
-            username=user,
-            expires_in=use_signature_expiration,
-        )
+        This is not a signature-only URL. A client that only has the URL is
+        denied by the data plane.
+        """
+        return f"{self._envd_url}/files?path={path}&username=user"
 
     # Sync variants
     read_sync = make_sync(read)

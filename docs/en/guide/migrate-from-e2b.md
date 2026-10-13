@@ -22,8 +22,8 @@ Easy Sandbox is designed to maintain a high degree of API compatibility with the
 | `sandbox.files.write(path, d)` | `sandbox.files.write(path, d)` | ✅ Fully compatible |
 | `sandbox.run_code(code)` | `sandbox.run_code(code)` | ✅ Fully compatible |
 | `sandbox.get_host(port)` | `sandbox.network.get_host(port)` | ⚠️ Requires the network submodule |
-| `sandbox.get_upload_url(path)` | `sandbox.get_upload_url(path)` | ✅ Returns a signed upload URL |
-| `sandbox.get_download_url(path)` | `sandbox.get_download_url(path)` | ✅ Returns a signed download URL |
+| `sandbox.get_upload_url(path)` | `sandbox.get_upload_url(path)` | The call fails. This data plane requires `X-Access-Token` and does not accept a signature-only URL |
+| `sandbox.get_download_url(path)` | `sandbox.get_download_url(path)` | Same as upload |
 
 ---
 
@@ -104,9 +104,9 @@ url = sandbox.network.get_url(8080)
 
 ### 3. `get_upload_url()` / `get_download_url()`
 
-These methods return a signed envd file URL. Upload with `POST` and a `multipart/form-data` field named `file`. Download with `GET`. The caller does not send `X-Access-Token`. `use_signature_expiration` is how many seconds the signature stays valid; omit it for a signature that does not expire.
+E2B's methods return a signed URL a browser can open. The current Express envd does not accept that request: without `X-Access-Token` it returns 403 `X-Access-Token header is required`. Easy Sandbox's methods of the same name raise `FileOperationError` instead of returning a URL that cannot be used.
 
-The SDK still moves its own files with `files.write()`, `files.read()`, `files.upload()`, and `files.download()`. The signed URL is for a browser or another client that does not hold the sandbox token.
+Move files with `files.write()`, `files.read()`, `files.upload()`, and `files.download()`. The SDK sends the access token on those calls.
 
 ### 4. Capability model
 
@@ -156,7 +156,7 @@ sandbox = await Sandbox.create(
    - Recommended: `from easy_sandbox.api.sandbox import Sandbox`
 3. **Replace `Sandbox.kill(id)`**: Change to `Sandbox.kill_by_id(id)`
 4. **Replace `get_host()`**: Change to `sandbox.network.get_host()`
-5. **`get_upload_url` / `get_download_url`**: The method names match. Optional `use_signature_expiration` is the signature lifetime in seconds
+5. **`get_upload_url` / `get_download_url`**: Use `files.write()` / `files.read()`. This data plane does not accept a signature-only URL
 6. **Set environment variables**: `EBX_SANDBOX_API_KEY` for the sandbox API key. Each setting has one variable; see [Configuration](../reference/configuration.md).
 
 ---

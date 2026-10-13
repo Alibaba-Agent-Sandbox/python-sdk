@@ -83,7 +83,7 @@ from easy_sandbox.compat import Sandbox
 
 **E2B**：返回带签名的 URL，浏览器可以直接上传或下载一个文件。
 
-**Easy Sandbox**：同样返回带签名的 envd `/files` URL。签名是 `v1_` 加上 `path:read|write:username:envdAccessToken[:过期时间]` 的 SHA-256（无填充 base64）。URL 里没有访问令牌本身。
+**Easy Sandbox**：同名方法会抛出 `FileOperationError`。对线上极速版沙箱的请求表明，envd 忽略查询参数里的签名，并要求 `X-Access-Token`。不返回一个会得到 403 的 URL。
 
 ### 4. 能力门禁
 

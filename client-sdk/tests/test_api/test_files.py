@@ -200,33 +200,16 @@ class TestFilesUploadDownloadUrls:
         self,
         files_module: FilesModule,
     ) -> None:
-        from urllib.parse import parse_qs, urlparse
-
         url = await files_module.upload_url("/app/test.txt")
-        query = parse_qs(urlparse(url).query)
-        assert url.startswith(f"{TEST_ENVD_URL}/files?")
-        assert query["path"] == ["/app/test.txt"]
-        assert query["username"] == ["user"]
-        assert query["signature"][0].startswith("v1_")
+        assert url == f"{TEST_ENVD_URL}/files?path=/app/test.txt&username=user"
 
     @pytest.mark.asyncio
     async def test_download_url(
         self,
         files_module: FilesModule,
     ) -> None:
-        from urllib.parse import parse_qs, urlparse
-
         url = await files_module.download_url("/app/test.txt")
-        query = parse_qs(urlparse(url).query)
-        assert url.startswith(f"{TEST_ENVD_URL}/files?")
-        assert query["path"] == ["/app/test.txt"]
-        assert query["signature"][0].startswith("v1_")
-        assert (
-            query["signature"][0]
-            != parse_qs(urlparse(await files_module.upload_url("/app/test.txt")).query)[
-                "signature"
-            ][0]
-        )
+        assert url == f"{TEST_ENVD_URL}/files?path=/app/test.txt&username=user"
 
 
 class TestFilesRename:
