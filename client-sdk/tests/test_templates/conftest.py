@@ -3,8 +3,8 @@
 ``examples/templates/`` is **not** a publishable template collection: the
 single source of truth for template content, the index and releases is the
 ``Easy-Sandbox/awesome-templates`` repository.  What remains here is a minimal
-fixture (``python-hello``, plus the offline ``agents-cli`` Agents API example) used to exercise the install/server pipelines
-**offline**: no network, no real platform API, no docker daemon.
+fixture (``python-hello`` and the offline ``agents-cli`` example) used to exercise the
+install/server pipelines **offline**: no network, no real platform API, no docker daemon.
 """
 
 from __future__ import annotations
