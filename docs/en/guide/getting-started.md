@@ -22,8 +22,7 @@ pip install "easy-sandbox[all]"
 
 The `ebx` CLI is not part of the Python package (there is no `[cli]` extra); it is a separate Node.js project, see [Related: the ebx CLI](#related-the-ebx-cli). The container-side runtime
 (`easy_sandbox.server`) is the separate `easy-sandbox-server` package (`pip install easy-sandbox-server`); `easy-sandbox`
-depends on it, so installing the client provides it too. Upgrading from 0.2.x in place? See
-[Migrating from 0.2.x](migrating-from-0.2.md).
+depends on it, so installing the client provides it too.
 
 ## 2. Configure the API Key
 

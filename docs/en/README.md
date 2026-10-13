@@ -46,7 +46,6 @@ Easy Sandbox is a cloud sandbox SDK built on Alibaba Cloud Function Compute, pro
 | [Environment Variables](guide/environment-variables.md) | Sandbox env var scopes, injection, and direct-exec semantics |
 | [Troubleshooting](guide/troubleshooting.md) | Common issues and solutions *(coming soon)* |
 | [Testing & Definition of Done](guide/testing-e2e.md) | Real-cloud E2E suite (`make e2e`) and the Definition of Done |
-| [Migrating from 0.2.x](guide/migrating-from-0.2.md) | Upgrade to 0.3.0: client/server split, `easy-sandbox-server`, in-place upgrade repair |
 | [E2E Template Workflow](../../../cli/docs/en/guide/e2e-template-workflow.md) *(`cli` repository)* | Complete guide from building a template to using sandboxes |
 | [Agent Skill Installation](../../../cli/docs/en/guide/agent-skill-installation.md) *(`cli` repository)* | Install the static SKILL.md agent guide into Qoder / Claude Code / Cursor / Qwen Code / Codex |
 | [BYO Agent Integration](../../../cli/docs/en/guide/byo-agent-integration.md) *(`cli` repository)* | Bring your own agent CLI inside a sandbox: responsibility boundary, `custom_commands` contract, credential whitelist, version locking, license boundaries |

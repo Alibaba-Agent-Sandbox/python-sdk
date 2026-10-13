@@ -44,7 +44,6 @@ Easy Sandbox 是基于阿里云函数计算的云端沙箱 SDK，提供 E2B 兼�
 | [环境变量](guide/environment-variables.md) | 沙箱环境变量作用域、注入方式与直接执行语义 |
 | [故障排查](guide/troubleshooting.md) | 常见问题与解决方案 |
 | [测试与完成定义](guide/testing-e2e.md) | 真实云 E2E 套件(`make e2e`)与完成定义 |
-| [从 0.2.x 迁移](guide/migrating-from-0.2.md) | 升级到 0.3.0：客户端/服务端拆分、`easy-sandbox-server`、原地升级修复 |
 | [端到端模板工作流](../../../cli/docs/zh/guide/e2e-template-workflow.md) *（`cli` 仓库）* | 从零构建模板到沙箱使用完整指南 |
 | [Agent Skill 安装与分发](../../../cli/docs/zh/guide/agent-skill-installation.md) *（`cli` 仓库）* | 把静态 SKILL.md 指南安装到 Qoder / Claude Code / Cursor / Qwen Code / Codex |
 | [自带 Agent（BYO）集成](../../../cli/docs/zh/guide/byo-agent-integration.md) *（`cli` 仓库）* | 在沙箱内运行自带 Agent CLI：职责边界、custom_commands 契约、凭证白名单、版本锁定与许可边界 |

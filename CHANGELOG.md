@@ -6,11 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
-> Next release: **0.3.0**. Both distributions (`easy-sandbox`, `easy-sandbox-server`) and the MCP server version are already set to `0.3.0`; the split below must not be published as 0.2.x (`easy-sandbox` 0.1.0 and 0.2.0 already exist on PyPI as a single distribution).
-
-### Upgrading from 0.2.x
-
-An in-place `pip install -U easy-sandbox` over a 0.2.0 install can leave `easy_sandbox.server` broken (pip installs `easy-sandbox-server` first, then uninstalls the old monolith, whose file list deletes the freshly installed `easy_sandbox/server/*`; the import degrades to an empty namespace). Repair with `pip install --force-reinstall --no-deps easy-sandbox-server`, or `pip uninstall easy-sandbox easy-sandbox-server && pip install easy-sandbox`. A fresh environment is not affected. See [Migrating from 0.2.x](docs/en/guide/migrating-from-0.2.md) ([中文](docs/zh/guide/migrating-from-0.2.md)).
+> Next release: **0.3.0**. Both distributions (`easy-sandbox`, `easy-sandbox-server`) and the MCP server version are already set to `0.3.0`.
 
 ### Changed
 

@@ -59,8 +59,6 @@ pip install -e ./server-sdk -e "./client-sdk[dev]"
 
 `easy-sandbox` 依赖同版本的 `easy-sandbox-server`，因此 `pip install easy-sandbox` 同样会提供 `easy_sandbox.server`（`@sandbox` 装饰器的 server 代理在本地需要它）。`[server]` extra 作为无害的别名保留。
 
-> **从 0.2.x 升级？** 原地执行 `pip install -U easy-sandbox` 可能导致 `easy_sandbox.server` 损坏；请执行 `pip install --force-reinstall --no-deps easy-sandbox-server`（见[从 0.2 迁移](docs/zh/guide/migrating-from-0.2.md)）。
-
 `ebx` CLI 不再属于 Python 包（不再有 `[cli]` extra，也没有 `ebx` 控制台脚本），由
 [`cli`](https://github.com/Easy-Sandbox/easy-sandbox) 仓库分发（见[相关：ebx CLI](#相关ebx-cli)）。
 

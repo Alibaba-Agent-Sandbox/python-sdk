@@ -60,8 +60,6 @@ pip install -e ./server-sdk -e "./client-sdk[dev]"
 
 `easy-sandbox` depends on `easy-sandbox-server` of the same version, so `pip install easy-sandbox` also provides `easy_sandbox.server` (needed locally by the `@sandbox` decorator's server proxy). The `[server]` extra is kept as a harmless alias.
 
-> **Upgrading from 0.2.x?** An in-place `pip install -U easy-sandbox` can leave `easy_sandbox.server` broken; run `pip install --force-reinstall --no-deps easy-sandbox-server` (see [Migrating from 0.2](docs/en/guide/migrating-from-0.2.md)).
-
 The `ebx` CLI is no longer part of the Python package (there is no `[cli]` extra and no `ebx`
 console script); it is distributed from the [`cli`](https://github.com/Easy-Sandbox/easy-sandbox) repository
 (see [Related: the ebx CLI](#related-the-ebx-cli)).

@@ -252,12 +252,6 @@ pip install easy-sandbox
 pip install easy-sandbox --force-reinstall
 ```
 
-### `ImportError` on `easy_sandbox.server` After Upgrading From 0.2.x
-
-An in-place `pip install -U easy-sandbox` can leave `easy_sandbox.server` empty. Repair it with
-`pip install --force-reinstall --no-deps easy-sandbox-server` (details in
-[Migrating from 0.2.x](migrating-from-0.2.md)).
-
 ### Python SDK Not Found
 
 Confirm that Python's bin directory is in your PATH:

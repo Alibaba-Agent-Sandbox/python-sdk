@@ -252,11 +252,6 @@ pip install easy-sandbox
 pip install easy-sandbox --force-reinstall
 ```
 
-### 从 0.2.x 升级后 `easy_sandbox.server` 导入失败
-
-原地执行 `pip install -U easy-sandbox` 可能使 `easy_sandbox.server` 变成空命名空间。执行
-`pip install --force-reinstall --no-deps easy-sandbox-server` 修复（详见[从 0.2.x 迁移](migrating-from-0.2.md)）。
-
 ### Python SDK 未找到
 
 确认 Python 的 bin 目录在 PATH 中：

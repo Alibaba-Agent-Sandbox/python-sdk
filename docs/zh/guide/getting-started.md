@@ -22,7 +22,6 @@ pip install "easy-sandbox[all]"
 
 `ebx` CLI 不属于 Python 包（没有 `[cli]` extra），它是独立的 Node.js 项目，见[相关：ebx CLI](#相关ebx-cli)。容器侧运行时（`easy_sandbox.server`）是独立的
 `easy-sandbox-server` 包（`pip install easy-sandbox-server`）；`easy-sandbox` 依赖它，安装客户端时会一并安装。
-从 0.2.x 原地升级？请见[从 0.2.x 迁移](migrating-from-0.2.md)。
 
 ## 2. 配置 API Key
 
