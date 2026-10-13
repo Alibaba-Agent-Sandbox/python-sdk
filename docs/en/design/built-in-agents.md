@@ -1,6 +1,9 @@
 # Built-in Agent High-Level API Design
 
-> Easy Sandbox built-in agents adopt a minimalist architecture: AI CLI tools (Codex, etc.) are pre-installed in sandbox templates, and the SDK Agent API is simply syntactic sugar wrapping `commands.run()`. The SDK has zero LLM dependencies, keeping it lightweight.
+> This is the design for `sb.agent.*`, which is sugar over `commands.run()`. It is not the HTTP Agents API.
+> The Agents API (`/v1/agents/sessions`; Codex and Qwen Code are supported today) is [Agents API](../guide/agents-api.md). The base image does not preinstall those CLIs. Install the one you call. See the [`agents-cli`](../../examples/templates/agents-cli/README.md) template.
+
+> The rest of this page still describes an earlier idea that baked Codex into a template. The product does not put Codex and Qwen Code into the base image together.
 
 ---
 

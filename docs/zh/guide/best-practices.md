@@ -26,7 +26,7 @@ export EBX_SERVER_DISABLED_GROUPS=terminal,dev_tools
 
 Agents 路由保持关闭，直到进程以 `EBX_SERVER_ENABLED_GROUPS=agents` 启动（或在 `serve()` 之前 `enable_group(CapabilityGroup.AGENTS)`）。组关闭时，这些路径返回 404，正文说明路由已禁用。
 
-这一批只托管 Codex 和 Qwen Code。检查清单、本地响应头和 404 见[托管代理 — 最佳实践](hosted-agents.md#最佳实践)。
+目前支持 Codex 和 Qwen Code。检查清单、本地响应头和 404 见[托管代理 — 最佳实践](hosted-agents.md#最佳实践)。
 
 ## 密钥不会被回显
 

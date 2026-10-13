@@ -2,7 +2,7 @@
 
 The user guide and the runnable case are in [Agents API](agents-api.md). This page is the route reference.
 
-This slice hosts **Codex** and **Qwen Code** only. Claude Code, Cursor, Qoder and the generic command adapter are not served here. Naming any other adapter returns HTTP 404 `not_found_error` with `x-should-retry: false`.
+Codex and Qwen Code are supported today. Adapter names that are not supported yet, including Claude Code, Cursor, Qoder, and the generic command adapter, return HTTP 404 `not_found_error` with `x-should-retry: false`.
 
 The routes live on the sandbox server (`easy_sandbox.server`), in the opt-in `agents` capability group. They stay **off** until `EBX_SERVER_ENABLED_GROUPS` includes `agents`. With the group disabled, the same paths answer 404 and the body says the route is disabled.
 
@@ -15,7 +15,7 @@ The template server listens on **port 9000**. Point an OpenAI-shaped client at `
 
 ## Best practices
 
-* Host **Codex** and **Qwen Code** only. A body that names Claude Code, Cursor, Qoder, or any other adapter is HTTP 404 `not_found_error` with `x-should-retry: false`.
+* Codex and Qwen Code are supported today. A body that names an adapter that is not supported yet is HTTP 404 `not_found_error` with `x-should-retry: false`.
 * Treat every response as local. Read the header `X-Easy-Sandbox-Local: 1` (errors included). `x_easy_sandbox.compute` is `local_process`, `local_state`, or `none`.
 * Do not call `POST /v1/responses/input_tokens`. It is 404 `agents.not_implemented_locally` with `x-should-retry: false`. No tokenizer matches the model the CLI will call.
 * Leave the group off until a session needs it. Start the process with `EBX_SERVER_ENABLED_GROUPS=agents`.
@@ -155,4 +155,4 @@ Webhook endpoints (`/v1/webhook_endpoints`, create, retrieve, update, list, dele
 
 Each answers `404`, `type: not_found_error`, `code: agents.not_implemented_locally`, `x-should-retry: false`, `X-Easy-Sandbox-Local: 1`.
 
-Clients that only demonstrate the calls, against a server you already started: [hosted_codex.py](../../../examples/agents/hosted_codex.py) and [hosted_qwen.py](../../../examples/agents/hosted_qwen.py). [local_files_and_session.py](../../../examples/agents/local_files_and_session.py) uploads one file and runs one session against a local server, using the fake CLI (no model API key). See [examples/agents/README.md](../../../examples/agents/README.md).
+Clients that only demonstrate the calls, against a server you already started: [hosted_codex.py](../../../examples/agents/hosted_codex.py) and [hosted_qwen.py](../../../examples/agents/hosted_qwen.py). [local_files_and_session.py](../../../examples/agents/local_files_and_session.py) uploads one file and opens one session against a local server. It places a local program named `codex` on `PATH` and does not read a model API key. See [examples/agents/README.md](../../../examples/agents/README.md).

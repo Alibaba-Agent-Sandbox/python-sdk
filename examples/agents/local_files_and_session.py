@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Upload one file and run one Codex session against a local sandbox server.
 
-The Codex binary is the fake CLI from ``examples/agents/README.md``: a shell
-script named ``codex`` on ``PATH`` that discards stdin, prints one JSONL agent
-message plus ``turn.completed``, and exits 0. This file does not read or send
+The Codex binary is a local program, described in ``examples/agents/README.md``:
+a shell script named ``codex`` on ``PATH`` that discards stdin and prints one
+JSONL agent message plus ``turn.completed``. This file does not read or send
 a model API key.
 
 With no arguments the script starts ``SandboxServer`` on 127.0.0.1, with
-``agents`` enabled and the fake ``codex`` on ``PATH``. Pass a base URL to talk
-to a server you already started; that process must see the same kind of fake
+``agents`` enabled and that local ``codex`` on ``PATH``. Pass a base URL to talk
+to a server you already started; that process must see the same local
 ``codex``, and ``EBX_SERVER_ENABLED_GROUPS`` must include ``agents``.
 
     python local_files_and_session.py

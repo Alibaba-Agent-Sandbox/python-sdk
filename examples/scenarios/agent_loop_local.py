@@ -1,4 +1,4 @@
-"""Local stand-in for: create sandbox -> exec -> read result -> kill.
+"""Create a sandbox, run a command, read the result, then kill it.
 
 This process starts ``python -m easy_sandbox.server serve`` on 127.0.0.1, talks to it
 with ``ServerClient``, and prints every response. It does not call route handlers

@@ -2,7 +2,7 @@
 
 用户向的说明和一条能跑完的案例在 [Agents API](agents-api.md)。本页是路由参考。
 
-这一切片**只托管 Codex 和 Qwen Code**。这里不提供 Claude Code、Cursor、Qoder 和通用 command 适配器。写出任何其他适配器名称都会得到 HTTP 404，错误类型是 `not_found_error`，响应头 `x-should-retry: false`。
+目前支持 **Codex** 和 **Qwen Code**。目前未支持的适配器名称，包括 Claude Code、Cursor、Qoder 和通用 command，返回 HTTP 404，错误类型是 `not_found_error`，响应头 `x-should-retry: false`。
 
 路由在沙箱服务端（`easy_sandbox.server`）的 `agents` 能力组上。该组默认**关闭**，只有 `EBX_SERVER_ENABLED_GROUPS` 包含 `agents` 时才打开。组关闭时，同样的路径返回 404，正文会说明路由已禁用。
 
@@ -15,7 +15,7 @@ python -m easy_sandbox.server
 
 ## 最佳实践
 
-* 只托管 **Codex** 和 **Qwen Code**。正文里写出 Claude Code、Cursor、Qoder 或任何其他适配器，都是 HTTP 404 `not_found_error`，并带 `x-should-retry: false`。
+* 目前支持 **Codex** 和 **Qwen Code**。正文里写出目前未支持的适配器名称，是 HTTP 404 `not_found_error`，并带 `x-should-retry: false`。
 * 把每个响应都当成本地操作。读取响应头 `X-Easy-Sandbox-Local: 1`（错误响应也有）。`x_easy_sandbox.compute` 是 `local_process`、`local_state` 或 `none`。
 * 不要调用 `POST /v1/responses/input_tokens`。它是 404 `agents.not_implemented_locally`，并带 `x-should-retry: false`。没有与 CLI 将要调用的模型一致的分词器。
 * 在会话需要之前保持该组关闭。用 `EBX_SERVER_ENABLED_GROUPS=agents` 启动进程。
@@ -155,4 +155,4 @@ Webhook 端点（`/v1/webhook_endpoints`，创建、读取、更新、列出、�
 
 每一个都返回 `404`、`type: not_found_error`、`code: agents.not_implemented_locally`、`x-should-retry: false`、`X-Easy-Sandbox-Local: 1`。
 
-只演示调用方式的客户端，对着你已经启动的服务：[hosted_codex.py](../../../examples/agents/hosted_codex.py) 和 [hosted_qwen.py](../../../examples/agents/hosted_qwen.py)。[local_files_and_session.py](../../../examples/agents/local_files_and_session.py) 对着本地服务上传一个文件并跑一个会话，使用假 CLI（没有模型 API key）。见 [examples/agents/README.md](../../../examples/agents/README.md)。
+只演示调用方式的客户端，对着你已经启动的服务：[hosted_codex.py](../../../examples/agents/hosted_codex.py) 和 [hosted_qwen.py](../../../examples/agents/hosted_qwen.py)。[local_files_and_session.py](../../../examples/agents/local_files_and_session.py) 对着本地服务上传一个文件并开一个会话。它在 `PATH` 上放名为 `codex` 的本地程序，不读取模型 API key。见 [examples/agents/README.md](../../../examples/agents/README.md)。

@@ -6,7 +6,7 @@ This is the local form of an agent loop. A real `Sandbox.create` needs a provide
 python3 examples/scenarios/agent_loop_local.py
 ```
 
-Recorded on 2026-10-12 from that command (exit 0). The port is chosen at runtime.
+Example output. The port is chosen at runtime.
 
 ```text
 step 1  create
@@ -26,18 +26,11 @@ step 4  kill
 
 `return -15` is the process group receiving SIGTERM (signal 15).
 
-The same three checks are also in `e2e/test_client_sdk_local_e2e.py`. On 2026-10-12:
-
-```text
-e2e/test_client_sdk_local_e2e.py::test_health PASSED
-e2e/test_client_sdk_local_e2e.py::test_write_and_read_file_under_base_dir PASSED
-e2e/test_client_sdk_local_e2e.py::test_shell_stdout PASSED
-3 passed in 0.37s
-```
+The same checks are in `e2e/test_client_sdk_local_e2e.py`.
 
 ## Modal-style examples
 
-`examples/compat-demos/modal_compute.py` and `modal_data_analysis.py` call `@sandbox` against a cloud sandbox (`code-interpreter-v1`). They were not run in this environment: that path needs a live sandbox API. The decorator's local path is covered by `client-sdk/tests/integration/test_declarative_register_e2e.py` and `test_workflow_e2e.py`, which start a real server process.
+`examples/compat-demos/modal_compute.py` and `modal_data_analysis.py` call `@sandbox` against a cloud sandbox (`code-interpreter-v1`). They need `EBX_SANDBOX_API_KEY`. The decorator's local path is covered by `client-sdk/tests/integration/test_declarative_register_e2e.py` and `test_workflow_e2e.py`, which start a real server process.
 
 ## What to set
 

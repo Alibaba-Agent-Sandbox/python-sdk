@@ -171,7 +171,7 @@ asyncio.run(main())
 
 ---
 
-The sandbox server can also host coding-agent CLIs. This slice is Codex (`codex`, npm package `@openai/codex`) and Qwen Code (`qwen`, npm package `@qwen-code/qwen-code`) only, on `/v1/agents/sessions`, and only after `EBX_SERVER_ENABLED_GROUPS` includes `agents`. See [Hosted agents](hosted-agents.md).
+The sandbox server can also host coding-agent CLIs. Codex (`codex`, npm package `@openai/codex`) and Qwen Code (`qwen`, npm package `@qwen-code/qwen-code`) are supported today, on `/v1/agents/sessions`, after `EBX_SERVER_ENABLED_GROUPS` includes `agents`. See [Hosted agents](hosted-agents.md).
 
 ## Next Steps
 

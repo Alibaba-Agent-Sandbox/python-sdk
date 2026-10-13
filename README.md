@@ -36,7 +36,7 @@ the server only ships `easy_sandbox/server/`) and are **released in lockstep** w
 - **Declarative decorator** — `@sandbox` turns a plain function into a remote sandbox execution with automatic serialisation.
 - **Session persistence** — save and restore sandbox state across runs.
 - **E2B compatibility layer** — drop-in replacement for projects already using the E2B SDK.
-- **Agents API** — in-sandbox HTTP sessions for Codex and Qwen Code only. Install a CLI when you call it; the base image does not carry both. Guide and complete case: [Agents API](docs/en/guide/agents-api.md).
+- **Agents API** — in-sandbox HTTP sessions. Codex and Qwen Code are supported today. Install a CLI when you call it; the base image does not carry both. Guide and complete case: [Agents API](docs/en/guide/agents-api.md).
 
 ## Installation
 

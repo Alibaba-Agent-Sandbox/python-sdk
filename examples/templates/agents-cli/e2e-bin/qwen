@@ -1,0 +1,4 @@
+#!/bin/sh
+printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"text","text":"hello-from-fake-qwen"}]}}'
+printf '%s\n' '{"type":"result","subtype":"success"}'
+exit 0

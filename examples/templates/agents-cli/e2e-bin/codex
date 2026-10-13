@@ -1,0 +1,5 @@
+#!/bin/sh
+cat >/dev/null
+printf '%s\n' '{"type":"item.completed","item":{"id":"m1","type":"agent_message","text":"hello-from-fake-codex"}}'
+printf '%s\n' '{"type":"turn.completed","usage":{"input_tokens":1,"output_tokens":1}}'
+exit 0

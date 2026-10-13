@@ -77,7 +77,7 @@ sandbox = await Sandbox.connect("sbx-xxxx", sandbox_api_key="your-api-key")
 
 ## AK/SK 阿里云扩展认证 🧪
 
-> **⚠️ 实验性功能**：AK/SK → API Key 的 token 交换框架已在 SDK 中实现（`transport/auth.py`），但 token 交换端点的 action 名称（`CreateApiKey`）和响应字段解析**仍待 FC 平台团队确认**。TTL（3600s）和提前刷新时间（300s）为假设值，未经真实端点实测。当前阶段可用于本地调试，**生产环境仍推荐使用 API Key 认证**。
+> **⚠️ 实验性功能**：AK/SK → API Key 的 token 交换框架已在 SDK 中实现（`transport/auth.py`），但 token 交换端点的 action 名称（`CreateApiKey`）和响应字段解析**仍待 FC 平台团队确认**。TTL（3600s）和提前刷新时间（300s）是占位值，要等平台确认端点之后才算数。当前可用于本地调试，**生产环境仍推荐使用 API Key 认证**。
 
 AK/SK 模式使用阿里云 AccessKey 对，通过 token 交换获取临时 API Key（设计 TTL 3600 秒，到期前 300 秒自动刷新）。
 

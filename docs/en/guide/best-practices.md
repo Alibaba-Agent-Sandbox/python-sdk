@@ -26,7 +26,7 @@ Or set `server.groups` in the template policy (`process: false`, and so on). `co
 
 The Agents routes stay off until the process is started with `EBX_SERVER_ENABLED_GROUPS=agents` (or `enable_group(CapabilityGroup.AGENTS)` before `serve()`). With the group off, those paths answer 404 and the body says the route is disabled.
 
-This slice hosts Codex and Qwen Code only. Checklist, the local header, and the 404s: [Hosted agents — Best practices](hosted-agents.md#best-practices).
+Codex and Qwen Code are supported today. Checklist, the local header, and the 404s: [Hosted agents — Best practices](hosted-agents.md#best-practices).
 
 ## Secrets are not echoed
 

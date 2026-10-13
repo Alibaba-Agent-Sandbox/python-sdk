@@ -4,7 +4,7 @@
 This is not ``sb.agent.*``. That name is a different design (sugar over
 ``commands.run()``). This script talks to the sandbox HTTP Agents API.
 
-The image does not contain the CLIs. This case writes two stand-in programs
+The image does not contain the CLIs. This case writes two local programs
 named ``codex`` and ``qwen`` and puts them on ``PATH``. A real deployment
 installs only the one it calls:
 
@@ -182,7 +182,7 @@ def main() -> int:
     else:
         sys.exit("server did not become healthy")
     print(f"server {base}")
-    print("CLIs on PATH: codex, qwen (stand-ins; no model key)")
+    print("CLIs on PATH: codex, qwen (local programs; no model key)")
 
     status, missing, headers = call(base, "POST", "/v1/agents/sessions", {"agent": {"model": "gpt-5"}})
     _show("POST session without an adapter name", status, missing, headers)

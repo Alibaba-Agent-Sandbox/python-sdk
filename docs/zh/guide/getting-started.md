@@ -170,7 +170,7 @@ asyncio.run(main())
 
 ---
 
-沙箱服务端也可以托管编程代理 CLI。当前这一切片只提供 Codex（`codex`，npm 包 `@openai/codex`）和 Qwen Code（`qwen`，npm 包 `@qwen-code/qwen-code`），路径是 `/v1/agents/sessions`，并且只有在 `EBX_SERVER_ENABLED_GROUPS` 包含 `agents` 时才会打开。见[托管代理](hosted-agents.md)。
+沙箱服务端也可以托管编程代理 CLI。目前支持 Codex（`codex`，npm 包 `@openai/codex`）和 Qwen Code（`qwen`，npm 包 `@qwen-code/qwen-code`）。路径是 `/v1/agents/sessions`，需要 `EBX_SERVER_ENABLED_GROUPS` 包含 `agents`。见[托管代理](hosted-agents.md)。
 
 ## 下一步
 

@@ -1,0 +1,52 @@
+name: agents-cli
+version: "1.0.0"
+description: "Agents API for Codex and Qwen Code. The image does not preinstall either CLI."
+author: "Easy-Sandbox"
+tags:
+  - agents-api
+  - codex
+  - qwen-code
+  - self-hosted
+
+base: python:3.12-slim
+
+capabilities:
+  - shell
+  - files
+  - ports
+
+ports:
+  - 9000
+
+env:
+  EBX_SERVER_ENABLED_GROUPS: "agents"
+
+# The group turns the gate on. ``endpoints`` names each route. ``*`` off means
+# shell, file routes, and the rest of /v1/agents/* stay closed.
+server:
+  groups:
+    agents: true
+    file_ops: false
+    process: false
+    terminal: false
+    dev_tools: false
+    browser: false
+  endpoints:
+    "*":
+      enabled: false
+    agents_sessions_create:
+      enabled: true
+    agents_sessions_get:
+      enabled: true
+    agents_sessions_list:
+      enabled: true
+    agents_sessions_events_create:
+      enabled: true
+    agents_sessions_items_list:
+      enabled: true
+    agents_runtimes_list:
+      enabled: true
+
+resources:
+  cpu: 1
+  memory: 1024

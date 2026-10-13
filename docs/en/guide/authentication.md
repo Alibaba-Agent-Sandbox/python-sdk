@@ -77,7 +77,7 @@ sandbox = await Sandbox.connect("sbx-xxxx", sandbox_api_key="your-api-key")
 
 ## AK/SK Alibaba Cloud Extended Authentication 🧪
 
-> **⚠️ Experimental Feature**: The AK/SK → API Key token exchange framework is implemented in the SDK (`transport/auth.py`), but the token exchange endpoint’s action name (`CreateApiKey`) and response field parsing **are still pending FC platform team confirmation**. TTL (3600s) and early refresh time (300s) are assumed values, not validated against a real endpoint. This feature can be used for local debugging; **API Key authentication is still recommended for production environments**.
+> **⚠️ Experimental Feature**: The AK/SK → API Key token exchange framework is implemented in the SDK (`transport/auth.py`), but the token exchange endpoint’s action name (`CreateApiKey`) and response field parsing **are still pending FC platform team confirmation**. TTL (3600s) and the 300s early refresh are placeholders until the platform confirms the endpoint. Use it for local debugging; **API Key authentication is still recommended for production**.
 
 AK/SK mode uses an Alibaba Cloud AccessKey pair to obtain a temporary API Key via token exchange (designed TTL 3600 seconds, auto-refreshed 300 seconds before expiry).
 

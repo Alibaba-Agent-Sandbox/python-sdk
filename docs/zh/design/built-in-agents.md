@@ -1,6 +1,9 @@
 # 内置 Agent 高级 API 设计
 
-> Easy Sandbox 内置 Agent 采用极简架构：沙箱模板内预装 AI CLI 工具（Codex 等），SDK Agent API 只是 `commands.run()` 的语法糖封装。SDK 零 LLM 依赖，保持轻量。
+> 这是 `sb.agent.*` 的设计稿，本质是 `commands.run()` 的语法糖。它不是 HTTP Agents API。
+> Agents API（`/v1/agents/sessions`，目前支持 Codex 和 Qwen Code）见 [Agents API](../guide/agents-api.md)。基础镜像不预装这些 CLI；要用哪一个再安装哪一个，见模板 [`agents-cli`](../../examples/templates/agents-cli/README.md)。
+
+> 下文仍保留早期「模板内预装 Codex」的写法，用来说明语法糖设想。当前产品不把 Codex 和 Qwen Code 一起打进基础镜像。
 
 ---
 

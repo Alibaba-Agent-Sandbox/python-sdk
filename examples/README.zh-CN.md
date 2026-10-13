@@ -9,24 +9,26 @@
 ### 1. 安装 SDK
 
 ```bash
-# 完整安装（推荐，包含 CLI + 声明式装饰器）
+# 完整安装（推荐，包含声明式装饰器、MCP 服务等）
 pip install "easy-sandbox[all]"
 
 # 或按需安装
-pip install "easy-sandbox[cli]"           # 仅 CLI
 pip install "easy-sandbox[declarative]"   # 仅 @sandbox 装饰器
 
-# 从源码安装
-pip install -e .
+# 从源码安装（在 python-sdk 仓库根目录执行）
+pip install -e ./server-sdk -e ./client-sdk
+
+# ebx CLI 是独立的 Node.js 项目（`cli` 仓库）
+npm install -g @easy-sandbox/cli
 ```
 
 ### 2. 配置凭证
 
 ```bash
 # 方式一：环境变量
-export E2B_API_KEY="your-api-key"
+export EBX_SANDBOX_API_KEY="your-api-key"
 
-# 方式二：CLI 配置（持久化到 ~/.ebx/config.toml）
+# 方式二：CLI 配置（持久化到 ~/.ebx/config.toml；需安装 ebx CLI）
 ebx config set sandbox_api_key your-api-key
 
 # 如需运行 Codex Agent 示例，还需配置：
@@ -46,26 +48,24 @@ examples/
 │   ├── 04_data_analysis.py    # 数据分析 —— CSV 上传、pandas 分析
 │   └── 05_decorator_usage.py  # @sandbox 装饰器 —— 声明式远程执行
 ├── agents/                    # Agent 集成示例
-│   ├── codex_agent.py         # Codex Agent —— AI 代码生成与执行
-│   └── browser_automation.py  # 浏览器自动化 —— Playwright 爬取与截图
+│   ├── complete_case.py       # Agents API 完整案例（Codex + Qwen Code，无模型密钥）
+│   ├── hosted_codex.py        # Agents API 客户端（Codex）
+│   ├── hosted_qwen.py         # Agents API 客户端（Qwen Code）
+│   ├── local_files_and_session.py  # 本地服务 + 名为 codex 的本地程序，不需要模型密钥
+│   ├── codex_agent.py         # 云上 Codex 沙箱，需要提供方
+│   └── browser_automation.py  # 浏览器自动化，需要提供方
 ├── compat-demos/              # E2B/Modal 兼容层演示
 │   ├── e2b_data_analysis.py   # E2B 风格数据分析
 │   ├── e2b_web_scraper.py     # E2B 风格网页爬取
 │   ├── modal_compute.py       # Modal 风格科学计算
 │   ├── modal_data_analysis.py # Modal 风格数据分析
 │   └── comparison.py          # E2B vs Modal 风格对比
-└── templates/                 # 沙箱模板（Dockerfile + template.yaml）
+└── templates/                 # 离线夹具（发布真源是 awesome-templates）
     ├── python-hello/
-    ├── node-web/
-    ├── browser-automation/
-    ├── claude-code/
-    ├── codex/
-    ├── qoder/
-    ├── qwen-code/
-    ├── deepseek-harness/
-    ├── hermes-agent/
-    └── openclaw/
+    └── agents-cli/            # Codex / Qwen Code 的 Agents API，镜像不预装 CLI
 ```
+
+[`templates/python-hello/call_api.py`](templates/python-hello/call_api.py) 调用一个已经在运行的模板服务器（`GET /health`、`GET /capabilities`、`GET /commands`、一次上传、一次 shell）。基址来自命令行参数或 `EBX_TEMPLATE_URL`，令牌来自 `EBX_SERVER_TOKEN`。请求和响应形状见[模板服务器 HTTP API](../docs/zh/guide/template-server-api.md)（[English](../docs/en/guide/template-server-api.md)）。
 
 ## 示例列表
 
@@ -85,6 +85,10 @@ examples/
 |------|------|----------|
 | [`codex_agent.py`](agents/codex_agent.py) | **Codex Agent** —— AI 代码生成与执行 | AI 编程 |
 | [`browser_automation.py`](agents/browser_automation.py) | **浏览器自动化** —— Playwright 爬取与截图 | 网页爬取 |
+| [`complete_case.py`](agents/complete_case.py) | **Agents API 完整案例** —— 本地服务，Codex 与 Qwen Code，不需要模型密钥 | Agents API |
+| [`hosted_codex.py`](agents/hosted_codex.py) | **托管 Codex 客户端** —— 对着已经启动的服务开一个会话 | Agents API |
+| [`hosted_qwen.py`](agents/hosted_qwen.py) | **托管 Qwen 客户端** —— 对着已经启动的服务开一个会话 | Agents API |
+| [`local_files_and_session.py`](agents/local_files_and_session.py) | **文件加一个 Codex 会话** —— 本地服务，`PATH` 上名为 `codex` 的本地程序，无 API key | Agents API |
 
 ### compat-demos/ —— 兼容层演示
 

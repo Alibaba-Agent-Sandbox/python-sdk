@@ -4,8 +4,9 @@
 `127.0.0.1` and an ephemeral port, then sends HTTP from a separate client. A raw socket is used
 only for `GET /v1/responses` with `Upgrade: websocket`. Handlers are not called in-process.
 
-No cloud credentials, API keys, or real `codex` / `qwen` binaries. The process gets fake `codex`
-and `qwen` shell scripts on `PATH` (one JSON line, exit 0) and `EBX_SERVER_ENABLED_GROUPS=agents`.
+No cloud credentials, API keys, or the published `codex` / `qwen` binaries. The process
+puts local programs named `codex` and `qwen` on `PATH` (each prints one JSON line) and
+sets `EBX_SERVER_ENABLED_GROUPS=agents`.
 `PYTHONPATH` is `server-sdk/src`. Traffic stays on localhost.
 
 ## Run
@@ -20,7 +21,7 @@ PYTHONPATH=../server-sdk/src python3 -m pytest test_server_http_e2e.py --noconft
 
 The subprocess is `sys.executable -m easy_sandbox.server serve` (the same interpreter that runs pytest).
 
-## Skip instead of a fake pass
+## Skipped cases
 
 - `GET /v1/responses` with a WebSocket upgrade that still returns **400** is skipped, and the skip
   text includes that status.

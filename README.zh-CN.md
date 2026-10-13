@@ -35,7 +35,7 @@ Node.js 项目，位于 [`cli`](https://github.com/Easy-Sandbox/easy-sandbox) �
 - **声明式装饰器** —— `@sandbox` 将普通函数变为远程沙箱执行，自动序列化。
 - **会话持久化** —— 跨运行保存和恢复沙箱状态。
 - **E2B 兼容层** —— 已使用 E2B SDK 的项目可直接替换。
-- **Agents API** —— 沙箱内 HTTP 会话，只接 Codex 和 Qwen Code。CLI 按需安装，不打进基础镜像。说明和完整案例见 [Agents API](docs/zh/guide/agents-api.md)。
+- **Agents API** —— 沙箱内 HTTP 会话。目前支持 Codex 和 Qwen Code。CLI 按需安装，不打进基础镜像。说明和完整案例见 [Agents API](docs/zh/guide/agents-api.md)。
 
 ## 安装
 

@@ -6,7 +6,7 @@
 python3 examples/scenarios/agent_loop_local.py
 ```
 
-2026-10-12 这次运行的真实输出（退出码 0）。端口每次不同。
+示例输出。端口在运行时选择。
 
 ```text
 step 1  create
@@ -26,18 +26,11 @@ step 4  kill
 
 `return -15` 表示进程组收到了 SIGTERM（信号 15）。
 
-同一组检查也在 `e2e/test_client_sdk_local_e2e.py`。2026-10-12：
-
-```text
-e2e/test_client_sdk_local_e2e.py::test_health PASSED
-e2e/test_client_sdk_local_e2e.py::test_write_and_read_file_under_base_dir PASSED
-e2e/test_client_sdk_local_e2e.py::test_shell_stdout PASSED
-3 passed in 0.37s
-```
+同一组检查在 `e2e/test_client_sdk_local_e2e.py`。
 
 ## Modal 风格示例
 
-`examples/compat-demos/modal_compute.py` 和 `modal_data_analysis.py` 用 `@sandbox` 调云上沙箱（`code-interpreter-v1`）。这次没有跑它们，因为需要可用的云端 API。装饰器的本地路径由 `client-sdk/tests/integration/test_declarative_register_e2e.py` 和 `test_workflow_e2e.py` 覆盖，它们会启动真实的服务进程。
+`examples/compat-demos/modal_compute.py` 和 `modal_data_analysis.py` 用 `@sandbox` 调云上沙箱（`code-interpreter-v1`）。它们需要 `EBX_SANDBOX_API_KEY`。装饰器的本地路径由 `client-sdk/tests/integration/test_declarative_register_e2e.py` 和 `test_workflow_e2e.py` 覆盖，它们会启动真实的服务进程。
 
 ## 要设置的变量
 

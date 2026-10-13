@@ -9,24 +9,26 @@ This directory contains complete usage examples for the Easy Sandbox SDK, coveri
 ### 1. Install the SDK
 
 ```bash
-# Full install (recommended — includes CLI + declarative decorator)
+# Full install (recommended — includes the declarative decorator, MCP server, ...)
 pip install "easy-sandbox[all]"
 
 # Or install selectively
-pip install "easy-sandbox[cli]"           # CLI only
 pip install "easy-sandbox[declarative]"   # @sandbox decorator only
 
-# From source
-pip install -e .
+# From source (run from the python-sdk repository root)
+pip install -e ./server-sdk -e ./client-sdk
+
+# The ebx CLI is a separate Node.js project (the `cli` repository)
+npm install -g @easy-sandbox/cli
 ```
 
 ### 2. Configure Credentials
 
 ```bash
 # Option 1: Environment variable
-export E2B_API_KEY="your-api-key"
+export EBX_SANDBOX_API_KEY="your-api-key"
 
-# Option 2: CLI config (persisted to ~/.ebx/config.toml)
+# Option 2: CLI config (persisted to ~/.ebx/config.toml; requires the ebx CLI)
 ebx config set sandbox_api_key your-api-key
 
 # For the Codex Agent example, also set:
@@ -46,16 +48,20 @@ examples/
 │   ├── 04_data_analysis.py    # Data analysis — CSV upload, pandas analysis
 │   └── 05_decorator_usage.py  # @sandbox decorator — declarative remote execution
 ├── agents/                    # Agent integration examples
-│   ├── codex_agent.py         # Codex Agent — AI code generation & execution
-│   └── browser_automation.py  # Browser automation — Playwright scraping & screenshots
+│   ├── codex_agent.py         # Cloud Codex sandbox — needs a provider and OPENAI_API_KEY
+│   ├── browser_automation.py  # Browser automation — needs a provider
+│   ├── hosted_codex.py        # Agents API client for a server that is already up
+│   ├── hosted_qwen.py         # Agents API client for Qwen Code
+│   └── local_files_and_session.py  # Local server, local codex program, no model key
 ├── compat-demos/              # E2B/Modal compatibility demos
 │   ├── e2b_data_analysis.py   # E2B-style data analysis
 │   ├── e2b_web_scraper.py     # E2B-style web scraping
 │   ├── modal_compute.py       # Modal-style scientific computing
 │   ├── modal_data_analysis.py # Modal-style data analysis
 │   └── comparison.py          # E2B vs Modal style comparison
-└── templates/                 # Offline test fixture (NOT the publishing source)
-    └── python-hello/          # Publishable templates: github.com/Easy-Sandbox/awesome-templates
+└── templates/                 # Offline fixtures (NOT the publishing source)
+    ├── python-hello/          # Publishable templates: github.com/Easy-Sandbox/awesome-templates
+    └── agents-cli/            # Agents API for Codex and Qwen Code; CLIs are not preinstalled
 ```
 
 > `templates/` keeps only the minimal `python-hello` **fixture** used by offline
@@ -63,6 +69,8 @@ tests.  Official & community templates — content, index (`awesome-templates.ya
 releases and CI — live in the single-source-of-truth repository
 [`Easy-Sandbox/awesome-templates`](https://github.com/Easy-Sandbox/awesome-templates);
 discover and install them with `ebx template search` / `ebx template install <name>`.
+
+[`templates/python-hello/call_api.py`](templates/python-hello/call_api.py) talks to a server that is already running (`GET /health`, `GET /capabilities`, `GET /commands`, one upload, one shell). The base URL comes from argv or `EBX_TEMPLATE_URL`; the token comes from `EBX_SERVER_TOKEN`. Request and response shapes are in the [template server HTTP API](../docs/en/guide/template-server-api.md) guide ([中文](../docs/zh/guide/template-server-api.md)).
 
 ## Example Catalog
 
@@ -82,6 +90,10 @@ discover and install them with `ebx template search` / `ebx template install <na
 |------|-------------|----------|
 | [`codex_agent.py`](agents/codex_agent.py) | **Codex Agent** — AI code generation & execution | AI programming |
 | [`browser_automation.py`](agents/browser_automation.py) | **Browser automation** — Playwright scraping & screenshots | Web scraping |
+| [`complete_case.py`](agents/complete_case.py) | **Complete Agents API case** — local server, Codex and Qwen Code, no model key | Agents API |
+| [`hosted_codex.py`](agents/hosted_codex.py) | **Hosted Codex client** — one session against a server you already started | Agents API |
+| [`hosted_qwen.py`](agents/hosted_qwen.py) | **Hosted Qwen client** — one session against a server you already started | Agents API |
+| [`local_files_and_session.py`](agents/local_files_and_session.py) | **Files plus one Codex session** — local server, a local program named `codex` on `PATH`, no API key | Agents API |
 
 ### compat-demos/ — Compatibility Layer
 

@@ -268,7 +268,7 @@ def run_app():
 
 ## 范式三：内置 Agent 模式
 
-这一节是 `sb.agent.*` 的设计稿，不是 Agents API。Agents API 是沙箱里的 HTTP 会话（`/v1/agents/sessions`），只接 Codex 和 Qwen Code，CLI 按需安装。用法和完整案例见 [Agents API](../guide/agents-api.md)。
+这一节是 `sb.agent.*` 的设计稿，不是 Agents API。Agents API 是沙箱里的 HTTP 会话（`/v1/agents/sessions`）。目前支持 Codex 和 Qwen Code，CLI 按需安装。用法和完整案例见 [Agents API](../guide/agents-api.md)。
 
 全新设计 — SDK 内置预配置的 AI Agent，一行代码完成复杂任务。
 

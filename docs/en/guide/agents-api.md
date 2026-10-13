@@ -1,6 +1,6 @@
 # Agents API
 
-HTTP sessions inside the sandbox. This slice hosts **Codex** and **Qwen Code** only. The base image does not install either CLI. Install the one you are about to call.
+HTTP sessions inside the sandbox. Codex and Qwen Code are supported today. The base image does not install either CLI. Install the one you are about to call.
 
 This is not the [built-in agent design](../design/built-in-agents.md). That page is `sb.agent.*`, sugar over `commands.run()`. The Agents API is a different set of routes: `/v1/agents/sessions`.
 
@@ -17,7 +17,7 @@ npm install -g @qwen-code/qwen-code   # binary name: qwen
 
 Codex reads `OPENAI_API_KEY` or `CODEX_API_KEY` when it actually calls a model. Qwen Code reads `OPENAI_API_KEY`. Inject the key when the sandbox is created. Do not bake it into the image, and do not put it in the case below.
 
-The [agents-cli](https://github.com/Easy-Sandbox/awesome-templates/tree/main/agents-cli) template only turns the `agents` group on. Its Dockerfile leaves the one `npm install` line for you to add.
+The [agents-cli](https://github.com/Easy-Sandbox/awesome-templates/tree/main/agents-cli) template does not turn on `file_ops` or `process`. `groups.agents: true` is only the gate. `endpoints` sets `*` to `enabled: false`, then turns on `agents_sessions_create`, `agents_sessions_events_create`, `agents_sessions_items_list`, and `agents_runtimes_list` one by one. `POST /shell` and `POST /v1/agents` (definitions) stay 404. The Dockerfile leaves the one `npm install` line for the CLI you call.
 
 ## Not the built-in agent API
 
@@ -30,13 +30,13 @@ The [agents-cli](https://github.com/Easy-Sandbox/awesome-templates/tree/main/age
 
 ## Complete case
 
-The case starts a local server and puts two stand-in programs named `codex` and `qwen` on `PATH`. It does not read a model key. The stand-ins prove the HTTP session. After the `npm install` lines above, the same requests run the real CLIs.
+The case starts a local server and places programs named `codex` and `qwen` on `PATH` so the requests and responses can be shown without a model key. After the `npm install` lines above, the same requests run the real CLIs.
 
 ```bash
 python examples/agents/complete_case.py
 ```
 
-Ran locally on 2026-10-13, exit code 0. The transcript below keeps the stable parts. Session ids change every run.
+The shapes below are what the server returns. The server assigns the session id.
 
 A model id such as `gpt-5` does not select a CLI:
 
@@ -46,7 +46,7 @@ X-Easy-Sandbox-Local: 1
 code: agents.adapter_required
 ```
 
-`claude-code` is outside this slice:
+An adapter name that is not supported today, for example `claude-code`:
 
 ```text
 POST /v1/agents/sessions  adapter=claude-code  404
@@ -56,7 +56,7 @@ code: agents.not_implemented_locally
 message: adapter 'claude-code' is not available in this slice (codex, qwen-code)
 ```
 
-`GET /v1/agents/runtimes` lists only `codex` and `qwen-code`, each with `install_steps` (`npm install -g ...`). `installed` is whether that binary is on this process's `PATH` right now.
+`GET /v1/agents/runtimes` currently returns `codex` and `qwen-code`, each with `install_steps` (`npm install -g ...`). `installed` is whether that binary is on this process's `PATH`.
 
 One Codex turn:
 
