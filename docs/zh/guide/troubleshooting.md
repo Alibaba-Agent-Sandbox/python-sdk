@@ -1,6 +1,6 @@
 # 常见问题（FAQ）
 
-> **说明：** 本页出现的 `ebx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @easy-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`easy-sandbox`）与容器侧运行时（`easy-sandbox-server`）。
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox`）与容器侧运行时（`agent-sandbox-server`）。
 
 ---
 
@@ -22,14 +22,14 @@
 
 2. **检查超时配置**：增大 HTTP 超时
    ```bash
-   ebx config set http_timeout 60
+   abx config set http_timeout 60
    ```
 
 3. **检查代理**：如果在代理环境中，确保 `https_proxy` 正确配置
 
 4. **检查区域**：确认区域设置正确
    ```bash
-   ebx config get region
+   abx config get region
    ```
 
 ---
@@ -40,19 +40,19 @@
 
 ```text
 [E1001] API key cannot be empty
-  Suggestion: Check your E2B_API_KEY environment variable or pass api_key parameter.
+  Suggestion: Check your ABX_SANDBOX_API_KEY environment variable or pass sandbox_api_key.
 ```
 
 **解决**：
 ```bash
 # 检查配置状态
-ebx config get sandbox_api_key
+abx config get sandbox_api_key
 
 # 重新设置 API Key
-ebx config set sandbox_api_key your-api-key
+abx config set sandbox_api_key your-api-key
 
 # 或设置环境变量
-export E2B_API_KEY="your-api-key"
+export ABX_SANDBOX_API_KEY="your-api-key"
 ```
 
 ### E1003 — AK/SK 凭证无效
@@ -83,7 +83,7 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 
 ```text
 [E2001] Template 'my-template' not found
-  Suggestion: Run 'ebx template list' to see available templates.
+  Suggestion: Run 'abx template list' to see available templates.
 ```
 
 **解决**：
@@ -91,11 +91,11 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 1. 检查模板名称拼写
 2. 确认模板已安装：
    ```bash
-   ebx template install owner/repo
+   abx template install owner/repo
    ```
 3. 使用默认模板测试：
    ```bash
-   ebx create --template base
+   abx create --template base
    ```
 
 ### E2009 — SandboxNotFoundError
@@ -106,7 +106,7 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 
 对该 ID 调用 `Sandbox.connect()`、`get_info()`、`set_timeout()`、`pause()` 或 `resume()` 时，平台返回了 HTTP 404。
 
-**解决**：检查 ID 拼写，运行 `ebx list` 查看运行中的沙箱。已销毁或已过期的沙箱无法重新连接，请重新创建。对未知 ID 调用 `kill()` 仍保持幂等，不会抛出异常。
+**解决**：检查 ID 拼写，运行 `abx list` 查看运行中的沙箱。已销毁或已过期的沙箱无法重新连接，请重新创建。对未知 ID 调用 `kill()` 仍保持幂等，不会抛出异常。
 
 ---
 
@@ -121,7 +121,7 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 
 ### 解释
 
-Easy Sandbox 使用能力模型控制沙箱功能。每个能力需要在模板中显式声明：
+Agent Sandbox 使用能力模型控制沙箱功能。每个能力需要在模板中显式声明：
 
 | 能力 | 默认包含 | 需要显式声明 |
 |------|----------|-------------|
@@ -163,13 +163,13 @@ capabilities:
 
 ```bash
 # 查看运行中的沙箱
-ebx list --status running
+abx list --status running
 
 # 销毁不需要的沙箱
-ebx kill sbx-xxxx
+abx kill sbx-xxxx
 
 # 批量销毁
-ebx kill --all --yes
+abx kill --all --yes
 ```
 
 ---
@@ -190,33 +190,14 @@ ebx kill --all --yes
 result = await sandbox.commands.run("long-command", timeout=300)
 
 # CLI 中增加超时
-ebx exec sbx-xxxx "long-command" --timeout 300
+abx exec sbx-xxxx "long-command" --timeout 300
 ```
 
 ---
 
-## 部署相关
+## 构建与部署相关
 
-### E7001 — 缺少 LLM Key
-
-> 仅 SDK 的 `Sandbox.deploy()` 会抛出。`ebx deploy` 不需要 LLM Key；CLI 的 AI 步骤（`ebx create "..."`、`ebx template init "..."`、`ebx template init --adopt`）使用 `ebx config` 中的 Qwen Code 凭据。
-
-```text
-[E7001] No LLM API key found for the qwen-code agent.
-  Suggestion: Set BAILIAN_CODING_PLAN_API_KEY, DASHSCOPE_API_KEY, or OPENAI_API_KEY environment variable.
-```
-
-**解决**：设置任一 LLM API Key：
-
-```bash
-export DASHSCOPE_API_KEY="your-key"
-# 或向 Sandbox.deploy(...) 传入 llm_api_key=
-# CLI（create / template init）：ebx config set llm_api_key your-key
-```
-
-### E7003 — 部署超时
-
-**解决**：增加 `max_wall_time` 参数或简化部署任务。
+构建、推送、部署的错误（`E7xxx` 错误码，以及 `abx create` / `abx template init` 缺少 LLM Key）由 `abx` CLI 抛出，不属于这个 SDK。见 CLI 的排障指南和[构建与部署](build-and-deploy.md)。
 
 ---
 
@@ -246,10 +227,10 @@ entries = await sandbox.files.list("/home/user")
 
 ```bash
 # 确保使用正确的包名
-pip install easy-sandbox
+pip install agent-sandbox
 
 # 如果遇到依赖冲突
-pip install easy-sandbox --force-reinstall
+pip install agent-sandbox --force-reinstall
 ```
 
 ### Python SDK 未找到
@@ -257,9 +238,9 @@ pip install easy-sandbox --force-reinstall
 确认 Python 的 bin 目录在 PATH 中：
 
 ```bash
-python -m easy_sandbox --version
+python -m agent_sandbox --version
 # 或
-pip show easy-sandbox | grep Location
+pip show agent-sandbox | grep Location
 ```
 
 ---
@@ -272,6 +253,6 @@ pip show easy-sandbox | grep Location
 
 ---
 
-## 相关：ebx CLI
+## 相关：abx CLI
 
-CLI 特有的问题（找不到 `ebx`、`ebx deploy` 没有 Dockerfile、部署步骤长时间无输出、无效的快捷方式目标、`ebx template init --adopt` 确认提示）见 CLI 仓库：[故障排查（CLI）](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/troubleshooting.md)。
+CLI 特有的问题（找不到 `abx`、`abx deploy` 没有 Dockerfile、部署步骤长时间无输出、无效的快捷方式目标、`abx template init --adopt` 确认提示）见 CLI 仓库：[故障排查（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/troubleshooting.md)。

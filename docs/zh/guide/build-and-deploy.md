@@ -1,179 +1,37 @@
-# 构建与部署（SDK）
+# 构建与部署
 
-Python SDK 提供两种在代码中构建与部署沙箱镜像的方式：**沙箱内 Agent 部署**（`Sandbox.deploy()`）和 **`Image` 链式构建**。
+Python SDK（`agent-sandbox`）是**运行时**客户端：创建、使用、销毁沙箱。它不构建镜像，也不注册模板。模板的构建和部署由 `abx` CLI 负责。
 
-> 通过命令行发布模板（`ebx template init` → `ebx deploy` → `ebx create`）属于 CLI 工作流，见 CLI 的[部署与构建](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/deploy-and-build.md)指南。
+| 步骤 | 命令 | 说明 |
+|------|------|------|
+| 编写 | `abx template init` | 生成 `Dockerfile`、`template.yaml`、`commands.py` |
+| 构建 | `abx template build` | 对模板目录执行 `docker build` |
+| 发布 | `abx template deploy`（或 `abx deploy`） | 构建、推送到阿里云 ACR、注册模板、等待就绪 |
+| 启动 | `abx create --template <TEMPLATE_ID>` 或 `Sandbox.create(template=...)` | 运行时；SDK 从这里开始 |
 
----
+完整流程、全部选项和 AI 辅助编写步骤见 CLI 的[部署与构建](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/deploy-and-build.md)指南。
 
-## Sandbox.deploy（仅 SDK）
-
-`Sandbox.deploy()` 会启动 `qwen-code` 模板沙箱、上传项目，由沙箱内的 Agent 分析、安装依赖、构建并启动服务。仅提供 Python API。
-
-Agent 会自动：
-1. 创建 `qwen-code` 模板的沙箱（默认 2 CPU / 4096MB 内存）
-2. 上传项目目录
-3. 分析项目结构和依赖
-4. 安装依赖并构建
-5. 启动服务
-
-### 用法
+## 在 Python 里使用结果
 
 ```python
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox import Sandbox
 
-sandbox = await Sandbox.deploy(
-    project_path="./my-flask-app",
-    description="部署这个 Flask 应用到 8080 端口",
-    max_wall_time="10m",         # agent 最大运行时间（默认 10m）
-    max_session_turns=100,       # qwen-code 会话轮次上限（默认 100）
-    timeout=900,                 # 沙箱超时秒数（默认 900）
-    cpu=2,                       # CPU 核数（默认 2）
-    memory=4096,                 # 内存 MB（默认 4096）
-    on_progress=lambda msg: print(f"[进度] {msg}"),
-)
-
-# sandbox 仍在运行，可继续操作
-print(f"沙箱 ID: {sandbox.id}")
-print(f"部署结果: {sandbox._deploy_result}")
+async with await Sandbox.create(template="<TEMPLATE_ID 或别名>") as sandbox:
+    print(await sandbox.run("hello", name="Ada"))      # 注册在模板 server 里的命令
+    proc = await sandbox.commands.run("python3 --version")
 ```
 
-### LLM Key 配置
+带 `agent-sandbox-server` 的模板见[编写模板](authoring-templates.md)和[模板服务器 HTTP API](template-server-api.md)。
 
-`Sandbox.deploy()`（不是 `ebx deploy`）依赖 LLM API Key，SDK 按以下顺序查找：
+## 有什么变化
 
-1. `llm_api_key=` 参数
-2. 进程环境变量：`EBX_LLM_API_KEY`，然后 `BAILIAN_CODING_PLAN_API_KEY`、`DASHSCOPE_API_KEY`、`OPENAI_API_KEY`，然后旧的 `EBX_QWEN_CODE_API_KEY`
-3. `./.env` 里的同名变量
-4. `ebx config set llm_api_key` 保存的 `EBX_LLM_API_KEY`（`~/.ebx/.env`）
-
-地址和模型走同样的层次（`openai_base_url=` / `openai_model=`，然后 `EBX_LLM_BASE_URL` / `OPENAI_BASE_URL` 与 `EBX_LLM_MODEL` / `OPENAI_MODEL`，然后 `./.env` 里的同名变量，然后 `~/.ebx/config.toml`）。空白值不算已配置。完整表见 [凭证解析](../reference/configuration.md#凭证解析)。
-
-若未找到密钥，抛出 `DeployLLMKeyMissingError`（E7001）。`ebx deploy` 不会抛出它。
-
----
-
-## Image 链式 API
-
-`Image` 类提供类似 Modal 的链式 API，用于声明式构建 Docker 镜像。
-
-### 基础用法
-
-```python
-from easy_sandbox.api.image import Image
-
-image = (
-    Image.from_template("python-base")
-    .pip_install("flask", "sqlalchemy")
-    .apt_install("postgresql-client")
-    .env(DATABASE_URL="postgresql://localhost/mydb")
-    .run_command("echo 'setup complete'")
-)
-```
-
-### 从 Docker 镜像开始
-
-```python
-image = (
-    Image.from_image("python:3.11-slim")
-    .pip_install("pandas", "matplotlib")
-    .workdir("/app")
-    .expose(8080)
-    .entrypoint("python app.py")
-)
-```
-
-### 链式方法
-
-| 方法 | 说明 |
-|------|------|
-| `Image.from_template(name)` | 基于已有模板 |
-| `Image.from_image(ref)` | 基于 Docker 镜像 |
-| `.pip_install(*pkgs)` | 安装 pip 包 |
-| `.apt_install(*pkgs)` | 安装系统包 |
-| `.copy_local(src, dst)` | 复制本地文件 |
-| `.env(**kv)` | 设置环境变量 |
-| `.run_command(cmd)` | 构建时执行命令 |
-| `.workdir(path)` | 设置工作目录 |
-| `.expose(*ports)` | 暴露端口 |
-| `.entrypoint(cmd)` | 设置入口命令 |
-
-### 生成 Dockerfile
-
-```python
-dockerfile = image.to_dockerfile()
-print(dockerfile)
-# FROM python-base
-# RUN pip install --no-cache-dir flask sqlalchemy
-# RUN apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*
-# ENV DATABASE_URL=postgresql://localhost/mydb
-# RUN echo 'setup complete'
-```
-
-### 构建为模板
-
-```python
-template_info = await image.build(
-    alias="my-flask-app",  # 模板别名
-    timeout=600,           # 构建超时秒数
-    cpu_count=2,           # 默认 CPU
-    memory_mb=4096,        # 默认内存
-    start_cmd="python app.py",  # 启动命令
-)
-
-print(f"Template ID: {template_info.template_id}")
-print(f"Build status: {template_info.build_status.value}")
-
-# 使用构建的模板创建沙箱
-sandbox = await Sandbox.create(template=template_info.template_id)
-```
-
-### 与 @sandbox 装饰器结合
-
-```python
-from easy_sandbox.declarative import sandbox
-from easy_sandbox.api.image import Image
-
-image = Image.from_template("python-base").pip_install("flask")
-
-@sandbox(image=image)
-def my_app():
-    from flask import Flask
-    return "Flask ready"
-```
-
-`image` 参数优先于 `template` 参数。
-
----
-
-## Docker 构建流程
-
-Image 构建的内部流程：
-
-1. **生成 Dockerfile**：`image.to_dockerfile()` 将链式调用转换为 Dockerfile
-2. **创建 HTTP 客户端**：使用配置的认证凭证
-3. **调用 TemplateManager.build()**：上传 Dockerfile 到平台
-4. **等待构建完成**：轮询构建状态直到 `ready` 或 `error`
-5. **返回 TemplateInfo**：包含 `template_id` 和构建状态
-
-### 构建相关错误
-
-| 错误 | 错误码 | 场景 |
-|------|--------|------|
-| `TemplateBuildError` | E7010 | 模板构建失败 |
-| `TemplateBuildTimeoutError` | E7011 | 构建超时 |
-| `DockerBuildError` | E7020 | 本地 Docker 构建失败 |
-| `ACRPushError` | E7021 | 推送到 ACR 失败 |
-| `ACRLoginError` | E7022 | ACR 登录失败 |
-
----
+早期的 SDK 自带一套构建流水线（`Sandbox.deploy`、`Image`、`DockerBuilder`、`TemplateManager`、`[alicloud]` extra 和 E7xxx 构建错误码）。它们已删除：一条流水线，一个工具。如果你的代码调用过它们，换成上面的 CLI 命令（脚本里可以运行 `abx template deploy --yes`）。
 
 ## 下一步
 
 - [编写模板](authoring-templates.md) — 通过 template.yaml 定义模板
-- [SDK 使用指南](sdk-usage.md) — SDK 完整用法
-- [API 参考](../reference/api-reference.md) — Image 类 API 详情
+- [SDK 使用指南](sdk-usage.md) — SDK 的运行时用法
 
-## 相关：ebx CLI
+## 相关：abx CLI
 
-命令行模板生命周期（`ebx deploy`、`ebx template deploy`）记录在 [`cli` 仓库](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/deploy-and-build.md)中。
+命令行的模板生命周期记录在 [`cli` 仓库](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/deploy-and-build.md)。

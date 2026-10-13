@@ -15,7 +15,7 @@ my-template/
 └── ...
 ```
 
-安装后位于 `~/.ebx/templates/<template-name>/template.yaml`。
+安装后位于 `~/.abx/templates/<template-name>/template.yaml`。
 
 ---
 
@@ -73,44 +73,21 @@ my-template/
 - 显式列表 → 仅启用列出的能力（可以是标准能力集的子集或超集）
 - 列表中的值必须是标准能力集中的项，否则校验失败（抛出 `TemplateParseError` E2004）
 
-### 自定义命令
+### 已移除的键：`custom_commands`
 
-| 字段 | 类型 | 必须 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `custom_commands` | `dict[str, Command]` | ❌ | `{}` | 命名命令映射 |
-
-**Command 结构**：
-
-| 字段 | 类型 | 必须 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `cmd` | `str` | ✅ | — | Shell 命令模板，支持 `{placeholder}` 令牌 |
-| `description` | `str` | ❌ | `""` | 命令描述 |
-| `cwd` | `str` | ❌ | `"/app"` | 工作目录 |
-| `timeout` | `int` | ❌ | `60` | 超时秒数 |
-| `env` | `dict[str, str]` | ❌ | `{}` | 命令特定的环境变量 |
-| `args` | `list[Arg]` | ❌ | `[]` | 参数定义列表 |
-
-**Arg 结构**：
-
-| 字段 | 类型 | 必须 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `name` | `str` | ✅ | — | 参数名（对应 `cmd` 中的 `{name}` 占位符） |
-| `type` | `str` | ❌ | `"string"` | 类型：`string` / `integer` / `float` / `boolean` |
-| `required` | `bool` | ❌ | `false` | 是否必需 |
-| `default` | `str \| null` | ❌ | `null` | 默认值（字符串形式） |
-| `description` | `str` | ❌ | `""` | 参数描述 |
+`custom_commands` 不是 `template.yaml` 的键。客户端会拒绝包含它的文件（`TemplateParseError`，E2004）。命名命令只有一种机制：注册在模板 server 里的函数（`commands.py` 中的 `@sandbox.register`），用 `sandbox.run(name, **kwargs)` 或 `abx run <id> <name>` 调用。见[编写模板](../guide/authoring-templates.md#注册命令)。
 
 ### 服务端策略（`server`）
 
 可选。声明模板对外暴露哪些 SandboxServer 端点以及各端点的限制（设计见
 [细粒度能力管理](../design/fine-grained-capabilities.md)）。省略即保持服务端默认行为。`SandboxTemplate` 会对该块做结构校验（未知键报错）；
-取值由 `easy-sandbox-server check-config` 校验。工具链会把它编译为 `/etc/easy-sandbox/server-policy.json`，服务端启动时自动加载。
+取值由 `agent-sandbox-server check-config` 校验。工具链会把它编译为 `/etc/agent-sandbox/server-policy.json`，服务端启动时自动加载。
 
 | 键 | 类型 | 说明 |
 |----|------|------|
 | `preset` | `str` | `default`、`transfer-only`、`read-only`、`hardened`、`locked` |
 | `base_dir` | `str` | 相对路径的根目录，也是默认的路径边界 |
-| `groups` | `map[str, bool]` | 启用/禁用能力组（`file_ops`、`process` 等） |
+| `groups` | `list[str]` 或 `map[str, bool]` | 打开能力组（`[agents, dev_tools]`），或开/关（`{process: false}`）。组是它的端点 id 的别名 |
 | `defaults` | 规则 | 先于各端点自身规则应用于所有端点 |
 | `endpoints` | `map[str, 规则]` | 以端点 id 为键的逐端点规则（`files_download_stream`、`shell` 等） |
 | `auth` | map | `tokens`（`id`、`scopes`、`token_env` 或 `token_sha256`）、`allow_anonymous`、`anonymous_scopes`、`legacy_scopes` |
@@ -137,7 +114,7 @@ server:
 name: flask-web
 version: "2.0.0"
 description: "Flask Web 开发环境"
-author: "Easy Sandbox Team"
+author: "Agent Sandbox Team"
 license: "MIT"
 tags:
   - python
@@ -162,42 +139,10 @@ capabilities:
   - terminal
   - ports
 
-custom_commands:
-  dev:
-    cmd: "flask run --host=0.0.0.0 --port={port}"
-    description: "启动 Flask 开发服务器"
-    cwd: "/app"
-    timeout: 0
-    env:
-      FLASK_DEBUG: "1"
-    args:
-      - name: port
-        type: string
-        required: false
-        default: "5000"
-        description: "监听端口"
-
-  test:
-    cmd: "python -m pytest {path} -v --tb=short"
-    description: "运行 pytest 测试"
-    cwd: "/app"
-    timeout: 120
-    args:
-      - name: path
-        type: string
-        required: false
-        default: "tests/"
-        description: "测试文件路径"
-
-  migrate:
-    cmd: "flask db upgrade"
-    description: "执行数据库迁移"
-    cwd: "/app"
-    timeout: 60
 ```
 
 ---
 
 ## 构建说明
 
-`template.yaml` 只定义运行时配置（能力、命令、环境变量、资源）。镜像构建完全由模板目录中的 `Dockerfile` 负责，使用语言原生依赖文件（`requirements.txt` / `package.json`）管理依赖。
+`template.yaml` 只定义运行时配置（能力、server 策略、环境变量、资源）。镜像构建完全由模板目录中的 `Dockerfile` 负责，使用语言原生依赖文件（`requirements.txt` / `package.json`）管理依赖。

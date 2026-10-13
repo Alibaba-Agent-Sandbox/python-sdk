@@ -3,16 +3,16 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "easy-sandbox"
+name = "agent-sandbox"
 dynamic = ["version"]
-description = "Easy Sandbox SDK — Create, manage, and interact with cloud sandboxes for AI agents"
+description = "Agent Sandbox SDK — Create, manage, and interact with cloud sandboxes for AI agents"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
 authors = [
     { name = "Anycodes" },
 ]
-keywords = ["sandbox", "easy", "ai", "agent", "cloud", "e2b"]
+keywords = ["sandbox", "ai", "agent", "cloud", "alibaba-cloud"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -30,10 +30,14 @@ dependencies = [
     "websockets>=12.0",
     "pydantic>=2.0",
     "python-dotenv>=1.0",
+    # Lock-step release: the container-side runtime (``agent_sandbox.server``) used to ship inside
+    # ``agent-sandbox`` itself, so it stays a hard dependency. Keep the pin equal to ``_version.py``.
+    "agent-sandbox-server==0.3.0",
 ]
 
 [project.optional-dependencies]
 mcp = [
+    "mcp>=1.0.0",
     "starlette>=0.37",
     "uvicorn>=0.29",
 ]
@@ -46,20 +50,14 @@ declarative = [
 session = [
     "filelock>=3.12",
 ]
-alicloud = [
-    "alibabacloud-fcsandbox20260509>=1.6.0",
-]
-# Container-side runtime (``easy_sandbox.server``), shipped as a separate
-# distribution (``python-sdk/server-sdk``) so sandbox images do not need the
-# client stack.  Needed locally by the ``@sandbox`` decorator's server proxy.
-server = [
-    "easy-sandbox-server",
-]
+# Alias kept for ``pip install "agent-sandbox[server]"``: ``agent-sandbox-server`` is now a hard
+# dependency of ``agent-sandbox``, so this extra adds nothing.
+server = []
 all = [
-    "easy-sandbox[fast,session,mcp,declarative,alicloud,server]",
+    "agent-sandbox[fast,session,mcp,declarative,server]",
 ]
 dev = [
-    "easy-sandbox[all]",
+    "agent-sandbox[all]",
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
     "pytest-httpx>=0.30",
@@ -70,22 +68,22 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Easy-Sandbox/easy-sandbox"
-Documentation = "https://github.com/Easy-Sandbox/easy-sandbox/tree/main/docs"
-Repository = "https://github.com/Easy-Sandbox/easy-sandbox"
-Issues = "https://github.com/Easy-Sandbox/easy-sandbox/issues"
-Changelog = "https://github.com/Easy-Sandbox/easy-sandbox/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/alibaba-agent-sandbox/python-sdk"
+Documentation = "https://github.com/alibaba-agent-sandbox/python-sdk/tree/main/docs"
+Repository = "https://github.com/alibaba-agent-sandbox/python-sdk"
+Issues = "https://github.com/alibaba-agent-sandbox/python-sdk/issues"
+Changelog = "https://github.com/alibaba-agent-sandbox/python-sdk/blob/main/CHANGELOG.md"
 
 [tool.hatch.version]
-path = "src/easy_sandbox/_version.py"
+path = "src/agent_sandbox/_version.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/easy_sandbox"]
+packages = ["src/agent_sandbox"]
 artifacts = ["py.typed"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "src/easy_sandbox/",
+    "src/agent_sandbox/",
     "tests/",
     "README.md",
     "LICENSE",
@@ -118,14 +116,10 @@ strict = true
 warn_return_any = true
 warn_unused_configs = true
 
-# Optional third-party dependencies that ship no type stubs (alicloud SDK)
-# or are only present as a fallback on older interpreters (tomli, used when
-# the stdlib ``tomllib`` is unavailable before Python 3.11).
+# ``tomli`` is only present as a fallback on older interpreters (the stdlib ``tomllib`` is
+# unavailable before Python 3.11).
 [[tool.mypy.overrides]]
 module = [
-    "alibabacloud_fcsandbox20260509",
-    "alibabacloud_fcsandbox20260509.*",
-    "alibabacloud_tea_openapi.*",
     "tomli",
 ]
 ignore_missing_imports = true

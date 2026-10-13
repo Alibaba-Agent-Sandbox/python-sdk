@@ -9,7 +9,7 @@ Shows how to install Playwright in a sandbox, scrape a web page, and capture scr
 import asyncio
 import os
 
-from easy_sandbox import Sandbox
+from agent_sandbox import Sandbox
 
 # Playwright 爬取脚本
 SCRAPER_SCRIPT = """\
@@ -68,7 +68,7 @@ asyncio.run(scrape())
 
 
 async def main() -> None:
-    api_key = os.environ.get("EBX_SANDBOX_API_KEY", "")
+    api_key = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
     # 使用 base 模板，因为需要手动安装 Playwright 和 Chromium。
     # 如果已部署了 browser-automation 模板，可直接使用 template="browser-automation"

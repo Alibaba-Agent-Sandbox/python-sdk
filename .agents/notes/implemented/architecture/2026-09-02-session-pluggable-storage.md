@@ -7,7 +7,7 @@ Session data (sandbox mapping, state) needs persistence across CLI invocations. 
 
 ## Decision
 Define `SessionStore` abstract base class with pluggable backends:
-1. **LocalSessionStore** (default) — filelock-based, `~/.ebx/sessions/`
+1. **LocalSessionStore** (default) — filelock-based, `~/.abx/sessions/`
 2. **OSSSessionStore** (Phase 2) — Alibaba Cloud OSS for team sharing
 3. **DatabaseSessionStore** (Phase 2) — SQL database for enterprise
 
@@ -22,7 +22,7 @@ class SessionStore(ABC):
     def delete(self, session_id: str) -> None: ...
     def exists(self, session_id: str) -> bool: ...
 
-class LocalSessionStore(SessionStore): ...   # filelock-based, ~/.ebx/sessions/
+class LocalSessionStore(SessionStore): ...   # filelock-based, ~/.abx/sessions/
 ```
 
 ## Alternatives considered
@@ -40,7 +40,7 @@ class LocalSessionStore(SessionStore): ...   # filelock-based, ~/.ebx/sessions/
 - Test session lifecycle (create → save → load → delete)
 
 ## Acceptance criteria
-- `LocalSessionStore` persists sessions under `~/.ebx/sessions/` using filelock
+- `LocalSessionStore` persists sessions under `~/.abx/sessions/` using filelock
 - The backend is selectable via config `session.backend = "local" | "oss" | "database"`
 - Swapping the storage backend requires no changes to caller code
 

@@ -1,6 +1,6 @@
 """Subprocess end-to-end coverage for the agents WebSocket and ``POST /v1/files``.
 
-Starts ``python -m easy_sandbox.server serve`` on ``127.0.0.1`` and talks to it
+Starts ``python -m agent_sandbox.server serve`` on ``127.0.0.1`` and talks to it
 from this process. Handlers are never called in-process.
 """
 
@@ -25,7 +25,7 @@ from websockets.sync.client import connect
 TOKEN = "test-token"
 SDK_ROOT = Path(__file__).resolve().parents[1]
 SERVER_SRC = SDK_ROOT / "server-sdk" / "src"
-BOUNDARY = "----ebxTestBoundary7MA4YWxkTrZu0gW"
+BOUNDARY = "----abxTestBoundary7MA4YWxkTrZu0gW"
 PAYLOAD = b"\x00\x01binary\r\nline2\r\n--not-a-boundary\xff\xfe" + bytes(range(32))
 
 CODEX_SCRIPT = """#!/bin/sh
@@ -40,9 +40,10 @@ exit 0
 class Live:
     """Base URL of the subprocess server."""
 
-    def __init__(self, base: str, port: int) -> None:
+    def __init__(self, base: str, port: int, root: Path) -> None:
         self.base = base
         self.port = port
+        self.root = root
 
 
 def _detail(status: int, raw: bytes) -> str:
@@ -76,7 +77,7 @@ def _wait_ready(base: str, proc: subprocess.Popen[bytes], log: Path) -> None:
 
 @pytest.fixture(scope="module")
 def live_server(tmp_path_factory: pytest.TempPathFactory) -> Any:
-    """Real ``python -m easy_sandbox.server serve`` on an ephemeral port."""
+    """Real ``python -m agent_sandbox.server serve`` on an ephemeral port."""
     root = tmp_path_factory.mktemp("agents-transport-e2e")
     bindir = root / "bin"
     bindir.mkdir()
@@ -88,26 +89,28 @@ def live_server(tmp_path_factory: pytest.TempPathFactory) -> Any:
     port = _free_port()
     env = os.environ.copy()
     env["PYTHONPATH"] = str(SERVER_SRC)
-    env["EBX_SERVER_ENABLED_GROUPS"] = "agents"
-    env["EBX_SERVER_TOKEN"] = TOKEN
-    env["EBX_SERVER_DISABLED_GROUPS"] = "terminal"
-    env["EBX_AGENTS_PERSIST"] = "0"
-    env["EBX_AGENTS_RESPONSES_WORKSPACE"] = str(responses)
+    env["ABX_SERVER_ENABLED_GROUPS"] = "agents"
+    env["ABX_SERVER_TOKEN"] = TOKEN
+    env["ABX_SERVER_BASE_DIR"] = str(root)
+    env["ABX_AGENTS_PERSIST"] = "0"
+    env["ABX_AGENTS_RESPONSES_WORKSPACE"] = str(responses)
     env["PATH"] = str(bindir) + os.pathsep + env.get("PATH", "")
-    env.pop("EBX_SERVER_POLICY", None)
-    env.pop("EBX_SERVER_POLICY_FILE", None)
+    env.pop("ABX_SERVER_POLICY", None)
+    env.pop("ABX_SERVER_POLICY_FILE", None)
     log = root / "server.log"
     log_fh = log.open("w", encoding="utf-8")
     proc = subprocess.Popen(
         [
             sys.executable,
             "-m",
-            "easy_sandbox.server",
+            "agent_sandbox.server",
             "serve",
             "--host",
             "127.0.0.1",
             "--port",
             str(port),
+            "--pty-port",
+            str(_free_port()),
         ],
         cwd=str(SDK_ROOT),
         env=env,
@@ -118,7 +121,7 @@ def live_server(tmp_path_factory: pytest.TempPathFactory) -> Any:
     base = f"http://127.0.0.1:{port}"
     try:
         _wait_ready(base, proc, log)
-        yield Live(base, port)
+        yield Live(base, port, root)
     finally:
         if proc.poll() is None:
             os.killpg(proc.pid, signal.SIGTERM)
@@ -289,10 +292,10 @@ def test_responses_websocket_create_and_queued_steer(live_server: Live) -> None:
         )
         steered = _completed(_recv_until(conn, "response.completed"), "response.steer")
         assert steered["previous_response_id"] == created["id"], json.dumps(steered)
-        assert "queued_steer" in steered["x_easy_sandbox"]["differences"], json.dumps(steered)
+        assert "queued_steer" in steered["x_agent_sandbox"]["differences"], json.dumps(steered)
 
 
-def test_files_multipart_and_json_base64_round_trip(live_server: Live, tmp_path: Path) -> None:
+def test_files_multipart_and_json_base64_round_trip(live_server: Live) -> None:
     status, raw, headers = _request(
         live_server,
         "POST",
@@ -301,11 +304,11 @@ def test_files_multipart_and_json_base64_round_trip(live_server: Live, tmp_path:
         headers={"Content-Type": f"multipart/form-data; boundary={BOUNDARY}"},
     )
     assert status == 200, _detail(status, raw)
-    assert headers.get("X-Easy-Sandbox-Local") == "1", _detail(status, raw)
+    assert headers.get("X-Agent-Sandbox-Local") == "1", _detail(status, raw)
     created = _json(status, raw)
     assert created["object"] == "file", _detail(status, raw)
     assert created["bytes"] == len(PAYLOAD), _detail(status, raw)
-    assert _bytes_for_file_id(live_server, created["id"], tmp_path / "multipart") == PAYLOAD, (
+    assert _bytes_for_file_id(live_server, created["id"], live_server.root / "multipart") == PAYLOAD, (
         _detail(status, raw)
     )
 
@@ -320,9 +323,9 @@ def test_files_multipart_and_json_base64_round_trip(live_server: Live, tmp_path:
         headers={"Content-Type": "application/json"},
     )
     assert status == 200, _detail(status, raw)
-    assert headers.get("X-Easy-Sandbox-Local") == "1", _detail(status, raw)
+    assert headers.get("X-Agent-Sandbox-Local") == "1", _detail(status, raw)
     created = _json(status, raw)
     assert created["bytes"] == len(PAYLOAD), _detail(status, raw)
-    assert _bytes_for_file_id(live_server, created["id"], tmp_path / "json") == PAYLOAD, _detail(
+    assert _bytes_for_file_id(live_server, created["id"], live_server.root / "json") == PAYLOAD, _detail(
         status, raw
     )

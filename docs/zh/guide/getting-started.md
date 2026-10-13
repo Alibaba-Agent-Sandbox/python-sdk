@@ -7,21 +7,21 @@
 ## 前置条件
 
 - Python 3.10 或更高版本
-- 一个有效的 API Key（从 Easy Sandbox 平台获取）
+- 一个有效的 API Key（从 Agent Sandbox 平台获取）
 - 网络可访问阿里云杭州区域（默认 `cn-hangzhou`）
 
 ## 1. 安装
 
 ```bash
 # 安装 SDK
-pip install easy-sandbox
+pip install agent-sandbox
 
 # 安装全部额外依赖（推荐）
-pip install "easy-sandbox[all]"
+pip install "agent-sandbox[all]"
 ```
 
-`ebx` CLI 不属于 Python 包（没有 `[cli]` extra），它是独立的 Node.js 项目，见[相关：ebx CLI](#相关ebx-cli)。容器侧运行时（`easy_sandbox.server`）是独立的
-`easy-sandbox-server` 包（`pip install easy-sandbox-server`）；`easy-sandbox` 依赖它，安装客户端时会一并安装。
+`abx` CLI 不属于 Python 包（没有 `[cli]` extra），它是独立的 Node.js 项目，见[相关：abx CLI](#相关abx-cli)。容器侧运行时（`agent_sandbox.server`）是独立的
+`agent-sandbox-server` 包（`pip install agent-sandbox-server`）；`agent-sandbox` 依赖它，安装客户端时会一并安装。
 
 ## 2. 配置 API Key
 
@@ -30,7 +30,7 @@ pip install "easy-sandbox[all]"
 ### 方式一：代码参数（只影响这一次调用）
 
 ```python
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 sandbox = await Sandbox.create(api_key="your-api-key-here")
 ```
@@ -38,12 +38,12 @@ sandbox = await Sandbox.create(api_key="your-api-key-here")
 ### 方式二：环境变量（推荐用于 CI/CD）
 
 ```bash
-export EBX_SANDBOX_API_KEY="your-api-key-here"
+export ABX_SANDBOX_API_KEY="your-api-key-here"
 ```
 
-### 选项 3：持久化文件（`~/.ebx/.env`）
+### 选项 3：持久化文件（`~/.abx/.env`）
 
-环境变量和项目 `.env` 都没写这个键时，才用这里保存的值。该文件由 `ebx` CLI 写入（`ebx config set sandbox_api_key your-api-key`，权限 600；见[相关：ebx CLI](#相关ebx-cli)），也可以手工编辑：`EBX_SANDBOX_API_KEY=your-api-key`。
+环境变量和项目 `.env` 都没写这个键时，才用这里保存的值。该文件由 `abx` CLI 写入（`abx config set sandbox_api_key your-api-key`，权限 600；见[相关：abx CLI](#相关abx-cli)），也可以手工编辑：`ABX_SANDBOX_API_KEY=your-api-key`。
 
 ## 3. 创建第一个 Sandbox
 
@@ -51,7 +51,7 @@ export EBX_SANDBOX_API_KEY="your-api-key-here"
 
 ```python
 import asyncio
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 async def main():
     # 创建沙箱（默认模板: base，超时: 300 秒）
@@ -65,7 +65,7 @@ asyncio.run(main())
 ### 使用 SDK（同步）
 
 ```python
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 sandbox = Sandbox.create_sync(template="base")
 print(f"Sandbox ID: {sandbox.id}")
@@ -76,9 +76,9 @@ print(f"Sandbox ID: {sandbox.id}")
 ### SDK
 
 ```python
-result = await sandbox.run_code("print('Hello, Easy Sandbox!')")
-print(result.text)     # "Hello, Easy Sandbox!"
-print(result.stdout)   # "Hello, Easy Sandbox!\n"
+result = await sandbox.run_code("print('Hello, Agent Sandbox!')")
+print(result.text)     # "Hello, Agent Sandbox!"
+print(result.stdout)   # "Hello, Agent Sandbox!\n"
 print(result.exit_code)  # 0
 ```
 
@@ -144,7 +144,7 @@ async with await Sandbox.create(template="base") as sandbox:
 
 ```python
 import asyncio
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 async def main():
     async with await Sandbox.create(template="base") as sandbox:
@@ -169,7 +169,7 @@ asyncio.run(main())
 
 ---
 
-沙箱服务端也可以托管编程代理 CLI。目前支持 Codex（`codex`，npm 包 `@openai/codex`）和 Qwen Code（`qwen`，npm 包 `@qwen-code/qwen-code`）。路径是 `/v1/agents/sessions`，需要 `EBX_SERVER_ENABLED_GROUPS` 包含 `agents`。见[托管代理](hosted-agents.md)。
+沙箱服务端也可以托管编程代理 CLI。目前支持 Codex（`codex`，npm 包 `@openai/codex`）和 Qwen Code（`qwen`，npm 包 `@qwen-code/qwen-code`）。路径是 `/v1/agents/sessions`，需要 `ABX_SERVER_ENABLED_GROUPS` 包含 `agents`。见[托管代理](hosted-agents.md)。
 
 ## 下一步
 
@@ -180,6 +180,6 @@ asyncio.run(main())
 
 ---
 
-## 相关：ebx CLI
+## 相关：abx CLI
 
-上述步骤对应的命令行用法（用 npm 或独立二进制安装 `ebx`、`ebx config set`、`ebx create`、`ebx exec`、`ebx upload` / `download`、`ebx kill`）见 CLI 仓库：[快速开始（CLI）](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/getting-started.md)、[二进制安装](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/binary-installation.md)、[CLI 教程](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/cli-tutorial.md)与[模板使用](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/using-templates.md)。
+上述步骤对应的命令行用法（用 npm 或独立二进制安装 `abx`、`abx config set`、`abx create`、`abx exec`、`abx upload` / `download`、`abx kill`）见 CLI 仓库：[快速开始（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/getting-started.md)、[二进制安装](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/binary-installation.md)、[CLI 教程](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/cli-tutorial.md)与[模板使用](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/using-templates.md)。

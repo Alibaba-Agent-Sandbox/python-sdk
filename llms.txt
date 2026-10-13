@@ -1,60 +1,60 @@
-# Easy Sandbox
+# Agent Sandbox
 
 > Python SDK for the Alibaba Cloud FC Agent Sandbox service.
-> E2B-protocol compatible with Alibaba Cloud extensions (OSS, VPC, custom domains).
+> Runtime client: create, use and kill sandboxes. Template build and deploy live in the
+> `abx` CLI. E2B-shaped method names ease migration; see docs/en/guide/migrate-from-e2b.md.
 >
 > This repository (python-sdk) contains the Python SDK as two lock-step PyPI
-> distributions: client-sdk/ (`easy-sandbox`, import `easy_sandbox`) and
-> server-sdk/ (`easy-sandbox-server`, import `easy_sandbox.server`, the
-> container-side runtime). The `ebx` command-line tool is a separate Node.js project in the
-> `cli` repository (https://github.com/Easy-Sandbox/easy-sandbox).
+> distributions: client-sdk/ (`agent-sandbox`, import `agent_sandbox`) and
+> server-sdk/ (`agent-sandbox-server`, import `agent_sandbox.server`, the
+> container-side runtime). The `abx` command-line tool is a separate Node.js project in the
+> `cli` repository (https://github.com/alibaba-agent-sandbox/agent-sandbox).
 
 ## Purpose
 
-Easy Sandbox lets AI agents and developers create, manage, and interact
+Agent Sandbox lets AI agents and developers create, manage, and interact
 with secure cloud sandboxes. It provides isolated execution environments for
 running untrusted code, file operations, and shell commands — designed for
 LLM tool-use and agentic workflows.
 
-AI coding tools: the static Agent Skills guide (SKILL.md) ships with the `ebx`
-CLI and is documented in the `cli` repository; see "Related: the ebx CLI" below.
+AI coding tools: the static Agent Skills guide (SKILL.md) ships with the `abx`
+CLI and is documented in the `cli` repository; see "Related: the abx CLI" below.
 
 ## Architecture
 
-Six-layer architecture (lower layers never import upper layers):
+Five-layer architecture (lower layers never import upper layers):
 
 - L1 Transport & Auth: HTTP/2 connection pooling, WebSocket, API Key / AK-SK auth
-- L2 Core Protocol: E2B-compatible protocol (REST + WebSocket), sandbox lifecycle, filesystem, process, terminal, port
-- L3 Extensions: Alibaba Cloud ecosystem — OSS mounts, VPC networking, custom domains
-- L4 High-Level API: Sandbox class, SandboxPool, file ops, code execution, network helpers
-- L5 Declarative API: @sandbox decorator for automatic remote execution with serialisation
-- L6 Agent Integration: MCP tool server, built-in agent harnesses, framework adapters
+- L2 Core Protocol: envd REST + WebSocket, sandbox lifecycle, filesystem, process, terminal, port
+- L3 High-Level API: Sandbox class, file ops, code execution, named commands, network helpers
+- L4 Declarative API: @sandbox decorator for automatic remote execution with serialisation
+- L5 Agent Integration: MCP tool server, tool definitions (agents run through the Agents API, /v1/agents/**)
 
 ## Key APIs
 
 ### SDK (Python, async-first)
 
 ```python
-from easy_sandbox import Sandbox
+from agent_sandbox import Sandbox
 
 async with await Sandbox.create(template="python-hello") as sb:
     result = await sb.run_code("print('hello')")      # code execution
     await sb.files.write("/tmp/f.txt", b"data")       # file I/O
-    proc = await sb.commands.run("ls /tmp")            # shell command
+    proc = await sb.commands.run("ls /tmp")            # raw shell command
+    out = await sb.run("hello", name="Ada")            # command registered in the sandbox server
 ```
 
 ## Source Layout
 
-- client-sdk/src/easy_sandbox/transport/ — HTTP, WebSocket, auth, codec
-- client-sdk/src/easy_sandbox/protocol/ — sandbox lifecycle, filesystem, process, terminal
-- client-sdk/src/easy_sandbox/models/ — Pydantic data models, error hierarchy
-- client-sdk/src/easy_sandbox/api/ — Sandbox class, file/code/command/network/pool APIs
-- client-sdk/src/easy_sandbox/agent/ — MCP server, built-in agents, tool definitions
-- client-sdk/src/easy_sandbox/compat/ — E2B drop-in compatibility layer
-- client-sdk/src/easy_sandbox/declarative/ — @sandbox decorator
-- client-sdk/src/easy_sandbox/extensions/ — OSS, VPC, domain extensions
-- client-sdk/src/easy_sandbox/integrations/ — Framework adapters (planned — directory currently empty; see ADR 2026-09-23)
-- server-sdk/src/easy_sandbox/server/ — container-side runtime (`easy-sandbox-server`): HTTP routes, command registry, PTY, dev tools, browser
+- client-sdk/src/agent_sandbox/transport/ — HTTP, WebSocket, auth, codec
+- client-sdk/src/agent_sandbox/protocol/ — sandbox lifecycle, filesystem, process, terminal
+- client-sdk/src/agent_sandbox/models/ — Pydantic data models, error hierarchy
+- client-sdk/src/agent_sandbox/api/ — Sandbox class, file/code/command/network APIs
+- client-sdk/src/agent_sandbox/agent/ — MCP server, tool definitions
+- client-sdk/src/agent_sandbox/compat/ — E2B migration helper (partial)
+- client-sdk/src/agent_sandbox/declarative/ — @sandbox decorator
+- client-sdk/src/agent_sandbox/integrations/ — Framework adapters (planned — directory currently empty; see ADR 2026-09-23)
+- server-sdk/src/agent_sandbox/server/ — container-side runtime (`agent-sandbox-server`): HTTP routes, command registry, PTY, dev tools, browser
 
 ## Links
 
@@ -64,19 +64,19 @@ async with await Sandbox.create(template="python-hello") as sb:
 - SDK API design: docs/en/design/sdk-api-design.md
 - Template system: docs/en/design/template-system.md
 - Template YAML spec: docs/en/reference/template-yaml-spec.md
-- Build & deploy: docs/en/guide/build-and-deploy.md
+- Build & deploy (abx template build|deploy): docs/en/guide/build-and-deploy.md
 - MCP server: docs/en/design/mcp-server.md
 - Contributing: .github/CONTRIBUTING.md
 - Changelog: CHANGELOG.md
 
-## Related: the ebx CLI
+## Related: the abx CLI
 
-The `ebx` command-line tool (`@easy-sandbox/cli`, Node.js) shares sandboxes,
+The `abx` command-line tool (`@agent-sandbox/cli`, Node.js) shares sandboxes,
 templates and credentials with this SDK but is developed and documented in the
 `cli` repository. Its README, command reference, tutorials, MCP server commands
 and Agent Skill (SKILL.md) live there:
 
-- CLI README: https://github.com/Easy-Sandbox/easy-sandbox/blob/main/README.md
-- Agent usage skill: https://github.com/Easy-Sandbox/easy-sandbox/blob/main/SKILL.md
-- Agent skill installation: https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/agent-skill-installation.md
-- CLI reference: https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/reference/cli-reference.md
+- CLI README: https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/README.md
+- Agent usage skill: https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/SKILL.md
+- Agent skill installation: https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/agent-skill-installation.md
+- CLI reference: https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/cli-reference.md

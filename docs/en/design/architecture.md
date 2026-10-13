@@ -1,6 +1,6 @@
-# System Architecture Design — Six-Layer Architecture
+# System Architecture Design — Five-Layer Architecture
 
-> Easy Sandbox SDK adopts a six-layer architecture, abstracting from low-level transport to high-level AI integration layer by layer. Each layer has a single responsibility with clear boundaries, and users can plug in at any layer. The SDK has zero LLM dependencies and does not depend on the E2B SDK — it implements the E2B-compatible protocol independently.
+> Agent Sandbox SDK adopts a five-layer architecture, abstracting from low-level transport to high-level AI integration layer by layer. Each layer has a single responsibility with clear boundaries, and users can plug in at any layer. The SDK has zero LLM dependencies and does not depend on the E2B SDK — it talks to the envd data plane and the platform control plane directly. It is the runtime client: template build and deploy are done by `abx template build|deploy`.
 
 ---
 
@@ -8,16 +8,14 @@
 
 ```mermaid
 graph TD
-    L6["L6 Agent Integration Layer<br/>AI Integration — Sandbox built-in AI CLI tool wrappers / MCP Server"]
-    L5["L5 Declarative API Layer<br/>Declarative API — @sandbox decorator / sandbox.yaml"]
-    L4["L4 High-Level API Layer<br/>High-Level API — Sandbox / SandboxPool / Image"]
-    L3["L3 Extension Layer<br/>Alibaba Cloud Extensions — VPC / OSS / Domain / NAS Mount"]
-    L2["L2 Core Protocol Layer<br/>Core Protocol — Self-implemented E2B-compatible protocol / HTTP REST + WebSocket"]
+    L5["L5 Agent Integration Layer<br/>MCP Server / agent tool schemas"]
+    L4["L4 Declarative API Layer<br/>Declarative API — @sandbox decorator / sandbox.yaml"]
+    L3["L3 High-Level API Layer<br/>High-Level API — Sandbox / Files / Code / named commands"]
+    L2["L2 Core Protocol Layer<br/>Core Protocol — envd REST + WebSocket"]
     L1["L1 Transport & Auth Layer<br/>Transport & Auth — HTTP connection pool / API Key / AK-SK Token Exchange"]
     GW["Alibaba Cloud API Gateway"]
     FC["Alibaba Cloud Function Compute (FC) Sandbox Runtime"]
 
-    L6 --> L5
     L5 --> L4
     L4 --> L3
     L3 --> L2
@@ -36,7 +34,7 @@ graph TD
 |--------|----------------|
 | `transport.http` | HTTPS client based on httpx, connection pool management, timeout/retry policies |
 | `transport.ws` | Long-lived connections based on websockets, heartbeat keep-alive, auto-reconnect |
-| `auth.api_key` | **API Key authentication (primary path)**: passed via `X-API-KEY` header, environment variable `EBX_SANDBOX_API_KEY` |
+| `auth.api_key` | **API Key authentication (primary path)**: passed via `X-API-KEY` header, environment variable `ABX_SANDBOX_API_KEY` |
 | `auth.ak_sk` | **AK/SK authentication (extension)**: exchanges Alibaba Cloud AK/SK for temporary API Key, or for control plane OpenAPI calls |
 | `auth.config` | Multi-environment config loading (code params → env vars → .env → config.toml → defaults) |
 
@@ -44,16 +42,16 @@ graph TD
 
 | Auth Method | Scenario | Transport | Environment Variables |
 |-------------|----------|-----------|----------------------|
-| **API Key (primary)** | Cloud sandbox data plane operations | `X-API-KEY` header | `EBX_SANDBOX_API_KEY` |
+| **API Key (primary)** | Cloud sandbox data plane operations | `X-API-KEY` header | `ABX_SANDBOX_API_KEY` |
 | **AK/SK (extension)** | Exchange temporary API Key, control plane OpenAPI | Alibaba Cloud V4 Signature | `ALICLOUD_ACCESS_KEY_ID` / `ALICLOUD_ACCESS_KEY_SECRET` |
 
-> **Note**: The sandbox API key has one environment variable, `EBX_SANDBOX_API_KEY`. The AccessKey pair uses `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. See [authentication.md](../guide/authentication.md) and [configuration.md](../reference/configuration.md).
+> **Note**: The sandbox API key has one environment variable, `ABX_SANDBOX_API_KEY`. The AccessKey pair uses `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. See [authentication.md](../guide/authentication.md) and [configuration.md](../reference/configuration.md).
 
 **Target Users**: Infrastructure developers, advanced users who need custom authentication logic.
 
 ### L2 — Core Protocol Layer
 
-**Self-implemented E2B-compatible protocol** — does not depend on the E2B SDK, implemented directly with httpx + websockets. Two categories of APIs:
+**Self-implemented protocol clients** — no dependency on the E2B SDK, implemented directly with httpx + websockets. Two categories of APIs:
 
 - **Platform API (REST)**: Sandbox lifecycle management (create, list, destroy), interacts with Alibaba Cloud platform via HTTP REST API
 - **Sandbox envd API (Connect Protocol)**: In-sandbox operations (processes, files, terminals), communicates with sandbox envd via HTTP + WebSocket
@@ -68,52 +66,37 @@ graph TD
 
 **Target Users**: Protocol-level developers, users who need fine-grained control.
 
-### L3 — Extension Layer (Alibaba Cloud Extensions)
+### L3 — High-Level API Layer
 
 | Module | Responsibility |
 |--------|----------------|
-| `extensions.vpc` | VPC network configuration, security group rules, ENI binding |
-| `extensions.oss` | OSS mounting, file synchronization, large file transfer acceleration |
-| `extensions.domain` | Custom domain binding and TLS certificate management |
-| `extensions.nas` | NAS filesystem mounting (shared storage) | _TODO — planned_ |
-| `extensions.log` | SLS log integration, structured log collection | _TODO — planned_ |
-
-**Target Users**: Enterprise users, developers who need deep Alibaba Cloud service integration.
-
-### L4 — High-Level API Layer
-
-| Module | Responsibility |
-|--------|----------------|
-| `api.sandbox` | Sandbox class — unified entry point for create, manage, execute, destroy |
-| `api.pool` | SandboxPool — connection pool / warm pool, concurrency management | _TODO — planned_ |
-| `api.image` | Image builder — chainable API for building custom images |
+| `api.sandbox` | Sandbox class — unified entry point for create, manage, execute, destroy; `run(name, **kwargs)` calls a server-registered command |
+| `api.server_client` | `ServerClient` — typed client for every in-sandbox SandboxServer route |
 | `api.files` | High-level file operations — upload/download/watch |
 | `api.code` | Code execution engine — multi-language support, Rich Output |
 
-**Target Users**: Most developers, the core layer for E2B-compatible mode.
+**Target Users**: Most developers, the core layer, with E2B-shaped method names.
 
-### L5 — Declarative API Layer
+### L4 — Declarative API Layer
 
 | Module | Responsibility |
 |--------|----------------|
 | `declarative.decorator` | `@sandbox` decorator — Modal-style remote execution |
 | `declarative.config` | `sandbox.yaml` parsing and validation |
 | `declarative.serializer` | Parameter/return value serialization (JSON only) |
-| `declarative.scheduler` | Declarative task scheduling and orchestration | _TODO — planned_ |
 
 **Target Users**: Python developers and ML engineers seeking a minimalist experience.
 
-### L6 — Agent Integration Layer (AI CLI Wrapper Layer)
+### L5 — Agent Integration Layer
 
 | Module | Responsibility |
 |--------|----------------|
-| `agent.builtin` | Built-in Agent wrapper — pre-installed AI CLI tools (Codex / Qwen CLI) in sandbox templates, SDK provides syntactic sugar |
 | `agent.tools` | Agent tool set — sandbox operations wrapped as OpenAI function calling format |
 | `agent.mcp` | MCP Server implementation — exposes sandbox capabilities as MCP Tools |
 
 **Target Users**: AI application developers, Agent framework integrators.
 
-> **Note**: The SDK has zero LLM dependencies and does not include a built-in LLM Provider adapter layer. Agent capabilities come from AI CLI tools pre-installed in sandbox templates. The Agent API (`sb.agent.code()`) is syntactic sugar wrapping `commands.run()`.
+> **Note**: The SDK has zero LLM dependencies. There is one way to run a coding agent inside a sandbox: the [Agents API](../guide/agents-api.md) (`/v1/agents/**`, served by `agent-sandbox-server`). The SDK has no agent keyword table and no `sb.agent.*` sugar.
 
 ### Server Module (In-Container Runtime Service)
 
@@ -131,7 +114,7 @@ graph TD
 | `server.routes_devtools` | Dev tools endpoints: code/run, git/status, git/diff (3 endpoints) |
 | `server.types` | Request/response data models: `ServerRequest`, `ServerResponse`, `SSEResponse` |
 
-The Server module (the separate `easy-sandbox-server` distribution, import `easy_sandbox.server`) runs inside the sandbox container and has a different layering from the main SDK — it is an opt-in persistent HTTP service running inside containers. Built entirely on Python stdlib with zero third-party dependencies (the PTY terminal uses the `websockets` dependency of the `easy-sandbox-server` distribution). It provides 42 endpoints managed across 8 CapabilityGroups:
+The Server module (the separate `agent-sandbox-server` distribution, import `agent_sandbox.server`) runs inside the sandbox container and has a different layering from the main SDK — it is an opt-in persistent HTTP service running inside containers. Built entirely on Python stdlib with zero third-party dependencies (the PTY terminal uses the `websockets` dependency of the `agent-sandbox-server` distribution). It provides 42 endpoints managed across 8 CapabilityGroups:
 
 | Capability Group | Description | Default State |
 |------------------|-------------|---------------|
@@ -152,28 +135,26 @@ The Server module (the separate `easy-sandbox-server` distribution, import `easy
 
 ```mermaid
 graph TD
-    L6[L6 Agent Integration] --> L4[L4 High-Level API]
-    L5[L5 Declarative API] --> L4
-    L4 --> L3[L3 Extensions - Optional]
-    L4 --> L2[L2 Core Protocol]
+    L5[L5 Agent Integration] --> L3[L3 High-Level API]
+    L4[L4 Declarative API] --> L3
+    L3 --> L2[L2 Core Protocol]
     L2 --> L1[L1 Transport & Auth]
 ```
 
 **Dependency Rules**:
 
 1. **Strict downward dependencies**: Each layer can only depend on layers below it; reverse or cross-layer dependencies are prohibited
-2. **L3 is optional**: L4 can depend directly on L2; L3 Extensions are enhancement modules included on demand
-3. **L5 depends on L4**: Declarative API is implemented through L4 High-Level API, does not depend directly on L2
-4. **L6 depends on L4**: Agent integration is implemented through L4 High-Level API
-5. **L1 is the foundation**: All upper layers ultimately depend on L1 for network communication and authentication
+2. **L4 depends on L3**: Declarative API is implemented through the L3 High-Level API, not directly on L2
+3. **L5 depends on L3**: Agent integration is implemented through the L3 High-Level API
+4. **L1 is the foundation**: All upper layers ultimately depend on L1 for network communication and authentication
 
 ---
 
 ## 4. Project Directory Structure
 
 ```
-client-sdk/src/easy_sandbox/
-├── __init__.py                    # Top-level exports: Sandbox, Image, Agent, sandbox
+client-sdk/src/agent_sandbox/
+├── __init__.py                    # Top-level exports: Sandbox, sandbox
 ├── _version.py                    # Version number
 │
 ├── transport/                     # L1 — Transport & Auth Layer
@@ -183,7 +164,7 @@ client-sdk/src/easy_sandbox/
 │   ├── auth.py                    #   API Key auth + AK/SK exchange
 │   └── config.py                  #   Config loading (code params → env vars → .env → config.toml → defaults)
 │
-├── protocol/                      # L2 — Core Protocol Layer (self-implemented E2B-compatible)
+├── protocol/                      # L2 — Core Protocol Layer
 │   ├── __init__.py
 │   ├── sandbox.py                 #   Sandbox lifecycle API (HTTP REST)
 │   ├── process.py                 #   Remote process management (HTTP + WebSocket streaming)
@@ -191,34 +172,22 @@ client-sdk/src/easy_sandbox/
 │   ├── terminal.py                #   PTY terminal multiplexing (WebSocket)
 │   └── port.py                    #   Port forwarding management (HTTP REST)
 │
-├── extensions/                    # L3 — Alibaba Cloud Extension Layer
-│   ├── __init__.py
-│   ├── vpc.py                     #   VPC network configuration
-│   ├── oss.py                     #   OSS mounting and file sync
-│   ├── domain.py                  #   Custom domain binding
-│   ├── nas.py                     #   NAS filesystem mounting (TODO — planned)
-│   └── log.py                     #   SLS log integration (TODO — planned)
-│
-├── api/                           # L4 — High-Level API
+├── api/                           # L3 — High-Level API
 │   ├── __init__.py
 │   ├── sandbox.py                 #   Sandbox core class
-│   ├── pool.py                    #   SandboxPool sandbox pool (TODO — planned)
-│   ├── image.py                   #   Image chainable builder
+│   ├── server_client.py           #   ServerClient — typed client for the in-sandbox server
 │   ├── files.py                   #   High-level file operations
 │   └── code.py                    #   Code execution engine
 │
-├── declarative/                   # L5 — Declarative API Layer
+├── declarative/                   # L4 — Declarative API Layer
 │   ├── __init__.py
 │   ├── decorator.py               #   @sandbox decorator
 │   ├── config.py                  #   sandbox.yaml parsing
-│   ├── serializer.py              #   Parameter serialization
-│   └── scheduler.py               #   Task scheduling (TODO — planned)
+│   └── serializer.py              #   Parameter serialization
 │
-├── agent/                         # L6 — AI Integration Layer (lightweight wrapper)
+├── agent/                         # L5 — AI Integration Layer
 │   ├── __init__.py
-│   ├── builtin.py                 #   AgentModule — commands.run() syntactic sugar
 │   ├── tools.py                   #   Agent tool set (OpenAI function calling format)
-│   ├── infer.py                   #   Natural language inference (external Server/Qwen CLI/rule matching)
 │   └── mcp.py                     #   MCP Server implementation
 │
 ├── models/                        # Data models
@@ -235,10 +204,10 @@ client-sdk/src/easy_sandbox/
     └── async_bridge.py            #   Sync/async bridge utilities
 ```
 
-The in-container runtime ships as the separate `easy-sandbox-server` distribution (same `easy_sandbox` namespace, no `easy_sandbox/__init__.py` of its own, released in lockstep with the client):
+The in-container runtime ships as the separate `agent-sandbox-server` distribution (same `agent_sandbox` namespace, no `agent_sandbox/__init__.py` of its own, released in lockstep with the client):
 
 ```
-server-sdk/src/easy_sandbox/server/   # In-container runtime HTTP Server (opt-in, stdlib-only)
+server-sdk/src/agent_sandbox/server/   # In-container runtime HTTP Server (opt-in, stdlib-only)
 ├── __init__.py                #   Module exports: SandboxServer, start, CapabilityGroup, RouteTable
 ├── app.py                     #   SandboxServer main class, HTTP request dispatch
 ├── router.py                  #   RouteTable declarative routing + CapabilityGroup enum
@@ -250,11 +219,10 @@ server-sdk/src/easy_sandbox/server/   # In-container runtime HTTP Server (opt-in
 ├── routes_pty.py              #   TERMINAL capability group (REST + WebSocket PTY)
 ├── routes_browser.py          #   BROWSER capability group (8 endpoints, Playwright)
 ├── routes_devtools.py         #   DEV_TOOLS capability group (Code Interpreter + Git)
-├── _compat.py                 #   Backward compatibility layer (enable_builtin/disable_builtin)
 └── types.py                   #   ServerRequest/ServerResponse/SSEResponse
 ```
 
-The CLI (`ebx`) formerly lived in `src/easy_sandbox/cli/` (Click commands under `commands/`, `formatters.py`, `output.py`). It is now a Node.js/TypeScript project in the `cli` repository and is no longer part of this package.
+The CLI (`abx`) formerly lived in `src/agent_sandbox/cli/` (Click commands under `commands/`, `formatters.py`, `output.py`). It is now a Node.js/TypeScript project in the `cli` repository and is no longer part of this package.
 
 ---
 
@@ -262,7 +230,7 @@ The CLI (`ebx`) formerly lived in `src/easy_sandbox/cli/` (Click commands under 
 
 | Area | Choice | Rationale |
 |------|--------|-----------|
-| HTTP Client | `httpx` | Native async support, HTTP/2, core for E2B-compatible protocol implementation |
+| HTTP Client | `httpx` | Native async support, HTTP/2, core of the protocol clients |
 | WebSocket | `websockets` | Mature and stable, async-native, used for PTY/streaming scenarios |
 | CLI Framework | _(moved)_ | The CLI is a separate Node.js/TypeScript project in the `cli` repository; the former `click` + `rich` implementation is no longer part of this package |
 | Serialization | JSON (`json` stdlib) | Safe cross-language serialization for `@sandbox` decorator |
@@ -274,9 +242,9 @@ The CLI (`ebx`) formerly lived in `src/easy_sandbox/cli/` (Click commands under 
 
 ## 6. Design Principles
 
-1. **E2B Protocol Compatibility**: L4 API is compatible with the E2B data plane protocol, with a compatibility layer to facilitate migration; L2 implements the protocol independently without depending on the E2B SDK
-2. **Progressive Complexity**: Users start at L4 and explore downward or use advanced features upward as needed
-3. **Zero-Config Defaults**: Works out of the box with sensible defaults; just set the `EBX_SANDBOX_API_KEY` environment variable to get started
-4. **Alibaba Cloud Native**: Deep integration with Alibaba Cloud services (FC, VPC, OSS) to leverage platform strengths
+1. **E2B-shaped, not E2B-compatible**: L3 uses E2B-shaped method names and ships a small migration helper (`agent_sandbox.compat`); L2 implements the protocol independently without depending on the E2B SDK
+2. **Progressive Complexity**: Users start at L3 and explore downward or use advanced features upward as needed
+3. **Zero-Config Defaults**: Works out of the box with sensible defaults; just set the `ABX_SANDBOX_API_KEY` environment variable to get started
+4. **Alibaba Cloud Native**: Built for the Alibaba Cloud FC sandbox service
 5. **AI First**: Built-in AI CLI tools in sandboxes and MCP Server are first-class citizens; SDK has zero LLM dependencies
 6. **Type Safety**: Comprehensive use of Python Type Hints + Pydantic validation

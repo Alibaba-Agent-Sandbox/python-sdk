@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from easy_sandbox.models.config import GlobalConfig
+from agent_sandbox.models.config import GlobalConfig
 
 
 class TestGlobalConfig:

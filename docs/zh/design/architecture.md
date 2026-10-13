@@ -1,6 +1,6 @@
-# 系统架构设计 — 六层分层架构
+# 系统架构设计 — 五层分层架构
 
-> Easy Sandbox SDK 采用六层分层架构，从底层传输到上层 AI 集成逐层抽象，每层职责单一、边界清晰，用户可在任意层级接入使用。SDK 零 LLM 依赖，不依赖 E2B SDK，自行实现 E2B 兼容协议。
+> Agent Sandbox SDK 采用五层分层架构，从底层传输到上层 AI 集成逐层抽象，每层职责单一、边界清晰，用户可在任意层级接入使用。SDK 零 LLM 依赖，不依赖 E2B SDK，直接对接 envd 数据面和平台控制面。它是运行时客户端：模板的构建和部署由 `abx template build|deploy` 完成。
 
 ---
 
@@ -8,16 +8,14 @@
 
 ```mermaid
 graph TD
-    L6["L6 Agent Integration Layer<br/>AI 集成层 - 沙箱内置 AI CLI 工具封装 / MCP Server"]
-    L5["L5 Declarative API Layer<br/>声明式 API 层 - @sandbox 装饰器 / sandbox.yaml"]
-    L4["L4 High-Level API Layer<br/>高层便捷 API - Sandbox / SandboxPool / Image"]
-    L3["L3 Extension Layer<br/>阿里云扩展层 - VPC / OSS / 域名 / NAS 挂载"]
-    L2["L2 Core Protocol Layer<br/>核心协议层 - 自行实现 E2B 兼容协议 / HTTP REST + WebSocket"]
+    L5["L5 Agent Integration Layer<br/>AI 集成层 - MCP Server / Agent 工具定义"]
+    L4["L4 Declarative API Layer<br/>声明式 API 层 - @sandbox 装饰器 / sandbox.yaml"]
+    L3["L3 High-Level API Layer<br/>高层便捷 API - Sandbox / Files / Code / 命名命令"]
+    L2["L2 Core Protocol Layer<br/>核心协议层 - envd REST + WebSocket"]
     L1["L1 Transport & Auth Layer<br/>传输与认证层 - HTTP 连接池 / API Key / AK-SK 兑换 Token"]
     GW["阿里云 API 网关"]
     FC["阿里云函数计算 FC 沙箱运行时"]
 
-    L6 --> L5
     L5 --> L4
     L4 --> L3
     L3 --> L2
@@ -36,7 +34,7 @@ graph TD
 |------|------|
 | `transport.http` | 基于 httpx 封装 HTTPS 请求，连接池管理，超时/重试策略 |
 | `transport.ws` | 基于 websockets 的长连接，心跳保活，自动重连 |
-| `auth.api_key` | **API Key 认证（主路径）**：通过 `X-API-KEY` 请求头传递，环境变量 `EBX_SANDBOX_API_KEY` |
+| `auth.api_key` | **API Key 认证（主路径）**：通过 `X-API-KEY` 请求头传递，环境变量 `ABX_SANDBOX_API_KEY` |
 | `auth.ak_sk` | **AK/SK 认证（扩展）**：通过阿里云 AK/SK 兑换临时 API Key，或用于控制面 OpenAPI 调用 |
 | `auth.config` | 多环境配置加载（代码参数 → 环境变量 → .env → config.toml → 默认值） |
 
@@ -44,16 +42,16 @@ graph TD
 
 | 认证方式 | 场景 | 传递方式 | 环境变量 |
 |----------|------|----------|----------|
-| **API Key（主路径）** | 云沙箱数据面操作 | `X-API-KEY` 请求头 | `EBX_SANDBOX_API_KEY` |
+| **API Key（主路径）** | 云沙箱数据面操作 | `X-API-KEY` 请求头 | `ABX_SANDBOX_API_KEY` |
 | **AK/SK（扩展）** | 兑换临时 API Key、控制面 OpenAPI | 阿里云 V4 签名 | `ALICLOUD_ACCESS_KEY_ID` / `ALICLOUD_ACCESS_KEY_SECRET` |
 
-> **注意**：沙箱 API Key 只有一个环境变量 `EBX_SANDBOX_API_KEY`。AccessKey 对使用 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。见 [authentication.md](../guide/authentication.md) 与 [configuration.md](../reference/configuration.md)。
+> **注意**：沙箱 API Key 只有一个环境变量 `ABX_SANDBOX_API_KEY`。AccessKey 对使用 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。见 [authentication.md](../guide/authentication.md) 与 [configuration.md](../reference/configuration.md)。
 
 **面向用户**：基础设施开发者、需要自定义认证逻辑的高级用户。
 
 ### L2 — Core Protocol Layer（核心协议层）
 
-**自行实现 E2B 兼容协议**，不依赖 E2B SDK，直接基于 httpx + websockets 实现。区分两类 API：
+**自行实现协议客户端**，不依赖 E2B SDK，直接基于 httpx + websockets 实现。区分两类 API：
 
 - **Platform API（REST）**：沙箱生命周期管理（创建、列表、销毁），通过 HTTP REST API 与阿里云平台交互
 - **Sandbox envd API（Connect 协议）**：沙箱内部操作（进程、文件、终端），通过 HTTP + WebSocket 与沙箱 envd 通信
@@ -68,52 +66,37 @@ graph TD
 
 **面向用户**：协议层开发者、需要细粒度控制的用户。
 
-### L3 — Extension Layer（阿里云扩展层）
+### L3 — High-Level API Layer（高层便捷 API）
 
 | 模块 | 职责 |
 |------|------|
-| `extensions.vpc` | VPC 网络配置，安全组规则，ENI 绑定 |
-| `extensions.oss` | OSS 挂载，文件同步，大文件传输加速 |
-| `extensions.domain` | 自定义域名绑定与 TLS 证书管理 |
-| `extensions.nas` | NAS 文件系统挂载（共享存储） | _TODO — 计划中_ |
-| `extensions.log` | SLS 日志集成，结构化日志采集 | _TODO — 计划中_ |
-
-**面向用户**：企业用户、需要深度集成阿里云服务的开发者。
-
-### L4 — High-Level API Layer（高层便捷 API）
-
-| 模块 | 职责 |
-|------|------|
-| `api.sandbox` | Sandbox 类 — 创建、管理、执行、销毁的统一入口 |
-| `api.pool` | SandboxPool — 连接池/预热池，并发管理 | _TODO — 计划中_ |
-| `api.image` | Image 构建器 — 链式 API 构建自定义镜像 |
+| `api.sandbox` | Sandbox 类 — 创建、管理、执行、销毁的统一入口；`run(name, **kwargs)` 调用服务端注册命令 |
+| `api.server_client` | `ServerClient` — 沙箱内 SandboxServer 全部路由的类型化客户端 |
 | `api.files` | 高层文件操作 — 上传/下载/监听 |
 | `api.code` | 代码执行引擎 — 多语言支持，Rich Output |
 
-**面向用户**：绝大多数开发者，E2B 兼容模式的核心层。
+**面向用户**：绝大多数开发者，核心层，方法名参考 E2B。
 
-### L5 — Declarative API Layer（声明式 API 层）
+### L4 — Declarative API Layer（声明式 API 层）
 
 | 模块 | 职责 |
 |------|------|
 | `declarative.decorator` | `@sandbox` 装饰器 — Modal 风格远程执行 |
 | `declarative.config` | `sandbox.yaml` 解析与验证 |
 | `declarative.serializer` | 参数/返回值序列化（仅 JSON） |
-| `declarative.scheduler` | 声明式任务调度与编排 | _TODO — 计划中_ |
 
 **面向用户**：追求极简体验的 Python 开发者、ML 工程师。
 
-### L6 — Agent Integration Layer（AI CLI 封装层）
+### L5 — Agent Integration Layer（Agent 集成层）
 
 | 模块 | 职责 |
 |------|------|
-| `agent.builtin` | 内置 Agent 封装 — 沙箱模板内预装 AI CLI 工具（Codex / Qwen CLI），SDK 提供语法糖 |
 | `agent.tools` | Agent 工具集 — 沙箱操作封装为 OpenAI function calling 格式 |
 | `agent.mcp` | MCP Server 实现 — 暴露沙箱能力为 MCP Tools |
 
 **面向用户**：AI 应用开发者、Agent 框架集成者。
 
-> **注意**：SDK 零 LLM 依赖，不内置 LLM Provider 适配层。Agent 能力来自沙箱模板内预装的 AI CLI 工具。Agent API（`sb.agent.code()`）是 `commands.run()` 的语法糖封装。
+> **注意**：SDK 零 LLM 依赖。在沙箱里运行编码 Agent 只有一种方式：[Agents API](../guide/agents-api.md)（`/v1/agents/**`，由 `agent-sandbox-server` 提供）。SDK 没有 Agent 关键字表，也没有 `sb.agent.*` 语法糖。
 
 ### Server 模块（容器内运行时服务）
 
@@ -131,7 +114,7 @@ graph TD
 | `server.routes_devtools` | 开发工具端点：code/run、git/status、git/diff（3 端点） |
 | `server.types` | 请求/响应数据模型：`ServerRequest`、`ServerResponse`、`SSEResponse` |
 
-Server 模块（独立的 `easy-sandbox-server` 分发包，导入路径 `easy_sandbox.server`）运行在沙箱容器内部，与 SDK 主体分层不同，它是用户 opt-in 的容器内常驻 HTTP 服务。完全基于 Python stdlib，零第三方依赖（PTY 终端使用 `easy-sandbox-server` 分发包自身的 `websockets` 依赖）。提供 42 个端点，按 8 个 CapabilityGroup 分组管理：
+Server 模块（独立的 `agent-sandbox-server` 分发包，导入路径 `agent_sandbox.server`）运行在沙箱容器内部，与 SDK 主体分层不同，它是用户 opt-in 的容器内常驻 HTTP 服务。完全基于 Python stdlib，零第三方依赖（PTY 终端使用 `agent-sandbox-server` 分发包自身的 `websockets` 依赖）。提供 42 个端点，按 8 个 CapabilityGroup 分组管理：
 
 | 能力组 | 说明 | 默认状态 |
 |--------|------|----------|
@@ -152,28 +135,26 @@ Server 模块（独立的 `easy-sandbox-server` 分发包，导入路径 `easy_s
 
 ```mermaid
 graph TD
-    L6[L6 Agent Integration] --> L4[L4 High-Level API]
-    L5[L5 Declarative API] --> L4
-    L4 --> L3[L3 Extensions - 可选]
-    L4 --> L2[L2 Core Protocol]
+    L5[L5 Agent Integration] --> L3[L3 High-Level API]
+    L4[L4 Declarative API] --> L3
+    L3 --> L2[L2 Core Protocol]
     L2 --> L1[L1 Transport & Auth]
 ```
 
 **依赖规则**：
 
 1. **严格向下依赖**：每层只能依赖其下方的层，禁止反向依赖或跨层依赖
-2. **L3 为可选层**：L4 可直接依赖 L2，L3 Extensions 作为增强模块按需引入
-3. **L5 依赖 L4**：声明式 API 通过 L4 高层 API 实现，不直接依赖 L2
-4. **L6 依赖 L4**：Agent 集成通过 L4 高层 API 实现
-5. **L1 为基础层**：所有上层最终依赖 L1 完成网络通信和认证
+2. **L4 依赖 L3**：声明式 API 通过 L3 高层 API 实现，不直接依赖 L2
+3. **L5 依赖 L3**：Agent 集成通过 L3 高层 API 实现
+4. **L1 为基础层**：所有上层最终依赖 L1 完成网络通信和认证
 
 ---
 
 ## 4. 项目目录结构
 
 ```
-client-sdk/src/easy_sandbox/
-├── __init__.py                    # 顶层导出：Sandbox, Image, Agent, sandbox
+client-sdk/src/agent_sandbox/
+├── __init__.py                    # 顶层导出：Sandbox, sandbox
 ├── _version.py                    # 版本号
 │
 ├── transport/                     # L1 — 传输与认证层
@@ -183,7 +164,7 @@ client-sdk/src/easy_sandbox/
 │   ├── auth.py                    #   API Key 认证 + AK/SK 兑换
 │   └── config.py                  #   配置加载（代码参数→环境变量→.env→config.toml→默认值）
 │
-├── protocol/                      # L2 — 核心协议层（自行实现 E2B 兼容）
+├── protocol/                      # L2 — 核心协议层
 │   ├── __init__.py
 │   ├── sandbox.py                 #   沙箱生命周期 API（HTTP REST）
 │   ├── process.py                 #   远程进程管理（HTTP + WebSocket 流式）
@@ -191,34 +172,22 @@ client-sdk/src/easy_sandbox/
 │   ├── terminal.py                #   PTY 终端复用（WebSocket）
 │   └── port.py                    #   端口转发管理（HTTP REST）
 │
-├── extensions/                    # L3 — 阿里云扩展层
-│   ├── __init__.py
-│   ├── vpc.py                     #   VPC 网络配置
-│   ├── oss.py                     #   OSS 挂载与文件同步
-│   ├── domain.py                  #   自定义域名绑定
-│   ├── nas.py                     #   NAS 文件系统挂载（TODO — 计划中）
-│   └── log.py                     #   SLS 日志集成（TODO — 计划中）
-│
-├── api/                           # L4 — 高层便捷 API
+├── api/                           # L3 — 高层便捷 API
 │   ├── __init__.py
 │   ├── sandbox.py                 #   Sandbox 核心类
-│   ├── pool.py                    #   SandboxPool 沙箱池（TODO — 计划中）
-│   ├── image.py                   #   Image 链式构建器
+│   ├── server_client.py           #   ServerClient — 沙箱内 server 的类型化客户端
 │   ├── files.py                   #   高层文件操作
 │   └── code.py                    #   代码执行引擎
 │
-├── declarative/                   # L5 — 声明式 API 层
+├── declarative/                   # L4 — 声明式 API 层
 │   ├── __init__.py
 │   ├── decorator.py               #   @sandbox 装饰器
 │   ├── config.py                  #   sandbox.yaml 解析
-│   ├── serializer.py              #   参数序列化
-│   └── scheduler.py               #   任务调度（TODO — 计划中）
+│   └── serializer.py              #   参数序列化
 │
-├── agent/                         # L6 — AI 集成层（轻量封装）
+├── agent/                         # L5 — AI 集成层
 │   ├── __init__.py
-│   ├── builtin.py                 #   AgentModule — commands.run() 语法糖
 │   ├── tools.py                   #   Agent 工具集（OpenAI function calling 格式）
-│   ├── infer.py                   #   自然语言推断（外部调用 Server/Qwen CLI/规则匹配）
 │   └── mcp.py                     #   MCP Server 实现
 │
 ├── models/                        # 数据模型
@@ -235,10 +204,10 @@ client-sdk/src/easy_sandbox/
     └── async_bridge.py            #   同步/异步桥接工具
 ```
 
-容器内运行时以独立的 `easy-sandbox-server` 分发包发布（共享 `easy_sandbox` 命名空间，自身没有 `easy_sandbox/__init__.py`，与 client 同步发布）：
+容器内运行时以独立的 `agent-sandbox-server` 分发包发布（共享 `agent_sandbox` 命名空间，自身没有 `agent_sandbox/__init__.py`，与 client 同步发布）：
 
 ```
-server-sdk/src/easy_sandbox/server/   # 容器内运行时 HTTP Server（opt-in，stdlib-only）
+server-sdk/src/agent_sandbox/server/   # 容器内运行时 HTTP Server（opt-in，stdlib-only）
 ├── __init__.py                #   模块导出：SandboxServer, start, CapabilityGroup, RouteTable
 ├── app.py                     #   SandboxServer 主类，HTTP 请求分发
 ├── router.py                  #   RouteTable 声明式路由 + CapabilityGroup 能力组枚举
@@ -250,11 +219,10 @@ server-sdk/src/easy_sandbox/server/   # 容器内运行时 HTTP Server（opt-in�
 ├── routes_pty.py              #   TERMINAL 能力组（REST + WebSocket PTY）
 ├── routes_browser.py          #   BROWSER 能力组（8 端点，Playwright）
 ├── routes_devtools.py         #   DEV_TOOLS 能力组（Code Interpreter + Git）
-├── _compat.py                 #   向后兼容层（enable_builtin/disable_builtin）
 └── types.py                   #   ServerRequest/ServerResponse/SSEResponse
 ```
 
-CLI（`ebx`）原先位于 `src/easy_sandbox/cli/`（`commands/` 下的 Click 子命令、`formatters.py`、`output.py`），现已迁移为 `cli` 仓库中的 Node.js/TypeScript 项目，不再属于本包。
+CLI（`abx`）原先位于 `src/agent_sandbox/cli/`（`commands/` 下的 Click 子命令、`formatters.py`、`output.py`），现已迁移为 `cli` 仓库中的 Node.js/TypeScript 项目，不再属于本包。
 
 ---
 
@@ -262,7 +230,7 @@ CLI（`ebx`）原先位于 `src/easy_sandbox/cli/`（`commands/` 下的 Click �
 
 | 领域 | 选型 | 理由 |
 |------|------|------|
-| HTTP 客户端 | `httpx` | 原生 async 支持，HTTP/2，E2B 兼容协议实现的核心 |
+| HTTP 客户端 | `httpx` | 原生 async 支持，HTTP/2，协议客户端的核心 |
 | WebSocket | `websockets` | 成熟稳定，async 原生，用于 PTY/流式场景 |
 | CLI 框架 | _（已迁移）_ | CLI 是 `cli` 仓库中独立的 Node.js/TypeScript 项目；原 `click` + `rich` 实现不再属于本包 |
 | 序列化 | JSON（`json` 标准库） | `@sandbox` 装饰器的安全跨语言序列化 |
@@ -274,9 +242,9 @@ CLI（`ebx`）原先位于 `src/easy_sandbox/cli/`（`commands/` 下的 Click �
 
 ## 6. 设计原则
 
-1. **E2B 协议兼容**：L4 层 API 兼容 E2B 数据面协议，提供兼容层方便迁移用户；L2 层自行实现协议，不依赖 E2B SDK
-2. **渐进式复杂度**：用户从 L4 开始，按需向下探索或向上使用高级功能
-3. **零配置默认**：开箱即用的默认值，设置 `EBX_SANDBOX_API_KEY` 环境变量即可启动
-4. **阿里云原生**：深度集成阿里云服务（FC、VPC、OSS），发挥平台优势
+1. **方法名参考 E2B，但不兼容 E2B**：L3 沿用 E2B 风格的方法名，并提供一个小的迁移辅助（`agent_sandbox.compat`）；L2 层自行实现协议，不依赖 E2B SDK
+2. **渐进式复杂度**：用户从 L3 开始，按需向下探索或向上使用高级功能
+3. **零配置默认**：开箱即用的默认值，设置 `ABX_SANDBOX_API_KEY` 环境变量即可启动
+4. **阿里云原生**：为阿里云 FC 沙箱服务而做
 5. **AI First**：沙箱内置 AI CLI 工具、MCP Server 是一等公民，SDK 零 LLM 依赖
 6. **类型安全**：全面使用 Python Type Hints + Pydantic 验证

@@ -1,8 +1,8 @@
-# Easy Sandbox — Examples
+# Agent Sandbox — Examples
 
 **English** | [中文](README.zh-CN.md)
 
-This directory contains complete usage examples for the Easy Sandbox SDK, covering everything from basic operations to advanced scenarios.
+This directory contains complete usage examples for the Agent Sandbox SDK, covering everything from basic operations to advanced scenarios.
 
 ## Prerequisites
 
@@ -10,26 +10,26 @@ This directory contains complete usage examples for the Easy Sandbox SDK, coveri
 
 ```bash
 # Full install (recommended — includes the declarative decorator, MCP server, ...)
-pip install "easy-sandbox[all]"
+pip install "agent-sandbox[all]"
 
 # Or install selectively
-pip install "easy-sandbox[declarative]"   # @sandbox decorator only
+pip install "agent-sandbox[declarative]"   # @sandbox decorator only
 
 # From source (run from the python-sdk repository root)
 pip install -e ./server-sdk -e ./client-sdk
 
-# The ebx CLI is a separate Node.js project (the `cli` repository)
-npm install -g @easy-sandbox/cli
+# The abx CLI is a separate Node.js project (the `cli` repository)
+npm install -g @agent-sandbox/cli
 ```
 
 ### 2. Configure Credentials
 
 ```bash
 # Option 1: Environment variable
-export EBX_SANDBOX_API_KEY="your-api-key"
+export ABX_SANDBOX_API_KEY="your-api-key"
 
-# Option 2: CLI config (persisted to ~/.ebx/config.toml; requires the ebx CLI)
-ebx config set sandbox_api_key your-api-key
+# Option 2: CLI config (persisted to ~/.abx/config.toml; requires the abx CLI)
+abx config set sandbox_api_key your-api-key
 
 # For the Codex Agent example, also set:
 export OPENAI_API_KEY="your-openai-key-here"
@@ -60,17 +60,17 @@ examples/
 │   ├── modal_data_analysis.py # Modal-style data analysis
 │   └── comparison.py          # E2B vs Modal style comparison
 └── templates/                 # Offline fixtures (NOT the publishing source)
-    ├── python-hello/          # Publishable templates: github.com/Easy-Sandbox/awesome-templates
+    ├── python-hello/          # Publishable templates: github.com/alibaba-agent-sandbox/awesome-templates
     └── agents-cli/            # Agents API for Codex and Qwen Code; CLIs are not preinstalled
 ```
 
 > `templates/` keeps only the minimal `python-hello` **fixture** used by offline
 tests.  Official & community templates — content, index (`awesome-templates.yaml`),
 releases and CI — live in the single-source-of-truth repository
-[`Easy-Sandbox/awesome-templates`](https://github.com/Easy-Sandbox/awesome-templates);
-discover and install them with `ebx template search` / `ebx template install <name>`.
+[`alibaba-agent-sandbox/awesome-templates`](https://github.com/alibaba-agent-sandbox/awesome-templates);
+discover and install them with `abx template search` / `abx template install <name>`.
 
-[`templates/python-hello/call_api.py`](templates/python-hello/call_api.py) talks to a server that is already running (`GET /health`, `GET /capabilities`, `GET /commands`, one upload, one shell). The base URL comes from argv or `EBX_TEMPLATE_URL`; the token comes from `EBX_SERVER_TOKEN`. Request and response shapes are in the [template server HTTP API](../docs/en/guide/template-server-api.md) guide ([中文](../docs/zh/guide/template-server-api.md)).
+[`templates/python-hello/call_api.py`](templates/python-hello/call_api.py) talks to a server that is already running (`GET /health`, `GET /capabilities`, `GET /commands`, one upload, one shell). The base URL comes from argv or `ABX_TEMPLATE_URL`; the token comes from `ABX_SERVER_TOKEN`. Request and response shapes are in the [template server HTTP API](../docs/en/guide/template-server-api.md) guide ([中文](../docs/zh/guide/template-server-api.md)).
 
 ## Example Catalog
 
@@ -117,7 +117,7 @@ python examples/quickstart/04_data_analysis.py
 # @sandbox decorator
 python examples/quickstart/05_decorator_usage.py
 
-# E2B compatibility
+# E2B-style API usage
 python examples/compat-demos/e2b_data_analysis.py
 ```
 
@@ -126,26 +126,25 @@ python examples/compat-demos/e2b_data_analysis.py
 ### Execution Methods
 
 ```python
-from easy_sandbox import Sandbox
+from agent_sandbox import Sandbox
 
 async with await Sandbox.create(template="base", api_key="...") as sandbox:
 
-    # 1. Bare shell — sandbox.run(cmd)
-    proc = await sandbox.run("echo hello")
+    # 1. Bare shell — sandbox.commands.run(cmd)
+    proc = await sandbox.commands.run("echo hello")
     print(proc.stdout, proc.exit_code)
 
     # 2. Code interpreter — sandbox.run_code(code)
     code_result = await sandbox.run_code("print(1 + 1)")
     print(code_result.text)   # "2"
 
-    # 3. Named command — sandbox.custom(name, **kwargs)
-    #    Resolves template custom_commands (A) then SandboxServer (B)
-    cmd_result = await sandbox.custom("hello", name="Alice")
-    print(cmd_result.value)   # command return value
-    print(cmd_result.source)  # "template" or "server"
+    # 3. Named command — sandbox.run(name, **kwargs)
+    #    POST /commands/hello on the template's SandboxServer
+    value = await sandbox.run("hello", name="Alice")
+    print(value)              # command return value
 ```
 
-> **E2B compatibility:** `sandbox.commands.run(cmd)` is the low-level entry that `sandbox.run()` delegates to. Existing E2B code continues to work.
+> **Note:** `sandbox.run(name, **kwargs)` calls a command registered in the template's server; it never runs a shell string. Use `sandbox.commands.run(cmd)` for that.
 
 ### File Operations
 
@@ -165,7 +164,7 @@ async with await Sandbox.create(template="base", api_key="...") as sandbox:
 ### Declarative Decorator
 
 ```python
-from easy_sandbox.declarative import sandbox
+from agent_sandbox.declarative import sandbox
 
 @sandbox(template="code-interpreter", packages=["numpy"])
 def compute(n: int) -> float:

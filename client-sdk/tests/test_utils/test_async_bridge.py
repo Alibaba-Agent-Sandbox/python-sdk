@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from easy_sandbox.utils.async_bridge import make_sync, run_sync
+from agent_sandbox.utils.async_bridge import make_sync, run_sync
 
 
 class TestRunSync:

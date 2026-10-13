@@ -24,15 +24,18 @@ from urllib.parse import parse_qs
 import pytest
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator
     from pathlib import Path
 
-import easy_sandbox.server.routes_agents  # noqa: F401  (registers routes)
-from easy_sandbox.server.agents.api_responses import ResponsesSocket
-from easy_sandbox.server.app import SandboxRequestHandler
-from easy_sandbox.server.router import CapabilityGroup, default_table
-from easy_sandbox.server.routes_agents import get_agent_runtime, reset_agent_runtime
-from easy_sandbox.server.types import ServerRequest, ServerResponse, SSEResponse
+import agent_sandbox.server.routes_agents  # noqa: F401  (registers routes)
+from agent_sandbox.server.agents.api_responses import ResponsesSocket
+from agent_sandbox.server.app import SandboxRequestHandler
+from agent_sandbox.server.endpoints import ENDPOINTS
+from agent_sandbox.server.router import CapabilityGroup, default_table
+from agent_sandbox.server.routes_agents import get_agent_runtime, reset_agent_runtime
+from agent_sandbox.server.types import ServerRequest, ServerResponse, SSEResponse
+
+from ._live import wire
 
 CANARY = "canary-secret-7f3a91c2d4e5"
 MCP_URL = "https://mcp.example.com/mcp"
@@ -94,19 +97,19 @@ def install(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Callable[..., Pa
 @pytest.fixture(autouse=True)
 def _isolate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, install: Callable[..., Path]) -> Any:
     for name in (
-        "EBX_AGENTS_DEFAULT",
-        "EBX_AGENTS_CONFIG",
-        "EBX_SERVER_TOKEN",
-        "EBX_AGENTS_TRACES",
-        "EBX_AGENTS_ALLOW_PRIVATE_URLS",
-        "EBX_AGENTS_WEBHOOK_ALLOW_HTTP",
-        "EBX_AGENTS_MAX_FILE_BYTES",
+        "ABX_AGENTS_DEFAULT",
+        "ABX_AGENTS_CONFIG",
+        "ABX_SERVER_TOKEN",
+        "ABX_AGENTS_TRACES",
+        "ABX_AGENTS_ALLOW_PRIVATE_URLS",
+        "ABX_AGENTS_WEBHOOK_ALLOW_HTTP",
+        "ABX_AGENTS_MAX_FILE_BYTES",
         "CODEX_HOME",
     ):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setenv("EBX_AGENTS_PERSIST", "0")
+    monkeypatch.setenv("ABX_AGENTS_PERSIST", "0")
     rw = tmp_path / "responses-ws"
-    monkeypatch.setenv("EBX_AGENTS_RESPONSES_WORKSPACE", str(rw))
+    monkeypatch.setenv("ABX_AGENTS_RESPONSES_WORKSPACE", str(rw))
     install("codex", _script(codex_lines()))
     install("qwen", _script(qwen_lines()))
     reset_agent_runtime()
@@ -148,7 +151,7 @@ def call(
 def ok(response: Any, status: int = 200) -> Any:
     assert isinstance(response, ServerResponse), response
     assert response.status == status, response.body
-    assert response.headers.get("X-Easy-Sandbox-Local") == "1"
+    assert response.headers.get("X-Agent-Sandbox-Local") == "1"
     return response.body
 
 
@@ -159,7 +162,7 @@ def refused(
     assert response.status == status, response.body
     error = response.body["error"]
     assert response.headers.get("x-should-retry") == "false"
-    assert response.headers.get("X-Easy-Sandbox-Local") == "1"
+    assert response.headers.get("X-Agent-Sandbox-Local") == "1"
     assert error["type"] == ("not_found_error" if status == 404 else "invalid_request_error")
     if param is not None:
         assert error["param"] == param
@@ -253,18 +256,18 @@ def walk_strings(node: Any) -> list[str]:
 class TestLabelContract:
     def test_existing_and_new_objects_carry_the_label(self, ws: Path) -> None:
         session = new_session(ws)
-        assert session["x_easy_sandbox"]["local"] is True
-        assert session["x_easy_sandbox"]["compute"] == "local_process"
-        assert "queued_not_steered" in session["x_easy_sandbox"]["differences"]
+        assert session["x_agent_sandbox"]["local"] is True
+        assert session["x_agent_sandbox"]["compute"] == "local_process"
+        assert "queued_not_steered" in session["x_agent_sandbox"]["differences"]
         send(session["id"])
         wait_idle(session["id"])
         turn = ok(call("GET", f"/v1/agents/sessions/{session['id']}/turns"))["data"][0]
         item = ok(call("GET", f"/v1/agents/sessions/{session['id']}/items"))["data"][0]
         for obj in (turn, item):
-            assert obj["x_easy_sandbox"]["local"] is True
-            assert obj["x_easy_sandbox"]["compute"] != "openai_hosted"
+            assert obj["x_agent_sandbox"]["local"] is True
+            assert obj["x_agent_sandbox"]["compute"] != "openai_hosted"
         runtimes = ok(call("GET", "/v1/agents/runtimes"))["data"]
-        assert all(r["x_easy_sandbox"]["local"] for r in runtimes)
+        assert all(r["x_agent_sandbox"]["local"] for r in runtimes)
 
     def test_no_object_claims_hosted_compute(self, ws: Path) -> None:
         env = make_env(ws)
@@ -272,8 +275,8 @@ class TestLabelContract:
         agent = ok(call("POST", "/v1/agents", {"model": "codex"}))
         tmpl = ok(call("POST", "/v1/agents/environments/templates", {"name": "t"}))
         for obj in (env, vault, agent, tmpl):
-            assert obj["x_easy_sandbox"]["compute"] in ("local_state", "local_process", "none")
-            assert "openai_hosted" not in json.dumps(obj["x_easy_sandbox"])
+            assert obj["x_agent_sandbox"]["compute"] in ("local_state", "local_process", "none")
+            assert "openai_hosted" not in json.dumps(obj["x_agent_sandbox"])
 
     @pytest.mark.parametrize(
         ("method", "path"),
@@ -287,7 +290,7 @@ class TestLabelContract:
     def test_cannot_routes_are_labeled_404(self, method: str, path: str) -> None:
         response = call(method, path, {})
         error = refused(response, 404, code="agents.not_implemented_locally")
-        assert error["x_easy_sandbox"]["differences"] == ["not_implemented_locally"]
+        assert error["x_agent_sandbox"]["differences"] == ["not_implemented_locally"]
         assert response.status != 501
         assert response.body != {}
 
@@ -303,7 +306,7 @@ class TestLabelContract:
                 assert status == 404
                 assert body["error"]["type"] == "not_found_error"
                 assert headers["x-should-retry"] == "false"
-                assert headers["x-easy-sandbox-local"] == "1"
+                assert headers["x-agent-sandbox-local"] == "1"
         finally:
             httpd.shutdown()
 
@@ -319,7 +322,7 @@ class TestLabelContract:
                     "POST",
                     "/v1/responses",
                     {"model": "m", "input": "hi"},
-                    headers={"X-EBX-Adapter": name},
+                    headers={"X-ABX-Adapter": name},
                 ),
                 404,
                 param="adapter",
@@ -327,8 +330,9 @@ class TestLabelContract:
         ids = [m["id"] for m in ok(call("GET", "/v1/models"))["data"]]
         assert ids == ["codex", "qwen-code"]
         runtimes = ok(call("GET", "/v1/agents/runtimes?limit=100&order=asc"))["data"]
-        assert [r["name"] for r in runtimes] == ["codex", "qwen-code"]
-        assert [r["default"] for r in runtimes] == [True, False]
+        assert [r["name"] for r in runtimes][:2] == ["codex", "qwen-code"]
+        assert [r["implemented"] for r in runtimes] == [True, True, False, False, False]
+        assert [r["default"] for r in runtimes] == [True, False, False, False, False]
 
     def test_group_disabled_hides_every_new_route(self) -> None:
         table = default_table()
@@ -374,7 +378,7 @@ class TestDefinitions:
         assert created["id"].startswith("agent_") and created["id"] != "reviewer"
         assert created["model"] == "gpt-5-codex"
         assert created["multi_agent"]["enabled"] is False
-        assert created["x_easy_sandbox"]["runtime"] == "codex"
+        assert created["x_agent_sandbox"]["runtime"] == "codex"
         got = ok(call("GET", f"/v1/agents/{created['id']}"))
         assert got == created
         updated = ok(
@@ -394,7 +398,7 @@ class TestDefinitions:
             "id": created["id"],
             "object": "agent.deleted",
             "deleted": True,
-            "x_easy_sandbox": deleted["x_easy_sandbox"],
+            "x_agent_sandbox": deleted["x_agent_sandbox"],
         }
         refused(call("GET", f"/v1/agents/{created['id']}"), 404, code="resource_not_found")
 
@@ -582,21 +586,21 @@ class TestEnvironments:
         assert env["type"] == "self_hosted"
         assert env["status"] == "ready"
         assert env["id"].startswith("env_")
-        assert "local_workspace" in env["x_easy_sandbox"]["differences"]
+        assert "local_workspace" in env["x_agent_sandbox"]["differences"]
         assert ok(call("GET", f"/v1/agents/environments/{env['id']}")) == env
         assert [e["id"] for e in ok(call("GET", "/v1/agents/environments"))["data"]] == [env["id"]]
         assert ok(call("GET", "/v1/agents/environments?type=openai_hosted"))["data"] == []
 
     def test_empty_hosted_request_is_converted_and_says_so(self, ws: Path, monkeypatch) -> None:
         monkeypatch.setattr(
-            "easy_sandbox.server.agents.api_environments.check_workspace_root",
+            "agent_sandbox.server.agents.api_environments.check_workspace_root",
             lambda path, field="": str(ws),
         )
         body = ok(
             call("POST", "/v1/agents/environments", {"environment": {"type": "openai_hosted"}})
         )
         assert body["type"] == "self_hosted"
-        assert "hosted_request_converted" in body["x_easy_sandbox"]["differences"]
+        assert "hosted_request_converted" in body["x_agent_sandbox"]["differences"]
 
     def test_configured_hosted_request_is_refused(self, ws: Path) -> None:
         refused(
@@ -701,7 +705,7 @@ class TestEnvironments:
             "NODE_OPTIONS",
             "PYTHONPATH",
             "GIT_SSH_COMMAND",
-            "EBX_SERVER_TOKEN",
+            "ABX_SERVER_TOKEN",
             "LD_PRELOAD",
         ],
     )
@@ -734,7 +738,7 @@ class TestEnvironmentFiles:
         assert written["environment_id"] == env["id"]
         assert written["path"] == "/workspace/src/main.py"
         assert written["size_bytes"] == 8
-        assert written["x_easy_sandbox"]["differences"] == ["local_workspace", "no_overwrite"]
+        assert written["x_agent_sandbox"]["differences"] == ["local_workspace", "no_overwrite"]
         assert (ws / "src" / "main.py").read_text() == "print(1)"
         ok(self._create(env["id"], "/workspace/src/main.py", "print(1)"))
         refused(
@@ -799,7 +803,7 @@ class TestEnvironmentFiles:
         refused(self._create(env["id"], path), 400)
 
     def test_size_cap_and_bad_base64(self, ws: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("EBX_AGENTS_MAX_FILE_BYTES", "8")
+        monkeypatch.setenv("ABX_AGENTS_MAX_FILE_BYTES", "8")
         env = make_env(ws)
         refused(
             self._create(env["id"], "/workspace/big", "123456789"),
@@ -845,7 +849,7 @@ class TestBlobStore:
         )
         assert blob["id"].startswith("file-") and blob["object"] == "file"
         assert blob["bytes"] == 9 and blob["purpose"] == "user_data"
-        assert blob["x_easy_sandbox"]["differences"] == ["local_blob"]
+        assert blob["x_agent_sandbox"]["differences"] == ["local_blob"]
         env = make_env(ws)
         written = ok(
             call(
@@ -910,7 +914,7 @@ class TestTemplates:
         assert created["files"] == [
             {"type": "inline", "path": "/workspace/t.txt", "size_bytes": 26}
         ]
-        assert created["x_easy_sandbox"]["differences"] == [
+        assert created["x_agent_sandbox"]["differences"] == [
             "not_hosted_template",
             "applies_env_and_files_only",
         ]
@@ -1033,8 +1037,8 @@ class TestVaults:
     def test_vault_crud(self) -> None:
         vault = ok(call("POST", "/v1/vaults", {"name": "team", "metadata": {"k": "v"}}))
         assert vault["object"] == "vault"
-        assert set(vault) == {"id", "object", "created_at", "metadata", "name", "x_easy_sandbox"}
-        assert vault["x_easy_sandbox"]["differences"] == ["memory_only"]
+        assert set(vault) == {"id", "object", "created_at", "metadata", "name", "x_agent_sandbox"}
+        assert vault["x_agent_sandbox"]["differences"] == ["memory_only"]
         assert ok(call("GET", f"/v1/vaults/{vault['id']}")) == vault
         renamed = ok(
             call("POST", f"/v1/vaults/{vault['id']}", {"name": None, "metadata": {"a": "b"}})
@@ -1049,7 +1053,7 @@ class TestVaults:
         refused(call("GET", f"/v1/vaults/{vault['id']}"), 404, code="resource_not_found")
 
     def test_vault_limit(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("EBX_AGENTS_MAX_VAULTS", "1")
+        monkeypatch.setenv("ABX_AGENTS_MAX_VAULTS", "1")
         reset_agent_runtime()
         ok(call("POST", "/v1/vaults", {}))
         refused(call("POST", "/v1/vaults", {}), 400, code="agents.limit_exceeded")
@@ -1061,7 +1065,7 @@ class TestVaults:
         assert created["object"] == "vault.credential"
         assert created["vault_id"] == vault["id"]
         assert created["auth"] == {"type": "static_bearer", "mcp_server_url": MCP_URL}
-        assert created["x_easy_sandbox"]["differences"] == ["memory_only", "secret_in_agent_env"]
+        assert created["x_agent_sandbox"]["differences"] == ["memory_only", "secret_in_agent_env"]
         cid = created["id"]
         bodies = [
             created,
@@ -1247,9 +1251,9 @@ class TestCredentialInjection:
         wait_idle(session["id"])
         argv = (ws / "argv.txt").read_text()
         assert CANARY not in argv
-        assert "env_http_headers" in argv and "EBX_MCP_DOCS_AUTHORIZATION" in argv
+        assert "env_http_headers" in argv and "ABX_MCP_DOCS_AUTHORIZATION" in argv
         env_dump = (ws / "env.txt").read_text()
-        assert f"EBX_MCP_DOCS_AUTHORIZATION=Bearer {CANARY}" in env_dump
+        assert f"ABX_MCP_DOCS_AUTHORIZATION=Bearer {CANARY}" in env_dump
         everything = json.dumps(
             [
                 ok(call("GET", f"/v1/agents/sessions/{session['id']}")),
@@ -1272,8 +1276,8 @@ class TestCredentialInjection:
         wait_idle(session["id"])
         settings = (ws / ".qwen" / "settings.json").read_text()
         assert CANARY not in settings
-        assert "${EBX_MCP_DOCS_AUTHORIZATION}" in settings
-        assert f"EBX_MCP_DOCS_AUTHORIZATION=Bearer {CANARY}" in (ws / "env.txt").read_text()
+        assert "${ABX_MCP_DOCS_AUTHORIZATION}" in settings
+        assert f"ABX_MCP_DOCS_AUTHORIZATION=Bearer {CANARY}" in (ws / "env.txt").read_text()
 
     def test_rotation_reaches_the_next_turn(self, ws: Path, install: Callable[..., Path]) -> None:
         install("codex", _script(codex_lines(), pre=DUMP))
@@ -1487,7 +1491,7 @@ class TestArtifacts:
         assert art["size_bytes"] == 14
         assert art["session_id"] == session["id"]
         assert art["turn_id"].startswith("turn_")
-        assert art["x_easy_sandbox"]["differences"] == ["snapshot_copy", "reported_paths_only"]
+        assert art["x_agent_sandbox"]["differences"] == ["snapshot_copy", "reported_paths_only"]
         assert str(ws) not in json.dumps(art)
         assert ok(call("GET", f"{base}/{art['id']}")) == art
         (ws / "out.txt").write_text("changed afterwards")
@@ -1495,10 +1499,10 @@ class TestArtifacts:
         assert isinstance(content, SSEResponse)
         assert content.headers["X-Content-Type-Options"] == "nosniff"
         assert content.headers["Content-Disposition"].startswith("attachment")
-        assert content.headers["X-Easy-Sandbox-Local"] == "1"
+        assert content.headers["X-Agent-Sandbox-Local"] == "1"
         assert b"".join(content.event_iterator) == b"artifact-bytes"
         deleted = ok(call("DELETE", f"{base}/{art['id']}"))
-        assert deleted["x_easy_sandbox"]["deleted_scope"] == "snapshot"
+        assert deleted["x_agent_sandbox"]["deleted_scope"] == "snapshot"
         assert deleted["object"] == "agent.session.artifact.deleted"
         assert (ws / "out.txt").read_text() == "changed afterwards"
         refused(call("GET", f"{base}/{art['id']}"), 404)
@@ -1599,7 +1603,7 @@ class TestArtifacts:
         session = self._run_codex(ws, install)
         base = f"/v1/agents/sessions/{session['id']}/artifacts"
         assert ok(call("GET", f"{base}?environment_id=env_other"))["data"] == []
-        assert len(ok(call("GET", f"{base}?environment_id=env_easy_sandbox"))["data"]) == 1
+        assert len(ok(call("GET", f"{base}?environment_id=env_agent_sandbox"))["data"]) == 1
         ok(call("DELETE", f"/v1/agents/sessions/{session['id']}"))
         refused(call("GET", base), 404)
 
@@ -1632,12 +1636,12 @@ class TestTraces:
         wait_idle(session["id"])
         url = f"/v1/agents/sessions/{session['id']}/traces"
         assert ok(call("GET", url))["data"] == []
-        monkeypatch.setenv("EBX_AGENTS_TRACES", "1")
+        monkeypatch.setenv("ABX_AGENTS_TRACES", "1")
         traces = ok(call("GET", url))["data"]
         assert len(traces) == 1
         trace = traces[0]
         assert trace["object"] == "agent.session.trace"
-        assert trace["x_easy_sandbox"]["differences"] == ["trace_from_journal_timing_only"]
+        assert trace["x_agent_sandbox"]["differences"] == ["trace_from_journal_timing_only"]
         assert CANARY not in json.dumps(trace) and "echo" not in json.dumps(trace)
         span = trace["otlp"]["resourceSpans"][0]["scopeSpans"][0]["spans"][0]
         assert int(span["endTimeUnixNano"]) >= int(span["startTimeUnixNano"])
@@ -1721,13 +1725,13 @@ class TestSubagents:
         assert sub["parent_agent_id"] == session["agent"]["id"]
         assert sub["status"] == "active"
         assert sub["instructions"] == [{"type": "input_text", "text": "do the child task"}]
-        assert sub["x_easy_sandbox"]["differences"] == ["ids_from_cli_only"]
+        assert sub["x_agent_sandbox"]["differences"] == ["ids_from_cli_only"]
         assert ok(call("GET", f"{base}/thr-child-0001")) == sub
         refused(call("GET", f"{base}/thr-unrelated-9"), 404)
         turns = ok(call("GET", f"{base}/thr-child-0001/turns?order=asc"))["data"]
         assert [t["id"] for t in turns] == ["ct-1", "ct-2"]
         assert all(t["subagent_id"] == "thr-child-0001" for t in turns)
-        assert "turns_from_rollout" in turns[0]["x_easy_sandbox"]["differences"]
+        assert "turns_from_rollout" in turns[0]["x_agent_sandbox"]["differences"]
         assert ok(call("GET", f"{base}/thr-child-0001/turns/ct-2"))["id"] == "ct-2"
         refused(call("GET", f"{base}/thr-child-0001/turns/ct-9"), 404)
         items = ok(call("GET", f"{base}/thr-child-0001/items?order=asc"))["data"]
@@ -1859,7 +1863,7 @@ class TestSubagents:
         turns = ok(call("GET", f"{base}/toolu_agent1/turns?order=asc"))["data"]
         assert len(turns) == 2
         assert all(t["status"] == "completed" for t in turns)
-        assert "turns_grouped_from_parent_stream" in turns[0]["x_easy_sandbox"]["differences"]
+        assert "turns_grouped_from_parent_stream" in turns[0]["x_agent_sandbox"]["differences"]
         items = ok(call("GET", f"{base}/toolu_agent1/items?order=asc"))["data"]
         assert [i["type"] for i in items] == [
             "message",
@@ -1910,8 +1914,8 @@ class TestResponses:
         assert response["id"].startswith("resp_")
         assert response["status"] == "completed"
         assert response["model"] == "gpt-5-codex"
-        assert response["x_easy_sandbox"]["model_resolved"] is True
-        assert response["x_easy_sandbox"]["compute"] == "local_process"
+        assert response["x_agent_sandbox"]["model_resolved"] is True
+        assert response["x_agent_sandbox"]["compute"] == "local_process"
         assert response["metadata"] == {"k": "v"}
         assert response["tools"] == []
         assert response["usage"]["input_tokens"] == 3
@@ -1934,7 +1938,7 @@ class TestResponses:
     def test_model_alias_is_not_a_model_and_says_so(self) -> None:
         response = create_response(model="qwen")
         assert response["model"] == "qwen-code"
-        assert response["x_easy_sandbox"]["model_resolved"] is False
+        assert response["x_agent_sandbox"]["model_resolved"] is False
         assert response["output"][0]["content"][0]["text"] == "qwen-fake-ok"
 
     def test_model_selects_a_stored_definition(self, ws: Path) -> None:
@@ -2027,7 +2031,7 @@ class TestResponses:
             },
         )
         assert response.status == 200
-        header = response.headers["X-Easy-Sandbox-Ignored-Params"]
+        header = response.headers["X-Agent-Sandbox-Ignored-Params"]
         assert set(header.split(",")) == {"temperature", "top_p", "max_output_tokens"}
 
     def test_omitted_adapter_uses_the_first_runtime(self) -> None:
@@ -2120,7 +2124,7 @@ class TestResponses:
         assert mcp["server_label"] == "docs" and mcp["name"] == "lookup"
         for item in output:
             if item["type"] != "message":
-                assert item["x_easy_sandbox"]["local"] is True
+                assert item["x_agent_sandbox"]["local"] is True
 
     def test_failed_turn_reports_failed_not_completed(self, install: Callable[..., Path]) -> None:
         install("codex", _script([{"type": "thread.started", "thread_id": "t"}], exit_code=3))
@@ -2218,7 +2222,7 @@ class TestResponses:
     def test_stream_replays_the_turn_with_official_event_names(self) -> None:
         stream = call("POST", "/v1/responses", {"model": "codex", "input": "s", "stream": True})
         assert isinstance(stream, SSEResponse)
-        assert stream.headers["X-Easy-Sandbox-Local"] == "1"
+        assert stream.headers["X-Agent-Sandbox-Local"] == "1"
         events = sse_events(stream)
         types_ = [e["type"] for e in events]
         assert types_[:2] == ["response.created", "response.in_progress"]
@@ -2232,9 +2236,9 @@ class TestResponses:
         assert events[0]["response"]["status"] == "in_progress"
         assert events[0]["response"]["output"] == []
         assert (
-            "stream_replayed_after_turn" in events[0]["response"]["x_easy_sandbox"]["differences"]
+            "stream_replayed_after_turn" in events[0]["response"]["x_agent_sandbox"]["differences"]
         )
-        assert "stream_replayed_after_turn" in final["x_easy_sandbox"]["differences"]
+        assert "stream_replayed_after_turn" in final["x_agent_sandbox"]["differences"]
         rid = final["id"]
         replay = sse_events(call("GET", f"/v1/responses/{rid}?stream=true&starting_after=3"))
         assert replay[0]["sequence_number"] == 4
@@ -2263,7 +2267,7 @@ class TestResponses:
         )
         final = steered[-1]["response"]
         assert final["previous_response_id"] == first["id"]
-        assert "queued_steer" in final["x_easy_sandbox"]["differences"]
+        assert "queued_steer" in final["x_agent_sandbox"]["differences"]
         bad = engine.handle(
             {
                 "type": "response.create",
@@ -2292,7 +2296,7 @@ class TestCompact:
         assert compacted["object"] == "response.compaction"
         assert compacted["id"].startswith("resp_cmp_")
         assert compacted["output"][0]["type"] == "message"
-        label_ = compacted["x_easy_sandbox"]
+        label_ = compacted["x_agent_sandbox"]
         assert "summary_not_encrypted_compaction" in label_["differences"]
         assert label_["original_token_count"] == 900 and label_["new_token_count"] == 120
         assert ok(call("GET", f"/v1/responses/{first['id']}"))["id"] == first["id"]
@@ -2338,16 +2342,16 @@ class TestModels:
         by_id = {m["id"]: m for m in listing["data"]}
         assert set(by_id) == {agent["id"], "codex", "qwen-code"}
         for model in listing["data"]:
-            assert model["object"] == "model" and model["owned_by"] == "easy-sandbox-local"
-            assert model["x_easy_sandbox"]["compute"] == "none"
-        assert by_id["codex"]["x_easy_sandbox"] == {
+            assert model["object"] == "model" and model["owned_by"] == "agent-sandbox-local"
+            assert model["x_agent_sandbox"]["compute"] == "none"
+        assert by_id["codex"]["x_agent_sandbox"] == {
             "local": True,
             "compute": "none",
             "differences": [],
             "kind": "adapter",
             "installed": True,
         }
-        assert by_id[agent["id"]]["x_easy_sandbox"]["kind"] == "agent_definition"
+        assert by_id[agent["id"]]["x_agent_sandbox"]["kind"] == "agent_definition"
         assert ok(call("GET", "/v1/models/codex"))["id"] == "codex"
         assert "gpt-4o" not in by_id
         error = refused(call("GET", "/v1/models/gpt-4o"), 404, code="model_not_found")
@@ -2365,7 +2369,7 @@ class TestModels:
         monkeypatch.setenv("PATH", str(empty))
         reset_agent_runtime()
         by_id = {m["id"]: m for m in ok(call("GET", "/v1/models"))["data"]}
-        assert by_id["codex"]["x_easy_sandbox"]["installed"] is False
+        assert by_id["codex"]["x_agent_sandbox"]["installed"] is False
 
 
 class _Receiver:
@@ -2395,8 +2399,8 @@ class _Receiver:
 
 @pytest.fixture
 def receiver(monkeypatch: pytest.MonkeyPatch) -> Any:
-    monkeypatch.setenv("EBX_AGENTS_ALLOW_PRIVATE_URLS", "1")
-    monkeypatch.setenv("EBX_AGENTS_WEBHOOK_ALLOW_HTTP", "1")
+    monkeypatch.setenv("ABX_AGENTS_ALLOW_PRIVATE_URLS", "1")
+    monkeypatch.setenv("ABX_AGENTS_WEBHOOK_ALLOW_HTTP", "1")
     rec = _Receiver()
     yield rec
     rec.close()
@@ -2594,7 +2598,7 @@ def _serve(port: int, *, enable: bool = True) -> ThreadingHTTPServer:
     if enable:
         default_table().enable_group(CapabilityGroup.AGENTS)
     httpd = ThreadingHTTPServer(("127.0.0.1", port), SandboxRequestHandler)
-    httpd.auth_token = None  # type: ignore[attr-defined]
+    wire(httpd, auth_token=None)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     time.sleep(0.05)
     return httpd
@@ -2645,7 +2649,7 @@ class TestOverHttp:
             status, agent, headers = _http(
                 port, "POST", "/v1/agents", {"model": "m", "adapter": "codex"}
             )
-            assert status == 200 and headers["x-easy-sandbox-local"] == "1"
+            assert status == 200 and headers["x-agent-sandbox-local"] == "1"
             status, session, _ = _http(
                 port,
                 "POST",
@@ -2663,7 +2667,7 @@ class TestOverHttp:
                 {"events": [{"type": "agent.session.input.message", "input": "go"}]},
             )
             assert status == 202 and raw == b""
-            wait_idle(session["id"])
+            wait_idle(session["id"], principal="anonymous")
             status, listing, _ = _http(
                 port, "GET", f"/v1/agents/sessions/{session['id']}/artifacts"
             )
@@ -2677,7 +2681,7 @@ class TestOverHttp:
             assert resp.status == 200
             assert resp.read() == b"wire-bytes"
             assert resp.getheader("X-Content-Type-Options") == "nosniff"
-            assert resp.getheader("X-Easy-Sandbox-Local") == "1"
+            assert resp.getheader("X-Agent-Sandbox-Local") == "1"
             conn.close()
             status, body, headers = _http(port, "GET", "/v1/vaults/vlt_nope")
             assert status == 404 and headers["x-should-retry"] == "false"
@@ -2686,7 +2690,7 @@ class TestOverHttp:
                 port, "POST", "/v1/responses", {"model": "codex", "input": "hi", "adapter": "codex"}
             )
             assert status == 200 and response["object"] == "response"
-            assert headers["x-easy-sandbox-local"] == "1"
+            assert headers["x-agent-sandbox-local"] == "1"
         finally:
             httpd.shutdown()
 
@@ -2694,7 +2698,7 @@ class TestOverHttp:
         default_table().enable_group(CapabilityGroup.AGENTS)
         port = _free_port()
         httpd = ThreadingHTTPServer(("127.0.0.1", port), SandboxRequestHandler)
-        httpd.auth_token = "tok"  # type: ignore[attr-defined]
+        wire(httpd, auth_token="tok")
         threading.Thread(target=httpd.serve_forever, daemon=True).start()
         try:
             assert _http(port, "GET", "/v1/vaults")[0] == 401
@@ -2702,3 +2706,382 @@ class TestOverHttp:
             assert status == 200
         finally:
             httpd.shutdown()
+
+
+# ---------------------------------------------------------------------- #
+# Every declared agents route does real work (table-driven)
+# ---------------------------------------------------------------------- #
+
+
+class TestEveryRoute:
+    """One real call per endpoint declared in the ``agents`` group, over HTTP.
+
+    The table is ordered by dependency (create before read, delete last) and a final test fails
+    when a declared agents endpoint has no case, so a new route cannot ship untested.
+    """
+
+    @pytest.fixture
+    def world(
+        self,
+        ws: Path,
+        tmp_path: Path,
+        receiver: _Receiver,
+        monkeypatch: pytest.MonkeyPatch,
+        install: Callable[..., Path],
+    ) -> Iterator[dict[str, Any]]:
+        home = tmp_path / "codex-home"
+        monkeypatch.setenv("CODEX_HOME", str(home))
+        write_rollout(home, "thr-child-0001", CHILD_ROLLOUT)
+        collab = {
+            "type": "item.completed",
+            "item": {
+                "id": "k1",
+                "type": "collab_tool_call",
+                "tool": "spawn_agent",
+                "sender_thread_id": "thr-parent-0001",
+                "receiver_thread_ids": ["thr-child-0001"],
+                "prompt": "do the child task",
+                "status": "completed",
+                "agents_states": {"thr-child-0001": {"status": "running"}},
+            },
+        }
+        written = {
+            "type": "item.completed",
+            "item": {
+                "id": "f1",
+                "type": "file_change",
+                "status": "completed",
+                "changes": [{"path": "out.txt", "kind": "add"}],
+            },
+        }
+        install(
+            "codex",
+            _script(codex_lines("done", collab, written), pre="printf 'bytes' > out.txt\n"),
+        )
+        reset_agent_runtime()
+        port = _free_port()
+        httpd = _serve(port)
+        yield {
+            "port": port,
+            "ws": ws,
+            "receiver": receiver,
+            "install": install,
+            "covered": set(),
+        }
+        httpd.shutdown()
+
+    @staticmethod
+    def _call(
+        w: dict[str, Any],
+        endpoint: str,
+        method: str,
+        path: str,
+        body: Any = None,
+        *,
+        status: int = 200,
+        code: str | None = None,
+    ) -> Any:
+        got, payload, headers = _http(w["port"], method, path, body)
+        assert got == status, f"{endpoint}: {method} {path} -> {got} {payload!r}"
+        assert headers["x-agent-sandbox-local"] == "1", endpoint
+        if code is not None:
+            assert payload["error"]["code"] == code, f"{endpoint}: {payload!r}"
+        w["covered"].add(endpoint)
+        return payload
+
+    def _wait_idle(self, w: dict[str, Any], session_id: str) -> None:
+        deadline = time.time() + 20
+        while time.time() < deadline:
+            session = self._call(
+                w, "agents_sessions_get", "GET", f"/v1/agents/sessions/{session_id}"
+            )
+            turns = self._call(
+                w, "agents_sessions_turns_list", "GET", f"/v1/agents/sessions/{session_id}/turns"
+            )["data"]
+            if (
+                session["status"] == "idle"
+                and turns
+                and all(t["status"] in ("completed", "failed", "cancelled") for t in turns)
+            ):
+                return
+            time.sleep(0.03)
+        pytest.fail("session did not become idle")
+
+    def test_runtimes_report_implemented_and_installed_for_every_declared_runtime(
+        self, world: dict[str, Any]
+    ) -> None:
+        data = self._call(
+            world, "agents_runtimes_list", "GET", "/v1/agents/runtimes?limit=100&order=asc"
+        )["data"]
+        by_name = {r["name"]: r for r in data}
+        assert list(by_name) == ["codex", "qwen-code", "claude-code", "command", "cursor"]
+        assert {n for n, r in by_name.items() if r["implemented"]} == {"codex", "qwen-code"}
+        for runtime in data:
+            assert isinstance(runtime["implemented"], bool)
+            assert isinstance(runtime["installed"], bool)
+            assert runtime["x_agent_sandbox"]["implemented"] is runtime["implemented"]
+        assert by_name["codex"]["installed"] and by_name["qwen-code"]["installed"]
+        assert by_name["codex"]["default"] is True
+        assert not any(by_name[n]["default"] for n in ("claude-code", "cursor", "command"))
+
+    def test_declared_but_unimplemented_runtime_points_at_the_runtimes_endpoint(
+        self, world: dict[str, Any]
+    ) -> None:
+        for name in ("claude-code", "cursor", "command"):
+            payload = self._call(
+                world,
+                "agents_definitions_create",
+                "POST",
+                "/v1/agents",
+                {"model": "m", "adapter": name},
+                status=404,
+                code="agents.not_implemented_locally",
+            )
+            error = payload["error"]
+            assert "/v1/agents/runtimes" in error["message"]
+            assert error["x_agent_sandbox"]["runtimes"] == "/v1/agents/runtimes"
+            assert "declared but has no local backend" in error["message"]
+        unknown = self._call(
+            world,
+            "agents_definitions_create",
+            "POST",
+            "/v1/agents",
+            {"model": "m", "adapter": "bogus"},
+            status=404,
+            code="agents.not_implemented_locally",
+        )
+        assert "not a declared runtime" in unknown["error"]["message"]
+
+    def test_every_declared_route_has_a_working_case(self, world: dict[str, Any]) -> None:
+        w = world
+        call_ = self._call
+        b64data = b64("hello")
+
+        # discovery
+        call_(w, "agents_runtimes_list", "GET", "/v1/agents/runtimes")
+        call_(w, "agents_models_list", "GET", "/v1/models")
+        assert call_(w, "agents_models_get", "GET", "/v1/models/codex")["id"] == "codex"
+        events = call_(w, "agents_webhook_event_types", "GET", "/v1/webhook_event_types")
+        assert events["data"]
+
+        # definitions
+        agent = call_(
+            w, "agents_definitions_create", "POST", "/v1/agents", {"model": "m", "adapter": "codex"}
+        )
+        call_(w, "agents_definitions_list", "GET", "/v1/agents")
+        call_(w, "agents_definitions_get", "GET", f"/v1/agents/{agent['id']}")
+        renamed = call_(
+            w, "agents_definitions_update", "POST", f"/v1/agents/{agent['id']}", {"name": "renamed"}
+        )
+        assert renamed["name"] == "renamed"
+
+        # environments, files, templates
+        env_body = {"environment": {"type": "self_hosted", "workspace_directory": str(w["ws"])}}
+        env = call_(w, "agents_environments_create", "POST", "/v1/agents/environments", env_body)
+        call_(w, "agents_environments_list", "GET", "/v1/agents/environments")
+        call_(w, "agents_environments_get", "GET", f"/v1/agents/environments/{env['id']}")
+        file_body = {"type": "inline", "path": "/workspace/a.txt", "data": b64data}
+        call_(
+            w,
+            "agents_environment_files_create",
+            "POST",
+            f"/v1/agents/environments/{env['id']}/files",
+            file_body,
+        )
+        listed = call_(
+            w, "agents_environment_files_list", "GET", f"/v1/agents/environments/{env['id']}/files"
+        )
+        assert [row["path"] for row in listed["data"]] == ["/workspace/a.txt"]
+        tmpl = call_(
+            w,
+            "agents_environment_templates_create",
+            "POST",
+            "/v1/agents/environments/templates",
+            {"name": "t"},
+        )
+        call_(w, "agents_environment_templates_list", "GET", "/v1/agents/environments/templates")
+        tpath = f"/v1/agents/environments/templates/{tmpl['id']}"
+        call_(w, "agents_environment_templates_get", "GET", tpath)
+        updated = call_(w, "agents_environment_templates_update", "POST", tpath, {"name": "t2"})
+        assert updated["name"] == "t2"
+
+        # blobs
+        blob = call_(
+            w, "agents_files_create", "POST", "/v1/files", {"purpose": "user_data", "data": b64data}
+        )
+        assert blob["bytes"] == 5
+
+        # vaults and credentials
+        vault = call_(w, "agents_vaults_create", "POST", "/v1/vaults", {"name": "v"})
+        call_(w, "agents_vaults_list", "GET", "/v1/vaults")
+        call_(w, "agents_vaults_get", "GET", f"/v1/vaults/{vault['id']}")
+        call_(w, "agents_vaults_update", "POST", f"/v1/vaults/{vault['id']}", {"name": "v2"})
+        cpath = f"/v1/vaults/{vault['id']}/credentials"
+        cred = call_(w, "agents_vault_credentials_create", "POST", cpath, cred_body())
+        call_(w, "agents_vault_credentials_list", "GET", cpath)
+        call_(w, "agents_vault_credentials_get", "GET", f"{cpath}/{cred['id']}")
+        call_(
+            w,
+            "agents_vault_credentials_update",
+            "POST",
+            f"{cpath}/{cred['id']}",
+            {"metadata": {"rotated": "1"}},
+        )
+
+        # sessions, events, turns, items
+        session = call_(
+            w,
+            "agents_sessions_create",
+            "POST",
+            "/v1/agents/sessions",
+            {"agent_id": agent["id"], "environment": env_body["environment"]},
+        )
+        sid = session["id"]
+        spath = f"/v1/agents/sessions/{sid}"
+        call_(w, "agents_sessions_list", "GET", "/v1/agents/sessions")
+        accepted = _http(
+            w["port"],
+            "POST",
+            f"{spath}/events",
+            {"events": [{"type": "agent.session.input.message", "input": "go"}]},
+        )
+        assert accepted[0] == 202
+        w["covered"].add("agents_sessions_events_create")
+        self._wait_idle(w, sid)
+        call_(w, "agents_sessions_update", "POST", spath, {"metadata": {"k": "v"}})
+        items = call_(w, "agents_sessions_items_list", "GET", f"{spath}/items")["data"]
+        assert items
+        turns = call_(w, "agents_sessions_turns_list", "GET", f"{spath}/turns")["data"]
+        turn_id = turns[0]["id"]
+        call_(w, "agents_sessions_turns_get", "GET", f"{spath}/turns/{turn_id}")
+        call_(w, "agents_sessions_turns_items_list", "GET", f"{spath}/turns/{turn_id}/items")
+        got, raw, _ = _http(w["port"], "GET", f"{spath}/events?after=0")
+        assert got == 200 and b"event" in raw or b"data" in raw
+        w["covered"].add("agents_sessions_events_stream")
+
+        # artifacts and traces
+        artifacts = call_(w, "agents_artifacts_list", "GET", f"{spath}/artifacts")["data"]
+        assert len(artifacts) == 1
+        apath = f"{spath}/artifacts/{artifacts[0]['id']}"
+        call_(w, "agents_artifacts_get", "GET", apath)
+        got, raw, _ = _http(w["port"], "GET", f"{apath}/content")
+        assert got == 200 and raw == b"bytes"
+        w["covered"].add("agents_artifacts_content")
+        call_(w, "agents_traces_list", "GET", f"{spath}/traces")
+
+        # subagents
+        sub = call_(w, "agents_subagents_list", "GET", f"{spath}/subagents")["data"]
+        assert [s["id"] for s in sub] == ["thr-child-0001"]
+        bpath = f"{spath}/subagents/thr-child-0001"
+        call_(w, "agents_subagents_get", "GET", bpath)
+        call_(w, "agents_subagents_items_list", "GET", f"{bpath}/items")
+        sub_turns = call_(w, "agents_subagents_turns_list", "GET", f"{bpath}/turns")["data"]
+        call_(w, "agents_subagents_turns_get", "GET", f"{bpath}/turns/{sub_turns[0]['id']}")
+        call_(
+            w,
+            "agents_subagents_turns_items_list",
+            "GET",
+            f"{bpath}/turns/{sub_turns[0]['id']}/items",
+        )
+
+        # responses
+        resp = call_(
+            w,
+            "agents_responses_create",
+            "POST",
+            "/v1/responses",
+            {"model": "codex", "input": "hi", "adapter": "codex"},
+        )
+        assert resp["object"] == "response"
+        rpath = f"/v1/responses/{resp['id']}"
+        call_(w, "agents_responses_get", "GET", rpath)
+        call_(w, "agents_responses_input_items", "GET", f"{rpath}/input_items")
+        qwen = call_(
+            w,
+            "agents_responses_create",
+            "POST",
+            "/v1/responses",
+            {"model": "qwen-code", "input": "hi", "adapter": "qwen-code"},
+        )
+        compact = call_(
+            w,
+            "agents_responses_compact",
+            "POST",
+            "/v1/responses/compact",
+            {"previous_response_id": qwen["id"], "adapter": "qwen-code"},
+        )
+        assert compact
+        call_(
+            w,
+            "agents_responses_connect",
+            "GET",
+            "/v1/responses",
+            status=400,
+            code="agents.websocket_upgrade_required",
+        )
+        w["install"]("codex", "#!/bin/sh\ncat >/dev/null\nsleep 30\n")
+        slow = call_(
+            w,
+            "agents_responses_create",
+            "POST",
+            "/v1/responses",
+            {"model": "codex", "input": "slow", "adapter": "codex", "background": True},
+        )
+        cancelled = call_(
+            w, "agents_responses_cancel", "POST", f"/v1/responses/{slow['id']}/cancel"
+        )
+        assert cancelled["status"] == "cancelled"
+        call_(w, "agents_responses_delete", "DELETE", rpath)
+
+        # webhooks
+        hook = call_(
+            w,
+            "agents_webhooks_create",
+            "POST",
+            "/v1/webhook_endpoints",
+            {"url": w["receiver"].url, "event_types": ["agent.session.idle"]},
+        )
+        hpath = f"/v1/webhook_endpoints/{hook['id']}"
+        call_(w, "agents_webhooks_list", "GET", "/v1/webhook_endpoints")
+        call_(w, "agents_webhooks_get", "GET", hpath)
+        call_(w, "agents_webhooks_update", "POST", hpath, {"name": "w2"})
+        rotated = call_(w, "agents_webhooks_rotate_secret", "POST", f"{hpath}/rotate_secret")
+        assert rotated["signing_secret"].startswith("whsec_")
+        before = len(w["receiver"].events)
+        call_(
+            w, "agents_webhooks_test", "POST", f"{hpath}/test", {"event_type": "agent.session.idle"}
+        )
+        assert len(w["receiver"].events) == before + 1
+
+        # refusals that are the documented answer, not stubs
+        for endpoint, method, path in (
+            ("agents_cannot_responses_input_tokens", "POST", "/v1/responses/input_tokens"),
+            ("agents_cannot_models_delete", "DELETE", "/v1/models/codex"),
+            (
+                "agents_cannot_executor_registration",
+                "POST",
+                f"/v1/agents/environments/{env['id']}/register",
+            ),
+            (
+                "agents_cannot_executor_channel",
+                "GET",
+                f"/v1/agents/environments/{env['id']}/connect",
+            ),
+        ):
+            payload = call_(
+                w, endpoint, method, path, {}, status=404, code="agents.not_implemented_locally"
+            )
+            assert payload["error"]["x_agent_sandbox"]["runtimes"] == "/v1/agents/runtimes"
+
+        # deletes
+        call_(w, "agents_artifacts_delete", "DELETE", apath)
+        call_(w, "agents_webhooks_delete", "DELETE", hpath)
+        call_(w, "agents_vault_credentials_delete", "DELETE", f"{cpath}/{cred['id']}")
+        call_(w, "agents_vaults_delete", "DELETE", f"/v1/vaults/{vault['id']}")
+        call_(w, "agents_environment_templates_delete", "DELETE", tpath)
+        call_(w, "agents_sessions_delete", "DELETE", spath)
+        call_(w, "agents_definitions_delete", "DELETE", f"/v1/agents/{agent['id']}")
+
+        declared = {name for name, ep in ENDPOINTS.items() if ep.group is CapabilityGroup.AGENTS}
+        assert len(declared) == 70
+        assert w["covered"] == declared, f"no case for: {sorted(declared - w['covered'])}"

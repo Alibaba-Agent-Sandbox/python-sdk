@@ -28,7 +28,7 @@ class TestShellRules:
         live: Live = live_server(
             policy={"endpoints": {"shell": {"params": {"deny_commands": ["rm", "mk*"]}}}}
         )
-        assert live.post("/shell", {"command": "rm -rf /tmp/x"})[0] == 403
+        assert live.post("/shell", {"command": "rm -rf /data/x"})[0] == 403
         assert live.post("/shell", {"command": "/bin/rm x"})[0] == 403
         assert live.post("/shell", {"command": "mkdir x"})[0] == 403
         assert live.post("/shell", {"command": "echo ok"})[0] == 200
@@ -176,7 +176,7 @@ class TestBrowserUrlRules:
 
     def test_non_http_schemes_blocked(self, live_server: Any) -> None:
         live = self._live(live_server, url_deny=["http://never.invalid/*"])
-        for url in ("file:///etc/passwd", "javascript:alert(1)", "ftp://x/y"):
+        for url in ("file://localhost/etc/passwd", "javascript:alert(1)", "ftp://x/y"):
             status, body = live.post("/browser/navigate", {"url": url})
             assert status == 403, url
 

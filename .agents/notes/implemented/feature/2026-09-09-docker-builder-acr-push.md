@@ -12,7 +12,7 @@ The custom-template build flow previously supported only platform-side build
    exist in ACR (the v2 API `from_image` parameter), but the SDK provided no
    full chain from local build to ACR push.
 3. **CLI lacks a local-build command**: users could not perform "build → push →
-   register template" in one shot through the `ebx` CLI.
+   register template" in one shot through the `abx` CLI.
 
 ## Decision
 Add the `api/docker_builder.py` module, which provides a `DockerBuilder` class
@@ -38,12 +38,12 @@ Three new error classes (E7020–E7022) are added in `models/errors.py`:
 
 ### CLI command
 
-Add the `ebx template build-local` subcommand:
+Add the `abx template build-local` subcommand:
 ```bash
-ebx template build-local ./examples/templates/python-hello \
+abx template build-local ./examples/templates/python-hello \
     --acr-namespace my-ns --acr-repo python-hello
 
-ebx template build-local ./my-template \
+abx template build-local ./my-template \
     --acr-namespace prod --acree-instance-id cri-xxx
 ```
 
@@ -130,7 +130,7 @@ class ACRLoginError(SandboxError):
   `docker push` commands are assembled correctly.
 - Error scenarios: Docker not installed → `DockerBuildError`; wrong ACR credentials
   → `ACRLoginError`; push failure → `ACRPushError`.
-- CLI: `ebx template build-local --help` argument completeness.
+- CLI: `abx template build-local --help` argument completeness.
 - E2E: cover the real build → push → register chain in Scenario B of
   `scripts/e2e/cloud_e2e_test.py`.
 
@@ -139,7 +139,7 @@ class ACRLoginError(SandboxError):
   register" chain.
 - The three new error classes (E7020/E7021/E7022) are raised correctly in their
   respective failure scenarios.
-- The `ebx template build-local` CLI command runs the complete flow.
+- The `abx template build-local` CLI command runs the complete flow.
 - The v3/v2 API methods in `protocol/template.py` align with E2B SDK 2.31.0.
 
 ## Files changed

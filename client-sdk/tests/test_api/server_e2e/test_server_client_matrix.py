@@ -7,11 +7,11 @@ from typing import Any
 
 import pytest
 
-pytest.importorskip("easy_sandbox.server", reason="needs the easy-sandbox-server distribution")
+pytest.importorskip("agent_sandbox.server", reason="needs the agent-sandbox-server distribution")
 
-from easy_sandbox.server.router import CapabilityGroup, default_table  # noqa: E402
+from agent_sandbox.server.router import CapabilityGroup, default_table  # noqa: E402
 
-from easy_sandbox.api.server_client import ServerClient  # noqa: E402
+from agent_sandbox.api.server_client import ServerClient  # noqa: E402
 
 #: Routes deliberately without a ``ServerClient`` method (see client-server-alignment.md N/A-7).
 _DELIBERATELY_ONE_SIDED_GROUPS = {CapabilityGroup.AGENTS}

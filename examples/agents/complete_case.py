@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Complete Agents API case: Codex and Qwen Code, no model key.
 
-This is not ``sb.agent.*``. That name is a different design (sugar over
-``commands.run()``). This script talks to the sandbox HTTP Agents API.
+This script talks to the sandbox HTTP Agents API, the one way to run an
+agent in a sandbox.
 
 The image does not contain the CLIs. This case writes two local programs
 named ``codex`` and ``qwen`` and puts them on ``PATH`` so both can be
@@ -94,7 +94,7 @@ def _texts(payload: object) -> list[str]:
 
 def _show(title: str, status: int, payload: object, headers: dict[str, str]) -> None:
     print(f"\n--- {title} ({status})")
-    print("X-Easy-Sandbox-Local:", headers.get("x-easy-sandbox-local", ""))
+    print("X-Agent-Sandbox-Local:", headers.get("x-agent-sandbox-local", ""))
     if isinstance(payload, (dict, list)):
         print(json.dumps(payload, ensure_ascii=False, indent=2)[:1200])
     else:
@@ -110,8 +110,8 @@ def _turn(base: str, adapter: str, needle: str) -> None:
     status, created, headers = call(base, "POST", "/v1/agents/sessions", {"agent": {"model": adapter}})
     _show(f"POST /v1/agents/sessions model={adapter}", status, created, headers)
     _expect(status, 200, "create session")
-    if headers.get("x-easy-sandbox-local") != "1":
-        sys.exit("missing X-Easy-Sandbox-Local")
+    if headers.get("x-agent-sandbox-local") != "1":
+        sys.exit("missing X-Agent-Sandbox-Local")
     if not isinstance(created, dict) or "id" not in created:
         sys.exit("session has no id")
     session_id = str(created["id"])
@@ -152,20 +152,20 @@ def _turn(base: str, adapter: str, needle: str) -> None:
 
 
 def main() -> int:
-    workspace = Path(tempfile.mkdtemp(prefix="ebx-agents-case-"))
+    workspace = Path(tempfile.mkdtemp(prefix="abx-agents-case-"))
     bin_dir = workspace / "bin"
     _write_cli(bin_dir, "codex", _FAKE_CODEX)
     _write_cli(bin_dir, "qwen", _FAKE_QWEN)
     os.environ["PATH"] = str(bin_dir) + os.pathsep + os.environ.get("PATH", "")
-    os.environ["EBX_SERVER_BASE_DIR"] = str(workspace / "files")
+    os.environ["ABX_SERVER_BASE_DIR"] = str(workspace / "files")
     (workspace / "files").mkdir()
-    os.environ["EBX_SERVER_ENABLED_GROUPS"] = "agents"
-    os.environ["EBX_AGENTS_PERSIST"] = "0"
-    os.environ.pop("EBX_SERVER_TOKEN", None)
-    os.environ.pop("EBX_AGENTS_DEFAULT", None)
+    os.environ["ABX_SERVER_ENABLED_GROUPS"] = "agents"
+    os.environ["ABX_AGENTS_PERSIST"] = "0"
+    os.environ.pop("ABX_SERVER_TOKEN", None)
+    os.environ.pop("ABX_AGENTS_DEFAULT", None)
     _server_src()
-    from easy_sandbox.server.app import SandboxServer
-    from easy_sandbox.server.router import CapabilityGroup
+    from agent_sandbox.server.app import SandboxServer
+    from agent_sandbox.server.router import CapabilityGroup
 
     server = SandboxServer(host="127.0.0.1")
     server.route_table.disable_group(CapabilityGroup.TERMINAL)

@@ -1,9 +1,9 @@
 # Container-Side HTTP Server API Reference
 
-> Complete API reference for the container-side HTTP Server (`easy_sandbox.server`).
+> Complete API reference for the container-side HTTP Server (`agent_sandbox.server`).
 >
 > All endpoint methods, paths, parameters, request body fields, and response formats in this document
-> are read directly from the implementation code under `src/easy_sandbox/server/`, staying consistent
+> are read directly from the implementation code under `src/agent_sandbox/server/`, staying consistent
 > with the source code. Where the code does not explicitly define certain behavior, this document
 > faithfully notes it rather than speculating.
 
@@ -15,29 +15,29 @@
 
 The container-side HTTP Server is a lightweight HTTP service that relies **solely on the Python standard library** (stdlib-only, zero third-party dependencies). It runs inside a Sandbox container and exposes file, process, terminal, system information, development tools, and browser automation capabilities to external consumers (SDK / CLI / Agent).
 
-- Built on [`http.server.ThreadingHTTPServer`](../../../server-sdk/src/easy_sandbox/server/app.py) with a custom `BaseHTTPRequestHandler` subclass.
-- Request dispatching is handled by a data-driven [`RouteTable`](../../../server-sdk/src/easy_sandbox/server/router.py), not a hard-coded `if/elif` chain.
-- Each route belongs to a **Capability Group** that can be enabled/disabled as a whole.
-- Request/response objects are stdlib `dataclass`es ([`types.py`](../../../server-sdk/src/easy_sandbox/server/types.py)), not Pydantic models.
+- Built on [`http.server.ThreadingHTTPServer`](../../../server-sdk/src/agent_sandbox/server/app.py) with a custom `BaseHTTPRequestHandler` subclass.
+- Request dispatching is handled by a data-driven [`RouteTable`](../../../server-sdk/src/agent_sandbox/server/router.py), not a hard-coded `if/elif` chain.
+- Each route is an endpoint with one id, declared once in [`endpoints.py`](../../../server-sdk/src/agent_sandbox/server/endpoints.py). A **Capability Group** is a name for a set of endpoint ids.
+- Request/response objects are stdlib `dataclass`es ([`types.py`](../../../server-sdk/src/agent_sandbox/server/types.py)), not Pydantic models.
 
 > Note: The "capability groups" described here are **runtime switches in the Server-side RouteTable**, which is an independent mechanism from `STANDARD_CAPABILITIES` in the SDK template layer (`models/template.py` / `api/capability.py`). Do not confuse the two.
 
 ### 1.2 Startup
 
 **Convenience function** —
-[`start()`](../../../server-sdk/src/easy_sandbox/server/app.py#L320-L334):
+[`start()`](../../../server-sdk/src/agent_sandbox/server/app.py#L320-L334):
 
 ```python
-from easy_sandbox.server import start
+from agent_sandbox.server import start
 
 start(9000)  # Listen on 0.0.0.0:9000, blocking
 ```
 
 **Class interface** —
-[`SandboxServer`](../../../server-sdk/src/easy_sandbox/server/app.py#L215-L317) (accepts custom `registry` / `route_table`):
+[`SandboxServer`](../../../server-sdk/src/agent_sandbox/server/app.py#L215-L317) (accepts custom `registry` / `route_table`):
 
 ```python
-from easy_sandbox.server import SandboxServer, CommandRegistry
+from agent_sandbox.server import SandboxServer, CommandRegistry
 
 registry = CommandRegistry()
 # ... register custom commands ...
@@ -54,130 +54,97 @@ The Server uses two ports:
 | Port | Protocol | Purpose | Default | Override Variable |
 |------|----------|---------|---------|-------------------|
 | HTTP Port | HTTP/1.1 | All REST / SSE endpoints | `9000` (`serve(port=...)` parameter) | — |
-| PTY Port | WebSocket | Interactive terminal (PTY) | `9001` | `EBX_PTY_PORT` |
+| PTY Port | WebSocket | Interactive terminal (PTY) | `9001` | `ABX_PTY_PORT` |
 
 The PTY WebSocket service starts in a background daemon thread only when the `TERMINAL` capability group is enabled (see
-[`SandboxServer.serve`](../../../server-sdk/src/easy_sandbox/server/app.py#L254-L280)). `TERMINAL` is enabled by default, so the PTY service starts alongside the main service by default.
+[`SandboxServer.serve`](../../../server-sdk/src/agent_sandbox/server/app.py#L254-L280)). `TERMINAL` is enabled by default, so the PTY service starts alongside the main service by default.
 
 ---
 
 ## 2. Capability Groups
 
-Capability groups are defined in the enum
-[`CapabilityGroup`](../../../server-sdk/src/easy_sandbox/server/router.py#L50-L64),
-totaling **8 groups**. Each group is a set of endpoints that can be enabled/disabled as a unit.
+Every route is one **endpoint** with one id (see [Fine-grained capabilities](fine-grained-capabilities.md)); the table is [`endpoints.py`](../../../server-sdk/src/agent_sandbox/server/endpoints.py). A **capability group** is a name for a set of endpoint ids. There is one switch, the endpoint rule. A group name expands to the ids it contains, in every place it is accepted (`groups:` in the policy, `enable_group()` in code, `ABX_SERVER_ENABLED_GROUPS` in the environment). There is no second gate in front of the endpoint rules.
 
 | Capability Group | Enum Value | Endpoints | Default State | Description |
 |------------------|------------|:---------:|:-------------:|-------------|
-| `CORE` | `core` | 2 | **Always enabled** (cannot be disabled) | Health check, capability query |
-| `COMMANDS` | `commands` | 2 | Enabled | Custom command listing and execution |
-| `FILE_OPS` | `file_ops` | 11 | Enabled | File upload/download/listing/search/archive etc. |
-| `PROCESS` | `process` | 6 | Enabled | Shell execution, SSE streaming shell, background process management |
-| `TERMINAL` | `terminal` | 3 REST + WS | Enabled | PTY session management + WebSocket interactive terminal |
+| `CORE` | `core` | 3 | **Always enabled** (cannot be disabled) | Health check, capability query and check |
+| `COMMANDS` | `commands` | 2 | Enabled | Named command listing and execution |
+| `FILE_OPS` | `file_ops` | 12 | Enabled | File upload/download/listing/search/archive etc. |
+| `PROCESS` | `process` | 8 | Enabled | Shell execution, SSE streaming shell, background process management |
+| `TERMINAL` | `terminal` | 5 REST + WS | Enabled | PTY session management + WebSocket interactive terminal |
 | `SYSTEM` | `system` | 6 | Enabled | System info, environment variables, ports, packages, metrics |
-| `DEV_TOOLS` | `dev_tools` | 3 | **Disabled by default** | Code execution, Git inspection |
-| `BROWSER` | `browser` | 8 | **Disabled by default** | Playwright browser automation |
+| `DEV_TOOLS` | `dev_tools` | 3 | **Opt-in (off by default)** | Code execution, Git inspection |
+| `BROWSER` | `browser` | 8 | **Opt-in (off by default)** | Playwright browser automation |
+| `AGENTS` | `agents` | 70 | **Opt-in (off by default)** | The Agents API (`/v1/agents/...`, `/v1/vaults`, `/v1/responses`, ...) |
 
-### 2.1 Default Disabled Set
+`TERMINAL` is enabled by default, so the PTY WebSocket service starts with the main service. It runs in a background daemon thread and only when `pty_connect` is enabled.
 
-From the definition in [`router.py`](../../../server-sdk/src/easy_sandbox/server/router.py#L68):
+### 2.1 Layers
 
-```python
-_DEFAULT_DISABLED = frozenset({CapabilityGroup.DEV_TOOLS, CapabilityGroup.BROWSER})
-```
+Rules for one endpoint come from five layers, merged per endpoint: default (the opt-in groups start off), code (`enable_group` / `disable_group` on the route table), preset, policy (`groups`, `defaults`, `endpoints`), and environment (`ABX_SERVER_ENABLED_GROUPS`, which can only turn groups on). The more specific selector wins (exact id, then glob, then `group:`, then `@defaults`); at equal specificity the later layer wins; inside one layer a single `enabled: false` turns the endpoint off. `CORE` (`health`, `capabilities`, `capabilities_check`) cannot be disabled: `disable_group(CapabilityGroup.CORE)` raises `ValueError`.
 
-> **Accuracy note**: Only `DEV_TOOLS` and `BROWSER` are disabled by default in the source code. `TERMINAL` **is enabled by default** (thus the PTY WebSocket service starts by default). The statement "TERMINAL is disabled by default" in the task outline does not match the current code; this document follows the code.
+Every denial names the rule that denied it: the `404` body carries `code: endpoint_disabled` and `rule` (`policy:endpoints.shell`, `preset:read-only`, `code:enable_group:file_ops`, `default:opt-in:browser`).
 
-`CORE` is always enabled; calling `disable_group(CapabilityGroup.CORE)` raises `ValueError`;
-`enable_group(CapabilityGroup.CORE)` is a no-op.
+### 2.2 Environment Variable
 
-### 2.2 Environment Variable Control
+`ABX_SERVER_ENABLED_GROUPS` is a comma-separated list of group names (`agents,dev_tools`). It turns groups on. An unknown name stops the process with a did-you-mean message. There is no variable for turning groups off; write `groups: {process: false}` or an `endpoints` rule in the policy.
 
-`RouteTable` reads the environment variable
-[`EBX_SERVER_DISABLED_GROUPS`](../../../server-sdk/src/easy_sandbox/server/router.py#L112-L126)
-at instantiation time. Its value is a comma-separated list of capability group enum values (e.g., `system,process`), used to additionally disable groups at process startup:
+### 2.3 Code API
 
-```bash
-# Disable system and process groups in addition to the defaults (dev_tools, browser)
-export EBX_SERVER_DISABLED_GROUPS="system,process"
-```
-
-Parsing rules:
-
-- Each item is `strip()`-ed then matched against enum values; unrecognized values are silently ignored.
-- `core` is explicitly skipped (CORE cannot be disabled via environment variable).
-
-### 2.3 Runtime Toggle API
-
-`RouteTable` provides runtime switches (see
-[`router.py`](../../../server-sdk/src/easy_sandbox/server/router.py#L240-L265)):
+`RouteTable` has two code-level switches, both of which edit the code layer of the endpoint rules:
 
 | Method | Description |
 |--------|-------------|
-| `enable_group(group)` | Enable a capability group (no-op for `CORE`) |
-| `disable_group(group)` | Disable a capability group (raises `ValueError` for `CORE`) |
-| `is_group_enabled(group) -> bool` | Query whether a capability group is enabled |
-| `list_groups() -> dict[str, bool]` | Return `{enum_value: is_enabled}` mapping |
+| `enable_group(group)` | Turn on every endpoint of the group (no-op for `CORE`) |
+| `disable_group(group)` | Turn off every endpoint of the group (raises `ValueError` for `CORE`) |
 
-Template author example (from
-[`python-hello/commands.py`](../../../examples/templates/python-hello/commands.py#L23-L26)):
+Template author example:
 
 ```python
-from easy_sandbox.server import CapabilityGroup, default_table
+from agent_sandbox.server import CapabilityGroup, default_table
 
 table = default_table()
-table.enable_group(CapabilityGroup.FILE_OPS)
-table.enable_group(CapabilityGroup.PROCESS)
-table.enable_group(CapabilityGroup.SYSTEM)
+table.enable_group(CapabilityGroup.DEV_TOOLS)
 ```
 
-> Compatibility layer: The legacy API `enable_builtin("upload"|"download"|"shell")` /
-> `disable_builtin(...)` is still available, internally mapping to corresponding capability groups
-> (`upload`/`download` → `FILE_OPS`, `shell` → `PROCESS`), see
-> [`_compat.py`](../../../server-sdk/src/easy_sandbox/server/_compat.py#L30-L34).
+`GET /capabilities` reports the state per endpoint and derives `groups` and `group_summary` from it.
 
 ---
 
 ## 3. Authentication
 
-Authentication logic resides in
-[`SandboxRequestHandler._check_auth`](../../../server-sdk/src/easy_sandbox/server/app.py#L66-L81).
+Authentication is step 2 of the pipeline in `SandboxRequestHandler._pipeline` ([`app.py`](../../../server-sdk/src/agent_sandbox/server/app.py)).
 
-- The Server reads the environment variable `EBX_SERVER_TOKEN` at startup (`os.environ.get("EBX_SERVER_TOKEN") or None`).
-- **Token not set**: `auth_token is None`, treated as local mode — **all requests bypass authentication**.
-- **Token set**: Requests must include an `X-Access-Token` header, compared against the configured value using `hmac.compare_digest` (constant-time comparison).
-  - Missing or mismatched → `401`, response body `{"error": "unauthorized", "type": "AuthError"}`.
+- The Server reads the environment variable `ABX_SERVER_TOKEN` at startup (`os.environ.get("ABX_SERVER_TOKEN") or None`).
+- **Token not set**: local mode, all requests bypass authentication. The caller is the identity `anonymous`.
+- **Token set**: requests must carry the token in `X-Access-Token` or `Authorization: Bearer <token>` (both accepted on every route), compared with `hmac.compare_digest` (constant-time comparison). Missing or mismatched is `401`, body `{"error": "unauthorized", "type": "AuthError"}`. Two different `X-Access-Token` values are `400` `ambiguous_credentials`.
 
 ### 3.1 Auth-Exempt Endpoints
 
-Only `GET /health` is registered with `auth_required=False` (`GET /capabilities` and `POST /capabilities/check` always require authentication; earlier revisions of this table listed `/capabilities` by mistake):
+Only `GET /health` is registered with `auth_required=False` (`GET /capabilities` and `POST /capabilities/check` always require authentication):
 
-| Endpoint | Capability Group | Source |
-|----------|------------------|--------|
-| `GET /health` | `CORE` | [routes.py#L442-L445](../../../server-sdk/src/easy_sandbox/server/routes.py#L442-L445) |
+| Endpoint | Capability Group |
+|----------|------------------|
+| `GET /health` | `CORE` |
 
 Example request with token:
 
 ```bash
-curl -H "X-Access-Token: $EBX_SERVER_TOKEN" http://localhost:9000/system/info
+curl -H "X-Access-Token: $ABX_SERVER_TOKEN" http://localhost:9000/system/info
 ```
 
 ### 3.2 Dispatch Order
 
-> With a policy configured (section 10) the order is extended: authenticate (`Authorization: Bearer`
-> first, then `X-Access-Token`) -> group gate -> per-endpoint admission (enabled, scopes, rate/
-> concurrency) -> duplicate-query and `Transfer-Encoding` rejection -> body read bounded by
-> `max_request_bytes` -> handler (path/limit/param rules) -> audit. Without a policy the steps below
-> apply unchanged.
-
-The processing order in [`_dispatch`](../../../server-sdk/src/easy_sandbox/server/app.py#L134-L179):
+There is one pipeline and every route goes through it, in this order:
 
 1. Path normalization: `urlparse` followed by `path.rstrip("/") or "/"` (strip trailing slash).
-2. `RouteTable.match(method, path)`: no match → `404 {"error": "Not found: <path>", "type": "ValueError"}`.
-3. If `route.auth_required` and authentication fails → `401` (this step occurs **before** the capability group gate).
-4. Capability group gate: if `route.group` is disabled → `404 {"error": "Built-in route '<name>' is disabled", "type": "ValueError"}`.
-5. For `POST/PUT/PATCH/DELETE`, read JSON request body (parse failure → `400`).
-6. Invoke handler; `streaming=True` takes the SSE dispatch path.
+2. `RouteTable.match(method, path)`: no match is `404 {"error": "Not found: <path>", "type": "ValueError"}`.
+3. Authenticate (only when `route.auth_required`): failure is `401`.
+4. Admission by the policy engine, for the matched endpoint: enabled (else `404 endpoint_disabled` with `rule`), scopes (`403 missing_scope`), rate and concurrency limits (`429`).
+5. Duplicate query parameters (`400 duplicate_parameter`) and `Transfer-Encoding` rejection.
+6. For `POST/PUT/PATCH/DELETE`, read the JSON request body, bounded by `max_request_bytes` (`413`); a parse failure is `400`.
+7. Invoke the handler (path, command, URL and parameter rules apply here); `streaming=True` takes the SSE dispatch path.
+8. Write the audit entry.
 
 > Only `do_GET` / `do_POST` / `do_DELETE` are implemented. `PUT` / `PATCH` have no corresponding entry points; stdlib returns `501`.
 
@@ -186,7 +153,7 @@ The processing order in [`_dispatch`](../../../server-sdk/src/easy_sandbox/serve
 ## 3.3 Request/Response Data Models
 
 Route handler inputs and outputs use stdlib `dataclass` definitions (not Pydantic), located in
-[`types.py`](../../../server-sdk/src/easy_sandbox/server/types.py).
+[`types.py`](../../../server-sdk/src/agent_sandbox/server/types.py).
 
 #### `ServerRequest`
 
@@ -235,9 +202,9 @@ Return type for SSE streaming handlers (`streaming=True` routes).
 
 Response bodies are uniformly JSON. Success generally returns `200`; error bodies follow the format
 `{"error": "<message>", "type": "<ExceptionName>"}` (see
-[`ServerResponse.error`](../../../server-sdk/src/easy_sandbox/server/types.py#L70-L88)).
+[`ServerResponse.error`](../../../server-sdk/src/agent_sandbox/server/types.py#L70-L88)).
 
-### 4.1 CORE (2)
+### 4.1 CORE (3)
 
 #### `GET /health`
 
@@ -298,7 +265,7 @@ Response:
 ```
 
 Parameter fields from
-[`handle_list_commands`](../../../server-sdk/src/easy_sandbox/server/routes.py#L96-L119):
+[`handle_list_commands`](../../../server-sdk/src/agent_sandbox/server/routes.py#L96-L119):
 `name` / `type` / `required` / `default` / `description`.
 
 #### `POST /commands/{name}`
@@ -312,7 +279,7 @@ Request body example:
 ```
 
 Processing flow (see
-[`handle_run_command`](../../../server-sdk/src/easy_sandbox/server/routes.py#L229-L269)):
+[`handle_run_command`](../../../server-sdk/src/agent_sandbox/server/routes.py#L229-L269)):
 
 1. Command does not exist → `404 {"error": "Unknown command '<name>'; available: ...", "type": "ValueError"}`.
 2. Parameter validation/type coercion failure → `400` (missing required parameter, unknown parameter, type conversion failure).
@@ -321,7 +288,7 @@ Processing flow (see
 
 Type coercion supports `string` / `integer` / `float` / `boolean`; boolean accepts
 `true/false/yes/no/1/0` (see
-[`_parse_boolean`](../../../server-sdk/src/easy_sandbox/server/routes.py#L130-L152)).
+[`_parse_boolean`](../../../server-sdk/src/agent_sandbox/server/routes.py#L130-L152)).
 
 ```bash
 curl -X POST http://localhost:9000/commands/hello \
@@ -332,12 +299,12 @@ curl -X POST http://localhost:9000/commands/hello \
 
 ---
 
-### 4.3 FILE_OPS (11)
+### 4.3 FILE_OPS (12)
 
 Includes 2 "legacy" upload/download endpoints (`/upload`, `/download`, registered in
-[`routes.py`](../../../server-sdk/src/easy_sandbox/server/routes.py#L454-L461)) and 9 extended file operation endpoints (registered in
-[`routes_files.py`](../../../server-sdk/src/easy_sandbox/server/routes_files.py#L528-L565)). All paths go through
-[`_resolve_safe_path`](../../../server-sdk/src/easy_sandbox/server/routes.py#L58-L84) path traversal protection (see §8.1).
+[`routes.py`](../../../server-sdk/src/agent_sandbox/server/routes.py#L454-L461)) and 9 extended file operation endpoints (registered in
+[`routes_files.py`](../../../server-sdk/src/agent_sandbox/server/routes_files.py#L528-L565)). All paths go through
+the path guard (see §8.1).
 
 #### `POST /upload`
 
@@ -352,7 +319,7 @@ Request body:
 Response: `{"path": "<resolved_absolute_path>", "bytes": <byte_count>}`.
 
 Errors: missing/invalid `path` or `content_base64` → `400`; invalid base64 → `400`; write failure → `500`;
-path escaping base directory → `400 {"error": "Path escapes base directory", ...}`.
+a path outside the allowed directories → `403 {"code": "path_not_allowed", ...}`.
 
 #### `GET /download?path=...`
 
@@ -442,7 +409,7 @@ Timeout upper limit `10` seconds (`_SEARCH_TIMEOUT_SECONDS`, implemented via a t
 
 Chunked (64 KB) base64 upload with size limit. Request body
 `{"path": "...", "content_base64": "..."}`. Exceeding the limit (default 100 MB, overridable via
-`EBX_MAX_UPLOAD_SIZE`) → `413`. Success `{"path": "...", "bytes": N}`.
+`ABX_MAX_UPLOAD_SIZE`) → `413`. Success `{"path": "...", "bytes": N}`.
 
 #### `GET /files/download-stream?path=...`
 
@@ -472,10 +439,10 @@ Path not found → `404`. Response:
 
 ---
 
-### 4.4 PROCESS (6)
+### 4.4 PROCESS (8)
 
-Includes `/shell` (registered in [routes.py](../../../server-sdk/src/easy_sandbox/server/routes.py#L462-L465)) and SSE streaming shell with background process management (registered in
-[routes_process.py](../../../server-sdk/src/easy_sandbox/server/routes_process.py#L268-L288)).
+Includes `/shell` (registered in [routes.py](../../../server-sdk/src/agent_sandbox/server/routes.py#L462-L465)) and SSE streaming shell with background process management (registered in
+[routes_process.py](../../../server-sdk/src/agent_sandbox/server/routes_process.py#L268-L288)).
 
 #### `POST /shell`
 
@@ -547,10 +514,10 @@ Success `{"pid": 12345, "signal": 15}`.
 
 ---
 
-### 4.5 TERMINAL (3 REST + WebSocket)
+### 4.5 TERMINAL (5 REST + WebSocket)
 
 PTY session management endpoints (registered in
-[routes_pty.py](../../../server-sdk/src/easy_sandbox/server/routes_pty.py#L398-L410)). WebSocket interaction protocol described in §5.
+[routes_pty.py](../../../server-sdk/src/agent_sandbox/server/routes_pty.py#L398-L410)). WebSocket interaction protocol described in §5.
 
 > PTY depends on the Unix `pty` module; creating sessions on non-Unix platforms raises `OSError` (→ `500`). Session limit
 > `MAX_SESSIONS = 10`, idle timeout `IDLE_TIMEOUT = 1800` seconds.
@@ -573,7 +540,7 @@ Response:
 ```
 
 `cols`/`rows` not integer → `400`; session limit reached → `429 {"type": "RuntimeError"}`; PTY creation failure →
-`500 {"type": "OSError"}`. The port in `ws_url` comes from `EBX_PTY_PORT` (default `9001`).
+`500 {"type": "OSError"}`. The port in `ws_url` comes from `ABX_PTY_PORT` (default `9001`).
 
 #### `GET /pty/sessions`
 
@@ -597,7 +564,7 @@ not found → `404`.
 ### 4.6 SYSTEM (6)
 
 System information endpoints (registered in
-[routes_system.py](../../../server-sdk/src/easy_sandbox/server/routes_system.py#L416-L440)). All implemented using only the standard library (no `psutil`).
+[routes_system.py](../../../server-sdk/src/agent_sandbox/server/routes_system.py#L416-L440)). All implemented using only the standard library (no `psutil`).
 
 #### `GET /system/info`
 
@@ -630,7 +597,7 @@ Lists environment variables. Query parameter `filter` is a comma-separated white
 #### `POST /env`
 
 Sets environment variables. Request body `{"vars": {"KEY": "value"}}`. **Protected variables**
-(`PATH`/`HOME`/`USER`/`SHELL`/`EBX_SERVER_TOKEN`) cannot be overwritten → `403 {"type": "PermissionError"}`;
+(`PATH`/`HOME`/`USER`/`SHELL`/`ABX_SERVER_TOKEN`) cannot be overwritten → `403 {"type": "PermissionError"}`;
 `vars` not an object → `400`. Success `{"updated": ["KEY1", "KEY2"]}` (sorted).
 
 #### `GET /ports`
@@ -670,10 +637,10 @@ Real-time resource metrics:
 
 ---
 
-### 4.7 DEV_TOOLS (3) — Disabled by Default
+### 4.7 DEV_TOOLS (3) — Opt-in
 
 Code execution and Git inspection (registered in
-[routes_devtools.py](../../../server-sdk/src/easy_sandbox/server/routes_devtools.py#L385-L397)). Must
+[routes_devtools.py](../../../server-sdk/src/agent_sandbox/server/routes_devtools.py#L385-L397)). Must
 `default_table().enable_group(CapabilityGroup.DEV_TOOLS)` before use, otherwise requests return `404` (group disabled).
 
 #### `POST /code/run`
@@ -723,14 +690,14 @@ Diff text exceeding 1 MB (`_MAX_DIFF_BYTES`) is truncated with `... (truncated a
 
 ---
 
-### 4.8 BROWSER (8) — Disabled by Default
+### 4.8 BROWSER (8) — Opt-in
 
 Playwright headless browser control (registered in
-[routes_browser.py](../../../server-sdk/src/easy_sandbox/server/routes_browser.py#L484-L516)). Must
+[routes_browser.py](../../../server-sdk/src/agent_sandbox/server/routes_browser.py#L484-L516)). Must
 `default_table().enable_group(CapabilityGroup.BROWSER)` before use.
 
 > **Playwright lazy loading and 503 degradation**: Playwright is imported and started only on first use
-> ([`_get_playwright`](../../../server-sdk/src/easy_sandbox/server/routes_browser.py#L60-L96)).
+> ([`_get_playwright`](../../../server-sdk/src/agent_sandbox/server/routes_browser.py#L60-L96)).
 > If `playwright` is not installed, all browser endpoints return
 > `503 {"error": "Playwright is not installed. ...", "type": "RuntimeError"}`.
 > The page is a process-wide shared singleton (same `page`), and operations are serialized by `_browser_lock`.
@@ -807,8 +774,8 @@ Log buffer limit `1000` entries (`_MAX_CONSOLE_LOGS`).
 ## 5. WebSocket PTY Terminal Protocol
 
 Implementation in
-[`pty_ws_handler`](../../../server-sdk/src/easy_sandbox/server/routes_pty.py#L426-L503)
-and [`start_pty_server`](../../../server-sdk/src/easy_sandbox/server/routes_pty.py#L546-L571).
+[`pty_ws_handler`](../../../server-sdk/src/agent_sandbox/server/routes_pty.py#L426-L503)
+and [`start_pty_server`](../../../server-sdk/src/agent_sandbox/server/routes_pty.py#L546-L571).
 The WebSocket service depends on the `websockets` library and runs on a separate port (default `9001`).
 
 ### 5.1 Connection URL
@@ -867,8 +834,8 @@ unrecognized signal names are ignored. Invalid JSON frames are silently discarde
 ## 6. SSE Streaming Shell
 
 Endpoint: `POST /shell/stream` (PROCESS group). Implementation in
-[`_handle_shell_stream`](../../../server-sdk/src/easy_sandbox/server/routes_process.py#L64-L121).
-Response `Content-Type: text/event-stream` ([`SSEResponse`](../../../server-sdk/src/easy_sandbox/server/types.py#L91-L107)),
+[`_handle_shell_stream`](../../../server-sdk/src/agent_sandbox/server/routes_process.py#L64-L121).
+Response `Content-Type: text/event-stream` ([`SSEResponse`](../../../server-sdk/src/agent_sandbox/server/types.py#L91-L107)),
 events flushed one by one as standard SSE frames `event: <name>\ndata: <json>\n\n`.
 
 ### 6.1 Event Types (Confirmed from Code)
@@ -912,12 +879,12 @@ The Server's routes and commands can be extended by template `commands.py` witho
 
 ### 7.1 Registering Custom HTTP Routes
 
-Use the [`RouteTable.route()`](../../../server-sdk/src/easy_sandbox/server/router.py#L175-L204) decorator (or `register()`).
+Use the [`RouteTable.route()`](../../../server-sdk/src/agent_sandbox/server/router.py#L175-L204) decorator (or `register()`).
 Path templates support `{param}` placeholders, compiled to named capture groups `(?P<param>[^/]+)`, accessible via
 `request.path_params`:
 
 ```python
-from easy_sandbox.server import CapabilityGroup, ServerResponse, default_table
+from agent_sandbox.server import CapabilityGroup, ServerResponse, default_table
 
 table = default_table()
 
@@ -933,14 +900,14 @@ def hello_route(request) -> ServerResponse:
 #### Custom SSE Streaming Endpoints
 
 When a route is registered with `streaming=True`, the handler should return an
-[`SSEResponse`](../../../server-sdk/src/easy_sandbox/server/types.py#L91-L107) whose
+[`SSEResponse`](../../../server-sdk/src/agent_sandbox/server/types.py#L91-L107) whose
 `event_iterator` yields standard SSE frame format strings (refer to the implementation in
-[`routes_process.py`](../../../server-sdk/src/easy_sandbox/server/routes_process.py#L64-L121)):
+[`routes_process.py`](../../../server-sdk/src/agent_sandbox/server/routes_process.py#L64-L121)):
 
 ```python
 import json
-from easy_sandbox.server import CapabilityGroup, default_table
-from easy_sandbox.server.types import SSEResponse, ServerResponse
+from agent_sandbox.server import CapabilityGroup, default_table
+from agent_sandbox.server.types import SSEResponse, ServerResponse
 
 table = default_table()
 
@@ -963,11 +930,11 @@ The client will receive a `Content-Type: text/event-stream` response with events
 
 #### Auth-Exempt Endpoints
 
-Setting `auth_required=False` makes an endpoint bypass authentication even when `EBX_SERVER_TOKEN` is configured (the built-in
+Setting `auth_required=False` makes an endpoint bypass authentication even when `ABX_SERVER_TOKEN` is configured (the built-in
 `GET /health` uses this mode):
 
 ```python
-from easy_sandbox.server import CapabilityGroup, ServerResponse, default_table
+from agent_sandbox.server import CapabilityGroup, ServerResponse, default_table
 
 table = default_table()
 
@@ -980,36 +947,29 @@ def public_status(request) -> ServerResponse:
 
 ### 7.2 Registering Custom Commands
 
-Use the [`CommandRegistry.command()`](../../../server-sdk/src/easy_sandbox/server/registry.py#L163-L234) decorator;
-when `args` is not explicitly provided, parameter types are **inferred from the function signature** (`int`→`integer`, `float`→`float`,
-`bool`→`boolean`, others→`string`) along with required status (no default value means required):
+A named command has one mechanism: register a function with the module-level [`command`](../../../server-sdk/src/agent_sandbox/server/registry.py) decorator. `GET /commands` lists it and `POST /commands/{name}` runs it. When `args` is not explicitly provided, parameter types are **inferred from the function signature** (`int`→`integer`, `float`→`float`, `bool`→`boolean`, others→`string`) along with required status (no default value means required):
 
 ```python
-from easy_sandbox.server import CommandRegistry, SandboxServer
+from agent_sandbox.server import command, start
 
-registry = CommandRegistry()
-
-@registry.command("hello", description="Say hello.")
+@command("hello", description="Say hello.")
 def hello(name: str = "World") -> str:
     return f"Hello, {name}!"
 
-@registry.command(hidden=True)          # Executable but not listed in GET /commands
+@command(hidden=True)                    # Executable but not listed in GET /commands
 def _debug_info() -> dict:
     import platform
     return {"python": platform.python_version()}
 
-registry.freeze()                        # Registering after freeze raises RuntimeError
-server = SandboxServer(registry=registry)
-server.serve(port=9000)
+start(9000)
 ```
 
-- `hidden=True`: The command can still be executed via `POST /commands/{name}`, but is excluded from the `GET /commands` listing by
-  [`list_visible`](../../../server-sdk/src/easy_sandbox/server/registry.py#L268-L276).
-- `freeze()`: Locks the registry to prevent modifications after startup; `serve()` also calls this internally.
-- Programmatic registration is also available via `registry.register(name, fn, args=[CommandArg(...)], description=..., hidden=...)`.
+- `hidden=True`: The command can still be executed via `POST /commands/{name}`, but is excluded from the `GET /commands` listing.
+- `scopes=(...)`: scopes the caller must hold; a caller without them neither sees nor runs the command.
+- The registry is frozen when the server starts; register at import time.
+- A private `CommandRegistry()` can be passed to `SandboxServer(registry=...)` for tests.
 
-`CommandArg`'s `type` must be one of `string`/`integer`/`float`/`boolean`, otherwise the constructor raises
-`ValueError`.
+`CommandArg`'s `type` must be one of `string`/`integer`/`float`/`boolean`, otherwise the constructor raises `ValueError`.
 
 ---
 
@@ -1017,19 +977,9 @@ server.serve(port=9000)
 
 ### 8.1 Path Traversal Protection
 
-> Policy mode (section 10) replaces this single-root check with `PathGuard` (allow/deny/read-only
-> roots, symlink modes, no existence oracle). The description below is the unconfigured behaviour.
+Every endpoint that takes a path (file routes, the `cwd` of `/shell` and `/process/start`, git `path`) resolves it through one `PathGuard` ([`guard.py`](../../../server-sdk/src/agent_sandbox/server/guard.py)), built from the endpoint's `paths` rule. The default boundary is `ABX_SERVER_BASE_DIR` (default `/home/user`); a policy can set `base_dir` or per-endpoint `paths.allow`, `paths.deny`, `paths.read_only` and `paths.symlinks`. The guard `realpath`s the path, always denies `/proc`, `/sys` and `/dev`, refuses a root of `/`, and opens files with `O_NOFOLLOW` on the final component. A violation is `403 {"code": "path_not_allowed"}` (or `path_denied`, `read_only`, `symlink_denied`); there is no existence oracle.
 
-[`_resolve_safe_path`](../../../server-sdk/src/easy_sandbox/server/routes.py#L58-L84)
-normalizes paths for all file endpoints (`os.path.realpath` + `normpath`) and verifies the resolved result must equal
-the base directory or reside under it (`resolved == base_dir or resolved.startswith(base_dir + os.sep)`),
-otherwise raises `ValueError` (→ `400 {"error": "Path escapes base directory"}`).
-
-- Base directory comes from `EBX_SERVER_BASE_DIR`, default `/home/user`.
-- `/files/list` additionally skips symlinks pointing outside the base directory.
-- Git endpoints (`/git/status`, `/git/diff`) use a separate `..` segment rejection check
-  ([`_validate_git_path`](../../../server-sdk/src/easy_sandbox/server/routes_devtools.py#L62-L70)),
-  rather than `_resolve_safe_path`.
+- `/files/list`, search and archive skip entries the guard denies and symlinks pointing outside the boundary.
 
 ### 8.2 Signal Whitelist
 
@@ -1043,8 +993,8 @@ otherwise raises `ValueError` (→ `400 {"error": "Path escapes base directory"}
 - **Redaction (`GET /env`)**: Variables whose names contain `_ENV_BLACKLIST_TOKENS`
   (`TOKEN`/`SECRET`/`KEY`/`PASSWORD`/`CREDENTIAL`, case-insensitive) are always excluded from the response.
 - **Protection (`POST /env`)**: `_PROTECTED_ENV_VARS`
-  (`PATH`/`HOME`/`USER`/`SHELL`/`EBX_SERVER_TOKEN`) cannot be overwritten; matching triggers `403`.
-- **Policy mode**: the server's own secrets (`EBX_SERVER_*` and every configured `token_env` name) are also removed from the environment of child processes (`shell`, `process_start`, `code_run`, git, PTY) and refused by `POST /env`.
+  (`PATH`/`HOME`/`USER`/`SHELL`/`ABX_SERVER_TOKEN`) cannot be overwritten; matching triggers `403`.
+- **Policy mode**: the server's own secrets (`ABX_SERVER_*` and every configured `token_env` name) are also removed from the environment of child processes (`shell`, `process_start`, `code_run`, git, PTY) and refused by `POST /env`.
 
 ### 8.4 Other Limits
 
@@ -1053,7 +1003,7 @@ otherwise raises `ValueError` (→ `400 {"error": "Path escapes base directory"}
 | shell / code / git commands | `shell=False` + argument vector execution | Various handlers |
 | `/shell` timeout | 300s | routes.py |
 | `/code/run` timeout | Default 30s, max 300s | routes_devtools.py |
-| Upload size limit | 100 MB (`EBX_MAX_UPLOAD_SIZE` adjustable) | routes_files.py |
+| Upload size limit | 100 MB (`ABX_MAX_UPLOAD_SIZE` adjustable) | routes_files.py |
 | Archive file count/size | 10000 / 100 MB | routes_files.py |
 | Background process limit | 100 | routes_process.py |
 | PTY session limit / idle timeout | 10 / 1800s | routes_pty.py |
@@ -1065,11 +1015,11 @@ otherwise raises `ValueError` (→ `400 {"error": "Path escapes base directory"}
 
 | Environment Variable | Default | Purpose | Read Location |
 |---------------------|---------|---------|---------------|
-| `EBX_SERVER_TOKEN` | (unset = no auth) | Authentication token; when set, requires matching `X-Access-Token` header | [app.py#L43](../../../server-sdk/src/easy_sandbox/server/app.py#L43) |
-| `EBX_SERVER_BASE_DIR` | `/home/user` | File endpoint path safety root directory | [routes.py#L54-L55](../../../server-sdk/src/easy_sandbox/server/routes.py#L54-L55) |
-| `EBX_SERVER_DISABLED_GROUPS` | (empty) | Comma-separated, additionally disables capability groups beyond the defaults | [router.py#L71](../../../server-sdk/src/easy_sandbox/server/router.py#L71) |
-| `EBX_PTY_PORT` | `9001` | PTY WebSocket port, also written into `ws_url` | [app.py#L247](../../../server-sdk/src/easy_sandbox/server/app.py#L247) / [routes_pty.py#L362](../../../server-sdk/src/easy_sandbox/server/routes_pty.py#L362) |
-| `EBX_MAX_UPLOAD_SIZE` | `104857600` (100 MB) | `/files/upload-stream` upload byte limit | [routes_files.py#L39](../../../server-sdk/src/easy_sandbox/server/routes_files.py#L39) |
+| `ABX_SERVER_TOKEN` | (unset = no auth) | Authentication token; when set, requires matching `X-Access-Token` header | [app.py#L43](../../../server-sdk/src/agent_sandbox/server/app.py#L43) |
+| `ABX_SERVER_BASE_DIR` | `/home/user` | File endpoint path safety root directory | [routes.py#L54-L55](../../../server-sdk/src/agent_sandbox/server/routes.py#L54-L55) |
+| `ABX_SERVER_ENABLED_GROUPS` | (empty) | Comma-separated groups to turn on (`agents,dev_tools`); the only group variable | [policy.py](../../../server-sdk/src/agent_sandbox/server/policy.py) |
+| `ABX_PTY_PORT` | `9001` | PTY WebSocket port, also written into `ws_url` | [app.py#L247](../../../server-sdk/src/agent_sandbox/server/app.py#L247) / [routes_pty.py#L362](../../../server-sdk/src/agent_sandbox/server/routes_pty.py#L362) |
+| `ABX_MAX_UPLOAD_SIZE` | `104857600` (100 MB) | `/files/upload-stream` upload byte limit | [routes_files.py#L39](../../../server-sdk/src/agent_sandbox/server/routes_files.py#L39) |
 
 > The HTTP port is not controlled by an environment variable; it is a `start(port=...)` / `SandboxServer.serve(port=...)` parameter (default `9000`).
 
@@ -1080,16 +1030,15 @@ otherwise raises `ValueError` (→ `400 {"error": "Path escapes base directory"}
 ## 10. Fine-grained capability management (v2)
 
 Design and rationale: [fine-grained-capabilities.md](fine-grained-capabilities.md); review log:
-[fine-grained-capabilities-review.md](fine-grained-capabilities-review.md). **An unconfigured server
-behaves exactly as described in sections 1-9** (all new response fields are additive).
+[fine-grained-capabilities-review.md](../archive/fine-grained-capabilities-review.md). An unconfigured server runs the same engine with the default policy (opt-in groups off, paths under the base directory).
 
 ### 10.1 Configuration sources
 
 First match wins: `SandboxServer(policy=...)` / `serve --policy FILE --preset NAME` ->
-`EBX_SERVER_POLICY` (inline JSON) -> `EBX_SERVER_POLICY_FILE` ->
-`/etc/easy-sandbox/server-policy.json` -> none (legacy mode). The `template.yaml` `server:` block is the
+`ABX_SERVER_POLICY` (inline JSON) -> `ABX_SERVER_POLICY_FILE` ->
+`/etc/agent-sandbox/server-policy.json` -> none (the empty policy; the engine still runs). The `template.yaml` `server:` block is the
 same document, compiled to JSON by tooling. Unknown keys and unknown endpoint ids are startup
-errors with a did-you-mean hint. Validate with `easy-sandbox-server check-config --policy FILE
+errors with a did-you-mean hint. Validate with `agent-sandbox-server check-config --policy FILE
 [--strict] [--json] [--explain ENDPOINT --path P --scopes S --op read]`.
 
 ```yaml
@@ -1123,7 +1072,7 @@ Identities hold scopes (`files:read`, `files:write`, `files:delete`, `process:ru
 `process:manage`, `terminal:use`, `system:read`, `system:write`, `devtools:run`, `browser:use`,
 `commands:run`, `commands:run:<name>`, `core:read` (implicit), `*`). Each endpoint requires a
 documented scope (`files_move` requires `files:write` **and** `files:delete`); a rule's `scopes`
-overrides it. Legacy `EBX_SERVER_TOKEN` maps to the identity `legacy` with scope `*`.
+overrides it. Legacy `ABX_SERVER_TOKEN` maps to the identity `legacy` with scope `*`.
 
 ### 10.3 Error codes
 
@@ -1133,19 +1082,19 @@ Bodies keep `{"error", "type"}` and add `code` (+ `endpoint`, `scope`, `limit`, 
 |------|--------|--------|
 | 400 | `ValueError` | `ambiguous_credentials`, `duplicate_parameter`, `unsupported_encoding` (a malformed `Content-Length` is a plain 400 without `code`) |
 | 401 | `AuthError` | `unauthorized` |
-| 403 | `PolicyDenied` | `missing_scope`, `path_not_allowed`, `path_denied`, `read_only`, `symlink_denied`, `command_not_allowed`, `language_not_allowed`, `signal_not_allowed`, `shell_not_allowed`, `url_not_allowed`, `extension_not_allowed`, `env_var_not_allowed` |
+| 403 | `PolicyDenied` | `missing_scope`, `path_not_allowed`, `path_denied`, `read_only`, `symlink_denied`, `command_not_allowed`, `language_not_allowed`, `signal_not_allowed`, `shell_not_allowed`, `url_denied`, `extension_not_allowed`, `env_var_not_allowed`, `env_var_denied`, `process_denied` |
 | 404 | `ValueError` | `endpoint_disabled` (identical to "unknown route" for callers lacking discovery rights) |
 | 409 | `FileExistsError` | `file_exists` (upload with `overwrite: false`) |
 | 413 | `ValueError` | `payload_too_large` (+ `limit`) |
 | 429 | `RateLimited` | `rate_limited`, `concurrency_limited` (+ `Retry-After`) |
 
-A disabled group in an unconfigured server still returns the legacy 404 body without `code`.
+A disabled endpoint always carries `code: endpoint_disabled` and `rule`, whether or not a policy file is loaded.
 
 ### 10.4 Discovery
 
 `GET /capabilities` (v2 fields): `api_version: 2`, `server_version`, `identity {id, scopes}`,
-`policy {preset, revision}`, `endpoints{name -> {method, path, group, streaming, enabled, allowed,
-reason, scopes, limits, paths, params}}`, `warnings`. `POST /capabilities/check` with
+`policy {preset, revision}`, `groups` and `group_summary` (derived), `endpoints{name -> {method, path, group, summary, streaming, enabled, allowed,
+reason, rule, scopes, limits, paths, params}}`, `warnings`. `POST /capabilities/check` with
 `{"endpoint", "path"?, "op"?, "paths"?}` returns the policy decision for a hypothetical call; it is
 policy-only and never touches the filesystem (no existence oracle).
 
@@ -1162,12 +1111,11 @@ policy-only and never touches the filesystem (no existence oracle).
 | `POST /shell`, `/shell/stream` | PROCESS | additive `cwd`, `env`, `timeout` parameters |
 | `POST /process/start` | PROCESS | additive `env`, `capture_output`, `stdin` |
 
-Endpoint counts after this revision: CORE 3, COMMANDS 2, FILE_OPS 12, PROCESS 8, TERMINAL 5 REST
-(+ the PTY WebSocket), SYSTEM 6, DEV_TOOLS 3, BROWSER 8 = **47 HTTP routes** (+1 WebSocket).
+The full list, with the 70 Agents routes, is in the appendix.
 
 ### 10.6 Container entrypoint
 
-`easy-sandbox-server serve [--host --port --pty-port --commands FILE|MODULE --policy FILE --preset
+`agent-sandbox-server serve [--host --port --pty-port --commands FILE|MODULE --policy FILE --preset
 NAME --base-dir DIR]`, `healthcheck [--host --port --timeout]` (exit 0/1, for `ready_cmd` and Docker
 `HEALTHCHECK`), `check-config`, `version`. Base image contract:
 [base-image-and-server-sdk.md](base-image-and-server-sdk.md).
@@ -1176,22 +1124,16 @@ NAME --base-dir DIR]`, `healthcheck [--host --port --timeout]` (exit 0/1, for `r
 
 ## Appendix: Endpoint Count Verification
 
-> Counts below are the original 41-route baseline; section 10.5 lists the routes added since (47 total).
+The declaration table `endpoints.py` has 118 endpoints: 117 HTTP routes and the PTY WebSocket (`pty_connect`, `ws://host:9001/pty?session_id=...`).
 
 | Capability Group | Endpoints | Endpoint List |
 |------------------|:---------:|---------------|
-| CORE | 2 | `GET /health`, `GET /capabilities` |
+| CORE | 3 | `GET /health`, `GET /capabilities`, `POST /capabilities/check` |
 | COMMANDS | 2 | `GET /commands`, `POST /commands/{name}` |
-| FILE_OPS | 11 | `POST /upload`, `GET /download`, `GET /files/list`, `GET /files/stat`, `POST /files/mkdir`, `DELETE /files`, `POST /files/move`, `POST /files/search`, `POST /files/upload-stream`, `GET /files/download-stream`, `POST /files/archive` |
-| PROCESS | 6 | `POST /shell`, `POST /shell/stream`, `POST /process/start`, `GET /process/list`, `GET /process/{pid}`, `POST /process/{pid}/signal` |
-| TERMINAL | 3 REST | `POST /pty/sessions`, `GET /pty/sessions`, `DELETE /pty/sessions/{id}` |
+| FILE_OPS | 12 | `POST /upload`, `GET /download`, `GET /files/list`, `GET /files/stat`, `POST /files/mkdir`, `DELETE /files`, `POST /files/move`, `POST /files/search`, `POST /files/upload-stream`, `GET /files/download-stream`, `POST /files/archive`, `GET /files/watch` |
+| PROCESS | 8 | `POST /shell`, `POST /shell/stream`, `POST /process/start`, `GET /process/list`, `GET /process/{pid}`, `POST /process/{pid}/signal`, `POST /process/{pid}/stdin`, `GET /process/{pid}/output` |
+| TERMINAL | 6 | `POST /pty/sessions`, `GET /pty/sessions`, `GET /pty/sessions/{id}`, `POST /pty/sessions/{id}/resize`, `DELETE /pty/sessions/{id}`, `WS /pty` |
 | SYSTEM | 6 | `GET /system/info`, `GET /env`, `POST /env`, `GET /ports`, `GET /packages`, `GET /system/metrics` |
 | DEV_TOOLS | 3 | `POST /code/run`, `GET /git/status`, `GET /git/diff` |
 | BROWSER | 8 | `POST /browser/navigate`, `POST /browser/screenshot`, `GET /browser/content`, `POST /browser/click`, `POST /browser/type`, `POST /browser/evaluate`, `POST /browser/pdf`, `GET /browser/console` |
-| **HTTP Total** | **41** | |
-| WebSocket | 1 | `ws://host:9001/pty?session_id=...` |
-| **Grand Total** | **42** | |
-
-> 41 HTTP routes match the total count of `_table.register(...)` calls in the source code (`CORE 2 + COMMANDS 2 +
-> FILE_OPS 11 + PROCESS 6 + TERMINAL 3 + SYSTEM 6 + DEV_TOOLS 3 + BROWSER 8 = 41`), plus 1
-> PTY WebSocket endpoint for a total of **42 endpoints**.
+| AGENTS | 70 | 70 routes under `/v1/agents/...`, `/v1/vaults`, `/v1/responses`, `/v1/models`, `/v1/files`, `/v1/webhook_endpoints`; see the [Agents API reference](../reference/agents-api.md) |

@@ -5,16 +5,16 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from easy_sandbox.api.files import FilesModule
-from easy_sandbox.models.errors import (
+from agent_sandbox.api.files import FilesModule
+from agent_sandbox.models.errors import (
     FileNotFoundError_,
     FileOperationError,
     PermissionDeniedError,
     SandboxError,
     SandboxNotFoundError,
 )
-from easy_sandbox.protocol.filesystem import FilesystemProtocol
-from easy_sandbox.protocol.sandbox import SandboxProtocol
+from agent_sandbox.protocol.filesystem import FilesystemProtocol
+from agent_sandbox.protocol.sandbox import SandboxProtocol
 from tests.test_known_issues.helpers import API, ENVD, make_http, token
 
 FILES_URL = f"{ENVD}/files?path=%2Ftmp%2Fnope.txt&username=user"
@@ -122,9 +122,9 @@ async def test_is_running_is_false_for_a_missing_sandbox(httpx_mock) -> None:
 
 
 async def test_sandbox_connect_on_a_missing_sandbox(httpx_mock, monkeypatch) -> None:
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
-    monkeypatch.setenv("EBX_PROVIDER", "alicloud-express")
+    monkeypatch.setenv("ABX_PROVIDER", "alicloud-express")
     httpx_mock.add_response(method="GET", status_code=404, json={"message": "nope"})
     with pytest.raises(SandboxNotFoundError):
         await Sandbox.connect("sbx-00000000", api_key="k", api_url=API)
@@ -134,9 +134,9 @@ async def test_sandbox_connect_on_a_missing_sandbox(httpx_mock, monkeypatch) -> 
 
 
 def test_sandbox_not_found_error_contract() -> None:
-    import easy_sandbox.models as models
-    from easy_sandbox.models import errors
-    from easy_sandbox.providers.epp import exit_code_for
+    import agent_sandbox.models as models
+    from agent_sandbox.models import errors
+    from agent_sandbox.providers.epp import exit_code_for
 
     assert models.SandboxNotFoundError is SandboxNotFoundError
     assert "SandboxNotFoundError" in errors.__all__

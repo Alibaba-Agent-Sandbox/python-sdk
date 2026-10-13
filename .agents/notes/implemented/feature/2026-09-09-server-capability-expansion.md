@@ -4,7 +4,7 @@ Status: implemented
 Implemented: 2026-09-21
 
 ## Problem
-The `easy_sandbox.server` module previously exposed only 6 basic endpoints
+The `agent_sandbox.server` module previously exposed only 6 basic endpoints
 (health, commands, upload, download, shell, run command), giving limited
 capability coverage. To make Server a complete in-sandbox service layer, its
 coverage needed to expand to include filesystem CRUD, process management, PTY
@@ -43,7 +43,7 @@ groups.
 2. **Everything except `/health` is toggleable**: `/health` and `/capabilities`
    belong to the CORE group and are always available and non-disable-able. All
    other endpoints can be enabled/disabled through CapabilityGroup. At runtime,
-   this can be configured via the `EBX_SERVER_DISABLED_GROUPS` environment
+   this can be configured via the `ABX_SERVER_DISABLED_GROUPS` environment
    variable.
 
 3. **Hidden commands (hidden)**: `RegisteredCommand` supports a `hidden=True`
@@ -78,7 +78,7 @@ groups.
 ### File safety
 
 - `_resolve_safe_path()` prevents path traversal; all file-op paths are confined
-  under `EBX_SERVER_BASE_DIR` (default `/home/user`).
+  under `ABX_SERVER_BASE_DIR` (default `/home/user`).
 - Sensitive environment-variable fields (TOKEN/SECRET/KEY/PASSWORD) are masked automatically.
 - Protected variables (PATH/HOME/USER/SHELL) cannot be overridden via `POST /env`.
 - Process signals are restricted to an allow list (SIGINT/SIGKILL/SIGTERM, etc.);
@@ -138,5 +138,5 @@ server = SandboxServer(
 - ✅ This ADR has been moved from `proposed/` to `implemented/`.
 
 ## Evidence
-- Source: all route modules under the `src/easy_sandbox/server/` directory.
+- Source: all route modules under the `src/agent_sandbox/server/` directory.
 - Test coverage: corresponding test files under the `tests/test_server/` directory.

@@ -7,7 +7,7 @@ Shows how to start a Node.js Express server in a sandbox and get its public URL.
 import asyncio
 import os
 
-from easy_sandbox import Sandbox
+from agent_sandbox import Sandbox
 
 # Express 应用代码
 EXPRESS_APP = """\
@@ -48,14 +48,14 @@ PACKAGE_JSON = """\
 
 
 async def main() -> None:
-    api_key = os.environ.get("E2B_API_KEY", "")
+    api_key = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
     # 注意：本示例需要 network.get_url()/get_host() 计算公网访问地址，
     # 而这依赖模板声明 "ports" 能力。默认的 "base" 模板只回落
     # DEFAULT_CAPABILITIES（shell/files/code，不含 ports），调用 network.*
     # 会抛 CapabilityNotSupportedError(E3004)。这里使用已声明 ports 能力的
-    # node-web 模板（来自模板真源仓库 Easy-Sandbox/awesome-templates，
-    # 先 `ebx template install node-web` 安装），语义上也更契合 Node.js 服务。
+    # node-web 模板（来自模板真源仓库 alibaba-agent-sandbox/awesome-templates，
+    # 先 `abx template install node-web` 安装），语义上也更契合 Node.js 服务。
     async with await Sandbox.create(
         template="node-web",
         api_key=api_key,

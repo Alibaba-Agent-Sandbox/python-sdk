@@ -11,12 +11,12 @@
       "name": "single file",
       "files": [
         {
-          "path": "ebx-provider.toml",
+          "path": "abx-provider.toml",
           "executable": false,
           "content_b64": "bWFuaWZlc3RfdmVyc2lvbiA9IDEK"
         }
       ],
-      "tree_sha256": "6913ef17e5830c3e51c7dc0aa38787ecbc9c6defa7ff9faa2e146fd74691dfed"
+      "tree_sha256": "3bd81e030457de347cb9e760ae1c301813b2fe9bfca6a616c22116cdf40dc30b"
     },
     {
       "name": "executable flag matters",
@@ -108,12 +108,12 @@
       "name": "file whose name looks like the receipt, nested",
       "files": [
         {
-          "path": "sub/.ebx-install.json",
+          "path": "sub/.abx-install.json",
           "executable": false,
           "content_b64": "e30="
         }
       ],
-      "tree_sha256": "9b91c5fc3252be6caa4d27b8437d2d5c74a340e9fe0b821d62ea94c3a494ffaa"
+      "tree_sha256": "acd07209434e4196e1a4fc1347a5f64ebff026e55c65416731d1f59341fde0e2"
     }
   ]
 }

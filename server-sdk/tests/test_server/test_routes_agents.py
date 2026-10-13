@@ -20,10 +20,12 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 
-import easy_sandbox.server.routes_agents  # noqa: F401  (registers routes)
-from easy_sandbox.server.app import SandboxRequestHandler
-from easy_sandbox.server.router import CapabilityGroup, default_table
-from easy_sandbox.server.routes_agents import reset_agent_runtime
+import agent_sandbox.server.routes_agents  # noqa: F401  (registers routes)
+from agent_sandbox.server.app import SandboxRequestHandler
+from agent_sandbox.server.router import CapabilityGroup, default_table
+from agent_sandbox.server.routes_agents import reset_agent_runtime
+
+from ._live import wire
 
 
 def _fake_script(payload: dict[str, Any]) -> str:
@@ -57,7 +59,7 @@ def _find_free_port() -> int:
 
 def _start_server(port: int, *, auth_token: str | None = None) -> ThreadingHTTPServer:
     httpd = ThreadingHTTPServer(("127.0.0.1", port), SandboxRequestHandler)
-    httpd.auth_token = auth_token  # type: ignore[attr-defined]
+    wire(httpd, auth_token=auth_token)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
     time.sleep(0.05)
@@ -126,10 +128,10 @@ def _wait_for_text(port: int, session_id: str, needle: str) -> dict[str, Any]:
 
 @pytest.fixture(autouse=True)
 def _isolate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
-    monkeypatch.setenv("EBX_AGENTS_PERSIST", "0")
-    monkeypatch.delenv("EBX_AGENTS_DEFAULT", raising=False)
-    monkeypatch.delenv("EBX_AGENTS_CONFIG", raising=False)
-    monkeypatch.delenv("EBX_SERVER_TOKEN", raising=False)
+    monkeypatch.setenv("ABX_AGENTS_PERSIST", "0")
+    monkeypatch.delenv("ABX_AGENTS_DEFAULT", raising=False)
+    monkeypatch.delenv("ABX_AGENTS_CONFIG", raising=False)
+    monkeypatch.delenv("ABX_SERVER_TOKEN", raising=False)
     bindir = tmp_path / "bin"
     bindir.mkdir()
     for name, script in (("codex", _CODEX_SH), ("qwen", _QWEN_SH)):
@@ -157,7 +159,7 @@ class TestRoutesAgents:
     def test_group_off_unless_enabled(self, workspace: str) -> None:
         table = default_table()
         table.disable_group(CapabilityGroup.AGENTS)
-        assert table.is_group_enabled(CapabilityGroup.AGENTS) is False
+        assert table.group_overrides[CapabilityGroup.AGENTS] is False
         port = _find_free_port()
         httpd = _start_server(port)
         try:
@@ -256,12 +258,25 @@ class TestRoutesAgents:
             assert status == 200, body
             assert body["agent"]["id"] == "codex"
             assert body["agent"]["model"] == "gpt-5-codex"
-            assert headers.get("x-easy-sandbox-local") == "1"
+            assert headers.get("x-agent-sandbox-local") == "1"
 
             status, runtimes, _ = _request(port, "GET", "/v1/agents/runtimes?limit=100&order=asc")
             assert status == 200
-            assert [item["name"] for item in runtimes["data"]] == ["codex", "qwen-code"]
-            assert [item["default"] for item in runtimes["data"]] == [True, False]
+            assert [item["name"] for item in runtimes["data"]] == [
+                "codex",
+                "qwen-code",
+                "claude-code",
+                "command",
+                "cursor",
+            ]
+            assert [item["implemented"] for item in runtimes["data"]] == [
+                True,
+                True,
+                False,
+                False,
+                False,
+            ]
+            assert [item["default"] for item in runtimes["data"]] == [True] + [False] * 4
 
             status, body, headers = _request(
                 port,
@@ -278,7 +293,7 @@ class TestRoutesAgents:
                 "POST",
                 "/v1/agents/sessions",
                 {"agent": {"model": "cursor"}, "environment": env},
-                headers={"X-EBX-Adapter": "cursor"},
+                headers={"X-ABX-Adapter": "cursor"},
             )
             assert status == 404
             assert body["error"]["type"] == "not_found_error"
@@ -294,11 +309,11 @@ class TestRoutesAgents:
                 assert status == 200, created
                 assert created["agent"]["id"] == "qwen-code"
 
-            os.environ["EBX_AGENTS_DEFAULT"] = "qwen-code"
+            os.environ["ABX_AGENTS_DEFAULT"] = "qwen-code"
             reset_agent_runtime()
             status, runtimes, _ = _request(port, "GET", "/v1/agents/runtimes?limit=100&order=asc")
             assert status == 200
-            assert [item["default"] for item in runtimes["data"]] == [False, True]
+            assert [item["default"] for item in runtimes["data"]] == [False, True] + [False] * 3
             status, created, _ = _request(
                 port,
                 "POST",
@@ -311,8 +326,8 @@ class TestRoutesAgents:
 
             config = tmp_path / "agents.json"
             config.write_text(json.dumps({"agents": {"default": "qwen-code"}}))
-            os.environ.pop("EBX_AGENTS_DEFAULT", None)
-            os.environ["EBX_AGENTS_CONFIG"] = str(config)
+            os.environ.pop("ABX_AGENTS_DEFAULT", None)
+            os.environ["ABX_AGENTS_CONFIG"] = str(config)
             status, created, _ = _request(
                 port,
                 "POST",
@@ -322,8 +337,8 @@ class TestRoutesAgents:
             assert status == 200, created
             assert created["agent"]["id"] == "qwen-code"
         finally:
-            os.environ.pop("EBX_AGENTS_DEFAULT", None)
-            os.environ.pop("EBX_AGENTS_CONFIG", None)
+            os.environ.pop("ABX_AGENTS_DEFAULT", None)
+            os.environ.pop("ABX_AGENTS_CONFIG", None)
             httpd.shutdown()
 
     def test_idempotency_key_replays_202(self, workspace: str) -> None:
@@ -418,9 +433,16 @@ class TestRoutesAgents:
 
             status, runtimes, _ = _request(port, "GET", "/v1/agents/runtimes?limit=100")
             assert status == 200
-            assert [item["name"] for item in runtimes["data"]] == ["qwen-code", "codex"]
+            assert [item["name"] for item in runtimes["data"]] == [
+                "cursor",
+                "command",
+                "claude-code",
+                "qwen-code",
+                "codex",
+            ]
             by_name = {item["name"]: item["default"] for item in runtimes["data"]}
-            assert by_name == {"codex": True, "qwen-code": False}
+            assert by_name["codex"] is True
+            assert not any(v for k, v in by_name.items() if k != "codex")
 
             status, _, _ = _request(port, "DELETE", f"/v1/agents/sessions/{session_id}")
             assert status == 200

@@ -1,7 +1,7 @@
-"""Tests for easy_sandbox.server.router — the declarative RouteTable.
+"""Tests for agent_sandbox.server.router — the declarative RouteTable.
 
 Covers route registration + matching, path-parameter extraction, capability
-group toggles, the ``EBX_SERVER_DISABLED_GROUPS`` environment variable, and
+group aliases (``enable_group`` / ``disable_group``), and
 the decorator form of :meth:`RouteTable.route`.
 """
 
@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 
-from easy_sandbox.server.router import (
+from agent_sandbox.server.router import (
     CapabilityGroup,
     RouteInfo,
     RouteTable,
@@ -117,79 +117,68 @@ class TestPathParams:
 
 
 # ---------------------------------------------------------------------------
-# Capability groups
+# Group aliases (policy inputs recorded by the table, expanded by the policy engine)
 # ---------------------------------------------------------------------------
 
 
-class TestCapabilityGroups:
-    """Enable/disable semantics for capability groups."""
+class TestGroupAliases:
+    """``enable_group`` / ``disable_group`` only record an alias; the policy engine expands it."""
 
-    def test_default_enabled(self) -> None:
-        table = RouteTable()
-        assert table.is_group_enabled(CapabilityGroup.FILE_OPS) is True
-        assert table.is_group_enabled(CapabilityGroup.COMMANDS) is True
-
-    def test_dev_tools_disabled_by_default(self) -> None:
-        table = RouteTable()
-        assert table.is_group_enabled(CapabilityGroup.DEV_TOOLS) is False
+    def test_no_aliases_by_default(self) -> None:
+        assert RouteTable().group_overrides == {}
 
     def test_disable_then_enable(self) -> None:
         table = RouteTable()
         table.disable_group(CapabilityGroup.FILE_OPS)
-        assert table.is_group_enabled(CapabilityGroup.FILE_OPS) is False
+        assert table.group_overrides == {CapabilityGroup.FILE_OPS: False}
         table.enable_group(CapabilityGroup.FILE_OPS)
-        assert table.is_group_enabled(CapabilityGroup.FILE_OPS) is True
+        assert table.group_overrides == {CapabilityGroup.FILE_OPS: True}
 
-    def test_core_always_on(self) -> None:
+    def test_changes_bump_the_revision(self) -> None:
         table = RouteTable()
-        assert table.is_group_enabled(CapabilityGroup.CORE) is True
-        # enable_group is a no-op for CORE and never raises.
+        before = table.revision
+        table.enable_group(CapabilityGroup.AGENTS)
+        assert table.revision > before
+
+    def test_enable_core_is_a_no_op(self) -> None:
+        table = RouteTable()
+        before = table.revision
         table.enable_group(CapabilityGroup.CORE)
-        assert table.is_group_enabled(CapabilityGroup.CORE) is True
+        assert table.group_overrides == {}
+        assert table.revision == before
 
     def test_cannot_disable_core(self) -> None:
         table = RouteTable()
         with pytest.raises(ValueError, match="Cannot disable CORE"):
             table.disable_group(CapabilityGroup.CORE)
 
-    def test_list_groups(self) -> None:
+    def test_clear_and_copy(self) -> None:
         table = RouteTable()
-        groups = table.list_groups()
-        assert groups[CapabilityGroup.CORE.value] is True
-        assert groups[CapabilityGroup.DEV_TOOLS.value] is False
-        assert set(groups) == {g.value for g in CapabilityGroup}
+        table.enable_group(CapabilityGroup.BROWSER)
+        clone = table.copy()
+        table.clear_group_overrides()
+        assert table.group_overrides == {}
+        assert clone.group_overrides == {CapabilityGroup.BROWSER: True}
 
 
-# ---------------------------------------------------------------------------
-# Environment-variable configuration
-# ---------------------------------------------------------------------------
+class TestMount:
+    """Built-in routes are declared once in ``ENDPOINTS`` and mounted by name."""
 
-
-class TestEnvConfig:
-    """``EBX_SERVER_DISABLED_GROUPS`` seeds disabled groups at construction."""
-
-    def test_env_disables_groups(self, monkeypatch: Any) -> None:
-        monkeypatch.setenv("EBX_SERVER_DISABLED_GROUPS", "file_ops,process")
+    def test_mount_takes_the_declared_binding(self) -> None:
         table = RouteTable()
-        assert table.is_group_enabled(CapabilityGroup.FILE_OPS) is False
-        assert table.is_group_enabled(CapabilityGroup.PROCESS) is False
-        # DEV_TOOLS remains disabled by default too.
-        assert table.is_group_enabled(CapabilityGroup.DEV_TOOLS) is False
-        # Untouched group stays enabled.
-        assert table.is_group_enabled(CapabilityGroup.COMMANDS) is True
+        table.mount("files_list", _handler)
+        route, _ = table.match("GET", "/files/list")
+        assert route is not None
+        assert route.name == "files_list"
+        assert route.group is CapabilityGroup.FILE_OPS
+        assert route.spec.scopes == ("files:read",)
 
-    def test_env_ignores_unknown_and_core(self, monkeypatch: Any) -> None:
-        monkeypatch.setenv("EBX_SERVER_DISABLED_GROUPS", "core, bogus , system")
+    def test_mount_unknown_or_virtual_endpoint_fails(self) -> None:
         table = RouteTable()
-        # CORE cannot be disabled; unknown names are ignored.
-        assert table.is_group_enabled(CapabilityGroup.CORE) is True
-        assert table.is_group_enabled(CapabilityGroup.SYSTEM) is False
-
-    def test_empty_env_uses_defaults(self, monkeypatch: Any) -> None:
-        monkeypatch.setenv("EBX_SERVER_DISABLED_GROUPS", "")
-        table = RouteTable()
-        assert table.is_group_enabled(CapabilityGroup.FILE_OPS) is True
-        assert table.is_group_enabled(CapabilityGroup.DEV_TOOLS) is False
+        with pytest.raises(KeyError):
+            table.mount("nope", _handler)
+        with pytest.raises(KeyError, match="another transport"):
+            table.mount("pty_connect", _handler)
 
 
 # ---------------------------------------------------------------------------

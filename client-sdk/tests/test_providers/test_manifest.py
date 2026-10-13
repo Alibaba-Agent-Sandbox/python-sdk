@@ -6,8 +6,8 @@ import re
 
 import pytest
 
-from easy_sandbox.models.errors import ProviderManifestError, ProviderVersionError
-from easy_sandbox.providers.manifest import (
+from agent_sandbox.models.errors import ProviderManifestError, ProviderVersionError
+from agent_sandbox.providers.manifest import (
     check_requires,
     parse_manifest,
     version_satisfies,
@@ -47,11 +47,11 @@ def test_bytes_and_str_inputs_agree():
 @pytest.mark.parametrize(
     ("text", "needle"),
     [
-        ("not toml [", "Invalid ebx-provider.toml"),
+        ("not toml [", "Invalid abx-provider.toml"),
         (mutate("manifest_version = 1", "manifest_version = 2"), "manifest_version"),
         (mutate('id = "demo-prov"', 'id = "Demo"'), "provider id"),
         (mutate('id = "demo-prov"', 'id = "alicloud-express"'), "reserved"),
-        (mutate('id = "demo-prov"', 'id = "ebx-thing"'), "reserved"),
+        (mutate('id = "demo-prov"', 'id = "abx-thing"'), "reserved"),
         (mutate('version = "1.2.3"', 'version = "banana"'), "version"),
         (mutate('kind = "exec"', 'kind = "docker"'), "runtime.kind"),
         (mutate('command = ["python3", "./p.py"]', "command = []"), "runtime.command"),
@@ -66,7 +66,7 @@ def test_bytes_and_str_inputs_agree():
             "unknown feature",
         ),
         (BASE + '\n[core]\ninherit = ["region"]\n', "core.inherit"),
-        (BASE + '\n[runtime2]\n[security]\nenv_passthrough = ["EBX_TOKEN"]\n', "env_passthrough"),
+        (BASE + '\n[runtime2]\n[security]\nenv_passthrough = ["ABX_TOKEN"]\n', "env_passthrough"),
         (BASE + '\n[security]\nfilesystem = ["everything"]\n', "filesystem"),
         (BASE + '\n[config.fields.provider]\ntype = "string"\n', "collides"),
         (BASE + '\n[config.fields.Bad-Key]\ntype = "string"\n', "must match"),
@@ -76,7 +76,7 @@ def test_bytes_and_str_inputs_agree():
             "default",
         ),
         (BASE + '\n[config.fields.tok]\ntype = "enum"\n', "choices"),
-        (BASE + '\n[config.fields.tok]\ntype = "string"\nenv = ["EBX_TOK"]\n', "reserved"),
+        (BASE + '\n[config.fields.tok]\ntype = "string"\nenv = ["ABX_TOK"]\n', "reserved"),
         (BASE + '\n[auth]\nany_of = [["ghost"]]\n', "undeclared"),
         (mutate('kind = "exec"', 'kind = "exec"\nstartup_timeout_ms = 5'), "startup_timeout_ms"),
         (BASE + '\n[compat]\nprotocol = "epp/9"\n', "protocol"),

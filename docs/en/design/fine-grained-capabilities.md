@@ -1,10 +1,10 @@
 # Fine-Grained Capabilities, Scoping and Permissions
 
 > Status: **v2 (reviewed)**. Draft v1 went through the two review rounds recorded in
-> [fine-grained-capabilities-review.md](fine-grained-capabilities-review.md); the resolutions
+> [fine-grained-capabilities-review.md](../archive/fine-grained-capabilities-review.md); the resolutions
 > are folded in below and summarised in section 11.
-> Scope: `easy-sandbox-server` (`easy_sandbox.server`) enforcement, `template.yaml`
-> declarative config, and `easy-sandbox` (`easy_sandbox`) client discovery / errors / helpers.
+> Scope: `agent-sandbox-server` (`agent_sandbox.server`) enforcement, `template.yaml`
+> declarative config, and `agent-sandbox` (`agent_sandbox`) client discovery / errors / helpers.
 > Companion docs: [client-server-alignment.md](client-server-alignment.md),
 > [base-image-and-server-sdk.md](base-image-and-server-sdk.md),
 > [server-api.md](server-api.md).
@@ -14,7 +14,7 @@
 The server exposes endpoints through **coarse capability groups** (`FILE_OPS`, `PROCESS`, ...).
 Turning on `FILE_OPS` exposes eleven endpoints (list, stat, mkdir, delete, move, search,
 upload, download, archive, legacy upload/download), all confined only by one process-wide
-`EBX_SERVER_BASE_DIR`. Product needs finer control:
+`ABX_SERVER_BASE_DIR`. Product needs finer control:
 
 * expose **only** the upload and download endpoints;
 * make download usable only from specified directories;
@@ -27,8 +27,9 @@ rule. The server lints for this combination (see 3.9).
 
 ## 2. Design principles
 
-1. **Backward compatible by construction.** With no policy configured, every request takes the
-   code path that exists today (same status codes, same bodies; new fields are additive).
+1. **One engine, always on.** There is no "unconfigured" code path. No policy is the empty policy,
+   which still applies the default boundary (`/home/user`) and the opt-in groups. The project is
+   unreleased, so nothing is kept for compatibility.
 2. **Fail closed.** A policy that is present but invalid prevents the server from starting; it
    never degrades to "allow all".
 3. **One decision point, keyed by the matched route.** Policy attaches to the `RouteInfo`
@@ -81,10 +82,10 @@ Scope syntax: `namespace:action`; `*` grants everything; `namespace:*` grants a 
 
 ### 3.3 Identities and tokens
 
-Today: one optional `EBX_SERVER_TOKEN` compared against `X-Access-Token`.
+Today: one optional `ABX_SERVER_TOKEN` compared against `X-Access-Token`.
 
 * **Unchanged default.** No token -> anonymous identity with scope `*` (local mode). One
-  `EBX_SERVER_TOKEN` -> identity `legacy` with scope `*` (override via `auth.legacy_scopes`).
+  `ABX_SERVER_TOKEN` -> identity `legacy` with scope `*` (override via `auth.legacy_scopes`).
 * **New:** `auth.tokens` — a list of `{id, scopes, token_env | token_sha256}`. Plain tokens
   are never accepted inline in files (a secret in a baked image file is a leak). `token_env`
   names an environment variable read at start; `token_sha256` is the hex digest of the token.
@@ -102,12 +103,12 @@ Today: one optional `EBX_SERVER_TOKEN` compared against `X-Access-Token`.
 {
   "version": 1,
   "preset": "default",                // default | transfer-only | read-only | hardened | locked
-  "base_dir": "/home/user",           // optional; overrides EBX_SERVER_BASE_DIR
-  "groups": { "dev_tools": false },   // same effect as enable_group / disable_group
+  "base_dir": "/home/user",           // optional; overrides ABX_SERVER_BASE_DIR
+  "groups": { "dev_tools": true },    // alias for the group's endpoint ids; a list ["dev_tools"] also works
   "defaults": { "audit": "deny", "limits": { "max_request_bytes": 10485760 } },
   "auth": {
     "tokens": [
-      { "id": "uploader", "token_env": "EBX_TOKEN_UPLOADER", "scopes": ["files:write"] },
+      { "id": "uploader", "token_env": "ABX_TOKEN_UPLOADER", "scopes": ["files:write"] },
       { "id": "reader",   "token_sha256": "9f86d0...", "scopes": ["files:read"] }
     ]
   },
@@ -137,8 +138,14 @@ Today: one optional `EBX_SERVER_TOKEN` compared against `X-Access-Token`.
 scalars/`allow` lists **replace**; `deny` lists and `deny_*` params **union**; `enabled: false`
 at the same specificity beats `true`.
 
-**Effective enabled** = group enabled (route table, env, `groups`) **AND** rule `enabled`.
-A rule can never re-enable a disabled group, and `CORE` endpoints (`health`, `capabilities`,
+**A group is an alias, not a gate.** `groups: {file_ops: false}`, `groups: [agents]`,
+`table.enable_group(...)`, and `ABX_SERVER_ENABLED_GROUPS=agents` all expand to the endpoint ids of
+that group and become ordinary endpoint rules in one of five layers: default (opt-in groups start
+off), code (`enable_group` / `disable_group`), preset, policy, environment (turn-on only). There is
+no separate group gate and no group-level state. The more specific selector wins (exact id > glob >
+`group:` > `@defaults`), then the later layer; at equal specificity and layer a single
+`enabled: false` wins. Every denial names its rule (`policy:endpoints.shell`, `preset:read-only`,
+`code:enable_group:file_ops`, `default:opt-in:browser`). `CORE` endpoints (`health`, `capabilities`,
 `capabilities_check`) cannot be disabled.
 
 ### 3.5 Path scoping
@@ -200,7 +207,7 @@ user wrote; there is no hidden ceiling.
 
 Per `(identity, endpoint)` token bucket (`rate_per_minute`, burst = rate) and semaphore
 (`max_concurrency`). Denied with `429` + `Retry-After`. Audit events go to the
-`easy_sandbox.server.audit` logger as one JSON object per line: `ts, identity, endpoint,
+`agent_sandbox.server.audit` logger as one JSON object per line: `ts, identity, endpoint,
 method, decision, code, status, paths(resolved, truncated)` — never tokens, bodies or file
 contents. `audit`: `off` | `deny` (default) | `all`.
 
@@ -212,30 +219,30 @@ contents. `audit`: `off` | `deny` (default) | `all`.
 ### 3.9 Lint
 
 `ServerPolicy.lint()` returns human-readable warnings, logged at startup and printed by
-`easy-sandbox-server check-config`: path scoping configured while `process`/`terminal`/
+`agent-sandbox-server check-config`: path scoping configured while `process`/`terminal`/
 `dev_tools`/`browser` endpoints are reachable by the same scopes; allow root `/`; wildcard
 token scopes with other tokens defined; `overwrite: false` without `paths.allow`; etc.
 
 ### 3.10 Subprocess environment
 
 When `auth.tokens` is configured, child processes started by `shell*`, `process_start`,
-`code_run`, `git_*` and PTY sessions receive `os.environ` **minus** `EBX_SERVER_TOKEN`,
-`EBX_SERVER_POLICY*` and every `token_env` variable, so a `process:run` identity cannot read
+`code_run`, `git_*` and PTY sessions receive `os.environ` **minus** `ABX_SERVER_TOKEN`,
+`ABX_SERVER_POLICY*` and every `token_env` variable, so a `process:run` identity cannot read
 another identity's secret. Unconfigured servers keep today's behaviour.
 
 ## 4. Configuration surfaces
 
 Resolution order (low -> high): code defaults < well-known file
-(`/etc/easy-sandbox/server-policy.json` if present) < `EBX_SERVER_POLICY_FILE` <
-`EBX_SERVER_POLICY` (inline JSON) < `SandboxServer(policy=...)`. Legacy env vars
-(`EBX_SERVER_DISABLED_GROUPS`, `EBX_SERVER_BASE_DIR`, `EBX_MAX_UPLOAD_SIZE`, `EBX_SERVER_TOKEN`)
-keep working and are applied as the lowest-priority inputs **except** that
-`EBX_SERVER_DISABLED_GROUPS` still wins over policy `groups` (an operator kill switch).
+(`/etc/agent-sandbox/server-policy.json` if present) < `ABX_SERVER_POLICY_FILE` <
+`ABX_SERVER_POLICY` (inline JSON) < `SandboxServer(policy=...)` (the highest present source wins; sources are
+not merged). `ABX_SERVER_BASE_DIR`, `ABX_MAX_UPLOAD_SIZE`, and `ABX_SERVER_TOKEN` are read as the
+lowest-priority inputs. The only group variable is `ABX_SERVER_ENABLED_GROUPS` (turn on, environment
+layer); there is no variable that turns a group off.
 
 Python:
 
 ```python
-from easy_sandbox.server import SandboxServer, ServerPolicy
+from agent_sandbox.server import SandboxServer, ServerPolicy
 
 policy = ServerPolicy.from_dict({
     "preset": "transfer-only",
@@ -261,7 +268,7 @@ server:
 
 Size strings (`5MB`, `1GiB`) are accepted in YAML/JSON and normalised to integers by the
 loader. The client SDK validates the block (`SandboxTemplate.server`), the toolchain compiles it
-to `server-policy.json` placed at `/etc/easy-sandbox/server-policy.json` in the image
+to `server-policy.json` placed at `/etc/agent-sandbox/server-policy.json` in the image
 (CLI follow-up). The in-container server stays stdlib-only: JSON natively, YAML only if PyYAML
 happens to be installed.
 
@@ -273,24 +280,24 @@ Presets (all plain policy dicts, documented in `server-api.md`):
 ```
 route = match(method, raw_path)                 # no override headers/params honoured
 identity = authenticate(headers)                # 401   (skipped for auth_required=False)
-group gate                                      # 404 endpoint_disabled (as today)
-rule gate: enabled -> scopes -> rate -> concurrency       # 404 / 403 / 429
+rule gate: enabled -> scopes -> rate -> concurrency       # 404 endpoint_disabled(+rule) / 403 / 429
+duplicate query parameters                                # 400
 body gate: Content-Length valid -> <= max_request_bytes   # 400 / 413 (before reading)
 handler(request with request.context["policy"]=EndpointContext)
    PathGuard / limits / params enforced inside the handler on the *same* values it uses
 audit(decision)
 ```
 
-Handlers raise `PolicyDenied(code, message, ...)`; the dispatcher maps it to `403`.
-Direct handler calls without a context (existing unit tests) use a default context that
-reproduces legacy behaviour.
+Handlers raise `PolicyDenied(code, message, ...)`; the dispatcher maps it to `403`. Every handler
+receives an `EndpointContext`; there is no context-less mode.
 
 ## 6. Discovery contract
 
 `GET /capabilities` (authenticated) stays backward compatible (`groups` kept) and adds:
 `api_version: 2`, `server_version`, `identity {id, scopes}`, `policy {preset, revision}`,
-`endpoints{name -> {method, path, group, streaming, enabled, allowed, reason, scopes, limits,
-paths{allow, read_only, deny_count}, params}}`, `warnings` (only for identities holding `*`).
+`groups` and `group_summary` (derived from the endpoint state), `endpoints{name -> {method, path, group,
+summary, streaming, enabled, allowed, reason, rule, scopes, limits, paths{allow, read_only, deny_count},
+params}}`, `warnings` (only for identities holding `*`).
 `POST /capabilities/check` `{endpoint, path?, op?, paths?}` returns the server's authoritative
 decision for a hypothetical call (policy only; never touches the filesystem) so clients do not
 re-implement path rules. `revision` is a hash of the effective policy so caches can invalidate.
@@ -303,23 +310,23 @@ optional `endpoint`, `scope`, `retry_after`.
 | HTTP | `type` | `code` examples |
 |------|--------|-----------------|
 | 401 | `AuthError` | `unauthorized` |
-| 403 | `PolicyDenied` | `missing_scope`, `path_not_allowed`, `path_denied`, `read_only`, `symlink_denied`, `command_not_allowed`, `language_not_allowed`, `signal_not_allowed`, `shell_not_allowed`, `url_not_allowed`, `extension_not_allowed`, `env_var_not_allowed` |
-| 404 | `ValueError` (kept) | `endpoint_disabled` |
-| 409 | `PolicyDenied` | `file_exists` |
+| 403 | `PolicyDenied` | `missing_scope`, `path_not_allowed`, `path_denied`, `read_only`, `symlink_denied`, `command_not_allowed`, `language_not_allowed`, `signal_not_allowed`, `shell_not_allowed`, `url_denied`, `extension_not_allowed`, `env_var_not_allowed`, `env_var_denied`, `process_denied` |
+| 404 | `ValueError` | `endpoint_disabled` (+ `rule`) |
+| 409 | `FileExistsError` | `file_exists` (upload with `overwrite: false`) |
 | 413 | `ValueError` (kept) | `payload_too_large` (+ `limit`) |
 | 429 | `RateLimited` | `rate_limited`, `concurrency_limited` |
 
-Client exceptions (new `E8xxx` family, subclassing existing classes where the semantics match so
-current `except` clauses keep working): `ServerAPIError` (E8000), `ServerAuthError` (E8001,
-also `AuthenticationError`), `PolicyDeniedError` (E8002; `FilePolicyDeniedError` also
-`PermissionDeniedError`), `EndpointNotAvailableError` (E8003, also
-`CapabilityNotSupportedError`), `PayloadTooLargeError` (E8004), `RateLimitedError` (E8005,
+Client exceptions (new `E9xxx` family, subclassing existing classes where the semantics match so
+current `except` clauses keep working): `ServerAPIError` (E9000), `ServerAuthError` (E9001,
+also `AuthenticationError`), `PolicyDeniedError` (E9002; `FilePolicyDeniedError` also
+`PermissionDeniedError`), `EndpointNotAvailableError` (E9003, also
+`CapabilityNotSupportedError`), `PayloadTooLargeError` (E9004), `RateLimitedError` (E9005,
 `retry_after`). OS-level 404/403 map to the existing `FileNotFoundError_` /
 `PermissionDeniedError`; process timeouts to `CommandTimeoutError`.
 
 ## 8. Client SDK
 
-* `easy_sandbox.api.server_client.ServerClient` — typed async client for **every** server
+* `agent_sandbox.api.server_client.ServerClient` — typed async client for **every** server
   endpoint with `*_sync` twins (see alignment doc); `Sandbox.server` (port 9000) and
   `Sandbox.server_at(port, token=...)` hand out instances bound to the sandbox's port URL and
   gateway headers.
@@ -328,23 +335,20 @@ also `AuthenticationError`), `PolicyDeniedError` (E8002; `FilePolicyDeniedError`
   `endpoints_for(scope)`. Methods consult a populated cache and fail fast with the typed error
   *before* the network round trip; server responses remain authoritative and map to the same
   exceptions. No hidden discovery request is ever made.
-* Legacy servers (no `endpoints` key): `ServerCapabilities.legacy = True`, group-level gating
-  only, no pre-checks.
 * `template.yaml` gains `server:` (validated by `SandboxTemplate`; unknown keys rejected).
 
-## 9. Backward compatibility matrix
+## 9. Behaviour without a policy
 
-| Behaviour | Unconfigured today | After |
-|-----------|--------------------|-------|
-| Default groups | all but `dev_tools`, `browser` | same |
-| `EBX_SERVER_TOKEN` / `X-Access-Token` | all-or-nothing | same (identity `legacy`, `*`) |
-| `GET /capabilities` | `{"groups"}` | superset |
-| Error bodies | `{error,type}` | superset (`code`...) |
-| Relative path resolution | server CWD | same |
-| Download size | unlimited (`/files/download-stream`), 100MB (`/download`) | same |
-| Unsupported HTTP methods | stdlib 501 | same |
-| `enable_builtin`/`_enabled_builtins` | works | same |
-| Direct `ThreadingHTTPServer(..., SandboxRequestHandler)` wiring | works | works (policy attrs read via `getattr`) |
+| Behaviour | Value |
+|-----------|-------|
+| Default groups | all but `dev_tools`, `browser`, `agents` (opt-in) |
+| `ABX_SERVER_TOKEN` / `X-Access-Token` or `Authorization: Bearer` | all-or-nothing; identity `legacy`, scope `*` (`anonymous` when no token is set) |
+| Path boundary | `ABX_SERVER_BASE_DIR` (default `/home/user`) for every path-taking endpoint including shell `cwd`; violations are `403 path_not_allowed` |
+| `GET /capabilities` | per-endpoint state, `rule`, derived `groups` and `group_summary` |
+| Error bodies | `{error, type}` plus `code`, `endpoint`, `rule` where they apply |
+| Relative path resolution | server CWD, then still inside the boundary |
+| Unsupported HTTP methods | stdlib 501 |
+| Capability switches | one layer: the endpoint rule (`enable_builtin`, `disable_builtin` and `ABX_SERVER_DISABLED_GROUPS` do not exist) |
 
 ## 10. Security test plan (bypass matrix)
 
@@ -360,7 +364,7 @@ and child processes.
 
 ## 11. Changes after review (Draft v1 -> v2)
 
-Full findings: [fine-grained-capabilities-review.md](fine-grained-capabilities-review.md).
+Full findings: [fine-grained-capabilities-review.md](../archive/fine-grained-capabilities-review.md).
 
 * **`ServerPolicy.only(*ids)`** is normative: disables every non-core endpoint then enables the
   listed IDs; the token `"transfer"` expands to `upload`, `download`, `files_upload_stream`,
@@ -368,17 +372,22 @@ Full findings: [fine-grained-capabilities-review.md](fine-grained-capabilities-r
 * **Path roles** for multi-path endpoints: `files_move` source is `delete`, destination is
   `write`; both must pass allow/deny/read-only. Archive/search/list re-check *every produced
   entry*.
-* **Byte limits are enforced while streaming**, not only via `Content-Length`; chunked
-  `Transfer-Encoding` is rejected; partial uploads are removed on abort.
+* **Byte limits**: the request body is bounded by `max_request_bytes` (default: the transfer cap)
+  applied to the validated `Content-Length` *before* the body is read, `max_bytes` bounds the
+  decoded payload; chunked `Transfer-Encoding` is rejected in policy mode; partial uploads are
+  removed on abort. (There is no counting reader: the server reads exactly the declared length.)
 * **Strict config**: unknown keys and unknown exact endpoint IDs are errors with a
   did-you-mean hint and the JSON path.
 * **HTTP hardening in all modes** (bug fixes): strict `Content-Length` (non-numeric/negative/
   duplicate -> 400), zip archives never follow symlinks that leave the boundary.
-* **Policy-mode only hardening**: duplicate path parameters rejected; boundary/deny check
+* **Policy-mode only hardening**: duplicate query parameters and `Transfer-Encoding` rejected; boundary/deny check
   before any `stat` (no existence oracle); relative paths resolve against the first allow
   root; ambiguous credential headers rejected; `Authorization: Bearer` is consulted first.
-* **Secrets**: in identities mode `GET /env` redacts `EBX_SERVER_*`, `EBX_*TOKEN*` and all
-  `token_env` names; `env_set` refuses them; child processes get a scrubbed environment.
+* **Secrets**: in identities mode `GET /env` redacts the server's own secrets (`ABX_SERVER_*` and
+  every `token_env` name); `env_set` refuses them and the `ABX_` prefix; child processes get an
+  environment scrubbed of the same names only. Arbitrary user variables are never touched (legacy
+  `GET /env` still returns the full environment; use `endpoints.env_get` / `groups.system` to
+  restrict it).
 * **PTY WebSocket** is covered by the policy (`pty_connect`, scope `terminal:use`, header
   auth); the legacy `?token=` still works.
 * **Custom routes** may declare `scopes=` and receive `request.context["policy"]`.

@@ -89,10 +89,10 @@ result = await sandbox.run_code("code", timeout=60)
 
 ```bash
 # 全局默认超时
-ebx --timeout 600 create
+abx --timeout 600 create
 
 # 命令级超时
-ebx exec sbx-xxxx "command" --timeout 120
+abx exec sbx-xxxx "command" --timeout 120
 ```
 
 ---

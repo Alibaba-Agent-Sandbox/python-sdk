@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from easy_sandbox.declarative.config import SandboxDeclarativeConfig
+from agent_sandbox.declarative.config import SandboxDeclarativeConfig
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -24,7 +24,6 @@ class TestSandboxDeclarativeConfigDefaults:
         assert cfg.python_packages == []
         assert cfg.files == {}
         assert cfg.serializer == "json"
-        assert cfg.image is None
         assert cfg.cpu is None
         assert cfg.memory is None
 
@@ -113,7 +112,7 @@ class TestSandboxDeclarativeConfigFromDict:
 
 
 class TestSandboxDeclarativeConfigResourceFields:
-    """New cpu / memory / image fields."""
+    """cpu / memory fields."""
 
     def test_cpu_memory_set(self) -> None:
         cfg = SandboxDeclarativeConfig(cpu=2, memory=512)
@@ -124,18 +123,6 @@ class TestSandboxDeclarativeConfigResourceFields:
         cfg = SandboxDeclarativeConfig.from_dict({"cpu": 4, "memory": 1024})
         assert cfg.cpu == 4
         assert cfg.memory == 1024
-
-    def test_image_field_accepts_object(self) -> None:
-        """image field accepts any object (duck-typed Image)."""
-        sentinel = object()
-        cfg = SandboxDeclarativeConfig(image=sentinel)
-        assert cfg.image is sentinel
-
-    def test_image_excluded_from_dict_export(self) -> None:
-        """image is excluded from model_dump (not serialisable)."""
-        cfg = SandboxDeclarativeConfig(image=object())
-        data = cfg.model_dump()
-        assert "image" not in data
 
     @pytest.fixture(autouse=True)
     def _check_yaml(self) -> None:

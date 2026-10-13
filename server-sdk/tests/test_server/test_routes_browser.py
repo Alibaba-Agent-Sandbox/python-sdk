@@ -1,4 +1,4 @@
-"""Tests for easy_sandbox.server.routes_browser — browser automation endpoints.
+"""Tests for agent_sandbox.server.routes_browser — browser automation endpoints.
 
 Covers:
 - BROWSER group disabled by default (endpoints return 404)
@@ -20,10 +20,12 @@ from unittest import mock
 import pytest
 
 # Import the browser routes so they register on the default table.
-import easy_sandbox.server.routes_browser as routes_browser_mod
-from easy_sandbox.server.app import SandboxRequestHandler
-from easy_sandbox.server.registry import CommandRegistry
-from easy_sandbox.server.router import CapabilityGroup, default_table
+import agent_sandbox.server.routes_browser as routes_browser_mod
+from agent_sandbox.server.app import SandboxRequestHandler
+from agent_sandbox.server.registry import CommandRegistry
+from agent_sandbox.server.router import CapabilityGroup, default_table
+
+from ._live import wire
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -41,8 +43,7 @@ def _start_server(port: int) -> ThreadingHTTPServer:
     """Create and start a no-auth server on *port* in a daemon thread."""
     registry = CommandRegistry()
     httpd = ThreadingHTTPServer(("127.0.0.1", port), SandboxRequestHandler)
-    httpd.auth_token = None  # type: ignore[attr-defined]
-    httpd.registry = registry  # type: ignore[attr-defined]
+    wire(httpd, auth_token=None, registry=registry)
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()
     time.sleep(0.05)

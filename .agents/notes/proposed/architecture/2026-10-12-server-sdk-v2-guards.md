@@ -6,13 +6,13 @@ Status: proposed
 Design 03 (sections 6, 7, 15.3) and plan 10 (WP-3, `guards/{paths,commands}.py`) call for path scopes (allow roots, deny globs, read-only, non-removable system deny list) and command scopes (normalised argv, deny pass, allow-list, no shell by default). Today the checks are split: `server/guard.py` (`PathGuard`) and a private `_check_command` in `routes.py` (fnmatch on `argv[0]` only; `ls -lR` style aliases and argument pinning are impossible).
 
 ## Decision
-New stdlib-only package `easy_sandbox/server/guards/`; `guard.py`, `policy.py`, `routes.py` and every error code are untouched (the v1 dispatcher stays).
+New stdlib-only package `agent_sandbox/server/guards/`; `guard.py`, `policy.py`, `routes.py` and every error code are untouched (the v1 dispatcher stays).
 
 | Module | Content |
 |---|---|
 | `paths.py` | re-exports `PathGuard`, `open_checked`, `OP_*`; `path_guard(*roots, deny, readonly, symlinks)` (refuses no root, `/`, relative or glob roots; always adds `SYSTEM_DENY = /proc /sys /dev`); `path_guard_from_context(ctx)` wraps `EndpointContext.guard()` plus the system deny list |
 | `commands.py` | `CommandGuard(allow, deny, shell, path_guard, require_allow, legacy_codes)`; `normalise(command xor argv)`; `expand_short_flags`; `command_guard(...)` (fail-closed); `command_guard_from_context(ctx)` and `check_command(ctx, argv)` read the engine's `allow_commands` / `deny_commands` params |
-| `env.py` | `check_env(updates, deny=())`: admits ordinary `KEY=VALUE` pairs; refuses `EBX_*` (any case) and any name matching the caller deny list. Does not write `os.environ` |
+| `env.py` | `check_env(updates, deny=())`: admits ordinary `KEY=VALUE` pairs; refuses `ABX_*` (any case) and any name matching the caller deny list. Does not write `os.environ` |
 | `urls.py` | `check_url(url, allow_private=False)`: refuses loopback, link-local and private addresses unless `allow_private`; a public `https` URL is admitted. Literal address only (no DNS) |
 | `process.py` | `check_process(argv)`: refuses an argv whose executable resolves under `/proc`, `/sys` or `/dev` (path as given and real path) |
 
@@ -46,7 +46,7 @@ Checked and not a gap (caller does not supply the executable, or a stricter agen
 
 - `handle_git_status`, `handle_git_diff` — argv is fixed `git ...`; the query supplies a work tree and an optional path, not an executable
 - `handle_packages` — argv is fixed `pip` or `npm` from the `manager` enum; `_ports_via_ss` runs fixed `ss -tlnp` only as a fallback
-- `handle_environments_create`, `handle_templates_create`, `handle_templates_update` — env maps go through `check_env_map`, which refuses `EBX_*` and a wider deny list (`LD_*`, `PATH`, `HOME`, proxies, provider keys)
+- `handle_environments_create`, `handle_templates_create`, `handle_templates_update` — env maps go through `check_env_map`, which refuses `ABX_*` and a wider deny list (`LD_*`, `PATH`, `HOME`, proxies, provider keys)
 - `handle_webhooks_create`, `handle_webhooks_update` — URLs go through `check_endpoint_url` → `url_check` (https, no userinfo/query/fragment, private and loopback hosts refused)
 - Agent/response tool `server_url` and vault `auth.mcp_server_url` — `url_check`. MCP tool URLs pass `allow_private=True` on purpose (local MCP). `check_url` would either duplicate that allowance or reject private MCP hosts
 - `AgentRuntime._supervise` and `prepare_workspace` — argv[0] is the adapter binary or `git`. The HTTP field allow-list rejects `command`, `extra_args`, and stdio MCP `command`. Environment create/update has no git URL field, so the clone path is not an HTTP input

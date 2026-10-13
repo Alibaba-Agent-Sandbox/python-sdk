@@ -1,13 +1,13 @@
 # API Reference
 
-This document lists all public API signatures, parameters, return values, and exceptions of the Easy Sandbox Python SDK.
+This document lists all public API signatures, parameters, return values, and exceptions of the Agent Sandbox Python SDK.
 
 ---
 
 ## Sandbox Class
 
 ```python
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 ```
 
 ### Class Methods
@@ -28,7 +28,6 @@ async def create(
     memory: int | None = None,
     disk: int | None = None,
     gpu: str | None = None,
-    description: str | None = None,
     secure: bool = True,
     api_key: str | None = None,
     api_url: str | None = None,
@@ -38,7 +37,7 @@ async def create(
 ) -> Sandbox
 ```
 
-Create a new sandbox. When `description` is provided and `template` remains at its default value `"base"`, the SDK records it as a hint log entry. Template inference via LLM happens at the **CLI / Agent layer**, not inside `Sandbox.create()` itself.
+Create a new sandbox.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -51,7 +50,6 @@ Create a new sandbox. When `description` is provided and `template` remains at i
 | `memory` | `int` | `None` | Memory in MB |
 | `disk` | `int` | `None` | Disk in MB |
 | `gpu` | `str` | `None` | GPU specification (e.g., `"A10"`) |
-| `description` | `str` | `None` | Natural language hint (recorded as a log entry; LLM inference happens at the CLI / Agent layer, not inside `create()`) |
 | `secure` | `bool` | `True` | Secure mode (port access requires token) |
 | `api_key` | `str` | `None` | API Key override |
 | `api_url` | `str` | `None` | Platform API URL override |
@@ -127,39 +125,6 @@ Destroy a sandbox by ID (class method, no prior connection required).
 
 **Sync version**: `Sandbox.kill_by_id_sync(...)`
 
-#### `Sandbox.deploy()`
-
-```python
-@classmethod
-async def deploy(
-    cls,
-    project_path: str,
-    description: str,
-    *,
-    max_wall_time: str = "10m",
-    max_session_turns: int = 100,
-    llm_api_key: str | None = None,
-    openai_base_url: str | None = None,
-    openai_model: str | None = None,
-    timeout: int = 900,
-    envs: dict[str, str] | None = None,
-    cpu: int | None = None,
-    memory: int | None = None,
-    on_progress: Callable[[str], None] | None = None,
-    api_key: str | None = None,
-    api_url: str | None = None,
-    domain: str | None = None,
-    access_key_id: str | None = None,
-    access_key_secret: str | None = None,
-) -> Sandbox
-```
-
-Automatically deploy a project using the qwen-code agent. Creates a `qwen-code` template sandbox, uploads the project, and automatically analyzes, installs dependencies, builds, and starts the service.
-
-**Returns**: `Sandbox` instance (still running); the `_deploy_result` attribute contains the deployment result.
-
-**Sync version**: `Sandbox.deploy_sync(...)`
-
 ### Instance Methods
 
 | Method | Signature | Description | Sync Version |
@@ -220,65 +185,37 @@ async def list_commands(
     self,
     *,
     server_port: int = 9000,
-) -> list[dict[str, Any]]
+) -> list[ServerCommand]
 ```
 
-Return the merged command catalogue (template + server). Combines template `custom_commands` (source `"template"`) with SandboxServer `/commands` (source `"server"`). When both sources define the same name, the template entry wins and the server entry is marked `shadowed=True`.
+List the named commands registered on the sandbox's SandboxServer (`GET /commands`). Commands are registered inside the sandbox with `@sandbox.register` or the server's `CommandRegistry`.
 
-**Returns**: List where each item contains `name`, `description`, `args`, `source`, `shadowed`
+**Returns**: List of `ServerCommand` (`name`, `description`, `args`)
+
+**Raises**: `ProviderFeatureNotSupportedError` (E8004) when the provider has no HTTP data plane; `ConnectionError_` when the server is unreachable
+
+**Sync version**: `list_commands_sync()`
 
 #### `run()`
 
 ```python
 async def run(
     self,
-    cmd: str,
-    *,
-    timeout: int = 60,
-    env: dict[str, str] | None = None,
-    cwd: str = "",
-    user: str = "",
-    background: bool = False,
-) -> ProcessResult | StreamReader[ProcessChunk]
-```
-
-Execute a bare shell command. Convenience shortcut for `sandbox.commands.run(cmd, ...)`. This is **not** named-command dispatch; use `custom()` for that.
-
-**Returns**: `ProcessResult` (or `StreamReader` when `background=True`)
-
-#### `custom()`
-
-```python
-async def custom(
-    self,
     name: str,
-    *,
-    server_port: int = 9000,
-    **kwargs: Any,
-) -> CommandResult
-```
-
-Execute a named command with A→B resolution: first looks up template `custom_commands` (Mechanism A), then falls back to SandboxServer `POST /commands/{name}` (Mechanism B).
-
-**Returns**: `CommandResult` (with `value`, `stdout`, `stderr`, `exit_code`, `execution_time`, `source`)
-
-**Sync version**: `custom_sync()`
-
-#### `run_command()` *(deprecated)*
-
-```python
-async def run_command(
-    self,
-    name: str,
+    /,
     *,
     server_port: int = 9000,
     **kwargs: Any,
 ) -> Any
 ```
 
-**Deprecated** alias for `custom()`. Returns only `CommandResult.value` instead of the full `CommandResult`. New code should use `custom()`.
+Call a named command registered on the sandbox's SandboxServer: `sandbox.run("name", x=1)` is `POST /commands/name` with `kwargs` as the JSON body. This is the only way to call a named command. For a raw shell command use `sandbox.commands.run(cmd, ...)`.
 
-**Sync version**: `run_command_sync()` *(also deprecated)*
+**Returns**: The command's result value
+
+**Raises**: `CommandNotFoundError` (404), `ServerAPIError` (other server errors), `ProviderFeatureNotSupportedError` (E8004)
+
+**Sync version**: `run_sync()`
 
 ### Properties
 
@@ -391,49 +328,10 @@ All methods require the `code` capability and enforce it at runtime — calling 
 
 ---
 
-## Image Class
-
-```python
-from easy_sandbox.api.image import Image
-```
-
-Chaining image builder (Modal-style).
-
-### Factory Methods
-
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `from_template()` | `@classmethod def from_template(template: str) -> Image` | Create from an existing template |
-| `from_image()` | `@classmethod def from_image(image: str) -> Image` | Create from a Docker image |
-| `official_base()` | `@classmethod def official_base(variant: str = "base", *, region=None, tag=None) -> Image` | Create from the official Alibaba Cloud Agent Sandbox base image |
-
-### Chaining Methods
-
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `pip_install()` | `def pip_install(*packages: str) -> Image` | Install pip packages |
-| `apt_install()` | `def apt_install(*packages: str) -> Image` | Install system packages |
-| `copy_local()` | `def copy_local(src: str, dst: str) -> Image` | Copy local files |
-| `env()` | `def env(**kwargs: str) -> Image` | Set environment variables |
-| `run_command()` | `def run_command(cmd: str) -> Image` | Execute a command during build |
-| `workdir()` | `def workdir(path: str) -> Image` | Set working directory |
-| `expose()` | `def expose(*ports: int) -> Image` | Expose ports |
-| `entrypoint()` | `def entrypoint(cmd: str) -> Image` | Set entrypoint command |
-
-### Output Methods
-
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `to_dockerfile()` | `def to_dockerfile() -> str` | Generate Dockerfile text |
-| `build()` | `async def build(*, alias=None, api_key=None, ..., timeout=600) -> TemplateInfo` | Build as a platform template |
-
----
-
 ## ServerClient (in-sandbox SandboxServer)
 
 ```python
-from easy_sandbox.api import ServerClient, ServerCapabilities
-from easy_sandbox.api.base_image import official_base_image, scaffold_dockerfile, lint_dockerfile
+from agent_sandbox.api import ServerClient, ServerCapabilities
 ```
 
 Typed client for the template-authored SandboxServer (port 9000, PTY WebSocket on 9001). It is separate from
@@ -441,14 +339,14 @@ the envd-backed `sandbox.files` / `sandbox.commands`: use `Sandbox.server` when 
 you want policy-scoped, scope-checked access, or need endpoints envd lacks (`files.search`, `files.archive`,
 `files.watch`, `process.output`, git, browser). Every coroutine has a `*_sync` twin; async generators
 (`files.watch`, `process.shell_stream`, `process.follow`) have collecting coroutines (`files.watch_for`,
-`process.run_stream`) instead. Models live in `easy_sandbox.models.server`.
+`process.run_stream`) instead. Models live in `agent_sandbox.models.server`.
 
 | Member | Signature | Description |
 |--------|-----------|-------------|
 | `ServerClient()` | `(base_url, *, token=None, headers=None, pty_url=None, timeout=30.0, http_client=None)` | `token` is sent as `Authorization: Bearer`; `headers` carry the gateway `X-Access-Token` |
 | `Sandbox.server` | `cached_property -> ServerClient` | Client for port 9000 with the sandbox gateway headers |
 | `Sandbox.server_at()` | `(port=9000, *, token=None, pty_port=9001, timeout=30.0) -> ServerClient` | A fresh client for another port/token |
-| `Sandbox.start_server()` | `async (*, port=9000, commands=None, policy=None, token=None, env=None, command=None, wait=True, timeout=30.0) -> ServerClient` | Starts `easy-sandbox-server serve` as a background envd command and polls `/health`; `policy` is a dict (`EBX_SERVER_POLICY`) or a preset name; raises `ConnectionError_` on timeout |
+| `Sandbox.start_server()` | `async (*, port=9000, commands=None, policy=None, token=None, env=None, command=None, wait=True, timeout=30.0) -> ServerClient` | Starts `agent-sandbox-server serve` as a background envd command and polls `/health`; `policy` is a dict (`ABX_SERVER_POLICY`) or a preset name; raises `ConnectionError_` on timeout |
 | `health()` | `async -> bool` | `GET /health`, never raises for an unreachable server |
 | `discover()` | `async -> ServerCapabilities` | `GET /capabilities`; caches the result in `client.capabilities` and enables fail-fast pre-checks |
 | `forget_discovery()` | `() -> None` | Drop the cache (policy changed) |
@@ -460,7 +358,7 @@ Sub-APIs (all return typed models; see [Server HTTP API](./server-http-api.md) f
 
 | Sub-API | Methods |
 |---------|---------|
-| `files` | `list`, `stat`, `exists`, `mkdir`, `delete`, `move`, `search`, `archive`, `watch`/`watch_for`, `upload`, `download`, `read_text`, `upload_file`, `download_file`, `upload_legacy`, `download_legacy` |
+| `files` | `list`, `stat`, `exists`, `mkdir`, `delete`, `move`, `search`, `archive`, `watch`/`watch_for`, `upload`, `download`, `read_text`, `upload_file`, `download_file`, `upload_legacy`, `download_legacy` (the `/upload` and `/download` endpoints) |
 | `process` | `shell`, `shell_stream`/`run_stream`, `start`, `list`, `get`, `signal`, `terminate`, `kill`, `send_stdin`, `close_stdin`, `output`, `follow`, `wait` |
 | `pty` | `create`, `list`, `get`, `resize`, `delete`, `connect` (WebSocket `PtyConnection`) |
 | `system` | `info`, `metrics`, `env`, `set_env`, `ports`, `packages` |
@@ -473,18 +371,20 @@ route of the server's default table is present).
 
 ### ServerCapabilities
 
-Returned by `discover()`. `legacy` is `True` for a server without per-endpoint discovery (only group-level checks).
+Returned by `discover()`. There is no legacy mode: a server whose `/capabilities` lacks `endpoints` is not supported.
 
 | Member | Description |
 |--------|-------------|
 | `can(endpoint)` | `True` when the endpoint exists, is enabled and the identity may call it |
-| `denial(endpoint)` | Reason string (`endpoint_disabled`, `group_disabled`, `unknown_endpoint`, `missing_scope`) or `None` |
+| `denial(endpoint)` | Reason string (`endpoint_disabled`, `unknown_endpoint`, `missing_scope`) or `None` |
+| `rule(endpoint)` | The rule code that disabled the endpoint (`policy:groups.file_ops`, `default:opt-in:dev_tools`, ...) or `None` |
 | `require(endpoint)` | Raises `EndpointNotAvailableError` / `PolicyDeniedError`; otherwise returns the `EndpointInfo` |
 | `info(endpoint)` | `EndpointInfo` (`method`, `path`, `group`, `enabled`, `allowed`, `scopes`, `limits`, `paths`, `params`) |
 | `limit(endpoint, key, default=None)` / `param(...)` | A configured limit / parameter |
 | `paths(endpoint)` | `EndpointPaths` (`allow`, `read_only`, `deny_count`, `symlinks`) |
 | `endpoints_for(scope)` / `available()` | Endpoint ids granted by a scope / callable now |
 | `check_path(endpoint, path, op=None)` (+ `_sync`) | Authoritative server-side path decision (never an existence oracle) |
+| `groups`, `group_summary` | `{group: enabled}` and `{group: {enabled, total}}` derived views; the switch is the endpoint rule |
 | `identity_id`, `scopes`, `preset`, `revision`, `warnings`, `api_version`, `server_version`, `configured` | Document metadata |
 
 ### Errors (E9xxx)
@@ -494,21 +394,6 @@ Returned by `discover()`. `legacy` is `True` for a server without per-endpoint d
 `CapabilityNotSupportedError`), `PayloadTooLargeError` (E9004; `limit`), `RateLimitedError` (E9005; `retry_after`).
 See [Error Codes](./error-codes.md#e9xxx--in-sandbox-server-api-errors-serverapierror).
 
-### Base image helpers (`easy_sandbox.api.base_image`)
-
-| Name | Description |
-|------|-------------|
-| `official_base_image(*, region=None, variant="base", tag=None)` | `fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/<variant>:<tag>`; env `EBX_BASE_IMAGE_REGION` / `EBX_BASE_IMAGE_TAG`; malformed parts raise `ValueError` |
-| `is_official_base_image(ref)` | Whether *ref* is in the official registry namespace |
-| `lint_dockerfile(text)` | Advisory findings `B001` (non-official base), `B002` (`ENTRYPOINT`), `B003` (final `USER root`), `B004` (reserved port), `B005` (no `FROM`) |
-| `scaffold_dockerfile(...)` | Dockerfile that layers `easy-sandbox-server` (wheel or pinned PyPI) onto the official base |
-| `BaseImageContract` | Constants: user, home, app dir, ports, start/ready commands |
-| `Image.official_base(variant="base", *, region=None, tag=None)` | `Image` starting from the official base (the default `Image()` base is unchanged) |
-
-`Image.build()` and `DockerBuilder.build()` log the lint findings as warnings; they never fail a build.
-`SandboxTemplate.server` holds the declarative server policy block (structurally validated; see
-[Template YAML Spec](./template-yaml-spec.md)).
-
 ---
 
 ## Data Models
@@ -516,7 +401,7 @@ See [Error Codes](./error-codes.md#e9xxx--in-sandbox-server-api-errors-serverapi
 ### SandboxStatus
 
 ```python
-from easy_sandbox.models.sandbox import SandboxStatus
+from agent_sandbox.models.sandbox import SandboxStatus
 
 class SandboxStatus(str, Enum):
     CREATING = "creating"
@@ -549,18 +434,6 @@ class SandboxStatus(str, Enum):
 | `exit_code` | `int` | Exit code |
 | `execution_time` | `float` | Execution time (seconds) |
 | `output_files` | `list` | Output file list |
-
-### CommandResult
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `value` | `Any` | Return value — `stdout.strip()` for template commands, JSON return for server commands |
-| `stdout` | `str` | Standard output (empty for server commands) |
-| `stderr` | `str` | Standard error (empty for server commands) |
-| `exit_code` | `int` | Exit code (0 on success, 1 on failure for server commands) |
-| `execution_time` | `float` | Execution time (seconds) |
-| `source` | `str` | `"template"` or `"server"` |
-| `success` | `bool` | `exit_code == 0` (property) |
 
 ### OutputFile
 

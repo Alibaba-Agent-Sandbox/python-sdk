@@ -1,11 +1,11 @@
 # Error Codes Reference
 
-> **Note:** The `ebx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @easy-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`easy-sandbox`) and the container-side runtime (`easy-sandbox-server`).
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`).
 
 All SDK errors inherit from `SandboxError` and carry `code` (error code), `message`, `suggestion`, and `docs_url` attributes.
 
 ```python
-from easy_sandbox.models.errors import SandboxError
+from agent_sandbox.models.errors import SandboxError
 
 try:
     sandbox = await Sandbox.create(template="nonexistent")
@@ -21,13 +21,13 @@ except SandboxError as e:
 | Error Code | Exception Class | Meaning | Suggestion | Trigger Scenario |
 |------------|----------------|---------|------------|------------------|
 | E1000 | `AuthenticationError` | Authentication failed (base class) | — | General authentication errors |
-| E1001 | `InvalidAPIKeyError` | Invalid or missing API Key | Check the `EBX_SANDBOX_API_KEY` environment variable or pass the `sandbox_api_key` parameter | Called an authenticated API without configuring any API Key |
+| E1001 | `InvalidAPIKeyError` | Invalid or missing API Key | Check the `ABX_SANDBOX_API_KEY` environment variable or pass the `sandbox_api_key` parameter | Called an authenticated API without configuring any API Key |
 | E1002 | `TokenExpiredError` | Authentication token expired | SDK should auto-refresh tokens; if persistent, check system clock synchronization | AK/SK temporary token expired and auto-refresh failed |
 | E1003 | `InvalidCredentialsError` | Invalid AK/SK credentials | Check `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET` environment variables | AK/SK is empty or malformed |
 
 ### Troubleshooting Steps
 
-1. Run `ebx config get sandbox_api_key` to confirm authentication status
+1. Run `abx config get sandbox_api_key` to confirm authentication status
 2. Verify environment variables are correctly set
 3. Confirm the API Key has not expired or been revoked
 4. For E1002, check if the system clock is accurate (`date` command)
@@ -39,22 +39,18 @@ except SandboxError as e:
 | Error Code | Exception Class | Meaning | Suggestion | Trigger Scenario |
 |------------|----------------|---------|------------|------------------|
 | E2000 | `SandboxCreationError` | Creation failed (base class) | — | General sandbox creation errors |
-| E2001 | `TemplateNotFoundError` | Template does not exist | Run `ebx template list` to view available templates | Specified a non-existent template name |
+| E2001 | `TemplateNotFoundError` | Template does not exist | Run `abx template list` to view available templates | Specified a non-existent template name |
 | E2002 | `QuotaExceededError` | Quota exceeded | Destroy idle sandboxes or request a quota increase | Number of running sandboxes exceeds account quota |
 | E2003 | `RegionUnavailableError` | Region unavailable | Try another region or check service availability | Requested region is temporarily unavailable or does not exist |
 | E2004 | `TemplateParseError` | Template parse failure | Fix template.yaml (see validation errors); capabilities will not be granted until the template parses successfully | template.yaml has format errors or invalid fields |
-| E2005 | `QwenCodeNotInstalledError` | Qwen Code is not installed | Install the official standalone build per the Quick Setup (or run `ebx config init`), or skip AI generation with `ebx create --template <name>` | `ebx create "description"` while Qwen Code is absent from PATH and `~/.ebx/bin`, and the user declines install or a non-TTY shell omits `-y` |
-| E2006 | `QwenCodeCredentialError` | Qwen Code credentials missing | `ebx config set llm_api_key <KEY>` or `ebx config init`; exported `DASHSCOPE_API_KEY`/`OPENAI_API_KEY` also work | No usable credential in `llm_api_key`, environment variables, or `~/.qwen/settings.json` on the AI path |
-| E2007 | `AICodegenError` | AI generation failed | Inspect the retained workspace (`~/.ebx/generated/<name>`, or under `--dir`) and retry, or use `ebx create --template <name>` | Qwen Code generation failed/timed out, or the produced Dockerfile/template.yaml is missing or fails validation |
-| E2008 | `DescriptionClarificationError` | Description too incomplete for AI generation | Add the missing details listed in the suggestion (or a similar example description) to `DESCRIPTION`, pass `--yes`/`-y` to generate from the current description anyway, or use `ebx create --template <name>` | After the agent researched the publicly verifiable facts itself, the description still scores below the 80% completeness threshold (missing user preferences / private constraints / business decisions) and the session cannot ask clarifying questions (non-TTY / CI without `-y`), or the interactive clarification was cancelled / interrupted (EOF) |
-| E2009 | `SandboxNotFoundError` | No sandbox with this ID exists | Run `ebx list` to see the running sandboxes; a killed or expired sandbox cannot be reconnected | `Sandbox.connect()` / `get_info()` / `set_timeout()` / `pause()` / `resume()` on an ID the platform answers with HTTP 404 (`kill` stays idempotent) |
+| E2009 | `SandboxNotFoundError` | No sandbox with this ID exists | Run `abx list` to see the running sandboxes; a killed or expired sandbox cannot be reconnected | `Sandbox.connect()` / `get_info()` / `set_timeout()` / `pause()` / `resume()` on an ID the platform answers with HTTP 404 (`kill` stays idempotent) |
 
 ### Troubleshooting Steps
 
-1. Verify the template name is correct (`ebx template list`)
-2. For E2002, check `ebx list` for idle sandboxes
+1. Verify the template name is correct (`abx template list`)
+2. For E2002, check `abx list` for idle sandboxes
 3. For E2004, check template.yaml YAML syntax and field values
-4. For E2005–E2008 (AI path), follow the Quick Setup printed in the output; pass `ebx create --template <name>` explicitly to skip AI generation. For E2008 specifically, add the missing details (or the example description) to the argument, or pass `-y` to generate from the current description without clarification
+4. E2005–E2008 (AI template generation) and the E7xxx build and deploy codes belong to the `abx` CLI; see the CLI's error-codes reference. The Python SDK no longer defines them
 
 ---
 
@@ -67,8 +63,8 @@ except SandboxError as e:
 | E3002 | `ProcessError` | Non-zero exit code | — | Command returned a non-zero exit code (carries `exit_code`, `stdout`, `stderr` attributes) |
 | E3003 | `CodeExecutionError` | Code execution failed | Check code syntax and runtime dependencies | Code Interpreter failed to execute code |
 | E3004 | `CapabilityNotSupportedError` | Capability not enabled | Declare the required capability in the template's `capabilities` list, or use a template that supports it | Called a capability that is runtime-gated without it being declared (e.g., calling `run_code()` on a template without the `code` capability). Also raised during `resolve_capabilities()` at template parse time |
-| E3005 | `CommandNotFoundError` | Named custom command not found | Check the command name, the template's `custom_commands`, and whether the SandboxServer is running (`sandbox.server.start()`) | `Sandbox.custom(name)` / `ebx run <name>` cannot resolve the command from the template's `custom_commands` (mechanism A) or the SandboxServer registry (mechanism B) — server reachable but HTTP 404, or SandboxServer unreachable (connection failure / invalid response). Carries `command_name` and `checked_sources` attributes |
-| E3006 | `EnvdRpcError` | envd rejected an RPC call (HTTP >= 400) | Check the command and arguments, or run with `ebx -v` for the raw error response | Sandbox envd returned HTTP >= 400 (e.g., a `process.Process/Start` 500 for an unknown executable). Carries `status_code`, `rpc_path`, `envd_error` (parsed JSON body) and `body_text`; the message never includes the full sandbox URL. `ebx connect` maps it to a single friendly notice (e.g., `Command not found: <cmd>`) |
+| E3005 | `CommandNotFoundError` | Named command not found | Check the command name with `sandbox.list_commands()`, and make sure the SandboxServer is running in the sandbox (`sandbox.start_server()`) | `Sandbox.run(name)` / `abx run <id> <name>` names a command the in-sandbox SandboxServer does not have (HTTP 404). Carries the `command_name` attribute |
+| E3006 | `EnvdRpcError` | envd rejected an RPC call (HTTP >= 400) | Check the command and arguments, or run with `abx -v` for the raw error response | Sandbox envd returned HTTP >= 400 (e.g., a `process.Process/Start` 500 for an unknown executable). Carries `status_code`, `rpc_path`, `envd_error` (parsed JSON body) and `body_text`; the message never includes the full sandbox URL. `abx connect` maps it to a single friendly notice (e.g., `Command not found: <cmd>`) |
 
 ### E3004 Details
 
@@ -106,7 +102,7 @@ except CapabilityNotSupportedError as e:
 | Error Code | Exception Class | Meaning | Suggestion | Trigger Scenario |
 |------------|----------------|---------|------------|------------------|
 | E5000 | `NetworkError` | Network error (base class) | — | General network connection errors |
-| E5000 | `GitHubRateLimitError` | GitHub anonymous API rate limit hit while fetching templates | Run `ebx config set github_token` (masked input; the CLI offers this interactively and retries once), or inject `GITHUB_TOKEN` in CI | `ebx template install` / `ebx install` / `ebx template search` without a token configured |
+| E5000 | `GitHubRateLimitError` | GitHub anonymous API rate limit hit while fetching templates | Run `abx config set github_token` (masked input; the CLI offers this interactively and retries once), or inject `GITHUB_TOKEN` in CI | `abx template install` / `abx install` / `abx template search` without a token configured |
 | E5001 | `ConnectionError_` | Connection failed | Check network connectivity and firewall rules | Unable to connect to the sandbox service |
 
 > **Note**: The `ConnectionError_` class name has a trailing underscore to avoid shadowing Python's built-in `ConnectionError`.
@@ -125,34 +121,6 @@ except CapabilityNotSupportedError as e:
 
 ---
 
-## E7xxx — Deployment & Build Errors
-
-### Deployment Errors (DeployError)
-
-| Error Code | Exception Class | Meaning | Suggestion | Trigger Scenario |
-|------------|----------------|---------|------------|------------------|
-| E7000 | `DeployError` | Deployment failed (base class) | — | General NL-driven deployment errors |
-| E7001 | `DeployLLMKeyMissingError` | LLM API Key not found | Set `EBX_LLM_API_KEY` (or `BAILIAN_CODING_PLAN_API_KEY`, `DASHSCOPE_API_KEY`, `OPENAI_API_KEY`), run `ebx config set llm_api_key <KEY>`, or pass `llm_api_key=` | Missing the LLM Key required by the in-sandbox qwen-code agent of the SDK's `Sandbox.deploy()` (`ebx deploy` never raises it) |
-| E7002 | `DeployAgentError` | Agent returned an error | Check `DeployResult`'s `raw_output` for details | qwen-code agent encountered an error |
-| E7003 | `DeployTimeoutError` | Deployment timeout | Increase `max_wall_time` or simplify the deployment task | Deployment exceeded the maximum time limit |
-
-### Template Build Errors
-
-| Error Code | Exception Class | Meaning | Suggestion | Trigger Scenario |
-|------------|----------------|---------|------------|------------------|
-| E7010 | `TemplateBuildError` | Template build failed | Check the Dockerfile and build logs | Template image build error |
-| E7011 | `TemplateBuildTimeoutError` | Template build timeout | Increase the build timeout or simplify the Dockerfile | Image build took too long |
-
-### Docker/ACR Errors
-
-| Error Code | Exception Class | Meaning | Suggestion | Trigger Scenario |
-|------------|----------------|---------|------------|------------------|
-| E7020 | `DockerBuildError` | Docker build failed | Check Dockerfile syntax and ensure Docker daemon is running | Local Docker build failed |
-| E7021 | `ACRPushError` | Push to ACR failed | Verify ACR credentials and registry URL; ensure namespace and repository exist | Image push to Alibaba Cloud ACR failed |
-| E7022 | `ACRLoginError` | ACR login failed | Check AccessKey/AccessSecret credentials and registry URL | Alibaba Cloud ACR authentication failed |
-
----
-
 ## E8xxx — Provider Errors (ProviderError)
 
 Raised by the provider layer ([Providers guide](../guide/providers.md)). All subclass `SandboxError`. The CLI exit code is the same for every provider.
@@ -160,7 +128,7 @@ Raised by the provider layer ([Providers guide](../guide/providers.md)). All sub
 | Error Code | Exception Class | Meaning | Trigger Scenario | CLI exit |
 |------------|----------------|---------|------------------|----------|
 | E8000 | `ProviderError` | Provider failure (base class) | A plugin reported a failure with no more specific class | 1 |
-| E8001 | `ProviderNotFoundError` | Provider id unknown or not installed | `provider="x"` / `EBX_PROVIDER=x` names nothing registered or installed | 4 |
+| E8001 | `ProviderNotFoundError` | Provider id unknown or not installed | `provider="x"` / `ABX_PROVIDER=x` names nothing registered or installed | 4 |
 | E8002 | `ProviderConfigError` | Invalid or unknown provider option | `provider_options` key not in the plugin schema; wrong type; plugin reports `-32006` | 2 |
 | E8003 | `ProviderConflictError` | Duplicate or reserved provider id | Installing over an existing id without `--force`; registering a reserved id | 1 |
 | E8004 | `ProviderFeatureNotSupportedError` | The provider lacks the feature (also a `CapabilityNotSupportedError`) | Calling `pause()` on a provider that does not declare `sandbox.pause` | 1 |
@@ -169,7 +137,7 @@ Raised by the provider layer ([Providers guide](../guide/providers.md)). All sub
 | E8011 | `ProviderIntegrityError` | Digest or pin mismatch | Installed files changed since install; `--sha256` does not match | 1 |
 | E8012 | `ProviderTrustError` | Consent, pin or transport policy not satisfied | Non-interactive install without `--yes`; unpinned source without `--allow-unpinned`; insecure URL | 2 |
 | E8013 | `ProviderVersionError` | Incompatible SDK/CLI or protocol version | Manifest `requires` or `protocol` not supported by this host | 1 |
-| E8014 | `ProviderManifestError` | Invalid `ebx-provider.toml` | Failed validation rule | 1 |
+| E8014 | `ProviderManifestError` | Invalid `abx-provider.toml` | Failed validation rule | 1 |
 | E8020 | `ProviderProtocolError` | Malformed or oversized EPP message, handshake failure | Bad JSON line, line over 8 MiB, wrong protocol version | 1 |
 | E8021 | `ProviderProcessError` | Plugin process failed to start or crashed | Missing interpreter; exit during a call (stderr tail attached) | 1 |
 | E8022 | `ProviderTimeoutError` | Plugin start-up or call timed out | No `initialize` reply within the start-up timeout; call exceeds `call_timeout` | 5 |
@@ -179,8 +147,8 @@ Missing *credential* fields of a plugin raise the existing `InvalidCredentialsEr
 
 ### Troubleshooting Steps
 
-1. `python -m easy_sandbox.providers list` (or `ebx provider list`) shows what is installed and which is the default.
-2. `python -m easy_sandbox.providers doctor <id>` checks the manifest, the digest, the handshake and the credentials.
+1. `python -m agent_sandbox.providers list` (or `abx provider list`) shows what is installed and which is the default.
+2. `python -m agent_sandbox.providers doctor <id>` checks the manifest, the digest, the handshake and the credentials.
 3. For E8011, run `provider update <id>` or reinstall; do not edit installed files (edit your source and reinstall, or use `--link` while developing).
 4. For E8021, run the plugin command by hand from its directory to see the error; the SDK shows only the last 64 KiB of stderr.
 
@@ -197,9 +165,9 @@ Existing exception classes are reused where they already fit: HTTP 404 `FileNotF
 |------|-----------|---------|----------------------|:--------:|
 | E9000 | `ServerAPIError` | Any other server error (base class) | other 4xx/5xx | 1 |
 | E9001 | `ServerAuthError` (also `AuthenticationError`) | Missing or wrong server token | 401 `unauthorized`, 400 `ambiguous_credentials` | 3 |
-| E9002 | `PolicyDeniedError` (`scope`) | The server policy refuses the call | 403 `missing_scope`, `command_not_allowed`, `url_not_allowed`, ... | 1 |
+| E9002 | `PolicyDeniedError` (`scope`) | The server policy refuses the call | 403 `missing_scope`, `command_not_allowed`, `url_denied`, ... | 1 |
 | E9002 | `FilePolicyDeniedError` (also `PermissionDeniedError`) | A path rule refuses the call | 403 `path_not_allowed`, `path_denied`, `read_only`, `symlink_denied`, 409 `file_exists` | 1 |
-| E9003 | `EndpointNotAvailableError` (also `CapabilityNotSupportedError`; `capability` = endpoint) | Endpoint or group disabled, or unknown to an older server | 404 `endpoint_disabled`, legacy "Built-in route ... is disabled" | 1 |
+| E9003 | `EndpointNotAvailableError` (also `CapabilityNotSupportedError`; `capability` = endpoint) | Endpoint disabled (the body's `rule` names the layer that turned it off), or unknown to the server | 404 `endpoint_disabled` | 1 |
 | E9004 | `PayloadTooLargeError` (`limit`) | Body or file exceeds the endpoint limit (also raised client-side after discovery) | 413 `payload_too_large` | 1 |
 | E9005 | `RateLimitedError` (`retry_after`) | Rate or concurrency limit exhausted | 429 `rate_limited`, `concurrency_limited` | 1 |
 
@@ -208,7 +176,7 @@ Existing exception classes are reused where they already fit: HTTP 404 `FileNotF
 1. `await sandbox.server.discover()` then `caps.info("<endpoint>")` / `caps.denial("<endpoint>")` shows why an endpoint is unavailable (disabled, missing scope, path rules).
 2. `await caps.check_path("files_download_stream", "/some/path", op="read")` asks the server for the authoritative path decision without touching the filesystem.
 3. For E9001, pass `Sandbox.server_at(port, token=...)`; the token is sent as `Authorization: Bearer`, the gateway header stays separate.
-4. Validate a policy before shipping: `easy-sandbox-server check-config --policy server-policy.json --explain files_download_stream --path /home/user/out/a.txt`.
+4. Validate a policy before shipping: `agent-sandbox-server check-config --policy server-policy.json --explain files_download_stream --path /home/user/out/a.txt`.
 
 ---
 
@@ -222,12 +190,6 @@ classDiagram
     SandboxError <|-- FileOperationError
     SandboxError <|-- NetworkError
     SandboxError <|-- SessionError
-    SandboxError <|-- DeployError
-    SandboxError <|-- TemplateBuildError
-    SandboxError <|-- TemplateBuildTimeoutError
-    SandboxError <|-- DockerBuildError
-    SandboxError <|-- ACRPushError
-    SandboxError <|-- ACRLoginError
     SandboxError <|-- ProviderError
     ProviderError <|-- ProviderNotFoundError
     ProviderError <|-- ProviderConfigError
@@ -253,10 +215,6 @@ classDiagram
     SandboxCreationError <|-- QuotaExceededError
     SandboxCreationError <|-- RegionUnavailableError
     SandboxCreationError <|-- TemplateParseError
-    SandboxCreationError <|-- QwenCodeNotInstalledError
-    SandboxCreationError <|-- QwenCodeCredentialError
-    SandboxCreationError <|-- AICodegenError
-    SandboxCreationError <|-- DescriptionClarificationError
 
     ExecutionError <|-- CommandTimeoutError
     ExecutionError <|-- ProcessError
@@ -272,9 +230,6 @@ classDiagram
     SessionError <|-- SessionNotFoundError
     SessionError <|-- SessionAlreadyExistsError
 
-    DeployError <|-- DeployLLMKeyMissingError
-    DeployError <|-- DeployAgentError
-    DeployError <|-- DeployTimeoutError
 
     class SandboxError { E0000 }
     class AuthenticationError { E1000 }
@@ -286,10 +241,6 @@ classDiagram
     class QuotaExceededError { E2002 }
     class RegionUnavailableError { E2003 }
     class TemplateParseError { E2004 }
-    class QwenCodeNotInstalledError { E2005 }
-    class QwenCodeCredentialError { E2006 }
-    class AICodegenError { E2007 }
-    class DescriptionClarificationError { E2008 }
     class SandboxNotFoundError { E2009 }
     class ExecutionError { E3000 }
     class CommandTimeoutError { E3001 }
@@ -305,15 +256,6 @@ classDiagram
     class SessionError { E6000 }
     class SessionNotFoundError { E6001 }
     class SessionAlreadyExistsError { E6002 }
-    class DeployError { E7000 }
-    class DeployLLMKeyMissingError { E7001 }
-    class DeployAgentError { E7002 }
-    class DeployTimeoutError { E7003 }
-    class TemplateBuildError { E7010 }
-    class TemplateBuildTimeoutError { E7011 }
-    class DockerBuildError { E7020 }
-    class ACRPushError { E7021 }
-    class ACRLoginError { E7022 }
     class ProviderError { E8000 }
     class ProviderNotFoundError { E8001 }
     class ProviderConfigError { E8002 }
@@ -336,7 +278,7 @@ classDiagram
 ## Imports
 
 ```python
-from easy_sandbox.models.errors import (
+from agent_sandbox.models.errors import (
     SandboxError,
     AuthenticationError,
     InvalidAPIKeyError,
@@ -347,10 +289,6 @@ from easy_sandbox.models.errors import (
     QuotaExceededError,
     RegionUnavailableError,
     TemplateParseError,
-    QwenCodeNotInstalledError,
-    QwenCodeCredentialError,
-    AICodegenError,
-    DescriptionClarificationError,
     ExecutionError,
     CommandTimeoutError,
     ProcessError,
@@ -365,15 +303,6 @@ from easy_sandbox.models.errors import (
     SessionError,
     SessionNotFoundError,
     SessionAlreadyExistsError,
-    DeployError,
-    DeployLLMKeyMissingError,
-    DeployAgentError,
-    DeployTimeoutError,
-    TemplateBuildError,
-    TemplateBuildTimeoutError,
-    DockerBuildError,
-    ACRPushError,
-    ACRLoginError,
     ProviderError,
     ProviderNotFoundError,
     ProviderConfigError,

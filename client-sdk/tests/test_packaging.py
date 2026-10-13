@@ -1,9 +1,9 @@
-"""Wheel/sdist layout of the client distribution (``easy-sandbox``).
+"""Wheel/sdist layout of the client distribution (``agent-sandbox``).
 
-The client and server SDKs share the ``easy_sandbox`` namespace but ship as two
-distributions.  The client wheel owns ``easy_sandbox/__init__.py`` and every
-sub-package *except* ``easy_sandbox/server``, which belongs to
-``easy-sandbox-server``.  The CLI lives in a separate (Node.js) project and must
+The client and server SDKs share the ``agent_sandbox`` namespace but ship as two
+distributions.  The client wheel owns ``agent_sandbox/__init__.py`` and every
+sub-package *except* ``agent_sandbox/server``, which belongs to
+``agent-sandbox-server``.  The CLI lives in a separate (Node.js) project and must
 not reappear here.
 
 The test builds with the project's real build backend (hatchling) in a temporary
@@ -61,30 +61,45 @@ def _wheel_names(wheel: Path) -> list[str]:
 
 def test_wheel_owns_the_namespace_root_and_is_typed(built_dists: dict[str, Path]) -> None:
     names = _wheel_names(built_dists["wheel"])
-    assert "easy_sandbox/__init__.py" in names
-    assert "easy_sandbox/_version.py" in names
-    assert "easy_sandbox/py.typed" in names
+    assert "agent_sandbox/__init__.py" in names
+    assert "agent_sandbox/_version.py" in names
+    assert "agent_sandbox/py.typed" in names
     for package in ("api", "models", "transport", "protocol", "declarative", "agent", "utils"):
-        assert f"easy_sandbox/{package}/__init__.py" in names
+        assert f"agent_sandbox/{package}/__init__.py" in names
 
 
 def test_wheel_excludes_server_and_cli(built_dists: dict[str, Path]) -> None:
     names = _wheel_names(built_dists["wheel"])
-    assert not [n for n in names if n.startswith("easy_sandbox/server")], (
-        "easy_sandbox.server belongs to the easy-sandbox-server distribution"
+    assert not [n for n in names if n.startswith("agent_sandbox/server")], (
+        "agent_sandbox.server belongs to the agent-sandbox-server distribution"
     )
-    assert not [n for n in names if n.startswith("easy_sandbox/cli")]
+    assert not [n for n in names if n.startswith("agent_sandbox/cli")]
     assert not [n for n in names if n.endswith("entry_points.txt")], "no console scripts"
 
 
 def test_wheel_metadata_has_no_cli_dependencies(built_dists: dict[str, Path]) -> None:
     with zipfile.ZipFile(built_dists["wheel"]) as zf:
         metadata = next(zf.read(n).decode() for n in zf.namelist() if n.endswith("/METADATA"))
-    assert "Name: easy-sandbox\n" in metadata
+    assert "Name: agent-sandbox\n" in metadata
     for dep in ("click", "rich", "questionary"):
         assert f"Requires-Dist: {dep}" not in metadata
     assert "Provides-Extra: cli" not in metadata
     assert "Provides-Extra: server" in metadata
+
+
+def test_wheel_hard_depends_on_the_matching_server_and_keeps_extras(
+    built_dists: dict[str, Path],
+) -> None:
+    import agent_sandbox
+
+    with zipfile.ZipFile(built_dists["wheel"]) as zf:
+        metadata = next(zf.read(n).decode() for n in zf.namelist() if n.endswith("/METADATA"))
+    requires = [line for line in metadata.splitlines() if line.startswith("Requires-Dist: ")]
+    unconditional = [r for r in requires if "extra ==" not in r]
+    assert f"Requires-Dist: agent-sandbox-server=={agent_sandbox.__version__}" in unconditional
+    assert "Provides-Extra: server" in metadata
+    mcp_deps = [r for r in requires if "extra == 'mcp'" in r]
+    assert any(r.startswith("Requires-Dist: mcp>=1.0.0") for r in mcp_deps)
 
 
 def test_sdist_ships_license_notice_and_sources(built_dists: dict[str, Path]) -> None:
@@ -96,7 +111,27 @@ def test_sdist_ships_license_notice_and_sources(built_dists: dict[str, Path]) ->
         "NOTICE",
         "README.md",
         "pyproject.toml",
-        "src/easy_sandbox/__init__.py",
+        "src/agent_sandbox/__init__.py",
     ):
         assert f"{root}/{name}" in members
-    assert not [m for m in members if "/src/easy_sandbox/server/" in m]
+    assert not [m for m in members if "/src/agent_sandbox/server/" in m]
+
+
+def test_sdist_include_list_is_the_documented_one() -> None:
+    """The sdist include list is exactly the documented one.
+
+    Repo-only documents (``llms.txt``, ``CHANGELOG.md``, ``SKILL.md``) are intentionally NOT
+    in it; update this test if shipping one in the distribution becomes an explicit decision.
+    """
+    try:
+        import tomllib  # type: ignore[import-not-found,unused-ignore]
+    except ImportError:  # pragma: no cover - Python 3.10 fallback
+        import tomli as tomllib
+
+    data = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    include: list[str] = data["tool"]["hatch"]["build"]["targets"]["sdist"]["include"]
+    assert sorted(include) == sorted(
+        ["src/agent_sandbox/", "tests/", "README.md", "LICENSE", "NOTICE", "pyproject.toml"]
+    )
+    for repo_doc in ("llms.txt", "CHANGELOG.md", "SKILL.md"):
+        assert repo_doc not in include

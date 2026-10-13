@@ -7,28 +7,8 @@ import pytest
 import e2e_helpers as H
 
 
-def test_template_catalogue_has_official_templates(run):  # type: ignore[no-untyped-def]
-    from easy_sandbox.api.template import TemplateManager
-    from easy_sandbox.transport.auth import create_auth_provider
-    from easy_sandbox.transport.config import load_config
-    from easy_sandbox.transport.http import HttpClient
-
-    async def _list():  # type: ignore[no-untyped-def]
-        cfg = load_config()
-        http = HttpClient(cfg, create_auth_provider(api_key=cfg.api_key))
-        try:
-            return await TemplateManager(http).list()
-        finally:
-            await http.close()
-
-    templates = run(_list())
-    aliases = {a for t in templates for a in t.aliases}
-    assert {H.OFFICIAL_BASE, H.OFFICIAL_CODE} <= aliases
-    assert all(t.template_id for t in templates)
-
-
 def test_list_sandboxes_returns_sandbox_infos(run):  # type: ignore[no-untyped-def]
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
     infos = run(Sandbox.list(limit=50))
     assert isinstance(infos, list)
@@ -37,30 +17,24 @@ def test_list_sandboxes_returns_sandbox_infos(run):  # type: ignore[no-untyped-d
 
 
 def test_wrong_api_key_is_rejected(run):  # type: ignore[no-untyped-def]
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
-    with pytest.raises(Exception) as err:  # noqa: PT011 - concrete type is KI-006
+    with pytest.raises(Exception) as err:  # noqa: PT011
         run(Sandbox.list(api_key="e2e-invalid-key-0000000000000000"))
     assert "401" in str(err.value) or "uthenticat" in str(err.value)
 
 
-@pytest.mark.known_issue
-@pytest.mark.xfail(
-    strict=True,
-    reason="KI-006: a 401 from the platform surfaces as raw httpx.HTTPStatusError, not AuthenticationError "
-    "(the CLI maps it, the SDK does not)",
-)
 def test_wrong_api_key_raises_authentication_error(run):  # type: ignore[no-untyped-def]
-    from easy_sandbox.api.sandbox import Sandbox
-    from easy_sandbox.models.errors import AuthenticationError
+    from agent_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.models.errors import AuthenticationError
 
     with pytest.raises(AuthenticationError):
         run(Sandbox.list(api_key="e2e-invalid-key-0000000000000000"))
 
 
 def test_create_with_unknown_template_fails_cleanly(run):  # type: ignore[no-untyped-def]
-    from easy_sandbox.api.sandbox import Sandbox
-    from easy_sandbox.models.errors import SandboxError
+    from agent_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.models.errors import SandboxError
 
     with pytest.raises(SandboxError):
         run(
@@ -74,7 +48,7 @@ def test_create_with_unknown_template_fails_cleanly(run):  # type: ignore[no-unt
 
 def test_kill_unknown_sandbox_is_not_fatal(run):  # type: ignore[no-untyped-def]
     """Killing an id that does not exist must not hang; the platform answers 404 or 2xx."""
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
     try:
         run(Sandbox.kill_by_id("sbx-00000000-0000-0000-0000-000000000000"))
@@ -82,15 +56,9 @@ def test_kill_unknown_sandbox_is_not_fatal(run):  # type: ignore[no-untyped-def]
         assert "404" in str(exc) or "not found" in str(exc).lower()
 
 
-@pytest.mark.known_issue
-@pytest.mark.xfail(
-    strict=True,
-    reason="KI-005: Sandbox.connect() on a missing sandbox leaks a raw httpx.HTTPStatusError "
-    "instead of an SDK SandboxError subclass",
-)
 def test_connect_to_missing_sandbox_raises_sdk_error(run):  # type: ignore[no-untyped-def]
-    from easy_sandbox.api.sandbox import Sandbox
-    from easy_sandbox.models.errors import SandboxError
+    from agent_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.models.errors import SandboxNotFoundError
 
-    with pytest.raises(SandboxError):
+    with pytest.raises(SandboxNotFoundError):
         run(Sandbox.connect("sbx-00000000-0000-0000-0000-000000000000"))

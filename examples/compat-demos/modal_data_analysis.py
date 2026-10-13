@@ -19,9 +19,9 @@ Style: Modal (declarative)
 import os
 
 # 确保 API Key 可用 / Ensure API key is available
-API_KEY = os.environ.get("E2B_API_KEY", "")
+API_KEY = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
-from easy_sandbox.declarative import sandbox
+from agent_sandbox.declarative import sandbox
 
 # ── 内嵌销售数据（与 E2B Demo 相同）/ Same CSV data as E2B demo ──────────
 SALES_CSV = """\

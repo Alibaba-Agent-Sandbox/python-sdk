@@ -8,14 +8,14 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 
-from easy_sandbox.models.filesystem import FileInfo, FileType, WatchEvent, WatchEventType
-from easy_sandbox.protocol.filesystem import (
+from agent_sandbox.models.filesystem import FileInfo, FileType, WatchEvent, WatchEventType
+from agent_sandbox.protocol.filesystem import (
     FilesystemProtocol,
     _name_from_path,
     _parse_file_info,
     _parse_watch_event,
 )
-from easy_sandbox.transport.auth import EnvdTokenManager
+from agent_sandbox.transport.auth import EnvdTokenManager
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator

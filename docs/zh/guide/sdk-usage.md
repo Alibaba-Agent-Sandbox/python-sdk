@@ -1,19 +1,19 @@
 # SDK 使用指南
 
-本文详述 Easy Sandbox Python SDK 的完整使用方法。
+本文详述 Agent Sandbox Python SDK 的完整使用方法。
 
 ---
 
 ## 安装
 
 ```bash
-pip install easy-sandbox
+pip install agent-sandbox
 ```
 
 ## 导入
 
 ```python
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 ```
 
 ---
@@ -50,16 +50,6 @@ async with await Sandbox.create(template="base") as sandbox:
     result = await sandbox.run_code("print(1+1)")
     print(result.text)  # "2"
 # 自动销毁
-```
-
-### 自然语言创建
-
-当提供 `description` 且 `template` 保持默认值时，SDK 会将其记录为 hint 日志条目，模板选择不发生在 `Sandbox.create()` 内部；CLI 的 `ebx create "<描述>"` 会调用 Qwen Code 生成 AI 模板后创建沙箱（显式传 `--template` 时跳过 AI 生成）：
-
-```python
-sandbox = await Sandbox.create(
-    description="我需要一个支持 pandas 和 matplotlib 的数据分析环境",
-)
 ```
 
 ### 连接已有沙箱
@@ -341,7 +331,7 @@ SDK 采用 **async-first** 设计，所有核心方法都是异步的。每个�
 所有 SDK 错误都继承自 `SandboxError`，携带 `code`、`message`、`suggestion` 属性：
 
 ```python
-from easy_sandbox.models.errors import (
+from agent_sandbox.models.errors import (
     SandboxError,
     InvalidAPIKeyError,       # E1001
     TemplateNotFoundError,    # E2001
@@ -364,28 +354,25 @@ except SandboxError as e:
 
 ---
 
-## 自定义命令
+## 命名命令
 
-模板可以定义自定义命令。使用 `sandbox.custom()` 执行命名命令，`sandbox.list_commands()` 查看：
+命名命令只有一种机制：注册在沙箱 server 里的函数（`@sandbox.register`，或 server 的 `CommandRegistry`）。`sandbox.run(name, **kwargs)` 调用其中一个（`POST /commands/{name}`），`sandbox.list_commands()` 列出它们：
 
 ```python
-# 查看可用命令
 commands = await sandbox.list_commands()
 for cmd in commands:
-    print(f"{cmd['name']}: {cmd['description']}")
+    print(f"{cmd.name}: {cmd.description}")
 
-# 执行命名自定义命令
-result = await sandbox.custom("dev", port="8080")
-print(result.value)
+result = await sandbox.run("dev", port=8080)   # 注册函数的返回值
 ```
 
-> **注意：** `sandbox.run(cmd)` 执行裸 shell 命令；`sandbox.custom(name)` 调度命名命令。
+名字不存在抛 `CommandNotFoundError`；参数或执行错误抛 `ServerAPIError`。沙箱镜像必须运行 `agent-sandbox-server`（见下文）。裸 shell 命令用 `sandbox.commands.run(cmd)`，它不经过注册表。
 
 ---
 
 ## 模板服务端 — server
 
-自带 `easy-sandbox-server` 的模板会暴露第二条由模板作者定义的数据通道（端口 9000），`sandbox.server` 是它的类型化客户端。
+自带 `agent-sandbox-server` 的模板会暴露第二条由模板作者定义的数据通道（端口 9000），`sandbox.server` 是它的类型化客户端。
 当模板按端点策略限制了可访问范围，或你需要 envd 没有的端点（搜索、打包、文件监听、进程输出/标准输入、git、浏览器）时使用它。
 
 ```python
@@ -403,7 +390,7 @@ async with await Sandbox.create(template="my-server-template") as sandbox:
     print(server.files.list_sync("/home/user"))    # 每个协程都有 *_sync 孪生方法
 ```
 
-在运行中的沙箱里启动服务端（镜像中需要有 `easy-sandbox-server`）：
+在运行中的沙箱里启动服务端（镜像中需要有 `agent-sandbox-server`）：
 
 ```python
 server = await sandbox.start_server(policy="read-only", token="s3cret", commands="/home/user/app/commands.py")
@@ -412,7 +399,7 @@ server = await sandbox.start_server(policy="read-only", token="s3cret", commands
 ### 限制端点（模板作者）
 
 ```python
-from easy_sandbox.server import SandboxServer
+from agent_sandbox.server import SandboxServer
 
 policy = {
     "preset": "transfer-only",                      # 仅保留上传/下载端点，并限制大小
@@ -426,12 +413,12 @@ SandboxServer(policy=policy).serve(9000)   # a dict or a ServerPolicy
 ```
 
 也可以在 `template.yaml` 中声明（`server:` 块，见[模板规范](../reference/template-yaml-spec.md)），或使用
-`easy-sandbox-server serve --policy server-policy.json`。用 `easy-sandbox-server check-config` 校验。
+`agent-sandbox-server serve --policy server-policy.json`。用 `agent-sandbox-server check-config` 校验。
 
 ### 处理拒绝
 
 ```python
-from easy_sandbox.models.errors import (
+from agent_sandbox.models.errors import (
     EndpointNotAvailableError, FilePolicyDeniedError, PayloadTooLargeError, RateLimitedError, ServerAPIError,
 )
 
@@ -450,17 +437,6 @@ except ServerAPIError as exc:                   # 基类：status_code、error_t
 服务端始终是权威：`discover()` 之后客户端只是免去一次往返，直接抛出相同的异常。策略变更后调用
 `server.forget_discovery()` 并重新 `discover()`。
 
-### 官方基础镜像
-
-```python
-from easy_sandbox.api.image import Image
-
-image = Image.official_base().pip_install("requests")      # FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
-```
-
-`Image()` 仍然以 `ubuntu:22.04` 起步。基于非官方镜像构建时会输出建议性警告（`B001`-`B005`），详见
-[基础镜像设计](../design/base-image-and-server-sdk.md)。
-
 ---
 
 ## 环境变量
@@ -477,7 +453,7 @@ image = Image.official_base().pip_install("requests")      # FROM fc-e2b-registr
 
 ```python
 import asyncio
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 async def agent_workflow(task_code: str) -> str:
     """Agent → 创建沙箱 → 执行代码 → 读取结果 → 销毁沙箱"""

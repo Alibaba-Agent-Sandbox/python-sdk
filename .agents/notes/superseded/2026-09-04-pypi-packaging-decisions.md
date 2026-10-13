@@ -11,22 +11,22 @@ surfaced several hard blockers (version stuck at `dev`, placeholder URLs, zero
 CI) and a missing typing marker.
 
 ## Decision
-Confirm the distribution name as `easy-sandbox` and define the P0 checklist that
+Confirm the distribution name as `agent-sandbox` and define the P0 checklist that
 must be resolved before publishing.
 
 ### Distribution name confirmation
 
-1. **Distribution name `easy-sandbox`**: the PyPI JSON API returns 404
-   (available). `ebx` is already taken by a third party (HTTP 200) and is not
+1. **Distribution name `agent-sandbox`**: the PyPI JSON API returns 404
+   (available). `abx` is already taken by a third party (HTTP 200) and is not
    available.
-2. **PyPI org `ebx` approval pending does not block release**: org approval only
+2. **PyPI org `abx` approval pending does not block release**: org approval only
    affects organisational ownership management, not distribution-name
    availability. The distribution name is a global namespace and is independent
    of the org.
 
 ### P0 fix list (must be resolved before release)
 
-3. **Missing `py.typed` marker**: `src/easy_sandbox/py.typed` does not exist.
+3. **Missing `py.typed` marker**: `src/agent_sandbox/py.typed` does not exist.
    The project uses `mypy strict=true` and is a fully-typed SDK — consumers
    should be able to leverage its type information. hatchling automatically
    includes this file under the `packages` setting — simply create an empty
@@ -40,7 +40,7 @@ must be resolved before publishing.
      Publishing (OIDC).
 5. **`[project.urls]` are `anycodes/*` placeholders**: Homepage / Documentation
    / Repository / Issues in `pyproject.toml` all point at
-   `github.com/anycodes/easy-sandbox*`. Replace with the final confirmed
+   `github.com/anycodes/agent-sandbox*`. Replace with the final confirmed
    org/repo URLs.
 6. **Placeholder contact email in CODE_OF_CONDUCT.md / SECURITY.md**: the
    `SECURITY_CONTACT_EMAIL` placeholder in both files must be replaced with a
@@ -73,7 +73,7 @@ metadata (`pyproject.toml`, `_version.py`), CI workflows, and documentation
 placeholders; no Python-level SDK APIs are added, removed, or modified.
 
 ## Alternatives considered
-- **Use `ebx` as the distribution name** — already taken by a third party on
+- **Use `abx` as the distribution name** — already taken by a third party on
   PyPI. Rejected (hard constraint).
 - **Publish first, add CI later** — a first release without CI cannot vouch for
   quality, and empty badges hurt trustworthiness. Rejected.
@@ -82,18 +82,18 @@ placeholders; no Python-level SDK APIs are added, removed, or modified.
 
 ## Dependencies
 - `pyproject.toml` (metadata fixes)
-- `src/easy_sandbox/_version.py` (version number)
+- `src/agent_sandbox/_version.py` (version number)
 - `.github/CODE_OF_CONDUCT.md`, `.github/SECURITY.md` (placeholders)
-- [`2026-09-04-single-distribution-cli-extra.md`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/process/2026-09-04-single-distribution-cli-extra.md) (naming scheme)
+- [`2026-09-04-single-distribution-cli-extra.md`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/process/2026-09-04-single-distribution-cli-extra.md) (naming scheme)
 
 ## Test Strategy
 - `python -m build` produces wheel + sdist successfully.
 - `twine check dist/*` PASSED (no warnings / errors).
-- After TestPyPI install, `import easy_sandbox` + `ebx --help` work correctly.
+- After TestPyPI install, `import agent_sandbox` + `abx --help` work correctly.
 - `mypy --strict` recognises `py.typed` in a consumer project.
 
 ## Acceptance criteria
-- `py.typed` exists under `src/easy_sandbox/`.
+- `py.typed` exists under `src/agent_sandbox/`.
 - CI workflows (`ci.yml` + `release.yml`) exist under `.github/workflows/` and
   execute successfully.
 - `[project.urls]` point at real URLs.

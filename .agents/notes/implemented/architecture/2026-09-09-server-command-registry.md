@@ -83,8 +83,8 @@ self._factory._registry[name] = cmd
 
 # Bridge to server registry (effective only inside a container)
 try:
-    from easy_sandbox.server.registry import CommandArg as ServerCommandArg
-    from easy_sandbox.server.registry import default_registry
+    from agent_sandbox.server.registry import CommandArg as ServerCommandArg
+    from agent_sandbox.server.registry import default_registry
     server_registry = default_registry()
     server_registry.register(name=cmd.name, fn=func, args=server_args, ...)
 except ImportError:

@@ -7,7 +7,7 @@ import asyncio
 import pytest
 
 import e2e_helpers as H
-from easy_sandbox import sandbox
+from agent_sandbox import sandbox
 
 
 def test_decorated_function_runs_remotely_on_an_existing_sandbox(sandbox_factory):  # type: ignore[no-untyped-def]
@@ -34,12 +34,6 @@ def test_remote_exception_surfaces_as_runtime_error(sandbox_factory):  # type: i
     assert "e2e-remote-boom" in str(err.value)
 
 
-@pytest.mark.known_issue
-@pytest.mark.xfail(
-    strict=True,
-    reason="KI-010: the generated remote script calls an async function without awaiting it, so the "
-    "result is the string '<coroutine object ...>'",
-)
 def test_async_decorated_function(sandbox_factory):  # type: ignore[no-untyped-def]
     sb = sandbox_factory(H.OFFICIAL_BASE)
 
@@ -64,7 +58,7 @@ def test_decorator_with_existing_sandbox_does_not_kill_it(run, sandbox_factory):
 def test_decorator_creates_and_destroys_its_own_sandbox(run):  # type: ignore[no-untyped-def]
     """Full create path. The decorator cannot tag the sandbox, so it relies on its own ``finally``
     kill plus the short TTL below; the janitor script covers anything that still leaks."""
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
     @sandbox(template=H.OFFICIAL_BASE, timeout=120)
     def where():

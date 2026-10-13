@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from easy_sandbox.providers import installer
+from agent_sandbox.providers import installer
 from tests.iso import iso  # noqa: F401
 from tests.test_providers.helpers import LOCAL_PROCESS
 

@@ -33,11 +33,11 @@ that include their own CMD/entrypoint.
   hit StreamReset failures. Rejected.
 
 ## Files changed
-- `src/easy_sandbox/api/fc_template.py` — default `envd_inject=False`
-- `src/easy_sandbox/api/docker_builder.py` — default `envd_inject=False`
-- `src/easy_sandbox/cli/commands/template.py` — CLI `--envd-inject` flag default
+- `src/agent_sandbox/api/fc_template.py` — default `envd_inject=False`
+- `src/agent_sandbox/api/docker_builder.py` — default `envd_inject=False`
+- `src/agent_sandbox/cli/commands/template.py` — CLI `--envd-inject` flag default
 
 ## Acceptance criteria
-- ✅ `ebx template deploy` uses `envd_inject=False` by default
+- ✅ `abx template deploy` uses `envd_inject=False` by default
 - ✅ Templates deploy successfully and sandboxes start without StreamReset
 - ✅ `--envd-inject` flag still allows explicit opt-in

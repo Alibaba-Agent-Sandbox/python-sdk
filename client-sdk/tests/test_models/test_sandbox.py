@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from easy_sandbox.models.sandbox import (
+from agent_sandbox.models.sandbox import (
     SandboxConfig,
     SandboxInfo,
     SandboxStatus,

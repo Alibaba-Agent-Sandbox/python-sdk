@@ -8,15 +8,15 @@ The server already has an agent runtime, Codex and Qwen Code adapters, and OpenA
 
 ## Decision
 
-Register `routes_agents.py` on `CapabilityGroup.AGENTS` (still off unless `EBX_SERVER_ENABLED_GROUPS` includes `agents`). `routes_agents.py` holds registration and the session/event/item/turn handlers; the other handlers live in `agents/api_*.py` and are registered only in `routes_agents.py`.
+Register `routes_agents.py` on `CapabilityGroup.AGENTS` (still off unless `ABX_SERVER_ENABLED_GROUPS` includes `agents`). `routes_agents.py` holds registration and the session/event/item/turn handlers; the other handlers live in `agents/api_*.py` and are registered only in `routes_agents.py`.
 
-The body may select `codex` or `qwen-code` (aliases `qwen`, `qwencode`, `qwen_code`). Otherwise the server uses config `agents.default` (`EBX_AGENTS_DEFAULT`, or `default` / `agents.default` in `EBX_AGENTS_CONFIG`). If neither is set, the response is 400 `agents.adapter_required`. Any other adapter name is 404 `not_found_error` with `x-should-retry: false`.
+The body may select `codex` or `qwen-code` (aliases `qwen`, `qwencode`, `qwen_code`). Otherwise the server uses config `agents.default` (`ABX_AGENTS_DEFAULT`, or `default` / `agents.default` in `ABX_AGENTS_CONFIG`). If neither is set, the response is 400 `agents.adapter_required`. Any other adapter name is 404 `not_found_error` with `x-should-retry: false`.
 
 The maintainer confirmed on 2026-10-12: do not integrate the Claude Code, Cursor, or Qoder adapters in this round. Those names are other CLIs behind the same Agents API (`claude`, `cursor-agent`, `qodercli`). They are not a separate product. The adapter modules may stay in the tree, but no new routes, docs, or examples should mount them until the maintainer says to.
 
 ### What the second round added
 
-Label contract (`agents/api_common.py`): every response carries `X-Easy-Sandbox-Local: 1` and every object `x_easy_sandbox: {local, compute, differences}` with `compute` in `local_process | local_state | none` and stable codes from one table (`DIFFERENCES`). The already shipped session, turn, item and runtime objects now carry it too. A foreign id and an unknown id answer identically; ownership is the policy identity id, or one local owner without a policy.
+Label contract (`agents/api_common.py`): every response carries `X-Agent-Sandbox-Local: 1` and every object `x_agent_sandbox: {local, compute, differences}` with `compute` in `local_process | local_state | none` and stable codes from one table (`DIFFERENCES`). The already shipped session, turn, item and runtime objects now carry it too. A foreign id and an unknown id answer identically; ownership is the policy identity id, or one local owner without a policy.
 
 | Operations | Where | Notes |
 |---|---|---|
@@ -24,12 +24,12 @@ Label contract (`agents/api_common.py`): every response carries `X-Easy-Sandbox-
 | A-06..A-10, O-03 environments, files, blobs | `api_environments.py`, `workspace_files.py` | Directory binding, files through `O_NOFOLLOW` directory fds, no overwrite (400 `agents.file_exists`), agent-config locations refused, size cap, listing of regular files with an opaque `page` token. `POST /v1/files` keeps `user_data` blobs in memory. |
 | A-11..A-15 templates | `api_environments.py` | `{name, env, files}` only. Hosted-only fields are 400 on create and update, so `environment_template_id` can be applied. |
 | A-18 session update | `api_sessions.py` | `metadata` only; `agent`, `vault_ids`, `environment` and unknown keys are 400. |
-| A-27..A-31 artifacts, traces | `artifacts.py`, `api_sessions.py` | A turn hook in `AgentRuntime` copies the paths the CLI reported (Codex `file_change`, Qwen `write_file`/`replace`/`edit`) at completion. Content is served as an attachment. Traces are empty unless `EBX_AGENTS_TRACES=1`, then timing-only. |
+| A-27..A-31 artifacts, traces | `artifacts.py`, `api_sessions.py` | A turn hook in `AgentRuntime` copies the paths the CLI reported (Codex `file_change`, Qwen `write_file`/`replace`/`edit`) at completion. Content is served as an attachment. Traces are empty unless `ABX_AGENTS_TRACES=1`, then timing-only. |
 | A-32..A-37 subagents | `subagents.py`, `api_sessions.py`, parsers | Codex `collab_tool_call.receiver_thread_ids` and the session's own rollout; child items and turns from the child rollout under `CODEX_HOME`. Qwen `parent_tool_use_id` events (previously dropped, and child tool calls leaked into the parent items) are collected per subagent. Unknown ids are 404. |
 | A-38..A-47 vaults, credentials | `api_vaults.py` | Memory-only, owner-bound, write-only. Injected per turn as an `Authorization` header through the existing env carrier. A deleted or expired credential fails the next event with 400. |
 | R-01..R-05, R-07 responses | `api_responses.py` | A labeled one-shot CLI turn. Output items are what the CLI emitted (native tools are `tool_call`, never hosted tool shapes). `previous_response_id` only from the latest. Compact is Qwen `/compress`; Codex is 400. |
 | R-08 `responses.connect` | `api_responses.py` | The client-event engine (`ResponsesSocket`: `response.create`, `response.steer` queued) is implemented and tested. The upgrade cannot be done in a route handler: `GET /v1/responses` answers 400 `agents.websocket_upgrade_required`. Needs a transport change in `app.py`. |
-| O-01, O-02 models | `api_other.py` | Definitions and the two adapters, `owned_by: easy-sandbox-local`, 404 `model_not_found` otherwise, no side effect. |
+| O-01, O-02 models | `api_other.py` | Definitions and the two adapters, `owned_by: agent-sandbox-local`, 404 `model_not_found` otherwise, no side effect. |
 | O-06..O-14 webhooks | `api_other.py`, `webhooks.py` | Local endpoints, `whsec_` secret returned once, Standard Webhooks signing, session created/in_progress/idle/failed delivery. https only, no private hosts, no redirects. |
 
 CANNOT, labeled 404 `not_found_error` (`agents.not_implemented_locally`, `x-should-retry: false`): R-06 `POST /v1/responses/input_tokens`, `DELETE /v1/models/{id}`, and O-04/O-05 (registered on guessed paths `POST /v1/agents/environments/{id}/register` and `GET .../{id}/connect`, because the real paths are unpublished).
@@ -41,14 +41,14 @@ Variant refusals stay 400 with `param` (ops-can-do section 3): hosted-only envir
 * Exec-effect gating with an `AgentScope` (`policy.py`, `guard.py`, `router.py`, `app.py` belong to another worker). The handlers read the identity from `request.context["policy"]` and call the policy's `resolve_path` for environment files when it is present, but nothing here enforces `AgentScope` or `UrlScope`.
 * `POST /v1/files` accepts JSON with base64 `data`. The dispatcher parses JSON bodies only, so the SDK's multipart `files.create` cannot reach it until `app.py` passes raw bodies.
 * The `responses.connect` WebSocket upgrade (above).
-* State is in memory: definitions, environments, vaults, responses, webhooks, Qwen subagent entries and artifact snapshots (a private temp directory unless `EBX_AGENTS_STATE_DIR`) are lost on restart. Sessions persist as before.
+* State is in memory: definitions, environments, vaults, responses, webhooks, Qwen subagent entries and artifact snapshots (a private temp directory unless `ABX_AGENTS_STATE_DIR`) are lost on restart. Sessions persist as before.
 
 ## API Design
 
 - Sessions, events, items, turns and runtimes as in the first round; `POST /v1/agents/sessions/{id}` is now the metadata update.
 - `/v1/agents`, `/v1/agents/environments[...]`, `/v1/vaults[...]`, `/v1/responses[...]`, `/v1/models[...]`, `/v1/files`, `/v1/webhook_endpoints[...]` as listed above. Route order matters in `RouteTable`: literal paths (`sessions`, `runtimes`, `environments`, `templates`) are registered before `{agent_id}` and `{environment_id}`.
 - Errors: `{"error": {message, type, param, code}}`; 400 for refused variants, 404 for unknown or foreign ids and CANNOT routes, never 501.
-- Environment variables added: `EBX_AGENTS_RESPONSES_WORKSPACE`, `EBX_AGENTS_MAX_FILE_BYTES`, `EBX_AGENTS_MAX_ARTIFACT_BYTES`, `EBX_AGENTS_MAX_VAULTS`, `EBX_AGENTS_TRACES`, `EBX_AGENTS_ALLOW_PRIVATE_URLS`, `EBX_AGENTS_WEBHOOK_ALLOW_HTTP`.
+- Environment variables added: `ABX_AGENTS_RESPONSES_WORKSPACE`, `ABX_AGENTS_MAX_FILE_BYTES`, `ABX_AGENTS_MAX_ARTIFACT_BYTES`, `ABX_AGENTS_MAX_VAULTS`, `ABX_AGENTS_TRACES`, `ABX_AGENTS_ALLOW_PRIVATE_URLS`, `ABX_AGENTS_WEBHOOK_ALLOW_HTTP`.
 
 ## Alternatives considered
 

@@ -1,11 +1,11 @@
-# Compatibility Demos
+# E2B-style and Modal-style Demos
 
-These demos showcase **E2B-compatible** (imperative) and **Modal-style** (declarative) API patterns, plus a full E2E capability validation suite. They verify that Easy Sandbox works as a drop-in replacement for E2B while also supporting the more concise `@sandbox` decorator approach.
+These demos showcase **E2B-style** (imperative) and **Modal-style** (declarative) API patterns, plus a full E2E capability validation suite. Agent Sandbox uses E2B-style method names, so code written that way ports with few changes (it is not a drop-in replacement; see the Migrate from E2B guide). It also offers the more concise `@sandbox` decorator.
 
 ## Prerequisites
 
 - Python 3.10+
-- `pip install easy-sandbox` (or dev install from repo root: `pip install -e ".[dev]"`)
+- `pip install agent-sandbox` (or dev install from the python-sdk repo root: `pip install -e ./server-sdk -e "./client-sdk[dev]"`)
 - Environment variables:
 
 ```bash
@@ -13,9 +13,9 @@ These demos showcase **E2B-compatible** (imperative) and **Modal-style** (declar
 export $(grep -v '^#' ../../.env | xargs)
 
 # Or set manually
-export E2B_API_KEY=your-api-key
-export E2B_API_URL=https://api.cn-hangzhou.e2b.fc.aliyuncs.com
-export E2B_DOMAIN=e2b.fc.aliyuncs.com
+export ABX_SANDBOX_API_KEY=your-api-key
+export ABX_SANDBOX_BASE_URL=https://api.cn-hangzhou.e2b.fc.aliyuncs.com
+export ABX_SANDBOX_DOMAIN=e2b.fc.aliyuncs.com
 ```
 
 ## Demo List
@@ -25,7 +25,7 @@ export E2B_DOMAIN=e2b.fc.aliyuncs.com
 | `comparison.py` | E2B vs Modal style side-by-side comparison | Both | `base` / `code-interpreter-v1` |
 | `e2b_data_analysis.py` | CSV data analysis with pandas (E2B imperative) | E2B | `base` |
 | `e2b_web_scraper.py` | Web scraping with requests + BeautifulSoup | E2B | `base` |
-| `e2e_capability_validation.py` | Full E2E validation (GitHub install, E2B-compat, Modal, custom template) | Both | `base` / `code-interpreter-v1` |
+| `e2e_capability_validation.py` | Full E2E validation (GitHub install, E2B-style API, Modal, custom template) | Both | `base` / `code-interpreter-v1` |
 | `modal_compute.py` | Monte Carlo / Fibonacci / matrix computation | Modal | `code-interpreter-v1` |
 | `modal_data_analysis.py` | Same data analysis as E2B demo but declarative | Modal | `code-interpreter-v1` |
 
@@ -96,7 +96,7 @@ Part A — GitHub install pipeline
   [BLOCKED] A-01 github install: anon rate limit exhausted, no GITHUB_TOKEN
   [PASS   ] A-02 local install: local pipeline OK, TemplateID=9k0lq3mhdamdm7hy3cgb
   [BLOCKED] A-03 cache landing: no real GitHub install this run (A-01 BLOCKED)
-Part B — E2B-compat (real FC, template="base")
+Part B — E2B-style API (real FC, template="base")
   [PASS   ] E2B-01 shell: stdout='hello' exit_code=0
   [PASS   ] E2B-02 files: read='world' exists=True
   [PASS   ] E2B-03 code: text='5' (CodeInterpreter 404 → shell fallback)

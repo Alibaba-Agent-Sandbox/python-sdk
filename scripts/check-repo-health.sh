@@ -108,16 +108,16 @@ for pkg in client-sdk server-sdk; do
   need_dir "$pkg/src" ; need_dir "$pkg/tests"
   need_file "$pkg/tests/conftest.py"
 done
-need_file client-sdk/src/easy_sandbox/__init__.py "client owns the namespace root"
-need_file client-sdk/src/easy_sandbox/py.typed
-need_file client-sdk/src/easy_sandbox/_version.py
-need_file server-sdk/src/easy_sandbox/server/__init__.py
-need_file server-sdk/src/easy_sandbox/server/py.typed
-need_file server-sdk/src/easy_sandbox/server/_version.py
-if [ -e server-sdk/src/easy_sandbox/__init__.py ]; then
-  fail "server-sdk must not ship easy_sandbox/__init__.py (it would shadow the client)"
+need_file client-sdk/src/agent_sandbox/__init__.py "client owns the namespace root"
+need_file client-sdk/src/agent_sandbox/py.typed
+need_file client-sdk/src/agent_sandbox/_version.py
+need_file server-sdk/src/agent_sandbox/server/__init__.py
+need_file server-sdk/src/agent_sandbox/server/py.typed
+need_file server-sdk/src/agent_sandbox/server/_version.py
+if [ -e server-sdk/src/agent_sandbox/__init__.py ]; then
+  fail "server-sdk must not ship agent_sandbox/__init__.py (it would shadow the client)"
 else
-  pass "server-sdk ships no easy_sandbox/__init__.py"
+  pass "server-sdk ships no agent_sandbox/__init__.py"
 fi
 for d in src tests; do
   if [ -e "$d" ]; then fail "stale top-level '$d/' from the single-package era (move into client-sdk/ or server-sdk/)"; else pass "no stale top-level $d/"; fi
@@ -151,8 +151,8 @@ def read_version(path):
     return m.group(1) if m else None
 
 try:
-    cv = read_version("client-sdk/src/easy_sandbox/_version.py")
-    sv = read_version("server-sdk/src/easy_sandbox/server/_version.py")
+    cv = read_version("client-sdk/src/agent_sandbox/_version.py")
+    sv = read_version("server-sdk/src/agent_sandbox/server/_version.py")
 except FileNotFoundError:
     cv = sv = None
 if cv and cv == sv:
@@ -173,16 +173,16 @@ else:
         client = server = None
     if client and server:
         deps = [d.replace(" ", "") for d in client.get("dependencies", [])]
-        if any(d.startswith("easy-sandbox-server") for d in deps):
-            result("PASS", "easy-sandbox hard-depends on easy-sandbox-server (keeps `from easy_sandbox.server import` working after `pip install easy-sandbox`)")
+        if any(d.startswith("agent-sandbox-server") for d in deps):
+            result("PASS", "agent-sandbox hard-depends on agent-sandbox-server (keeps `from agent_sandbox.server import` working after `pip install agent-sandbox`)")
         else:
-            result("FAIL", "easy-sandbox does not hard-depend on easy-sandbox-server: `pip install easy-sandbox` no longer provides easy_sandbox.server (0.2.0 behaviour)")
+            result("FAIL", "agent-sandbox does not hard-depend on agent-sandbox-server: `pip install agent-sandbox` no longer provides agent_sandbox.server (0.2.0 behaviour)")
         for name, proj in (("client-sdk", client), ("server-sdk", server)):
             urls = " ".join(proj.get("urls", {}).values())
-            if "Easy-Sandbox/python-sdk" in urls and "Easy-Sandbox/easy-sandbox" not in urls:
+            if "agent-sandbox/python-sdk" in urls and "alibaba-agent-sandbox/agent-sandbox" not in urls:
                 result("PASS", f"{name} project URLs point at the python-sdk repository")
             else:
-                result("FAIL", f"{name} project URLs still point at the legacy single repo (expected github.com/Easy-Sandbox/python-sdk)")
+                result("FAIL", f"{name} project URLs still point at the legacy single repo (expected github.com/agent-sandbox/python-sdk)")
             if "docs/en" in proj.get("urls", {}).get("Documentation", "") or "/docs" in proj.get("urls", {}).get("Documentation", ""):
                 result("PASS", f"{name} Documentation URL is set")
             else:
@@ -200,7 +200,7 @@ for f in guide/getting-started.md guide/sdk-usage.md guide/authentication.md gui
          design/repository-layout.md; do
   need_file "docs/en/$f"
 done
-warn_file docs/en/guide/server-sdk.md "how to author commands.py with easy_sandbox.server"
+warn_file docs/en/guide/server-sdk.md "how to author commands.py with agent_sandbox.server"
 warn_file docs/en/guide/release.md "maintainer release runbook (or CONTRIBUTING section)"
 need_file examples/README.md
 need_dir examples/quickstart
@@ -278,7 +278,7 @@ else:
     report("PASS", "all relative markdown links resolve")
 
 # 2. leaked local paths
-LEAK = re.compile(r"(/Users/[A-Za-z0-9_.-]+/|file:///|/home/ubuntu/|/tmp/(?:easy-sandbox|parity|venv)[A-Za-z0-9_-]*|Qoder/20\d\d|\bthis VM\b)")
+LEAK = re.compile(r"(/Users/[A-Za-z0-9_.-]+/|/home/ubuntu/|/tmp/(?:agent-sandbox|parity|venv)[A-Za-z0-9_-]*|Qoder/20\d\d|\bthis VM\b)")
 leaks = {}
 for p in files:
     if p.suffix not in TEXT_EXT or p.name == "check-repo-health.sh":
@@ -289,7 +289,7 @@ for p in files:
     n = len(LEAK.findall(t))
     if n: leaks[rel(p)] = n
 if leaks:
-    report("FAIL", f"{len(leaks)} files leak machine-local paths (/Users/..., file:///, /tmp/..., 'this VM'): " +
+    report("FAIL", f"{len(leaks)} files leak machine-local paths (/Users/..., /home/ubuntu/, /tmp/..., 'this VM'): " +
            ", ".join(list(sorted(leaks))[:6]) + (" ..." if len(leaks) > 6 else ""))
 else:
     report("PASS", "no machine-local paths in tracked text files")

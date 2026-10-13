@@ -15,10 +15,10 @@ import asyncio
 import os
 import time
 
-API_KEY = os.environ.get("E2B_API_KEY", "")
+API_KEY = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
-from easy_sandbox import Sandbox, SandboxError
-from easy_sandbox.declarative import sandbox
+from agent_sandbox import Sandbox, SandboxError
+from agent_sandbox.declarative import sandbox
 
 
 # ═══════════════════════════════════════════════════════════════════════════

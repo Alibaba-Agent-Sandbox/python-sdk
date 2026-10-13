@@ -9,7 +9,7 @@ a model API key.
 With no arguments the script starts ``SandboxServer`` on 127.0.0.1, with
 ``agents`` enabled and that local ``codex`` on ``PATH``. Pass a base URL to talk
 to a server you already started; that process must see the same local
-``codex``, and ``EBX_SERVER_ENABLED_GROUPS`` must include ``agents``.
+``codex``, and ``ABX_SERVER_ENABLED_GROUPS`` must include ``agents``.
 
     python local_files_and_session.py
     python local_files_and_session.py http://127.0.0.1:9000
@@ -39,7 +39,7 @@ exit 0
 
 
 def _server_src() -> None:
-    """Import ``easy_sandbox.server`` from this repo when it is not installed."""
+    """Import ``agent_sandbox.server`` from this repo when it is not installed."""
     root = Path(__file__).resolve().parents[2]
     src = root / "server-sdk" / "src"
     if src.is_dir() and str(src) not in sys.path:
@@ -64,13 +64,13 @@ def _free_port() -> int:
 def start_local(base_dir: Path, bin_dir: Path) -> str:
     """Start a local server. Returns ``http://127.0.0.1:<port>``."""
     install_fake_codex(bin_dir)
-    os.environ["EBX_SERVER_BASE_DIR"] = str(base_dir)
-    os.environ["EBX_SERVER_ENABLED_GROUPS"] = "agents"
-    os.environ["EBX_AGENTS_PERSIST"] = "0"
-    os.environ.pop("EBX_SERVER_TOKEN", None)
+    os.environ["ABX_SERVER_BASE_DIR"] = str(base_dir)
+    os.environ["ABX_SERVER_ENABLED_GROUPS"] = "agents"
+    os.environ["ABX_AGENTS_PERSIST"] = "0"
+    os.environ.pop("ABX_SERVER_TOKEN", None)
     _server_src()
-    from easy_sandbox.server.app import SandboxServer
-    from easy_sandbox.server.router import CapabilityGroup
+    from agent_sandbox.server.app import SandboxServer
+    from agent_sandbox.server.router import CapabilityGroup
 
     server = SandboxServer(host="127.0.0.1")
     server.route_table.disable_group(CapabilityGroup.TERMINAL)
@@ -146,7 +146,7 @@ def _texts(payload: object) -> list[str]:
 
 def main() -> int:
     given = origin_from_argv()
-    workspace = Path(tempfile.mkdtemp(prefix="ebx-agents-"))
+    workspace = Path(tempfile.mkdtemp(prefix="abx-agents-"))
     files = workspace / "files"
     files.mkdir()
     if given is None:
@@ -155,9 +155,9 @@ def main() -> int:
     else:
         base = given
 
-    # The server this script starts uses ``files`` as EBX_SERVER_BASE_DIR.
+    # The server this script starts uses ``files`` as ABX_SERVER_BASE_DIR.
     # A server you already started still uses the default base `/home/user`.
-    upload_path = str(files / "note.txt") if given is None else "/home/user/ebx-note.txt"
+    upload_path = str(files / "note.txt") if given is None else "/home/user/abx-note.txt"
     payload = base64.b64encode(b"hello-from-files\n").decode("ascii")
     status, body, _headers = call(
         base,
@@ -186,7 +186,7 @@ def main() -> int:
         },
     )
     print(f"--- POST /v1/agents/sessions ({status})")
-    print("X-Easy-Sandbox-Local:", headers.get("x-easy-sandbox-local", ""))
+    print("X-Agent-Sandbox-Local:", headers.get("x-agent-sandbox-local", ""))
     print(json.dumps(created, indent=2) if isinstance(created, dict) else created)
     if status != 200 or not isinstance(created, dict) or "id" not in created:
         return 1

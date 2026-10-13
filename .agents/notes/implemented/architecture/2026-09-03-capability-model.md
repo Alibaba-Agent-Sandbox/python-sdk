@@ -40,7 +40,7 @@ Effective set resolution:
 ## Dependencies
 - `models/config.py`, `models/errors.py` (extends `ExecutionError`)
 - Template parsing (`api/template.py`) to read `capabilities`
-- Command source resolution (see [`2026-09-03-command-source-resolution.md`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-03-command-source-resolution.md))
+- Command source resolution (see [`2026-09-03-command-source-resolution.md`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-03-command-source-resolution.md))
 
 ## Test Strategy
 - Unit test `DEFAULT_CAPABILITIES` inheritance when `capabilities` is omitted.

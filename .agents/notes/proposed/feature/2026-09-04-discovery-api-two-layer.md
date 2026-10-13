@@ -19,14 +19,14 @@ server remote discovery.
 ### Layer 1: local static discovery (no auth, no server needed)
 
 1. **YAML branch (already implemented)**: `_find_local_template()` in
-   `api/capability.py` scans `~/.ebx/templates/**/template.yaml` and parses
+   `api/capability.py` scans `~/.abx/templates/**/template.yaml` and parses
    `custom_commands:` + `capabilities:`. Triggered by `resolve_capabilities()`
    during `Sandbox.create()` / `Sandbox.connect()`.
 2. **Python command module introspection (gap, filled by @sandbox.register)**:
    the decorator produces `CustomCommand` objects at import time and injects
    them into the same `custom_commands` dict. CLI introspection only needs to
    `import` the user module to discover them.
-3. **Permissions**: purely local — only reads the `~/.ebx/templates` directory
+3. **Permissions**: purely local — only reads the `~/.abx/templates` directory
    or imports Python modules. Auth is neither required nor desirable.
 
 ### Layer 2: server remote discovery (runtime-registered commands)
@@ -34,17 +34,17 @@ server remote discovery.
 > **⚠ Key change (2026-09-05)**: the original ADR considered only the platform's
 > `GET /templates/{id}` as a remote discovery source and listed "user-built server
 > exposing a discovery endpoint" as Rejected. That decision has been overturned.
-> The new `easy_sandbox.server` module (see `2026-09-05-sandbox-server-module.md`)
+> The new `agent_sandbox.server` module (see `2026-09-05-sandbox-server-module.md`)
 > provides a `GET /commands` discovery endpoint and becomes the primary source
 > for Layer 2.
 
 4. **The server module provides a `GET /commands` discovery endpoint**: once
-   `easy_sandbox.server` is up, `GET https://{port}-{sandbox_id}.{domain}/commands`
+   `agent_sandbox.server` is up, `GET https://{port}-{sandbox_id}.{domain}/commands`
    returns every registered command with its argument schema. This is the
    standard discovery path for runtime-registered commands.
 5. **Platform template discovery (auxiliary)**: `GET /templates/{id}` in
    `protocol/template.py` plus `auth_headers = await self._auth.get_headers()`
-   at `transport/http.py:84` injects L1 credentials automatically. `ebx template
+   at `transport/http.py:84` injects L1 credentials automatically. `abx template
    info` is a live end-to-end proof point. The wiring gap: `api/capability.py:196`
    is a one-liner `# 3. TODO(Phase2): online fallback`.
 6. **Auth reuse**:
@@ -71,7 +71,7 @@ server remote discovery.
      (outside the protocol client's control). V1 explicitly states "only
      identity-level auth is guaranteed; per-command least-visibility is not".
    - **Current state** (Layer 1 only): zero auth, leak surface confined to local
-     `~/.ebx/templates`, direction is safe (discovery broader than execution).
+     `~/.abx/templates`, direction is safe (discovery broader than execution).
 
 ### Current list_commands() defects
 
@@ -89,7 +89,7 @@ server remote discovery.
     `TemplateInfo` in `models/template.py` has no such field, only a generic
     `metadata: dict[str, Any]`. `custom_commands` is a client-side YAML
     extension in this repo, not part of the E2B/FC template model. **Real E2E
-    verification is required (#103)**: run `ebx template info <id> --json` and
+    verification is required (#103)**: run `abx template info <id> --json` and
     inspect whether the response contains `metadata` / `customCommands`. This
     validation directly determines whether M6b (remote discovery wiring) is
     "one function call" or "requires platform-side support".
@@ -122,7 +122,7 @@ capabilities = sandbox.capabilities
   returns "currently running OS processes" (PID-level runtime state), not
   "which named commands are supported and their argument schema". Rejected.
 - **User-built server exposing a discovery endpoint** — ~~originally
-  Rejected~~. **Adopted (2026-09-05)**: the `easy_sandbox.server` module
+  Rejected~~. **Adopted (2026-09-05)**: the `agent_sandbox.server` module
   provides a `GET /commands` discovery endpoint, gated by the `ports`
   capability. This becomes the primary way of Layer 2 runtime discovery.
 - **Use `NetworkModule.get_access_headers()` for auth** — gated by `ports`
@@ -135,8 +135,8 @@ capabilities = sandbox.capabilities
 - `transport/auth.py` (`AuthProvider`, `EnvdTokenManager`)
 - `transport/http.py` (`platform_request` auto-injects L1)
 - `2026-09-03-sdk-capability-surface.md` (Discovery API definition)
-- [`2026-09-03-command-source-resolution.md`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-03-command-source-resolution.md) (resolution order + Phase 2 TODO)
-- [`2026-09-04-sandbox-register-command.md`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/feature/2026-09-04-sandbox-register-command.md) (M1 adds the `type` field)
+- [`2026-09-03-command-source-resolution.md`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-03-command-source-resolution.md) (resolution order + Phase 2 TODO)
+- [`2026-09-04-sandbox-register-command.md`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/feature/2026-09-04-sandbox-register-command.md) (M1 adds the `type` field)
 - `2026-09-05-sandbox-server-module.md` (server module provides `GET /commands`)
 
 ## Test Strategy

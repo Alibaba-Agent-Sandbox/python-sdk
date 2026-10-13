@@ -1,6 +1,6 @@
 # 提供方编写体验评估 —— 接入一个新提供方有多难？
 
-> **状态**：评估（基于证据），已应用一轮修复（见第 10 节） · **对象**：`opensandbox` exec 提供方插件（`examples/providers/opensandbox/`），仅依据仓库内文档编写，并在真实的本地 OpenSandbox 服务上驱动 · **配套文档**：[providers-and-credentials.md](providers-and-credentials.md)（规范性设计）、[provider-opensandbox-mapping.md](../../en/design/provider-opensandbox-mapping.md)（调研，仅英文）、`../guide/providers.md`（使用/编写指南） · **English**：[../../en/design/provider-authoring-evaluation.md](../../en/design/provider-authoring-evaluation.md)
+> **状态**：评估（基于证据），已应用一轮修复（见第 10 节） · **对象**：`opensandbox` exec 提供方插件（[awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox)）。插件源码在该目录，不在本仓库。评估依据 SDK 文档，并在真实的本地 OpenSandbox 服务上驱动 · **配套文档**：[providers-and-credentials.md](providers-and-credentials.md)（规范性设计）、[provider-opensandbox-mapping.md](../../en/design/provider-opensandbox-mapping.md)（调研，仅英文）、`../guide/providers.md`（使用/编写指南） · **English**：[../../en/design/provider-authoring-evaluation.md](../../en/design/provider-authoring-evaluation.md)
 >
 > **关于本译文**：这是英文评估文档的中文版，章节编号一致；两者有差异时以[英文版](../../en/design/provider-authoring-evaluation.md)为准。
 >
@@ -24,9 +24,9 @@
 
 | 项目 | 结果 |
 |---|---|
-| 运行时选择 | 无依赖 Node ESM（Node >= 20，内置 `fetch`）。调研文档*建议*使用标准库 Python，但并未强制。选择 Node 是因为 `ebx` CLI 本身是 Node 程序（CLI 用户无需额外运行时），`fetch` 加 `ReadableStream` 让 SSE 流式处理很简单，而安装器本来就禁止依赖。代价：仅用 Python SDK 的用户需要 `node` 在 `PATH` 中；改写成 Python 版本是机械翻译。 |
+| 运行时选择 | 无依赖 Node ESM（Node >= 20，内置 `fetch`）。调研文档*建议*使用标准库 Python，但并未强制。选择 Node 是因为 `abx` CLI 本身是 Node 程序（CLI 用户无需额外运行时），`fetch` 加 `ReadableStream` 让 SSE 流式处理很简单，而安装器本来就禁止依赖。代价：仅用 Python SDK 的用户需要 `node` 在 `PATH` 中；改写成 Python 版本是机械翻译。 |
 | 能力 | `sandbox.lifecycle`（create/connect/get/list/kill）、`sandbox.timeout`、`sandbox.pause`（pause/resume）、`exec.run`、`exec.stream`、`process.manage`（list/kill/signal；无 stdin）、`files.rw`（含范围读取、带 mode 写入、list、stat、mkdir、remove、move；扩展 search/chmod）、`ports.url`、`sessions`（后台命令）。声明为不支持（E8004）：`pty`、`code.interpret`、`templates.*`、`files.watch`、`files.transfer`、`process.stdin`。 |
-| 配置 | 13 个清单字段；规范名称 `EBX_OPENSANDBOX_*` 加原生别名（`OPEN_SANDBOX_API_KEY`、`OPEN_SANDBOX_DOMAIN` 等）。机密（`api_key`、`registry_password`）标记为 `secret`。 |
+| 配置 | 13 个清单字段；规范名称 `ABX_OPENSANDBOX_*` 加原生别名（`OPEN_SANDBOX_API_KEY`、`OPEN_SANDBOX_DOMAIN` 等）。机密（`api_key`、`registry_password`）标记为 `secret`。 |
 | 规模 | `provider.mjs` + `src/` 共 1 670 行；测试 1 262 行（24 单元、21 模拟服务、2 联机 EPP、5 套件、10 个 pytest SDK 场景）。 |
 | 吸收的平台特性 | execd 上传要求元数据部分为*文件*部分；`mode` 是以十进制整数书写的八进制数字；DELETE `/files` 与 `/directories` 按类型区分；第二次 kill 返回 404（吞掉以保持 `kill` 幂等）；TTL 最小 60 秒（截断）；metadata 必须符合 Kubernetes 标签规则（提前校验，`-32006`）；`renew-expiration` 接受绝对时间（取自服务端 `Date` 头，因此不受客户端时钟偏差影响）；旧版 execd v1.1.0 无 `argv` 且会吞掉换行（已检测并处理）。 |
 
@@ -38,7 +38,7 @@
 |---|---|---|
 | Node 单元 + 模拟服务 | `node tests/run.mjs` | 45/45 通过 |
 | Node 联机（直接 EPP/1） | `OPENSANDBOX_LIVE=1 node tests/run.mjs live` | 2/2 通过（完整生命周期/执行/文件/端口/暂停/错误映射，错误密钥） |
-| 共享契约测试套件 | `pytest ... --provider-under-test opensandbox`（使用 6.1 节的收集变通） | 5/5 通过（**现用 `python -m easy_sandbox.providers test opensandbox` 为 18/18**，第 10 节） |
+| 共享契约测试套件 | `pytest ... --provider-under-test opensandbox`（使用 6.1 节的收集变通） | 5/5 通过（**现用 `python -m agent_sandbox.providers test opensandbox` 为 18/18**，第 10 节） |
 | SDK 场景（`Sandbox.create(provider="opensandbox")`） | `pytest tests/contract` | 10/10 通过（5 套件 + 5 场景：流式顺序与增量到达、退出码、env/cwd、Unicode 文件、缺失文件 `E4001`、`set_timeout`、暂停/恢复、进程列表、`E8004`、未知 id） |
 | 配置优先级 | `provider_e2e.py --stages env` | 6/6：规范名称优先于原生名称（base URL 与 API key）；仅原生名称也足够；错误密钥为 `E1001` |
 | 安装流程 | `provider_install_e2e.py` | 36/36 检查通过，另有 2 项非致命发现（第 5 节）（**现为 39/39，无发现**，第 10 节） |
@@ -56,7 +56,7 @@
 | 清单与配置模式 | 4.5 | 声明式字段、`secret`、`env` 别名、`choices`、`default`、`core.inherit`、`security` 块；宿主负责解析优先级。唯一的坑：默认值会被*下发*给插件，因此 `base_url` 上的清单默认值会悄悄压过 `domain` 替代写法，文档未提及。 |
 | 错误模型 | 4 | JSON-RPC 码映射到稳定的 SDK 码，带 `retryable` 标志和 `sdk_code` 提示。不足：“连接被拒绝”没有对应码（表现为通用 `E8000`）；插件可指定的 `sdk_code` 取值只有示例（`E2001`、`E4001`），完整列表是 `providers/epp.py` 中的 `_SDK_CODE_CLASSES`。 |
 | 安装器、存储、信任 | 4 → **4.5** | 所有流程均正确且严格；授权与回执设计出色。有两个缺陷（第 5 节）和若干缺失的 CLI 参数。 |
-| 契约测试 / 编写者工具 | 2 → **4** | 套件存在但按文档执行收集不到测试，仅 5 项，不覆盖流式/暂停/超时/进程/文件边界，没有模拟宿主，没有脚手架或 `ebx provider init`。 |
+| 契约测试 / 编写者工具 | 2 → **4** | 套件存在但按文档执行收集不到测试，仅 5 项，不覆盖流式/暂停/超时/进程/文件边界，没有模拟宿主，没有脚手架或 `abx provider init`。 |
 | 宿主适配器（抽象完整度） | 3 → **4** | exec 适配器覆盖核心；但见第 4 节：写死 `secure`、无按次创建选项、惰性启动、`ports.url` 未接线、无 `code` 降级。 |
 | 参考插件 | 3.5 | `local-process` 精简易读；但它是 Python，不涉及 HTTP/流式/认证，也未体现真实世界的问题（时钟偏差、重试、取消）。 |
 | 文档可发现性 | 3 → **3.5** | 设计文档详尽但长达 700 多行；编写路径分散在设计、指南与代码中；指南的 *Writing a provider* 一节只展示了清单，没有首次 EPP 交互或必须响应哪些方法的完整演示。 |
@@ -111,8 +111,8 @@
 | # | 缺陷 | 证据 | 修复 |
 |---|---|---|---|
 | B1 | **更新回滚时 `data/` 丢失。** `_swap_in` 在 `verify` 之前就把旧 `data/` 移入暂存目录；验证失败时删除 `final`（此时含 `data/`）并恢复回收站中的副本，而后者已不含 `data/`。 | `provider_install_e2e.py` 输出 `[BUG ] data/ survives an update that was rolled back...` | 在 `remove_tree(final)` 之前把 `data/` 移回回收站副本（或在 `verify` 通过前改为复制）。 |
-| B2 | **`python -m easy_sandbox.providers update` 没有 `--allow-insecure-transport`。** 以该参数安装的 git 源无法在命令行更新（E8012）；回执也没有记录使用过该参数。 | `[GAP ] CLI 'update' cannot reach a file:// source` | 为 `update` 增加该参数；可考虑在回执中记录 `insecure_transport: true`，以便授权后 `update` 复用。 |
-| B3 | 文档中的契约测试命令收集到 0 项测试（6.1 节）。 | `--pyargs easy_sandbox.providers.testing` 什么都找不到，因为模块名（`testing.py`）和类名（`ProviderContractTests`）都不匹配 pytest 默认模式 | 见 6.1 节。 |
+| B2 | **`python -m agent_sandbox.providers update` 没有 `--allow-insecure-transport`。** 以该参数安装的 git 源无法在命令行更新（E8012）；回执也没有记录使用过该参数。 | `[GAP ] CLI 'update' cannot reach a file:// source` | 为 `update` 增加该参数；可考虑在回执中记录 `insecure_transport: true`，以便授权后 `update` 复用。 |
+| B3 | 文档中的契约测试命令收集到 0 项测试（6.1 节）。 | `--pyargs agent_sandbox.providers.testing` 什么都找不到，因为模块名（`testing.py`）和类名（`ProviderContractTests`）都不匹配 pytest 默认模式 | 见 6.1 节。 |
 
 ---
 
@@ -120,15 +120,15 @@
 
 ### 6.1 契约测试说明有误
 
-`guide/providers.md` 写的是 `pytest -p easy_sandbox.providers.testing --pyargs easy_sandbox.providers.testing --provider-under-test my-cloud`。它会**收集到 0 项**（pytest 退出码为 5，宽松的 CI 步骤可能忽略）。紧邻其上的子类写法可用。命令行形式需要：
+`guide/providers.md` 写的是 `pytest -p agent_sandbox.providers.testing --pyargs agent_sandbox.providers.testing --provider-under-test my-cloud`。它会**收集到 0 项**（pytest 退出码为 5，宽松的 CI 步骤可能忽略）。紧邻其上的子类写法可用。命令行形式需要：
 
 ```bash
-pytest -p easy_sandbox.providers.testing -o python_classes=ProviderContractTests \
-       -o python_files=testing.py --pyargs easy_sandbox.providers.testing \
+pytest -p agent_sandbox.providers.testing -o python_classes=ProviderContractTests \
+       -o python_files=testing.py --pyargs agent_sandbox.providers.testing \
        --provider-under-test my-cloud
 ```
 
-子类写法（`class TestMine(ProviderContractTests): provider_id = "my-cloud"`）即 `examples/providers/opensandbox/tests/contract/test_contract.py` 所用。建议：让套件默认可被收集（`__test__ = True`，把类改名为 `TestProviderContract`，或提供带 `pytest_collect_file` 的 `pytest11` 入口点），并在文档示例中把“收集到 0 项”视为错误。
+子类写法（`class TestMine(ProviderContractTests): provider_id = "my-cloud"`）即 [`opensandbox/tests/contract/test_contract.py`](https://github.com/alibaba-agent-sandbox/awesome-providers/blob/main/opensandbox/tests/contract/test_contract.py) 所用。建议：让套件默认可被收集（`__test__ = True`，把类改名为 `TestProviderContract`，或提供带 `pytest_collect_file` 的 `pytest11` 入口点），并在文档示例中把“收集到 0 项”视为错误。
 
 ### 6.2 缺失或难以找到的信息
 
@@ -143,13 +143,13 @@ pytest -p easy_sandbox.providers.testing -o python_classes=ProviderContractTests
 | D7 | `data/` 不参与摘要，而 `tests/` *参与*（插件测试会使每次安装变大并改变摘要） | 编写检查清单 |
 | D8 | 以 `install --link --yes` 作为开发循环，已在*安装*一节记录，但 *Writing a provider* 没有链接过去 | 编写指南交叉链接 |
 | D9 | 指南的 *Testing a plugin* 只覆盖契约套件：没有模拟宿主辅助、没有示例 EPP 客户端、没有离线测试建议 | 新增“测试你的插件”一节；本插件的 `tests/epp-client.mjs` 与 `tests/mock/` 可作为起点 |
-| D10 | 提供方 id 含连字符/下划线时的规范环境变量名，以及 `EBX_<ID>_*`、原生别名、`.env`、TOML 之间的优先级 | 环境变量指南（表有，别名规则是隐含的） |
+| D10 | 提供方 id 含连字符/下划线时的规范环境变量名，以及 `ABX_<ID>_*`、原生别名、`.env`、TOML 之间的优先级 | 环境变量指南（表有，别名规则是隐含的） |
 | D11 | 在含有无关 `conftest.py` 的目录运行仓库 `pytest` 会在收集阶段失败；作者需要 `--noconftest`/`--confcutdir` | 贡献文档 |
 | D12 | 当工作区对 `server-sdk` 使用 `uv` source 时，`pip install -e client-sdk` 失败 | 贡献文档 / 打包 |
 
 ### 6.3 已应用与待处理的文档修复
 
-已应用（我负责的文档）：`examples/providers/opensandbox/README.md` / `README.zh-CN.md`（安装、配置、能力矩阵、测试层级、已知限制）、`e2e/opensandbox/README.md`（如何运行提供方 E2E）、`examples/providers/README.md`（第三个参考插件）。**待处理**（文件归其他工作流所有）：6.1 节全部内容、D1–D12，以及第 7 节的修正。
+已应用（我负责的文档）：opensandbox 插件 README 现位于 [awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox)（`README.md` / `README.zh-CN.md`：安装、配置、能力矩阵、测试层级、已知限制）、`e2e/opensandbox/README.md`（如何运行提供方 E2E；测试工具会安装插件，不内置一份副本）、`examples/providers/README.md`（指向该目录）。**待处理**（文件归其他工作流所有）：6.1 节全部内容、D1–D12，以及第 7 节的修正。
 
 ---
 
@@ -159,16 +159,16 @@ pytest -p easy_sandbox.providers.testing -o python_classes=ProviderContractTests
 |---|---|---|---|
 | P0 | B1 更新失败时的数据丢失 | `installer._swap_in` | 约 5 行 + 测试 |
 | P0 | 修正契约测试命令并使套件可被收集（6.1 节） | `providers/testing.py`、`guide/providers.md`（中英） | 小 |
-| P1 | `provider update --allow-insecure-transport`（B2）及 `ebx provider update` 对齐 | `providers/__main__.py`、CLI | 小 |
+| P1 | `provider update --allow-insecure-transport`（B2）及 `abx provider update` 对齐 | `providers/__main__.py`、CLI | 小 |
 | P1 | L1/L2：遵从 `secure`，把 `provider_options` 传入 `sandbox.create` | `exec_provider.ExecSandboxProtocol.create`、规范表 | 小 |
 | P1 | L4：`ExecProcessProtocol.start` 立即发送 `exec.start` | `exec_provider.py` | 小 |
 | P1 | L3：让 `network.get_url` 走 `ports.url` | `Sandbox`/network API | 中 |
 | P2 | 机器可读的方法模式（每个方法一份 JSON Schema，SDK、CLI、套件共用），并据此生成套件测试 | `fixtures/`、`testing.py` | 中 |
 | P2 | 扩展套件：流式顺序与唯一退出、取消、`set_timeout`、暂停/恢复、进程 list/kill、文件边界（二进制、缺失 -> `E4001`、覆盖）、幂等 kill、错误参数 `-32006` | `providers/testing.py` | 中 |
-| P2 | 作者脚手架：`python -m easy_sandbox.providers init <id> --runtime node|python`，生成清单、入口和 EPP 测试客户端 | 新模块 | 中 |
+| P2 | 作者脚手架：`python -m agent_sandbox.providers init <id> --runtime node|python`，生成清单、入口和 EPP 测试客户端 | 新模块 | 中 |
 | P2 | 在 EPP 表中标明必需/可选方法与扩展方法（D3、D4） | `providers-and-credentials.md` | 小 |
 | P3 | L5–L10 | `exec_provider.py`、models | 各自较小 |
-| P3 | `--trace-epp` / `EBX_EPP_TRACE=1` 记录请求/响应（已脱敏） | `providers/epp.py` | 小 |
+| P3 | `--trace-epp` / `ABX_EPP_TRACE=1` 记录请求/响应（已脱敏） | `providers/epp.py` | 小 |
 | P3 | 摘要中排除 `tests/` 或写入文档（D7） | `store._walk_regular`、文档 | 小 |
 
 ---
@@ -187,9 +187,10 @@ pytest -p easy_sandbox.providers.testing -o python_classes=ProviderContractTests
 
 ```bash
 cd e2e/opensandbox && ./local-up.sh up && eval "$(./local-up.sh env)"
-python3 provider_e2e.py                 # 12 项检查
-python3 provider_install_e2e.py         # 39 项检查（以前会打印 [GAP]/[BUG] 发现；现已无）
-cd ../../examples/providers/opensandbox && node tests/run.mjs
+python3 provider_e2e.py                 # 未设置 ABX_OPENSANDBOX_PLUGIN 时会克隆 awesome-providers
+python3 provider_install_e2e.py
+git clone --depth 1 https://github.com/alibaba-agent-sandbox/awesome-providers.git
+cd awesome-providers/opensandbox && node tests/run.mjs
 ```
 
 各脚本读取的环境变量见 `e2e/opensandbox/README.md`（不会在任何地方写入机密；本地 API key 是一次性的开发用值）。
@@ -203,8 +204,8 @@ cd ../../examples/providers/opensandbox && node tests/run.mjs
 | 项目 | 状态 | 变更 |
 |---|---|---|
 | B1 回滚时丢失 `data/` | **已修复** | `installer._swap_in` 在恢复旧目录树之前先把 `data/` 移回，两条失败路径（`verify` 失败、交换失败）都覆盖。回归测试分别注入这两种失败，并比对文件内容与权限。 |
-| B2 `update` 缺少 `--allow-insecure-transport` | **已修复** | `python -m easy_sandbox.providers update` 接受 `--allow-insecure-transport` 和 `--no-verify`。回执刻意不记住该参数（见指南）。 |
-| B3 / 6.1 契约命令收集到 0 项 | **已修复** | `python -m easy_sandbox.providers test <id>`（收集到 0 项时失败，并与当前目录的 pytest 配置隔离）以及 `pytest -p easy_sandbox.providers.testing --pyargs easy_sandbox.providers.contract --provider-under-test <id>`。指南、设计文档及中文版已更正。 |
+| B2 `update` 缺少 `--allow-insecure-transport` | **已修复** | `python -m agent_sandbox.providers update` 接受 `--allow-insecure-transport` 和 `--no-verify`。回执刻意不记住该参数（见指南）。 |
+| B3 / 6.1 契约命令收集到 0 项 | **已修复** | `python -m agent_sandbox.providers test <id>`（收集到 0 项时失败，并与当前目录的 pytest 配置隔离）以及 `pytest -p agent_sandbox.providers.testing --pyargs agent_sandbox.providers.contract --provider-under-test <id>`。指南、设计文档及中文版已更正。 |
 | 套件仅 5 项测试（第 3 节） | **已修复** | 18 项测试：exec 流顺序与唯一 exit、退出码 / stderr / 环境变量、超时强制执行、二进制与 Unicode 文件、目录与移动、类型化未找到、kill 幂等、`set_timeout`、暂停 / 恢复、进程列表、`ports.url`、未声明特性的 E8004、密钥脱敏；支持 `--provider-option KEY=VALUE`。 |
 | L1 写死 `secure=True` | **已修复** | `Sandbox.create(secure=None)`：仅当调用者设置时才发给插件；内置提供方仍按 `True` 处理。 |
 | L2 没有按次创建的选项 | **已修复** | `provider_options` 以 `options` 的形式（去掉密钥字段）送达 `sandbox.create`。OpenSandbox 插件对每次创建接受一个白名单（`network_policy`、`platform`、`default_image` 等），并且绝不让 `options` 改变服务地址或密钥。 |
@@ -219,3 +220,25 @@ cd ../../examples/providers/opensandbox && node tests/run.mjs
 | 脚手架（`provider init`）、`--trace-epp`、每个方法的结果模式 | 未完成 | 参数有模式检查；结果仅作描述。 |
 
 **评分变化。** 契约测试 2 → 4（可收集、18 项测试、一条命令）；宿主适配器 3 → 4（L1-L4、L8）；安装器 4 → 4.5（B1、B2）；协议清晰度 4 → 4.5（一张带必需 / 可选 / 扩展标记及精确名称的表）；文档可发现性与离线可测性各 +0.5。总体 3.5 → 4.0。
+
+## 11. 补充（2026-10-13）：对照真实服务器复核这一抽象
+
+**结论：保留这一抽象，加固边缘。** EPP/1 exec 插件、`abx-provider.toml`、安装器和契约套件足以让 OpenSandbox 真正跑起来（Docker，服务器 1.1.1），Node CLI 和 Python SDK 两端都验证过：按提交固定从 git 安装、doctor、契约 18/18、create、exec、二进制文件、超时、pause/resume、connect、kill、篡改检测。证据：[2026-10-13-opensandbox-provider-e2e](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/evidence/verify/2026-10-13-opensandbox-provider-e2e.md)。没有新增任何协议方法。
+
+复核发现并改动的内容（TS 与 Python 同步）：
+
+| 发现 | 改动 |
+|---|---|
+| 沙箱不存在时，插件是 `E8005`，内置提供方是 `E2009` | `sandbox.get/connect/set_timeout/pause/resume` 把插件的「未找到」映射为 `SandboxNotFoundError`（E2009）；插件也可以写 `sdk_code: "E2009"`。契约套件现在要求未知 id 返回 E2009 |
+| `rest` 预设不执行 `[features] supported`（只有 `exec` 插件执行） | `feature_gate` 包住四个协议类；未声明的特性在任何 HTTP 请求之前返回 E8004 |
+| `exec` 记录继承了内置平台的 `region = "cn-hangzhou"` 和 `timeout = 300` | `record_to_info` 让区域为空；插件同时给出 `created_at`/`expires_at` 时由它们推出 timeout |
+| 某些路径下 `--yes` 会接受会移动的 git ref | `--yes` 永远不接受未固定的 ref；交互式审阅或 `--allow-unpinned` 才可以。`update` 同一规则。拒绝信息会打印应当固定的提交 |
+| 插件根目录缺少 `abx-provider.toml` 时只提示「file not found」 | 错误信息说明清单文件不在插件根目录，以及如何指向子目录 |
+| `provider list` 看不出提供方能做什么 | 新增 Features 列（`sandbox(lifecycle,pause) exec(run,stream) ...`），`--json` 和 `python -m agent_sandbox.providers list` 里也有 |
+| exec 与 rest 提供方里重复的同意逻辑；TS exec 适配器里没用的 `listV2` | 抽出 `consented_inherit`；删除该方法 |
+
+冗余检查：`exec_provider`（EPP 适配器）与 `rest_provider`（E2B 预设）除上面的辅助函数外没有共用代码，也不冗余：它们是到达后端的两种方式（自有线协议 vs E2B 线协议）。`epp.ts` / `epp.py` 只是 JSON-RPC 客户端和错误映射。`Provider.capabilities()` 与 `FEATURE_TO_CAPABILITY` 没有调用方；能力解析仍来自模板（未解决）。
+
+信任模型检查：安装器本来就不检出工作树、只允许普通文件、记录树摘要、每次启动校验、更新失败时回滚。确认与固定本来就有，但存在漏洞（`--yes` 加分支名），现已堵上。因此从 git URL 安装提供方**不是**实验性功能。
+
+未解决：模板命令忽略 `--provider`；能力集合不是由提供方特性推导的；没有 pause/resume 的 CLI 命令；`SandboxInfo` 的区域和超时仍带有内置默认值；awesome-providers 目录需要 `abx` 改名（`cli/e2e/providers/awesome-providers-abx-rename.patch`）。

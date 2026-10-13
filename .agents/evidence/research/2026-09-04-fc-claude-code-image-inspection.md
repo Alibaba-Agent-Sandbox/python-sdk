@@ -1,5 +1,5 @@
 > ⚠️ **HISTORICAL SNAPSHOT** — 标注追加于 2026-09-24（任务 #122，承接 #109 审计；正文未改写）
-> 本报告为 2026-09-04 的只读镜像实地检查快照。文中提及的 SDK 旧品牌 `serverless-sandbox` 现为 `easy-sandbox`（见 ADR [`2026-09-09-brand-rename-sbox-to-ebx.md`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-09-brand-rename-sbox-to-ebx.md)）；镜像检查结论本身不受更名影响。
+> 本报告为 2026-09-04 的只读镜像实地检查快照。文中提及的 SDK 旧品牌 `serverless-sandbox` 现为 `agent-sandbox`（见 ADR [`2026-09-09-brand-rename-sbox-to-abx.md`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-09-brand-rename-sbox-to-abx.md)）；镜像检查结论本身不受更名影响。
 
 # FC Claude Code 镜像实地检查
 

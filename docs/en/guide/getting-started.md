@@ -7,21 +7,21 @@ This tutorial walks you through the complete sandbox lifecycle, from installatio
 ## Prerequisites
 
 - Python 3.10 or later
-- A valid API Key (obtained from the Easy Sandbox platform)
+- A valid API Key (obtained from the Agent Sandbox platform)
 - Network access to the Alibaba Cloud Hangzhou region (default `cn-hangzhou`)
 
 ## 1. Installation
 
 ```bash
 # Install the SDK
-pip install easy-sandbox
+pip install agent-sandbox
 
 # Install with all extras (recommended)
-pip install "easy-sandbox[all]"
+pip install "agent-sandbox[all]"
 ```
 
-The `ebx` CLI is not part of the Python package (there is no `[cli]` extra); it is a separate Node.js project, see [Related: the ebx CLI](#related-the-ebx-cli). The container-side runtime
-(`easy_sandbox.server`) is the separate `easy-sandbox-server` package (`pip install easy-sandbox-server`); `easy-sandbox`
+The `abx` CLI is not part of the Python package (there is no `[cli]` extra); it is a separate Node.js project, see [Related: the abx CLI](#related-the-abx-cli). The container-side runtime
+(`agent_sandbox.server`) is the separate `agent-sandbox-server` package (`pip install agent-sandbox-server`); `agent-sandbox`
 depends on it, so installing the client provides it too.
 
 ## 2. Configure the API Key
@@ -31,7 +31,7 @@ There are three ways to configure credentials. When a call actually needs the ke
 ### Option 1: Code parameter (this call only)
 
 ```python
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 sandbox = await Sandbox.create(api_key="your-api-key-here")
 ```
@@ -39,12 +39,12 @@ sandbox = await Sandbox.create(api_key="your-api-key-here")
 ### Option 2: Environment variable (recommended for CI/CD)
 
 ```bash
-export EBX_SANDBOX_API_KEY="your-api-key-here"
+export ABX_SANDBOX_API_KEY="your-api-key-here"
 ```
 
-### Option 3: Persisted file (`~/.ebx/.env`)
+### Option 3: Persisted file (`~/.abx/.env`)
 
-Used when neither the environment nor the project `.env` sets the key. The file is written by the `ebx` CLI (`ebx config set sandbox_api_key your-api-key`, permissions 600; see [Related: the ebx CLI](#related-the-ebx-cli)) or edited by hand: `EBX_SANDBOX_API_KEY=your-api-key`.
+Used when neither the environment nor the project `.env` sets the key. The file is written by the `abx` CLI (`abx config set sandbox_api_key your-api-key`, permissions 600; see [Related: the abx CLI](#related-the-abx-cli)) or edited by hand: `ABX_SANDBOX_API_KEY=your-api-key`.
 
 ## 3. Create Your First Sandbox
 
@@ -52,7 +52,7 @@ Used when neither the environment nor the project `.env` sets the key. The file 
 
 ```python
 import asyncio
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 async def main():
     # Create a sandbox (default template: base, timeout: 300 seconds)
@@ -66,7 +66,7 @@ asyncio.run(main())
 ### Using the SDK (sync)
 
 ```python
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 sandbox = Sandbox.create_sync(template="base")
 print(f"Sandbox ID: {sandbox.id}")
@@ -77,9 +77,9 @@ print(f"Sandbox ID: {sandbox.id}")
 ### SDK
 
 ```python
-result = await sandbox.run_code("print('Hello, Easy Sandbox!')")
-print(result.text)     # "Hello, Easy Sandbox!"
-print(result.stdout)   # "Hello, Easy Sandbox!\n"
+result = await sandbox.run_code("print('Hello, Agent Sandbox!')")
+print(result.text)     # "Hello, Agent Sandbox!"
+print(result.stdout)   # "Hello, Agent Sandbox!\n"
 print(result.exit_code)  # 0
 ```
 
@@ -145,7 +145,7 @@ async with await Sandbox.create(template="base") as sandbox:
 
 ```python
 import asyncio
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 async def main():
     async with await Sandbox.create(template="base") as sandbox:
@@ -170,7 +170,7 @@ asyncio.run(main())
 
 ---
 
-The sandbox server can also host coding-agent CLIs. Codex (`codex`, npm package `@openai/codex`) and Qwen Code (`qwen`, npm package `@qwen-code/qwen-code`) are supported today, on `/v1/agents/sessions`, after `EBX_SERVER_ENABLED_GROUPS` includes `agents`. See [Hosted agents](hosted-agents.md).
+The sandbox server can also host coding-agent CLIs. Codex (`codex`, npm package `@openai/codex`) and Qwen Code (`qwen`, npm package `@qwen-code/qwen-code`) are supported today, on `/v1/agents/sessions`, after `ABX_SERVER_ENABLED_GROUPS` includes `agents`. See [Hosted agents](hosted-agents.md).
 
 ## Next Steps
 
@@ -181,6 +181,6 @@ The sandbox server can also host coding-agent CLIs. Codex (`codex`, npm package 
 
 ---
 
-## Related: the ebx CLI
+## Related: the abx CLI
 
-The command-line equivalents of the steps above (installing `ebx` with npm or as a standalone binary, `ebx config set`, `ebx create`, `ebx exec`, `ebx upload` / `download`, `ebx kill`) are in the CLI repository: [Getting Started (CLI)](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/getting-started.md), [Binary Installation](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/binary-installation.md), [CLI Tutorial](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/cli-tutorial.md) and [Using Templates](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/using-templates.md).
+The command-line equivalents of the steps above (installing `abx` with npm or as a standalone binary, `abx config set`, `abx create`, `abx exec`, `abx upload` / `download`, `abx kill`) are in the CLI repository: [Getting Started (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/getting-started.md), [Binary Installation](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md), [CLI Tutorial](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/cli-tutorial.md) and [Using Templates](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/using-templates.md).

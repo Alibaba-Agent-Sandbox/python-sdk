@@ -5,16 +5,16 @@ Stages (each prints PASS/FAIL; exit code is non-zero if any fails):
 
 1. ``node-unit``     plugin unit + mock-server tests (no server needed)
 2. ``node-live``     plugin driven directly over EPP/1 (``tests/live``)
-3. ``install``       ``python -m easy_sandbox.providers install <plugin dir>`` + ``doctor``
+3. ``install``       ``python -m agent_sandbox.providers install <plugin dir>`` + ``doctor``
 4. ``kit``           the shared ``ProviderContractTests`` with ``--provider-under-test opensandbox``
 5. ``sdk``           ``Sandbox.create(provider="opensandbox")`` scenarios (``tests/contract``)
-6. ``env``           configuration precedence: canonical ``EBX_OPENSANDBOX_*`` beats native
+6. ``env``           configuration precedence: canonical ``ABX_OPENSANDBOX_*`` beats native
                    ``OPEN_SANDBOX_*``
 
 Configuration (environment, never written anywhere):
 
-* ``EBX_OPENSANDBOX_BASE_URL`` (or ``OPENSANDBOX_BASE_URL``)  server URL, default ``http://127.0.0.1:8080``
-* ``EBX_OPENSANDBOX_API_KEY`` / ``OPEN_SANDBOX_API_KEY`` / ``OPENSANDBOX_API_KEY``  API key
+* ``ABX_OPENSANDBOX_BASE_URL`` (or ``OPENSANDBOX_BASE_URL``)  server URL, default ``http://127.0.0.1:8080``
+* ``ABX_OPENSANDBOX_API_KEY`` / ``OPEN_SANDBOX_API_KEY`` / ``OPENSANDBOX_API_KEY``  API key
 * ``OPENSANDBOX_TEST_IMAGE``  image for the sandboxes (default ``python:3.12-slim``)
 
 Usage::
@@ -22,9 +22,12 @@ Usage::
     eval "$(./local-up.sh env)"      # or point the variables above at any reachable server
     python3 provider_e2e.py [--stages node-unit,install,kit,sdk,env] [--keep]
 
-All provider state lives in a throwaway ``HOME`` so the real ``~/.ebx`` is never touched.
-Requires: Node >= 20, Python >= 3.11 with ``easy_sandbox`` importable (the script adds the
-sibling ``client-sdk/src`` and ``server-sdk/src`` to ``PYTHONPATH`` when they exist) and pytest.
+All provider state lives in a throwaway ``HOME`` so the real ``~/.abx`` is never touched.
+The plugin source is not in this repository. The script clones
+https://github.com/alibaba-agent-sandbox/awesome-providers (or uses ``ABX_OPENSANDBOX_PLUGIN`` /
+``ABX_AWESOME_PROVIDERS``) and runs that checkout. Requires: Node >= 20, git,
+Python >= 3.11 with ``agent_sandbox`` importable (the script adds the sibling
+``client-sdk/src`` and ``server-sdk/src`` to ``PYTHONPATH`` when they exist) and pytest.
 """
 
 from __future__ import annotations
@@ -41,18 +44,20 @@ import urllib.request
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from plugin_checkout import resolve_plugin
+
 ROOT = Path(__file__).resolve().parents[2]
-PLUGIN = ROOT / "examples" / "providers" / "opensandbox"
+PLUGIN: Path  # set in main() from the awesome-providers catalog
 ALL_STAGES = ["node-unit", "node-live", "install", "kit", "sdk", "env"]
 
 BASE_URL = (
-    os.environ.get("EBX_OPENSANDBOX_BASE_URL")
+    os.environ.get("ABX_OPENSANDBOX_BASE_URL")
     or os.environ.get("OPENSANDBOX_BASE_URL")
     or "http://127.0.0.1:8080"
 )
 BASE_URL = BASE_URL.rstrip("/").removesuffix("/v1")
 API_KEY = (
-    os.environ.get("EBX_OPENSANDBOX_API_KEY")
+    os.environ.get("ABX_OPENSANDBOX_API_KEY")
     or os.environ.get("OPEN_SANDBOX_API_KEY")
     or os.environ.get("OPENSANDBOX_API_KEY")
     or ""
@@ -65,7 +70,7 @@ def sh_env(
     env = dict(os.environ)
     for name in list(env):
         if (
-            name.startswith(("EBX_OPENSANDBOX_", "OPEN_SANDBOX_", "OPENSANDBOX_"))
+            name.startswith(("ABX_OPENSANDBOX_", "OPEN_SANDBOX_", "OPENSANDBOX_"))
             and name != "OPENSANDBOX_TEST_IMAGE"
         ):
             del env[name]
@@ -77,7 +82,7 @@ def sh_env(
         USERPROFILE=home,
         PYTHONPATH=os.pathsep.join(p for p in paths if p),
         PYTHONDONTWRITEBYTECODE="1",
-        EBX_OPENSANDBOX_BASE_URL=BASE_URL,
+        ABX_OPENSANDBOX_BASE_URL=BASE_URL,
         OPEN_SANDBOX_API_KEY=API_KEY,
     )
     env.update(extra or {})
@@ -126,7 +131,7 @@ def stage_node_unit(rep: Report, home: str) -> None:
 
 
 def stage_node_live(rep: Report, home: str) -> None:
-    env = sh_env(home, {"OPENSANDBOX_LIVE": "1", "EBX_OPENSANDBOX_API_KEY": API_KEY})
+    env = sh_env(home, {"OPENSANDBOX_LIVE": "1", "ABX_OPENSANDBOX_API_KEY": API_KEY})
     p = run(["node", "tests/run.mjs", "live"], env, PLUGIN)
     rep.add(
         "node-live: EPP/1 directly against the server",
@@ -138,10 +143,10 @@ def stage_node_live(rep: Report, home: str) -> None:
 def stage_install(rep: Report, home: str) -> None:
     env = sh_env(home)
     p = run(
-        [sys.executable, "-m", "easy_sandbox.providers", "install", str(PLUGIN), "--yes"], env, home
+        [sys.executable, "-m", "agent_sandbox.providers", "install", str(PLUGIN), "--yes"], env, home
     )
     rep.add("install: local path", p.returncode == 0, "" if p.returncode == 0 else rep.tail(p))
-    p = run([sys.executable, "-m", "easy_sandbox.providers", "doctor", "opensandbox"], env, home)
+    p = run([sys.executable, "-m", "agent_sandbox.providers", "doctor", "opensandbox"], env, home)
     rep.add(
         "install: doctor (spawn + initialize handshake)",
         p.returncode == 0,
@@ -151,12 +156,12 @@ def stage_install(rep: Report, home: str) -> None:
 
 def stage_kit(rep: Report, home: str) -> None:
     env = sh_env(home)
-    cmd = [sys.executable, "-m", "easy_sandbox.providers", "test", "opensandbox"]
+    cmd = [sys.executable, "-m", "agent_sandbox.providers", "test", "opensandbox"]
     p = run(cmd, env, home)
     last = p.stdout.strip().splitlines()[-1] if p.stdout.strip() else ""
     passed = re.search(r"(\d+) passed", last)
     rep.add(
-        "kit: python -m easy_sandbox.providers test opensandbox",
+        "kit: python -m agent_sandbox.providers test opensandbox",
         p.returncode == 0 and bool(passed) and int(passed.group(1)) >= 12,
         last or rep.tail(p),
     )
@@ -179,7 +184,7 @@ def stage_sdk(rep: Report, home: str) -> None:
 
 _PROBE = """
 import asyncio, sys
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 async def main():
     try:
         sb = await Sandbox.create(provider="opensandbox", timeout=120)
@@ -208,15 +213,15 @@ def stage_env(rep: Report, home: str) -> None:
     parts = urlsplit(BASE_URL)
     host_port = parts.netloc
     dead = "http://127.0.0.1:9"
-    base_names = ("EBX_OPENSANDBOX_BASE_URL",)
+    base_names = ("ABX_OPENSANDBOX_BASE_URL",)
     key_names = ("OPEN_SANDBOX_API_KEY",)
 
     r = probe(home, {})
     rep.add("env: canonical base_url + native API key works", r.startswith("OK"), r)
 
-    r = probe(home, {"EBX_OPENSANDBOX_BASE_URL": dead, "OPEN_SANDBOX_DOMAIN": host_port})
+    r = probe(home, {"ABX_OPENSANDBOX_BASE_URL": dead, "OPEN_SANDBOX_DOMAIN": host_port})
     rep.add(
-        "env: canonical EBX_OPENSANDBOX_BASE_URL beats native OPEN_SANDBOX_DOMAIN",
+        "env: canonical ABX_OPENSANDBOX_BASE_URL beats native OPEN_SANDBOX_DOMAIN",
         r.startswith("ERR"),
         r,
     )
@@ -228,9 +233,9 @@ def stage_env(rep: Report, home: str) -> None:
     )
     rep.add("env: native OPEN_SANDBOX_DOMAIN alone is enough", r.startswith("OK"), r)
 
-    r = probe(home, {"EBX_OPENSANDBOX_API_KEY": "wrong-key"})
+    r = probe(home, {"ABX_OPENSANDBOX_API_KEY": "wrong-key"})
     rep.add(
-        "env: canonical EBX_OPENSANDBOX_API_KEY beats native OPEN_SANDBOX_API_KEY",
+        "env: canonical ABX_OPENSANDBOX_API_KEY beats native OPEN_SANDBOX_API_KEY",
         r.startswith("ERR"),
         r,
     )
@@ -270,6 +275,12 @@ def main() -> int:
     unknown = [s for s in chosen if s not in STAGES]
     if unknown:
         ap.error(f"unknown stage(s): {', '.join(unknown)}")
+    global PLUGIN
+    try:
+        PLUGIN = resolve_plugin()
+    except SystemExit as exc:
+        print(exc, file=sys.stderr)
+        return 2
     if not shutil.which("node"):
         print("node (>= 20) is required", file=sys.stderr)
         return 2
@@ -280,7 +291,7 @@ def main() -> int:
         )
         return 2
 
-    home = tempfile.mkdtemp(prefix="ebx-osb-e2e-")
+    home = tempfile.mkdtemp(prefix="abx-osb-e2e-")
     rep = Report()
     started = time.monotonic()
     try:

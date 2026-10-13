@@ -13,10 +13,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-try:
-    import tomllib
-except ModuleNotFoundError:  # Python 3.10
-    import tomli as tomllib
+import tomllib
 
 HERE = Path(__file__).resolve().parent
 
@@ -73,31 +70,31 @@ def _resolution_inputs() -> list[dict[str, Any]]:
         }
 
     add("defaults only", S())
-    for name in ("EBX_SANDBOX_API_KEY", "E2B_API_KEY", "SANDBOX_API_KEY"):
+    for name in ("ABX_SANDBOX_API_KEY", "E2B_API_KEY", "SANDBOX_API_KEY"):
         add(f"{name} in process env", S(environ={name: "v-" + name}))
         add(f"{name} in dotenv", S(dotenv=[{name: "v-" + name}]))
     add(
         "canonical beats compat beats legacy (env)",
-        S(environ={"SANDBOX_API_KEY": "l", "E2B_API_KEY": "c", "EBX_SANDBOX_API_KEY": "n"}),
+        S(environ={"SANDBOX_API_KEY": "l", "E2B_API_KEY": "c", "ABX_SANDBOX_API_KEY": "n"}),
     )
     add("compat beats legacy (env)", S(environ={"SANDBOX_API_KEY": "l", "E2B_API_KEY": "c"}))
     add(
         "layer beats name: legacy env over canonical dotenv",
         S(
             environ={"SANDBOX_API_KEY": "legacy-env"},
-            dotenv=[{"EBX_SANDBOX_API_KEY": "canon-dotenv"}],
+            dotenv=[{"ABX_SANDBOX_API_KEY": "canon-dotenv"}],
         ),
     )
-    add("override beats env", S(overrides={k: "ov"}, environ={"EBX_SANDBOX_API_KEY": "env"}))
+    add("override beats env", S(overrides={k: "ov"}, environ={"ABX_SANDBOX_API_KEY": "env"}))
     add(
         "legacy kwarg api_key override",
-        S(overrides={"api_key": "legacy-kw"}, environ={"EBX_SANDBOX_API_KEY": "env"}),
+        S(overrides={"api_key": "legacy-kw"}, environ={"ABX_SANDBOX_API_KEY": "env"}),
     )
     add("blank override falls through", S(overrides={k: "   "}, environ={"E2B_API_KEY": "env"}))
     add(
         "blank env falls through to dotenv",
         S(
-            environ={"EBX_SANDBOX_API_KEY": " ", "E2B_API_KEY": ""},
+            environ={"ABX_SANDBOX_API_KEY": " ", "E2B_API_KEY": ""},
             dotenv=[{"SANDBOX_API_KEY": "dot"}],
         ),
     )
@@ -165,40 +162,34 @@ def _resolution_inputs() -> list[dict[str, Any]]:
         "ak canonical beats native",
         S(
             environ={
-                "EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID": "canon",
+                "ABX_ALICLOUD_EXPRESS_ACCESS_KEY_ID": "canon",
                 "ALICLOUD_ACCESS_KEY_ID": "native",
             }
         ),
     )
     add(
-        "acr legacy names and csv",
-        S(environ={"ACR_REGISTRY": "reg", "ACR_VSWITCH_IDS": "vsw-1,vsw-2", "ACR_PASSWORD": "pw"}),
-    )
-    add(
         "typed values",
-        S(environ={"EBX_HTTP_TIMEOUT": "12.5", "EBX_MAX_RETRIES": "7", "EBX_HTTP2": "off"}),
+        S(environ={"ABX_HTTP_TIMEOUT": "12.5", "ABX_MAX_RETRIES": "7", "ABX_HTTP2": "off"}),
     )
     add(
         "invalid typed values fall through",
         S(
-            environ={"EBX_HTTP_TIMEOUT": "soon", "EBX_HTTP2": "maybe"},
+            environ={"ABX_HTTP_TIMEOUT": "soon", "ABX_HTTP2": "maybe"},
             dotenv=[{"SANDBOX_HTTP_TIMEOUT": "9"}],
         ),
     )
     add("log level normalised", S(environ={"SANDBOX_LOG_LEVEL": "debug"}))
     add(
         "log level invalid ignored",
-        S(environ={"EBX_LOG_LEVEL": "loud", "SANDBOX_LOG_LEVEL": "info"}),
+        S(environ={"ABX_LOG_LEVEL": "loud", "SANDBOX_LOG_LEVEL": "info"}),
     )
-    add("llm key priority", S(environ={"OPENAI_API_KEY": "o", "DASHSCOPE_API_KEY": "d"}))
-    add("llm canonical beats native", S(environ={"OPENAI_API_KEY": "o", "EBX_LLM_API_KEY": "c"}))
     add("github token native", S(environ={"GITHUB_TOKEN": "gh"}))
     add(
         "github token canonical beats native",
-        S(environ={"GITHUB_TOKEN": "gh", "EBX_GITHUB_TOKEN": "mine"}),
+        S(environ={"GITHUB_TOKEN": "gh", "ABX_GITHUB_TOKEN": "mine"}),
     )
     add("template legacy names", S(environ={"SANDBOX_TEMPLATE": "py"}))
-    add("provider selection is not a resolved key", S(environ={"EBX_PROVIDER": "e2b-like"}))
+    add("provider selection is not a resolved key", S(environ={"ABX_PROVIDER": "e2b-like"}))
     # provider-scoped
     add(
         "non-builtin without inherit gets no generic keys",
@@ -215,7 +206,7 @@ def _resolution_inputs() -> list[dict[str, Any]]:
     add("plugin fields: defaults", S(), "plug", plug)
     add(
         "plugin field canonical env and native alias",
-        S(environ={"EBX_PLUG_TOKEN": "c", "PLUG_TOKEN": "n", "EBX_PLUG_MODE": "fast"}),
+        S(environ={"ABX_PLUG_TOKEN": "c", "PLUG_TOKEN": "n", "ABX_PLUG_MODE": "fast"}),
         "plug",
         plug,
     )
@@ -223,22 +214,22 @@ def _resolution_inputs() -> list[dict[str, Any]]:
     add(
         "plugin field toml table and dotenv",
         S(
-            dotenv=[{"EBX_PLUG_RETRIES": "5"}],
+            dotenv=[{"ABX_PLUG_RETRIES": "5"}],
             toml={"providers": {"plug": {"token": "t", "mode": "fast", "retries": 9}}},
         ),
         "plug",
         plug,
     )
-    add("plugin enum invalid falls to default", S(environ={"EBX_PLUG_MODE": "turbo"}), "plug", plug)
+    add("plugin enum invalid falls to default", S(environ={"ABX_PLUG_MODE": "turbo"}), "plug", plug)
     add(
         "plugin option override",
-        S(overrides={"token": "kw"}, environ={"EBX_PLUG_TOKEN": "env"}),
+        S(overrides={"token": "kw"}, environ={"ABX_PLUG_TOKEN": "env"}),
         "plug",
         plug,
     )
     add(
         "other provider's scoped env does not leak",
-        S(environ={"EBX_OTHER_TOKEN": "x", "EBX_ALICLOUD_EXPRESS_REGION": "r"}),
+        S(environ={"ABX_OTHER_TOKEN": "x", "ABX_ALICLOUD_EXPRESS_REGION": "r"}),
         "plug",
         plug,
     )
@@ -250,7 +241,7 @@ def _resolution_inputs() -> list[dict[str, Any]]:
     )
     add(
         "inheritor: scoped env beats generic",
-        S(environ={"E2B_API_KEY": "generic", "EBX_E2B_LIKE_SANDBOX_API_KEY": "scoped"}),
+        S(environ={"E2B_API_KEY": "generic", "ABX_E2B_LIKE_SANDBOX_API_KEY": "scoped"}),
         "e2b-like",
         e2b_like,
     )
@@ -268,7 +259,7 @@ def _resolution_inputs() -> list[dict[str, Any]]:
     add("inheritor: endpoint defaults when nothing set", S(), "e2b-like", e2b_like)
     add(
         "inheritor: explicit url beats endpoint default",
-        S(dotenv=[{"EBX_SANDBOX_BASE_URL": "https://dot.example"}]),
+        S(dotenv=[{"ABX_SANDBOX_BASE_URL": "https://dot.example"}]),
         "e2b-like",
         e2b_like,
     )
@@ -283,7 +274,7 @@ def _resolution_inputs() -> list[dict[str, Any]]:
         "derived endpoint suppressed by explicit env url",
         S(
             overrides={"region": "r9"},
-            environ={"EBX_REGIONAL_SANDBOX_BASE_URL": "https://x.example"},
+            environ={"ABX_REGIONAL_SANDBOX_BASE_URL": "https://x.example"},
         ),
         "regional",
         region_derived,
@@ -292,9 +283,9 @@ def _resolution_inputs() -> list[dict[str, Any]]:
 
 
 def _resolve(item: dict[str, Any]) -> dict[str, Any]:
-    from easy_sandbox.providers.base import ConfigField
-    from easy_sandbox.transport.config import ProviderSchema, _builtin_schema, resolve_all
-    from easy_sandbox.utils.config_keys import Sources
+    from agent_sandbox.providers.base import ConfigField
+    from agent_sandbox.transport.config import ProviderSchema, _builtin_schema, resolve_all
+    from agent_sandbox.utils.config_keys import Sources
 
     src = item["sources"]
     sources = Sources(
@@ -343,11 +334,11 @@ def resolution_vectors() -> dict[str, Any]:
 def tree_digest_vectors() -> dict[str, Any]:
     import base64
 
-    from easy_sandbox.providers import store
+    from agent_sandbox.providers import store
 
     cases: list[tuple[str, list[tuple[str, bool, bytes]]]] = [
         ("empty tree", []),
-        ("single file", [("ebx-provider.toml", False, b"manifest_version = 1\n")]),
+        ("single file", [("abx-provider.toml", False, b"manifest_version = 1\n")]),
         ("executable flag matters", [("run.sh", True, b"#!/bin/sh\n")]),
         ("not executable", [("run.sh", False, b"#!/bin/sh\n")]),
         (
@@ -367,7 +358,7 @@ def tree_digest_vectors() -> dict[str, Any]:
         ("empty file", [("empty", False, b"")]),
         (
             "file whose name looks like the receipt, nested",
-            [("sub/.ebx-install.json", False, b"{}")],
+            [("sub/.abx-install.json", False, b"{}")],
         ),
     ]
     out = []
@@ -391,7 +382,7 @@ def tree_digest_vectors() -> dict[str, Any]:
 
 
 def epp_error_vectors() -> dict[str, Any]:
-    from easy_sandbox.providers.epp import exit_code_for, map_error
+    from agent_sandbox.providers.epp import exit_code_for, map_error
 
     cases: list[tuple[str, dict[str, Any], list[str]]] = [
         ("unauthenticated", {"code": -32001, "message": "no key"}, []),
@@ -458,8 +449,8 @@ def epp_error_vectors() -> dict[str, Any]:
 
 
 def migration_vectors() -> dict[str, Any]:
-    from easy_sandbox.transport import config as cfg
-    from easy_sandbox.utils.toml_write import dumps_toml
+    from agent_sandbox.transport import config as cfg
+    from agent_sandbox.utils.toml_write import dumps_toml
 
     cases: list[tuple[str, dict[str, Any], str]] = [
         ("nothing stored", {}, ""),
@@ -490,7 +481,7 @@ def migration_vectors() -> dict[str, Any]:
             "# keep me\nE2B_API_KEY=abc\nSANDBOX_REGION=cn-shanghai\nOPENAI_API_KEY=k\n",
         ),
         ("env: shadowed legacy dropped", {}, "E2B_API_KEY=abc\nSANDBOX_API_KEY=old\n"),
-        ("env: canonical present wins", {}, "EBX_SANDBOX_API_KEY=new\nE2B_API_KEY=old\n"),
+        ("env: canonical present wins", {}, "ABX_SANDBOX_API_KEY=new\nE2B_API_KEY=old\n"),
         (
             "env: acr and ak legacy names",
             {},
@@ -528,8 +519,212 @@ def migration_vectors() -> dict[str, Any]:
     return {"schema_version": 1, "vectors": out}
 
 
+def epp_method_table() -> dict[str, Any]:
+    """Machine-readable EPP/1 method table (the single source for params names and types)."""
+    S, I, B, O, A = "string", "integer", "boolean", "object", "array"  # noqa: N806, E741
+    SI = "string|integer"  # noqa: N806
+    NI = "number|null"  # noqa: N806
+
+    def p(typ: str, required: bool = True) -> dict[str, Any]:
+        return {"type": typ, "required": required}
+
+    sb = {"sandbox_id": p(S)}
+    proc = {
+        "cmd": p(S),
+        "args": p(A),
+        "env": p(O),
+        "cwd": p(S),
+        "user": p(S),
+        "timeout": p(I),
+    }
+
+    def m(
+        method: str,
+        feature: str | None,
+        params: dict[str, Any],
+        result: str,
+        *,
+        support: str = "required",
+        idempotent: bool = False,
+        host_calls: bool = True,
+        note: str = "",
+    ) -> dict[str, Any]:
+        out: dict[str, Any] = {
+            "method": method,
+            "feature": feature,
+            "support": support,
+            "idempotent": idempotent,
+            "host_calls": host_calls,
+            "params": params,
+            "result": result,
+        }
+        if note:
+            out["note"] = note
+        return out
+
+    methods = [
+        m(
+            "initialize",
+            None,
+            {
+                "protocol": p(S),
+                "host": p(O),
+                "provider_id": p(S),
+                "config": p(O),
+                "core": p(O),
+                "locale": p(S),
+                "data_dir": p(S),
+            },
+            "{protocol, plugin:{name,version}, features:[...]}",
+        ),
+        m("shutdown", None, {}, "{}"),
+        m(
+            "sandbox.create",
+            "sandbox.lifecycle",
+            {
+                "template": p(S),
+                "timeout": p(I),
+                "metadata": p(O),
+                "envs": p(O),
+                "cpu": p("integer|null"),
+                "memory": p("integer|null"),
+                "disk": p("integer|null"),
+                "gpu": p("string|null"),
+                "request_timeout": p(NI),
+                "secure": p(B, False),
+                "options": p(O, False),
+            },
+            "SandboxRecord",
+            note="secure is sent only when the user set it; options = the per-create provider_options minus secret fields",
+        ),
+        m("sandbox.get", "sandbox.lifecycle", dict(sb), "SandboxRecord", idempotent=True),
+        m(
+            "sandbox.connect",
+            "sandbox.lifecycle",
+            dict(sb),
+            "SandboxRecord",
+            support="optional",
+            idempotent=True,
+            note="optional; may resume a paused sandbox. The host falls back to sandbox.get on -32601",
+        ),
+        m(
+            "sandbox.list",
+            "sandbox.lifecycle",
+            {
+                "limit": p(I),
+                "status": p(S, False),
+                "cursor": p(S, False),
+                "metadata": p(O, False),
+            },
+            "{sandboxes:[SandboxRecord], next?}",
+            idempotent=True,
+        ),
+        m("sandbox.kill", "sandbox.lifecycle", dict(sb), "{}", idempotent=True),
+        m(
+            "sandbox.set_timeout",
+            "sandbox.timeout",
+            {**sb, "timeout": p(I)},
+            "{}",
+        ),
+        m("sandbox.pause", "sandbox.pause", dict(sb), "{}"),
+        m("sandbox.resume", "sandbox.pause", dict(sb), "{}"),
+        m(
+            "exec.run",
+            "exec.run",
+            {**sb, **proc, "stdin": p(S, False)},
+            "{exit_code, stdout, stderr, stdout_b64?, stderr_b64?}",
+        ),
+        m(
+            "exec.start",
+            "exec.stream",
+            {**sb, **proc, "stdin": p(S, False), "detached": p(B, False)},
+            "{process_id: string}",
+            note="followed by notifications exec.output{process_id,stream,data} and exactly one exec.exit{process_id,exit_code}; detached is an optional extension (the host does not send it yet)",
+        ),
+        m("process.list", "process.manage", dict(sb), "{processes:[{pid,command,status,...}]}"),
+        m(
+            "process.kill",
+            "process.manage",
+            {**sb, "pid": p(SI)},
+            "{}",
+            note="pid is an opaque id: the integer pid of process.list or the string process_id of exec.start",
+        ),
+        m("process.signal", "process.manage", {**sb, "pid": p(SI), "signal": p(I)}, "{}"),
+        m(
+            "process.stdin",
+            "process.manage",
+            {**sb, "pid": p(SI), "data": p(S)},
+            "{}",
+            note="a plugin without stdin support answers -32003",
+        ),
+        m(
+            "files.read",
+            "files.rw",
+            {**sb, "path": p(S), "offset": p(I, False), "length": p(I, False)},
+            "{content_b64, size}",
+            idempotent=True,
+            note="offset/length are an optional extension for chunked reads (the host does not send them yet)",
+        ),
+        m(
+            "files.write",
+            "files.rw",
+            {**sb, "path": p(S), "content_b64": p(S), "mode": p(SI, False), "append": p(B, False)},
+            "{}",
+            note="mode and append are optional extensions (the host does not send them yet)",
+        ),
+        m(
+            "files.list",
+            "files.rw",
+            {**sb, "path": p(S)},
+            "{entries:[{name,path,type,size,mtime?}]}",
+            idempotent=True,
+        ),
+        m(
+            "files.stat",
+            "files.rw",
+            {**sb, "path": p(S)},
+            "{name,path,type,size,mtime?}",
+            idempotent=True,
+        ),
+        m("files.mkdir", "files.rw", {**sb, "path": p(S)}, "{}"),
+        m("files.remove", "files.rw", {**sb, "path": p(S)}, "{}"),
+        m(
+            "files.move",
+            "files.rw",
+            {**sb, "source": p(S), "destination": p(S), "overwrite": p(B, False)},
+            "{}",
+            note="plugins may additionally accept the legacy aliases src/dest",
+        ),
+        m(
+            "files.search",
+            "files.rw",
+            {**sb, "path": p(S), "pattern": p(S)},
+            "{entries:[...]}",
+            support="extension",
+            host_calls=False,
+        ),
+        m(
+            "files.chmod",
+            "files.rw",
+            {**sb, "path": p(S), "mode": p(SI)},
+            "{}",
+            support="extension",
+            host_calls=False,
+        ),
+        m(
+            "ports.url",
+            "ports.url",
+            {**sb, "port": p(I)},
+            "{url, headers?}",
+            idempotent=True,
+            note="routed through Sandbox.network.resolve()/resolve_url()",
+        ),
+    ]
+    return {"schema_version": 1, "methods": methods}
+
+
 def _env_dict(text: str) -> dict[str, str]:
-    from easy_sandbox.transport import config as cfg
+    from agent_sandbox.transport import config as cfg
 
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / ".env"
@@ -538,7 +733,7 @@ def _env_dict(text: str) -> dict[str, str]:
 
 
 def build_all() -> dict[str, Any]:
-    from easy_sandbox.utils.config_keys import export_schema
+    from agent_sandbox.utils.config_keys import export_schema
 
     return {
         "config-keys.json": export_schema(),
@@ -546,6 +741,7 @@ def build_all() -> dict[str, Any]:
         "tree-digest-vectors.json": tree_digest_vectors(),
         "epp-error-mapping.json": epp_error_vectors(),
         "migration-vectors.json": migration_vectors(),
+        "epp-methods.json": epp_method_table(),
     }
 
 
@@ -554,9 +750,12 @@ def render(doc: Any) -> str:
 
 
 def main() -> None:
+    cli_copy = HERE.parents[3] / "cli" / "docs" / "design" / "fixtures"
     for name, doc in build_all().items():
         (HERE / name).write_text(render(doc), encoding="utf-8")
         print("wrote", name)
+        if cli_copy.is_dir():
+            (cli_copy / name).write_text(render(doc), encoding="utf-8")
 
 
 if __name__ == "__main__":

@@ -1,8 +1,8 @@
-# Easy Sandbox — 使用示例
+# Agent Sandbox — 使用示例
 
 [English](README.md) | **中文**
 
-本目录包含 Easy Sandbox SDK 的完整使用示例，覆盖从基础操作到高级场景。
+本目录包含 Agent Sandbox SDK 的完整使用示例，覆盖从基础操作到高级场景。
 
 ## 前置条件
 
@@ -10,26 +10,26 @@
 
 ```bash
 # 完整安装（推荐，包含声明式装饰器、MCP 服务等）
-pip install "easy-sandbox[all]"
+pip install "agent-sandbox[all]"
 
 # 或按需安装
-pip install "easy-sandbox[declarative]"   # 仅 @sandbox 装饰器
+pip install "agent-sandbox[declarative]"   # 仅 @sandbox 装饰器
 
 # 从源码安装（在 python-sdk 仓库根目录执行）
 pip install -e ./server-sdk -e ./client-sdk
 
-# ebx CLI 是独立的 Node.js 项目（`cli` 仓库）
-npm install -g @easy-sandbox/cli
+# abx CLI 是独立的 Node.js 项目（`cli` 仓库）
+npm install -g @agent-sandbox/cli
 ```
 
 ### 2. 配置凭证
 
 ```bash
 # 方式一：环境变量
-export EBX_SANDBOX_API_KEY="your-api-key"
+export ABX_SANDBOX_API_KEY="your-api-key"
 
-# 方式二：CLI 配置（持久化到 ~/.ebx/config.toml；需安装 ebx CLI）
-ebx config set sandbox_api_key your-api-key
+# 方式二：CLI 配置（持久化到 ~/.abx/config.toml；需安装 abx CLI）
+abx config set sandbox_api_key your-api-key
 
 # 如需运行 Codex Agent 示例，还需配置：
 export OPENAI_API_KEY="your-openai-key-here"
@@ -65,7 +65,7 @@ examples/
     └── agents-cli/            # Codex / Qwen Code 的 Agents API，镜像不预装 CLI
 ```
 
-[`templates/python-hello/call_api.py`](templates/python-hello/call_api.py) 调用一个已经在运行的模板服务器（`GET /health`、`GET /capabilities`、`GET /commands`、一次上传、一次 shell）。基址来自命令行参数或 `EBX_TEMPLATE_URL`，令牌来自 `EBX_SERVER_TOKEN`。请求和响应形状见[模板服务器 HTTP API](../docs/zh/guide/template-server-api.md)（[English](../docs/en/guide/template-server-api.md)）。
+[`templates/python-hello/call_api.py`](templates/python-hello/call_api.py) 调用一个已经在运行的模板服务器（`GET /health`、`GET /capabilities`、`GET /commands`、一次上传、一次 shell）。基址来自命令行参数或 `ABX_TEMPLATE_URL`，令牌来自 `ABX_SERVER_TOKEN`。请求和响应形状见[模板服务器 HTTP API](../docs/zh/guide/template-server-api.md)（[English](../docs/en/guide/template-server-api.md)）。
 
 ## 示例列表
 
@@ -112,7 +112,7 @@ python examples/quickstart/04_data_analysis.py
 # @sandbox 装饰器
 python examples/quickstart/05_decorator_usage.py
 
-# E2B 兼容
+# E2B 风格用法
 python examples/compat-demos/e2b_data_analysis.py
 ```
 
@@ -121,26 +121,25 @@ python examples/compat-demos/e2b_data_analysis.py
 ### 执行方法
 
 ```python
-from easy_sandbox import Sandbox
+from agent_sandbox import Sandbox
 
 async with await Sandbox.create(template="base", api_key="...") as sandbox:
 
-    # 1. 裸 Shell —— sandbox.run(cmd)
-    proc = await sandbox.run("echo hello")
+    # 1. 裸 Shell —— sandbox.commands.run(cmd)
+    proc = await sandbox.commands.run("echo hello")
     print(proc.stdout, proc.exit_code)
 
     # 2. 代码解释器 —— sandbox.run_code(code)
     code_result = await sandbox.run_code("print(1 + 1)")
     print(code_result.text)   # "2"
 
-    # 3. 命名命令 —— sandbox.custom(name, **kwargs)
-    #    先查 template custom_commands (A)，再查 SandboxServer (B)
-    cmd_result = await sandbox.custom("hello", name="Alice")
-    print(cmd_result.value)   # 命令返回值
-    print(cmd_result.source)  # "template" 或 "server"
+    # 3. 命名命令 —— sandbox.run(name, **kwargs)
+    #    对模板 SandboxServer 发 POST /commands/hello
+    value = await sandbox.run("hello", name="Alice")
+    print(value)              # 命令返回值
 ```
 
-> **E2B 兼容：** `sandbox.commands.run(cmd)` 是 `sandbox.run()` 的底层入口。已有 E2B 代码可直接使用。
+> **说明：** `sandbox.run(name, **kwargs)` 调用注册在模板 server 里的命令，不会执行 shell 字符串。要执行 shell 请用 `sandbox.commands.run(cmd)`。
 
 ### 文件操作
 
@@ -160,7 +159,7 @@ async with await Sandbox.create(template="base", api_key="...") as sandbox:
 ### 声明式装饰器
 
 ```python
-from easy_sandbox.declarative import sandbox
+from agent_sandbox.declarative import sandbox
 
 @sandbox(template="code-interpreter", packages=["numpy"])
 def compute(n: int) -> float:

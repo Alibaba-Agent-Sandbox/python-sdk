@@ -1,8 +1,8 @@
 # Providers
 
-> **Note:** The `ebx provider ...` commands on this page are provided by the Node.js CLI in the `cli` repository. Python-only users get the same operations from `python -m easy_sandbox.providers ...`. Both use the same install directory, the same receipts and the same tree digest.
+> **Note:** The `abx provider ...` commands on this page are provided by the Node.js CLI in the `cli` repository. Python-only users get the same operations from `python -m agent_sandbox.providers ...`. Both use the same install directory, the same receipts and the same tree digest.
 
-A **provider** is a sandbox backend. Easy Sandbox ships one built-in provider and can load more from plugins.
+A **provider** is a sandbox backend. Agent Sandbox ships one built-in provider and can load more from plugins.
 
 | Id | Name | Kind | Default |
 |---|---|---|---|
@@ -19,15 +19,15 @@ Highest priority first:
 | Where | Example |
 |---|---|
 | SDK argument | `await Sandbox.create(provider="my-cloud")` |
-| CLI flag | `ebx create --provider my-cloud` |
-| Process environment | `export EBX_PROVIDER=my-cloud` |
-| `./.env` | `EBX_PROVIDER=my-cloud` |
-| `~/.ebx/.env` | `EBX_PROVIDER=my-cloud` |
-| `~/.ebx/config.toml` | `[core]` `provider = "my-cloud"` (written by `ebx provider default my-cloud`) |
+| CLI flag | `abx create --provider my-cloud` |
+| Process environment | `export ABX_PROVIDER=my-cloud` |
+| `./.env` | `ABX_PROVIDER=my-cloud` |
+| `~/.abx/.env` | `ABX_PROVIDER=my-cloud` |
+| `~/.abx/config.toml` | `[core]` `provider = "my-cloud"` (written by `abx provider default my-cloud`) |
 | Built-in | `alicloud-express` |
 
 ```python
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 sb = await Sandbox.create(template="base")                          # alicloud-express
 sb = await Sandbox.create(template="base", provider="local-process")
@@ -42,10 +42,10 @@ await sb.close()                                                    # releases t
 Default provider management:
 
 ```bash
-ebx provider list
-ebx provider default my-cloud       # persist in ~/.ebx/config.toml
-ebx provider default                # show the current default
-ebx provider default alicloud-express
+abx provider list
+abx provider default my-cloud       # persist in ~/.abx/config.toml
+abx provider default                # show the current default
+abx provider default alicloud-express
 ```
 
 ---
@@ -53,46 +53,46 @@ ebx provider default alicloud-express
 ## Installing a provider plugin
 
 ```bash
-ebx provider install ./my-provider                          # a local directory
-ebx provider install https://github.com/acme/ebx-provider-acme.git --ref 3f2c...   # a full commit
-ebx provider install git@github.com:acme/ebx-provider-acme.git --ref v1.2.0 --allow-unpinned
-ebx provider list
-ebx provider info my-cloud
-ebx provider update my-cloud --check
-ebx provider uninstall my-cloud
+abx provider install ./my-provider                          # a local directory
+abx provider install https://github.com/acme/abx-provider-acme.git --ref 3f2c...   # a full commit
+abx provider install git@github.com:acme/abx-provider-acme.git --ref v1.2.0 --allow-unpinned
+abx provider list
+abx provider info my-cloud
+abx provider update my-cloud --check
+abx provider uninstall my-cloud
 ```
 
 Without the CLI:
 
 ```bash
-python -m easy_sandbox.providers install ./my-provider
-python -m easy_sandbox.providers list --json
-python -m easy_sandbox.providers update my-cloud --check
-python -m easy_sandbox.providers doctor my-cloud
-python -m easy_sandbox.providers test my-cloud       # the contract suite (needs pytest)
+python -m agent_sandbox.providers install ./my-provider
+python -m agent_sandbox.providers list --json
+python -m agent_sandbox.providers update my-cloud --check
+python -m agent_sandbox.providers doctor my-cloud
+python -m agent_sandbox.providers test my-cloud       # the contract suite (needs pytest)
 ```
 
 ### What install does and does not do
 
 - **Nothing from the plugin is executed at install time.** There is no `setup.py`, no postinstall hook and no `git checkout`. Git sources are fetched without a checkout, every entry is validated (regular files only, no symlinks or submodules, size and count limits) and the installer writes the files itself.
 - The install shows a **consent screen**: id, version, source, resolved commit, content digest, the command that will run, the declared security block, the features, and the configuration fields. A non-interactive run needs `--yes`.
-- A source is **pinned** when you give a full 40-hex commit (`--ref`) or `--sha256 <tree digest>`. A tag or branch is **unpinned**: it could move between your review and the install. Unattended runs refuse unpinned sources unless you pass `--allow-unpinned`.
+- A source is **pinned** when you give a full 40-hex commit (`--ref`) or `--sha256 <tree digest>`. A tag or branch is **unpinned**: it could move between your review and the install. An unpinned source is accepted only after a person read the consent screen in a terminal (no `--yes`), or with `--allow-unpinned`. `--yes` on its own never accepts a moving ref: the install fails with `ProviderTrustError` (E8012) and prints the commit to pin. `provider update` follows the same rule.
 - Only `https://` and `ssh` git URLs are accepted. URLs with embedded credentials are rejected; use an SSH agent or install from a directory you cloned yourself. `--allow-insecure-transport` enables `file://`, `http://` and `git://` (for tests and development).
-- The installed files are recorded in a receipt (`.ebx-install.json`) with a SHA-256 tree digest. The digest is **verified every time the plugin starts**. If a file changed, the command fails with `ProviderIntegrityError` (E8011); reinstall or run `provider update`.
+- The installed files are recorded in a receipt (`.abx-install.json`) with a SHA-256 tree digest. The digest is **verified every time the plugin starts**. If a file changed, the command fails with `ProviderIntegrityError` (E8011); reinstall or run `provider update`.
 - `--link` makes a development symlink install with no integrity check. It needs confirmation, and every use prints a warning on stderr.
 
 ### Update and uninstall
 
-`provider update` re-fetches from the recorded source. If the command, the security block, or the feature list changed, you must consent again. Installs that are **pinned** (a 40-hex commit or `--sha256`) do not move: `update` reports `pinned` and does nothing unless you pass a new `--ref`. `update` takes the same transport and verification flags as `install`: `--ref`, `--check`, `--yes`, `--allow-unpinned`, `--allow-insecure-transport` (the receipt does not remember that you used it; a `file://`, `http://` or `git://` source needs it on every update) and `--no-verify` (skip the post-update handshake). The previous version stays in a trash directory until the new one starts successfully, then it is dropped. If the new version fails (for example its handshake), the previous files **and its `data/` directory** are restored exactly. `provider uninstall` removes the directory; stored settings (`[providers.<id>]`, `EBX_<ID>_*`) stay unless you pass `--purge`. Uninstalling the default provider resets the default to `alicloud-express`.
+`provider update` re-fetches from the recorded source. If the command, the security block, or the feature list changed, you must consent again. Installs that are **pinned** (a 40-hex commit or `--sha256`) do not move: `update` reports `pinned` and does nothing unless you pass a new `--ref`. `update` takes the same transport and verification flags as `install`: `--ref`, `--check`, `--yes`, `--allow-unpinned`, `--allow-insecure-transport` (the receipt does not remember that you used it; a `file://`, `http://` or `git://` source needs it on every update) and `--no-verify` (skip the post-update handshake). The previous version stays in a trash directory until the new one starts successfully, then it is dropped. If the new version fails (for example its handshake), the previous files **and its `data/` directory** are restored exactly. `provider uninstall` removes the directory; stored settings (`[providers.<id>]`, `ABX_<ID>_*`) stay unless you pass `--purge`. Uninstalling the default provider resets the default to `alicloud-express`.
 
 ### Where things live
 
 ```text
-~/.ebx/providers/
+~/.abx/providers/
   <id>/
-    ebx-provider.toml     # manifest
+    abx-provider.toml     # manifest
     ...                   # plugin files
-    .ebx-install.json     # receipt: source, commit, digest, consent
+    .abx-install.json     # receipt: source, commit, digest, consent
     data/                 # the plugin's working and state directory (not hashed)
 ```
 
@@ -128,13 +128,76 @@ A provider declares the features it implements. Calling something it lacks raise
 | `storage.mount`, `network.vpc` | object-storage mounts; VPC attachment |
 | `sessions` | the sandbox survives the process and can be re-attached by id |
 
-`alicloud-express` implements all 18 features. `ebx provider info <id>` shows what a plugin declares.
+`alicloud-express` implements all 18 features. `abx provider list` shows the declared features of every provider on one line (`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`; `python -m agent_sandbox.providers list` prints the same), and `abx provider info <id>` shows the full list.
+
+The manifest flag is enforced at run time, for every provider kind:
+
+| Kind | Where an undeclared feature is stopped | Result |
+|---|---|---|
+| `exec` | the EPP adapters, before the request is written to the plugin | E8004 |
+| `rest` | `feature_gate` around the built-in protocol classes, before any HTTP request | E8004 |
+| `python` | `Provider.require(feature)` in the provider's own code | E8004 |
+
+A feature that is declared but fails inside the backend is not E8004; the backend's error is mapped (see Errors below). Two different "not found" outcomes are kept apart on purpose: an unknown **sandbox id** is `SandboxNotFoundError` (E2009) on every provider and every `sandbox.*` call (`connect`, `info`, `set_timeout`, `pause`, `resume`; `kill` stays idempotent), and a missing template, file or process is E4001/E2001 or, with no `sdk_code`, `ProviderResourceNotFoundError` (E8005).
+
+### What you can call after installing
+
+Installing a provider does not enable every SDK method or every `abx` command. The SDK and the CLI call **the same installed plugin**. Each method and command needs one feature from the table above. If the plugin does not declare it, the call raises `ProviderFeatureNotSupportedError` (E8004) before any request is sent. `exec` and `rest` plugins work from both hosts. A `python` provider registered in-process works from the SDK only.
+
+| Feature | Python SDK | CLI |
+|---|---|---|
+| `sandbox.lifecycle` | `Sandbox.create`, `connect`, `list`, `kill`, `info` | `create`, `list`, `info`, `kill`, `connect` |
+| `sandbox.timeout` | `set_timeout` | `sandbox timeout` |
+| `sandbox.pause` | `pause`, `resume` | `sandbox pause`, `sandbox resume` |
+| `exec.run` | `commands.run`, `sandbox.run` | `exec`, `run` |
+| `exec.stream` | `commands.stream` | `sandbox shell-stream` |
+| `process.manage` | `commands.list`, `kill`, `send_stdin` | `sandbox process ...` |
+| `pty` | `get_terminal` | PTY session |
+| `files.rw` | `files.*` | `upload`, `download`, `sandbox files ...` |
+| `files.watch` | `files.watch` | — |
+| `files.transfer` | signed upload and download URLs | — |
+| `code.interpret` | `run_code` | `sandbox code` |
+| `templates.read` | template read APIs | `template list`, `template info` |
+| `templates.build` | image build and template registration | `template build/push/create/deploy/install/delete`, `deploy`, `install` |
+| `ports.url` | `network.get_url` | `sandbox url` |
+| `ports.domain` | custom domain configuration | — |
+| `storage.mount` | OSS mount | — |
+| `network.vpc` | VPC configuration | `--vpc-id` family |
+| `sessions` | `Sandbox.connect` on an existing id | `connect <provider:id>` |
+
+### OpenSandbox
+
+```bash
+abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox
+```
+
+`//opensandbox` is the directory inside the catalog, the same spelling as `abx template install alibaba-agent-sandbox/awesome-templates//python-hello`. Then:
+
+```python
+sb = await Sandbox.create(template="base", provider="opensandbox")
+proc = await sb.commands.run("echo hello")
+await sb.files.write("/tmp/note.txt", "hello")
+print(await sb.files.read("/tmp/note.txt"))
+await sb.kill()
+```
+
+**Verified status (2026-10-13)**, against a real `opensandbox-server` 1.1.1 with the Docker runtime, from the Node CLI and from `Sandbox.create(provider="opensandbox")` (evidence: [2026-10-13-opensandbox-provider-e2e](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/evidence/verify/2026-10-13-opensandbox-provider-e2e.md)):
+
+| Works (run for real) | Does not work |
+|---|---|
+| install pinned from git, doctor, the 18-case contract kit (18/18 on both hosts); create with an image URI, info, list, connect by id, kill (idempotent), `E2009` for a killed sandbox; `commands.run` exit code, stderr, env; 300 KB binary and unicode file round trip, directory listing, typed `E4001` for a missing file; process list (3 processes); `set_timeout`, `pause` (status `paused`), `resume` (command runs again); `network.resolve(9000)` (server proxy URL); tampering with an installed file stops every command with `E8011` | `run_code`, PTY, `files.watch`, template build/deploy, signed transfer URLs, domains, OSS, VPC: all answer `E8004` naming the feature. Not verified: the egress sidecar network policy (`network_policy` option), private registries, the `secure_access` token flow, `exec` with `process.manage` `send_stdin` |
+
+One gap that was found and is not a provider problem: the awesome-providers catalog still ships the pre-rename `ebx-provider.toml`, so installing it straight from GitHub fails with `E8014` (no `abx-provider.toml` at the plugin root).
+
+OpenSandbox declares nine features: `sandbox.lifecycle`, `sandbox.timeout`, `sandbox.pause`, `exec.run`, `exec.stream`, `process.manage`, `files.rw`, `ports.url`, `sessions`. Those SDK methods and the matching CLI commands work. These do not, and raise E8004: `run_code`, PTY, template list/build/deploy, file watch, signed transfer URLs, custom domains, OSS, VPC. Process list, kill, and signal work; `send_stdin` raises E8004, and killing an execd command id is SIGKILL only.
+
+The plugin is Node.js with no npm packages, so the SDK needs `node` on `PATH`. The default server is `http://127.0.0.1:8080` (`providers.opensandbox.base_url`). A template name is a container image; `base` means `python:3.12-slim` unless `default_image` is set. Field-by-field notes: [opensandbox/README.md](https://github.com/alibaba-agent-sandbox/awesome-providers/blob/main/opensandbox/README.md).
 
 ---
 
 ## Writing a provider
 
-A plugin is a directory with `ebx-provider.toml` and the program it runs.
+A plugin is a directory with `abx-provider.toml` and the program it runs.
 
 ```toml
 manifest_version = 1
@@ -162,19 +225,29 @@ spawns_processes = true
 [core]
 inherit = []                             # generic keys the plugin wants; needs user consent
 
-[config.fields.workdir_root]             # the plugin's own settings: EBX_LOCAL_PROCESS_WORKDIR_ROOT
+[config.fields.workdir_root]             # the plugin's own settings: ABX_LOCAL_PROCESS_WORKDIR_ROOT
 type    = "path"
 required = false
 description = "Directory that holds sandbox working directories"
 ```
 
-Two working examples are in the repository:
+Two working examples are in this repository:
 
 - `examples/providers/local-process/` — an `exec` provider in about 200 lines of Python standard library (lifecycle, commands, files).
 - `examples/providers/e2b-compatible/` — a `rest` provider that is only a manifest.
-- `examples/providers/opensandbox/` — a complete, dependency-free Node `exec` provider for an [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) server: streaming exec, files, process control, pause/resume and port URLs, with mock-server and live tests.
 
-Development loop: `python -m easy_sandbox.providers install ./my-provider --link --yes` installs a symlink with no digest check, so edits take effect immediately. Run `doctor`, then `test` (below), then install a pinned copy for real use.
+The OpenSandbox plugin is a separate installable provider, not part of this repository: [opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox) in [alibaba-agent-sandbox/awesome-providers](https://github.com/alibaba-agent-sandbox/awesome-providers). It is a dependency-free Node `exec` provider for an [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) server (streaming exec, files, process control, pause/resume, port URLs, mock-server and live tests). Install it with `abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox`.
+
+### Authoring checklist
+
+1. **Manifest**: `manifest_version = 1`, a valid id, `[compat] protocol = "epp/1"` and `requires`, `[runtime] kind = "exec"` (or a `rest` endpoint), `[config.fields.*]` for every option with `secret = true` on secrets and `env = [...]` for the vendor's own variable names. Errors are `E8014` with the broken field named.
+2. **Required methods**: `initialize` (return the features you implement), `shutdown`, and for `sandbox.lifecycle` `sandbox.create|get|list|kill`. Everything else is per feature (see "Methods a plugin answers").
+3. **Feature flags**: declare exactly what works and nothing else. The host answers E8004 for the rest without calling you.
+4. **Errors**: `-32003` for a feature you lack, `-32002` for a missing sandbox (`sdk_code` `E2009` if you want to be explicit), `sdk_code` on everything that has an SDK class, never a credential in a message.
+5. **Conformance**: `python -m agent_sandbox.providers test <id>` (or `abx provider test <id>`) must pass; skipped cases are the features you did not declare.
+6. **Publish**: pinned install line with a 40-hex commit, an honest `[security]` block, the consent-screen contents in the README.
+
+Development loop: `python -m agent_sandbox.providers install ./my-provider --link --yes` installs a symlink with no digest check, so edits take effect immediately. Run `doctor`, then `test` (below), then install a pinned copy for real use.
 
 ### Methods a plugin answers
 
@@ -185,7 +258,7 @@ The wire methods, their parameter names and types, and which are required are li
 - **Extensions** the host does not call yet but plugins may offer: `files.search`, `files.chmod`, `exec.start{detached}`, `files.read{offset,length}`, `files.write{mode,append}`.
 - `files.move` takes `{sandbox_id, source, destination, overwrite?}` (a plugin may also accept `src`/`dest`).
 - `exec.start` returns a **string** `process_id`. The `pid` of `process.kill|signal|stdin` is an opaque id: either the integer `pid` of a `process.list` entry or that string; `ProcessInfo.pid` and `commands.kill(pid)` accept both.
-- Unknown error `sdk_code` values fall back to the EPP code's default class. The accepted values are the SDK error codes the host maps, for example `E1001` (bad credentials), `E2000`/`E2001` (sandbox/template not found), `E3001` (command timeout) and `E4001` (file not found); see the [error code reference](../reference/error-codes.md). A bare `-32002` for a missing **file** becomes E8005 (sandbox not found), so send `sdk_code: "E4001"`.
+- Unknown error `sdk_code` values fall back to the EPP code's default class. The accepted values are the SDK error codes the host maps, for example `E1001` (bad credentials), `E2000`/`E2001` (sandbox/template not found), `E3001` (command timeout) and `E4001` (file not found); see the [error code reference](../reference/error-codes.md). A bare `-32002` for a missing **file** becomes E8005, so send `sdk_code: "E4001"`; a bare `-32002` for an unknown sandbox on `sandbox.get`/`connect`/`set_timeout`/`pause`/`resume` becomes E2009 (a plugin may also say `sdk_code: "E2009"`).
 - Manifest defaults are **delivered** in `initialize.config`. Do not put a default on a field that has an alternative (`base_url` next to `domain`): the default would always win.
 - `$/cancel {id}` for a running request means: stop the work (kill the spawned process) and answer with an error or the final result.
 
@@ -205,13 +278,13 @@ The wire methods, their parameter names and types, and which are required are li
 
 ### Configuration and credentials
 
-Each provider has its own scoped keys: `EBX_<PROVIDER>_<KEY>` in the environment or `.env`, `[providers.<id>]` in `config.toml`, `provider_options={...}` in the SDK. The provider receives only the keys its manifest declares, in the `initialize` request. Secrets are never put in the plugin's argv or environment.
+Each provider has its own scoped keys: `ABX_<PROVIDER>_<KEY>` in the environment or `.env`, `[providers.<id>]` in `config.toml`, `provider_options={...}` in the SDK. The provider receives only the keys its manifest declares, in the `initialize` request. Secrets are never put in the plugin's argv or environment.
 
-The generic keys `sandbox_api_key`, `sandbox_base_url` and `sandbox_domain` (`EBX_SANDBOX_API_KEY` and `EBX_SANDBOX_BASE_URL`) belong to the built-in provider. A plugin gets them only if its manifest lists them in `[core] inherit` **and** you consented at install or update time. The consent screen names the keys. Your LLM, GitHub and MCP keys are never delivered to a provider.
+The generic keys `sandbox_api_key`, `sandbox_base_url` and `sandbox_domain` (`ABX_SANDBOX_API_KEY` and `ABX_SANDBOX_BASE_URL`) belong to the built-in provider. A plugin gets them only if its manifest lists them in `[core] inherit` **and** you consented at install or update time. The consent screen names the keys. Your LLM, GitHub and MCP keys are never delivered to a provider.
 
 ### What the host does to the plugin process
 
-- Starts it with a scrubbed environment: `PATH`, `HOME`, temp and locale variables, names listed in `env_passthrough`, and `EBX_PROVIDER_DATA_DIR`. No `EBX_*`, `E2B_*`, `ALICLOUD_*`, `GITHUB_TOKEN` or `OPENAI_*` leak in. The working directory is the plugin's `data/` directory.
+- Starts it with a scrubbed environment: `PATH`, `HOME`, temp and locale variables, names listed in `env_passthrough`, and `ABX_PROVIDER_DATA_DIR`. No `ABX_*`, `E2B_*`, `ALICLOUD_*`, `GITHUB_TOKEN` or `OPENAI_*` leak in. The working directory is the plugin's `data/` directory.
 - Limits a protocol line to 8 MiB and keeps the last 64 KiB of stderr for crash messages. Values it sent in `initialize` are redacted from captured stderr and errors.
 - Applies timeouts (default 10 s to start, 60 s per call) and kills the whole process group on timeout, crash or close.
 - Retries only idempotent methods, and only on errors the plugin marks `retryable`.
@@ -225,7 +298,7 @@ The host maps plugin errors onto the existing exception hierarchy, so scripts se
 | EPP code | Raised as | CLI exit |
 |---|---|---|
 | `-32001` unauthenticated | `AuthenticationError` family (E1xxx) | 3 |
-| `-32002` not found | `ProviderResourceNotFoundError` (E8005), or the class named by `data.sdk_code` | 4 |
+| `-32002` not found | `SandboxNotFoundError` (E2009) for a `sandbox.*` call on an existing id; otherwise `ProviderResourceNotFoundError` (E8005), or the class named by `data.sdk_code` | 4 |
 | `-32003` feature not supported | `ProviderFeatureNotSupportedError` (E8004) | 1 |
 | `-32004` quota exceeded | `QuotaExceededError` | 6 |
 | `-32005` timeout | `ProviderTimeoutError` (E8022) or `CommandTimeoutError` | 5 |
@@ -241,44 +314,44 @@ Three ways to run the contract suite, from least to most work. The suite only ex
 
 ```bash
 # 1. One command, no test file. Fails when nothing was collected.
-python -m easy_sandbox.providers test my-cloud --option base_url=http://127.0.0.1:8080
-python -m easy_sandbox.providers test my-cloud -- -k exec -x      # extra pytest arguments after --
+python -m agent_sandbox.providers test my-cloud --option base_url=http://127.0.0.1:8080
+python -m agent_sandbox.providers test my-cloud -- -k exec -x      # extra pytest arguments after --
 
 # 2. Plain pytest, no test file
-pytest -p easy_sandbox.providers.testing --pyargs easy_sandbox.providers.contract \
+pytest -p agent_sandbox.providers.testing --pyargs agent_sandbox.providers.contract \
        --provider-under-test my-cloud --provider-option base_url=http://127.0.0.1:8080
 ```
 
 ```python
 # 3. A subclass in your plugin's own tests
-from easy_sandbox.providers.testing import ProviderContractTests
+from agent_sandbox.providers.testing import ProviderContractTests
 
 class TestMyProvider(ProviderContractTests):
     provider_id = "my-cloud"          # an installed provider
     provider_options = {}
 ```
 
-(`--provider-under-test` and `--provider-option KEY=VALUE`, repeatable, are registered when `easy_sandbox.providers.testing` is loaded as a pytest plugin with `-p`. `EBX_PROVIDER_UNDER_TEST` sets the default. With no provider selected the suite **fails** instead of skipping.)
+(`--provider-under-test` and `--provider-option KEY=VALUE`, repeatable, are registered when `agent_sandbox.providers.testing` is loaded as a pytest plugin with `-p`. `ABX_PROVIDER_UNDER_TEST` sets the default. With no provider selected the suite **fails** instead of skipping.)
 
-What it checks: declared features are known; secret fields have no default; lifecycle (create, connect, list, kill, unknown id is `E8005`); `kill` is idempotent; `set_timeout`; pause and resume; `exec.run` exit codes, stderr and env; streamed output order with exactly one final `exit`; that a command timeout is enforced; process listing; files (text, binary, unicode, directories, move, remove, missing file is a typed not-found); `ports.url`; that features you did **not** declare fail with E8004 (a `CapabilityNotSupportedError`); and that secret option values never appear in error text.
+What it checks: declared features are known; secret fields have no default; lifecycle (create, connect, list, kill, unknown id is `E2009`); `kill` is idempotent; `set_timeout`; pause and resume; `exec.run` exit codes, stderr and env; streamed output order with exactly one final `exit`; that a command timeout is enforced; process listing; files (text, binary, unicode, directories, move, remove, missing file is a typed not-found); `ports.url`; that features you did **not** declare fail with E8004 (a `CapabilityNotSupportedError`); and that secret option values never appear in error text.
 
-Offline testing: the kit needs a working backend. For a plugin that talks to HTTP, write a small mock server and drive the plugin over stdio with a tiny JSON-RPC client; `examples/providers/opensandbox/tests/` has both (`tests/mock/`, `tests/epp-client.mjs`).
+Offline testing: the kit needs a working backend. For a plugin that talks to HTTP, write a small mock server and drive the plugin over stdio with a tiny JSON-RPC client. The [opensandbox plugin](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox) has both (`tests/mock/`, `tests/epp-client.mjs`).
 
 Check an installed provider's wiring without running a sandbox:
 
 ```bash
-python -m easy_sandbox.providers doctor my-cloud          # manifest, digest, handshake, credentials
-python -m easy_sandbox.providers doctor my-cloud --no-handshake
+python -m agent_sandbox.providers doctor my-cloud          # manifest, digest, handshake, credentials
+python -m agent_sandbox.providers doctor my-cloud --no-handshake
 ```
 
-Running `pytest` from a directory that has an unrelated `conftest.py`? Add `--noconftest` (or `--confcutdir`). `python -m easy_sandbox.providers test` already isolates itself from the current directory's pytest configuration.
+Running `pytest` from a directory that has an unrelated `conftest.py`? Add `--noconftest` (or `--confcutdir`). `python -m agent_sandbox.providers test` already isolates itself from the current directory's pytest configuration.
 
 ---
 
 ## Python plugins (SDK only)
 
 ```python
-from easy_sandbox.providers import Provider, register_provider
+from agent_sandbox.providers import Provider, register_provider
 
 class MyProvider(Provider):
     id = "my-cloud"
@@ -287,7 +360,7 @@ class MyProvider(Provider):
 register_provider(MyProvider())
 ```
 
-A package can also publish an entry point in the group `easy_sandbox.providers` that points to a `Provider` instance or a zero-argument factory; it is loaded the first time providers are listed. These providers run in your process with full trust, so they cannot be installed by `ebx provider install`.
+A package can also publish an entry point in the group `agent_sandbox.providers` that points to a `Provider` instance or a zero-argument factory; it is loaded the first time providers are listed. These providers run in your process with full trust, so they cannot be installed by `abx provider install`.
 
 ---
 

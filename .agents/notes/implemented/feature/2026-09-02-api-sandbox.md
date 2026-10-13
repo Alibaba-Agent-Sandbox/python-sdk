@@ -43,7 +43,7 @@ class Sandbox:
 Sync variants are exposed via a `_sync` suffix.
 
 ## Implementation
-- **Source**: `src/easy_sandbox/api/sandbox.py`
+- **Source**: `src/agent_sandbox/api/sandbox.py`
 - **Tests**: `tests/test_api/test_sandbox.py`
 - **Future extensions**: `deploy()` classmethod (AI-driven deployment), `list_commands()` command discovery
 

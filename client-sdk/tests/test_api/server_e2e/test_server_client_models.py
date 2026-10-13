@@ -1,4 +1,4 @@
-"""Pure unit tests: error mapping, models, ServerCapabilities, URL derivation, legacy servers."""
+"""Pure unit tests: error mapping, models, ServerCapabilities, URL derivation."""
 
 from __future__ import annotations
 
@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from easy_sandbox.api.server_capabilities import ENDPOINT_GROUPS, ServerCapabilities
-from easy_sandbox.api.server_client import ServerClient, error_from_response
-from easy_sandbox.models import errors
-from easy_sandbox.models.server import (
+from agent_sandbox.api.server_capabilities import ServerCapabilities
+from agent_sandbox.api.server_client import ServerClient, error_from_response
+from agent_sandbox.models import errors
+from agent_sandbox.models.server import (
     ProcessOutput,
     ProcessOutputEvent,
     ServerFileEntry,
@@ -63,11 +63,6 @@ class TestErrorMapping:
                 },
                 errors.EndpointNotAvailableError,
             ),
-            (
-                404,
-                {"error": "Built-in route 'git_diff' is disabled", "type": "ValueError"},
-                errors.EndpointNotAvailableError,
-            ),
             (404, {"error": "nf", "type": "FileNotFoundError"}, errors.FileNotFoundError_),
             (
                 413,
@@ -114,10 +109,37 @@ class TestErrorMapping:
         )
         assert (err.endpoint, err.scope, err.code) == ("upload", "files:write", "E9002")
 
-    def test_legacy_disabled_message_names_the_endpoint(self) -> None:
-        err = error_from_response(404, {"error": "Built-in route 'git_diff' is disabled"})
+    def test_disabled_endpoint_names_the_rule(self) -> None:
+        err = error_from_response(
+            404,
+            {
+                "error": "Endpoint 'git_diff' is disabled: group 'dev_tools' is opt-in.",
+                "type": "ValueError",
+                "code": "endpoint_disabled",
+                "endpoint": "git_diff",
+                "rule": "default:opt-in:dev_tools",
+            },
+        )
         assert isinstance(err, errors.EndpointNotAvailableError)
         assert err.endpoint == "git_diff" and err.capability == "git_diff"
+        assert err.rule == "default:opt-in:dev_tools" and "opt-in" in str(err)
+
+    def test_path_violation_is_a_403_file_denial(self) -> None:
+        err = error_from_response(
+            403,
+            {
+                "error": "cwd: Path is outside the allowed directories",
+                "type": "PolicyDenied",
+                "code": "path_not_allowed",
+                "endpoint": "shell",
+            },
+        )
+        assert isinstance(err, errors.FilePolicyDeniedError)
+        assert (err.status_code, err.error_code, err.endpoint) == (403, "path_not_allowed", "shell")
+
+    def test_plain_404_is_not_an_endpoint_denial(self) -> None:
+        err = error_from_response(404, {"error": "Not found: /x", "type": "ValueError"})
+        assert type(err) is errors.ServerAPIError
 
     def test_retry_after_from_header_fallback(self) -> None:
         err = error_from_response(
@@ -186,6 +208,10 @@ class TestServerCapabilities:
         "api_version": 2,
         "server_version": "0.3.0",
         "groups": {"file_ops": True, "process": False},
+        "group_summary": {
+            "file_ops": {"enabled": 2, "total": 2},
+            "process": {"enabled": 0, "total": 9},
+        },
         "identity": {"id": "ci", "scopes": ["files:read"]},
         "policy": {"preset": "read-only", "revision": "abc", "configured": True},
         "warnings": ["w"],
@@ -207,13 +233,18 @@ class TestServerCapabilities:
                 "scopes": ["files:write"],
                 "params": {"overwrite": False},
             },
-            "shell": {"enabled": False, "allowed": False, "reason": "endpoint_disabled"},
+            "shell": {
+                "enabled": False,
+                "allowed": False,
+                "reason": "endpoint_disabled",
+                "rule": "policy:groups.process",
+            },
         },
     }
 
     def test_queries(self) -> None:
         caps = ServerCapabilities(self.DOC)
-        assert caps.legacy is False and caps.preset == "read-only" and caps.revision == "abc"
+        assert caps.preset == "read-only" and caps.revision == "abc"
         assert caps.can("files_list") and not caps.can("upload") and not caps.can("shell")
         assert not caps.can("never_heard_of_it")
         assert caps.limit("files_list", "max_entries") == 50
@@ -239,34 +270,25 @@ class TestServerCapabilities:
         with pytest.raises(errors.EndpointNotAvailableError):
             caps.require("brand_new_endpoint")
 
-    def test_legacy_document_gates_by_group_only(self) -> None:
-        caps = ServerCapabilities(
-            {"groups": {"file_ops": True, "process": False, "dev_tools": False}}
-        )
-        assert caps.legacy is True
-        assert caps.can("files_list") and caps.can("upload")
-        assert not caps.can("shell") and not caps.can("process_start") and not caps.can("code_run")
-        assert caps.can("something_unknown") is True
-        assert caps.limit("files_list", "max_entries") is None
-        assert caps.paths("files_list") is None and caps.available() == []
-        assert "legacy=True" in repr(caps)
-        with pytest.raises(errors.EndpointNotAvailableError):
+    def test_group_views_and_rule_codes(self) -> None:
+        caps = ServerCapabilities(self.DOC)
+        assert caps.groups == {"file_ops": True, "process": False}
+        assert caps.group_summary["process"] == {"enabled": 0, "total": 9}
+        assert caps.rule("shell") == "policy:groups.process" and caps.rule("files_list") is None
+        with pytest.raises(errors.EndpointNotAvailableError) as disabled:
             caps.require("shell")
+        assert disabled.value.rule == "policy:groups.process"
+        assert "policy:groups.process" in str(disabled.value)
 
-    def test_empty_document_uses_default_groups(self) -> None:
-        caps = ServerCapabilities({})
-        assert caps.legacy and caps.can("files_list") and not caps.can("code_run")
+    def test_document_without_endpoints_allows_nothing(self) -> None:
+        caps = ServerCapabilities({"groups": {"file_ops": True}})
+        assert not caps.can("files_list") and caps.available() == []
+        assert caps.denial("files_list") == "unknown_endpoint"
 
-    async def test_check_path_needs_a_discovering_server(self) -> None:
-        caps = ServerCapabilities({"groups": {}})
-        with pytest.raises(errors.EndpointNotAvailableError):
-            await caps.check_path("files_list", "/x")
+    async def test_check_path_needs_a_bound_client(self) -> None:
         unbound = ServerCapabilities(self.DOC)
         with pytest.raises(RuntimeError):
             await unbound.check_path("files_list", "/x")
-
-    def test_endpoint_groups_cover_known_client_endpoints(self) -> None:
-        assert set(ServerClient.ENDPOINT_METHODS) - set(ENDPOINT_GROUPS) == set()
 
 
 class TestClientConfiguration:
@@ -335,13 +357,13 @@ def plain_server() -> Iterator[str]:
     httpd.server_close()
 
 
-class TestLegacyServerStub:
-    """A pre-policy server: ``/capabilities`` lists groups only."""
+class TestForeignServerStub:
+    """A server whose ``/capabilities`` lists no endpoints: nothing is assumed available."""
 
-    async def test_discover_marks_legacy_and_gates_by_group(self, plain_server: str) -> None:
+    async def test_discover_without_endpoints_blocks_every_call(self, plain_server: str) -> None:
         client = ServerClient(plain_server, timeout=5)
         caps = await client.discover()
-        assert caps.legacy and caps.can("files_list") and not caps.can("shell")
+        assert not caps.can("files_list") and not caps.can("shell")
         with pytest.raises(errors.EndpointNotAvailableError):
             await client.process.shell("echo hi")
         assert await client.health() is True

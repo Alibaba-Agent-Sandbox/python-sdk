@@ -10,8 +10,8 @@ import threading
 import time
 from typing import TYPE_CHECKING, Any
 
-from easy_sandbox.server.registry import CommandRegistry
-from easy_sandbox.server.router import RouteTable
+from agent_sandbox.server.registry import CommandRegistry
+from agent_sandbox.server.router import RouteTable
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -100,9 +100,9 @@ class TestAuthentication:
         assert status == 200 and body["identity"] == {"id": "anonymous", "scopes": ["files:read"]}
 
     def test_token_env_resolution(self, live_server: Any, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("EBX_T_ENV", "from-env-token")
+        monkeypatch.setenv("ABX_T_ENV", "from-env-token")
         live: Live = live_server(
-            policy={"auth": {"tokens": [{"id": "e", "token_env": "EBX_T_ENV", "scopes": ["*"]}]}}
+            policy={"auth": {"tokens": [{"id": "e", "token_env": "ABX_T_ENV", "scopes": ["*"]}]}}
         )
         assert live.get("/capabilities", headers=hdr("from-env-token"))[0] == 200
         assert live.get("/capabilities", headers=hdr("other"))[0] == 401
@@ -110,7 +110,7 @@ class TestAuthentication:
     def test_legacy_env_token_still_works_with_policy(
         self, live_server: Any, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv("EBX_SERVER_TOKEN", "legacy-secret")
+        monkeypatch.setenv("ABX_SERVER_TOKEN", "legacy-secret")
         live: Live = live_server(policy={"preset": "default"})
         assert live.get("/capabilities")[0] == 401
         status, body = live.get("/capabilities", headers=hdr("legacy-secret"))
@@ -119,7 +119,7 @@ class TestAuthentication:
     def test_legacy_scopes_can_be_narrowed(
         self, live_server: Any, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv("EBX_SERVER_TOKEN", "legacy-secret")
+        monkeypatch.setenv("ABX_SERVER_TOKEN", "legacy-secret")
         live: Live = live_server(policy={"auth": {"legacy_scopes": ["files:read"]}})
         assert live.post("/shell", {"command": "true"}, headers=hdr("legacy-secret"))[0] == 403
 
@@ -187,13 +187,13 @@ class TestScopes:
             "GET",
             "/hello",
             group=__import__(
-                "easy_sandbox.server.router", fromlist=["CapabilityGroup"]
+                "agent_sandbox.server.router", fromlist=["CapabilityGroup"]
             ).CapabilityGroup.CORE,
             name="hello",
             scopes=["hello:read"],
         )
         def hello(request: Any) -> Any:
-            from easy_sandbox.server.types import ServerResponse
+            from agent_sandbox.server.types import ServerResponse
 
             return ServerResponse.ok({"hi": request.context["policy"].identity.id})
 
@@ -308,15 +308,25 @@ class TestLimitsAndRates:
         assert not (sandbox_tree / "big").exists()
 
 
+def _audit_events(caplog: pytest.LogCaptureFixture, expected: int) -> list[dict[str, Any]]:
+    """The audit line is written after the response; wait for it instead of racing."""
+    deadline = time.monotonic() + 3
+    while True:
+        events = [json.loads(r.message) for r in caplog.records if r.name.endswith("audit")]
+        if len(events) >= expected or time.monotonic() > deadline:
+            return events
+        time.sleep(0.02)
+
+
 class TestAudit:
     def test_deny_mode_logs_only_denials(
         self, live_server: Any, caplog: pytest.LogCaptureFixture, sandbox_tree: Path
     ) -> None:
         live: Live = live_server(policy=tokens_policy())
-        with caplog.at_level(logging.INFO, logger="easy_sandbox.server.audit"):
+        with caplog.at_level(logging.INFO, logger="agent_sandbox.server.audit"):
             live.get(f"/files/stat?path={sandbox_tree}", headers=hdr(READER))
             live.post("/files/mkdir", {"path": str(sandbox_tree / "n")}, headers=hdr(READER))
-        events = [json.loads(r.message) for r in caplog.records if r.name.endswith("audit")]
+            events = _audit_events(caplog, expected=1)
         assert len(events) == 1
         event = events[0]
         assert event["endpoint"] == "files_mkdir" and event["decision"] == "deny"
@@ -328,14 +338,14 @@ class TestAudit:
     ) -> None:
         live: Live = live_server(policy=tokens_policy(endpoints={"files_stat": {"audit": "all"}}))
         path = str(sandbox_tree / "out" / "a.txt")
-        with caplog.at_level(logging.INFO, logger="easy_sandbox.server.audit"):
+        with caplog.at_level(logging.INFO, logger="agent_sandbox.server.audit"):
             live.get(f"/files/stat?path={path}", headers=hdr(READER))
-        event = json.loads(caplog.records[-1].message)
+            event = _audit_events(caplog, expected=1)[-1]
         assert event["decision"] == "allow" and event["paths"] == [path]
 
     def test_off_mode_is_silent(self, live_server: Any, caplog: pytest.LogCaptureFixture) -> None:
         live: Live = live_server(policy=tokens_policy(defaults={"audit": "off"}))
-        with caplog.at_level(logging.INFO, logger="easy_sandbox.server.audit"):
+        with caplog.at_level(logging.INFO, logger="agent_sandbox.server.audit"):
             live.get("/capabilities")
         assert not [r for r in caplog.records if r.name.endswith("audit")]
 
@@ -344,11 +354,12 @@ class TestAudit:
     ) -> None:
         live: Live = live_server(policy=tokens_policy(defaults={"audit": "all"}))
         evil = str(sandbox_tree / 'a\nINJECTED {"x":1}')
-        with caplog.at_level(logging.INFO, logger="easy_sandbox.server.audit"):
+        with caplog.at_level(logging.INFO, logger="agent_sandbox.server.audit"):
             live.get(
                 "/files/stat?path=" + evil.replace("\n", "%0A").replace(" ", "%20"),
                 headers=hdr(READER),
             )
+            _audit_events(caplog, expected=1)
         records = [r for r in caplog.records if r.name.endswith("audit")]
         assert records
         for record in records:
@@ -442,7 +453,9 @@ class TestDiscovery:
         assert body["groups"]["file_ops"] is True and body["groups"]["browser"] is False
         assert body["policy"]["configured"] is False
         assert body["endpoints"]["files_list"]["allowed"] is True
-        assert body["endpoints"]["browser_navigate"]["reason"] == "group_disabled"
+        navigate = body["endpoints"]["browser_navigate"]
+        assert navigate["reason"] == "endpoint_disabled"
+        assert navigate["rule"] == "default:opt-in:browser"
 
 
 class TestSecrets:
@@ -450,18 +463,18 @@ class TestSecrets:
         self, live_server: Any, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("MY_PLAIN_NAME", "visible")
-        monkeypatch.setenv("EBX_UPLOADER_CRED", "super-secret-1")
+        monkeypatch.setenv("ABX_UPLOADER_CRED", "super-secret-1")
         policy = {
             "auth": {
                 "tokens": [
-                    {"id": "a", "token_env": "EBX_UPLOADER_CRED", "scopes": ["*"]},
+                    {"id": "a", "token_env": "ABX_UPLOADER_CRED", "scopes": ["*"]},
                 ]
             }
         }
         live: Live = live_server(policy=policy)
         _, body = live.get("/env", headers=hdr("super-secret-1"))
         assert body["variables"].get("MY_PLAIN_NAME") == "visible"
-        assert "EBX_UPLOADER_CRED" not in body["variables"]
+        assert "ABX_UPLOADER_CRED" not in body["variables"]
         assert "super-secret-1" not in json.dumps(body)
 
     def test_child_processes_do_not_inherit_token_env(

@@ -1,18 +1,18 @@
-# Contributing to Easy Sandbox
+# Contributing to Agent Sandbox
 
 Thank you for your interest in contributing! This guide will help you get started.
 
 ## Repository Layout
 
 This repository (`python-sdk`) holds the **Python SDK**, which is released as two PyPI
-distributions that share the `easy_sandbox` namespace and are versioned in lockstep:
+distributions that share the `agent_sandbox` namespace and are versioned in lockstep:
 
 | Folder | PyPI distribution | Import path | Purpose |
 |--------|-------------------|-------------|---------|
-| `client-sdk/` | `easy-sandbox` | `easy_sandbox` | Async client SDK (`Sandbox`, templates API, `@sandbox`, MCP server, E2B compat, ...) |
-| `server-sdk/` | `easy-sandbox-server` | `easy_sandbox.server` | Container-side runtime that runs inside sandbox images |
+| `client-sdk/` | `agent-sandbox` | `agent_sandbox` | Async client SDK (`Sandbox`, `ServerClient`, `@sandbox`, MCP server, E2B migration helper, ...) |
+| `server-sdk/` | `agent-sandbox-server` | `agent_sandbox.server` | Container-side runtime that runs inside sandbox images |
 
-The `ebx` command-line tool is a separate Node.js/TypeScript project that lives in the
+The `abx` command-line tool is a separate Node.js/TypeScript project that lives in the
 `cli` repository. CLI issues and pull requests belong there, not here.
 
 ## Development Setup
@@ -70,8 +70,8 @@ make test
    Every `make` target runs on both packages. To work on a single package, run the
    tools from inside its folder instead, for example:
    ```bash
-   cd client-sdk && ruff check src tests && mypy src/easy_sandbox && pytest -m "not integration"
-   cd server-sdk && ruff check src tests && mypy src/easy_sandbox/server && pytest
+   cd client-sdk && ruff check src tests && mypy src/agent_sandbox && pytest -m "not integration"
+   cd server-sdk && ruff check src tests && mypy src/agent_sandbox/server && pytest
    ```
 
    Or run the full local CI equivalent in one command:
@@ -166,15 +166,15 @@ logged or committed. The full rule, the evidence-file and ADR templates are in
 
 ## Template Contributions
 
-Sandbox templates — content, the machine-readable index (`awesome-templates.yaml`), releases and CI — live in the dedicated repository **[Easy-Sandbox/awesome-templates](https://github.com/Easy-Sandbox/awesome-templates)**. It is the single source of truth for official & community templates; this repository no longer bundles a template collection (it keeps only a minimal `python-hello` offline fixture for tests).
+Sandbox templates — content, the machine-readable index (`awesome-templates.yaml`), releases and CI — live in the dedicated repository **[alibaba-agent-sandbox/awesome-templates](https://github.com/alibaba-agent-sandbox/awesome-templates)**. It is the single source of truth for official & community templates; this repository no longer bundles a template collection (it keeps only a minimal `python-hello` offline fixture for tests).
 
 ### Contributing a Template
 
-1. **Read** the catalog repository's [CONTRIBUTING.md](https://github.com/Easy-Sandbox/awesome-templates/blob/main/CONTRIBUTING.md) — it defines the template anatomy, capability-group rules, and local dev workflow.
-2. **Open a PR** against [Easy-Sandbox/awesome-templates](https://github.com/Easy-Sandbox/awesome-templates) that adds your template folder and updates `awesome-templates.yaml` (plus the README template table) in the same PR.
+1. **Read** the catalog repository's [CONTRIBUTING.md](https://github.com/alibaba-agent-sandbox/awesome-templates/blob/main/CONTRIBUTING.md) — it defines the template anatomy, capability-group rules, and local dev workflow.
+2. **Open a PR** against [alibaba-agent-sandbox/awesome-templates](https://github.com/alibaba-agent-sandbox/awesome-templates) that adds your template folder and updates `awesome-templates.yaml` (plus the README template table) in the same PR.
 3. **Required index fields**: `name`, `description`, `repo`, `tags`, `author`, `capabilities`, `status` (optional: `path` for subdirectory templates, `ref` to pin a version).
 4. **Status values**:
-   - `official` — maintained by the Easy-Sandbox team (do not use for community PRs)
+   - `official` — maintained by the alibaba-agent-sandbox team (do not use for community PRs)
    - `community` — community-contributed and maintained
    - `experimental` — early-stage or proof-of-concept
 5. **Ensure** your repo contains a valid `template.yaml` at the specified path. The catalog CI validates every folder and the index offline.
@@ -188,11 +188,11 @@ Your template repository should include:
 
 ### Searching Templates
 
-Use the CLI (`ebx`, from the `cli` repository) to search the remote index:
+Use the CLI (`abx`, from the `cli` repository) to search the remote index:
 ```bash
-ebx template search python      # search by tag or keyword
-ebx template search ai-agent    # find AI agent templates
-ebx template search browser     # find browser automation templates
+abx template search python      # search by tag or keyword
+abx template search ai-agent    # find AI agent templates
+abx template search browser     # find browser automation templates
 ```
 
 ## Commit Message Convention
@@ -211,12 +211,12 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ## Reporting Issues
 
-- Use [GitHub Issues](https://github.com/Easy-Sandbox/python-sdk/issues/new/choose) with our templates
+- Use [GitHub Issues](https://github.com/alibaba-agent-sandbox/python-sdk/issues/new/choose) with our templates
 - For security vulnerabilities, see our [Security Policy](SECURITY.md)
 
 ## Questions?
 
-- Open a [Discussion](https://github.com/Easy-Sandbox/python-sdk/discussions) for general questions
+- Open a [Discussion](https://github.com/alibaba-agent-sandbox/python-sdk/discussions) for general questions
 - Check existing issues and discussions before creating new ones
 
 ## License

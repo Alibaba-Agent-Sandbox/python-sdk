@@ -66,7 +66,7 @@ custom_commands: dict[str, CustomCommand] = {}
 
 ## Dependencies
 - `models/template.py` (Pydantic models)
-- [`2026-09-03-cli-run-vs-exec.md`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-03-cli-run-vs-exec.md) (`ebx run` dispatches these)
+- [`2026-09-03-cli-run-vs-exec.md`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-03-cli-run-vs-exec.md) (`abx run` dispatches these)
 - `2026-09-03-sdk-capability-surface.md` (`sandbox.run("name", **args)`)
 
 ## Test Strategy

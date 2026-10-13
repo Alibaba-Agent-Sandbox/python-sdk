@@ -4,7 +4,7 @@
 
 This repository is a Python library and an in-sandbox HTTP service. It has no graphical application. Text, JSON, and documented exit behavior are the interface.
 
-The terminal interface is `ebx`, maintained in [easy-sandbox](https://github.com/Easy-Sandbox/easy-sandbox). Its commitment, supported terminals, and how to turn color and animation off are in that repository's [ACCESSIBILITY.md](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/ACCESSIBILITY.md).
+The terminal interface is `abx`, maintained in [agent-sandbox](https://github.com/alibaba-agent-sandbox/agent-sandbox). Its commitment, supported terminals, and how to turn color and animation off are in that repository's [ACCESSIBILITY.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/ACCESSIBILITY.md).
 
 ## Commitment
 
@@ -36,15 +36,15 @@ The terminal interface is `ebx`, maintained in [easy-sandbox](https://github.com
 
 Open an issue:
 
-https://github.com/Easy-Sandbox/python-sdk/issues/new/choose
+https://github.com/alibaba-agent-sandbox/python-sdk/issues/new/choose
 
-Include the call or HTTP request with secrets removed, the Python version, the operating system, and what you expected to read versus what you received. If the barrier is in `ebx` rather than the library, file it on [easy-sandbox](https://github.com/Easy-Sandbox/easy-sandbox/issues/new/choose).
+Include the call or HTTP request with secrets removed, the Python version, the operating system, and what you expected to read versus what you received. If the barrier is in `abx` rather than the library, file it on [agent-sandbox](https://github.com/alibaba-agent-sandbox/agent-sandbox/issues/new/choose).
 
 ## 中文
 
 这个仓库是 Python 库和沙箱内的 HTTP 服务，没有图形界面。接口是文本、JSON，以及文档里写明的退出行为。
 
-终端程序是 `ebx`，在 [easy-sandbox](https://github.com/Easy-Sandbox/easy-sandbox) 仓库。终端、读屏软件，以及如何关闭颜色和动画，写在该仓库的 [ACCESSIBILITY.md](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/ACCESSIBILITY.md)。
+终端程序是 `abx`，在 [agent-sandbox](https://github.com/alibaba-agent-sandbox/agent-sandbox) 仓库。终端、读屏软件，以及如何关闭颜色和动画，写在该仓库的 [ACCESSIBILITY.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/ACCESSIBILITY.md)。
 
 我们承诺：公开 API 返回结构化数据；错误信息用文字说明失败，且不把密钥抄进消息；模板对外的 HTTP 路由用状态码和 JSON 表明自己；无障碍障碍视为产品缺陷，并在议题里回复。
 
@@ -57,4 +57,4 @@ Include the call or HTTP request with secrets removed, the Python version, the o
 - `examples/` 下的示例是脚本，输出是纯文本，不是一套可交互的无障碍教程。
 - 你构建的沙箱镜像里可以运行第三方程序，那些程序不在本说明的范围内。
 
-报告障碍：打开 https://github.com/Easy-Sandbox/python-sdk/issues/new/choose 。写上调用或 HTTP 请求（去掉密钥）、Python 版本、操作系统，以及你期望读到的内容和实际收到的内容。如果问题出在 `ebx` 而不是这个库，请提到 [easy-sandbox](https://github.com/Easy-Sandbox/easy-sandbox/issues/new/choose)。
+报告障碍：打开 https://github.com/alibaba-agent-sandbox/python-sdk/issues/new/choose 。写上调用或 HTTP 请求（去掉密钥）、Python 版本、操作系统，以及你期望读到的内容和实际收到的内容。如果问题出在 `abx` 而不是这个库，请提到 [agent-sandbox](https://github.com/alibaba-agent-sandbox/agent-sandbox/issues/new/choose)。

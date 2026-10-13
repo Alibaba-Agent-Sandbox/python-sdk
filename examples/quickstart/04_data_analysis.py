@@ -7,7 +7,7 @@ Shows how to upload CSV data and run pandas analysis inside a sandbox.
 import asyncio
 import os
 
-from easy_sandbox import Sandbox
+from agent_sandbox import Sandbox
 
 # 样本 CSV 数据
 SAMPLE_CSV = """\
@@ -80,7 +80,7 @@ print(json.dumps(summary, ensure_ascii=False, indent=2))
 
 
 async def main() -> None:
-    api_key = os.environ.get("E2B_API_KEY", "")
+    api_key = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
     async with await Sandbox.create(
         template="base",

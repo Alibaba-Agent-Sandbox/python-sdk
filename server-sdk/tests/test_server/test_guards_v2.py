@@ -1,4 +1,4 @@
-"""Unit tests for ``easy_sandbox.server.guards`` (path and command guards, engine bridge)."""
+"""Unit tests for ``agent_sandbox.server.guards`` (path and command guards, engine bridge)."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from easy_sandbox.server import guard as legacy_guard
-from easy_sandbox.server.guards import (
+from agent_sandbox.server import guard as path_guard_module
+from agent_sandbox.server.guards import (
     SYSTEM_DENY,
     CommandGuard,
     PathGuard,
@@ -19,7 +19,7 @@ from easy_sandbox.server.guards import (
     path_guard,
     path_guard_from_context,
 )
-from easy_sandbox.server.policy import Identity, PolicyDenied, ServerPolicy
+from agent_sandbox.server.policy import Identity, PolicyDenied, ServerPolicy
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -106,22 +106,18 @@ class TestPathGuard:
         with pytest.raises(ValueError):
             path_guard()
 
-    def test_v1_names_are_reexported(self) -> None:
-        assert PathGuard is legacy_guard.PathGuard
-        assert legacy_guard.open_checked is not None
+    def test_names_are_reexported(self) -> None:
+        assert PathGuard is path_guard_module.PathGuard
+        assert path_guard_module.open_checked is not None
 
 
 class TestCommandGuard:
     def test_denied_command_is_rejected(self) -> None:
         guard = CommandGuard(deny=["rm", "/usr/bin/dd"])
-        assert code_of(guard.check, ["rm", "-rf", "x"]) == "command_denied"
-        assert code_of(guard.check, ["/bin/rm", "x"]) == "command_denied"
-        assert code_of(guard.check, ["/usr/bin/dd", "if=/dev/zero"]) == "command_denied"
+        assert code_of(guard.check, ["rm", "-rf", "x"]) == "command_not_allowed"
+        assert code_of(guard.check, ["/bin/rm", "x"]) == "command_not_allowed"
+        assert code_of(guard.check, ["/usr/bin/dd", "if=/dev/zero"]) == "command_not_allowed"
         assert guard.check(["ls"]) == ["ls"]
-
-    def test_legacy_codes_keep_v1_deny_code(self) -> None:
-        guard = CommandGuard(deny=["rm"], legacy_codes=True)
-        assert code_of(guard.check, ["rm"]) == "command_not_allowed"
 
     def test_allow_list_executable_only(self) -> None:
         guard = CommandGuard(allow=["ls", "cat"])
@@ -244,7 +240,7 @@ class TestEngineBridge:
         assert code_of(check_command, ctx, ["rm", "x"]) == "command_not_allowed"
 
     def test_matches_v1_check_command(self, ctx) -> None:  # type: ignore[no-untyped-def]
-        from easy_sandbox.server.routes import _check_command
+        from agent_sandbox.server.routes import _check_command
 
         for argv in (["ls"], ["cat", "x"], ["/bin/ls", "-l"], ["rm"], ["/usr/bin/cat"]):
             try:
@@ -265,9 +261,9 @@ def test_route_helpers_deny_and_allow_under_tmp() -> None:
     import tempfile
     from pathlib import Path
 
-    from easy_sandbox.server.routes import enforce_exec_policy, handle_download
+    from agent_sandbox.server.routes import enforce_exec_policy, handle_download
 
-    with tempfile.TemporaryDirectory(prefix="ebx-guard-", dir="/tmp") as raw:
+    with tempfile.TemporaryDirectory(prefix="abx-guard-", dir="/tmp") as raw:
         work = Path(raw)
         note = work / "note.txt"
         note.write_text("hello")

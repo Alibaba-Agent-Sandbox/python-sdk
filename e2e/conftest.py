@@ -2,7 +2,7 @@
 
 Guarantees:
 
-* every sandbox/template a test creates is tagged ``metadata e2e=<run id>`` and tracked;
+* every sandbox a test creates is tagged ``metadata e2e=<run id>`` and tracked;
 * the session finalizer deletes everything tracked, then sweeps by tag, even when tests fail;
 * secrets are masked in any report text pytest produces;
 * with missing credentials every test is skipped with an explicit message.
@@ -28,7 +28,6 @@ H.load_env()
 def pytest_configure(config: pytest.Config) -> None:
     for line in (
         "e2e: runs against the real cloud",
-        "e2e_docker: needs Docker + ACR",
         "e2e_slow: slow test",
         "known_issue: strict xfail for a recorded product bug",
     ):
@@ -37,10 +36,6 @@ def pytest_configure(config: pytest.Config) -> None:
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     missing = H.missing_env(H.REQUIRED_ENV)
-    docker_missing_env = H.missing_env(H.DOCKER_ENV)
-    docker_reason = None
-    if any("e2e_docker" in i.keywords for i in items):
-        docker_reason = H.docker_unavailable_reason()
     for item in items:
         item.add_marker(pytest.mark.e2e)
         if missing:
@@ -50,14 +45,6 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
                     "(see .env.example) or export them"
                 )
             )
-            continue
-        if "e2e_docker" in item.keywords:
-            if docker_missing_env:
-                item.add_marker(
-                    pytest.mark.skip(reason=f"e2e_docker skipped: missing env {docker_missing_env}")
-                )
-            elif docker_reason:
-                item.add_marker(pytest.mark.skip(reason=f"e2e_docker skipped: {docker_reason}"))
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -95,7 +82,7 @@ def run(loop):  # type: ignore[no-untyped-def]
 
 
 async def _kill_quietly(sandbox_id: str) -> str:
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
     try:
         await Sandbox.kill_by_id(sandbox_id)
@@ -105,7 +92,7 @@ async def _kill_quietly(sandbox_id: str) -> str:
 
 
 async def _sweep_by_tag() -> list[str]:
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
     notes: list[str] = []
     for info in await Sandbox.list(limit=200):
@@ -127,18 +114,16 @@ def tracker(loop, request):  # type: ignore[no-untyped-def]
             tr.cleanup_log.extend(loop.run_until_complete(_sweep_by_tag()))
         except Exception as exc:  # noqa: BLE001
             tr.cleanup_log.append(f"sweep failed: {type(exc).__name__}: {H.mask(str(exc))[:120]}")
-        _delete_templates(tr)
-        _remove_local_images(tr)
         leaked = _leaked()
         print(
             f"\n[e2e cleanup] run={H.RUN_ID} sandboxes_tracked={len(tr.sandbox_ids)} "
-            f"templates_tracked={len(tr.template_ids)} leaked_after_cleanup={len(leaked)}"
+            f"leaked_after_cleanup={len(leaked)}"
         )
         if leaked:
             print("[e2e cleanup] LEAKED:", ", ".join(leaked))
 
     def _leaked() -> list[str]:
-        from easy_sandbox.api.sandbox import Sandbox
+        from agent_sandbox.api.sandbox import Sandbox
 
         try:
             infos = loop.run_until_complete(Sandbox.list(limit=200))
@@ -150,46 +135,12 @@ def tracker(loop, request):  # type: ignore[no-untyped-def]
     return tr
 
 
-def _delete_templates(tr: H.Tracker) -> None:
-    import os
-
-    for tid in tr.template_ids:
-        try:
-            from easy_sandbox.api.template import TemplateManager
-            from easy_sandbox.transport.auth import create_auth_provider
-            from easy_sandbox.transport.config import load_config
-            from easy_sandbox.transport.http import HttpClient
-
-            async def _del(template_id: str = tid) -> None:
-                cfg = load_config()
-                http = HttpClient(cfg, create_auth_provider(api_key=cfg.api_key))
-                try:
-                    await TemplateManager(http).delete(template_id)
-                finally:
-                    await http.close()
-
-            asyncio.new_event_loop().run_until_complete(_del())
-            tr.cleanup_log.append(f"deleted template {tid}")
-        except Exception as exc:  # noqa: BLE001
-            tr.cleanup_log.append(f"delete template {tid} failed: {type(exc).__name__}: {H.mask(str(exc))[:120]}")
-    _ = os
-
-
-def _remove_local_images(tr: H.Tracker) -> None:
-    prefix = H.docker_cmd()
-    if not prefix:
-        return
-    import subprocess
-
-    for ref in tr.local_images:
-        subprocess.run([*prefix, "rmi", "-f", ref], capture_output=True, timeout=60)
-
 
 # --------------------------------------------------------------------------- sandbox factories
 
 
 async def create_tracked(tracker: H.Tracker, template: str, test_name: str = "", **kwargs: Any):  # type: ignore[no-untyped-def]
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
     metadata = H.tag_metadata(test_name)
     metadata.update(kwargs.pop("metadata", {}) or {})
@@ -244,7 +195,7 @@ def code_sandbox(run, tracker, request):  # type: ignore[no-untyped-def]
 
 @pytest.fixture(scope="module")
 def server_sandbox(run, tracker, request):  # type: ignore[no-untyped-def]
-    """Official ``python-hello`` template (ships easy-sandbox-server); the server is started on demand."""
+    """Official ``python-hello`` template (ships agent-sandbox-server); the server is started on demand."""
     sb = run(create_tracked(tracker, H.SERVER_TEMPLATE, request.module.__name__, timeout=600))
     run(wait_envd_ready(sb))
     yield sb
@@ -270,7 +221,7 @@ def local_tmp():  # type: ignore[no-untyped-def]
 
 
 class ServerHandle:
-    """HTTP client for the in-sandbox easy-sandbox-server reached through the port gateway."""
+    """HTTP client for the in-sandbox agent-sandbox-server reached through the port gateway."""
 
     def __init__(self, sandbox: Any, port: int = 9000) -> None:
         self.sandbox = sandbox
@@ -309,5 +260,5 @@ def server(run, server_sandbox):  # type: ignore[no-untyped-def]
     def _ready() -> bool:
         return handle.get("/commands").status_code == 200
 
-    H.eventually(_ready, timeout=60, interval=2, what="easy-sandbox-server to serve /commands")
+    H.eventually(_ready, timeout=60, interval=2, what="agent-sandbox-server to serve /commands")
     return handle

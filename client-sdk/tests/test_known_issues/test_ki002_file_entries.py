@@ -15,9 +15,9 @@ from typing import Any
 
 import pytest
 
-from easy_sandbox.api.files import FilesModule
-from easy_sandbox.models.filesystem import FileType
-from easy_sandbox.protocol.filesystem import FilesystemProtocol, _parse_file_info, _unwrap_entry
+from agent_sandbox.api.files import FilesModule
+from agent_sandbox.models.filesystem import FileType
+from agent_sandbox.protocol.filesystem import FilesystemProtocol, _parse_file_info, _unwrap_entry
 from tests.test_known_issues.helpers import ENVD, make_http, token
 
 LIST_URL = f"{ENVD}/filesystem.Filesystem/ListDir"

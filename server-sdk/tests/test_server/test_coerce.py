@@ -1,6 +1,6 @@
-"""Unit tests for ``easy_sandbox.server._coerce``.
+"""Unit tests for ``agent_sandbox.server._coerce``.
 
-The module is a byte-for-byte copy of the client SDK's ``easy_sandbox.utils.coerce``
+The module is a byte-for-byte copy of the client SDK's ``agent_sandbox.utils.coerce``
 (which keeps the ``CustomCommandArg`` tests); this server-side suite makes the
 server distribution self-testing without the client installed.
 """
@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import pytest
 
-from easy_sandbox.server._coerce import coerce_kwargs, parse_scalar
-from easy_sandbox.server.registry import CommandArg
+from agent_sandbox.server._coerce import coerce_kwargs, parse_scalar
+from agent_sandbox.server.registry import CommandArg
 
 # ---------------------------------------------------------------------------
 # parse_scalar

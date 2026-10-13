@@ -1,4 +1,4 @@
-"""easy-sandbox-server (server-sdk) running inside a real sandbox (template ``python-hello``).
+"""agent-sandbox-server (server-sdk) running inside a real sandbox (template ``python-hello``).
 
 The official ``python-hello`` template ships the server but the platform does not start the image
 ``CMD`` for first-generation sandboxes, so the ``server`` fixture starts it explicitly. Everything
@@ -151,24 +151,21 @@ def test_process_start_list_signal(server):  # type: ignore[no-untyped-def]
     H.eventually(_gone, timeout=20, interval=1, what="signalled process to exit")
 
 
-def test_sdk_list_commands_merges_server_commands(run, server_sandbox, server):  # type: ignore[no-untyped-def]
+def test_sdk_list_commands_returns_server_commands(run, server_sandbox, server):  # type: ignore[no-untyped-def]
     cmds = run(server_sandbox.list_commands())
-    by_name = {c["name"]: c for c in cmds}
-    assert by_name["hello"]["source"] == "server"
-    assert by_name["hello"]["args"][0]["name"] == "name"
+    by_name = {c.name: c for c in cmds}
+    assert by_name["hello"].args[0].name == "name"
 
 
-def test_sdk_custom_dispatches_to_the_server(run, server_sandbox, server):  # type: ignore[no-untyped-def]
-    result = run(server_sandbox.custom("hello", name="sdk"))
-    assert result.success and result.source == "server"
-    assert result.value == "Hello, sdk!"
+def test_sdk_run_dispatches_to_the_server(run, server_sandbox, server):  # type: ignore[no-untyped-def]
+    assert run(server_sandbox.run("hello", name="sdk")) == "Hello, sdk!"
 
 
-def test_sdk_custom_unknown_command_raises(run, server_sandbox, server):  # type: ignore[no-untyped-def]
-    from easy_sandbox.models.errors import CommandNotFoundError
+def test_sdk_run_unknown_command_raises(run, server_sandbox, server):  # type: ignore[no-untyped-def]
+    from agent_sandbox.models.errors import CommandNotFoundError
 
     with pytest.raises(CommandNotFoundError):
-        run(server_sandbox.custom("e2e_unknown_command"))
+        run(server_sandbox.run("e2e_unknown_command"))
 
 
 def test_server_survives_a_burst_of_requests(server):  # type: ignore[no-untyped-def]

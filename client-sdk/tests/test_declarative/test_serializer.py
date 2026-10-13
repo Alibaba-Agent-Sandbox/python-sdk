@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from easy_sandbox.declarative.serializer import Serializer, SerializerType
+from agent_sandbox.declarative.serializer import Serializer, SerializerType
 
 # ---------------------------------------------------------------------------
 # JSON mode

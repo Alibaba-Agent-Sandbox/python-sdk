@@ -3,7 +3,7 @@
 - Date: 2026-10-12
 - Change: fixes of the defects pinned by the real-cloud E2E suite ([`e2e/KNOWN-ISSUES.md`](../../../e2e/KNOWN-ISSUES.md)); CHANGELOG `Unreleased` > `Fixed`
 - Result: PASS for the eight fixed defects; one throughput-bound test is environment-flaky (KI-008, see below)
-- Package under test: `easy-sandbox` (`client-sdk`) installed editable from the working tree
+- Package under test: `agent-sandbox` (`client-sdk`) installed editable from the working tree
 - Environment: real Alibaba Cloud FC agent sandbox platform (cn-hangzhou, envd 0.5.2), Python 3.11, Linux. Credentials from the gitignored `.env` (values not recorded)
 
 ## Protocol evidence (captured from a real sandbox)
@@ -17,7 +17,7 @@
 ```bash
 cd client-sdk && python -m pytest tests -m "not integration"      # 2222 passed, 1 skipped, 1 failed (see below)
 cd client-sdk && python -m pytest tests/test_known_issues          # 81 new regression tests, all pass
-cd client-sdk && ruff check src tests && mypy src/easy_sandbox/    # clean
+cd client-sdk && ruff check src tests && mypy src/agent_sandbox/    # clean
 cd e2e && python -m pytest -m "e2e and not e2e_docker and not e2e_slow" -ra     # fast path (make e2e)
 python scripts/e2e-cleanup.py --all-tagged                         # dry run: 0 leftovers
 ```
@@ -36,7 +36,7 @@ python scripts/e2e-cleanup.py --all-tagged                         # dry run: 0 
 
 ## Throughput-bound test (not a regression)
 
-`test_medium_file_roundtrip_matches_remote_checksum` uploads 400 KB. From this host the upload rate measured 20-30 s for 400 KB in the later runs (it passed in the first run after the fixes), i.e. right at the 30 s default HTTP timeout (KI-008). It now fails with `FileOperationError: Upload to <path> (400000 bytes) timed out; the transfer took longer than the HTTP timeout` plus the `EBX_HTTP_TIMEOUT` hint instead of a bare `httpx.ReadTimeout`. The upload code path is otherwise unchanged.
+`test_medium_file_roundtrip_matches_remote_checksum` uploads 400 KB. From this host the upload rate measured 20-30 s for 400 KB in the later runs (it passed in the first run after the fixes), i.e. right at the 30 s default HTTP timeout (KI-008). It now fails with `FileOperationError: Upload to <path> (400000 bytes) timed out; the transfer took longer than the HTTP timeout` plus the `ABX_HTTP_TIMEOUT` hint instead of a bare `httpx.ReadTimeout`. The upload code path is otherwise unchanged.
 
 ## Test-suite fixes made on the way
 

@@ -17,17 +17,17 @@ from unittest.mock import AsyncMock, patch
 import httpx
 import pytest
 
-from easy_sandbox.api.sandbox import Sandbox
-from easy_sandbox.models.errors import (
+from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox.models.errors import (
     CommandTimeoutError,
     QuotaExceededError,
     TemplateNotFoundError,
 )
-from easy_sandbox.models.filesystem import FileType
-from easy_sandbox.models.process import ProcessChunk, ProcessChunkType
-from easy_sandbox.models.sandbox import SandboxStatus
-from easy_sandbox.transport.config import reset_config
-from easy_sandbox.transport.http import HttpClient
+from agent_sandbox.models.filesystem import FileType
+from agent_sandbox.models.process import ProcessChunk, ProcessChunkType
+from agent_sandbox.models.sandbox import SandboxStatus
+from agent_sandbox.transport.config import reset_config
+from agent_sandbox.transport.http import HttpClient
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -499,7 +499,7 @@ async def test_multiple_sandbox_management():
         mock_platform.return_value = _make_httpx_response(
             json_data=[sb1_info, sb2_info],
         )
-        from easy_sandbox.protocol.sandbox import SandboxProtocol
+        from agent_sandbox.protocol.sandbox import SandboxProtocol
 
         proto = SandboxProtocol(sandbox1._http_client)
         sandboxes = await proto.list()

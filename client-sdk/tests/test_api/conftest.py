@@ -9,30 +9,30 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from easy_sandbox.api.capability import ResolvedCapabilities
-from easy_sandbox.api.code import CodeContextModule
-from easy_sandbox.api.commands import CommandsModule
-from easy_sandbox.api.files import FilesModule
-from easy_sandbox.api.network import NetworkModule
-from easy_sandbox.api.sandbox import Sandbox
-from easy_sandbox.models.filesystem import FileInfo, FileType
-from easy_sandbox.models.process import (
+from agent_sandbox.api.capability import ResolvedCapabilities
+from agent_sandbox.api.code import CodeContextModule
+from agent_sandbox.api.commands import CommandsModule
+from agent_sandbox.api.files import FilesModule
+from agent_sandbox.api.network import NetworkModule
+from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox.models.filesystem import FileInfo, FileType
+from agent_sandbox.models.process import (
     ProcessChunk,
     ProcessChunkType,
     ProcessInfo,
 )
-from easy_sandbox.models.sandbox import SandboxInfo, SandboxStatus
-from easy_sandbox.models.template import STANDARD_CAPABILITIES
-from easy_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
-from easy_sandbox.protocol.filesystem import FilesystemProtocol
-from easy_sandbox.protocol.process import ProcessProtocol
-from easy_sandbox.protocol.sandbox import SandboxProtocol
-from easy_sandbox.transport.auth import (
+from agent_sandbox.models.sandbox import SandboxInfo, SandboxStatus
+from agent_sandbox.models.template import STANDARD_CAPABILITIES
+from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+from agent_sandbox.protocol.filesystem import FilesystemProtocol
+from agent_sandbox.protocol.process import ProcessProtocol
+from agent_sandbox.protocol.sandbox import SandboxProtocol
+from agent_sandbox.transport.auth import (
     AuthProvider,
     EnvdTokenManager,
 )
-from easy_sandbox.transport.config import TransportConfig
-from easy_sandbox.transport.http import HttpClient
+from agent_sandbox.transport.config import TransportConfig
+from agent_sandbox.transport.http import HttpClient
 
 # ---- Constants ----
 

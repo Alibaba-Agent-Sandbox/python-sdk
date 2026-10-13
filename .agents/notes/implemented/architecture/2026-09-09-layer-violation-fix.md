@@ -51,8 +51,8 @@ Add four CLI command modules:
 ## API Design
 ```python
 # session/__init__.py — after the fix
-from easy_sandbox.session.base import SessionStore
-from easy_sandbox.session.local import LocalSessionStore
+from agent_sandbox.session.base import SessionStore
+from agent_sandbox.session.local import LocalSessionStore
 
 __all__ = ["SessionStore", "LocalSessionStore"]
 # no longer imports SessionManager (L3)
@@ -88,7 +88,7 @@ class TemplateBuildTimeoutError(SandboxError):
 - Verify `session/__init__.py` contains no `api`-layer imports (Grep check).
 - Verify `TemplateBuildError.code == "E7010"` and `TemplateBuildTimeoutError.code == "E7011"`.
 - Verify all E7xxx error codes are collision-free (E7000–E7003 + E7010–E7011 + E7020–E7022).
-- Verify the four new CLI command groups load correctly via `ebx <group> --help`.
+- Verify the four new CLI command groups load correctly via `abx <group> --help`.
 
 ## Acceptance criteria
 - `session/__init__` exposes only `SessionStore` and `LocalSessionStore`, with no L3 imports.
@@ -96,7 +96,7 @@ class TemplateBuildTimeoutError(SandboxError):
   with codes E7010/E7011 respectively.
 - `cli/commands/` contains the four complete command modules `auth.py`, `session.py`,
   `secret.py`, and `skill.py`.
-- Grep for `from easy_sandbox.api` under `session/`, `models/`, and `protocol/` = 0 matches.
+- Grep for `from agent_sandbox.api` under `session/`, `models/`, and `protocol/` = 0 matches.
 
 ## Files changed
 - `session/__init__.py` — removed the `SessionManager` import

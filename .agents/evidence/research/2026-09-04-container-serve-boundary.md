@@ -1,9 +1,9 @@
 > ⚠️ **SUPERSEDED / 历史快照（HISTORICAL SNAPSHOT）** — 标注追加于 2026-09-24（任务 #122，承接 #109 审计；正文未改写）
 >
 > 本报告是 **2026-09-04 当时状态** 的只读快照。其中出现的下列称谓/结论可能已过时，请勿据此判断当前实现：
-> - 旧品牌 `serverless-sandbox` / 旧 CLI `sbox` → 现为 `easy-sandbox` / `ebx`，见 ADR [`2026-09-09-brand-rename-sbox-to-ebx.md`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-09-brand-rename-sbox-to-ebx.md)。
-> - 自此已删除的 CLI 命令组（`auth`/`session`/`secret`/`skill`），见 ADR [`2026-09-23-cli-command-reduction.md`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/feature/2026-09-23-cli-command-reduction.md)。
-> - 自此已移除的旧架构（`integrations` 集成层 / 能力门控 / 序列化 / keychain），见 ADR [`2026-09-23-overdesign-cleanup.md`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-23-overdesign-cleanup.md)。
+> - 旧品牌 `serverless-sandbox` / 旧 CLI `sbox` → 现为 `agent-sandbox` / `abx`，见 ADR [`2026-09-09-brand-rename-sbox-to-abx.md`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-09-brand-rename-sbox-to-abx.md)。
+> - 自此已删除的 CLI 命令组（`auth`/`session`/`secret`/`skill`），见 ADR [`2026-09-23-cli-command-reduction.md`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/feature/2026-09-23-cli-command-reduction.md)。
+> - 自此已移除的旧架构（`integrations` 集成层 / 能力门控 / 序列化 / keychain），见 ADR [`2026-09-23-overdesign-cleanup.md`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-23-overdesign-cleanup.md)。
 > 注：文中“注册式自定义命令”/统一 run 入口的最终 API 形态仍在 #117 讨论中，以后续方案为准，本快照结论不代表最终决议。
 >
 > 当前权威说明以 `AGENTS.md` 与 `docs/` 为准。
@@ -1383,9 +1383,9 @@ commands.start(cmd, background=True)   # 用 envd 的 process 原语后台拉起
 
 | # | 问题 | 位置 | 建议 |
 |---|------|------|------|
-| D1 | ADR 引用路径失效：三处引用 `proposed/architecture/…`，实际文件在 `implemented/architecture/…` | `rejected/2026-09-03-capability-model-alternatives.md`（3 处）；`implemented/feature/2026-09-03-custom-commands-schema.md:69-70` 同样引用 [`2026-09-03-cli-run-vs-exec.md`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-03-cli-run-vs-exec.md) / `2026-09-03-sdk-capability-surface.md`（无目录前缀，尚可） | 统一改为 `implemented/architecture/…`，或在 ADR 晋升时自动改写引用 |
+| D1 | ADR 引用路径失效：三处引用 `proposed/architecture/…`，实际文件在 `implemented/architecture/…` | `rejected/2026-09-03-capability-model-alternatives.md`（3 处）；`implemented/feature/2026-09-03-custom-commands-schema.md:69-70` 同样引用 [`2026-09-03-cli-run-vs-exec.md`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-03-cli-run-vs-exec.md) / `2026-09-03-sdk-capability-surface.md`（无目录前缀，尚可） | 统一改为 `implemented/architecture/…`，或在 ADR 晋升时自动改写引用 |
 | D2 | `proposed/architecture/` 目录为空（只有 `.gitkeep`），但被多处引用 | `.agents/notes/proposed/architecture/` | 见 D1 |
-| D3 | `sbox install` 措辞与实现不符（实为 `sbox template install`） | [`implemented/feature/2026-09-03-minimal-template-repo.md:40`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/feature/2026-09-03-minimal-template-repo.md#L40) | 更正措辞 |
+| D3 | `sbox install` 措辞与实现不符（实为 `sbox template install`） | [`implemented/feature/2026-09-03-minimal-template-repo.md:40`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/feature/2026-09-03-minimal-template-repo.md#L40) | 更正措辞 |
 | D4 | `custom-commands-schema.md:65` 否决"每命令 JSON-schema"的前提已被 `@sandbox.register` 改变 | 同 ADR | M1 落地时同步更新该 ADR，补记"前提变更"理由 |
 | D5 | `docs/DESIGN.md:192` / `docs/design/architecture.md:65` 称 `protocol.port` 走 "Platform API — HTTP REST"，与 `protocol/port.py:15-18` 的"纯本地计算，不涉及任何网络请求"**直接矛盾** | 见 §3.3 | 已在 §3.3 记录；以代码为准 |
 | D6 | `docs/DESIGN.md:155-164` 称平台鉴权用 `X-API-KEY`，实测为 `Authorization: Bearer` | `transport/auth.py:26,58` | 已在 §3.3 记录；以代码为准 |

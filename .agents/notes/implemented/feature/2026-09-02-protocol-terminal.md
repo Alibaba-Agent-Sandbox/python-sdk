@@ -29,9 +29,9 @@ class TerminalSession:
 ```
 
 ## Implementation
-- **Source**: `src/easy_sandbox/protocol/terminal.py`
+- **Source**: `src/agent_sandbox/protocol/terminal.py`
 - **Tests**: `tests/test_protocol/test_terminal.py`
-- **Server side**: `src/easy_sandbox/server/routes_pty.py` (WebSocket PTY terminal service)
+- **Server side**: `src/agent_sandbox/server/routes_pty.py` (WebSocket PTY terminal service)
 
 ## Alternatives considered
 - **HTTP long-polling** — Too much latency for interactive terminal

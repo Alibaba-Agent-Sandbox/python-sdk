@@ -5,8 +5,6 @@ from __future__ import annotations
 import asyncio
 import os
 import re
-import shutil
-import subprocess
 import sys
 import time
 import uuid
@@ -24,12 +22,9 @@ for _src in (REPO_ROOT / "client-sdk" / "src", REPO_ROOT / "server-sdk" / "src")
 
 T = TypeVar("T")
 
-REQUIRED_ENV = ("E2B_API_KEY",)
-DOCKER_ENV = ("AccessKey", "AccessSecret", "ACR_NAMESPACE")
+REQUIRED_ENV = ("ABX_SANDBOX_API_KEY",)
 SECRET_ENV = (
-    "E2B_API_KEY",
-    "AccessKey",
-    "AccessSecret",
+    "ABX_SANDBOX_API_KEY",
     "OPENAI_API_KEY",
 )
 
@@ -39,7 +34,6 @@ RUN_ID = os.environ.get("E2E_RUN_ID") or (
 os.environ["E2E_RUN_ID"] = RUN_ID
 
 TAG_KEY = "e2e"
-TEMPLATE_PREFIX = "e2e-"
 SANDBOX_TTL = int(os.environ.get("E2E_SANDBOX_TTL", "300"))
 
 OFFICIAL_BASE = "base"
@@ -86,9 +80,6 @@ class Tracker:
 
     def __init__(self) -> None:
         self.sandbox_ids: list[str] = []
-        self.template_ids: list[str] = []
-        self.template_names: list[str] = []
-        self.local_images: list[str] = []
         self.cleanup_log: list[str] = []
 
     def sandbox(self, sandbox_id: str) -> None:
@@ -146,68 +137,6 @@ async def eventually_async(
 
 def unique_dir(prefix: str = "e2e") -> str:
     return f"/tmp/{prefix}-{uuid.uuid4().hex[:10]}"
-
-
-# --------------------------------------------------------------------------- docker
-
-
-def docker_cmd() -> list[str] | None:
-    """Return an argv prefix that can talk to the Docker daemon, or ``None``.
-
-    Order: plain ``docker`` -> ``sudo -n docker`` (the VM's ``ubuntu`` user is not
-    in the ``docker`` group, but has passwordless sudo).
-    """
-    if not shutil.which("docker"):
-        return None
-    for prefix in (["docker"], ["sudo", "-n", "docker"]):
-        try:
-            proc = subprocess.run(
-                [*prefix, "info", "--format", "{{.ServerVersion}}"],
-                capture_output=True,
-                text=True,
-                timeout=20,
-            )
-        except (OSError, subprocess.TimeoutExpired):
-            continue
-        if proc.returncode == 0 and proc.stdout.strip():
-            return prefix
-    return None
-
-
-def docker_unavailable_reason() -> str | None:
-    """Exact reason Docker cannot be used (``None`` when it can)."""
-    if not shutil.which("docker"):
-        return "docker CLI not found on PATH"
-    if docker_cmd() is not None:
-        return None
-    try:
-        proc = subprocess.run(
-            ["docker", "info"], capture_output=True, text=True, timeout=20
-        )
-        err = (proc.stderr or proc.stdout).strip().splitlines()
-        return "docker daemon unreachable: " + (err[-1] if err else "no output")
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return f"docker info failed: {exc}"
-
-
-def make_docker_shim(prefix: list[str], docker_config_dir: Path, shim_dir: Path) -> Path:
-    """Write a ``docker`` executable that forwards to *prefix* with an isolated DOCKER_CONFIG.
-
-    ``DockerBuilder`` takes a single executable path, so the shim lets it use
-    ``sudo docker`` and keeps registry credentials out of ``~/.docker``.
-    """
-    shim_dir.mkdir(parents=True, exist_ok=True)
-    shim = shim_dir / "docker"
-    if prefix[0] == "sudo":
-        body = (
-            "#!/bin/sh\n"
-            f'exec sudo -n env DOCKER_CONFIG="{docker_config_dir}" docker "$@"\n'
-        )
-    else:
-        body = f'#!/bin/sh\nDOCKER_CONFIG="{docker_config_dir}" exec docker "$@"\n'
-    shim.write_text(body)
-    shim.chmod(0o755)
-    return shim
 
 
 def run_async(loop: asyncio.AbstractEventLoop, coro: Awaitable[T]) -> T:

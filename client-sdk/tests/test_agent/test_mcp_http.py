@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from easy_sandbox.agent.mcp_http import (
+from agent_sandbox.agent.mcp_http import (
     MCP_PROTOCOL_VERSION,
     MCPAuthConfigError,
     SessionStore,
@@ -69,7 +69,7 @@ class TestBearerTokenValidation:
         req = MagicMock()
         req.headers = {"authorization": "Bearer my-secret-token"}
         with patch(
-            "easy_sandbox.agent.mcp_http.hmac.compare_digest",
+            "agent_sandbox.agent.mcp_http.hmac.compare_digest",
             return_value=True,
         ) as compare_digest:
             assert _validate_bearer_token(req, "my-secret-token") is True
@@ -147,7 +147,7 @@ class TestSessionStore:
         server.shutdown = AsyncMock()
         store._sessions[sid].last_access = 0
 
-        with patch("easy_sandbox.agent.mcp_http.time.monotonic", return_value=11):
+        with patch("agent_sandbox.agent.mcp_http.time.monotonic", return_value=11):
             removed = await store.cleanup_expired()
 
         assert removed == 1

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Call a template server that is already running.
 
-Base URL: the first argument, or the EBX_TEMPLATE_URL environment variable.
-Token: EBX_SERVER_TOKEN, sent as X-Access-Token only when that variable is set.
+Base URL: the first argument, or the ABX_TEMPLATE_URL environment variable.
+Token: ABX_SERVER_TOKEN, sent as X-Access-Token only when that variable is set.
 This file does not contain a URL or a credential.
 
     python call_api.py http://127.0.0.1:9000
@@ -19,12 +19,12 @@ import urllib.request
 
 
 def base_url() -> str:
-    """Return the server origin from argv or EBX_TEMPLATE_URL."""
+    """Return the server origin from argv or ABX_TEMPLATE_URL."""
     if len(sys.argv) > 1 and sys.argv[1].strip():
         return sys.argv[1].strip().rstrip("/")
-    url = os.environ.get("EBX_TEMPLATE_URL", "").strip()
+    url = os.environ.get("ABX_TEMPLATE_URL", "").strip()
     if not url:
-        sys.exit("pass the base URL as argv[1] or set EBX_TEMPLATE_URL")
+        sys.exit("pass the base URL as argv[1] or set ABX_TEMPLATE_URL")
     return url.rstrip("/")
 
 
@@ -35,8 +35,8 @@ def call(origin: str, method: str, path: str, body: dict | None = None) -> tuple
     request.add_header("Accept", "application/json")
     if data is not None:
         request.add_header("Content-Type", "application/json")
-    # Local mode leaves EBX_SERVER_TOKEN unset; the server then accepts every route.
-    token = os.environ.get("EBX_SERVER_TOKEN")
+    # Local mode leaves ABX_SERVER_TOKEN unset; the server then accepts every route.
+    token = os.environ.get("ABX_SERVER_TOKEN")
     if token:
         request.add_header("X-Access-Token", token)
     try:
@@ -63,7 +63,7 @@ def main() -> int:
     origin = base_url()
     ok = True
 
-    # Open even when EBX_SERVER_TOKEN is set.
+    # Open even when ABX_SERVER_TOKEN is set.
     status, payload = call(origin, "GET", "/health")
     ok = show("GET /health", status, payload) and ok
 
@@ -74,13 +74,14 @@ def main() -> int:
     status, payload = call(origin, "GET", "/commands")
     ok = show("GET /commands", status, payload) and ok
 
-    # file_ops. The path must stay under EBX_SERVER_BASE_DIR (default /home/user).
+    # file_ops. The path must stay under ABX_SERVER_BASE_DIR (default /home/user).
+    base_dir = os.environ.get("ABX_SERVER_BASE_DIR", "/home/user").rstrip("/")
     status, payload = call(
         origin,
         "POST",
         "/upload",
         {
-            "path": "/home/user/call-api.txt",
+            "path": f"{base_dir}/call-api.txt",
             "content_base64": base64.b64encode(b"hello\n").decode("ascii"),
         },
     )

@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from easy_sandbox.api.server_client import ServerClient
-from easy_sandbox.models.errors import (
+from agent_sandbox.api.server_client import ServerClient
+from agent_sandbox.models.errors import (
     AuthenticationError,
     CapabilityNotSupportedError,
     EndpointNotAvailableError,

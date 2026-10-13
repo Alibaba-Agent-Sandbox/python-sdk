@@ -71,7 +71,7 @@ once merged, add a new dated file instead of editing it.
 - Date: YYYY-MM-DD
 - Change: <PR / ADR slug / commit>
 - Result: PASS | PARTIAL | BLOCKED | FAIL
-- Package under test: <easy-sandbox / easy-sandbox-server version, how it was installed>
+- Package under test: <agent-sandbox / agent-sandbox-server version, how it was installed>
 - Environment: <real cloud region, Node/Python versions, OS>. Credentials: supplied via env/.env (values not recorded)
 
 ## What was verified

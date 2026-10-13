@@ -1,6 +1,6 @@
 """STDIO process checks for the MCP server.
 
-These start the real ``python -m easy_sandbox.agent.mcp`` process. The sandbox
+These start the real ``python -m agent_sandbox.agent.mcp`` process. The sandbox
 API is a local stub, so the tests do not create a cloud sandbox.
 """
 
@@ -43,11 +43,11 @@ class _SlowHandler(BaseHTTPRequestHandler):
 
 def _start_mcp(api_url: str) -> subprocess.Popen[str]:
     env = os.environ.copy()
-    env["E2B_API_KEY"] = "stdio-e2e-placeholder"
-    env["E2B_API_URL"] = api_url
-    env["SANDBOX_TEMPLATE"] = "python-hello"
+    env["ABX_SANDBOX_API_KEY"] = "stdio-e2e-placeholder"
+    env["ABX_SANDBOX_BASE_URL"] = api_url
+    env["ABX_DEFAULT_TEMPLATE"] = "python-hello"
     proc = subprocess.Popen(
-        [sys.executable, "-m", "easy_sandbox.agent.mcp"],
+        [sys.executable, "-m", "agent_sandbox.agent.mcp"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -165,9 +165,44 @@ class TestStdioProcess:
             second = _readline(proc, timeout=8)
             assert first["id"] == 3
             assert first["result"] == {}
-            assert ping_at < 0.5
+            # Ordering is the contract; the bound only catches a ping that was
+            # held for most of the tool call (the stub answers after 0.8 s).
+            assert ping_at < 0.75
             assert second["id"] == 2
             assert proc.poll() is None
         finally:
             _stop(proc)
             server.shutdown()
+
+    def test_sdk_is_imported_before_the_first_request_is_served(self) -> None:
+        """A cold lazy import inside the first tool call would block ping.
+
+        Importing ``agent_sandbox.api.sandbox`` takes hundreds of milliseconds on
+        a busy host and runs on the event loop. The server must pay it at
+        startup, so a ping answered before any tool call already sees it loaded.
+        """
+        probe = (
+            "import sys\n"
+            "import agent_sandbox.agent.mcp as m\n"
+            "assert 'agent_sandbox.api.sandbox' not in sys.modules\n"
+            "async def _ping(self, params):\n"
+            "    return {'loaded': 'agent_sandbox.api.sandbox' in sys.modules}\n"
+            "m.SandboxMCPServer._handle_ping = _ping\n"
+            "m.main()\n"
+        )
+        env = os.environ.copy()
+        env["ABX_SANDBOX_API_KEY"] = "stdio-e2e-placeholder"
+        proc = subprocess.Popen(
+            [sys.executable, "-c", probe],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+        )
+        try:
+            _send(proc, {"jsonrpc": "2.0", "id": 1, "method": "ping", "params": {}})
+            response = _readline(proc, timeout=15)
+            assert response["result"] == {"loaded": True}
+        finally:
+            _stop(proc)

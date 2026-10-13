@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from easy_sandbox.models.session import SessionConfig, SessionInfo
+from agent_sandbox.models.session import SessionConfig, SessionInfo
 
 
 class TestSessionConfig:

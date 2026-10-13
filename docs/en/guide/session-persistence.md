@@ -1,6 +1,6 @@
 # Session Persistence
 
-> **Note:** The `ebx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @easy-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`easy-sandbox`) and the container-side runtime (`easy-sandbox-server`).
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`).
 
 A session associates a sandbox with a human-readable name, making it easy to reconnect to the same sandbox from different terminals or at different times.
 
@@ -35,7 +35,7 @@ Sessions use local filesystem storage by default, implemented by `LocalSessionSt
 ### Storage Location
 
 ```text
-~/.ebx/sessions/
+~/.abx/sessions/
 ├── my-project.json       # Session "my-project"
 ├── my-project.json.lock  # Concurrency lock file
 ├── dev-env.json          # Session "dev-env"
@@ -54,12 +54,12 @@ File reads and writes are protected by file locks:
 
 ## CLI Usage
 
-> **Note**: The `ebx session` CLI command group has been removed from the CLI. Session functionality is now provided entirely through the SDK API. The examples below are for reference only; please use the Python SDK in practice.
+> **Note**: The `abx session` CLI command group has been removed from the CLI. Session functionality is now provided entirely through the SDK API. The examples below are for reference only; please use the Python SDK in practice.
 
 ### SDK Alternative
 
 ```python
-from easy_sandbox.session import SessionManager
+from agent_sandbox.session import SessionManager
 
 manager = SessionManager()
 
@@ -81,11 +81,11 @@ await manager.stop("my-project")
 ## SDK Usage
 
 ```python
-from easy_sandbox.session.local import LocalSessionStore
-from easy_sandbox.models.session import SessionInfo
+from agent_sandbox.session.local import LocalSessionStore
+from agent_sandbox.models.session import SessionInfo
 
 # Create a store instance
-store = LocalSessionStore()  # Default ~/.ebx/sessions/
+store = LocalSessionStore()  # Default ~/.abx/sessions/
 
 # Save a session
 session = SessionInfo(
@@ -119,5 +119,5 @@ store = LocalSessionStore(base_dir="/path/to/custom/sessions")
 
 ## Next Steps
 
-- [CLI Tutorial](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/cli-tutorial.md) — Complete CLI tutorial
+- [CLI Tutorial](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/cli-tutorial.md) — Complete CLI tutorial
 - [Configuration Reference](../reference/configuration.md) — Config file locations

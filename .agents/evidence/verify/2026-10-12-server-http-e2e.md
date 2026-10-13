@@ -1,6 +1,6 @@
 # Verification: local server HTTP end-to-end (2026-10-12)
 
-Subprocess `python -m easy_sandbox.server serve` on 127.0.0.1 (ephemeral port). Checks are a separate HTTP client, plus a raw socket for the websocket upgrade. Handlers were not called in-process. `PYTHONPATH=server-sdk/src`, `EBX_SERVER_ENABLED_GROUPS=agents`, fake `codex` and `qwen` on `PATH`. No server source edits.
+Subprocess `python -m agent_sandbox.server serve` on 127.0.0.1 (ephemeral port). Checks are a separate HTTP client, plus a raw socket for the websocket upgrade. Handlers were not called in-process. `PYTHONPATH=server-sdk/src`, `ABX_SERVER_ENABLED_GROUPS=agents`, fake `codex` and `qwen` on `PATH`. No server source edits.
 
 ## Command
 

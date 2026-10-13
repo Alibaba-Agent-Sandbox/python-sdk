@@ -8,13 +8,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from easy_sandbox.models.errors import (
+from agent_sandbox.models.errors import (
     InvalidAPIKeyError,
     InvalidCredentialsError,
     TokenExchangeError,
     TokenExpiredError,
 )
-from easy_sandbox.transport.auth import (
+from agent_sandbox.transport.auth import (
     ENVD_AUTH_HEADER,
     ENVD_SANDBOX_ID_HEADER,
     ENVD_SANDBOX_PORT_HEADER,
@@ -221,6 +221,26 @@ class TestCreateAuthProvider:
     def test_api_key_used(self):
         auth = create_auth_provider(api_key="key-123")
         assert isinstance(auth, ApiKeyAuth)
+
+    def test_env_sandbox_api_key_is_used(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "env-key-123")
+        auth = create_auth_provider()
+        assert isinstance(auth, ApiKeyAuth)
+        assert auth._api_key == "env-key-123"
+
+    async def test_env_sandbox_api_key_header(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "env-key-123")
+        auth = create_auth_provider()
+        assert await auth.get_headers() == {PLATFORM_AUTH_HEADER: "Bearer env-key-123"}
+
+    def test_retired_api_key_names_are_not_read(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("E2B_API_KEY", "retired-e2b")
+        monkeypatch.setenv("SANDBOX_API_KEY", "retired-sandbox")
+        with pytest.raises(InvalidAPIKeyError, match="No authentication credentials") as exc_info:
+            create_auth_provider()
+        suggestion = exc_info.value.suggestion
+        assert "ABX_SANDBOX_API_KEY" in suggestion
+        assert "E2B_API_KEY" not in suggestion
 
 
 class TestBuildEnvdHeaders:

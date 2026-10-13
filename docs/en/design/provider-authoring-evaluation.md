@@ -1,6 +1,6 @@
 # Provider authoring evaluation — how hard is it to add a provider?
 
-> **Status**: Evaluation (evidence-based) with a resolution pass applied (see §10) · **Subject**: the `opensandbox` exec-provider plugin (`examples/providers/opensandbox/`) written against only the in-repo docs, then driven against a real local OpenSandbox server · **Companion docs**: [providers-and-credentials.md](providers-and-credentials.md) (normative design), [provider-opensandbox-mapping.md](provider-opensandbox-mapping.md) (research that fed the plugin), `../guide/providers.md` (user/author guide) · **中文**: [../../zh/design/provider-authoring-evaluation.md](../../zh/design/provider-authoring-evaluation.md)
+> **Status**: Evaluation (evidence-based) with a resolution pass applied (see §10) · **Subject**: the `opensandbox` exec-provider plugin ([awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox)) written against the SDK docs, then driven against a real local OpenSandbox server. The plugin source is that catalog, not this repository. · **Companion docs**: [providers-and-credentials.md](providers-and-credentials.md) (normative design), [provider-opensandbox-mapping.md](provider-opensandbox-mapping.md) (research that fed the plugin), `../guide/providers.md` (user/author guide) · **中文**: [../../zh/design/provider-authoring-evaluation.md](../../zh/design/provider-authoring-evaluation.md)
 >
 > **Method.** One author (an AI coding agent) started from the repository docs and the reference plugin, built the plugin, and recorded every place the docs, the host adapters or the tooling forced a detour. Claims are tagged **[ran]** (reproduced by running something; the command is in §9), **[read]** (read in source or docs) or **[est]** (estimate). "Time" figures are wall-clock estimates of the session, not instrumented measurements.
 
@@ -22,9 +22,9 @@ The friction is concentrated in three places, none of them the protocol itself:
 
 | Item | Result |
 |---|---|
-| Runtime choice | Dependency-free Node ESM (Node >= 20, built-in `fetch`). The mapping doc *recommended* stdlib Python but did not mandate it. Node was chosen because the `ebx` CLI is a Node program (no extra runtime for CLI users), `fetch` + `ReadableStream` make SSE streaming simple, and the installer forbids dependencies anyway. Cost: Python-SDK-only users need `node` on `PATH`. A Python port would be a mechanical translation. |
+| Runtime choice | Dependency-free Node ESM (Node >= 20, built-in `fetch`). The mapping doc *recommended* stdlib Python but did not mandate it. Node was chosen because the `abx` CLI is a Node program (no extra runtime for CLI users), `fetch` + `ReadableStream` make SSE streaming simple, and the installer forbids dependencies anyway. Cost: Python-SDK-only users need `node` on `PATH`. A Python port would be a mechanical translation. |
 | Capabilities | `sandbox.lifecycle` (create/connect/get/list/kill), `sandbox.timeout`, `sandbox.pause` (pause/resume), `exec.run`, `exec.stream`, `process.manage` (list/kill/signal; no stdin), `files.rw` (read incl. ranges, write incl. mode, list, stat, mkdir, remove, move; extensions search/chmod), `ports.url`, `sessions` (detached commands). Declared unsupported (E8004): `pty`, `code.interpret`, `templates.*`, `files.watch`, `files.transfer`, `process.stdin`. |
-| Configuration | 13 manifest fields; canonical `EBX_OPENSANDBOX_*` plus native aliases (`OPEN_SANDBOX_API_KEY`, `OPEN_SANDBOX_DOMAIN`, ...). Secrets (`api_key`, `registry_password`) flagged `secret`. |
+| Configuration | 13 manifest fields; canonical `ABX_OPENSANDBOX_*` plus native aliases (`OPEN_SANDBOX_API_KEY`, `OPEN_SANDBOX_DOMAIN`, ...). Secrets (`api_key`, `registry_password`) flagged `secret`. |
 | Size | `provider.mjs` + `src/` 1 670 lines; tests 1 262 lines (24 unit, 21 mock-server, 2 live-EPP, 5 kit, 10 pytest SDK scenarios). |
 | Quirks absorbed | execd upload needs the metadata part as a *file* part; `mode` is octal digits written as a decimal integer; DELETE `/files` vs `/directories` are type-specific; a second kill returns 404 (swallowed to keep `kill` idempotent); TTL minimum 60 s (clamped); metadata must follow Kubernetes label rules (validated up front, `-32006`); `renew-expiration` takes an absolute time (derived from the server `Date` header, so client clock skew does not matter); legacy execd v1.1.0 has no `argv` and strips line endings (detected and handled). |
 
@@ -36,7 +36,7 @@ The friction is concentrated in three places, none of them the protocol itself:
 |---|---|---|
 | Node unit + mock server | `node tests/run.mjs` | 45/45 pass |
 | Node live (EPP/1 direct) | `OPENSANDBOX_LIVE=1 node tests/run.mjs live` | 2/2 pass (full lifecycle/exec/files/ports/pause/error mapping, wrong key) |
-| Shared contract kit | `pytest ... --provider-under-test opensandbox` (with the collection workaround, §6.1) | 5/5 pass (**now 18/18** with `python -m easy_sandbox.providers test opensandbox`, §10) |
+| Shared contract kit | `pytest ... --provider-under-test opensandbox` (with the collection workaround, §6.1) | 5/5 pass (**now 18/18** with `python -m agent_sandbox.providers test opensandbox`, §10) |
 | SDK scenarios (`Sandbox.create(provider="opensandbox")`) | `pytest tests/contract` | 10/10 pass (5 kit + 5 scenarios: streaming order and incrementality, exit codes, env/cwd, unicode files, `E4001` for missing files, `set_timeout`, pause/resume, process list, `E8004`, unknown id) |
 | Config precedence | `provider_e2e.py --stages env` | 6/6: canonical beats native for base URL and API key; native alone suffices; wrong key is `E1001` |
 | Installer flows | `provider_install_e2e.py` | 36/36 checks pass, plus 2 non-fatal findings (§5) (**now 39/39, no findings**, §10) |
@@ -54,7 +54,7 @@ The installer flows covered: local-path install; `file://` bare-repo install pin
 | Manifest and config schema | 4.5 | Declarative fields, `secret`, `env` aliases, `choices`, `default`, `core.inherit`, `security` block; the host resolves precedence. The one trap: defaults are *delivered* to the plugin, so a manifest default on `base_url` would silently beat the `domain` alternative. Not documented. |
 | Error model | 4 | JSON-RPC codes map to stable SDK codes, `retryable` flag, `sdk_code` hint. Gaps: no code for "connection refused" (surfaces as generic `E8000`); the set of `sdk_code` values a plugin may name is documented only by example (`E2001`, `E4001`), the full list is the `_SDK_CODE_CLASSES` table in `providers/epp.py`. |
 | Installer, store, trust | 4 → **4.5** | Correct and strict in all flows; consent and receipt design is excellent. Two bugs (§5) and missing CLI flags. |
-| Contract tests / author tooling | 2 → **4** | Kit exists but collects nothing as documented, has 5 tests, no streaming/pause/timeout/process/file-edge coverage, no mock host, no scaffold or `ebx provider init`. |
+| Contract tests / author tooling | 2 → **4** | Kit exists but collects nothing as documented, has 5 tests, no streaming/pause/timeout/process/file-edge coverage, no mock host, no scaffold or `abx provider init`. |
 | Host adapters (completeness of the abstraction) | 3 → **4** | The exec adapters cover the core; but see §4: hard-coded `secure`, no per-create options, lazy start, no `ports.url` wiring, no `code` fallback. |
 | Reference plugin | 3.5 | `local-process` is compact and readable; it is Python, covers no HTTP/streaming/auth, and shows none of the real-world problems (clock skew, retries, cancel). |
 | Docs discoverability | 3 → **3.5** | Design doc is exhaustive but 700+ lines; the author path is spread over design + guide + code; the guide's *Writing a provider* section shows the manifest only; there is no walk-through of the first EPP exchange or of the methods a plugin must answer. |
@@ -109,8 +109,8 @@ The same protocol surface is described in four places: the design table, the Pyt
 | # | Defect | Evidence | Fix |
 |---|---|---|---|
 | B1 | **`data/` is lost when an update is rolled back.** `_swap_in` moves the old `data/` into the staged tree before `verify` runs; on verify failure it deletes `final` (now holding `data/`) and restores the trash copy, which no longer has `data/`. | `provider_install_e2e.py` prints `[BUG ] data/ survives an update that was rolled back...` | Move `data/` back into the trash copy before `remove_tree(final)` (or copy instead of move until `verify` passes). |
-| B2 | **`python -m easy_sandbox.providers update` has no `--allow-insecure-transport`.** Git sources installed with the flag cannot be updated from the command line (E8012); the receipt does not record that the flag was used. | `[GAP ] CLI 'update' cannot reach a file:// source` | Add the flag to `update`; consider recording `insecure_transport: true` in the receipt so `update` can reuse it after consent. |
-| B3 | The documented contract-test command collects 0 tests (§6.1). | `--pyargs easy_sandbox.providers.testing` finds nothing because neither the module name (`testing.py`) nor the class name (`ProviderContractTests`) matches pytest's defaults | See §6.1. |
+| B2 | **`python -m agent_sandbox.providers update` has no `--allow-insecure-transport`.** Git sources installed with the flag cannot be updated from the command line (E8012); the receipt does not record that the flag was used. | `[GAP ] CLI 'update' cannot reach a file:// source` | Add the flag to `update`; consider recording `insecure_transport: true` in the receipt so `update` can reuse it after consent. |
+| B3 | The documented contract-test command collects 0 tests (§6.1). | `--pyargs agent_sandbox.providers.testing` finds nothing because neither the module name (`testing.py`) nor the class name (`ProviderContractTests`) matches pytest's defaults | See §6.1. |
 
 ---
 
@@ -118,15 +118,15 @@ The same protocol surface is described in four places: the design table, the Pyt
 
 ### 6.1 Contract kit instructions are wrong
 
-`guide/providers.md` says `pytest -p easy_sandbox.providers.testing --pyargs easy_sandbox.providers.testing --provider-under-test my-cloud`. That collects **0 items** (pytest exits 5, which a lenient CI step can ignore). The subclass form shown just above it in the guide works. The command line form needs:
+`guide/providers.md` says `pytest -p agent_sandbox.providers.testing --pyargs agent_sandbox.providers.testing --provider-under-test my-cloud`. That collects **0 items** (pytest exits 5, which a lenient CI step can ignore). The subclass form shown just above it in the guide works. The command line form needs:
 
 ```bash
-pytest -p easy_sandbox.providers.testing -o python_classes=ProviderContractTests \
-       -o python_files=testing.py --pyargs easy_sandbox.providers.testing \
+pytest -p agent_sandbox.providers.testing -o python_classes=ProviderContractTests \
+       -o python_files=testing.py --pyargs agent_sandbox.providers.testing \
        --provider-under-test my-cloud
 ```
 
-The subclass form (`class TestMine(ProviderContractTests): provider_id = "my-cloud"`) is what `examples/providers/opensandbox/tests/contract/test_contract.py` uses. Recommended: make the kit collectable by default (`__test__ = True`, rename the class `TestProviderContract`, or ship a `pytest11` entry point with `pytest_collect_file`), and make "collected zero tests" an error in the docs' example (`--strict`-style check).
+The subclass form (`class TestMine(ProviderContractTests): provider_id = "my-cloud"`) is what [`opensandbox/tests/contract/test_contract.py`](https://github.com/alibaba-agent-sandbox/awesome-providers/blob/main/opensandbox/tests/contract/test_contract.py) uses. Recommended: make the kit collectable by default (`__test__ = True`, rename the class `TestProviderContract`, or ship a `pytest11` entry point with `pytest_collect_file`), and make "collected zero tests" an error in the docs' example (`--strict`-style check).
 
 ### 6.2 Missing or hard-to-find information
 
@@ -141,13 +141,13 @@ The subclass form (`class TestMine(ProviderContractTests): provider_id = "my-clo
 | D7 | `data/` excluded from the digest, `tests/` *included* (a plugin's tests bloat every install and change the digest) | Authoring checklist |
 | D8 | `install --link --yes` as the development loop is documented under *Install* but not linked from *Writing a provider* | Author guide cross-link |
 | D9 | The guide's *Testing a plugin* covers only the contract kit: no mock-host helper, no sample EPP client, no advice on offline tests | New "Testing your plugin" section; this plugin's `tests/epp-client.mjs` and `tests/mock/` are a starting point |
-| D10 | Canonical env names for a provider id with a dash/underscore, and the precedence between `EBX_<ID>_*`, native aliases, `.env`, TOML | Environment variables guide (the table exists, the rule for aliases is implicit) |
+| D10 | Canonical env names for a provider id with a dash/underscore, and the precedence between `ABX_<ID>_*`, native aliases, `.env`, TOML | Environment variables guide (the table exists, the rule for aliases is implicit) |
 | D11 | Repository `pytest` runs from a directory containing an unrelated `conftest.py` fail at collection; authors need `--noconftest`/`--confcutdir` | Contributing doc |
 | D12 | `pip install -e client-sdk` fails when the workspace uses a `uv` source for `server-sdk` | Contributing doc / packaging |
 
 ### 6.3 Doc fixes applied vs deferred
 
-Applied (docs I own): `examples/providers/opensandbox/README.md` / `README.zh-CN.md` (install, config, capability matrix, test tiers, known limits), `e2e/opensandbox/README.md` (how to run the provider E2E), `examples/providers/README.md` (third reference plugin). **Deferred** (files owned by other workstreams): everything in §6.1, D1-D12, and the corrections in §7.
+Applied (docs I own): the opensandbox plugin README now lives in [awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox) (`README.md` / `README.zh-CN.md`: install, config, capability matrix, test tiers, known limits), `e2e/opensandbox/README.md` (how to run the provider E2E; the harness installs the plugin and does not vendor it), `examples/providers/README.md` (points at the catalog). **Deferred** (files owned by other workstreams): everything in §6.1, D1-D12, and the corrections in §7.
 
 ---
 
@@ -157,16 +157,16 @@ Applied (docs I own): `examples/providers/opensandbox/README.md` / `README.zh-CN
 |---|---|---|---|
 | P0 | B1 data loss on failed update | `installer._swap_in` | ~5 lines + test |
 | P0 | Correct the contract-test command and make the kit collectable (§6.1) | `providers/testing.py`, `guide/providers.md` (en/zh) | small |
-| P1 | `provider update --allow-insecure-transport` (B2) and `ebx provider update` parity | `providers/__main__.py`, CLI | small |
+| P1 | `provider update --allow-insecure-transport` (B2) and `abx provider update` parity | `providers/__main__.py`, CLI | small |
 | P1 | L1/L2: honour `secure`, pass `provider_options` into `sandbox.create` | `exec_provider.ExecSandboxProtocol.create`, spec table | small |
 | P1 | L4: eager `exec.start` in `ExecProcessProtocol.start` | `exec_provider.py` | small |
 | P1 | L3: route `network.get_url` through `ports.url` | `Sandbox`/network API | medium |
 | P2 | Machine-readable method schemas (one JSON Schema per method, shared by SDK, CLI, kit) plus kit tests generated from them | `fixtures/`, `testing.py` | medium |
 | P2 | Extend the kit: streaming order and exactly one exit, cancel, `set_timeout`, pause/resume, process list/kill, file edge cases (binary, missing -> `E4001`, overwrite), idempotent kill, `-32006` on bad params | `providers/testing.py` | medium |
-| P2 | Author scaffold: `python -m easy_sandbox.providers init <id> --runtime node|python` generating manifest, entry, EPP test client | new module | medium |
+| P2 | Author scaffold: `python -m agent_sandbox.providers init <id> --runtime node|python` generating manifest, entry, EPP test client | new module | medium |
 | P2 | Mark required vs optional methods and extension methods in the EPP table (D3, D4) | `providers-and-credentials.md` | small |
 | P3 | L5-L10 | `exec_provider.py`, models | small each |
-| P3 | `--trace-epp` / `EBX_EPP_TRACE=1` to log requests/responses (redacted) | `providers/epp.py` | small |
+| P3 | `--trace-epp` / `ABX_EPP_TRACE=1` to log requests/responses (redacted) | `providers/epp.py` | small |
 | P3 | Exclude `tests/` from the digest or document it (D7) | `store._walk_regular`, docs | small |
 
 ---
@@ -185,9 +185,10 @@ Applied (docs I own): `examples/providers/opensandbox/README.md` / `README.zh-CN
 
 ```bash
 cd e2e/opensandbox && ./local-up.sh up && eval "$(./local-up.sh env)"
-python3 provider_e2e.py                 # 12 checks
-python3 provider_install_e2e.py         # 39 checks (it used to print [GAP]/[BUG] findings; none remain)
-cd ../../examples/providers/opensandbox && node tests/run.mjs
+python3 provider_e2e.py                 # clones awesome-providers unless ABX_OPENSANDBOX_PLUGIN is set
+python3 provider_install_e2e.py
+git clone --depth 1 https://github.com/alibaba-agent-sandbox/awesome-providers.git
+cd awesome-providers/opensandbox && node tests/run.mjs
 ```
 
 See `e2e/opensandbox/README.md` for the environment variables each script reads (no secrets are written anywhere; the local API key is a throwaway development value).
@@ -201,8 +202,8 @@ Everything below was fixed in the SDK and re-verified against the local OpenSand
 | Item | Status | What changed |
 |---|---|---|
 | B1 `data/` lost on rollback | **Fixed** | `installer._swap_in` moves `data/` back before restoring the previous tree, on both failure paths (failed `verify`, failed swap). Regression tests inject each failure and compare file contents and modes. |
-| B2 `update` lacks `--allow-insecure-transport` | **Fixed** | `python -m easy_sandbox.providers update` takes `--allow-insecure-transport` and `--no-verify`. The receipt deliberately does not remember the flag (see the guide). |
-| B3 / §6.1 contract command collects 0 tests | **Fixed** | `python -m easy_sandbox.providers test <id>` (fails on 0 collected tests, isolates from the current directory's pytest config) and `pytest -p easy_sandbox.providers.testing --pyargs easy_sandbox.providers.contract --provider-under-test <id>`. Guide, design doc and zh copies corrected. |
+| B2 `update` lacks `--allow-insecure-transport` | **Fixed** | `python -m agent_sandbox.providers update` takes `--allow-insecure-transport` and `--no-verify`. The receipt deliberately does not remember the flag (see the guide). |
+| B3 / §6.1 contract command collects 0 tests | **Fixed** | `python -m agent_sandbox.providers test <id>` (fails on 0 collected tests, isolates from the current directory's pytest config) and `pytest -p agent_sandbox.providers.testing --pyargs agent_sandbox.providers.contract --provider-under-test <id>`. Guide, design doc and zh copies corrected. |
 | Kit has 5 tests (§3) | **Fixed** | 18 tests: exec stream order and single exit, exit code/stderr/env, timeout enforcement, binary and unicode files, directories and move, typed not-found, kill idempotence, `set_timeout`, pause/resume, process list, `ports.url`, E8004 for undeclared features, secret redaction; `--provider-option KEY=VALUE`. |
 | L1 hard-coded `secure=True` | **Fixed** | `Sandbox.create(secure=None)`: sent to a plugin only when the caller set it; the built-in provider still behaves as `True`. |
 | L2 no per-create options | **Fixed** | `provider_options` reach `sandbox.create` as `options` (secret fields removed). The OpenSandbox plugin accepts a whitelist per create (`network_policy`, `platform`, `default_image`, ...) and never lets `options` change the server address or key. |
@@ -217,3 +218,25 @@ Everything below was fixed in the SDK and re-verified against the local OpenSand
 | Scaffold (`provider init`), `--trace-epp`, per-method result schemas | Open | Parameters are schema-checked; results are only described. |
 
 **Scorecard movement.** Contract tests 2 → 4 (collectable, 18 tests, one command); host adapters 3 → 4 (L1-L4, L8); installer 4 → 4.5 (B1, B2); protocol clarity 4 → 4.5 (one table with required/optional/extension and exact names); docs discoverability and offline testability +0.5 each. Overall 3.5 → 4.0.
+
+## 11. Addendum 2026-10-13: review of the abstraction against a live server
+
+**Verdict: keep the abstraction; harden the edges.** EPP/1 exec plugins, `abx-provider.toml`, the installer and the contract kit were enough to run OpenSandbox for real (Docker, server 1.1.1) from both hosts: install pinned from git, doctor, 18/18 contract cases, create, exec, binary files, timeout, pause/resume, connect, kill, tamper detection. Evidence: [2026-10-13-opensandbox-provider-e2e](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/evidence/verify/2026-10-13-opensandbox-provider-e2e.md). No new protocol method was needed.
+
+What the review found and changed (TS and Python together):
+
+| Finding | Change |
+|---|---|
+| A missing sandbox was `E8005` for plugins and `E2009` for the built-in provider | `sandbox.get/connect/set_timeout/pause/resume` map a plugin's "not found" to `SandboxNotFoundError` (E2009); a plugin may also name `sdk_code: "E2009"`. The contract kit now requires E2009 for an unknown id |
+| `rest` presets ignored `[features] supported` (only `exec` plugins enforced it) | `feature_gate` wraps the four protocol classes; an undeclared feature is E8004 before any HTTP request |
+| `exec` records inherited the built-in `region = "cn-hangzhou"` and `timeout = 300` | `record_to_info` leaves the region empty and derives the timeout from `created_at`/`expires_at` when the plugin reports both |
+| `--yes` accepted a moving git ref in some paths | `--yes` never accepts an unpinned ref; interactive review or `--allow-unpinned` does. Same rule for `update`. The refusal prints the commit to pin |
+| A plugin root without `abx-provider.toml` gave a bare "file not found" | the error says the file is missing at the plugin root and how to point at the subdirectory |
+| `provider list` did not show what a provider can do | a Features column (`sandbox(lifecycle,pause) exec(run,stream) ...`), also in `--json` and in `python -m agent_sandbox.providers list` |
+| Duplicated consent logic in the exec and rest providers; an unused `listV2` in the TS exec adapter | `consented_inherit` helper; the adapter method was removed |
+
+Redundancy check. `exec_provider` (EPP adapters) and `rest_provider` (E2B preset) share no code beyond the helpers above and are not redundant: they are the two ways a backend is reached (own wire protocol vs E2B wire protocol). `epp.ts` / `epp.py` is only the JSON-RPC client and error mapping. `Provider.capabilities()` and `FEATURE_TO_CAPABILITY` are unused; capability resolution still comes from the template (open).
+
+Trust model check. The installer already fetched without a checkout, allowed only regular files, recorded a tree digest, verified it on every start and rolled back a failed update. Confirmation and pinning were present but had a hole (`--yes` plus a branch); that is closed. `provider install` from a git URL is therefore **not** experimental.
+
+Open: template commands ignore `--provider`; the capability set is not derived from provider features; no pause/resume CLI command; `SandboxInfo` still has built-in defaults for region and timeout; the awesome-providers catalog needs the `abx` rename (`cli/e2e/providers/awesome-providers-abx-rename.patch`).

@@ -19,14 +19,12 @@ from typing import Any
 
 import httpx
 import pytest
-from easy_sandbox.server import CommandRegistry, SandboxServer
-from easy_sandbox.server.routes import (
-    _KNOWN_BUILTINS,
-    _enabled_builtins,
-    enable_builtin,
-)
 
-from easy_sandbox.declarative.decorator import _SandboxFactory
+from agent_sandbox.declarative.decorator import _SandboxFactory
+
+pytest.importorskip("agent_sandbox.server", reason="needs the agent-sandbox-server distribution")
+
+from agent_sandbox.server import CommandRegistry, SandboxServer, default_table  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -46,10 +44,9 @@ def _free_port() -> int:
 
 @pytest.fixture()
 def _reset_builtins():
-    original = set(_enabled_builtins)
+    default_table().clear_group_overrides()
     yield
-    _enabled_builtins.clear()
-    _enabled_builtins.update(original)
+    default_table().clear_group_overrides()
 
 
 @pytest.fixture()
@@ -64,7 +61,7 @@ def register_and_serve(_reset_builtins, tmp_path):
     srv_registry = CommandRegistry()
 
     # Monkeypatch ``default_registry`` to return our fresh instance
-    import easy_sandbox.server.registry as _reg_mod
+    import agent_sandbox.server.registry as _reg_mod
 
     original_default = _reg_mod._default_registry
     _reg_mod._default_registry = srv_registry
@@ -94,9 +91,7 @@ def register_and_serve(_reset_builtins, tmp_path):
     port = _free_port()
     server = SandboxServer(host="127.0.0.1", registry=srv_registry)
 
-    for name in _KNOWN_BUILTINS:
-        enable_builtin(name)
-    os.environ["EBX_SERVER_BASE_DIR"] = str(tmp_path)
+    os.environ["ABX_SERVER_BASE_DIR"] = str(tmp_path)
 
     t = threading.Thread(target=server.serve, kwargs={"port": port}, daemon=True)
     t.start()
@@ -116,7 +111,7 @@ def register_and_serve(_reset_builtins, tmp_path):
     yield port, factory, srv_registry
 
     server.shutdown()
-    os.environ.pop("EBX_SERVER_BASE_DIR", None)
+    os.environ.pop("ABX_SERVER_BASE_DIR", None)
     _reg_mod._default_registry = original_default
 
 

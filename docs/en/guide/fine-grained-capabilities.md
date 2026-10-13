@@ -1,31 +1,39 @@
 # Fine-grained capabilities
 
-Groups are the gate. Endpoint policy decides which routes inside a group can be called, and which path, command, size, and rate limits apply. `agents-cli` exposes only the session routes and leaves `POST /shell` and `POST /v1/agents` closed. That is this layer.
+Every route has one endpoint id, and one rule per endpoint decides whether it can be called and which path, command, size, and rate limits apply. There is no second gate in front of the rules. `agents-cli` exposes only the session routes and leaves `POST /shell` and `POST /v1/agents` closed. That is this layer.
 
-The design note is [Fine-grained capabilities](../design/fine-grained-capabilities.md). Path and command enforcement is in [File and command controls](file-and-command-controls.md). Agents request and response shapes are in [Agents API](agents-api.md). The full route table is in the [Agents API reference](../../zh/reference/agents-api.md) (中文).
+The design note is [Fine-grained capabilities](../design/fine-grained-capabilities.md). Path and command enforcement is in [File and command controls](file-and-command-controls.md). Agents request and response shapes are in [Agents API](agents-api.md). The full route table is in the [Agents API reference](../reference/agents-api.md).
 
-## Two switches
+## One switch: the endpoint
 
-1. **Group.** `core` is always on. `agents`, `dev_tools`, and `browser` start off. `file_ops`, `process`, `terminal`, `system`, and `commands` start on. A disabled group returns 404 `Built-in route '<id>' is disabled` before any endpoint rule runs.
-2. **Endpoint.** Once a policy is loaded, each route is allowed or denied by its endpoint id. Set `"*": {enabled: false}`, then set the ids you want to `enabled: true`. `health`, `capabilities`, and `capabilities_check` cannot be turned off.
+An endpoint id (`upload`, `files_list`, `agents_sessions_create`) is the unit everything uses: the policy, the audit log, `GET /capabilities`, and the client. A group is only a **name for a set of endpoint ids**. Writing `groups: [file_ops]`, `group:file_ops`, `table.enable_group(CapabilityGroup.FILE_OPS)`, or `ABX_SERVER_ENABLED_GROUPS=file_ops` expands to the ids declared in that group, and the result is the same per-endpoint rule set.
 
-`table.enable_group(FILE_OPS)` opens every file route in that group. Narrowing to one route needs a policy.
+Defaults: `core` is always on. `agents`, `dev_tools`, and `browser` are opt-in and start off. `file_ops`, `process`, `terminal`, `system`, and `commands` start on. `health`, `capabilities`, and `capabilities_check` cannot be turned off.
+
+Rules come from five layers and are merged per endpoint:
+
+| Layer | Source | Can turn on | Can turn off |
+|---|---|---|---|
+| default | the built-in opt-in groups | no | yes (opt-in groups) |
+| code | `default_table().enable_group()` / `disable_group()` in the template's `commands.py` | yes | yes |
+| preset | `preset:` | yes | yes |
+| policy | `groups`, `defaults`, `endpoints` of the policy document | yes | yes |
+| environment | `ABX_SERVER_ENABLED_GROUPS` | yes | no |
+
+The more specific selector wins: an exact id beats a glob, a glob beats `group:<name>`. At equal specificity the later layer wins, and inside one layer a single `enabled: false` turns the endpoint off. So `endpoints.code_run.enabled: false` in the policy stays off even when the environment enables `dev_tools`.
+
+A denial names the rule that denied it. The 404 body carries `code: endpoint_disabled` and `rule`, for example `policy:endpoints.shell`, `policy:groups.process`, `preset:read-only`, `code:enable_group:file_ops`, or `default:opt-in:browser`. `GET /capabilities` reports the same `rule` per endpoint. Its `groups` and `group_summary` fields are derived from the endpoint state (`{"file_ops": {"enabled": 11, "total": 12}}`), never stored.
+
+`ABX_SERVER_ENABLED_GROUPS` is the only group environment variable. A comma list of group names, such as `agents,dev_tools`. An unknown name stops the process with a did-you-mean message. There is no variable to disable groups. Write `groups: {process: false}` or `endpoints` rules.
 
 ## How to turn it on
 
 Three inputs, one document. An invalid document stops the process. It does not fall open.
 
-The `server:` block in `template.yaml`. Tooling compiles it to `/etc/easy-sandbox/server-policy.json`.
+The `server:` block in `template.yaml`. Tooling compiles it to `/etc/agent-sandbox/server-policy.json`. Accepted keys: `version`, `preset`, `base_dir`, `groups`, `defaults`, `auth`, `endpoints`, `description`. `groups` is either a list of groups to turn on or a map of group to `true`/`false`.
 
 ```yaml
 server:
-  groups:
-    agents: true
-    file_ops: false
-    process: false
-    terminal: false
-    dev_tools: false
-    browser: false
   endpoints:
     "*":
       enabled: false
@@ -39,43 +47,60 @@ server:
       enabled: true
 ```
 
+Group shorthand, list or map:
+
+```yaml
+server:
+  groups: [agents, dev_tools]     # same as {agents: true, dev_tools: true}
+```
+
+```yaml
+server:
+  groups:
+    process: false
+    terminal: false
+```
+
 Inline JSON:
 
 ```bash
-export EBX_SERVER_POLICY='{"groups":{"agents":true,"process":false},"endpoints":{"*":{"enabled":false},"agents_sessions_create":{"enabled":true}}}'
+export ABX_SERVER_POLICY='{"groups":["agents"],"endpoints":{"*":{"enabled":false},"agents_sessions_create":{"enabled":true}}}'
 ```
 
 Or a file:
 
 ```bash
-export EBX_SERVER_POLICY_FILE=/etc/easy-sandbox/server-policy.json
-easy-sandbox-server check-config --policy /etc/easy-sandbox/server-policy.json
+export ABX_SERVER_POLICY_FILE=/etc/agent-sandbox/server-policy.json
+agent-sandbox-server check-config --policy /etc/agent-sandbox/server-policy.json
 ```
 
-Lookup order: `EBX_SERVER_POLICY`, then `EBX_SERVER_POLICY_FILE`, then the well-known policy file. With none of them, the server keeps the group switches and does not apply per-endpoint rules.
+Lookup order: `ABX_SERVER_POLICY`, then `ABX_SERVER_POLICY_FILE`, then the well-known policy file. With none of them the built-in defaults apply: opt-in groups off, everything else on, no per-endpoint limits.
 
 Python:
 
 ```python
-from easy_sandbox.server import SandboxServer, ServerPolicy, default_table
+from agent_sandbox.server import SandboxServer, ServerPolicy
 
 policy = ServerPolicy.only(
     "agents_sessions_create",
     "agents_sessions_events_create",
     "agents_sessions_items_list",
     "agents_runtimes_list",
-).with_options(groups={
-    "agents": True,
-    "file_ops": False,
-    "process": False,
-    "terminal": False,
-    "dev_tools": False,
-    "browser": False,
-})
-SandboxServer(route_table=default_table(), policy=policy).serve(port=9000)
+)
+SandboxServer(policy=policy).serve(port=9000)
 ```
 
-`ServerPolicy.only` turns `"*"` off, turns the listed ids on, and leaves the core endpoints on. `agents-cli`'s `commands.py` is this call.
+`ServerPolicy.only` turns `"*"` off, turns the listed ids on, and leaves the core endpoints on. `agents-cli`'s `commands.py` is this call. `only` also accepts `"transfer"` (the four upload and download ids) and `"group:<name>"`.
+
+To open a whole group from `commands.py` without a policy document:
+
+```python
+from agent_sandbox.server import CapabilityGroup, default_table
+
+default_table().enable_group(CapabilityGroup.DEV_TOOLS)
+```
+
+`enable_group` and `disable_group` are the only code-level switches. `disable_group(CORE)` raises.
 
 ## Selectors
 
@@ -87,7 +112,7 @@ SandboxServer(route_table=default_table(), policy=policy).serve(port=9000)
 | `*` | Every endpoint |
 | `@defaults` | The `defaults` block, applied before each endpoint |
 
-If any matching rule at the same layer sets `enabled: false`, the endpoint is off. A more specific selector can turn it back on.
+If several matching rules of the same specificity and layer disagree, `enabled: false` wins. A more specific selector can turn the endpoint back on.
 
 ## What a rule may contain
 
@@ -111,7 +136,7 @@ Presets apply before your endpoint rules:
 
 | Preset | Effect |
 |---|---|
-| `default` | No extra restriction |
+| `default` | No extra restriction (opt-in groups stay off) |
 | `transfer-only` | Only `upload`, `download`, `files_upload_stream`, `files_download_stream` |
 | `read-only` | Turns off process, terminal, dev_tools, and browser, and turns off write endpoints and `env_set` |
 | `hardened` | Turns off those groups and denies `/proc`, `/sys`, `/dev`, `.ssh`, `.env`, `*.pem`, and private-key names on file routes |
@@ -123,7 +148,7 @@ The checker warns (L1) when one identity can both read scoped files and run `she
 
 ## Endpoint catalogue
 
-This is the route table registered when the server package is imported. Agents rows use the scope `agents:use`. They have fewer knobs than file routes that take a path, because these routes do not accept paths or specialised parameters.
+This is the endpoint declaration table (`agent_sandbox.server.endpoints.ENDPOINTS`). The route table, the policy, and `GET /capabilities` are all derived from it. `pty_connect` is the WebSocket upgrade, served on the PTY port. Agents rows use the scope `agents:use`. They have fewer knobs than file routes that take a path, because these routes do not accept paths or specialised parameters.
 
 | Group | Method | Path | Endpoint id | Scope | Knobs |
 |---|---|---|---|---|---|
@@ -239,6 +264,7 @@ This is the route table registered when the server package is imported. Agents r
 | `system` | GET | `/ports` | `ports` | system:read | common limits only |
 | `system` | GET | `/system/info` | `system_info` | system:read | common limits only |
 | `system` | GET | `/system/metrics` | `system_metrics` | system:read | common limits only |
+| `terminal` | WS | `/pty` | `pty_connect` | terminal:use | common limits only |
 | `terminal` | POST | `/pty/sessions` | `pty_create_session` | terminal:use | params: env_deny, shells; limits: max_sessions |
 | `terminal` | DELETE | `/pty/sessions/{id}` | `pty_delete_session` | terminal:use | common limits only |
 | `terminal` | GET | `/pty/sessions/{id}` | `pty_detail` | terminal:use | common limits only |
@@ -247,7 +273,7 @@ This is the route table registered when the server package is imported. Agents r
 
 ## How this meets the Agents API case
 
-`agents-cli` sets `groups.agents` and enables only:
+`agents-cli` enables only:
 
 | Endpoint id | Route |
 |---|---|

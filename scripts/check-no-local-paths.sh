@@ -35,7 +35,7 @@ RULES=(
   'Windows user path::[A-Za-z]:[\\/]+Users[\\/]::'
   'personal scratch / project directory::Documents/Qoder|Qoder/20[0-9][0-9]|/chat-[0-9]+([^0-9]|$)::'
   'virtualenv interpreter assumption::[.]venv/(bin|Scripts)/::'
-  'agent scratch location::/tmp/(easy-sandbox|parity|venv)[A-Za-z0-9_-]*::'
+  'agent scratch location::/tmp/(agent-sandbox|parity|venv)[A-Za-z0-9_-]*::'
   'dated e2e artifact name::e2e-20[0-9]{6}::'
   'secret: Alibaba Cloud AccessKey id::LTAI[A-Za-z0-9]{12,}::'
   'secret: AWS-style access key id::AKIA[0-9A-Z]{16}::'
@@ -48,7 +48,7 @@ RULES=(
 
 # Maintainer-private literals (account ids, handles) live in a gitignored file, one
 # extended regex per line, so they never appear in a published script.
-PRIVATE_RULES_FILE="${EBX_HYGIENE_PRIVATE_RULES:-$ROOT/scripts/local-paths.private}"
+PRIVATE_RULES_FILE="${ABX_HYGIENE_PRIVATE_RULES:-$ROOT/scripts/local-paths.private}"
 if [ -f "$PRIVATE_RULES_FILE" ]; then
   while IFS= read -r line || [ -n "$line" ]; do
     line="${line%$'\r'}"

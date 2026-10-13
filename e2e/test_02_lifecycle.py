@@ -28,14 +28,14 @@ def test_create_info_and_kill(run, sandbox_factory):  # type: ignore[no-untyped-
 
 
 async def _not_running(sandbox_id: str) -> bool:
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
     infos = await Sandbox.list(limit=200)
     return all(i.sandbox_id != sandbox_id for i in infos)
 
 
 def test_created_sandbox_appears_in_list_with_metadata(run, sandbox_factory):  # type: ignore[no-untyped-def]
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
     sb = sandbox_factory(H.OFFICIAL_BASE, metadata={"e2e_kind": "list-check"})
 
@@ -49,7 +49,7 @@ def test_created_sandbox_appears_in_list_with_metadata(run, sandbox_factory):  #
 
 
 def test_connect_from_second_handle_shares_state(run, sandbox_factory):  # type: ignore[no-untyped-def]
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
     sb = sandbox_factory(H.OFFICIAL_BASE)
     path = H.unique_dir() + ".txt"
@@ -82,7 +82,7 @@ def test_set_timeout_extends_the_deadline(run, sandbox_factory):  # type: ignore
 
 
 def test_async_context_manager_kills_on_exit(run, tracker):  # type: ignore[no-untyped-def]
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
     async def _scenario() -> str:
         async with await Sandbox.create(
@@ -100,14 +100,14 @@ def test_async_context_manager_kills_on_exit(run, tracker):  # type: ignore[no-u
 
 
 def test_invalid_request_timeout_is_rejected_locally(run):  # type: ignore[no-untyped-def]
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
     with pytest.raises(ValueError):
         run(Sandbox.create(template=H.OFFICIAL_BASE, request_timeout=0))
 
 
 def test_kill_by_id_is_idempotent(run, sandbox_factory):  # type: ignore[no-untyped-def]
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
     sb = sandbox_factory(H.OFFICIAL_BASE)
     run(Sandbox.kill_by_id(sb.id))

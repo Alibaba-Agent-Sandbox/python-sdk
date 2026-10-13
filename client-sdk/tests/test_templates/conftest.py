@@ -2,7 +2,7 @@
 
 ``examples/templates/`` is **not** a publishable template collection: the
 single source of truth for template content, the index and releases is the
-``Easy-Sandbox/awesome-templates`` repository.  What remains here is a minimal
+``alibaba-agent-sandbox/awesome-templates`` repository.  What remains here is a minimal
 fixture (``python-hello`` and the offline ``agents-cli`` example) used to exercise the
 install/server pipelines **offline**: no network, no real platform API, no docker daemon.
 """
@@ -25,7 +25,7 @@ EXPECTED_FIXTURE_TEMPLATES: tuple[str, ...] = ("agents-cli", "python-hello")
 
 #: Single source of truth for official & community template content, the
 #: machine-readable index (``awesome-templates.yaml``) and publication.
-SOURCE_OF_TRUTH_URL = "https://github.com/Easy-Sandbox/awesome-templates"
+SOURCE_OF_TRUTH_URL = "https://github.com/alibaba-agent-sandbox/awesome-templates"
 
 #: Files every template folder must contain.
 REQUIRED_TEMPLATE_FILES = ("template.yaml", "Dockerfile", "README.md")

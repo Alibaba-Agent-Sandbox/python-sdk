@@ -1,35 +1,35 @@
 """Tests for the E2B compatibility layer public exports.
 
 Guards the import surface documented in ``docs/*/guide/migrate-from-e2b.md``:
-``from easy_sandbox.compat import E2BSandbox`` must keep working, and
-``easy_sandbox.compat.__all__`` must list both public names.
+``from agent_sandbox.compat import E2BSandbox`` must keep working, and
+``agent_sandbox.compat.__all__`` must list both public names.
 """
 
 from __future__ import annotations
 
-import easy_sandbox.compat as compat
+import agent_sandbox.compat as compat
 
 
 class TestCompatPackageExports:
-    """Test the ``easy_sandbox.compat`` package re-exports."""
+    """Test the ``agent_sandbox.compat`` package re-exports."""
 
     def test_import_sandbox_from_package(self) -> None:
-        from easy_sandbox.compat import Sandbox
+        from agent_sandbox.compat import Sandbox
 
         assert Sandbox is not None
 
     def test_import_e2b_sandbox_from_package(self) -> None:
-        from easy_sandbox.compat import E2BSandbox
+        from agent_sandbox.compat import E2BSandbox
 
         assert E2BSandbox is not None
 
     def test_import_e2b_sandbox_from_submodule(self) -> None:
-        from easy_sandbox.compat.sandbox import E2BSandbox, Sandbox
+        from agent_sandbox.compat.sandbox import E2BSandbox, Sandbox
 
         assert E2BSandbox is Sandbox
 
     def test_e2b_sandbox_is_alias_of_sandbox(self) -> None:
-        from easy_sandbox.compat import E2BSandbox, Sandbox
+        from agent_sandbox.compat import E2BSandbox, Sandbox
 
         # ``compat/sandbox.py`` defines ``E2BSandbox = Sandbox`` (an alias,
         # not a subclass), so both names resolve to the same class object.

@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from easy_sandbox.server.guards import check_env, check_process, check_url
-from easy_sandbox.server.policy import PolicyDenied
+from agent_sandbox.server.guards import check_env, check_process, check_url
+from agent_sandbox.server.policy import PolicyDenied
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -28,14 +28,14 @@ class TestEnvGuard:
     def test_ordinary_assignment_is_admitted(self) -> None:
         assert check_env({"FOO": "bar", "COUNT": "1"}) == {"FOO": "bar", "COUNT": "1"}
 
-    def test_ebx_overwrite_is_denied(self) -> None:
-        assert code_of(check_env, {"EBX_SERVER_TOKEN": "x"}) == "env_var_denied"
-        assert code_of(check_env, {"ebx_secret": "x"}) == "env_var_denied"
+    def test_abx_overwrite_is_denied(self) -> None:
+        assert code_of(check_env, {"ABX_SERVER_TOKEN": "x"}) == "env_var_denied"
+        assert code_of(check_env, {"abx_secret": "x"}) == "env_var_denied"
 
     def test_caller_deny_list_blocks_only_listed_names(self) -> None:
         assert code_of(check_env, {"SECRET": "x"}, deny=["SECRET", "TOKEN"]) == "env_var_denied"
         assert check_env({"FOO": "bar"}, deny=["SECRET"]) == {"FOO": "bar"}
-        assert code_of(check_env, {"EBX_FLAG": "1"}, deny=["OTHER"]) == "env_var_denied"
+        assert code_of(check_env, {"ABX_FLAG": "1"}, deny=["OTHER"]) == "env_var_denied"
 
 
 class TestUrlGuard:

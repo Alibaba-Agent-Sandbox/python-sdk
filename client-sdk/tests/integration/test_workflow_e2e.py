@@ -1,7 +1,7 @@
 """SDK 工作流端到端测试 — Mock 后端验证完整链路。
 
 Tests the complete workflow from template definition → capability resolution
-→ image build → declarative↔server bridge.
+→ declarative↔server bridge.
 
 (The CLI-completeness class of the original monolith moved out with the CLI.)
 """
@@ -14,12 +14,11 @@ from unittest.mock import patch
 import pytest
 import yaml
 
-from easy_sandbox.api.capability import (
+from agent_sandbox.api.capability import (
     ResolvedCapabilities,
     resolve_capabilities,
 )
-from easy_sandbox.api.image import Image
-from easy_sandbox.models.template import (
+from agent_sandbox.models.template import (
     DEFAULT_CAPABILITIES,
     SandboxTemplate,
 )
@@ -49,8 +48,6 @@ class TestTemplateDefinition:
         assert "shell" in template.capabilities
         assert "ports" in template.capabilities
         assert template.ports == [9000]
-        assert "run" in template.custom_commands
-        assert "test" in template.custom_commands
 
     def test_legacy_build_fields_ignored(self):
         """Legacy build fields are silently ignored by extra='ignore'."""
@@ -59,22 +56,6 @@ class TestTemplateDefinition:
         # Legacy fields should not be present on the model
         assert not hasattr(template, "base")
         assert not hasattr(template, "system_packages")
-
-    def test_custom_commands_parsed(self):
-        """Custom commands in the template should have correct args and fields."""
-        data = yaml.safe_load(_PYTHON_HELLO_YAML.read_text())
-        template = SandboxTemplate.model_validate(data)
-
-        run_cmd = template.custom_commands["run"]
-        assert run_cmd.cmd == "python3 {file}"
-        assert run_cmd.timeout == 60
-        assert len(run_cmd.args) == 1
-        assert run_cmd.args[0].name == "file"
-        assert run_cmd.args[0].default == "main.py"
-
-        test_cmd = template.custom_commands["test"]
-        assert test_cmd.cmd == "python3 -m pytest {path}"
-        assert test_cmd.timeout == 120
 
     def test_template_with_capabilities_none_uses_defaults(self):
         """When capabilities is None, DEFAULT_CAPABILITIES should apply."""
@@ -112,7 +93,7 @@ class TestCapabilityResolution:
         assert result.capabilities == {"shell", "files", "terminal"}
 
     async def test_resolve_from_local_cache(self, tmp_path):
-        """Priority 2: scan ~/.ebx/templates/."""
+        """Priority 2: scan ~/.abx/templates/."""
         cache_dir = tmp_path / "templates" / "my-template"
         cache_dir.mkdir(parents=True)
         yaml_content = {
@@ -122,7 +103,7 @@ class TestCapabilityResolution:
         }
         (cache_dir / "template.yaml").write_text(yaml.dump(yaml_content))
 
-        with patch("easy_sandbox.api.capability.TEMPLATE_CACHE_DIR", tmp_path / "templates"):
+        with patch("agent_sandbox.api.capability.TEMPLATE_CACHE_DIR", tmp_path / "templates"):
             result = await resolve_capabilities("my-template")
 
         assert "ports" in result.capabilities
@@ -132,102 +113,10 @@ class TestCapabilityResolution:
         """Priority 4: when nothing matches, fall back to DEFAULT_CAPABILITIES."""
         result = await resolve_capabilities("nonexistent-template-xyz")
         assert result.capabilities == set(DEFAULT_CAPABILITIES)
-        assert result.custom_commands == {}
-
-    async def test_resolve_with_custom_commands(self, tmp_path):
-        """Custom commands from template.yaml should appear in resolved result."""
-        yaml_content = {
-            "name": "cmd-template",
-            "capabilities": ["shell"],
-            "custom_commands": {
-                "build": {
-                    "cmd": "make build",
-                    "description": "Build the project",
-                    "timeout": 120,
-                }
-            },
-        }
-        yaml_file = tmp_path / "template.yaml"
-        yaml_file.write_text(yaml.dump(yaml_content))
-
-        result = await resolve_capabilities(
-            "cmd-template",
-            local_yaml_path=str(yaml_file),
-        )
-        assert "build" in result.custom_commands
-        assert result.custom_commands["build"].cmd == "make build"
 
 
 # ---------------------------------------------------------------------------
-# Test 3: Image chain builder
-# ---------------------------------------------------------------------------
-
-
-class TestImageChainBuilder:
-    """Test Image.from_image(...).pip_install(...).env(...) chain."""
-
-    def test_basic_chain(self):
-        """Chain API produces correct Dockerfile."""
-        image = Image.from_image("python:3.11").pip_install("flask").env(PORT="8080")
-        dockerfile = image.to_dockerfile()
-        lines = dockerfile.split("\n")
-
-        assert lines[0] == "FROM python:3.11"
-        assert any("pip install" in line and "flask" in line for line in lines)
-        assert any("ENV PORT=8080" in line for line in lines)
-
-    def test_full_chain(self):
-        """Test all chain methods together."""
-        image = (
-            Image.from_image("python:3.11-slim")
-            .apt_install("curl", "git")
-            .pip_install("flask", "sqlalchemy")
-            .run_command("echo 'setup done'")
-            .env(APP_ENV="production", DEBUG="false")
-            .workdir("/app")
-            .expose(8080, 443)
-            .entrypoint("python main.py")
-        )
-        dockerfile = image.to_dockerfile()
-
-        assert "FROM python:3.11-slim" in dockerfile
-        assert "apt-get" in dockerfile
-        assert "curl" in dockerfile and "git" in dockerfile
-        assert "pip install" in dockerfile
-        assert "flask" in dockerfile and "sqlalchemy" in dockerfile
-        assert "echo 'setup done'" in dockerfile
-        assert "ENV APP_ENV=production" in dockerfile
-        assert "ENV DEBUG=false" in dockerfile
-        assert "WORKDIR /app" in dockerfile
-        assert "EXPOSE 8080" in dockerfile
-        assert "EXPOSE 443" in dockerfile
-        assert "CMD python main.py" in dockerfile
-
-    def test_from_template(self):
-        """from_template sets the base to the template name."""
-        image = Image.from_template("python-base").pip_install("numpy")
-        dockerfile = image.to_dockerfile()
-        assert "FROM python-base" in dockerfile
-        assert "pip install" in dockerfile
-        assert "numpy" in dockerfile
-
-    def test_empty_image(self):
-        """Default image uses ubuntu:22.04."""
-        image = Image()
-        dockerfile = image.to_dockerfile()
-        assert dockerfile == "FROM ubuntu:22.04"
-
-    def test_repr(self):
-        """repr shows meaningful info."""
-        image = Image.from_image("python:3.11").pip_install("a").env(X="1")
-        r = repr(image)
-        assert "python:3.11" in r
-        assert "steps=1" in r
-        assert "envs=1" in r
-
-
-# ---------------------------------------------------------------------------
-# Test 5: Declarative → Server bridge verification
+# Test 3: Declarative → Server bridge verification
 # ---------------------------------------------------------------------------
 
 
@@ -236,20 +125,20 @@ class TestDeclarativeServerBridge:
 
     @pytest.fixture(autouse=True)
     def _require_server_sdk(self) -> None:
-        pytest.importorskip("easy_sandbox.server", reason="needs the easy-sandbox-server dist")
+        pytest.importorskip("agent_sandbox.server", reason="needs the agent-sandbox-server dist")
 
     def test_register_bridges_to_server_registry(self):
         """@sandbox.register should register the command in both registries."""
         # Import fresh to avoid cross-test pollution of the default registry
-        from easy_sandbox.server.registry import CommandRegistry as ServerCommandRegistry
+        from agent_sandbox.server.registry import CommandRegistry as ServerCommandRegistry
 
-        from easy_sandbox.declarative.decorator import _SandboxFactory
+        from agent_sandbox.declarative.decorator import _SandboxFactory
 
         # Create a fresh server registry and patch default_registry()
         fresh_server_reg = ServerCommandRegistry()
 
         with patch(
-            "easy_sandbox.server.registry.default_registry",
+            "agent_sandbox.server.registry.default_registry",
             return_value=fresh_server_reg,
         ):
             factory = _SandboxFactory()
@@ -283,14 +172,14 @@ class TestDeclarativeServerBridge:
 
     def test_register_with_defaults(self):
         """Arguments with defaults should be marked required=False."""
-        from easy_sandbox.server.registry import CommandRegistry as ServerCommandRegistry
+        from agent_sandbox.server.registry import CommandRegistry as ServerCommandRegistry
 
-        from easy_sandbox.declarative.decorator import _SandboxFactory
+        from agent_sandbox.declarative.decorator import _SandboxFactory
 
         fresh_server_reg = ServerCommandRegistry()
 
         with patch(
-            "easy_sandbox.server.registry.default_registry",
+            "agent_sandbox.server.registry.default_registry",
             return_value=fresh_server_reg,
         ):
             factory = _SandboxFactory()
@@ -310,14 +199,14 @@ class TestDeclarativeServerBridge:
 
     def test_registered_function_still_callable(self):
         """The original function should still be callable locally."""
-        from easy_sandbox.server.registry import CommandRegistry as ServerCommandRegistry
+        from agent_sandbox.server.registry import CommandRegistry as ServerCommandRegistry
 
-        from easy_sandbox.declarative.decorator import _SandboxFactory
+        from agent_sandbox.declarative.decorator import _SandboxFactory
 
         fresh_server_reg = ServerCommandRegistry()
 
         with patch(
-            "easy_sandbox.server.registry.default_registry",
+            "agent_sandbox.server.registry.default_registry",
             return_value=fresh_server_reg,
         ):
             factory = _SandboxFactory()
@@ -331,14 +220,14 @@ class TestDeclarativeServerBridge:
 
     def test_list_registered_commands(self):
         """list_registered() returns metadata for all registered commands."""
-        from easy_sandbox.server.registry import CommandRegistry as ServerCommandRegistry
+        from agent_sandbox.server.registry import CommandRegistry as ServerCommandRegistry
 
-        from easy_sandbox.declarative.decorator import _SandboxFactory
+        from agent_sandbox.declarative.decorator import _SandboxFactory
 
         fresh_server_reg = ServerCommandRegistry()
 
         with patch(
-            "easy_sandbox.server.registry.default_registry",
+            "agent_sandbox.server.registry.default_registry",
             return_value=fresh_server_reg,
         ):
             factory = _SandboxFactory()

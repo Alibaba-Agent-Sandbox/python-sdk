@@ -12,9 +12,9 @@ import json
 import struct
 from typing import Any
 
-from easy_sandbox.transport.auth import ApiKeyAuth, EnvdTokenManager
-from easy_sandbox.transport.config import TransportConfig
-from easy_sandbox.transport.http import HttpClient
+from agent_sandbox.transport.auth import ApiKeyAuth, EnvdTokenManager
+from agent_sandbox.transport.config import TransportConfig
+from agent_sandbox.transport.http import HttpClient
 
 API = "https://api.sandbox-test.example.com"
 ENVD = "https://49983-sbx-ki.sandbox-test.example.com"

@@ -4,7 +4,7 @@ Status: implemented
 
 ## Problem
 
-Issue #140 identified that the blanket removal of all runtime `check_capability()` call-sites in the P0+P1 overdesign cleanup (see [`2026-09-23-overdesign-cleanup.md`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-23-overdesign-cleanup.md)) was over-broad for the `code` capability. The cleanup correctly removed gates from `commands`, `files`, and `network` modules — those gates added overhead without protecting against real misuse — but removing the gate from `CodeContextModule` created a security gap:
+Issue #140 identified that the blanket removal of all runtime `check_capability()` call-sites in the P0+P1 overdesign cleanup (see [`2026-09-23-overdesign-cleanup.md`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-23-overdesign-cleanup.md)) was over-broad for the `code` capability. The cleanup correctly removed gates from `commands`, `files`, and `network` modules — those gates added overhead without protecting against real misuse — but removing the gate from `CodeContextModule` created a security gap:
 
 **Threat model — arbitrary code execution.** `CodeContextModule` exposes `run()`, `create_context()`, `list_contexts()`, `restart_context()`, and `remove_context()` which execute arbitrary user-supplied code inside the sandbox. A template that deliberately omits `code` from its capability declaration (e.g. a web-only or file-server template) must *never* allow code execution, even when the underlying CodeInterpreter service or shell fallback happens to be technically reachable. Without the gate, such a template could be tricked into executing arbitrary code through the code module.
 
@@ -14,7 +14,7 @@ The `code` capability gate is fundamentally different from the removed `shell`/`
 
 ## Decision
 
-Restore `check_capability(self._capabilities, "code")` in `CodeContextModule` for **all five public entrypoints**: `run()`, `create_context()`, `list_contexts()`, `restart_context()`, and `remove_context()`. This is a deliberate, scoped partial reversal of [`2026-09-23-overdesign-cleanup.md`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-23-overdesign-cleanup.md) item #4.
+Restore `check_capability(self._capabilities, "code")` in `CodeContextModule` for **all five public entrypoints**: `run()`, `create_context()`, `list_contexts()`, `restart_context()`, and `remove_context()`. This is a deliberate, scoped partial reversal of [`2026-09-23-overdesign-cleanup.md`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-23-overdesign-cleanup.md) item #4.
 
 ### Key design rules
 
@@ -33,7 +33,7 @@ Restore `check_capability(self._capabilities, "code")` in `CodeContextModule` fo
 | `2026-09-03-capability-model.md` | **Foundational.** Defines the capability vocabulary and `check_capability()` semantics. This decision restores the model's original intent for `code` specifically. |
 | `2026-09-03-no-backward-compat-capability.md` | **Still valid.** No backward-compat shim is added. |
 | `2026-09-03-sdk-capability-surface.md` | **Still valid.** Standard capabilities remain typed and gated (now: `code` re-gated; others remain un-gated per cleanup). |
-| [`2026-09-23-overdesign-cleanup.md`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-23-overdesign-cleanup.md) | **Partially reversed** for item #4 only (`check_capability` gating). The cleanup removed all 14 call-sites; this decision restores 5 of them — exclusively in `CodeContextModule`. The other 9 removed sites (in `commands.py`, `files.py`, `network.py`, `sandbox.py`) remain deleted. |
+| [`2026-09-23-overdesign-cleanup.md`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-23-overdesign-cleanup.md) | **Partially reversed** for item #4 only (`check_capability` gating). The cleanup removed all 14 call-sites; this decision restores 5 of them — exclusively in `CodeContextModule`. The other 9 removed sites (in `commands.py`, `files.py`, `network.py`, `sandbox.py`) remain deleted. |
 
 ### Applicability and expiry conditions
 
@@ -47,7 +47,7 @@ Restore `check_capability(self._capabilities, "code")` in `CodeContextModule` fo
 # api/code.py — CodeContextModule
 # Each public entrypoint starts with the gate:
 
-from easy_sandbox.api.capability import check_capability
+from agent_sandbox.api.capability import check_capability
 
 class CodeContextModule:
     async def run(self, code: str, ...) -> CodeResult:
@@ -86,7 +86,7 @@ No new public API is introduced. `check_capability()` and `CapabilityNotSupporte
 - `api/capability.py` — `check_capability()` function (already exists, preserved by cleanup)
 - `models/errors.py` — `CapabilityNotSupportedError` / E3004 (already exists, preserved by cleanup)
 - `models/template.py` — `DEFAULT_CAPABILITIES` constant (already exists)
-- [`2026-09-23-overdesign-cleanup.md`](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-23-overdesign-cleanup.md) — parent decision being partially reversed
+- [`2026-09-23-overdesign-cleanup.md`](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/notes/implemented/architecture/2026-09-23-overdesign-cleanup.md) — parent decision being partially reversed
 
 ## Test Strategy
 
@@ -123,5 +123,5 @@ All tests pass. No regressions introduced in the broader test suite.
 
 ## Files changed
 
-- `src/easy_sandbox/api/code.py` — Added `check_capability(self._capabilities, "code")` to 5 methods, added import of `check_capability`
+- `src/agent_sandbox/api/code.py` — Added `check_capability(self._capabilities, "code")` to 5 methods, added import of `check_capability`
 - `tests/test_api/test_code.py` — Added `TestCodeCapabilityGating` class with 9 test methods

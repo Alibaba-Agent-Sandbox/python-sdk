@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from easy_sandbox.models.template import SandboxTemplate, TemplateRef
+from agent_sandbox.models.template import SandboxTemplate, TemplateRef
 
 
 class TestSandboxTemplate:
@@ -15,7 +15,6 @@ class TestSandboxTemplate:
         assert tmpl.env == {}
         assert tmpl.ports == []
         assert tmpl.capabilities is None
-        assert tmpl.custom_commands == {}
 
     def test_full_template(self) -> None:
         tmpl = SandboxTemplate(

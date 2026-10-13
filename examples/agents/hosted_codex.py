@@ -7,7 +7,7 @@ template)::
 
     python hosted_codex.py http://127.0.0.1:9000
 
-The base URL may also come from ``EBX_TEMPLATE_URL``. When ``EBX_SERVER_TOKEN``
+The base URL may also come from ``ABX_TEMPLATE_URL``. When ``ABX_SERVER_TOKEN``
 is set it is sent as ``Authorization: Bearer``, which the agents routes accept.
 """
 
@@ -22,12 +22,12 @@ import urllib.request
 
 
 def origin() -> str:
-    """Server origin from argv or ``EBX_TEMPLATE_URL`` (no ``/v1`` suffix)."""
+    """Server origin from argv or ``ABX_TEMPLATE_URL`` (no ``/v1`` suffix)."""
     raw = sys.argv[1].strip() if len(sys.argv) > 1 and sys.argv[1].strip() else ""
     if not raw:
-        raw = os.environ.get("EBX_TEMPLATE_URL", "").strip()
+        raw = os.environ.get("ABX_TEMPLATE_URL", "").strip()
     if not raw:
-        sys.exit("pass the base URL as argv[1] or set EBX_TEMPLATE_URL")
+        sys.exit("pass the base URL as argv[1] or set ABX_TEMPLATE_URL")
     raw = raw.rstrip("/")
     if raw.endswith("/v1"):
         raw = raw[:-3]
@@ -43,7 +43,7 @@ def call(
     request.add_header("Accept", accept)
     if data is not None:
         request.add_header("Content-Type", "application/json")
-    token = os.environ.get("EBX_SERVER_TOKEN")
+    token = os.environ.get("ABX_SERVER_TOKEN")
     if token:
         request.add_header("Authorization", f"Bearer {token}")
     try:

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from easy_sandbox.transport.streaming import StreamReader
+from agent_sandbox.transport.streaming import StreamReader
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator

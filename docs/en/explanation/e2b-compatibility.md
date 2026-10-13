@@ -1,28 +1,28 @@
 # E2B Compatibility
 
-This document explains Easy Sandbox's compatibility strategy with the E2B Python SDK — what is compatible, what is not, and the design rationale behind the decisions.
+This document explains how Agent Sandbox relates to the E2B Python SDK: which method shapes are shared, what differs, and why. Agent Sandbox is **not** a drop-in replacement for E2B. It is a different service with E2B-shaped method names so that migration needs few edits.
 
 ---
 
 ## Design Goals
 
-Easy Sandbox's E2B compatibility strategy is:
+The migration strategy is:
 
-> **Allow users of the E2B SDK to migrate to Easy Sandbox with minimal changes, without being constrained by E2B's historical design decisions.**
+> **Allow users of the E2B SDK to migrate to Agent Sandbox with minimal changes, without being constrained by E2B's historical design decisions.**
 
 Specifically:
-- Core API signatures remain consistent
-- Environment variable names are compatible
-- A `compat` module is provided to simplify migration
-- New capabilities do not break compatibility
+- Core method signatures stay close to E2B
+- Environment variables are different (`ABX_*`); E2B's `E2B_*` variables are not read
+- A small `compat` module re-exports `Sandbox` to simplify migration
+- Coverage is partial: two methods raise (see below) and some behaviours differ
 
 ---
 
-## What Is Compatible
+## What Is Shared
 
 ### API Signatures
 
-The following APIs are fully compatible with the E2B Python SDK:
+These methods have the same name and call shape as the E2B Python SDK:
 
 | API | Status |
 |-----|--------|
@@ -47,27 +47,27 @@ Each setting has one environment variable. Set these instead of the E2B variable
 
 | Setting | Environment variable |
 |----------|--------|
-| Sandbox API key | `EBX_SANDBOX_API_KEY` |
-| Platform API URL | `EBX_SANDBOX_BASE_URL` |
-| Data-plane domain | `EBX_SANDBOX_DOMAIN` |
+| Sandbox API key | `ABX_SANDBOX_API_KEY` |
+| Platform API URL | `ABX_SANDBOX_BASE_URL` |
+| Data-plane domain | `ABX_SANDBOX_DOMAIN` |
 
 ### Compatibility Layer
 
 ```python
-from easy_sandbox.compat import Sandbox
+from agent_sandbox.compat import Sandbox
 ```
 
-The `compat` module re-exports the `Sandbox` class with no additional wrapping.
+The `compat` module is a migration helper. It re-exports the `Sandbox` class with no additional wrapping (plus the alias `E2BSandbox`). It does not make E2B code run unchanged.
 
 ---
 
-## What Is Not Compatible
+## What Differs
 
 ### 1. `Sandbox.kill(id)` Class Method
 
 **E2B**: `Sandbox.kill(id)` is a class method that destroys a sandbox by ID.
 
-**Easy Sandbox**: The class method is renamed to `Sandbox.kill_by_id(id)`, while `kill()` is reserved as an instance method.
+**Agent Sandbox**: The class method is renamed to `Sandbox.kill_by_id(id)`, while `kill()` is reserved as an instance method.
 
 **Rationale**: In Python, having both a class method and an instance method with the same name creates ambiguity. Explicitly naming the class method `kill_by_id` is clearer and avoids confusion between `Sandbox.kill("sbx-xxxx")` and `sandbox.kill()`.
 
@@ -75,7 +75,7 @@ The `compat` module re-exports the `Sandbox` class with no additional wrapping.
 
 **E2B**: `sandbox.get_host(port)` is a direct method on the Sandbox instance.
 
-**Easy Sandbox**: Moved to `sandbox.network.get_host(port)` submodule.
+**Agent Sandbox**: Moved to `sandbox.network.get_host(port)` submodule.
 
 **Rationale**: Network-related functionality is consolidated under the `network` submodule, maintaining a consistent organizational structure with `commands`, `files`, and other submodules. Additionally, `network` methods require `ports` capability gating.
 
@@ -83,13 +83,13 @@ The `compat` module re-exports the `Sandbox` class with no additional wrapping.
 
 **E2B**: Returns a signed URL so a browser can upload or download one file.
 
-**Easy Sandbox**: The methods of the same name raise `FileOperationError`. A request to a live Express sandbox showed that envd ignores a query signature and requires `X-Access-Token`. The SDK does not return a URL that would get 403.
+**Agent Sandbox**: The methods of the same name raise `FileOperationError`. A request to a live Express sandbox showed that envd ignores a query signature and requires `X-Access-Token`. The SDK does not return a URL that would get 403.
 
 ### 4. Capability Gating
 
 **E2B**: No capability checking mechanism; all features are always available.
 
-**Easy Sandbox**: Introduces a capability model that checks whether a template declares the required capabilities before an API call.
+**Agent Sandbox**: Introduces a capability model that checks whether a template declares the required capabilities before an API call.
 
 **Rationale**:
 - **Security**: Restricts sandbox functionality scope, following the principle of least privilege
@@ -104,18 +104,16 @@ Some APIs (`run_code`, `get_terminal`, etc.) have RPC paths reverse-engineered f
 
 ## Extensions (Non-E2B Features)
 
-Easy Sandbox adds the following features on top of E2B compatibility:
+Agent Sandbox adds the following features that E2B does not have:
 
 | Feature | Description |
 |---------|-------------|
 | AK/SK Authentication | Alibaba Cloud AccessKey pair authentication |
 | Capability Model | Template-level capability declarations and runtime gating |
-| Custom Commands | Parameterized shell commands defined in template.yaml |
+| Registered commands | Functions registered in the sandbox server (`@sandbox.register`) and called with `sandbox.run(name, **kwargs)` |
 | @sandbox Decorator | Declarative remote function execution |
-| Image Chaining API | Modal-style image building |
 | MCP Server | AI IDE integration (Cursor/Claude/VS Code) |
 | Session Management | Named session persistence |
-| NL Deployment | Natural language-driven project deployment |
 | Secret Management | Environment variables and `.env` file secure storage |
 
 ---

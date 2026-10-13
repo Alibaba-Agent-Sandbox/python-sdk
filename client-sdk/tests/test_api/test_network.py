@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from easy_sandbox.api.network import NetworkModule
+from agent_sandbox.api.network import NetworkModule
 from tests.test_api.conftest import TEST_ENVD_TOKEN, TEST_SANDBOX_ID
 
 DOMAIN = "cn-hangzhou.e2b.fc.aliyuncs.com"

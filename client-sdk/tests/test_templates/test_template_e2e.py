@@ -1,7 +1,7 @@
 """End-to-end test for the ``python-hello`` fixture template.
 
 The full catalog (10 templates) has its own end-to-end suite in the
-single-source-of-truth repository ``Easy-Sandbox/awesome-templates``
+single-source-of-truth repository ``alibaba-agent-sandbox/awesome-templates``
 (``tests/test_commands_e2e.py``).  This copy only keeps one minimal
 fixture — ``examples/templates/python-hello/`` — so the sandbox HTTP server
 integration (import, discovery, dispatch, built-in routes) stays covered
@@ -33,9 +33,10 @@ import threading
 import time
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
-from unittest.mock import patch
 
 import pytest
+
+pytest.importorskip("agent_sandbox.server", reason="needs the agent-sandbox-server distribution")
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -99,18 +100,20 @@ def _http_post(
 def _template_server(template_name: str, base_dir: str) -> Generator[int, None, None]:
     """Load a template's ``commands.py``, start the sandbox HTTP server on a
     random port, yield the port, then shut down and restore global state."""
-    from easy_sandbox.server import SandboxServer
-    from easy_sandbox.server.routes import _KNOWN_BUILTINS, _enabled_builtins
+    from agent_sandbox.server import SandboxServer, default_registry, default_table
 
     # --- 1. Save & clean global state ---
-    saved_builtins = set(_enabled_builtins)
-    saved_base_dir = os.environ.get("EBX_SERVER_BASE_DIR")
+    registry = default_registry()
+    saved_commands = dict(registry._commands)
+    saved_frozen = registry._frozen
+    saved_base_dir = os.environ.get("ABX_SERVER_BASE_DIR")
 
-    _enabled_builtins.clear()
-    _enabled_builtins.update(_KNOWN_BUILTINS)
-    os.environ["EBX_SERVER_BASE_DIR"] = base_dir
+    registry._commands.clear()
+    registry._frozen = False
+    default_table().clear_group_overrides()
+    os.environ["ABX_SERVER_BASE_DIR"] = base_dir
 
-    # --- 2. Import commands.py with SandboxServer.serve() patched out ---
+    # --- 2. Import commands.py (its server start is behind ``__main__``) ---
     template_dir = os.path.join(_TEMPLATES_DIR, template_name)
     commands_path = os.path.join(template_dir, "commands.py")
     module_name = f"_e2e_{template_name.replace('-', '_')}_commands"
@@ -120,19 +123,8 @@ def _template_server(template_name: str, base_dir: str) -> Generator[int, None, 
         f"Cannot create module spec for {commands_path}"
     )
     module = importlib.util.module_from_spec(spec)
-
-    with patch.object(SandboxServer, "serve"):
-        spec.loader.exec_module(module)
-
-    # Don't leave stale entries in sys.modules
+    spec.loader.exec_module(module)
     sys.modules.pop(module_name, None)
-
-    # Extract the CommandRegistry from the loaded module.
-    registry = getattr(module, "registry", None)
-    assert registry is not None, (
-        f"Template {template_name!r} commands.py must define a module-level "
-        f"'registry' (CommandRegistry instance)"
-    )
 
     # --- 3. Start server on a random port ---
     port = _find_free_port()
@@ -161,12 +153,14 @@ def _template_server(template_name: str, base_dir: str) -> Generator[int, None, 
         server.shutdown()
         thread.join(timeout=2.0)
 
-        _enabled_builtins.clear()
-        _enabled_builtins.update(saved_builtins)
+        registry._commands.clear()
+        registry._commands.update(saved_commands)
+        registry._frozen = saved_frozen
+        default_table().clear_group_overrides()
         if saved_base_dir is not None:
-            os.environ["EBX_SERVER_BASE_DIR"] = saved_base_dir
+            os.environ["ABX_SERVER_BASE_DIR"] = saved_base_dir
         else:
-            os.environ.pop("EBX_SERVER_BASE_DIR", None)
+            os.environ.pop("ABX_SERVER_BASE_DIR", None)
 
 
 # ---------------------------------------------------------------------------
@@ -176,8 +170,8 @@ def _template_server(template_name: str, base_dir: str) -> Generator[int, None, 
 
 @pytest.fixture()
 def base_dir() -> Generator[str, None, None]:
-    """Temporary directory used as ``EBX_SERVER_BASE_DIR``."""
-    with tempfile.TemporaryDirectory(prefix="ebx_e2e_") as d:
+    """Temporary directory used as ``ABX_SERVER_BASE_DIR``."""
+    with tempfile.TemporaryDirectory(prefix="abx_e2e_") as d:
         yield d
 
 
@@ -249,6 +243,18 @@ def test_python_hello_e2e(base_dir: str) -> None:
         status, body = _http_post(port, "/commands/run_script", {"code": "print(1+1)"})
         assert status == 200
         assert "2" in body["result"]
+
+        # hidden command: callable, not listed
+        status, body = _http_post(port, "/commands/_debug_info", {})
+        assert status == 200 and "python" in body["result"]
+        _, listing = _http_get(port, "/commands")
+        assert "_debug_info" not in [c["name"] for c in listing["commands"]]
+
+        # custom route and the opt-in group the template enables in code
+        status, body = _http_get(port, "/hello/Bob")
+        assert status == 200 and body == {"greeting": "Hello, Bob!"}
+        _, caps = _http_get(port, "/capabilities")
+        assert caps["groups"]["dev_tools"] is True and caps["groups"]["browser"] is False
 
         # Built-in routes
         _assert_upload_download_roundtrip(port, base_dir)

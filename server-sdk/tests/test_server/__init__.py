@@ -1,1 +1,1 @@
-"""Tests for easy_sandbox.server."""
+"""Tests for agent_sandbox.server."""

@@ -27,8 +27,8 @@ async def set_timeout(sandbox_id: str, timeout: int) -> None: ...
 ```
 
 ## Implementation
-- **Source**: `src/easy_sandbox/protocol/sandbox.py`
-- **Models**: `src/easy_sandbox/models/sandbox.py`
+- **Source**: `src/agent_sandbox/protocol/sandbox.py`
+- **Models**: `src/agent_sandbox/models/sandbox.py`
 - **Tests**: `tests/test_protocol/test_sandbox.py`
 
 ## Alternatives considered

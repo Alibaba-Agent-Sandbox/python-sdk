@@ -11,11 +11,11 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
-from easy_sandbox.models.errors import ConnectionError_, EnvdRpcError, ExecutionError
-from easy_sandbox.transport.auth import PLATFORM_AUTH_HEADER, ApiKeyAuth, EnvdTokenManager
-from easy_sandbox.transport.codec import CONNECT_CONTENT_TYPE
-from easy_sandbox.transport.config import TransportConfig
-from easy_sandbox.transport.http import HttpClient
+from agent_sandbox.models.errors import ConnectionError_, EnvdRpcError, ExecutionError
+from agent_sandbox.transport.auth import PLATFORM_AUTH_HEADER, ApiKeyAuth, EnvdTokenManager
+from agent_sandbox.transport.codec import CONNECT_CONTENT_TYPE
+from agent_sandbox.transport.config import TransportConfig
+from agent_sandbox.transport.http import HttpClient
 
 
 def make_envd_frame(payload: dict, flags: int = 0x00) -> bytes:
@@ -718,7 +718,7 @@ class TestEnvdStreamStreaming:
     async def test_http_500_envd_json_error_structured(self, envd_token):
         """Command-not-found 500: envd JSON body is propagated structurally.
 
-        Mirrors the real reproduction (``ebx connect`` + typo'd command):
+        Mirrors the real reproduction (``abx connect`` + typo'd command):
         envd answers /process.Process/Start with 500 and a JSON error body
         (e.g. "exec not found").  The transport must surface that body as
         structured data for upper layers to map, instead of double-printing
@@ -858,7 +858,7 @@ class TestEnvdStreamStreaming:
         # 1) At INFO level (>= default WARNING visibility): zero records.
         with (
             self._patch(transport),
-            caplog.at_level(logging.INFO, logger="easy_sandbox.transport.http"),
+            caplog.at_level(logging.INFO, logger="agent_sandbox.transport.http"),
             pytest.raises(EnvdRpcError),
         ):
             async for _ in client.envd_stream(
@@ -872,7 +872,7 @@ class TestEnvdStreamStreaming:
         # 2) At DEBUG level the diagnostic line exists but has no URL.
         with (
             self._patch(transport),
-            caplog.at_level(logging.DEBUG, logger="easy_sandbox.transport.http"),
+            caplog.at_level(logging.DEBUG, logger="agent_sandbox.transport.http"),
             pytest.raises(EnvdRpcError),
         ):
             async for _ in client.envd_stream(

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from easy_sandbox.protocol.port import PortClient
+from agent_sandbox.protocol.port import PortClient
 
 
 class TestGetHost:

@@ -6,8 +6,8 @@ import os
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
-import easy_sandbox.server.routes_browser as routes_browser
-import easy_sandbox.server.routes_devtools as routes_devtools
+import agent_sandbox.server.routes_browser as routes_browser
+import agent_sandbox.server.routes_devtools as routes_devtools
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -20,19 +20,19 @@ if TYPE_CHECKING:
 class TestEnvRoutes:
     def test_denied_env_key_is_forbidden(self, live_server: Any) -> None:
         live: Live = live_server()
-        status, body = live.post("/env", {"vars": {"EBX_GUARD_PROBE": "x"}})
+        status, body = live.post("/env", {"vars": {"ABX_GUARD_PROBE": "x"}})
         assert status == 403
         assert body["code"] == "env_var_denied"
-        assert "EBX_GUARD_PROBE" not in os.environ
+        assert "ABX_GUARD_PROBE" not in os.environ
 
         status, body = live.post(
-            "/shell", {"command": "true", "env": {"EBX_FROM_SHELL": "1"}, "timeout": 1}
+            "/shell", {"command": "true", "env": {"ABX_FROM_SHELL": "1"}, "timeout": 1}
         )
         assert status == 403
         assert body["code"] == "env_var_denied"
 
         status, body = live.post(
-            "/pty/sessions", {"shell": "/bin/sh", "env": {"EBX_FROM_PTY": "1"}}
+            "/pty/sessions", {"shell": "/bin/sh", "env": {"ABX_FROM_PTY": "1"}}
         )
         assert status == 403
         assert body["code"] == "env_var_denied"
@@ -79,7 +79,7 @@ class TestEnvRoutes:
         marker = tmp_path / "ran"
         status, body = live.post(
             "/shell",
-            {"command": f"sh -c 'echo ran > {marker}'", "env": {"EBX_TOUCH": "1"}, "timeout": 1},
+            {"command": f"sh -c 'echo ran > {marker}'", "env": {"ABX_TOUCH": "1"}, "timeout": 1},
         )
         assert status == 403
         assert body["code"] == "env_var_denied"

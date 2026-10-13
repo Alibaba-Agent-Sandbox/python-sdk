@@ -46,12 +46,6 @@ def test_make_dir_and_list_names_and_sizes(run, base_sandbox, workdir):  # type:
     assert by_name["f1.txt"].size == 5
 
 
-@pytest.mark.known_issue
-@pytest.mark.xfail(
-    strict=True,
-    reason="KI-002: FilesModule.list/get_info do not understand envd's numeric entry type "
-    "(directories are reported as 'file') and get_info ignores the nested 'entry' object",
-)
 def test_list_and_stat_report_directory_type(run, base_sandbox, workdir):  # type: ignore[no-untyped-def]
     d = workdir(base_sandbox)
     run(base_sandbox.files.make_dir(f"{d}/sub"))
@@ -94,35 +88,24 @@ def test_remove_file_and_directory(run, base_sandbox, workdir):  # type: ignore[
 
 def test_read_missing_file_fails(run, base_sandbox, workdir):  # type: ignore[no-untyped-def]
     d = workdir(base_sandbox)
-    with pytest.raises(Exception) as err:  # noqa: PT011 - concrete type is KI-005
+    with pytest.raises(Exception) as err:  # noqa: PT011
         run(base_sandbox.files.read(f"{d}/does-not-exist.txt"))
     assert "404" in str(err.value) or "not found" in str(err.value).lower()
 
 
-@pytest.mark.known_issue
-@pytest.mark.xfail(
-    strict=True,
-    reason="KI-005: reading a missing file leaks httpx.HTTPStatusError instead of FileNotFoundError_",
-)
 def test_read_missing_file_raises_sdk_file_error(run, base_sandbox, workdir):  # type: ignore[no-untyped-def]
-    from easy_sandbox.models.errors import FileOperationError
+    from agent_sandbox.models.errors import FileNotFoundError_
 
     d = workdir(base_sandbox)
-    with pytest.raises(FileOperationError):
+    with pytest.raises(FileNotFoundError_):
         run(base_sandbox.files.read(f"{d}/does-not-exist.txt"))
 
 
-@pytest.mark.known_issue
-@pytest.mark.xfail(
-    strict=True,
-    reason="KI-007: files.list on a missing directory returns [] (envd answers 200 with no entries) "
-    "instead of raising",
-)
 def test_list_missing_directory_raises(run, base_sandbox, workdir):  # type: ignore[no-untyped-def]
-    from easy_sandbox.models.errors import SandboxError
+    from agent_sandbox.models.errors import FileNotFoundError_
 
     d = workdir(base_sandbox)
-    with pytest.raises(SandboxError):
+    with pytest.raises(FileNotFoundError_):
         run(base_sandbox.files.list(f"{d}/no-such-dir"))
 
 

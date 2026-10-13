@@ -1,6 +1,6 @@
 # 客户端 / 服务端对齐：差距矩阵
 
-> 状态：**v2（已评审，见 fine-grained-capabilities-review.md）**。对 `easy-sandbox-server` 的每一条路由与 `easy-sandbox`（`api/`、`protocol/`）
+> 状态：**v2（已评审，见 fine-grained-capabilities-review.md）**。对 `agent-sandbox-server` 的每一条路由与 `agent-sandbox`（`api/`、`protocol/`）
 > 以及客户端另外使用的 envd（E2B）协议所做的审计。「状态」列在工作落地时更新（最终统计见文末）。
 > 英文版为准：[../../en/design/client-server-alignment.md](../../en/design/client-server-alignment.md)。
 > 相关：[fine-grained-capabilities.md](fine-grained-capabilities.md)。
@@ -10,7 +10,7 @@
 | 通道 | 进程 | 端口 | 谁访问它 | 协议 |
 |------|------|------|----------|------|
 | **envd**（平台注入，位于官方基础镜像中） | `/.fce2b/envd` | 49983 | `Sandbox.commands/files/code/get_terminal` | Connect RPC + `GET/POST /files` |
-| **SandboxServer**（`easy-sandbox-server`，由模板作者提供） | `easy_sandbox.server` | 9000（+ PTY WS 9001） | 目前只有 `Sandbox.custom()` / `list_commands()` | 普通 HTTP/JSON、SSE、WS |
+| **SandboxServer**（`agent-sandbox-server`，由模板作者提供） | `agent_sandbox.server` | 9000（+ PTY WS 9001） | `Sandbox.run(name)` / `list_commands()`，以及带类型的 `Sandbox.server` 客户端 | 普通 HTTP/JSON、SSE、WS |
 
 在这项工作之前，客户端只触达约 45 条服务端路由中的**两条**（`GET /commands`、`POST /commands/{name}`），其余都是只存在于服务端、SDK 够不到的。
 反过来，客户端面向 envd 的接口也有服务端不提供的功能。
@@ -29,8 +29,8 @@
 | `GET /health` | `health` | — | — | `ServerClient.health()` | NEW |
 | `GET /capabilities` | `capabilities` | core:read | — | `ServerClient.discover()` -> `ServerCapabilities` | NEW |
 | `POST /capabilities/check` | `capabilities_check` | core:read | — | `ServerClient.check()` / `caps.check_path()` | NEW（服务端+客户端） |
-| `GET /commands` | `list_commands` | commands:list | `Sandbox._fetch_server_commands`（无类型） | `server.commands.list()` -> `ServerCommand[]`；`Sandbox.list_commands` 不变 | NEW 类型化 |
-| `POST /commands/{name}` | `run_command` | commands:run | `Sandbox.custom` / `_call_server_command` | `server.commands.run(name, **kw)`；`Sandbox.custom` 不变 | NEW 类型化 + 错误 |
+| `GET /commands` | `list_commands` | commands:list | `Sandbox.list_commands()` | `server.commands.list()` -> `ServerCommand[]`；`Sandbox.list_commands` 是一层薄封装 | NEW 类型化 |
+| `POST /commands/{name}` | `run_command` | commands:run | `Sandbox.run(name, **kw)` | `server.commands.run(name, **kw)`；`Sandbox.run` 是一层薄封装 | NEW 类型化 + 错误 |
 
 ### 2.2 文件
 
@@ -118,7 +118,7 @@
 | `get_terminal`（envd WS `/terminal`） | 9001 上的 PTY WS + REST 会话创建 | 客户端 `server.pty` 实现服务端协议；envd 路径不变 |
 | `code.run` / 上下文（CodeInterpreter RPC） | 仅 `code_run`（无状态） | N/A-2 |
 | `network.get_url/get_host` | `ports`（监听端口） | 已覆盖；两个独立的概念 |
-| `sandbox.custom` 机制 B | `commands` | 已覆盖 |
+| `sandbox.run(name)` | `commands` | 已覆盖 |
 
 ## 4. 有意的单边项
 
@@ -152,18 +152,19 @@
 
 ## 7. 评审后的变更（草案 v1 -> v2）
 
-见 [fine-grained-capabilities-review.md](fine-grained-capabilities-review.md) 第 3 节。
+见 [fine-grained-capabilities-review.md](../archive/fine-grained-capabilities-review.md) 第 3 节。
 
 * `process_output` 由有界环形缓冲支撑（`limits.max_output_bytes`，默认每进程 1 MiB），基于游标读取（`since=<offset>`）；`process_start(capture_output=false)` 保持今天的行为（输出被丢弃）。
 * `ServerClient` 与基于 envd 的模块的决策表：代码必须在任何沙箱上都能工作时使用 `Sandbox.files/commands`；模板作者自带服务端、需要受策略限定且受 scope 检查的访问
   （或需要 envd 没有的端点：`files_search`、`files_archive`、`process_output`、浏览器、git）时使用 `Sandbox.server`。
 * 流式方法在生成器 `aclose()` 时关闭 HTTP 响应；同步孪生返回支持 `close()` 的迭代器。
-* 客户端把旧版服务端（`/capabilities` 中没有 `endpoints`）视为 `legacy=True`，并把*新*端点上的 404 映射为 `EndpointNotAvailableError`，绝不暴露原始 HTTP 错误。
+* 带 `code: endpoint_disabled` 的 404 映射为 `EndpointNotAvailableError`（`rule` 字段给出禁用它的规则，如 `policy:groups.file_ops`）；路径违规是 403 `path_not_allowed`，映射为 `FilePolicyDeniedError`。`/capabilities` 中没有 `endpoints` 的服务端不再受支持。
 
 ## 8. 最终统计（按实际实现）
 
-* 已审计的服务端路由：默认路由表中的 47 条 HTTP 路由（core 3、file_ops 12、process 8、terminal 5、system 6、dev_tools 3、browser 8、commands 2）加 PTY WebSocket（`pty_connect`）：
-  **48 个端点 ID 全部已映射**，在 `ServerClient.ENDPOINT_METHODS` 中对应 59 个客户端方法（异步协程各带 `*_sync` 孪生；流式生成器没有同步孪生，改用收集型协程 `watch_for` / `run_stream`）。
+* 已审计的服务端端点：唯一的 `ENDPOINTS` 表声明了 118 个 id。`agents` 组之外的 48 个（core 3、commands 2、file_ops 12、process 8、terminal 6（含 `pty_connect` WebSocket）、system 6、dev_tools 3、browser 8）
+  **全部已映射**，在 `ServerClient.ENDPOINT_METHODS` 中对应 59 个客户端方法（异步协程各带 `*_sync` 孪生；流式生成器没有同步孪生，改用收集型协程 `watch_for` / `run_stream`）。
+  70 个 `agents` 端点（`/v1/agents/*`、`/v1/vaults`、`/v1/responses` 等）属于 Agents API，`ServerClient` 不封装（见 [Agents API](../reference/agents-api.md)）。
 * 已补齐的客户端到服务端差距：`files_watch`、`process_output`、`process_stdin`、`pty_resize` / 会话详情、`shell*` 的 `cwd`/`env`/`timeout`、`process_start` 的 `env`/`capture_output`/`stdin`。
 * 有意的单边项：N/A-1 .. N/A-7。
-* 类型化模型位于 `easy_sandbox.models.server`；错误位于 `easy_sandbox.models.errors`（E9xxx）；全部由 `tests/test_api/server_e2e/` 针对真实进程内 `SandboxServer` 验证。
+* 类型化模型位于 `agent_sandbox.models.server`；错误位于 `agent_sandbox.models.errors`（E9xxx）；全部由 `tests/test_api/server_e2e/` 针对真实进程内 `SandboxServer` 验证。

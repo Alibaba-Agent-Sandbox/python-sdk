@@ -1,4 +1,4 @@
-"""Tests for easy_sandbox.server.routes_files — file operation endpoints.
+"""Tests for agent_sandbox.server.routes_files — file operation endpoints.
 
 Each test spins up a real ``ThreadingHTTPServer`` on a random free port in a
 background thread and uses ``http.client.HTTPConnection`` to hit it directly.
@@ -18,10 +18,12 @@ from typing import Any
 
 import pytest
 
-import easy_sandbox.server.routes_files  # noqa: F401  (trigger route registration)
-from easy_sandbox.server.app import SandboxRequestHandler
-from easy_sandbox.server.registry import CommandRegistry
-from easy_sandbox.server.router import CapabilityGroup, default_table
+import agent_sandbox.server.routes_files  # noqa: F401  (trigger route registration)
+from agent_sandbox.server.app import SandboxRequestHandler
+from agent_sandbox.server.registry import CommandRegistry
+from agent_sandbox.server.router import CapabilityGroup, default_table
+
+from ._live import wire
 
 # ---------------------------------------------------------------------------
 # Helpers (same pattern as test_app.py)
@@ -37,8 +39,7 @@ def _find_free_port() -> int:
 def _start_server(port: int) -> ThreadingHTTPServer:
     registry = CommandRegistry()
     httpd = ThreadingHTTPServer(("127.0.0.1", port), SandboxRequestHandler)
-    httpd.auth_token = None  # type: ignore[attr-defined]
-    httpd.registry = registry  # type: ignore[attr-defined]
+    wire(httpd, auth_token=None, registry=registry)
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()
     time.sleep(0.05)
@@ -89,7 +90,7 @@ def _reset_groups() -> Any:
 @pytest.fixture()
 def server_port(tmp_path: Any, monkeypatch: Any) -> Any:
     """Spin up a no-auth server with base_dir set to tmp_path."""
-    monkeypatch.setenv("EBX_SERVER_BASE_DIR", str(tmp_path))
+    monkeypatch.setenv("ABX_SERVER_BASE_DIR", str(tmp_path))
     port = _find_free_port()
     httpd = _start_server(port)
     yield port
@@ -157,8 +158,8 @@ class TestFilesList:
 
     def test_list_path_traversal(self, server_port: int, base: str) -> None:
         status, body = _request(server_port, "GET", f"/files/list?path={base}/../../etc")
-        assert status == 400
-        assert "Path escapes" in body["error"]
+        assert status == 403
+        assert body["code"] == "path_not_allowed"
 
 
 # ---------------------------------------------------------------------------
@@ -245,7 +246,7 @@ class TestFilesMkdir:
             "/files/mkdir",
             body={"path": base + "/../../escape"},
         )
-        assert status == 400
+        assert status == 403
 
 
 # ---------------------------------------------------------------------------
@@ -463,7 +464,7 @@ class TestFilesUploadStream:
         assert status == 400
 
     def test_upload_size_limit(self, server_port: int, base: str, monkeypatch: Any) -> None:
-        monkeypatch.setenv("EBX_MAX_UPLOAD_SIZE", "10")
+        monkeypatch.setenv("ABX_MAX_UPLOAD_SIZE", "10")
         fp = os.path.join(base, "big.bin")
         content = b"x" * 100
         encoded = base64.b64encode(content).decode()
@@ -485,7 +486,7 @@ class TestFilesUploadStream:
                 "content_base64": "aGVsbG8=",
             },
         )
-        assert status == 400
+        assert status == 403
 
 
 # ---------------------------------------------------------------------------
@@ -524,7 +525,7 @@ class TestFilesDownloadStream:
             "GET",
             f"/files/download-stream?path={base}/../../etc/passwd",
         )
-        assert status == 400
+        assert status == 403
 
 
 # ---------------------------------------------------------------------------

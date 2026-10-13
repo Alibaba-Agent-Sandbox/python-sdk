@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from easy_sandbox.server.guard import PathGuard, open_checked
-from easy_sandbox.server.policy import PolicyDenied
+from agent_sandbox.server.guard import PathGuard, open_checked
+from agent_sandbox.server.policy import PolicyDenied
 
 if TYPE_CHECKING:
     from pathlib import Path

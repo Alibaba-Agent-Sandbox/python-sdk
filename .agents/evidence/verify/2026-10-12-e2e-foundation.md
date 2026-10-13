@@ -3,12 +3,12 @@
 - Date: 2026-10-12
 - Change: ADR [`2026-10-12-e2e-suite-and-definition-of-done`](../../notes/implemented/process/2026-10-12-e2e-suite-and-definition-of-done.md)
 - Result: PARTIAL (all runnable scenarios behave as recorded; the Docker/ACR custom-template flow is BLOCKED by registry upload throughput)
-- Binary / package under test: `easy-sandbox` (`client-sdk`) and `easy-sandbox-server` (`server-sdk`) installed editable from the working tree at commit `e26562b`
+- Binary / package under test: `agent-sandbox` (`client-sdk`) and `agent-sandbox-server` (`server-sdk`) installed editable from the working tree at commit `e26562b`
 - Environment: real Alibaba Cloud FC agent sandbox platform (cn-hangzhou), Python 3.12, Linux. Credentials: supplied via the gitignored `.env` (values not recorded)
 
 ## What was verified
 
-The new `e2e/` pytest suite itself: that it authenticates against the real platform, creates, uses and destroys real sandboxes (envd data plane and the in-sandbox `easy-sandbox-server` from the `python-hello` template), tags and cleans up everything it creates, skips with an exact reason without credentials, and pins known product defects as strict xfails.
+The new `e2e/` pytest suite itself: that it authenticates against the real platform, creates, uses and destroys real sandboxes (envd data plane and the in-sandbox `agent-sandbox-server` from the `python-hello` template), tags and cleans up everything it creates, skips with an exact reason without credentials, and pins known product defects as strict xfails.
 
 ## Commands run
 

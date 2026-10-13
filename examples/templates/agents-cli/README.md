@@ -2,7 +2,7 @@
 
 > **Fixture**: this directory is an offline example in the SDK repository, not the
 > publishing source. Publishable templates live in
-> [Easy-Sandbox/awesome-templates](https://github.com/Easy-Sandbox/awesome-templates).
+> [alibaba-agent-sandbox/awesome-templates](https://github.com/alibaba-agent-sandbox/awesome-templates).
 
 Codex 和 Qwen Code 的 Agents API 模板。镜像里**不预装**这两个 CLI。要用哪一个，再安装哪一个。
 
@@ -10,25 +10,24 @@ English follows the Chinese section.
 
 ## 这是什么
 
-沙箱里的 `easy-sandbox-server` 提供一组默认关闭的 Agents API（`/v1/agents/sessions` 等）。这个模板只做三件事：
+沙箱里的 `agent-sandbox-server` 提供一组默认关闭的 Agents API（`/v1/agents/sessions` 等）。这个模板只做三件事：
 
-1. 打开 `agents` 组作为门，再用 `ServerPolicy.only(...)` 只放出会话创建、读取、列表、事件、条目和 runtimes。`file_ops`、`process`、`POST /shell`、`POST /v1/agents`（定义）保持关闭。
+1. 用 `ServerPolicy.only(...)` 只放出会话创建、读取、列表、事件、条目和 runtimes；精确的端点规则会打开默认关闭的 `agents` 组里的这几条路由，其余端点（`file_ops`、`process`、`POST /shell`、`POST /v1/agents` 定义）全部关闭。
 2. 按请求里的名字选择 CLI：`codex`，或 `qwen-code`（别名 `qwen`、`qwencode`）。
 3. 在 `PATH` 上找到对应二进制，跑一轮，再把输出写成会话条目。
 
-这和下面两样不是同一件事：
+这和下面这个不是同一件事：
 
 | | 做什么 |
 |---|---|
 | **本模板 / Agents API** | HTTP 会话。服务端拉起你安装的 `codex` 或 `qwen`。 |
-| **内置 Agent 高级 API**（`sb.agent.code()`） | 设计文档里的 `commands.run()` 语法糖，不是这组 HTTP。 |
 | **`codex-agent-api` 模板** | 自己写的一套路由，并且在镜像里安装 Codex。新的案例用本模板。 |
 
 Claude Code、Cursor、Qoder 以及其他名字返回 HTTP 404 `not_found_error`，响应头 `x-should-retry: false`。
 
 ## 按需安装 CLI
 
-基础镜像只有 Python 和 `easy-sandbox-server`。两个 CLI 都装上会把镜像做大，所以默认都不装。
+基础镜像只有 Python 和 `agent-sandbox-server`。两个 CLI 都装上会把镜像做大，所以默认都不装。
 
 只在你的 Dockerfile 里加上你要用的那一行：
 
@@ -49,8 +48,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm ca-c
 服务监听 **9000**。客户端示例在 Python SDK 仓库的 `examples/agents/`：
 
 ```bash
-export EBX_SERVER_ENABLED_GROUPS=agents
-python -m easy_sandbox.server serve --port 9000
+export ABX_SERVER_ENABLED_GROUPS=agents
+python -m agent_sandbox.server serve --port 9000
 
 python examples/agents/hosted_codex.py http://127.0.0.1:9000
 python examples/agents/hosted_qwen.py http://127.0.0.1:9000
@@ -68,14 +67,14 @@ req = urllib.request.Request(
 print(urllib.request.urlopen(req).read().decode())
 ```
 
-每个响应都带 `X-Easy-Sandbox-Local: 1`。计算发生在这台沙箱里，不在 OpenAI 托管环境里。
+每个响应都带 `X-Agent-Sandbox-Local: 1`。计算发生在这台沙箱里，不在 OpenAI 托管环境里。
 
 ## 本地测试
 
 不安装真实 CLI，也不需要模型密钥。`e2e-bin/` 里的脚本只在 `E2E_RUN_LLM=0` 时进入 `PATH`。
 
 ```bash
-E2E_RUN_LLM=0 EBX_SERVER_PORT=9000 python3 commands.py
+E2E_RUN_LLM=0 ABX_SERVER_PORT=9000 python3 commands.py
 E2E_BASE_URL=http://127.0.0.1:9000 python3 e2e_test.py
 ```
 

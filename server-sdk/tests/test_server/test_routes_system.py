@@ -1,4 +1,4 @@
-"""Tests for easy_sandbox.server.routes_system — system endpoints.
+"""Tests for agent_sandbox.server.routes_system — system endpoints.
 
 Each test spins up a real ``ThreadingHTTPServer`` on a random free port in a
 background thread and uses ``http.client.HTTPConnection`` to hit it directly.
@@ -17,10 +17,12 @@ from typing import Any
 
 import pytest
 
-import easy_sandbox.server.routes_system  # noqa: F401  # trigger registration
-from easy_sandbox.server.app import SandboxRequestHandler
-from easy_sandbox.server.registry import CommandRegistry
-from easy_sandbox.server.router import CapabilityGroup, default_table
+import agent_sandbox.server.routes_system  # noqa: F401  # trigger registration
+from agent_sandbox.server.app import SandboxRequestHandler
+from agent_sandbox.server.registry import CommandRegistry
+from agent_sandbox.server.router import CapabilityGroup, default_table
+
+from ._live import wire
 
 # ---------------------------------------------------------------------------
 # Helpers (mirrors test_app.py)
@@ -44,8 +46,7 @@ def _start_server(
     if registry is None:
         registry = CommandRegistry()
     httpd = ThreadingHTTPServer(("127.0.0.1", port), SandboxRequestHandler)
-    httpd.auth_token = auth_token  # type: ignore[attr-defined]
-    httpd.registry = registry  # type: ignore[attr-defined]
+    wire(httpd, auth_token=auth_token, registry=registry)
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()
     time.sleep(0.05)
@@ -266,12 +267,12 @@ class TestEnvSet:
         assert status == 403
         assert "PATH" in body["error"]
 
-    def test_protected_ebx_token_rejected(self, server_port: int) -> None:
+    def test_protected_abx_token_rejected(self, server_port: int) -> None:
         status, body = _request(
             server_port,
             "POST",
             "/env",
-            body={"vars": {"EBX_SERVER_TOKEN": "hacked"}},
+            body={"vars": {"ABX_SERVER_TOKEN": "hacked"}},
         )
         assert status == 403
 

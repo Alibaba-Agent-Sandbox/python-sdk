@@ -1,8 +1,8 @@
 # 提供方（Providers）
 
-> **说明：** 本页的 `ebx provider ...` 命令由 `cli` 仓库中的 Node.js CLI 提供。只用 Python 的用户可以用 `python -m easy_sandbox.providers ...` 完成同样的操作。两者使用相同的安装目录、相同的回执和相同的目录树摘要。
+> **说明：** 本页的 `abx provider ...` 命令由 `cli` 仓库中的 Node.js CLI 提供。只用 Python 的用户可以用 `python -m agent_sandbox.providers ...` 完成同样的操作。两者使用相同的安装目录、相同的回执和相同的目录树摘要。
 
-**提供方**就是一个沙箱后端。Easy Sandbox 自带一个内置提供方，并且可以从插件加载更多提供方。
+**提供方**就是一个沙箱后端。Agent Sandbox 自带一个内置提供方，并且可以从插件加载更多提供方。
 
 | Id | 名称 | 类型 | 默认 |
 |---|---|---|---|
@@ -19,15 +19,15 @@
 | 位置 | 示例 |
 |---|---|
 | SDK 参数 | `await Sandbox.create(provider="my-cloud")` |
-| CLI 选项 | `ebx create --provider my-cloud` |
-| 进程环境变量 | `export EBX_PROVIDER=my-cloud` |
-| `./.env` | `EBX_PROVIDER=my-cloud` |
-| `~/.ebx/.env` | `EBX_PROVIDER=my-cloud` |
-| `~/.ebx/config.toml` | `[core]` `provider = "my-cloud"`（由 `ebx provider default my-cloud` 写入） |
+| CLI 选项 | `abx create --provider my-cloud` |
+| 进程环境变量 | `export ABX_PROVIDER=my-cloud` |
+| `./.env` | `ABX_PROVIDER=my-cloud` |
+| `~/.abx/.env` | `ABX_PROVIDER=my-cloud` |
+| `~/.abx/config.toml` | `[core]` `provider = "my-cloud"`（由 `abx provider default my-cloud` 写入） |
 | 内置 | `alicloud-express` |
 
 ```python
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 sb = await Sandbox.create(template="base")                          # alicloud-express
 sb = await Sandbox.create(template="base", provider="local-process")
@@ -42,10 +42,10 @@ await sb.close()                                                    # 释放提�
 默认提供方管理：
 
 ```bash
-ebx provider list
-ebx provider default my-cloud       # 持久化到 ~/.ebx/config.toml
-ebx provider default                # 显示当前默认提供方
-ebx provider default alicloud-express
+abx provider list
+abx provider default my-cloud       # 持久化到 ~/.abx/config.toml
+abx provider default                # 显示当前默认提供方
+abx provider default alicloud-express
 ```
 
 ---
@@ -53,46 +53,46 @@ ebx provider default alicloud-express
 ## 安装提供方插件
 
 ```bash
-ebx provider install ./my-provider                          # 本地目录
-ebx provider install https://github.com/acme/ebx-provider-acme.git --ref 3f2c...   # 完整提交
-ebx provider install git@github.com:acme/ebx-provider-acme.git --ref v1.2.0 --allow-unpinned
-ebx provider list
-ebx provider info my-cloud
-ebx provider update my-cloud --check
-ebx provider uninstall my-cloud
+abx provider install ./my-provider                          # 本地目录
+abx provider install https://github.com/acme/abx-provider-acme.git --ref 3f2c...   # 完整提交
+abx provider install git@github.com:acme/abx-provider-acme.git --ref v1.2.0 --allow-unpinned
+abx provider list
+abx provider info my-cloud
+abx provider update my-cloud --check
+abx provider uninstall my-cloud
 ```
 
 不用 CLI 时：
 
 ```bash
-python -m easy_sandbox.providers install ./my-provider
-python -m easy_sandbox.providers list --json
-python -m easy_sandbox.providers update my-cloud --check
-python -m easy_sandbox.providers doctor my-cloud
-python -m easy_sandbox.providers test my-cloud       # 契约测试套件（需要 pytest）
+python -m agent_sandbox.providers install ./my-provider
+python -m agent_sandbox.providers list --json
+python -m agent_sandbox.providers update my-cloud --check
+python -m agent_sandbox.providers doctor my-cloud
+python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需要 pytest）
 ```
 
 ### 安装会做什么、不会做什么
 
 - **安装时不会执行插件里的任何东西。** 没有 `setup.py`，没有 postinstall 钩子，也没有 `git checkout`。Git 来源以不检出的方式获取，每个条目都会被校验（只允许普通文件，不允许符号链接和子模块，并有大小和数量限制），文件由安装器自己写入。
 - 安装会显示**同意界面**：id、版本、来源、解析出的提交、内容摘要、将要运行的命令、声明的安全块、特性和配置字段。非交互运行需要 `--yes`。
-- 给出完整的 40 位十六进制提交（`--ref`）或 `--sha256 <目录树摘要>` 时，来源是**已固定（pinned）**的。标签或分支是**未固定（unpinned）**的：它可能在你审查之后、安装之前移动。无人值守的运行拒绝未固定的来源，除非加 `--allow-unpinned`。
+- 给出完整的 40 位十六进制提交（`--ref`）或 `--sha256 <目录树摘要>` 时，来源是**已固定（pinned）**的。标签或分支是**未固定（unpinned）**的：它可能在你审查之后、安装之前移动。只有在终端里有人读过同意界面（不加 `--yes`）之后才会接受未固定的来源，或者显式加 `--allow-unpinned`。单独的 `--yes` 永远不会接受会移动的 ref：安装以 `ProviderTrustError`（E8012）失败，并打印应当固定的提交。`provider update` 适用同一规则。
 - 只接受 `https://` 和 `ssh` 的 git URL。带内嵌凭证的 URL 会被拒绝；请使用 SSH agent，或者安装你自己克隆的目录。`--allow-insecure-transport` 会启用 `file://`、`http://` 和 `git://`（用于测试和开发）。
-- 已安装的文件记录在回执（`.ebx-install.json`）里，带有 SHA-256 目录树摘要。**每次插件启动时都会校验该摘要**。如果有文件被改动，命令以 `ProviderIntegrityError`（E8011）失败；请重新安装或运行 `provider update`。
+- 已安装的文件记录在回执（`.abx-install.json`）里，带有 SHA-256 目录树摘要。**每次插件启动时都会校验该摘要**。如果有文件被改动，命令以 `ProviderIntegrityError`（E8011）失败；请重新安装或运行 `provider update`。
 - `--link` 做开发用的符号链接安装，没有完整性检查。它需要确认，并且每次使用都会在 stderr 打印警告。
 
 ### 更新与卸载
 
-`provider update` 从记录的来源重新获取。如果命令、安全块或特性列表变了，你必须重新同意。**已固定**（40 位十六进制提交或 `--sha256`）的安装不会移动：`update` 报告 `pinned` 且什么也不做，除非你传入新的 `--ref`。`update` 与 `install` 接受同样的传输和校验参数：`--ref`、`--check`、`--yes`、`--allow-unpinned`、`--allow-insecure-transport`（回执不会记住你用过它；`file://`、`http://` 或 `git://` 来源每次更新都需要它）和 `--no-verify`（跳过更新后的握手）。旧版本保留在回收目录里，直到新版本成功启动后才丢弃。如果新版本失败（例如握手失败），旧文件**及其 `data/` 目录**会被原样恢复。`provider uninstall` 删除目录；已保存的设置（`[providers.<id>]`、`EBX_<ID>_*`）会保留，除非加 `--purge`。卸载默认提供方会把默认值重置为 `alicloud-express`。
+`provider update` 从记录的来源重新获取。如果命令、安全块或特性列表变了，你必须重新同意。**已固定**（40 位十六进制提交或 `--sha256`）的安装不会移动：`update` 报告 `pinned` 且什么也不做，除非你传入新的 `--ref`。`update` 与 `install` 接受同样的传输和校验参数：`--ref`、`--check`、`--yes`、`--allow-unpinned`、`--allow-insecure-transport`（回执不会记住你用过它；`file://`、`http://` 或 `git://` 来源每次更新都需要它）和 `--no-verify`（跳过更新后的握手）。旧版本保留在回收目录里，直到新版本成功启动后才丢弃。如果新版本失败（例如握手失败），旧文件**及其 `data/` 目录**会被原样恢复。`provider uninstall` 删除目录；已保存的设置（`[providers.<id>]`、`ABX_<ID>_*`）会保留，除非加 `--purge`。卸载默认提供方会把默认值重置为 `alicloud-express`。
 
 ### 文件位置
 
 ```text
-~/.ebx/providers/
+~/.abx/providers/
   <id>/
-    ebx-provider.toml     # 清单
+    abx-provider.toml     # 清单
     ...                   # 插件文件
-    .ebx-install.json     # 回执：来源、提交、摘要、同意记录
+    .abx-install.json     # 回执：来源、提交、摘要、同意记录
     data/                 # 插件的工作和状态目录（不参与摘要）
 ```
 
@@ -126,13 +126,76 @@ python -m easy_sandbox.providers test my-cloud       # 契约测试套件（需�
 | `storage.mount`、`network.vpc` | 对象存储挂载；VPC 接入 |
 | `sessions` | 沙箱在进程结束后仍存在，可按 id 重新连接 |
 
-`alicloud-express` 实现了全部 18 个特性。`ebx provider info <id>` 会显示插件声明了什么。
+`alicloud-express` 实现了全部 18 个特性。`abx provider list` 用一行显示每个提供方声明的特性（`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`；`python -m agent_sandbox.providers list` 输出相同），`abx provider info <id>` 显示完整清单。
+
+清单里的特性标志在运行时对每一种提供方都会被强制执行：
+
+| 类型 | 未声明的特性在哪里被拦下 | 结果 |
+|---|---|---|
+| `exec` | EPP 适配器，在请求写给插件之前 | E8004 |
+| `rest` | 包在内置协议类外面的 `feature_gate`，在任何 HTTP 请求之前 | E8004 |
+| `python` | 提供方自己代码里的 `Provider.require(feature)` | E8004 |
+
+已声明的特性在后端内部失败不属于 E8004，而是映射后端的错误（见下文「错误」）。两种「未找到」被有意区分开：未知的**沙箱 id** 在所有提供方、所有 `sandbox.*` 调用（`connect`、`info`、`set_timeout`、`pause`、`resume`；`kill` 仍然幂等）上都是 `SandboxNotFoundError`（E2009）；缺失的模板、文件或进程是 E4001/E2001，没有 `sdk_code` 时是 `ProviderResourceNotFoundError`（E8005）。
+
+### 安装之后能调用什么
+
+安装一个提供商，并不会打开全部 SDK 方法或全部 `abx` 命令。SDK 和 CLI 调用的是**同一份已安装插件**。每个方法和命令都对应上表里的一项能力。插件没有声明时，调用会在发出请求之前抛出 `ProviderFeatureNotSupportedError`（E8004）。`exec` 和 `rest` 插件两边都能用。进程内注册的 `python` 提供商只给 SDK 用。
+
+| 能力 | Python SDK | CLI |
+|---|---|---|
+| `sandbox.lifecycle` | `Sandbox.create`、`connect`、`list`、`kill`、`info` | `create`、`list`、`info`、`kill`、`connect` |
+| `sandbox.timeout` | `set_timeout` | `sandbox timeout` |
+| `sandbox.pause` | `pause`、`resume` | `sandbox pause`、`sandbox resume` |
+| `exec.run` | `commands.run`、`sandbox.run` | `exec`、`run` |
+| `exec.stream` | `commands.stream` | `sandbox shell-stream` |
+| `process.manage` | `commands.list`、`kill`、`send_stdin` | `sandbox process ...` |
+| `pty` | `get_terminal` | PTY 会话 |
+| `files.rw` | `files.*` | `upload`、`download`、`sandbox files ...` |
+| `files.watch` | `files.watch` | — |
+| `files.transfer` | 带签名的上传和下载 URL | — |
+| `code.interpret` | `run_code` | `sandbox code` |
+| `templates.read` | 模板读取 API | `template list`、`template info` |
+| `templates.build` | 镜像构建和模板注册 | `template build/push/create/deploy/install/delete`、`deploy`、`install` |
+| `ports.url` | `network.get_url` | `sandbox url` |
+| `ports.domain` | 自定义域名 | — |
+| `storage.mount` | OSS 挂载 | — |
+| `network.vpc` | VPC 配置 | `--vpc-id` 及相关参数 |
+| `sessions` | 对已有 id 调用 `Sandbox.connect` | `connect <provider:id>` |
+
+### OpenSandbox
+
+```bash
+abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox
+```
+
+`//opensandbox` 是目录仓库里的子目录，和 `abx template install alibaba-agent-sandbox/awesome-templates//python-hello` 的写法相同。然后：
+
+```python
+sb = await Sandbox.create(template="base", provider="opensandbox")
+proc = await sb.commands.run("echo hello")
+await sb.files.write("/tmp/note.txt", "hello")
+print(await sb.files.read("/tmp/note.txt"))
+await sb.kill()
+```
+
+**已验证的状态（2026-10-13）**：在真实的 `opensandbox-server` 1.1.1（Docker 运行时）上，分别通过 Node CLI 和 `Sandbox.create(provider="opensandbox")` 验证（证据：[2026-10-13-opensandbox-provider-e2e](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/evidence/verify/2026-10-13-opensandbox-provider-e2e.md)）：
+
+| 可用（真实运行过） | 不可用 |
+|---|---|
+| 按提交固定从 git 安装、doctor、18 个用例的契约套件（两端均 18/18）；用镜像 URI create、info、list、按 id connect、kill（幂等）、已 kill 的沙箱返回 `E2009`；`commands.run` 的退出码、stderr、环境变量；300 KB 二进制与 Unicode 文件往返、目录列表、缺失文件返回类型化的 `E4001`；进程列表（3 个进程）；`set_timeout`、`pause`（状态 `paused`）、`resume`（命令再次可执行）；`network.resolve(9000)`（服务器代理 URL）；篡改已安装文件后所有命令以 `E8011` 停止 | `run_code`、PTY、`files.watch`、模板构建/部署、签名传输 URL、域名、OSS、VPC：全部返回点名该特性的 `E8004`。未验证：egress 边车网络策略（`network_policy` 选项）、私有镜像仓库、`secure_access` 令牌流程、带 `process.manage` 的 `send_stdin` |
+
+已发现、但不属于提供方的一个缺口：awesome-providers 目录仍带着改名前的 `ebx-provider.toml`，直接从 GitHub 安装会以 `E8014`（插件根目录没有 `abx-provider.toml`）失败。
+
+OpenSandbox 声明了九项能力：`sandbox.lifecycle`、`sandbox.timeout`、`sandbox.pause`、`exec.run`、`exec.stream`、`process.manage`、`files.rw`、`ports.url`、`sessions`。对应的 SDK 方法和 CLI 命令可用。这些会以 E8004 拒绝：`run_code`、PTY、模板列出/构建/部署、文件监听、签名传输 URL、自定义域名、OSS、VPC。进程的列出、终止、发信号可用；`send_stdin` 返回 E8004，对 execd 命令 id 的终止只能发 SIGKILL。
+
+插件是没有 npm 依赖的 Node.js 程序，所以 SDK 需要 `PATH` 上有 `node`。默认服务地址是 `http://127.0.0.1:8080`（`providers.opensandbox.base_url`）。模板名是容器镜像；未设置 `default_image` 时，`base` 表示 `python:3.12-slim`。逐字段说明见 [opensandbox/README.zh-CN.md](https://github.com/alibaba-agent-sandbox/awesome-providers/blob/main/opensandbox/README.zh-CN.md)。
 
 ---
 
 ## 编写提供方
 
-插件是一个目录，里面有 `ebx-provider.toml` 和它要运行的程序。
+插件是一个目录，里面有 `abx-provider.toml` 和它要运行的程序。
 
 ```toml
 manifest_version = 1
@@ -160,7 +223,7 @@ spawns_processes = true
 [core]
 inherit = []                             # 插件想要的通用键；需要用户同意
 
-[config.fields.workdir_root]             # 插件自己的设置：EBX_LOCAL_PROCESS_WORKDIR_ROOT
+[config.fields.workdir_root]             # 插件自己的设置：ABX_LOCAL_PROCESS_WORKDIR_ROOT
 type    = "path"
 required = false
 description = "Directory that holds sandbox working directories"
@@ -170,9 +233,19 @@ description = "Directory that holds sandbox working directories"
 
 - `examples/providers/local-process/` —— 约 200 行 Python 标准库写成的 `exec` 提供方（生命周期、命令、文件）。
 - `examples/providers/e2b-compatible/` —— 只有清单的 `rest` 提供方。
-- `examples/providers/opensandbox/` —— 面向 [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) 服务的完整、无依赖的 Node `exec` 提供方：流式 exec、文件、进程控制、暂停 / 恢复和端口 URL，带 mock 服务器测试和在线测试。
 
-开发循环：`python -m easy_sandbox.providers install ./my-provider --link --yes` 安装一个不校验摘要的符号链接，修改立即生效。先运行 `doctor`，再运行 `test`（见下文），最后安装固定版本的副本正式使用。
+OpenSandbox 插件不在本仓库里，它是可单独安装的提供方：[opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox)（[alibaba-agent-sandbox/awesome-providers](https://github.com/alibaba-agent-sandbox/awesome-providers)）。这是面向 [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) 服务的无依赖 Node `exec` 提供方：流式 exec、文件、进程控制、暂停 / 恢复和端口 URL，带 mock 服务器测试和在线测试。安装命令：`abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox`。
+
+### 编写检查清单
+
+1. **清单**：`manifest_version = 1`、合法的 id、`[compat] protocol = "epp/1"` 与 `requires`、`[runtime] kind = "exec"`（或 `rest` 端点）；每个选项都写进 `[config.fields.*]`，密钥加 `secret = true`，厂商自己的变量名写进 `env = [...]`。清单有错时返回 `E8014`，并指出出错的字段。
+2. **必须实现的方法**：`initialize`（返回你实现的特性）、`shutdown`，以及 `sandbox.lifecycle` 的 `sandbox.create|get|list|kill`。其余都按特性划分（见「插件要响应的方法」）。
+3. **特性标志**：只声明确实可用的特性。其余的宿主直接返回 E8004，不会调用你。
+4. **错误**：缺少特性返回 `-32003`；沙箱不存在返回 `-32002`（想写明的话加 `sdk_code` `E2009`）；凡是有对应 SDK 类的都带 `sdk_code`；信息里绝不出现凭证。
+5. **一致性测试**：`python -m agent_sandbox.providers test <id>`（或 `abx provider test <id>`）必须通过；被跳过的用例就是你没有声明的特性。
+6. **发布**：给出带 40 位十六进制提交的固定安装命令，如实填写 `[security]`，并在 README 里写明同意界面的内容。
+
+开发循环：`python -m agent_sandbox.providers install ./my-provider --link --yes` 安装一个不校验摘要的符号链接，修改立即生效。先运行 `doctor`，再运行 `test`（见下文），最后安装固定版本的副本正式使用。
 
 ### 插件要响应的方法
 
@@ -183,7 +256,7 @@ description = "Directory that holds sandbox working directories"
 - **扩展**（宿主暂不调用，插件可以提供）：`files.search`、`files.chmod`、`exec.start{detached}`、`files.read{offset,length}`、`files.write{mode,append}`。
 - `files.move` 的参数是 `{sandbox_id, source, destination, overwrite?}`（插件也可以接受 `src`/`dest`）。
 - `exec.start` 返回**字符串**类型的 `process_id`。`process.kill|signal|stdin` 的 `pid` 是不透明 id：既可以是 `process.list` 条目的整数 `pid`，也可以是该字符串；`ProcessInfo.pid` 和 `commands.kill(pid)` 两者都接受。
-- 未知的错误 `sdk_code` 会回退为该 EPP 码的默认类。可接受的值就是宿主映射的 SDK 错误码，例如 `E1001`（凭证错误）、`E2000`/`E2001`（沙箱 / 模板未找到）、`E3001`（命令超时）、`E4001`（文件未找到），见[错误码参考](../reference/error-codes.md)。缺失**文件**时单独的 `-32002` 会变成 E8005（沙箱未找到），所以请带上 `sdk_code: "E4001"`。
+- 未知的错误 `sdk_code` 会回退为该 EPP 码的默认类。可接受的值就是宿主映射的 SDK 错误码，例如 `E1001`（凭证错误）、`E2000`/`E2001`（沙箱 / 模板未找到）、`E3001`（命令超时）、`E4001`（文件未找到），见[错误码参考](../reference/error-codes.md)。缺失**文件**时单独的 `-32002` 会变成 E8005，所以请带上 `sdk_code: "E4001"`；在 `sandbox.get`/`connect`/`set_timeout`/`pause`/`resume` 上，未知沙箱的单独 `-32002` 会变成 E2009（插件也可以直接写 `sdk_code: "E2009"`）。
 - 清单里的默认值会**随** `initialize.config` 一起送达。不要给带有替代项的字段（`base_url` 与 `domain`）设置默认值：默认值总会胜出。
 - 对一个正在运行的请求发 `$/cancel {id}` 的含义是：停止工作（杀掉派生的进程），并以错误或最终结果应答。
 
@@ -203,13 +276,13 @@ description = "Directory that holds sandbox working directories"
 
 ### 配置与凭证
 
-每个提供方有自己作用域的键：环境变量或 `.env` 里是 `EBX_<PROVIDER>_<KEY>`，`config.toml` 里是 `[providers.<id>]`，SDK 里是 `provider_options={...}`。提供方只会在 `initialize` 请求里收到其清单声明的键。密钥绝不会放进插件的 argv 或环境变量。
+每个提供方有自己作用域的键：环境变量或 `.env` 里是 `ABX_<PROVIDER>_<KEY>`，`config.toml` 里是 `[providers.<id>]`，SDK 里是 `provider_options={...}`。提供方只会在 `initialize` 请求里收到其清单声明的键。密钥绝不会放进插件的 argv 或环境变量。
 
-通用键 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`（`EBX_SANDBOX_API_KEY` 和 `EBX_SANDBOX_BASE_URL`）属于内置提供方。只有当插件清单在 `[core] inherit` 里列出它们，**并且**你在安装或更新时同意了，插件才能拿到。同意界面会列出这些键的名字。你的 LLM、GitHub 和 MCP 键永远不会交给提供方。
+通用键 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`（`ABX_SANDBOX_API_KEY` 和 `ABX_SANDBOX_BASE_URL`）属于内置提供方。只有当插件清单在 `[core] inherit` 里列出它们，**并且**你在安装或更新时同意了，插件才能拿到。同意界面会列出这些键的名字。你的 LLM、GitHub 和 MCP 键永远不会交给提供方。
 
 ### 宿主如何处理插件进程
 
-- 以清理过的环境启动：`PATH`、`HOME`、临时目录和语言环境变量、`env_passthrough` 中列出的名字，以及 `EBX_PROVIDER_DATA_DIR`。不会泄入 `EBX_*`、`E2B_*`、`ALICLOUD_*`、`GITHUB_TOKEN` 或 `OPENAI_*`。工作目录是插件的 `data/` 目录。
+- 以清理过的环境启动：`PATH`、`HOME`、临时目录和语言环境变量、`env_passthrough` 中列出的名字，以及 `ABX_PROVIDER_DATA_DIR`。不会泄入 `ABX_*`、`E2B_*`、`ALICLOUD_*`、`GITHUB_TOKEN` 或 `OPENAI_*`。工作目录是插件的 `data/` 目录。
 - 单行协议消息限制为 8 MiB，并为崩溃信息保留 stderr 的最后 64 KiB。在 `initialize` 里发送过的值会从捕获的 stderr 和错误信息中被遮蔽。
 - 应用超时（默认启动 10 秒、每次调用 60 秒），并在超时、崩溃或关闭时终止整个进程组。
 - 只重试幂等方法，并且只在插件标记为 `retryable` 的错误上重试。
@@ -223,7 +296,7 @@ description = "Directory that holds sandbox working directories"
 | EPP 错误码 | 抛出为 | CLI 退出码 |
 |---|---|---|
 | `-32001` 未认证 | `AuthenticationError` 系列（E1xxx） | 3 |
-| `-32002` 未找到 | `ProviderResourceNotFoundError`（E8005），或 `data.sdk_code` 指定的类 | 4 |
+| `-32002` 未找到 | 对已有 id 的 `sandbox.*` 调用是 `SandboxNotFoundError`（E2009）；其他情况是 `ProviderResourceNotFoundError`（E8005），或 `data.sdk_code` 指定的类 | 4 |
 | `-32003` 特性不支持 | `ProviderFeatureNotSupportedError`（E8004） | 1 |
 | `-32004` 超出配额 | `QuotaExceededError` | 6 |
 | `-32005` 超时 | `ProviderTimeoutError`（E8022）或 `CommandTimeoutError` | 5 |
@@ -239,44 +312,44 @@ description = "Directory that holds sandbox working directories"
 
 ```bash
 # 1. 一条命令，无需测试文件。什么都没收集到时会失败。
-python -m easy_sandbox.providers test my-cloud --option base_url=http://127.0.0.1:8080
-python -m easy_sandbox.providers test my-cloud -- -k exec -x      # `--` 之后是额外的 pytest 参数
+python -m agent_sandbox.providers test my-cloud --option base_url=http://127.0.0.1:8080
+python -m agent_sandbox.providers test my-cloud -- -k exec -x      # `--` 之后是额外的 pytest 参数
 
 # 2. 直接用 pytest，无需测试文件
-pytest -p easy_sandbox.providers.testing --pyargs easy_sandbox.providers.contract \
+pytest -p agent_sandbox.providers.testing --pyargs agent_sandbox.providers.contract \
        --provider-under-test my-cloud --provider-option base_url=http://127.0.0.1:8080
 ```
 
 ```python
 # 3. 在你插件自己的测试里写子类
-from easy_sandbox.providers.testing import ProviderContractTests
+from agent_sandbox.providers.testing import ProviderContractTests
 
 class TestMyProvider(ProviderContractTests):
     provider_id = "my-cloud"          # 已安装的提供方
     provider_options = {}
 ```
 
-（`--provider-under-test` 和 `--provider-option KEY=VALUE`（可重复）在用 `-p` 把 `easy_sandbox.providers.testing` 作为 pytest 插件加载时注册。`EBX_PROVIDER_UNDER_TEST` 设置默认值。没有选择提供方时套件会**失败**而不是跳过。）
+（`--provider-under-test` 和 `--provider-option KEY=VALUE`（可重复）在用 `-p` 把 `agent_sandbox.providers.testing` 作为 pytest 插件加载时注册。`ABX_PROVIDER_UNDER_TEST` 设置默认值。没有选择提供方时套件会**失败**而不是跳过。）
 
-它检查什么：已声明特性是否已知；密钥字段没有默认值；生命周期（创建、连接、列出、销毁，未知 id 是 `E8005`）；`kill` 幂等；`set_timeout`；暂停与恢复；`exec.run` 的退出码、stderr 和环境变量；流式输出顺序及恰好一个最终 `exit`；命令超时是否被强制执行；进程列表；文件（文本、二进制、Unicode、目录、移动、删除、缺失文件是类型化的未找到）；`ports.url`；你**没有**声明的特性是否以 E8004 失败（一个 `CapabilityNotSupportedError`）；以及密钥选项的值绝不出现在错误文本中。
+它检查什么：已声明特性是否已知；密钥字段没有默认值；生命周期（创建、连接、列出、销毁，未知 id 是 `E2009`）；`kill` 幂等；`set_timeout`；暂停与恢复；`exec.run` 的退出码、stderr 和环境变量；流式输出顺序及恰好一个最终 `exit`；命令超时是否被强制执行；进程列表；文件（文本、二进制、Unicode、目录、移动、删除、缺失文件是类型化的未找到）；`ports.url`；你**没有**声明的特性是否以 E8004 失败（一个 `CapabilityNotSupportedError`）；以及密钥选项的值绝不出现在错误文本中。
 
-离线测试：套件需要一个可用的后端。对于访问 HTTP 的插件，请写一个小型 mock 服务器，并用一个很小的 JSON-RPC 客户端通过 stdio 驱动插件；`examples/providers/opensandbox/tests/` 两者都有（`tests/mock/`、`tests/epp-client.mjs`）。
+离线测试：套件需要一个可用的后端。对于访问 HTTP 的插件，请写一个小型 mock 服务器，并用一个很小的 JSON-RPC 客户端通过 stdio 驱动插件。[opensandbox 插件](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox)里两者都有（`tests/mock/`、`tests/epp-client.mjs`）。
 
 不运行沙箱也能检查已安装提供方的接线：
 
 ```bash
-python -m easy_sandbox.providers doctor my-cloud          # 清单、摘要、握手、凭证
-python -m easy_sandbox.providers doctor my-cloud --no-handshake
+python -m agent_sandbox.providers doctor my-cloud          # 清单、摘要、握手、凭证
+python -m agent_sandbox.providers doctor my-cloud --no-handshake
 ```
 
-在含有无关 `conftest.py` 的目录里运行 `pytest`？加上 `--noconftest`（或 `--confcutdir`）。`python -m easy_sandbox.providers test` 已经让自己与当前目录的 pytest 配置隔离。
+在含有无关 `conftest.py` 的目录里运行 `pytest`？加上 `--noconftest`（或 `--confcutdir`）。`python -m agent_sandbox.providers test` 已经让自己与当前目录的 pytest 配置隔离。
 
 ---
 
 ## Python 插件（仅 SDK）
 
 ```python
-from easy_sandbox.providers import Provider, register_provider
+from agent_sandbox.providers import Provider, register_provider
 
 class MyProvider(Provider):
     id = "my-cloud"
@@ -285,7 +358,7 @@ class MyProvider(Provider):
 register_provider(MyProvider())
 ```
 
-软件包也可以在 `easy_sandbox.providers` 组里发布入口点，指向一个 `Provider` 实例或无参工厂；它会在第一次列出提供方时加载。这类提供方在你的进程内以完全信任运行，所以不能用 `ebx provider install` 安装。
+软件包也可以在 `agent_sandbox.providers` 组里发布入口点，指向一个 `Provider` 实例或无参工厂；它会在第一次列出提供方时加载。这类提供方在你的进程内以完全信任运行，所以不能用 `abx provider install` 安装。
 
 ---
 

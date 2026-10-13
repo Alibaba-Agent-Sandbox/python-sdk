@@ -1,4 +1,4 @@
-"""Tests for easy_sandbox.server — HTTP server + route handlers.
+"""Tests for agent_sandbox.server — HTTP server + route handlers.
 
 Each test spins up a real ``ThreadingHTTPServer`` on a random free port in a
 background thread and uses ``http.client.HTTPConnection`` to hit it directly.
@@ -17,14 +17,11 @@ from typing import Any
 
 import pytest
 
-from easy_sandbox.server.app import SandboxRequestHandler, SandboxServer
-from easy_sandbox.server.registry import CommandArg, CommandRegistry
-from easy_sandbox.server.router import CapabilityGroup, default_table
-from easy_sandbox.server.routes import (
-    _resolve_safe_path,
-    disable_builtin,
-    enable_builtin,
-)
+from agent_sandbox.server.app import SandboxRequestHandler, SandboxServer
+from agent_sandbox.server.registry import CommandArg, CommandRegistry
+from agent_sandbox.server.router import CapabilityGroup, default_table
+
+from ._live import wire
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -50,8 +47,7 @@ def _start_server(
     if registry is None:
         registry = CommandRegistry()
     httpd = ThreadingHTTPServer(("127.0.0.1", port), SandboxRequestHandler)
-    httpd.auth_token = auth_token  # type: ignore[attr-defined]
-    httpd.registry = registry  # type: ignore[attr-defined]
+    wire(httpd, auth_token=auth_token, registry=registry)
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()
     # Give the server a moment to bind.
@@ -255,7 +251,7 @@ class TestUploadDownload:
     """POST /upload and GET /download — file round-trip."""
 
     def test_round_trip(self, server_port: int, tmp_path: Any, monkeypatch: Any) -> None:
-        monkeypatch.setenv("EBX_SERVER_BASE_DIR", str(tmp_path))
+        monkeypatch.setenv("ABX_SERVER_BASE_DIR", str(tmp_path))
         file_path = str(tmp_path / "hello.txt")
         original = b"Hello, sandbox world!"
         encoded = base64.b64encode(original).decode()
@@ -279,7 +275,7 @@ class TestUploadDownload:
     def test_download_missing_file_404(
         self, server_port: int, tmp_path: Any, monkeypatch: Any
     ) -> None:
-        monkeypatch.setenv("EBX_SERVER_BASE_DIR", str(tmp_path))
+        monkeypatch.setenv("ABX_SERVER_BASE_DIR", str(tmp_path))
         status, body = _request(
             server_port, "GET", f"/download?path={tmp_path}/nonexistent/file.xyz"
         )
@@ -364,11 +360,11 @@ class TestAuth:
 # ---------------------------------------------------------------------------
 
 
-class TestBuiltinToggle:
-    """enable_builtin / disable_builtin controls route availability."""
+class TestGroupAliasToggle:
+    """``disable_group`` / ``enable_group`` on the table control route availability."""
 
     def test_disable_upload(self, server_port: int) -> None:
-        disable_builtin("upload")
+        default_table().disable_group(CapabilityGroup.FILE_OPS)
         status, body = _request(
             server_port,
             "POST",
@@ -376,29 +372,32 @@ class TestBuiltinToggle:
             body={"path": "/tmp/x", "content_base64": "aGVsbG8="},
         )
         assert status == 404
+        assert body["code"] == "endpoint_disabled"
+        assert body["rule"] == "code:enable_group:file_ops"
+        assert "disabled by rule" in body["error"]
 
     def test_disable_download(self, server_port: int) -> None:
-        disable_builtin("download")
+        default_table().disable_group(CapabilityGroup.FILE_OPS)
         status, body = _request(server_port, "GET", "/download?path=/tmp/x")
         assert status == 404
 
     def test_disable_shell(self, server_port: int) -> None:
-        disable_builtin("shell")
+        default_table().disable_group(CapabilityGroup.PROCESS)
         status, body = _request(server_port, "POST", "/shell", body={"command": "echo hi"})
         assert status == 404
 
     def test_enable_after_disable(self, server_port: int) -> None:
-        disable_builtin("shell")
-        enable_builtin("shell")
+        default_table().disable_group(CapabilityGroup.PROCESS)
+        default_table().enable_group(CapabilityGroup.PROCESS)
         status, body = _request(server_port, "POST", "/shell", body={"command": "echo re-enabled"})
         assert status == 200
         assert body["exit_code"] == 0
 
-    def test_unknown_builtin_raises(self) -> None:
-        with pytest.raises(ValueError, match="Unknown built-in"):
-            enable_builtin("unknown_route")
-        with pytest.raises(ValueError, match="Unknown built-in"):
-            disable_builtin("unknown_route")
+    def test_legacy_builtin_toggle_api_is_gone(self) -> None:
+        import agent_sandbox.server as server_pkg
+
+        for name in ("enable_builtin", "disable_builtin", "is_builtin_enabled"):
+            assert not hasattr(server_pkg, name)
 
 
 # ---------------------------------------------------------------------------
@@ -410,17 +409,17 @@ class TestSandboxServerClass:
     """SandboxServer initialisation and env-var token reading."""
 
     def test_default_no_token(self, monkeypatch: Any) -> None:
-        monkeypatch.delenv("EBX_SERVER_TOKEN", raising=False)
+        monkeypatch.delenv("ABX_SERVER_TOKEN", raising=False)
         srv = SandboxServer()
         assert srv.auth_token is None
 
     def test_token_from_env(self, monkeypatch: Any) -> None:
-        monkeypatch.setenv("EBX_SERVER_TOKEN", "env-secret")
+        monkeypatch.setenv("ABX_SERVER_TOKEN", "env-secret")
         srv = SandboxServer()
         assert srv.auth_token == "env-secret"
 
     def test_empty_token_treated_as_none(self, monkeypatch: Any) -> None:
-        monkeypatch.setenv("EBX_SERVER_TOKEN", "")
+        monkeypatch.setenv("ABX_SERVER_TOKEN", "")
         srv = SandboxServer()
         assert srv.auth_token is None
 
@@ -442,7 +441,7 @@ class TestEdgeCases:
         assert status == 404
 
     def test_upload_bad_base64(self, server_port: int, tmp_path: Any, monkeypatch: Any) -> None:
-        monkeypatch.setenv("EBX_SERVER_BASE_DIR", str(tmp_path))
+        monkeypatch.setenv("ABX_SERVER_BASE_DIR", str(tmp_path))
         status, body = _request(
             server_port,
             "POST",
@@ -466,36 +465,19 @@ class TestEdgeCases:
 
 
 # ---------------------------------------------------------------------------
-# Path traversal security — _resolve_safe_path
+# Path traversal security
 # ---------------------------------------------------------------------------
 
 
 class TestPathTraversal:
     """Verify that upload/download reject paths outside base_dir."""
 
-    def test_resolve_safe_path_within_base(self, tmp_path: Any) -> None:
-        base = str(tmp_path)
-        safe = _resolve_safe_path(str(tmp_path / "sub" / "file.txt"), base_dir=base)
-        assert safe.startswith(base)
-
-    def test_resolve_safe_path_dotdot_escape(self, tmp_path: Any) -> None:
-        base = str(tmp_path / "sandbox")
-        os.makedirs(base, exist_ok=True)
-        with pytest.raises(ValueError, match="Path escapes base directory"):
-            _resolve_safe_path(base + "/../../../etc/passwd", base_dir=base)
-
-    def test_resolve_safe_path_absolute_outside(self, tmp_path: Any) -> None:
-        base = str(tmp_path / "sandbox")
-        os.makedirs(base, exist_ok=True)
-        with pytest.raises(ValueError, match="Path escapes base directory"):
-            _resolve_safe_path("/etc/passwd", base_dir=base)
-
     def test_upload_path_traversal_rejected(
         self, server_port: int, tmp_path: Any, monkeypatch: Any
     ) -> None:
         base = str(tmp_path / "sandbox")
         os.makedirs(base, exist_ok=True)
-        monkeypatch.setenv("EBX_SERVER_BASE_DIR", base)
+        monkeypatch.setenv("ABX_SERVER_BASE_DIR", base)
         payload = base64.b64encode(b"evil").decode()
         status, body = _request(
             server_port,
@@ -503,21 +485,21 @@ class TestPathTraversal:
             "/upload",
             body={"path": base + "/../../etc/shadow", "content_base64": payload},
         )
-        assert status == 400
-        assert "Path escapes base directory" in body["error"]
+        assert status == 403
+        assert body["code"] == "path_not_allowed"
 
     def test_download_path_traversal_rejected(
         self, server_port: int, tmp_path: Any, monkeypatch: Any
     ) -> None:
         base = str(tmp_path / "sandbox")
         os.makedirs(base, exist_ok=True)
-        monkeypatch.setenv("EBX_SERVER_BASE_DIR", base)
+        monkeypatch.setenv("ABX_SERVER_BASE_DIR", base)
         status, body = _request(server_port, "GET", f"/download?path={base}/../../etc/passwd")
-        assert status == 400
-        assert "Path escapes base directory" in body["error"]
+        assert status == 403
+        assert body["code"] == "path_not_allowed"
 
     def test_upload_within_base_ok(self, server_port: int, tmp_path: Any, monkeypatch: Any) -> None:
-        monkeypatch.setenv("EBX_SERVER_BASE_DIR", str(tmp_path))
+        monkeypatch.setenv("ABX_SERVER_BASE_DIR", str(tmp_path))
         file_path = str(tmp_path / "project" / "file.py")
         payload = base64.b64encode(b"print('hello')").decode()
         status, body = _request(
@@ -529,12 +511,26 @@ class TestPathTraversal:
         assert status == 200
         assert body["bytes"] == len(b"print('hello')")
 
-    def test_env_var_configures_base_dir(self, tmp_path: Any, monkeypatch: Any) -> None:
-        custom_base = str(tmp_path / "custom")
-        os.makedirs(custom_base, exist_ok=True)
-        monkeypatch.setenv("EBX_SERVER_BASE_DIR", custom_base)
-        safe = _resolve_safe_path(custom_base + "/sub/file.txt")
-        assert safe.startswith(custom_base)
+    def test_env_var_configures_base_dir(
+        self, server_port: int, tmp_path: Any, monkeypatch: Any
+    ) -> None:
+        custom_base = tmp_path / "custom"
+        custom_base.mkdir()
+        monkeypatch.setenv("ABX_SERVER_BASE_DIR", str(custom_base))
+        payload = base64.b64encode(b"x").decode()
+        inside = _request(
+            server_port,
+            "POST",
+            "/upload",
+            body={"path": str(custom_base / "sub" / "file.txt"), "content_base64": payload},
+        )
+        outside = _request(
+            server_port,
+            "POST",
+            "/upload",
+            body={"path": str(tmp_path / "other.txt"), "content_base64": payload},
+        )
+        assert inside[0] == 200 and outside[0] == 403
 
 
 # ---------------------------------------------------------------------------

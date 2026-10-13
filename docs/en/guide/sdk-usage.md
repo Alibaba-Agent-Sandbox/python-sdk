@@ -1,19 +1,19 @@
 # SDK Usage Guide
 
-This document covers the complete usage of the Easy Sandbox Python SDK.
+This document covers the complete usage of the Agent Sandbox Python SDK.
 
 ---
 
 ## Installation
 
 ```bash
-pip install easy-sandbox
+pip install agent-sandbox
 ```
 
 ## Import
 
 ```python
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 ```
 
 ---
@@ -50,16 +50,6 @@ async with await Sandbox.create(template="base") as sandbox:
     result = await sandbox.run_code("print(1+1)")
     print(result.text)  # "2"
 # Automatically destroyed
-```
-
-### Natural Language Creation
-
-When `description` is provided and `template` is left at its default value, the SDK records it as a hint log entry; template selection does not happen inside `Sandbox.create()` itself. The CLI's `ebx create "<description>"` calls Qwen Code to generate an AI template before creating the sandbox (an explicit `--template` skips AI generation):
-
-```python
-sandbox = await Sandbox.create(
-    description="I need a data analysis environment with pandas and matplotlib",
-)
 ```
 
 ### Connect to an Existing Sandbox
@@ -341,7 +331,7 @@ Sync methods run an event loop in the background and are suitable for scripts an
 All SDK errors inherit from `SandboxError` and carry `code`, `message`, and `suggestion` attributes:
 
 ```python
-from easy_sandbox.models.errors import (
+from agent_sandbox.models.errors import (
     SandboxError,
     InvalidAPIKeyError,       # E1001
     TemplateNotFoundError,    # E2001
@@ -364,28 +354,25 @@ See [Error Codes Reference](../reference/error-codes.md) for details.
 
 ---
 
-## Custom Commands
+## Named Commands
 
-Templates can define custom commands. Use `sandbox.custom()` to execute named commands and `sandbox.list_commands()` to list them:
+There is one mechanism for named commands: functions registered in the sandbox server (`@sandbox.register`, or the server's `CommandRegistry`). `sandbox.run(name, **kwargs)` calls one of them (`POST /commands/{name}`), and `sandbox.list_commands()` lists them:
 
 ```python
-# List available commands
 commands = await sandbox.list_commands()
 for cmd in commands:
-    print(f"{cmd['name']}: {cmd['description']}")
+    print(f"{cmd.name}: {cmd.description}")
 
-# Execute a named custom command
-result = await sandbox.custom("dev", port="8080")
-print(result.value)
+result = await sandbox.run("dev", port=8080)   # the registered function's return value
 ```
 
-> **Note:** `sandbox.run(cmd)` runs a bare shell command; `sandbox.custom(name)` dispatches a named command.
+An unknown name raises `CommandNotFoundError`; argument or execution errors raise `ServerAPIError`. The sandbox image must run `agent-sandbox-server` (see below). For a bare shell command use `sandbox.commands.run(cmd)`; it never goes through the registry.
 
 ---
 
 ## Template Server — server
 
-Templates that ship an `easy-sandbox-server` expose a second, template-authored data plane (port 9000). `sandbox.server`
+Templates that ship an `agent-sandbox-server` expose a second, template-authored data plane (port 9000). `sandbox.server`
 is its typed client. Use it when the template restricts what is reachable (per-endpoint policy) or when you need
 endpoints envd does not have (search, archive, file watching, process output/stdin, git, browser).
 
@@ -404,7 +391,7 @@ async with await Sandbox.create(template="my-server-template") as sandbox:
     print(server.files.list_sync("/home/user"))    # every coroutine has a *_sync twin
 ```
 
-Starting a server in a running sandbox (the image must contain `easy-sandbox-server`):
+Starting a server in a running sandbox (the image must contain `agent-sandbox-server`):
 
 ```python
 server = await sandbox.start_server(policy="read-only", token="s3cret", commands="/home/user/app/commands.py")
@@ -413,7 +400,7 @@ server = await sandbox.start_server(policy="read-only", token="s3cret", commands
 ### Restricting endpoints (template author)
 
 ```python
-from easy_sandbox.server import SandboxServer
+from agent_sandbox.server import SandboxServer
 
 policy = {
     "preset": "transfer-only",                      # only upload + download endpoints, size-capped
@@ -427,12 +414,12 @@ SandboxServer(policy=policy).serve(9000)   # a dict or a ServerPolicy
 ```
 
 or declaratively in `template.yaml` (`server:` block, see the [template spec](../reference/template-yaml-spec.md)), or
-`easy-sandbox-server serve --policy server-policy.json`. Validate with `easy-sandbox-server check-config`.
+`agent-sandbox-server serve --policy server-policy.json`. Validate with `agent-sandbox-server check-config`.
 
 ### Handling denials
 
 ```python
-from easy_sandbox.models.errors import (
+from agent_sandbox.models.errors import (
     EndpointNotAvailableError, FilePolicyDeniedError, PayloadTooLargeError, RateLimitedError, ServerAPIError,
 )
 
@@ -451,17 +438,6 @@ except ServerAPIError as exc:                   # base class: status_code, error
 The server is always authoritative: after `discover()` the client merely fails fast with the same exception
 without a round trip. Policy changes are picked up with `server.forget_discovery()` + `discover()`.
 
-### Official base image
-
-```python
-from easy_sandbox.api.image import Image
-
-image = Image.official_base().pip_install("requests")      # FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
-```
-
-`Image()` still starts from `ubuntu:22.04`. Building from a non-official base logs advisory warnings (`B001`-`B005`); see
-[base image design](../design/base-image-and-server-sdk.md).
-
 ---
 
 ## Environment Variables
@@ -478,7 +454,7 @@ This is the canonical pattern for AI Agent scenarios — create a sandbox, run t
 
 ```python
 import asyncio
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 async def agent_workflow(task_code: str) -> str:
     """Agent → create sandbox → exec code → read result → kill sandbox"""

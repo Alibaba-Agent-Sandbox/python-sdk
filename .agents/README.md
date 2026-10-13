@@ -7,9 +7,9 @@ shipped in a wheel. All new documents are written in English.
 
 A record lives in the repository that owns the code the decision changed. Contract pages and ADRs for the SDK,
 the server runtime and the `template.yaml` schema live here; ADRs for the Node.js CLI live in
-[`easy-sandbox/easy-sandbox`](https://github.com/Easy-Sandbox/easy-sandbox/tree/main/.agents). Records never get copied between
+[`agent-sandbox/agent-sandbox`](https://github.com/alibaba-agent-sandbox/agent-sandbox/tree/main/.agents). Records never get copied between
 repositories: link to the other repository with an absolute URL
-(`https://github.com/Easy-Sandbox/<repo>/blob/main/<path>`), never with `../`, never with a bare slug.
+(`https://github.com/alibaba-agent-sandbox/<repo>/blob/main/<path>`), never with `../`, never with a bare slug.
 
 ## Layout
 

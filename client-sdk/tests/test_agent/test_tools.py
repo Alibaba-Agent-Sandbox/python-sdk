@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from easy_sandbox.agent.tools import (
+from agent_sandbox.agent.tools import (
     TOOL_HANDLERS,
     TOOL_SCHEMA_MAP,
     TOOL_SCHEMAS,
@@ -113,7 +113,7 @@ def _make_mock_manager():
     sandbox.url = "https://49983-sbx-test-001.cn-hangzhou.e2b.fc.aliyuncs.com"
 
     # Mock commands.run
-    from easy_sandbox.models.process import ProcessResult
+    from agent_sandbox.models.process import ProcessResult
 
     sandbox.commands.run = AsyncMock(
         return_value=ProcessResult(
@@ -125,7 +125,7 @@ def _make_mock_manager():
     )
 
     # Mock run_code
-    from easy_sandbox.models.process import CodeResult
+    from agent_sandbox.models.process import CodeResult
 
     sandbox.run_code = AsyncMock(
         return_value=CodeResult(
@@ -139,7 +139,7 @@ def _make_mock_manager():
     )
 
     # Mock files
-    from easy_sandbox.models.filesystem import FileInfo, FileType
+    from agent_sandbox.models.filesystem import FileInfo, FileType
 
     sandbox.files.read = AsyncMock(return_value="file content here")
     sandbox.files.write = AsyncMock(return_value=None)

@@ -1,10 +1,10 @@
 # FIXTURE — offline test sample only, do NOT publish from this repository.
 # The single source of truth for this template (content, index, release) is:
-#   https://github.com/Easy-Sandbox/awesome-templates/tree/main/python-hello
+#   https://github.com/alibaba-agent-sandbox/awesome-templates/tree/main/python-hello
 name: python-hello
 version: "1.0.0"
 description: "A minimal Python hello world template for testing"
-author: "Easy-Sandbox"
+author: "alibaba-agent-sandbox"
 tags:
   - python
   - hello-world
@@ -18,26 +18,6 @@ capabilities:
 
 ports:
   - 9000
-
-custom_commands:
-  run:
-    cmd: "python3 {file}"
-    description: "Run a Python script"
-    cwd: "/app"
-    timeout: 60
-    args:
-      - name: file
-        default: "main.py"
-        description: "Python file to execute"
-  test:
-    cmd: "python3 -m pytest {path}"
-    description: "Run tests with pytest"
-    cwd: "/app"
-    timeout: 120
-    args:
-      - name: path
-        default: "."
-        description: "Test path or file"
 
 env:
   LANG: C.UTF-8

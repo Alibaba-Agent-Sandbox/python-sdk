@@ -1,4 +1,4 @@
-"""Tests for easy_sandbox.server.routes_devtools — dev-tools endpoints.
+"""Tests for agent_sandbox.server.routes_devtools — dev-tools endpoints.
 
 Covers:
 - POST /code/run  (Python, Node, Bash, timeout, unsupported language, errors)
@@ -22,10 +22,12 @@ from typing import Any
 import pytest
 
 # Import the devtools routes so they register on the default table.
-import easy_sandbox.server.routes_devtools  # noqa: F401
-from easy_sandbox.server.app import SandboxRequestHandler
-from easy_sandbox.server.registry import CommandRegistry
-from easy_sandbox.server.router import CapabilityGroup, default_table
+import agent_sandbox.server.routes_devtools  # noqa: F401
+from agent_sandbox.server.app import SandboxRequestHandler
+from agent_sandbox.server.registry import CommandRegistry
+from agent_sandbox.server.router import CapabilityGroup, default_table
+
+from ._live import wire
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -43,8 +45,7 @@ def _start_server(port: int) -> ThreadingHTTPServer:
     """Create and start a no-auth server on *port* in a daemon thread."""
     registry = CommandRegistry()
     httpd = ThreadingHTTPServer(("127.0.0.1", port), SandboxRequestHandler)
-    httpd.auth_token = None  # type: ignore[attr-defined]
-    httpd.registry = registry  # type: ignore[attr-defined]
+    wire(httpd, auth_token=None, registry=registry)
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()
     time.sleep(0.05)
@@ -295,8 +296,8 @@ class TestGitStatus:
             "GET",
             "/git/status?path=../../etc",
         )
-        assert status == 400
-        assert "traversal" in body["error"].lower()
+        assert status == 403
+        assert body["code"] == "path_not_allowed"
 
     def test_invalid_repo(self, server_port: int, tmp_path: Any) -> None:
         """Pointing at a non-git directory should return an error."""
@@ -388,8 +389,8 @@ class TestGitDiff:
             "GET",
             "/git/diff?path=../../etc",
         )
-        assert status == 400
-        assert "traversal" in body["error"].lower()
+        assert status == 403
+        assert body["code"] == "path_not_allowed"
 
 
 # ---------------------------------------------------------------------------

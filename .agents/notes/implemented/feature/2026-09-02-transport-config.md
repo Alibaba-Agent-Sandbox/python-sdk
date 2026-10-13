@@ -11,7 +11,7 @@ Pydantic BaseSettings in `transport/config.py`. Priority (highest to lowest):
 1. Code parameters (passed directly to constructors)
 2. Environment variables (`SANDBOX_*` prefix)
 3. `.env` file in project root
-4. `~/.ebx/config.toml` user config file
+4. `~/.abx/config.toml` user config file
 5. Built-in defaults
 
 Lazy loading: file I/O (`.env`, `config.toml`) only performed on first access, not at import time.
@@ -20,13 +20,13 @@ Lazy loading: file I/O (`.env`, `config.toml`) only performed on first access, n
 ```python
 class SandboxSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SANDBOX_", env_file=".env")
-    # Fields resolved with priority: code params > env vars > .env > ~/.ebx/config.toml > defaults
+    # Fields resolved with priority: code params > env vars > .env > ~/.abx/config.toml > defaults
 
 def load_config(**overrides) -> SandboxSettings: ...  # lazy: file I/O only on first access
 ```
 
 ## Implementation
-- **Source**: `src/easy_sandbox/transport/config.py`
+- **Source**: `src/agent_sandbox/transport/config.py`
 - **Tests**: `tests/test_transport/test_config.py`
 - **Env var prefix**: `SANDBOX_*`, compatible with `E2B_*` aliases
 

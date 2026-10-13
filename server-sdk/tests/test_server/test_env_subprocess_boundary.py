@@ -26,14 +26,16 @@ from typing import Any
 
 import pytest
 
-import easy_sandbox.server.routes_process
-import easy_sandbox.server.routes_system  # noqa: F401  — trigger registration
-from easy_sandbox.server.app import SandboxRequestHandler
-from easy_sandbox.server.registry import CommandRegistry
-from easy_sandbox.server.router import CapabilityGroup, default_table
+import agent_sandbox.server.routes_process
+import agent_sandbox.server.routes_system  # noqa: F401  — trigger registration
+from agent_sandbox.server.app import SandboxRequestHandler
+from agent_sandbox.server.registry import CommandRegistry
+from agent_sandbox.server.router import CapabilityGroup, default_table
+
+from ._live import wire
 
 # Unique prefix to avoid collisions with real env vars or other tests.
-_PREFIX = "_EBX_BOUNDARY_TEST_"
+_PREFIX = "_ABX_BOUNDARY_TEST_"
 
 # ---------------------------------------------------------------------------
 # Helpers (same pattern as test_routes_system / test_routes_process)
@@ -50,8 +52,7 @@ def _find_free_port() -> int:
 def _start_server(port: int) -> ThreadingHTTPServer:
     registry = CommandRegistry()
     httpd = ThreadingHTTPServer(("127.0.0.1", port), SandboxRequestHandler)
-    httpd.auth_token = None  # type: ignore[attr-defined]
-    httpd.registry = registry  # type: ignore[attr-defined]
+    wire(httpd, auth_token=None, registry=registry)
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()
     time.sleep(0.05)

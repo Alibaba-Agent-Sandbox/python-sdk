@@ -1,15 +1,15 @@
 # MCP Server Design
 
-> **Note:** The `ebx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @easy-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`easy-sandbox`) and the container-side runtime (`easy-sandbox-server`).
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`).
 
-> Easy Sandbox MCP Server exposes sandbox capabilities as MCP (Model Context Protocol) Tools, allowing AI Agents (Cursor, Claude Desktop, VS Code, etc.) to directly operate cloud sandboxes.
+> Agent Sandbox MCP Server exposes sandbox capabilities as MCP (Model Context Protocol) Tools, allowing AI Agents (Cursor, Claude Desktop, VS Code, etc.) to directly operate cloud sandboxes.
 
-**Implemented surface** (kept in sync with `client-sdk/src/easy_sandbox/agent/`):
+**Implemented surface** (kept in sync with `client-sdk/src/agent_sandbox/agent/`):
 
 - 7 P0 tools (`agent/tools.py`)
-- STDIO transport (`agent/mcp.py`) — `python -m easy_sandbox.agent.mcp`
+- STDIO transport (`agent/mcp.py`) — `python -m agent_sandbox.agent.mcp`
 - Streamable HTTP transport (`agent/mcp_http.py`) — Starlette ASGI app
-- The `ebx mcp install / start / status / deploy` commands are provided by the Node.js CLI (see [Related: the ebx CLI](#related-the-ebx-cli))
+- The `abx mcp install / start / status / deploy` commands are provided by the Node.js CLI (see [Related: the abx CLI](#related-the-abx-cli))
 
 ---
 
@@ -22,7 +22,7 @@ All 7 tools are defined in `TOOL_SCHEMAS` (`agent/tools.py`). Omitting `sandbox_
 ```json
 {
   "name": "create_sandbox",
-  "description": "Create a cloud sandbox and make it the session default. When template is omitted, use the MCP server's configured template (code-interpreter-v1 for ebx mcp start).",
+  "description": "Create a cloud sandbox and make it the session default. When template is omitted, use the MCP server's configured template (code-interpreter-v1 for abx mcp start).",
   "inputSchema": {
     "type": "object",
     "properties": {
@@ -221,7 +221,7 @@ graph TD
 
 1. `create_sandbox` creates a sandbox and makes it the default. Later calls that omit `sandbox_id` use that sandbox. Earlier sandboxes stay alive until `kill_sandbox` or the session ends
 2. When there is no default yet, the first tool call that omits `sandbox_id` lazily creates one. Concurrent lazy creates share a single sandbox
-3. Default template: `code-interpreter-v1` when started via `ebx mcp start` (the CLI default); `base` when constructing `SandboxMCPServer` / the HTTP `SessionStore` programmatically without an explicit template. `create_sandbox` uses that server template when `template` is omitted
+3. Default template: `code-interpreter-v1` when started via `abx mcp start` (the CLI default); `base` when constructing `SandboxMCPServer` / the HTTP `SessionStore` programmatically without an explicit template. `create_sandbox` uses that server template when `template` is omitted
 4. `kill_sandbox` without `sandbox_id` destroys the default sandbox, and returns an error when there is no default. Session end destroys every sandbox in the session — STDIO EOF / server shutdown, or HTTP `DELETE /mcp` / idle session TTL expiry
 5. An explicit `sandbox_id` addresses that sandbox and does not change the default. Each use calls `Sandbox.set_timeout` with the timeout from create, extending the lifetime
 
@@ -255,7 +255,7 @@ sequenceDiagram
 
 ```mermaid
 graph LR
-    IDE["IDE / Agent<br/>Cursor, Claude, VS Code"] <-->|"STDIO stdin/stdout<br/>newline-delimited JSON-RPC 2.0"| MCP["MCP Server<br/>python -m easy_sandbox.agent.mcp"]
+    IDE["IDE / Agent<br/>Cursor, Claude, VS Code"] <-->|"STDIO stdin/stdout<br/>newline-delimited JSON-RPC 2.0"| MCP["MCP Server<br/>python -m agent_sandbox.agent.mcp"]
     MCP --> SM[SandboxManager]
     SM --> FC[Alibaba Cloud FC]
 ```
@@ -264,7 +264,7 @@ graph LR
 - **Protocol version**: `2024-11-05` — the only version the STDIO server supports. `initialize` echoes it when requested and falls back to it for missing/unsupported requests, preserving the original behavior
 - **Supported methods**: `initialize`, `notifications/initialized`, `tools/list`, `tools/call`, `ping`
 - **Use case**: local development, single user; the IDE spawns the process
-- **Startup**: `python -m easy_sandbox.agent.mcp` (typically launched by the IDE), configured from `EBX_SANDBOX_API_KEY` / `EBX_SANDBOX_BASE_URL` / `EBX_SANDBOX_DOMAIN` / `EBX_DEFAULT_TEMPLATE` (see Environment Variables below). The CLI server is `ebx mcp start [--template NAME] [--sandbox-api-key KEY] [--sandbox-base-url URL] [--sandbox-domain DOMAIN]`, with `ebx mcp stop` and `--http --background`
+- **Startup**: `python -m agent_sandbox.agent.mcp` (typically launched by the IDE), configured from `ABX_SANDBOX_API_KEY` / `ABX_SANDBOX_BASE_URL` / `ABX_SANDBOX_DOMAIN` / `ABX_DEFAULT_TEMPLATE` (see Environment Variables below). The CLI server is `abx mcp start [--template NAME] [--sandbox-api-key KEY] [--sandbox-base-url URL] [--sandbox-domain DOMAIN]`, with `abx mcp stop` and `--http --background`
 
 ### Streamable HTTP — Remote Deployment
 
@@ -285,23 +285,23 @@ graph LR
   - `GET /health` — health probe returning `{"status": "ok", "protocol": "2025-06-18"}`
 - **Sessions**: in-process `SessionStore`; idle TTL 3600 s (default), max 100 concurrent sessions (default); capacity exhaustion returns 503 with JSON-RPC error `-32000`
 - **Version negotiation**: `initialize` echoes the client-requested `protocolVersion` when supported; this transport supports `2025-06-18` only, matching `GET /health`. Missing or unsupported requested versions negotiate to `2025-06-18` — per the MCP spec the server responds with a version it supports, and clients that cannot accept it may disconnect. The STDIO transport independently keeps `2024-11-05`
-- **Use case**: remote service, team sharing, multiple clients; deploy to Alibaba Cloud FC via the artifact generated by the CLI's `ebx mcp deploy`, or run locally with uvicorn
-- **Optional dependency**: Starlette + uvicorn (`pip install 'easy-sandbox[mcp]'`)
+- **Use case**: remote service, team sharing, multiple clients; deploy to Alibaba Cloud FC via the artifact generated by the CLI's `abx mcp deploy`, or run locally with uvicorn
+- **Optional dependency**: Starlette + uvicorn (`pip install 'agent-sandbox[mcp]'`)
 
 ### Authentication
 
-- **Client → MCP**: `Authorization: Bearer <token>`, validated with constant-time comparison; configured via `EBX_MCP_AUTH_TOKEN`. On loopback, leaving it unset disables authentication; a configured-but-empty token fails closed (every request gets 401). The FC artifact calls `require_auth_token` and refuses to start when the token is empty
-- **MCP → Sandbox**: `EBX_SANDBOX_API_KEY` environment variable
+- **Client → MCP**: `Authorization: Bearer <token>`, validated with constant-time comparison; configured via `ABX_MCP_AUTH_TOKEN`. On loopback, leaving it unset disables authentication; a configured-but-empty token fails closed (every request gets 401). The FC artifact calls `require_auth_token` and refuses to start when the token is empty
+- **MCP → Sandbox**: `ABX_SANDBOX_API_KEY` environment variable
 
 ### Environment Variables
 
 | Variable | Purpose |
 |----------|---------|
-| `EBX_SANDBOX_API_KEY` | Sandbox backend API key |
-| `EBX_SANDBOX_BASE_URL` | Platform API URL |
-| `EBX_SANDBOX_DOMAIN` | Sandbox domain |
-| `EBX_DEFAULT_TEMPLATE` | Default sandbox template |
-| `EBX_MCP_AUTH_TOKEN` | Bearer token for client authentication (HTTP transport) |
+| `ABX_SANDBOX_API_KEY` | Sandbox backend API key |
+| `ABX_SANDBOX_BASE_URL` | Platform API URL |
+| `ABX_SANDBOX_DOMAIN` | Sandbox domain |
+| `ABX_DEFAULT_TEMPLATE` | Default sandbox template |
+| `ABX_MCP_AUTH_TOKEN` | Bearer token for client authentication (HTTP transport) |
 
 ---
 
@@ -314,7 +314,7 @@ graph TD
         TR["Tool Registry\n7 P0 tools (agent/tools.py)"]
         SM["SandboxManager / SessionStore"]
         RR["JSON-RPC Router\ninitialize / tools/list / tools/call / ping"]
-        SC["Sandbox Client\neasy_sandbox SDK"]
+        SC["Sandbox Client\nagent_sandbox SDK"]
     end
     TL --> RR
     TR --> RR
@@ -327,9 +327,9 @@ graph TD
 
 ## 5. Installation and CLI
 
-The Python server is registered in an IDE like any STDIO MCP server. The entry is `python -m easy_sandbox.agent.mcp`; the IDE passes the credentials in `env`. Examples are in Section 6.
+The Python server is registered in an IDE like any STDIO MCP server. The entry is `python -m agent_sandbox.agent.mcp`; the IDE passes the credentials in `env`. Examples are in Section 6.
 
-The `ebx mcp install --target cursor|claude|vscode` (merges an `easy-sandbox` entry into the IDE config), `ebx mcp status` (server name, transport, tool list, whether an API key is configured, per-IDE install flags), `ebx mcp start|stop` and `ebx mcp deploy` commands belong to the Node.js CLI; their design is the CLI's [MCP Server design](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/design/mcp-server.md).
+The `abx mcp install --target cursor|claude|vscode` (merges an `agent-sandbox` entry into the IDE config), `abx mcp status` (server name, transport, tool list, whether an API key is configured, per-IDE install flags), `abx mcp start|stop` and `abx mcp deploy` commands belong to the Node.js CLI; their design is the CLI's [MCP Server design](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/mcp-server.md).
 
 ## 6. Configuration Examples
 
@@ -339,11 +339,11 @@ The `ebx mcp install --target cursor|claude|vscode` (merges an `easy-sandbox` en
 // ~/Library/Application Support/Claude/claude_desktop_config.json
 {
   "mcpServers": {
-    "easy-sandbox": {
+    "agent-sandbox": {
       "command": "python",
-      "args": ["-m", "easy_sandbox.agent.mcp"],
+      "args": ["-m", "agent_sandbox.agent.mcp"],
       "env": {
-        "EBX_SANDBOX_API_KEY": "your-api-key"
+        "ABX_SANDBOX_API_KEY": "your-api-key"
       }
     }
   }
@@ -356,11 +356,11 @@ The `ebx mcp install --target cursor|claude|vscode` (merges an `easy-sandbox` en
 // ~/.cursor/mcp.json
 {
   "mcpServers": {
-    "easy-sandbox": {
+    "agent-sandbox": {
       "command": "python",
-      "args": ["-m", "easy_sandbox.agent.mcp"],
+      "args": ["-m", "agent_sandbox.agent.mcp"],
       "env": {
-        "EBX_SANDBOX_API_KEY": "your-api-key"
+        "ABX_SANDBOX_API_KEY": "your-api-key"
       }
     }
   }
@@ -373,16 +373,16 @@ The `ebx mcp install --target cursor|claude|vscode` (merges an `easy-sandbox` en
 // .vscode/mcp.json
 {
   "servers": {
-    "easy-sandbox": {
+    "agent-sandbox": {
       "type": "stdio",
       "command": "/path/to/python",
-      "args": ["-m", "easy_sandbox.agent.mcp"]
+      "args": ["-m", "agent_sandbox.agent.mcp"]
     }
   }
 }
 ```
 
-The CLI's `ebx mcp install` writes the equivalent entries with `command` set to `ebx` and `args` set to `["mcp", "start"]`.
+The CLI's `abx mcp install` writes the equivalent entries with `command` set to `abx` and `args` set to `["mcp", "start"]`.
 
 ### Remote (Streamable HTTP)
 
@@ -391,7 +391,7 @@ After deploying the HTTP app (Section 7), point clients at the endpoint; add a B
 ```json
 {
   "mcpServers": {
-    "easy-sandbox-remote": {
+    "agent-sandbox-remote": {
       "url": "https://<FC_HTTP_TRIGGER_URL>/mcp",
       "headers": {
         "Authorization": "Bearer <BEARER_TOKEN>"
@@ -403,7 +403,7 @@ After deploying the HTTP app (Section 7), point clients at the endpoint; add a B
 
 ## 7. FC Deployment
 
-> **Status:** `ebx mcp deploy` generates a deployment artifact; automatic FC API deployment is **not** implemented. Manual deployment steps are printed after generation.
+> **Status:** `abx mcp deploy` generates a deployment artifact; automatic FC API deployment is **not** implemented. Manual deployment steps are printed after generation.
 
 ### Architecture
 
@@ -411,48 +411,48 @@ The MCP Server can be deployed to Alibaba Cloud Function Compute (FC) as a Strea
 
 ```mermaid
 graph TB
-    CLI["ebx mcp deploy → artifact directory"]
-    FC["FC function: easy-sandbox-mcp (created manually)"]
+    CLI["abx mcp deploy → artifact directory"]
+    FC["FC function: agent-sandbox-mcp (created manually)"]
     Sandbox["Envd sandbox (separate FC instance)"]
 
     CLI --> FC
     FC --> Sandbox
 
     subgraph FC_Function ["FC function"]
-        ASGI["app.py → easy_sandbox.agent.mcp_http:asgi_app"]
+        ASGI["app.py → agent_sandbox.agent.mcp_http:asgi_app"]
         Trigger["HTTP trigger: POST/GET/DELETE /mcp"]
         Session["Session affinity: Mcp-Session-Id"]
-        Env["Env vars: EBX_SANDBOX_API_KEY / EBX_MCP_AUTH_TOKEN / EBX_DEFAULT_TEMPLATE"]
+        Env["Env vars: ABX_SANDBOX_API_KEY / ABX_MCP_AUTH_TOKEN / ABX_DEFAULT_TEMPLATE"]
     end
 ```
 
 ### Deployment Command
 
-The artifact is generated by `ebx mcp deploy` (options, region resolution, token sources); see the CLI's [MCP Server design](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/design/mcp-server.md#7-fc-deployment) and [CLI Design — mcp deploy](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/design/cli-design.md). The sections below describe the artifact and the application it runs, which this SDK provides.
+The artifact is generated by `abx mcp deploy` (options, region resolution, token sources); see the CLI's [MCP Server design](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/mcp-server.md#7-fc-deployment) and [CLI Design — mcp deploy](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/cli-design.md). The sections below describe the artifact and the application it runs, which this SDK provides.
 
 ### Artifact Contents
 
 | File | Content |
 |------|---------|
-| `requirements.txt` | `easy-sandbox[mcp]`, `uvicorn>=0.29` |
-| `app.py` | ASGI entry point reading `EBX_MCP_AUTH_TOKEN`, `EBX_SANDBOX_API_KEY`, `EBX_SANDBOX_BASE_URL`, `EBX_SANDBOX_DOMAIN`, `EBX_DEFAULT_TEMPLATE` from the FC function environment |
+| `requirements.txt` | `agent-sandbox[mcp]`, `uvicorn>=0.29` |
+| `app.py` | ASGI entry point reading `ABX_MCP_AUTH_TOKEN`, `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL`, `ABX_SANDBOX_DOMAIN`, `ABX_DEFAULT_TEMPLATE` from the FC function environment |
 | `config.yaml` | YAML deployment manifest (not an FC API payload): `function_name`, `region`, `runtime` (`python3.10`), `handler` (`app.app`), `memory`, `timeout`, `environment_variables`, `http_trigger` (methods POST/GET/DELETE + `enable_session_affinity`), optional `custom_domain` |
 
-`ebx mcp deploy` also prints manual deployment steps (package the artifact, create the function via the FC console or SDK, create an HTTP trigger, enable `Mcp-Session-Id` affinity if supported) and an IDE config template with the Bearer token masked.
+`abx mcp deploy` also prints manual deployment steps (package the artifact, create the function via the FC console or SDK, create an HTTP trigger, enable `Mcp-Session-Id` affinity if supported) and an IDE config template with the Bearer token masked.
 
 ### Key Design Points
 
 - **Protocol**: Streamable HTTP (MCP spec 2025-06-18); `initialize` negotiates `2025-06-18` consistently with `GET /health` (STDIO keeps `2024-11-05`)
 - **Session affinity**: delegated to the FC platform layer via the `Mcp-Session-Id` header — no application-level sticky routing needed
-- **Authentication**: dual-layer — client→MCP uses `Authorization: Bearer <token>`; MCP→sandbox uses `EBX_SANDBOX_API_KEY` from the FC env
+- **Authentication**: dual-layer — client→MCP uses `Authorization: Bearer <token>`; MCP→sandbox uses `ABX_SANDBOX_API_KEY` from the FC env
 - **Lifecycle**: sandboxes are lazily created per MCP session; `DELETE /mcp` triggers cleanup; the idle-session TTL is the safety net
 - **Cold start**: FC cold start (~1–3 s) may conflict with MCP initialize timeouts; provisioned instances are recommended for production
 - **Secrets**: `config.yaml` contains the API key and Bearer token — never commit it to version control
 
-See the [MCP Integration guide](../guide/mcp-integration.md) for end-to-end usage; the full `ebx mcp deploy` parameter reference is in the CLI repository (see [Deployment Command](#deployment-command)).
+See the [MCP Integration guide](../guide/mcp-integration.md) for end-to-end usage; the full `abx mcp deploy` parameter reference is in the CLI repository (see [Deployment Command](#deployment-command)).
 
 ---
 
-## Related: the ebx CLI
+## Related: the abx CLI
 
-The Node.js `ebx` CLI has its own MCP server implementation and the commands around it: [MCP Server design (CLI)](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/design/mcp-server.md) (`ebx mcp install|start|stop|status|deploy`, tool schemas as implemented in TypeScript, FC deployment) and [CLI Command System](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/design/cli-design.md).
+The Node.js `abx` CLI has its own MCP server implementation and the commands around it: [MCP Server design (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/mcp-server.md) (`abx mcp install|start|stop|status|deploy`, tool schemas as implemented in TypeScript, FC deployment) and [CLI Command System](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/cli-design.md).

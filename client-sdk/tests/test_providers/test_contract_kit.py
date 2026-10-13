@@ -9,12 +9,12 @@ import sys
 
 import pytest
 
-from easy_sandbox.providers import testing
+from agent_sandbox.providers import testing
 from tests.test_providers.helpers import LOCAL_PROCESS
 
 
 def _env(home):
-    env = {k: v for k, v in os.environ.items() if not k.startswith(("EBX_", "E2B_", "SANDBOX_"))}
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("ABX_", "E2B_", "SANDBOX_"))}
     env["HOME"] = str(home)
     env["USERPROFILE"] = str(home)
     return env
@@ -22,7 +22,7 @@ def _env(home):
 
 def _cli(home, *args, timeout=240):
     return subprocess.run(  # noqa: S603
-        [sys.executable, "-m", "easy_sandbox.providers", *args],
+        [sys.executable, "-m", "agent_sandbox.providers", *args],
         cwd=home,
         env=_env(home),
         capture_output=True,
@@ -59,9 +59,9 @@ def test_documented_pytest_command_collects_tests(installed_home):
             "-m",
             "pytest",
             "-p",
-            "easy_sandbox.providers.testing",
+            "agent_sandbox.providers.testing",
             "--pyargs",
-            "easy_sandbox.providers.contract",
+            "agent_sandbox.providers.contract",
             "--provider-under-test",
             "local-process",
             "-c",
@@ -92,9 +92,9 @@ def test_missing_provider_selection_fails_instead_of_skipping(installed_home):
             "-m",
             "pytest",
             "-p",
-            "easy_sandbox.providers.testing",
+            "agent_sandbox.providers.testing",
             "--pyargs",
-            "easy_sandbox.providers.contract",
+            "agent_sandbox.providers.contract",
             "-c",
             os.devnull,
             "--rootdir",

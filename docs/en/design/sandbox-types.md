@@ -1,6 +1,6 @@
 # Sandbox Type System Design
 
-> Easy Sandbox provides three sandbox modes, covering all scenarios from one-off scripts to long-running services. Currently, **only the Ephemeral sandbox is fully supported**; Persistent and Hibernated sandboxes are future plans.
+> Agent Sandbox provides three sandbox modes, covering all scenarios from one-off scripts to long-running services. Currently, **only the Ephemeral sandbox is fully supported**; Persistent and Hibernated sandboxes are future plans.
 
 ---
 
@@ -30,7 +30,7 @@ async with await Sandbox.create(template="code-interpreter") as sb:
 
 ```python
 # Future API — pending underlying support
-from easy_sandbox import Sandbox
+from agent_sandbox import Sandbox
 
 sb = await Sandbox.create(
     template="python-base",
@@ -54,7 +54,7 @@ result = await sb.commands.run("pip list")  # flask, sqlalchemy still present
 
 ```python
 # Future API — pending underlying support
-from easy_sandbox import Sandbox
+from agent_sandbox import Sandbox
 
 sb = await Sandbox.create(
     template="python-data-science",
@@ -121,7 +121,7 @@ State transition rules:
 ### Ephemeral Sandbox — Typical Workflow
 
 ```python
-from easy_sandbox import Sandbox
+from agent_sandbox import Sandbox
 
 # Scenario: AI Agent executes one-off code
 async def execute_code(code: str) -> str:
@@ -144,7 +144,7 @@ async def process_batch(items: list[str]) -> list[str]:
 > **The following APIs will be implemented once underlying capabilities are available.**
 
 ```python
-from easy_sandbox import Sandbox
+from agent_sandbox import Sandbox
 
 # Create or connect to a persistent development environment
 try:
@@ -176,7 +176,7 @@ async for event in sb.files.watch("/app/src"):
 > **The following APIs will be implemented once underlying capabilities are available.**
 
 ```python
-from easy_sandbox import Sandbox
+from agent_sandbox import Sandbox
 
 # Create a sandbox that supports hibernation
 sb = await Sandbox.create(
@@ -248,13 +248,13 @@ for i in range(5):
 | Trigger | Action | Default |
 |---------|--------|---------|
 | Manual `kill()` | Destroy | — |
-| CLI `ebx kill` | Destroy | — |
+| CLI `abx kill` | Destroy | — |
 | Account overdue | Freeze → destroy after 7 days | — |
 
 ### Global Cleanup Policy
 
 ```python
-from easy_sandbox import Config
+from agent_sandbox import Config
 
 # Global auto-cleanup configuration
 Config.set(

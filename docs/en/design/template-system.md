@@ -1,8 +1,8 @@
 # Template System Design
 
-> **Note:** The `ebx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @easy-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`easy-sandbox`) and the container-side runtime (`easy-sandbox-server`).
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`).
 
-> A Template is the runtime environment blueprint for Easy Sandbox, defining the sandbox's base image, pre-installed software, default configuration, and startup behavior. The template system is organized into three tiers: official core templates, community templates, and custom templates. The core distribution mechanism is based on the **GitHub tarball API (fetched by tag/branch/sha, no Release required)**, using a reference style similar to Go modules / GitHub Actions.
+> A Template is the runtime environment blueprint for Agent Sandbox, defining the sandbox's base image, pre-installed software, default configuration, and startup behavior. The template system is organized into three tiers: official core templates, community templates, and custom templates. The core distribution mechanism is based on the **GitHub tarball API (fetched by tag/branch/sha, no Release required)**, using a reference style similar to Go modules / GitHub Actions.
 
 ---
 
@@ -177,9 +177,9 @@ Template source priority:
 
 ```bash
 # CLI usage
-ebx create hello/world                    # → github.com/hello/world default branch
-# ebx create hello/world --tag v1.2.0       # → specific ref (tag/branch/sha)
-ebx create myorg/python-ml --tag latest   # → explicitly specify latest
+abx create hello/world                    # → github.com/hello/world default branch
+# abx create hello/world --tag v1.2.0       # → specific ref (tag/branch/sha)
+abx create myorg/python-ml --tag latest   # → explicitly specify latest
 ```
 
 ```python
@@ -219,7 +219,7 @@ The tarball (fetched by ref) from a template repository must contain a template 
 my-template/
 ├── template.yaml     # Template specification config (required, see Chapter 4)
 ├── Dockerfile            # Image definition (optional, base can be specified in template.yaml)
-├── AGENTS.md             # Instructions for external agent tools (optional; consumed by the agent tool itself, not an Easy Sandbox capability)
+├── AGENTS.md             # Instructions for external agent tools (optional; consumed by the agent tool itself, not an Agent Sandbox capability)
 ├── scripts/
 │   ├── setup.sh          # Initialization script (optional)
 │   └── healthcheck.sh    # Health check (optional)
@@ -233,18 +233,18 @@ An official `alicloud/sandbox-templates` repository (monorepo) is maintained, co
 
 ```bash
 # Official templates can use shorthand
-ebx create python-data-science     # Built-in Tier 1
-ebx create alicloud/sandbox-templates/browser-automation  # Official Tier 2
+abx create python-data-science     # Built-in Tier 1
+abx create alicloud/sandbox-templates/browser-automation  # Official Tier 2
 
 # Or use shorthand aliases directly
-ebx create browser-automation      # Auto-resolves to official template
+abx create browser-automation      # Auto-resolves to official template
 ```
 
 ### 2.6 GitHub Token Configuration (Private Repositories & Rate Limits)
 
-Anonymous GitHub requests are limited to **60 requests/hour**; an authenticated token raises that to **5000 requests/hour**. The token is read from the process environment variable `GITHUB_TOKEN`, then `./.env`, then the stored `github_token` in `~/.ebx/.env`; with none of them the request is anonymous. The token is never printed, logged, or echoed.
+Anonymous GitHub requests are limited to **60 requests/hour**; an authenticated token raises that to **5000 requests/hour**. The token is read from the process environment variable `GITHUB_TOKEN`, then `./.env`, then the stored `github_token` in `~/.abx/.env`; with none of them the request is anonymous. The token is never printed, logged, or echoed.
 
-Storing the token from the command line (`ebx config set github_token`, masked input, `--token` as a one-off override), the guided retry offered when `ebx template search` / `ebx template install` hit the anonymous limit (E5000), and the CLI's `--token` resolution order are CLI behaviour; see [Related: the ebx CLI](#related-the-ebx-cli).
+Storing the token from the command line (`abx config set github_token`, masked input, `--token` as a one-off override), the guided retry offered when `abx template search` / `abx template install` hit the anonymous limit (E5000), and the CLI's `--token` resolution order are CLI behaviour; see [Related: the abx CLI](#related-the-abx-cli).
 
 ### 2.7 Local Cache Management
 
@@ -268,40 +268,13 @@ Cache directory structure:
             └── ...
 ```
 
-The CLI commands that list and clean this cache (`ebx template cache list|clean`, `ebx create --no-cache`) are documented in the CLI repository; see [Related: the ebx CLI](#related-the-ebx-cli).
+The CLI commands that list and clean this cache (`abx template cache list|clean`, `abx create --no-cache`) are documented in the CLI repository; see [Related: the abx CLI](#related-the-abx-cli).
 
 ---
 
 ## 3. Custom Template Methods
 
-### Method 1: SDK Programmatic
-
-```python
-from easy_sandbox import Image
-
-# Chained build
-image = (
-    Image.from_template("python-base")
-    .pip_install("flask", "sqlalchemy", "celery")
-    .apt_install("postgresql-client", "redis-tools")
-    .copy_local("./config/", "/app/config/")
-    .env(
-        FLASK_ENV="production",
-        DATABASE_URL="postgresql://localhost/mydb",
-    )
-    .expose(5000, 6379)
-    .entrypoint("python /app/main.py")
-)
-
-# Build and push as template
-template_id = await image.build_and_push(
-    name="my-flask-app",
-    tag="v1.0",
-    description="Flask + PostgreSQL + Celery application template",
-)
-```
-
-### Method 2: CLI + Dockerfile
+### Method 1: CLI + Dockerfile
 
 ```dockerfile
 # Dockerfile
@@ -323,13 +296,13 @@ CMD ["python", "main.py"]
 
 ```bash
 # Build
-ebx template build . --name my-flask-app --tag v1.0
+abx template build . --name my-flask-app --tag v1.0
 
 # Push
-ebx template push my-flask-app:v1.0
+abx template push my-flask-app:v1.0
 ```
 
-### Method 3: sandbox.yaml Declarative
+### Method 2: sandbox.yaml Declarative
 
 ```yaml
 # sandbox.yaml
@@ -369,16 +342,16 @@ entrypoint: python /app/main.py
 workdir: /app
 ```
 
-### Method 4: Publish to GitHub (Fetch by tag/branch/sha)
+### Method 3: Publish to GitHub (Fetch by tag/branch/sha)
 
 Push the template to GitHub for others to reference via `owner/repo[//subdir][@ref]` format (no Release required):
 
 ```bash
 # 1. Initialize the template project (generates template.yaml, Dockerfile scaffolding)
-ebx template init my-template
+abx template init my-template
 
 # 2. Local development and testing
-ebx create ./my-template
+abx create ./my-template
 
 # 3. Publish to GitHub (push git tag / branch, no Release needed)
 cd my-template
@@ -386,8 +359,8 @@ git init && git add . && git commit -m "init"
 git tag v1.0.0 && git push origin v1.0.0
 
 # 4. Others can now use it (default branch or specified ref)
-ebx create yourname/my-template
-ebx create yourname/my-template@v1.0.0
+abx create yourname/my-template
+abx create yourname/my-template@v1.0.0
 ```
 
 ---
@@ -479,21 +452,9 @@ capabilities:
   - code
   - ports                             # Explicitly add capabilities beyond the default baseline
 
-# === Custom Commands ===
-# Templates can declare named commands, invokable via `ebx run <id> <name> --arg k=v` and SDK `sandbox.custom("name", **kwargs)`.
-# User-supplied arguments are escaped via shlex.quote() before filling {placeholders}, preventing injection.
-custom_commands:
-  serve:
-    cmd: "python -m http.server {port}"  # Command template, {placeholders} come from args[].name
-    description: "Start a static file server"  # Command description (for users/Agents)
-    cwd: "/app"                          # Working directory (default /app)
-    env: {}                              # Additional environment variables (default empty)
-    timeout: 60                          # Timeout in seconds (default 60)
-    args:
-      - name: port
-        default: "8000"                  # Default value
-        required: false                  # Whether required (default false)
-        description: "Listening port"
+# Named commands are not a template.yaml key (the client rejects `custom_commands`).
+# Register them in the template's server (`commands.py`, `@sandbox.register`); call them with
+# `abx run <id> <name> --arg k=v` or `sandbox.run(\"name\", **kwargs)`.
 
 # === Agent Prompts ===
 agent:
@@ -554,12 +515,6 @@ healthcheck:
 | | `startup_command` | | Command to auto-execute on startup |
 | | `readiness_probe` | | Readiness probe config (`type` + `port`/`command` + `timeout`) |
 | **capabilities** | (list) | | Standard capability set supported by the template. Vocabulary: `shell` / `files` / `code` / `terminal` / `ports` (extensible). When omitted, inherits default baseline `{shell, files, code}`; `terminal`/`ports` must be explicitly declared |
-| **custom_commands** | `<name>.cmd` | | Command template string with `{placeholder}` support (required) |
-| | `<name>.description` | | Command description |
-| | `<name>.cwd` | | Working directory (default `/app`) |
-| | `<name>.env` | | Additional environment variables (default empty) |
-| | `<name>.timeout` | | Timeout in seconds (default 60) |
-| | `<name>.args` | | Parameter list, each item `{name, default, required, description}` |
 | **agent** | `description` | | Scenario description for AI Agents |
 | | `triggers` | | Trigger keyword list for natural language template matching |
 | | `instructions` | | Agent usage guide describing how to work in this sandbox |
@@ -577,7 +532,7 @@ healthcheck:
 3. **`resources` default value semantics**: Templates declare recommended defaults; users can override them via SDK parameters or CLI options when creating sandboxes
 4. **`readiness_probe`**: Supports both `tcp` (port probing) and `exec` (command execution) readiness detection methods, ensuring the sandbox is truly available before returning
 5. **`capabilities` capability model**: Command capabilities are declared by templates, no longer assuming all sandboxes have shell/upload/download. The standard capability vocabulary is `shell` / `files` / `code` / `terminal` / `ports` (extensible). The system default baseline is a single constant `DEFAULT_CAPABILITIES = {shell, files, code}`; templates can explicitly declare subsets or add `terminal`/`ports`, omitting `capabilities` inherits the default baseline. **Only the `code` capability is enforced at runtime (fail-closed)**: `CodeContextModule` methods raise `CapabilityNotSupportedError` (E3004) when `code` is missing from the effective set. Other modules (`commands`, `files`, `network`) forward requests without a runtime gate — capabilities serve as a discovery and documentation mechanism for those modules. See ADR `2026-09-03-capability-model.md`
-6. **`custom_commands`**: Templates can declare named commands; user arguments are escaped via `shlex.quote()` before filling `{placeholders}` to prevent injection; dispatched via CLI `ebx run` and SDK `sandbox.custom("name", **kwargs)`. See ADR `2026-09-03-custom-commands-schema.md`
+6. **Named commands**: not declared in `template.yaml`. They are functions registered in the template's server and called with `abx run` or `sandbox.run("name", **kwargs)`.
 
 ### Example: Extension Based on a GitHub Template
 
@@ -660,7 +615,7 @@ sb = await Sandbox.create(template="hello/world@v1.2.0")        # GitHub ref (ta
 ### Version Listing
 
 ```bash
-$ ebx template info python-data-science
+$ abx template info python-data-science
 
 Template: python-data-science
 Description: Full data science environment
@@ -690,7 +645,7 @@ graph TD
 
 ### CLI Command Overview
 
-The marketplace and cache commands (`ebx create`, `ebx template build|push|init|info|list|search|pull|cache`, `ebx config set github_token`) are CLI design notes, kept with the CLI in [Templates Catalog — Design Notes: Template Command Surface](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/design/templates-catalog.md#9-design-notes-template-command-surface).
+The marketplace and cache commands (`abx create`, `abx template build|push|init|info|list|search|pull|cache`, `abx config set github_token`) are CLI design notes, kept with the CLI in [Templates Catalog — Design Notes: Template Command Surface](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/templates-catalog.md#9-design-notes-template-command-surface).
 
 ### Template Security
 
@@ -711,6 +666,6 @@ For the complete Session management design (including session persistence, state
 
 ---
 
-## Related: the ebx CLI
+## Related: the abx CLI
 
-The command-line side of the template system is documented in the CLI repository: [Templates Catalog](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/design/templates-catalog.md) (the awesome-templates index client, caching and degradation, and the template command surface), [CLI Command System](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/design/cli-design.md#ebx-template) (`ebx template ...`, `ebx create`, GitHub token handling) and [Using Templates](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/using-templates.md).
+The command-line side of the template system is documented in the CLI repository: [Templates Catalog](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/templates-catalog.md) (the awesome-templates index client, caching and degradation, and the template command surface), [CLI Command System](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/cli-design.md#abx-template) (`abx template ...`, `abx create`, GitHub token handling) and [Using Templates](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/using-templates.md).

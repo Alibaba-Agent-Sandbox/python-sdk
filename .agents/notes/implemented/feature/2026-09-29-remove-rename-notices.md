@@ -1,10 +1,10 @@
-# Decision: Remove all Serverless Sandbox → Easy Sandbox rename notices
+# Decision: Remove all Serverless Sandbox → Agent Sandbox rename notices
 
 Status: implemented
 Implemented: 2026-09-29
 
 ## Problem
-After the project was renamed from "Serverless Sandbox" to "Easy Sandbox",
+After the project was renamed from "Serverless Sandbox" to "Agent Sandbox",
 rename notices (blockquotes explaining the name change) were added to 41
 documentation files. However, the project has **not been publicly released**
 yet — there are no external users who need to be informed of a name change.

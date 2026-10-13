@@ -9,13 +9,13 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 
-from easy_sandbox.api.capability import resolve_capabilities
-from easy_sandbox.api.code import CodeContextModule
-from easy_sandbox.models.errors import (
+from agent_sandbox.api.capability import resolve_capabilities
+from agent_sandbox.api.code import CodeContextModule
+from agent_sandbox.models.errors import (
     CapabilityNotSupportedError,
     TemplateParseError,
 )
-from easy_sandbox.models.process import CodeResult
+from agent_sandbox.models.process import CodeResult
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -240,7 +240,7 @@ class TestCodeRunEnvs:
         self,
     ) -> None:
         """Verify envs end up as envVars in the protocol payload."""
-        from easy_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -268,7 +268,7 @@ class TestCodeRunEnvs:
         self,
     ) -> None:
         """Verify envVars is NOT in payload when envs is None."""
-        from easy_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -299,7 +299,7 @@ class TestCodeRunStreamingCallbacks:
         self,
     ) -> None:
         """on_stdout callback is invoked with stdout content at protocol layer."""
-        from easy_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -326,7 +326,7 @@ class TestCodeRunStreamingCallbacks:
         self,
     ) -> None:
         """on_stderr callback is invoked with stderr content at protocol layer."""
-        from easy_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -353,7 +353,7 @@ class TestCodeRunStreamingCallbacks:
         self,
     ) -> None:
         """on_result callback receives the full result dict."""
-        from easy_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -381,7 +381,7 @@ class TestCodeRunStreamingCallbacks:
         self,
     ) -> None:
         """All three callbacks fire when all are provided."""
-        from easy_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -428,7 +428,7 @@ class TestCodeRunStreamingCallbacks:
         self,
     ) -> None:
         """on_stdout is NOT called when stdout is empty."""
-        from easy_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -455,7 +455,7 @@ class TestCodeRunStreamingCallbacks:
         self,
     ) -> None:
         """Verify callbacks pass from CodeContextModule.run() to protocol."""
-        from easy_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -496,7 +496,7 @@ class TestCodeRunStreamingCallbacks:
         self,
     ) -> None:
         """Callbacks work with response that wraps data in 'result' key."""
-        from easy_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -566,7 +566,7 @@ def _make_500_exc() -> httpx.HTTPStatusError:
 
 def _mock_process_stream(stdout: str = "", stderr: str = "", exit_code: int = 0):
     """Return a _MockStreamReader that yields typical process chunks."""
-    from easy_sandbox.models.process import ProcessChunk, ProcessChunkType
+    from agent_sandbox.models.process import ProcessChunk, ProcessChunkType
     from tests.test_api.conftest import _MockStreamReader
 
     chunks = []
@@ -751,7 +751,7 @@ class TestCodeRunFallback:
         self,
     ) -> None:
         """If process_protocol was not injected, fallback raises RuntimeError."""
-        from easy_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
 
         mock_ci = AsyncMock(spec=CodeInterpreterProtocol)
         mock_ci.run_code.side_effect = _make_404_exc()
@@ -894,7 +894,7 @@ class TestCodeRunFallback:
             _mock_process_stream(),
         ]
 
-        with caplog.at_level(logging.WARNING, logger="easy_sandbox.api.code"):
+        with caplog.at_level(logging.WARNING, logger="agent_sandbox.api.code"):
             await code_module.run("print('x')")
 
         assert any(

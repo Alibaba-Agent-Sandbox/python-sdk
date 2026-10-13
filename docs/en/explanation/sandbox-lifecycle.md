@@ -89,10 +89,10 @@ result = await sandbox.run_code("code", timeout=60)
 
 ```bash
 # Global default timeout
-ebx --timeout 600 create
+abx --timeout 600 create
 
 # Command-level timeout
-ebx exec sbx-xxxx "command" --timeout 120
+abx exec sbx-xxxx "command" --timeout 120
 ```
 
 ---

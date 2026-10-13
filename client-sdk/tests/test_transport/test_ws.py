@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from easy_sandbox.transport.config import TransportConfig
-from easy_sandbox.transport.ws import WebSocketClient
+from agent_sandbox.transport.config import TransportConfig
+from agent_sandbox.transport.ws import WebSocketClient
 
 
 @pytest.fixture

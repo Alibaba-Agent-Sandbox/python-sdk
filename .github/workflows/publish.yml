@@ -6,7 +6,7 @@ on:
 
 jobs:
   publish:
-    name: Build & Publish (easy-sandbox-server, then easy-sandbox)
+    name: Build & Publish (agent-sandbox-server, then agent-sandbox)
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -35,8 +35,8 @@ jobs:
 
           versions = {}
           for name, path in {
-              "easy-sandbox": "client-sdk/src/easy_sandbox/_version.py",
-              "easy-sandbox-server": "server-sdk/src/easy_sandbox/server/_version.py",
+              "agent-sandbox": "client-sdk/src/agent_sandbox/_version.py",
+              "agent-sandbox-server": "server-sdk/src/agent_sandbox/server/_version.py",
           }.items():
               match = re.search(r'__version__\s*=\s*"([^"]+)"', Path(path).read_text(encoding="utf-8"))
               if match is None:
@@ -56,13 +56,13 @@ jobs:
       - name: Verify distributions
         run: twine check dist/*/*
 
-      - name: Upload easy-sandbox-server to PyPI
+      - name: Upload agent-sandbox-server to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: twine upload dist/server-sdk/*
 
-      - name: Upload easy-sandbox to PyPI
+      - name: Upload agent-sandbox to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}

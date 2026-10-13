@@ -1,67 +1,52 @@
-"""python-hello — 教学标杆模板，展示 Server API 全部新特性。
+"""python-hello — the teaching template for the Server API.
 
-演示内容:
-- CapabilityGroup 能力组开关（替代旧版 enable_builtin）
-- RouteTable.route() 装饰器注册自定义 HTTP 路由
-- hidden=True 隐藏命令（不在 GET /commands 中列出）
-- registry.freeze() 冻结命令注册表
+Shows:
+- ``@command``: named commands on the server's default registry (``POST /commands/{name}``)
+- ``hidden=True``: a command that is callable but not listed by ``GET /commands``
+- ``enable_group``: turn an opt-in endpoint group on from code (the built-in file, process and
+  system groups are already on)
+- ``RouteTable.route()``: one custom HTTP route
+- ``registry.freeze()``: no registrations after start-up
 """
+
 from __future__ import annotations
 
-from easy_sandbox.server import (
+from agent_sandbox.server import (
     CapabilityGroup,
-    CommandRegistry,
-    SandboxServer,
     ServerResponse,
+    command,
+    default_registry,
     default_table,
+    start,
 )
 
-# ---------------------------------------------------------------------------
-# Route table — enable capability groups
-# ---------------------------------------------------------------------------
-
 table = default_table()
-table.enable_group(CapabilityGroup.FILE_OPS)   # upload/download + file operations
-table.enable_group(CapabilityGroup.PROCESS)    # shell + process management
-table.enable_group(CapabilityGroup.SYSTEM)     # system info + port detection
-
-# ---------------------------------------------------------------------------
-# Command registry — custom commands
-# ---------------------------------------------------------------------------
-
-registry = CommandRegistry()
+table.enable_group(CapabilityGroup.DEV_TOOLS)  # opt-in: code_run, git_status, git_diff
 
 
-@registry.command("hello", description="Say hello.")
+@command("hello", description="Say hello.")
 def hello(name: str = "World") -> str:
     """Say hello."""
     return f"Hello, {name}!"
 
 
-@registry.command("run_script", description="Execute Python code and return stdout.")
+@command("run_script", description="Execute Python code and return stdout.")
 def run_script(code: str) -> str:
     """Execute Python code and return stdout."""
     import subprocess
 
-    result = subprocess.run(
-        ["python3", "-c", code], capture_output=True, text=True, timeout=30
-    )
+    result = subprocess.run(["python3", "-c", code], capture_output=True, text=True, timeout=30)
     if result.returncode != 0:
         raise RuntimeError(result.stderr)
     return result.stdout
 
 
-@registry.command(hidden=True)
+@command(hidden=True)
 def _debug_info() -> dict:
     """Internal debug command — not listed in /commands."""
     import platform
 
     return {"python": platform.python_version(), "system": platform.system()}
-
-
-# ---------------------------------------------------------------------------
-# Custom HTTP route via RouteTable.route() decorator
-# ---------------------------------------------------------------------------
 
 
 @table.route("GET", "/hello/{name}", group=CapabilityGroup.COMMANDS)
@@ -71,11 +56,9 @@ def hello_route(request: object) -> ServerResponse:
     return ServerResponse.ok({"greeting": f"Hello, {name}!"})
 
 
-# ---------------------------------------------------------------------------
-# Freeze & serve
-# ---------------------------------------------------------------------------
+default_registry().freeze()
 
-registry.freeze()
+if __name__ == "__main__":
+    import os
 
-server = SandboxServer(registry=registry)
-server.serve(port=9000)
+    start(int(os.environ.get("ABX_SERVER_PORT", "9000")))

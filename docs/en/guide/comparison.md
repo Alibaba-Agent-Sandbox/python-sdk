@@ -1,8 +1,8 @@
 # Comparison with Other Sandbox Tools
 
-> **Note:** The `ebx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @easy-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`easy-sandbox`) and the container-side runtime (`easy-sandbox-server`).
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`).
 
-This document provides an objective comparison of Easy Sandbox (ebx) with other popular sandbox and remote execution platforms: E2B, Modal, and Docker Sandbox.
+This document provides an objective comparison of Agent Sandbox (abx) with other popular sandbox and remote execution platforms: E2B, Modal, and Docker Sandbox.
 
 ---
 
@@ -10,7 +10,7 @@ This document provides an objective comparison of Easy Sandbox (ebx) with other 
 
 | Platform | Core Positioning | Primary Use Cases |
 |----------|-----------------|-------------------|
-| **Easy Sandbox (ebx)** | E2B-compatible cloud sandbox SDK on Alibaba Cloud FC | AI agent code execution, cloud dev environments, template-driven sandboxes |
+| **Agent Sandbox (abx)** | Sandbox SDK with pluggable providers. The default provider is Alibaba Cloud Express (FC); others install as plugins | AI agent code execution, cloud or local dev environments, template-driven sandboxes |
 | **E2B** | Cloud sandboxes built for AI apps | AI agent tool-use, code interpreters, data analysis in LLM workflows |
 | **Modal** | Serverless compute for data/ML pipelines | GPU workloads, batch jobs, model inference, scheduled tasks |
 | **Docker Sandbox** | Container-based local/remote isolation | Local development, CI/CD, reproducible environments |
@@ -19,27 +19,27 @@ This document provides an objective comparison of Easy Sandbox (ebx) with other 
 
 ## SDK Comparison
 
-| Dimension | Easy Sandbox | E2B | Modal |
+| Dimension | Agent Sandbox | E2B | Modal |
 |-----------|-------------|-----|-------|
 | **Language** | Python | Python, JS/TS, Kotlin, Go | Python |
-| **Install** | `pip install easy-sandbox` | `pip install e2b` | `pip install modal` |
-| **Sandbox creation** | `await Sandbox.create()` | `await Sandbox.create()` | `@app.function()` decorator |
+| **Install** | `pip install agent-sandbox` | `pip install e2b` | `pip install modal` |
+| **Sandbox creation** | `await Sandbox.create()`, or the Modal-style `@sandbox` decorator | `await Sandbox.create()` | `@app.function()` decorator |
 | **Sync support** | `Sandbox.create_sync()` | `Sandbox()` (sync class) | N/A (async-native) |
 | **Command execution** | `sandbox.commands.run()` | `sandbox.commands.run()` | Remote function call |
 | **File operations** | `sandbox.files.read/write/list` | `sandbox.files.read/write/list` | `modal.Volume` mount |
 | **Code execution** | `sandbox.run_code()` | `sandbox.run_code()` | Remote function execution |
-| **Custom commands** | `sandbox.custom(name, **kwargs)` | N/A | N/A |
+| **Registered commands** | `sandbox.run(name, **kwargs)` | N/A | N/A |
 | **Network access** | `sandbox.network.get_host()` | `sandbox.get_host()` | Built-in URL routing |
 | **Terminal (PTY)** | `sandbox.get_terminal()` | `sandbox.terminal.start()` | `modal shell` |
-| **E2B compat layer** | `from easy_sandbox.compat import Sandbox` | Native | N/A |
-| **Auth methods** | API Key, Alibaba Cloud AK/SK | API Key | Token-based |
+| **E2B migration helper** | `from agent_sandbox.compat import Sandbox` (partial) | Native | N/A |
+| **Auth methods** | Depends on the provider. The default uses `ABX_SANDBOX_API_KEY`; Alibaba Cloud Express also uses the official AK/SK names | API Key | Token-based |
 
 ### Code Examples
 
-**Easy Sandbox:**
+**Agent Sandbox:**
 
 ```python
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 async with await Sandbox.create(template="python-hello") as sb:
     result = await sb.run_code("print('hello')")
@@ -70,14 +70,14 @@ def hello():
 
 ### Usage Style Comparison
 
-Easy Sandbox supports both **imperative** (E2B style) and **declarative** (Modal style) programming paradigms:
+Agent Sandbox supports both **imperative** (E2B style) and **declarative** (Modal style) programming paradigms:
 
 | Dimension | E2B Style (Imperative) | Modal Style (Declarative) |
 |-----------|----------------------|-------------------------|
 | **Creation** | Manual `Sandbox.create()` | Automatic (`@sandbox` decorator) |
-| **Dependency install** | `sb.run("pip install ...")` | Decorator argument `packages=[...]` |
+| **Dependency install** | `sb.commands.run("pip install ...")` | Decorator argument `packages=[...]` |
 | **Data transfer** | `files.write()` + `files.read()` | Function args and return values auto-serialized |
-| **Execution** | `sb.run()` / `sb.run_code()` | Call function directly |
+| **Execution** | `sb.commands.run()` / `sb.run_code()` | Call function directly |
 | **Result retrieval** | Parse stdout / read files | Function return value |
 | **Lifecycle** | Manual `kill()` or `async with` | Automatically managed |
 | **Best for** | Fine-grained control, long-running interactions, multi-step workflows | Simple compute tasks, batch processing, function-as-a-service |
@@ -85,19 +85,19 @@ Easy Sandbox supports both **imperative** (E2B style) and **declarative** (Modal
 **E2B Style (Imperative) — fine-grained control:**
 
 ```python
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 async with await Sandbox.create() as sb:
-    await sb.run("pip install pandas")
+    await sb.commands.run("pip install pandas")
     await sb.files.write("/app/data.csv", csv_content)
-    result = await sb.run("python3 /app/analyze.py")
+    result = await sb.commands.run("python3 /app/analyze.py")
     report = await sb.files.read("/app/report.txt")
 ```
 
 **Modal Style (Declarative) — call like a local function:**
 
 ```python
-from easy_sandbox.declarative import sandbox
+from agent_sandbox.declarative import sandbox
 
 @sandbox(packages=["pandas"])
 def analyze(data: list[dict]) -> dict:
@@ -115,74 +115,73 @@ result = analyze(my_data)
 
 ## CLI Comparison
 
-| Dimension | ebx | e2b CLI | modal CLI |
+| Dimension | abx | e2b CLI | modal CLI |
 |-----------|-----|---------|-----------|
-| **Install** | `npm install -g @easy-sandbox/cli` | `npm i -g @e2b/cli` | `pip install modal` |
+| **Install** | `npm install -g @agent-sandbox/cli` | `npm i -g @e2b/cli` | `pip install modal` |
 | **Runtime** | Node.js (TypeScript) | Node.js | Python (Typer) |
-| **Create sandbox** | `ebx create` | `e2b sandbox create` | N/A (code-driven) |
-| **List sandboxes** | `ebx sandbox list` | `e2b sandbox list` | `modal container list` |
-| **Connect to sandbox** | `ebx connect <id>` | `e2b sandbox connect` | `modal shell` |
-| **Template build** | `ebx template build` | `e2b template build` | N/A |
-| **Template deploy** | `ebx template deploy` | `e2b template build --push` | N/A |
+| **Create sandbox** | `abx create` | `e2b sandbox create` | N/A (code-driven) |
+| **List sandboxes** | `abx sandbox list` | `e2b sandbox list` | `modal container list` |
+| **Connect to sandbox** | `abx connect <id>` | `e2b sandbox connect` | `modal shell` |
+| **Template build** | `abx template build` | `e2b template build` | N/A |
+| **Template deploy** | `abx template deploy` | `e2b template build --push` | N/A |
 | **Auth setup** | Via environment variables (`.env`) | `e2b auth login` | `modal token set` |
-| **MCP integration** | `ebx mcp install` | N/A | N/A |
+| **MCP integration** | `abx mcp install` | N/A | N/A |
 | **Secret management** | Via environment variables (`.env`) | N/A | `modal secret create` |
 
 ---
 
 ## Infrastructure
 
-| Dimension | Easy Sandbox | E2B | Modal | Docker Sandbox |
+| Dimension | Agent Sandbox | E2B | Modal | Docker Sandbox |
 |-----------|-------------|-----|-------|----------------|
-| **Isolation** | Container (Alibaba Cloud FC) | Firecracker MicroVM | Container (gVisor) | Container (runc/containerd) |
+| **Isolation** | Depends on the provider. The default is an Alibaba Cloud FC container; `local-process` is not isolated | Firecracker MicroVM | Container (gVisor) | Container (runc/containerd) |
 | **Startup time** | Seconds | ~150ms (MicroVM) | Seconds (cold) / ms (warm) | Seconds |
-| **Regions** | Alibaba Cloud regions (cn-hangzhou, etc.) | US, EU | US (aws-us-east-1, etc.) | Self-hosted |
-| **Platform** | Managed (Alibaba Cloud) | Managed (E2B Cloud) | Managed (Modal Cloud) | Self-hosted / Docker Desktop |
+| **Regions** | Default provider: Alibaba Cloud regions (cn-hangzhou, etc.). Other providers choose their own | US, EU | US (aws-us-east-1, etc.) | Self-hosted |
+| **Platform** | Default provider is managed Alibaba Cloud. Plugins can be local or another cloud | Managed (E2B Cloud) | Managed (Modal Cloud) | Self-hosted / Docker Desktop |
 | **GPU support** | Via template config | N/A | Native (A10G, A100, H100) | Via NVIDIA Container Toolkit |
 | **Max lifetime** | Configurable (up to 86400s) | Configurable | Per-invocation | Unlimited |
 | **Pricing** | Alibaba Cloud FC billing | Per-sandbox-second | Per-second compute | Infrastructure cost |
 
 ---
 
-## Unique Capabilities of Easy Sandbox
+## Unique Capabilities of Agent Sandbox
 
-### E2B Protocol Compatibility
+### E2B-shaped API
 
-Easy Sandbox maintains API-level compatibility with the E2B Python SDK. Existing E2B code can migrate with minimal changes:
+Agent Sandbox uses E2B-style method names, so E2B code can often be ported with few edits. It is not a drop-in replacement: configuration, authentication and several behaviours differ.
 
 ```python
-# Minimal migration — just change the import
-from easy_sandbox.compat import Sandbox  # drop-in for e2b.Sandbox
+# Start of a migration: change the import, then follow the guide
+from agent_sandbox.compat import Sandbox
 ```
 
 See [Migrating from E2B](migrate-from-e2b.md) for the full guide.
 
-### Alibaba Cloud Ecosystem Integration
+### Alibaba Cloud Integration
 
-| Extension | Description |
-|-----------|-------------|
+| Feature | Description |
+|---------|-------------|
 | **AK/SK Auth** | Native Alibaba Cloud AccessKey authentication |
-| **OSS Mount** | Mount Alibaba Cloud OSS buckets into sandbox filesystem |
-| **VPC** | Attach sandboxes to an Alibaba Cloud VPC |
-| **Custom Domain** | Bind custom domains to sandbox services |
-| **ACR** | Build and push template images to Alibaba Cloud Container Registry |
+| **Template build and deploy** | `abx template build` / `abx template deploy` push images to Alibaba Cloud Container Registry and register the template |
 
-### Custom Commands
+VPC, OSS volumes and custom domains are platform settings (template runtime configuration and account-level resources). The Python SDK has no API for them.
 
-Templates can define custom commands in `template.yaml` and implement them via a Server SDK inside the container. The SDK exposes them through a unified API:
+### Registered Commands
+
+Functions registered in the sandbox server (`@sandbox.register`, implemented by the Server SDK inside the container) are callable through one API:
 
 ```python
-result = await sandbox.custom("analyze", data="input.csv")
+result = await sandbox.run("analyze", data="input.csv")
 ```
 
 This is not available in E2B or Modal.
 
 ### MCP Server Integration
 
-Easy Sandbox includes a built-in MCP (Model Context Protocol) Server, enabling AI IDEs (Cursor, Claude Desktop, VS Code) to operate sandboxes directly:
+Agent Sandbox includes a built-in MCP (Model Context Protocol) Server, enabling AI IDEs (Cursor, Claude Desktop, VS Code) to operate sandboxes directly:
 
 ```bash
-ebx mcp install --target cursor
+abx mcp install --target cursor
 ```
 
 Provides 7 tools: `create_sandbox`, `run_code`, `run_command`, `read_file`, `write_file`, `list_files`, `kill_sandbox`.
@@ -190,7 +189,7 @@ Provides 7 tools: `create_sandbox`, `run_code`, `run_command`, `read_file`, `wri
 ### Declarative Sandbox Decorator
 
 ```python
-from easy_sandbox import sandbox
+from agent_sandbox import sandbox
 
 @sandbox(template="python-hello", timeout=60)
 async def my_task():
@@ -214,12 +213,12 @@ async def my_task():
 
 | Consideration | Recommended Platform |
 |--------------|---------------------|
-| Migrating from E2B to Alibaba Cloud | **Easy Sandbox** — protocol-compatible, minimal code changes |
-| AI agent with code execution needs | **Easy Sandbox** or **E2B** — purpose-built sandbox SDKs |
+| Migrating from E2B to Alibaba Cloud | **Agent Sandbox** — E2B-shaped method names, few code changes (not a drop-in) |
+| AI agent with code execution needs | **Agent Sandbox** or **E2B** — purpose-built sandbox SDKs |
 | GPU-heavy ML/inference workloads | **Modal** — native GPU support and serverless scaling |
 | Local development isolation | **Docker** — industry-standard, self-hosted |
-| Alibaba Cloud ecosystem integration | **Easy Sandbox** — native OSS, VPC, ACR, AK/SK support |
-| MCP-based AI IDE integration | **Easy Sandbox** — built-in MCP Server |
+| Alibaba Cloud ecosystem integration | **Agent Sandbox** — AK/SK auth, template build and deploy to ACR |
+| MCP-based AI IDE integration | **Agent Sandbox** — built-in MCP Server |
 
 ---
 
@@ -228,6 +227,6 @@ async def my_task():
 - [Command and SDK map](command-map.md)
 - [Migrating from E2B](migrate-from-e2b.md)
 - [SDK Usage Guide](sdk-usage.md)
-- [CLI Tutorial](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/cli-tutorial.md)
+- [CLI Tutorial](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/cli-tutorial.md)
 - [MCP Integration](mcp-integration.md)
 - [Authentication](authentication.md)

@@ -7,7 +7,7 @@ The `@sandbox` decorator lets you declaratively execute Python functions in a re
 ## Basic Usage
 
 ```python
-from easy_sandbox.declarative import sandbox
+from agent_sandbox.declarative import sandbox
 
 @sandbox(template="code-interpreter-v1")
 def analyze(data):
@@ -36,7 +36,6 @@ print(result)
     api_key=None,                     # API Key override
     api_url=None,                     # Platform API URL override
     domain=None,                      # Domain override
-    image=None,                       # Image object (takes priority over template)
     cpu=None,                         # CPU cores
     memory=None,                      # Memory in MB
 )
@@ -58,7 +57,6 @@ def my_func():
 | `api_key` | `str` | `None` | API Key override |
 | `api_url` | `str` | `None` | Platform URL override |
 | `domain` | `str` | `None` | Platform domain |
-| `image` | `Image` | `None` | Image object (takes priority over template) |
 | `cpu` | `int` | `None` | CPU cores |
 | `memory` | `int` | `None` | Memory in MB |
 
@@ -116,34 +114,12 @@ def use_flask():
 
 ---
 
-## Using the Image Object
-
-The `image` parameter takes priority over `template` — it builds the image first, then creates the sandbox:
-
-```python
-from easy_sandbox.api.image import Image
-from easy_sandbox.declarative import sandbox
-
-image = (
-    Image.from_template("python-base")
-    .pip_install("flask", "sqlalchemy")
-    .apt_install("postgresql-client")
-)
-
-@sandbox(image=image)
-def my_app():
-    from flask import Flask
-    return "Flask app ready"
-```
-
----
-
 ## Registration-Style Commands
 
 In addition to the decorator pattern, the `sandbox` object also supports registration-style commands:
 
 ```python
-from easy_sandbox.declarative import sandbox
+from agent_sandbox.declarative import sandbox
 
 @sandbox.register
 def demo(x: int, y: str) -> str:
@@ -163,12 +139,11 @@ commands = sandbox.list_registered()
 
 Registered function parameters only support scalar types: `str`, `int`, `float`, `bool`.
 
-### Built-in Routes
+This is the one mechanism for named commands. A command registered in a template's `commands.py` (or with `@sandbox.register`) is served by the in-sandbox server, and a regular `Sandbox` calls it with `await sandbox.run("demo", x=1, y="hello")` (`POST /commands/demo`). `template.yaml` has no `custom_commands` key; the client rejects it.
 
-```python
-sandbox.register.upload()    # Enable POST /upload route
-sandbox.register.download()  # Enable GET /download route
-```
+### File Transfer
+
+`sandbox.register` only registers named commands. File upload and download are endpoints of the server's `file_ops` group (on by default); a client uses `sandbox.files` or `ServerClient.files`.
 
 ### Start the HTTP Server
 

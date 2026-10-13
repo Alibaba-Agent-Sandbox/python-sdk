@@ -6,7 +6,7 @@ import struct
 
 import pytest
 
-from easy_sandbox.transport.codec import (
+from agent_sandbox.transport.codec import (
     CONNECT_CONTENT_TYPE,
     HAS_ORJSON,
     ConnectCodec,

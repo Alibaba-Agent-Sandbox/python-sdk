@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
+import json
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
 
-from easy_sandbox.api.sandbox import Sandbox
-from easy_sandbox.models.errors import CommandNotFoundError
-from easy_sandbox.models.process import CodeResult
-from easy_sandbox.models.sandbox import SandboxConfig, SandboxInfo, SandboxStatus
-from easy_sandbox.transport.auth import EnvdTokenManager
-from easy_sandbox.transport.config import TransportConfig
-from easy_sandbox.transport.http import HttpClient
+from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.server_client import ServerClient
+from agent_sandbox.models.errors import CommandNotFoundError, ServerAPIError
+from agent_sandbox.models.process import CodeResult
+from agent_sandbox.models.sandbox import SandboxConfig, SandboxInfo, SandboxStatus
+from agent_sandbox.transport.auth import EnvdTokenManager
+from agent_sandbox.transport.config import TransportConfig
+from agent_sandbox.transport.http import HttpClient
 from tests.test_api.conftest import (
     TEST_API_KEY,
     TEST_ENVD_TOKEN,
@@ -60,10 +63,10 @@ class TestSandboxCreate:
         mock_auth.get_headers.return_value = {"X-API-KEY": TEST_API_KEY}
 
         with (
-            patch("easy_sandbox.api.sandbox.load_config") as mock_load_config,
-            patch("easy_sandbox.api.sandbox.create_auth_provider") as mock_create_auth,
-            patch("easy_sandbox.api.sandbox.HttpClient") as mock_http_cls,
-            patch("easy_sandbox.api.sandbox.SandboxProtocol") as mock_proto_cls,
+            patch("agent_sandbox.api.sandbox.load_config") as mock_load_config,
+            patch("agent_sandbox.api.sandbox.create_auth_provider") as mock_create_auth,
+            patch("agent_sandbox.api.sandbox.HttpClient") as mock_http_cls,
+            patch("agent_sandbox.api.sandbox.SandboxProtocol") as mock_proto_cls,
         ):
             mock_load_config.return_value = TransportConfig(api_key=TEST_API_KEY)
             mock_create_auth.return_value = mock_auth
@@ -85,10 +88,10 @@ class TestSandboxCreate:
         mock_sandbox_proto.create.return_value = info
 
         with (
-            patch("easy_sandbox.api.sandbox.load_config") as mock_load_config,
-            patch("easy_sandbox.api.sandbox.create_auth_provider") as mock_create_auth,
-            patch("easy_sandbox.api.sandbox.HttpClient"),
-            patch("easy_sandbox.api.sandbox.SandboxProtocol") as mock_proto_cls,
+            patch("agent_sandbox.api.sandbox.load_config") as mock_load_config,
+            patch("agent_sandbox.api.sandbox.create_auth_provider") as mock_create_auth,
+            patch("agent_sandbox.api.sandbox.HttpClient"),
+            patch("agent_sandbox.api.sandbox.SandboxProtocol") as mock_proto_cls,
         ):
             mock_load_config.return_value = TransportConfig(api_key=TEST_API_KEY)
             mock_create_auth.return_value = AsyncMock()
@@ -115,10 +118,10 @@ class TestSandboxCreate:
         mock_sandbox_proto.create.return_value = info
 
         with (
-            patch("easy_sandbox.api.sandbox.load_config") as mock_load_config,
-            patch("easy_sandbox.api.sandbox.create_auth_provider") as mock_create_auth,
-            patch("easy_sandbox.api.sandbox.HttpClient"),
-            patch("easy_sandbox.api.sandbox.SandboxProtocol") as mock_proto_cls,
+            patch("agent_sandbox.api.sandbox.load_config") as mock_load_config,
+            patch("agent_sandbox.api.sandbox.create_auth_provider") as mock_create_auth,
+            patch("agent_sandbox.api.sandbox.HttpClient"),
+            patch("agent_sandbox.api.sandbox.SandboxProtocol") as mock_proto_cls,
         ):
             mock_load_config.return_value = TransportConfig(api_key=TEST_API_KEY)
             mock_create_auth.return_value = AsyncMock()
@@ -136,10 +139,10 @@ class TestSandboxCreate:
         mock_sandbox_proto.create.return_value = info
 
         with (
-            patch("easy_sandbox.api.sandbox.load_config") as mock_load_config,
-            patch("easy_sandbox.api.sandbox.create_auth_provider") as mock_create_auth,
-            patch("easy_sandbox.api.sandbox.HttpClient"),
-            patch("easy_sandbox.api.sandbox.SandboxProtocol") as mock_proto_cls,
+            patch("agent_sandbox.api.sandbox.load_config") as mock_load_config,
+            patch("agent_sandbox.api.sandbox.create_auth_provider") as mock_create_auth,
+            patch("agent_sandbox.api.sandbox.HttpClient"),
+            patch("agent_sandbox.api.sandbox.SandboxProtocol") as mock_proto_cls,
         ):
             mock_load_config.return_value = TransportConfig(api_key=TEST_API_KEY)
             mock_create_auth.return_value = AsyncMock()
@@ -176,10 +179,10 @@ class TestSandboxConnect:
         mock_sandbox_proto.connect.return_value = info
 
         with (
-            patch("easy_sandbox.api.sandbox.load_config") as mock_load_config,
-            patch("easy_sandbox.api.sandbox.create_auth_provider") as mock_create_auth,
-            patch("easy_sandbox.api.sandbox.HttpClient"),
-            patch("easy_sandbox.api.sandbox.SandboxProtocol") as mock_proto_cls,
+            patch("agent_sandbox.api.sandbox.load_config") as mock_load_config,
+            patch("agent_sandbox.api.sandbox.create_auth_provider") as mock_create_auth,
+            patch("agent_sandbox.api.sandbox.HttpClient"),
+            patch("agent_sandbox.api.sandbox.SandboxProtocol") as mock_proto_cls,
         ):
             mock_load_config.return_value = TransportConfig(api_key=TEST_API_KEY)
             mock_create_auth.return_value = AsyncMock()
@@ -298,7 +301,7 @@ class TestSandboxSubmodules:
     """Test lazy cached property sub-modules."""
 
     def test_commands_property(self, sandbox: Sandbox) -> None:
-        from easy_sandbox.api.commands import CommandsModule
+        from agent_sandbox.api.commands import CommandsModule
 
         cmds = sandbox.commands
         assert isinstance(cmds, CommandsModule)
@@ -306,21 +309,21 @@ class TestSandboxSubmodules:
         assert sandbox.commands is cmds
 
     def test_files_property(self, sandbox: Sandbox) -> None:
-        from easy_sandbox.api.files import FilesModule
+        from agent_sandbox.api.files import FilesModule
 
         files = sandbox.files
         assert isinstance(files, FilesModule)
         assert sandbox.files is files
 
     def test_network_property(self, sandbox: Sandbox) -> None:
-        from easy_sandbox.api.network import NetworkModule
+        from agent_sandbox.api.network import NetworkModule
 
         net = sandbox.network
         assert isinstance(net, NetworkModule)
         assert sandbox.network is net
 
     def test_code_property(self, sandbox: Sandbox) -> None:
-        from easy_sandbox.api.code import CodeContextModule
+        from agent_sandbox.api.code import CodeContextModule
 
         code = sandbox.code
         assert isinstance(code, CodeContextModule)
@@ -376,10 +379,10 @@ class TestSandboxResourceParams:
         mock_sandbox_proto.create.return_value = info
 
         with (
-            patch("easy_sandbox.api.sandbox.load_config") as mock_lc,
-            patch("easy_sandbox.api.sandbox.create_auth_provider") as mock_ca,
-            patch("easy_sandbox.api.sandbox.HttpClient"),
-            patch("easy_sandbox.api.sandbox.SandboxProtocol") as mock_pc,
+            patch("agent_sandbox.api.sandbox.load_config") as mock_lc,
+            patch("agent_sandbox.api.sandbox.create_auth_provider") as mock_ca,
+            patch("agent_sandbox.api.sandbox.HttpClient"),
+            patch("agent_sandbox.api.sandbox.SandboxProtocol") as mock_pc,
         ):
             mock_lc.return_value = TransportConfig(api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()
@@ -408,10 +411,10 @@ class TestSandboxResourceParams:
         mock_sandbox_proto.create.return_value = info
 
         with (
-            patch("easy_sandbox.api.sandbox.load_config") as mock_lc,
-            patch("easy_sandbox.api.sandbox.create_auth_provider") as mock_ca,
-            patch("easy_sandbox.api.sandbox.HttpClient"),
-            patch("easy_sandbox.api.sandbox.SandboxProtocol") as mock_pc,
+            patch("agent_sandbox.api.sandbox.load_config") as mock_lc,
+            patch("agent_sandbox.api.sandbox.create_auth_provider") as mock_ca,
+            patch("agent_sandbox.api.sandbox.HttpClient"),
+            patch("agent_sandbox.api.sandbox.SandboxProtocol") as mock_pc,
         ):
             mock_lc.return_value = TransportConfig(api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()
@@ -440,10 +443,10 @@ class TestSandboxResourceParams:
         mock_sandbox_proto.create.return_value = info
 
         with (
-            patch("easy_sandbox.api.sandbox.load_config") as mock_lc,
-            patch("easy_sandbox.api.sandbox.create_auth_provider") as mock_ca,
-            patch("easy_sandbox.api.sandbox.HttpClient"),
-            patch("easy_sandbox.api.sandbox.SandboxProtocol") as mock_pc,
+            patch("agent_sandbox.api.sandbox.load_config") as mock_lc,
+            patch("agent_sandbox.api.sandbox.create_auth_provider") as mock_ca,
+            patch("agent_sandbox.api.sandbox.HttpClient"),
+            patch("agent_sandbox.api.sandbox.SandboxProtocol") as mock_pc,
         ):
             mock_lc.return_value = TransportConfig(api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()
@@ -457,90 +460,6 @@ class TestSandboxResourceParams:
             assert "memoryMB" not in payload
             assert "diskSizeMB" not in payload
             assert "gpu" not in payload
-
-
-class TestSandboxDescriptionInfer:
-    """Test that description with default template logs a hint (infer removed from API layer)."""
-
-    @pytest.mark.asyncio
-    async def test_description_logs_hint_uses_base(self) -> None:
-        """description + default template logs a hint and uses 'base' template."""
-        info = make_sandbox_info()
-        mock_sandbox_proto = AsyncMock()
-        mock_sandbox_proto.create.return_value = info
-
-        with (
-            patch("easy_sandbox.api.sandbox.load_config") as mock_lc,
-            patch("easy_sandbox.api.sandbox.create_auth_provider") as mock_ca,
-            patch("easy_sandbox.api.sandbox.HttpClient"),
-            patch("easy_sandbox.api.sandbox.SandboxProtocol") as mock_pc,
-        ):
-            mock_lc.return_value = TransportConfig(api_key=TEST_API_KEY)
-            mock_ca.return_value = AsyncMock()
-            mock_pc.return_value = mock_sandbox_proto
-
-            await Sandbox.create(
-                description="分析 CSV 数据并画图",
-                api_key=TEST_API_KEY,
-            )
-
-            # Template should remain "base" since infer is no longer called
-            config: SandboxConfig = mock_sandbox_proto.create.call_args[0][0]
-            assert config.template == "base"
-
-    @pytest.mark.asyncio
-    async def test_explicit_template_skips_hint(self) -> None:
-        """Explicit template does not trigger description hint."""
-        info = make_sandbox_info()
-        mock_sandbox_proto = AsyncMock()
-        mock_sandbox_proto.create.return_value = info
-
-        with (
-            patch("easy_sandbox.api.sandbox.load_config") as mock_lc,
-            patch("easy_sandbox.api.sandbox.create_auth_provider") as mock_ca,
-            patch("easy_sandbox.api.sandbox.HttpClient"),
-            patch("easy_sandbox.api.sandbox.SandboxProtocol") as mock_pc,
-        ):
-            mock_lc.return_value = TransportConfig(api_key=TEST_API_KEY)
-            mock_ca.return_value = AsyncMock()
-            mock_pc.return_value = mock_sandbox_proto
-
-            await Sandbox.create(
-                template="node-web",
-                description="分析 CSV 数据",
-                api_key=TEST_API_KEY,
-            )
-
-            config: SandboxConfig = mock_sandbox_proto.create.call_args[0][0]
-            assert config.template == "node-web"
-
-    @pytest.mark.asyncio
-    async def test_explicit_cpu_memory_preserved(self) -> None:
-        """Explicit cpu/memory are preserved when description is given."""
-        info = make_sandbox_info()
-        mock_sandbox_proto = AsyncMock()
-        mock_sandbox_proto.create.return_value = info
-
-        with (
-            patch("easy_sandbox.api.sandbox.load_config") as mock_lc,
-            patch("easy_sandbox.api.sandbox.create_auth_provider") as mock_ca,
-            patch("easy_sandbox.api.sandbox.HttpClient"),
-            patch("easy_sandbox.api.sandbox.SandboxProtocol") as mock_pc,
-        ):
-            mock_lc.return_value = TransportConfig(api_key=TEST_API_KEY)
-            mock_ca.return_value = AsyncMock()
-            mock_pc.return_value = mock_sandbox_proto
-
-            await Sandbox.create(
-                description="运行 Python",
-                cpu=8,
-                memory=16384,
-                api_key=TEST_API_KEY,
-            )
-
-            config: SandboxConfig = mock_sandbox_proto.create.call_args[0][0]
-            assert config.cpu == 8
-            assert config.memory == 16384
 
 
 class TestSandboxResume:
@@ -625,7 +544,7 @@ class TestSandboxSignedFileUrls:
         self,
         sandbox: Sandbox,
     ) -> None:
-        from easy_sandbox.models.errors import FileOperationError
+        from agent_sandbox.models.errors import FileOperationError
 
         with pytest.raises(FileOperationError, match="X-Access-Token"):
             await sandbox.get_upload_url("/app/data.csv")
@@ -635,7 +554,7 @@ class TestSandboxSignedFileUrls:
         self,
         sandbox: Sandbox,
     ) -> None:
-        from easy_sandbox.models.errors import FileOperationError
+        from agent_sandbox.models.errors import FileOperationError
 
         with pytest.raises(FileOperationError, match="X-Access-Token"):
             await sandbox.get_download_url("/app/data.csv")
@@ -651,7 +570,7 @@ class TestSandboxTerminal:
     ) -> None:
         mock_session = AsyncMock()
         with patch(
-            "easy_sandbox.protocol.terminal.TerminalSession.create",
+            "agent_sandbox.protocol.terminal.TerminalSession.create",
             new_callable=AsyncMock,
             return_value=mock_session,
         ) as mock_create:
@@ -684,10 +603,10 @@ class TestSandboxEnvdUrlDerivation:
         mock_sandbox_proto.create.return_value = info
 
         with (
-            patch("easy_sandbox.api.sandbox.load_config") as mock_lc,
-            patch("easy_sandbox.api.sandbox.create_auth_provider") as mock_ca,
-            patch("easy_sandbox.api.sandbox.HttpClient"),
-            patch("easy_sandbox.api.sandbox.SandboxProtocol") as mock_pc,
+            patch("agent_sandbox.api.sandbox.load_config") as mock_lc,
+            patch("agent_sandbox.api.sandbox.create_auth_provider") as mock_ca,
+            patch("agent_sandbox.api.sandbox.HttpClient"),
+            patch("agent_sandbox.api.sandbox.SandboxProtocol") as mock_pc,
         ):
             mock_lc.return_value = TransportConfig(api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()
@@ -715,10 +634,10 @@ class TestSandboxEnvdUrlDerivation:
         mock_sandbox_proto.connect.return_value = info
 
         with (
-            patch("easy_sandbox.api.sandbox.load_config") as mock_lc,
-            patch("easy_sandbox.api.sandbox.create_auth_provider") as mock_ca,
-            patch("easy_sandbox.api.sandbox.HttpClient"),
-            patch("easy_sandbox.api.sandbox.SandboxProtocol") as mock_pc,
+            patch("agent_sandbox.api.sandbox.load_config") as mock_lc,
+            patch("agent_sandbox.api.sandbox.create_auth_provider") as mock_ca,
+            patch("agent_sandbox.api.sandbox.HttpClient"),
+            patch("agent_sandbox.api.sandbox.SandboxProtocol") as mock_pc,
         ):
             mock_lc.return_value = TransportConfig(api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()
@@ -768,181 +687,99 @@ class TestSandboxEnvdUrlDerivation:
         assert sb.url == original_url
 
 
-class TestSandboxRunCommand:
-    """Test Sandbox.custom() (mechanism B) and the run_command alias."""
+def _server_client(handler: Any) -> ServerClient:
+    return ServerClient(
+        "http://sandbox.test:9000",
+        http_client=httpx.AsyncClient(
+            base_url="http://sandbox.test:9000", transport=httpx.MockTransport(handler)
+        ),
+    )
+
+
+class TestSandboxRunNamedCommand:
+    """``Sandbox.run(name, **kwargs)`` is ``POST /commands/{name}`` on the SandboxServer."""
 
     @pytest.mark.asyncio
-    async def test_custom_server_success(
-        self,
-        sandbox: Sandbox,
-        mock_http_client: AsyncMock,
-    ) -> None:
-        """custom() returns a server-sourced CommandResult on HTTP 200."""
-        mock_response = MagicMock()
-        mock_response.is_success = True
-        mock_response.json.return_value = {"result": 42}
+    async def test_run_posts_kwargs_and_returns_value(self, sandbox: Sandbox) -> None:
+        seen: list[httpx.Request] = []
 
-        mock_client = AsyncMock()
-        mock_client.post.return_value = mock_response
-        mock_http_client._create_envd_client.return_value = mock_client
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen.append(request)
+            return httpx.Response(200, json={"result": 42})
 
-        result = await sandbox.custom("add", x=1, y=2)
+        sandbox.__dict__["server"] = _server_client(handler)
 
-        assert result.value == 42
-        assert result.source == "server"
-        assert result.exit_code == 0
-        assert result.success is True
-        mock_client.post.assert_called_once_with(
-            "/commands/add",
-            json={"x": 1, "y": 2},
-            headers=mock_client.post.call_args.kwargs["headers"],
+        assert await sandbox.run("add", x=1, y=2) == 42
+        assert seen[0].method == "POST"
+        assert seen[0].url.path == "/commands/add"
+        assert json.loads(seen[0].content) == {"x": 1, "y": 2}
+
+    @pytest.mark.asyncio
+    async def test_name_is_a_valid_command_argument(self, sandbox: Sandbox) -> None:
+        seen: list[httpx.Request] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen.append(request)
+            return httpx.Response(200, json={"result": "Hello World"})
+
+        sandbox.__dict__["server"] = _server_client(handler)
+
+        assert await sandbox.run("hello", name="World") == "Hello World"
+        assert seen[0].url.path == "/commands/hello"
+        assert json.loads(seen[0].content) == {"name": "World"}
+
+    @pytest.mark.asyncio
+    async def test_unknown_command_raises_command_not_found(self, sandbox: Sandbox) -> None:
+        sandbox.__dict__["server"] = _server_client(
+            lambda request: httpx.Response(404, json={"error": "not found", "type": "ValueError"})
         )
-
-    @pytest.mark.asyncio
-    async def test_custom_server_error_returns_exit_code_1(
-        self,
-        sandbox: Sandbox,
-        mock_http_client: AsyncMock,
-    ) -> None:
-        """A reachable server that fails (non-404) yields exit_code=1, not a raise."""
-        mock_response = MagicMock()
-        mock_response.is_success = False
-        mock_response.status_code = 500
-        mock_response.json.return_value = {
-            "error": "boom",
-            "type": "RuntimeError",
-        }
-
-        mock_client = AsyncMock()
-        mock_client.post.return_value = mock_response
-        mock_http_client._create_envd_client.return_value = mock_client
-
-        result = await sandbox.custom("bad")
-
-        assert result.source == "server"
-        assert result.exit_code == 1
-        assert result.success is False
-        assert "RuntimeError: boom" in result.stderr
-
-    @pytest.mark.asyncio
-    async def test_custom_server_404_raises_command_not_found(
-        self,
-        sandbox: Sandbox,
-        mock_http_client: AsyncMock,
-    ) -> None:
-        """A 404 from the server means the command is genuinely unknown."""
-        mock_response = MagicMock()
-        mock_response.is_success = False
-        mock_response.status_code = 404
-        mock_response.json.return_value = {
-            "error": "not found",
-            "type": "ValueError",
-        }
-
-        mock_client = AsyncMock()
-        mock_client.post.return_value = mock_response
-        mock_http_client._create_envd_client.return_value = mock_client
-
         with pytest.raises(CommandNotFoundError):
-            await sandbox.custom("nonexistent")
+            await sandbox.run("nonexistent")
 
     @pytest.mark.asyncio
-    async def test_custom_connection_failure_caches_probe(
-        self,
-        sandbox: Sandbox,
-        mock_http_client: AsyncMock,
-    ) -> None:
-        """A connection failure raises CommandNotFoundError, sets the probe
-        flag, and short-circuits subsequent calls without re-hitting HTTP."""
-        mock_client = AsyncMock()
-        mock_client.post.side_effect = httpx.ConnectError("connection refused")
-        mock_http_client._create_envd_client.return_value = mock_client
-
-        with pytest.raises(CommandNotFoundError):
-            await sandbox.custom("whatever")
-        assert sandbox._server_probe_failed is True
-
-        # Second call is short-circuited by the cached probe flag.
-        with pytest.raises(CommandNotFoundError):
-            await sandbox.custom("whatever")
-        assert mock_client.post.await_count == 1
-
-        # reset_server_probe() re-enables mechanism-B probing.
-        sandbox.reset_server_probe()
-        assert sandbox._server_probe_failed is False
-
-    @pytest.mark.asyncio
-    async def test_run_command_deprecated_alias(
-        self,
-        sandbox: Sandbox,
-        mock_http_client: AsyncMock,
-    ) -> None:
-        """run_command() warns DeprecationWarning and returns CommandResult.value."""
-        mock_response = MagicMock()
-        mock_response.is_success = True
-        mock_response.json.return_value = {"result": 7}
-
-        mock_client = AsyncMock()
-        mock_client.post.return_value = mock_response
-        mock_http_client._create_envd_client.return_value = mock_client
-
-        with pytest.warns(DeprecationWarning, match="custom"):
-            result = await sandbox.run_command("add", x=1)
-
-        assert result == 7
-
-    @pytest.mark.asyncio
-    async def test_custom_name_kwarg_no_conflict(
-        self,
-        sandbox: Sandbox,
-        mock_http_client: AsyncMock,
-    ) -> None:
-        """custom('hello', name='World') must not raise TypeError.
-
-        Because ``name`` is positional-only (after the ``/``), passing
-        ``name=`` as a keyword goes into **kwargs, not the command-name
-        parameter.
-        """
-        mock_response = MagicMock()
-        mock_response.is_success = True
-        mock_response.json.return_value = {"result": "Hello World"}
-
-        mock_client = AsyncMock()
-        mock_client.post.return_value = mock_response
-        mock_http_client._create_envd_client.return_value = mock_client
-
-        result = await sandbox.custom("hello", name="World")
-
-        assert result.value == "Hello World"
-        assert result.source == "server"
-        mock_client.post.assert_called_once_with(
-            "/commands/hello",
-            json={"name": "World"},
-            headers=mock_client.post.call_args.kwargs["headers"],
+    async def test_command_failure_raises_server_api_error(self, sandbox: Sandbox) -> None:
+        sandbox.__dict__["server"] = _server_client(
+            lambda request: httpx.Response(500, json={"error": "boom", "type": "RuntimeError"})
         )
+        with pytest.raises(ServerAPIError, match="boom"):
+            await sandbox.run("bad")
 
     @pytest.mark.asyncio
-    async def test_custom_502_non_json_raises_command_not_found(
-        self,
-        sandbox: Sandbox,
-        mock_http_client: AsyncMock,
+    async def test_server_port_selects_the_server_and_is_not_forwarded(
+        self, sandbox: Sandbox
     ) -> None:
-        """A 502 with non-JSON body should raise CommandNotFoundError,
-        not a raw RuntimeError."""
-        import json as _json
+        seen: list[httpx.Request] = []
 
-        mock_response = MagicMock()
-        mock_response.is_success = False
-        mock_response.status_code = 502
-        mock_response.text = "<html>502 Bad Gateway</html>"
-        mock_response.json.side_effect = _json.JSONDecodeError("x", "y", 0)
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen.append(request)
+            return httpx.Response(200, json={"result": "ok"})
 
-        mock_client = AsyncMock()
-        mock_client.post.return_value = mock_response
-        mock_http_client._create_envd_client.return_value = mock_client
+        with patch.object(Sandbox, "server_at", return_value=_server_client(handler)) as server_at:
+            assert await sandbox.run("ping", server_port=9100, a=1) == "ok"
 
-        with pytest.raises(CommandNotFoundError, match="invalid response"):
-            await sandbox.custom("anything")
+        server_at.assert_called_once_with(9100)
+        assert json.loads(seen[0].content) == {"a": 1}
 
-        # Should also cache the probe failure.
-        assert sandbox._server_probe_failed is True
+    @pytest.mark.asyncio
+    async def test_list_commands_returns_server_commands(self, sandbox: Sandbox) -> None:
+        sandbox.__dict__["server"] = _server_client(
+            lambda request: httpx.Response(
+                200,
+                json={
+                    "commands": [
+                        {
+                            "name": "add",
+                            "description": "Add",
+                            "args": [{"name": "x", "type": "integer", "required": True}],
+                        }
+                    ]
+                },
+            )
+        )
+        commands = await sandbox.list_commands()
+        assert [c.name for c in commands] == ["add"]
+        assert commands[0].args[0].type == "integer"
+
+    def test_client_side_command_mechanism_is_gone(self, sandbox: Sandbox) -> None:
+        for removed in ("custom", "run_command", "reset_server_probe", "custom_sync"):
+            assert not hasattr(sandbox, removed)

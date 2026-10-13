@@ -1,4 +1,4 @@
-"""Client SDK over HTTP against a local ``python -m easy_sandbox.server serve``.
+"""Client SDK over HTTP against a local ``python -m agent_sandbox.server serve``.
 
 The server is a subprocess on 127.0.0.1. ``ServerClient`` (source tree on
 ``PYTHONPATH``) performs every check. Route handlers are not called in-process.
@@ -19,8 +19,8 @@ from typing import Iterator
 
 import pytest
 
-from easy_sandbox.api.server_client import ServerClient
-from easy_sandbox.models.server import ShellResult, TransferResult
+from agent_sandbox.api.server_client import ServerClient
+from agent_sandbox.models.server import ShellResult, TransferResult
 
 SERVER_SRC = Path(__file__).resolve().parents[1] / "server-sdk" / "src"
 _DROP = {
@@ -28,15 +28,14 @@ _DROP = {
     "CODEX_API_KEY",
     "ANTHROPIC_API_KEY",
     "E2B_API_KEY",
-    "EBX_API_KEY",
-    "EBX_SANDBOX_API_KEY",
+    "ABX_API_KEY",
+    "ABX_SANDBOX_API_KEY",
     "DASHSCOPE_API_KEY",
-    "EBX_SERVER_TOKEN",
-    "EBX_SERVER_POLICY",
-    "EBX_SERVER_POLICY_FILE",
-    "EBX_SERVER_BASE_DIR",
-    "EBX_SERVER_DISABLED_GROUPS",
-    "EBX_SERVER_ENABLED_GROUPS",
+    "ABX_SERVER_TOKEN",
+    "ABX_SERVER_POLICY",
+    "ABX_SERVER_POLICY_FILE",
+    "ABX_SERVER_BASE_DIR",
+    "ABX_SERVER_ENABLED_GROUPS",
 }
 _MARKER = "client-sdk-local-e2e"
 
@@ -62,7 +61,7 @@ def _http_ok(port: int) -> bool:
 
 
 class LiveServer:
-    """One ``python -m easy_sandbox.server serve`` process."""
+    """One ``python -m agent_sandbox.server serve`` process."""
 
     def __init__(self, root: Path) -> None:
         self.root = root
@@ -86,7 +85,7 @@ class LiveServer:
                 [
                     sys.executable,
                     "-m",
-                    "easy_sandbox.server",
+                    "agent_sandbox.server",
                     "serve",
                     "--host",
                     "127.0.0.1",

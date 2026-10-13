@@ -1,1 +1,1 @@
-"""Global pytest fixtures for the Easy Sandbox server SDK tests."""
+"""Global pytest fixtures for the Agent Sandbox server SDK tests."""

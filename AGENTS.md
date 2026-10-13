@@ -5,20 +5,20 @@
 
 ## Project Overview
 
-**Easy Sandbox** (`easy-sandbox` on PyPI) is a Python SDK for the Alibaba Cloud FC Agent Sandbox service. It is **E2B-protocol compatible** with extensions for the Alibaba Cloud ecosystem (OSS, VPC, custom domains).
+**Agent Sandbox** (`agent-sandbox` on PyPI) is a Python SDK for the Alibaba Cloud FC Agent Sandbox service. It is the **runtime** client (create, use, kill sandboxes); templates are built and deployed with `abx template build|deploy`. Method names are E2B-shaped to ease migration; it is not a drop-in replacement (see `docs/en/guide/migrate-from-e2b.md`).
 
-This repository (`python-sdk`) holds the **Python SDK only**, split into two PyPI distributions that share the `easy_sandbox` namespace and are **released in lockstep** (same version number):
+This repository (`python-sdk`) holds the **Python SDK only**, split into two PyPI distributions that share the `agent_sandbox` namespace and are **released in lockstep** (same version number):
 
 | Folder | PyPI distribution | Import path | Source |
 |--------|-------------------|-------------|--------|
-| `client-sdk/` | `easy-sandbox` | `easy_sandbox` | `client-sdk/src/easy_sandbox/` |
-| `server-sdk/` | `easy-sandbox-server` | `easy_sandbox.server` | `server-sdk/src/easy_sandbox/server/` (container-side runtime; no `easy_sandbox/__init__.py` of its own) |
+| `client-sdk/` | `agent-sandbox` | `agent_sandbox` | `client-sdk/src/agent_sandbox/` |
+| `server-sdk/` | `agent-sandbox-server` | `agent_sandbox.server` | `server-sdk/src/agent_sandbox/server/` (container-side runtime; no `agent_sandbox/__init__.py` of its own) |
 
-The `ebx` CLI is **not** part of this repository: it is a Node.js/TypeScript project (`@easy-sandbox/cli`) that lives in the [`cli` repository](https://github.com/Easy-Sandbox/easy-sandbox). There is no `easy_sandbox.cli` module, no `[cli]`/`[binary]` extra and no `ebx` console script in the Python packages.
+The `abx` CLI is **not** part of this repository: it is a Node.js/TypeScript project (`@agent-sandbox/cli`) that lives in the [`cli` repository](https://github.com/alibaba-agent-sandbox/agent-sandbox). There is no `agent_sandbox.cli` module, no `[cli]`/`[binary]` extra and no `abx` console script in the Python packages.
 
 - **Language:** Python 3.10+
 - **Build system:** Hatchling (one `pyproject.toml` per package)
-- **Packages:** `client-sdk/src/easy_sandbox/`, `server-sdk/src/easy_sandbox/server/`
+- **Packages:** `client-sdk/src/agent_sandbox/`, `server-sdk/src/agent_sandbox/server/`
 - **Entry point:** none (library only).
 
 ---
@@ -27,25 +27,23 @@ The `ebx` CLI is **not** part of this repository: it is a Node.js/TypeScript pro
 
 ```
 python-sdk/
-├── client-sdk/                # PyPI: easy-sandbox (import easy_sandbox)
+├── client-sdk/                # PyPI: agent-sandbox (import agent_sandbox)
 │   ├── pyproject.toml
-│   ├── src/easy_sandbox/      # SDK source
+│   ├── src/agent_sandbox/      # SDK source
 │   │   ├── models/                # Data models: config, errors, sandbox, template, session, filesystem, process
 │   │   ├── transport/             # HTTP/WS transport, auth, codec, retry, streaming
 │   │   ├── protocol/              # Protocol abstractions: sandbox, filesystem, process, terminal, port, code_interpreter
-│   │   ├── api/                   # High-level API: Sandbox, files, code, commands, network, image, capability, session_manager, template
-│   │   ├── agent/                 # AI agent tooling: builtin agents, MCP server, tool definitions, inference
-│   │   ├── compat/                # E2B compatibility layer (drop-in replacement)
+│   │   ├── api/                   # High-level API: Sandbox, files, code, commands, network, capability, session_manager, server client
+│   │   ├── agent/                 # AI agent tooling: MCP server, tool definitions
+│   │   ├── compat/                # E2B migration helper (partial; re-exports Sandbox)
 │   │   ├── declarative/           # @sandbox decorator, config, serializer
-│   │   ├── extensions/            # Alibaba Cloud extensions: OSS, VPC, custom domains
-│   │   ├── integrations/          # Framework adapters (planned — directory currently empty; see ADR 2026-09-23)
 │   │   ├── session/               # Session persistence: local (LocalSessionStore)
 │   │   └── utils/                 # Async bridge, secret store, logging, registry, retry
 │   ├── tests/                 # Mirrors src/ structure (test_api/, test_models/, …) + test_packaging.py
 │   └── benchmarks/            # Import-time and sandbox-create benchmarks (run manually)
-├── server-sdk/                # PyPI: easy-sandbox-server (import easy_sandbox.server)
+├── server-sdk/                # PyPI: agent-sandbox-server (import agent_sandbox.server)
 │   ├── pyproject.toml
-│   ├── src/easy_sandbox/server/   # SandboxServer SDK: HTTP routes, registry, browser, PTY, devtools
+│   ├── src/agent_sandbox/server/   # SandboxServer SDK: HTTP routes, registry, browser, PTY, devtools
 │   └── tests/                 # test_server/ + test_packaging.py
 ├── docs/
 │   ├── en/
@@ -62,7 +60,7 @@ python-sdk/
 │       └── DESIGN.md          # Design topic index (links to design/)
 ├── examples/
 │   ├── agents/                # AI agent integration examples
-│   ├── compat-demos/          # E2B/Modal compatibility demos
+│   ├── compat-demos/          # E2B/Modal migration demos
 │   ├── quickstart/            # Quick start demos (5 demos)
 │   └── templates/             # Sandbox template examples (python-hello, codex, qoder, …)
 ├── .agents/
@@ -70,11 +68,11 @@ python-sdk/
 │   ├── design/                # Design documents and analysis
 │   ├── evidence/              # Research / verification evidence
 │   └── research/              # Research & competitor analysis notes
-├── scripts/                   # Repo tooling (dist checks, health check); scripts/e2e/ = manual cloud E2E scripts
+├── scripts/                   # Repo tooling (dist checks, health check, e2e janitor)
 └── Makefile                   # Dev commands (operate on both packages)
 ```
 
-CLI documentation (CLI design / tutorial / reference, binary installation, BYO-agent integration, `SKILL.md`) and the `ebx` source live in the [`cli` repository](https://github.com/Easy-Sandbox/easy-sandbox); this repository's docs describe only the Python SDK (see [Related: the ebx CLI](README.md#related-the-ebx-cli)).
+CLI documentation (CLI design / tutorial / reference, binary installation, `SKILL.md`) and the `abx` source live in the [`cli` repository](https://github.com/alibaba-agent-sandbox/agent-sandbox); this repository's docs describe only the Python SDK (see [Related: the abx CLI](README.md#related-the-abx-cli)).
 
 ---
 
@@ -85,11 +83,9 @@ The SDK follows a strict layered architecture — **lower layers never import up
 ```mermaid
 graph TB
     subgraph Upper["Upper Layers"]
-        Agent["Agent/MCP — MCP server, builtin agents, tool defs"]
-        Integ["Integrations — Framework adapters (planned)"]
+        Agent["Agent/MCP — MCP server, tool defs"]
         Decl["Declarative — @sandbox decorator"]
-        Compat["Compat — E2B compatibility shim"]
-        Ext["Extensions — OSS, VPC, domain extensions"]
+        Compat["Compat — E2B migration helper"]
         Server["Server — SandboxServer SDK, HTTP routes"]
         Sess["Session — Persistence"]
     end
@@ -102,10 +98,8 @@ graph TB
     end
 
     Agent --> L3
-    Integ --> L3
     Decl --> L3
     Compat --> L3
-    Ext --> L3
     Server --> L0U
     Sess --> L3
     L3 --> L2 --> L1
@@ -113,7 +107,7 @@ graph TB
     L1 --> L0U
 ```
 
-The former CLI upper layer (Click commands, formatters) is no longer part of this repository: the `ebx` CLI is a Node.js project in the `cli` repository and consumes the same E2B-compatible wire protocol and `easy_sandbox.server` HTTP API.
+The former CLI upper layer (Click commands, formatters) is no longer part of this repository: the `abx` CLI is a Node.js project in the `cli` repository and consumes the same envd wire protocol and `agent_sandbox.server` HTTP API.
 
 ---
 
@@ -137,7 +131,7 @@ pip install -e "./server-sdk[dev]"
 | `make test-cov`      | Tests with coverage report             |
 | `make lint`          | `ruff check src/ tests/` in both packages |
 | `make format`        | `ruff format src/ tests/` in both packages |
-| `make typecheck`     | `mypy src/easy_sandbox/` (client) and `mypy src/easy_sandbox/server/` (server) |
+| `make typecheck`     | `mypy src/agent_sandbox/` (client) and `mypy src/agent_sandbox/server/` (server) |
 | `make build`         | Build sdist + wheel of both packages into `dist/<package>/` |
 | `make dist-check`    | `twine check`, `py.typed` in both wheels, combined-install import check |
 | `make ci`            | Local CI equivalent (lint, format-check, typecheck, tests, build, dist-check) |
@@ -160,7 +154,7 @@ pytest tests/test_server/test_router.py -v
 
 ### Error Code System
 
-All SDK errors live in [`models/errors.py`](client-sdk/src/easy_sandbox/models/errors.py). Error codes follow `E{category}{sequence}`:
+All SDK errors live in [`models/errors.py`](client-sdk/src/agent_sandbox/models/errors.py). Error codes follow `E{category}{sequence}`:
 
 | Range   | Category       | Base Class               |
 |---------|----------------|--------------------------|
@@ -170,14 +164,12 @@ All SDK errors live in [`models/errors.py`](client-sdk/src/easy_sandbox/models/e
 | E4xxx   | Filesystem     | `FileOperationError`     |
 | E5xxx   | Network        | `NetworkError`           |
 | E6xxx   | Session        | `SessionError`           |
-| E70xx   | Deploy/Build   | `SandboxError` (`DeployError` covers E7000–E7003; E7010–E7011 inherit `SandboxError` directly) |
-| E702x   | Docker/ACR     | `SandboxError` (E7020–E7022 inherit it directly) |
 
 Every exception carries: `code`, `message`, `suggestion`, `docs_url` (populated when documentation is available).
 
 ### Capability Model
 
-Defined in [`models/template.py`](client-sdk/src/easy_sandbox/models/template.py), resolved by [`api/capability.py`](client-sdk/src/easy_sandbox/api/capability.py).
+Defined in [`models/template.py`](client-sdk/src/agent_sandbox/models/template.py), resolved by [`api/capability.py`](client-sdk/src/agent_sandbox/api/capability.py).
 
 - **`STANDARD_CAPABILITIES`** = `{shell, files, code, terminal, ports}` — all recognised tokens
 - **`DEFAULT_CAPABILITIES`** = `{shell, files, code}` — applied when a template declares nothing
@@ -188,13 +180,13 @@ Defined in [`models/template.py`](client-sdk/src/easy_sandbox/models/template.py
 ### Capability Resolution Priority
 
 1. Explicit `local_yaml_path` (programmatic override)
-2. Local template cache scan (`~/.ebx/templates/`)
+2. Local template cache scan (`~/.abx/templates/`)
 3. *(Phase 2, TODO)* Online fallback — `GET /templates/{id}`
 4. Fall back to `DEFAULT_CAPABILITIES` + warning
 
 ### Template Definition
 
-Templates use `template.yaml` (not `manifest.yaml` for capability purposes). Key fields: `name`, `capabilities`, `custom_commands`, `alias`/`aliases`.
+Templates use `template.yaml` (not `manifest.yaml` for capability purposes). Key fields: `name`, `capabilities`, `server`, `alias`/`aliases`. The client rejects `custom_commands`; named commands are registered in the sandbox server (`@sandbox.register`) and called with `sandbox.run(name, **kwargs)`.
 
 ---
 

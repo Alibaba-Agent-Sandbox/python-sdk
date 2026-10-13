@@ -7,7 +7,7 @@ officially verified fine-grained PAT prefill URL used by both clients
 
 from __future__ import annotations
 
-from easy_sandbox.utils.github_token import (
+from agent_sandbox.utils.github_token import (
     FINE_GRAINED_PAT_URL,
     GITHUB_TOKEN_CONFIG_KEY,
     GITHUB_TOKEN_ENV_VAR,
@@ -51,8 +51,8 @@ class TestRateLimitMessage:
 class TestRateLimitSuggestion:
     def test_recommends_config_set_over_token_flag(self) -> None:
         suggestion = rate_limit_suggestion()
-        assert "ebx config set github_token" in suggestion
-        assert "~/.ebx/.env" in suggestion
+        assert "abx config set github_token" in suggestion
+        assert "~/.abx/.env" in suggestion
 
     def test_token_flag_documented_as_leak_prone(self) -> None:
         suggestion = rate_limit_suggestion()

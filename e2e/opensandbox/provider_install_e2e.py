@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Install-flow E2E for the ``opensandbox`` plugin using the Python installer CLI.
 
-Exercises ``python -m easy_sandbox.providers`` (the same code path as ``ebx provider ...``) with a
+Exercises ``python -m agent_sandbox.providers`` (the same code path as ``abx provider ...``) with a
 throwaway ``HOME`` and a throwaway local bare git repository (``file://`` URL, pinned commit):
 
 1.  install from a local path; receipt tree digest equals a fresh digest of the installed tree
@@ -15,14 +15,17 @@ throwaway ``HOME`` and a throwaway local bare git repository (``file://`` URL, p
     rollback when the new version fails its handshake
 7.  uninstall (``--purge``), ``--link`` development install
 
-If an OpenSandbox server is reachable (``EBX_OPENSANDBOX_BASE_URL``, default
+If an OpenSandbox server is reachable (``ABX_OPENSANDBOX_BASE_URL``, default
 ``http://127.0.0.1:8080``) the git-installed plugin also creates and kills a real sandbox.
 
 Usage::
 
     python3 provider_install_e2e.py [--keep]
 
-Needs ``git`` and Node >= 20; ``easy_sandbox`` is taken from the sibling ``client-sdk/src``.
+Needs ``git`` and Node >= 20; ``agent_sandbox`` is taken from the sibling ``client-sdk/src``.
+The plugin source is cloned from https://github.com/alibaba-agent-sandbox/awesome-providers
+(``opensandbox/``), or taken from ``ABX_OPENSANDBOX_PLUGIN`` / ``ABX_AWESOME_PROVIDERS``.
+This script does not keep a copy of the plugin.
 """
 
 from __future__ import annotations
@@ -38,12 +41,14 @@ import tempfile
 import urllib.request
 from pathlib import Path
 
+from plugin_checkout import resolve_plugin
+
 ROOT = Path(__file__).resolve().parents[2]
-PLUGIN = ROOT / "examples" / "providers" / "opensandbox"
+PLUGIN: Path  # set in main() from the awesome-providers catalog
 sys.path[:0] = [str(ROOT / "client-sdk" / "src"), str(ROOT / "server-sdk" / "src")]
 
 BASE_URL = (
-    (os.environ.get("EBX_OPENSANDBOX_BASE_URL") or "http://127.0.0.1:8080")
+    (os.environ.get("ABX_OPENSANDBOX_BASE_URL") or "http://127.0.0.1:8080")
     .rstrip("/")
     .removesuffix("/v1")
 )
@@ -73,17 +78,17 @@ class Env:
             PYTHONDONTWRITEBYTECODE="1",
         )
         for name in list(self.env):
-            if name.startswith(("EBX_OPENSANDBOX_", "OPENSANDBOX_")):
+            if name.startswith(("ABX_OPENSANDBOX_", "OPENSANDBOX_")):
                 del self.env[name]
-        self.env["EBX_OPENSANDBOX_BASE_URL"] = BASE_URL
+        self.env["ABX_OPENSANDBOX_BASE_URL"] = BASE_URL
 
     @property
     def provider_dir(self) -> Path:
-        return self.home / ".ebx" / "providers" / "opensandbox"
+        return self.home / ".abx" / "providers" / "opensandbox"
 
     def cli(self, *args: str, stdin: str | None = None) -> tuple[int, dict | list | None, str]:
         p = subprocess.run(
-            [sys.executable, "-m", "easy_sandbox.providers", "--json", *args],
+            [sys.executable, "-m", "agent_sandbox.providers", "--json", *args],
             env=self.env,
             cwd=str(self.home),
             text=True,
@@ -101,7 +106,7 @@ class Env:
     def update(
         self, *args: str, ref: str | None = None, check: bool = False, yes: bool = False
     ) -> tuple[int, list | None, str]:
-        """``python -m easy_sandbox.providers update`` with ``--allow-insecure-transport`` (file:// repos)."""
+        """``python -m agent_sandbox.providers update`` with ``--allow-insecure-transport`` (file:// repos)."""
         argv = ["update", "opensandbox", "--allow-insecure-transport", *args]
         if ref:
             argv += ["--ref", ref]
@@ -113,11 +118,11 @@ class Env:
         return rc, data if isinstance(data, list) else None, err
 
     def receipt(self) -> dict:
-        return json.loads((self.provider_dir / ".ebx-install.json").read_text(encoding="utf-8"))
+        return json.loads((self.provider_dir / ".abx-install.json").read_text(encoding="utf-8"))
 
 
 def digest(path: Path) -> str:
-    from easy_sandbox.providers import store
+    from agent_sandbox.providers import store
 
     return store.digest_dir(path)
 
@@ -147,7 +152,7 @@ def server_healthy() -> bool:
 
 def sdk_roundtrip(env: Env) -> str:
     code = (
-        "import asyncio\nfrom easy_sandbox.api.sandbox import Sandbox\n"
+        "import asyncio\nfrom agent_sandbox.api.sandbox import Sandbox\n"
         "async def m():\n"
         "    sb = await Sandbox.create(provider='opensandbox', timeout=120)\n"
         "    try:\n        print('OK', (await sb.commands.run('echo installed')).stdout.strip())\n"
@@ -156,7 +161,7 @@ def sdk_roundtrip(env: Env) -> str:
     )
     api_key = (
         os.environ.get("OPEN_SANDBOX_API_KEY")
-        or os.environ.get("EBX_OPENSANDBOX_API_KEY")
+        or os.environ.get("ABX_OPENSANDBOX_API_KEY")
         or os.environ.get("OPENSANDBOX_API_KEY")
     )
     e = dict(env.env)
@@ -186,7 +191,14 @@ def main() -> int:
         print("git and node are required", file=sys.stderr)
         return 2
 
-    tmp = Path(tempfile.mkdtemp(prefix="ebx-osb-install-"))
+    global PLUGIN
+    try:
+        PLUGIN = resolve_plugin()
+    except SystemExit as exc:
+        print(exc, file=sys.stderr)
+        return 2
+
+    tmp = Path(tempfile.mkdtemp(prefix="abx-osb-install-"))
     try:
         run_all(tmp)
     finally:
@@ -308,7 +320,7 @@ def run_all(tmp: Path) -> None:
         err,
     )
 
-    manifest = work / "ebx-provider.toml"
+    manifest = work / "abx-provider.toml"
     manifest.write_text(
         re.sub(
             r'(?m)^(version\s*=\s*)"0\.1\.0"', r'\g<1>"0.1.1"', manifest.read_text(encoding="utf-8")
@@ -411,7 +423,7 @@ def run_all(tmp: Path) -> None:
 
 def digest_source(plugin: Path, tmp: Path) -> str:
     """Digest of the plugin as the installer sees it (no VCS/node_modules noise)."""
-    from easy_sandbox.providers import store
+    from agent_sandbox.providers import store
 
     entries = store.collect_local_dir(plugin)
     return store.digest_files(entries)

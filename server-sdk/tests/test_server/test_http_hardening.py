@@ -82,13 +82,14 @@ class TestPolicyModeFraming:
         assert status == 400
         assert "duplicate" in json.dumps(body).lower()
 
-    def test_duplicate_query_param_tolerated_when_unconfigured(
+    def test_duplicate_query_param_rejected_without_a_policy(
         self, live_server: Any, sandbox_tree: Any
     ) -> None:
         live: Live = live_server()
         target = sandbox_tree / "out" / "a.txt"
-        status, _ = live.get(f"/files/stat?path={target}&path={target}")
-        assert status == 200
+        status, body = live.get(f"/files/stat?path={target}&path={target}")
+        assert status == 400
+        assert "duplicate" in json.dumps(body).lower()
 
 
 class TestMethodOverride:

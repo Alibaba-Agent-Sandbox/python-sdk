@@ -1,18 +1,18 @@
 # Architecture Overview
 
-This document provides a brief overview of the Easy Sandbox architecture to help you understand the relationships between the SDK, CLI, and Server.
+This document provides a brief overview of the Agent Sandbox architecture to help you understand the relationships between the SDK, CLI, and Server.
 
 ---
 
 ## Three-Layer Architecture
 
-Easy Sandbox consists of three core layers:
+Agent Sandbox consists of three core layers:
 
 ```mermaid
 graph TB
     User["User Code / AI IDE"]
     SDK["SDK API (Python)"]
-    CLI["CLI (ebx, Node.js — cli repository)"]
+    CLI["CLI (abx, Node.js — cli repository)"]
     Decl["@sandbox Decorator (declarative)"]
     Transport["Transport Layer (HTTP/WS)"]
     Platform["Platform API (Control Plane)"]
@@ -35,18 +35,18 @@ graph TB
 
 - **Sandbox class**: Core entry point for managing sandbox lifecycle
 - **Submodules**: `commands` (shell commands), `files` (filesystem), `network` (networking), `code` (code interpreter)
-- **Image builder**: Chaining API for building Docker images
+- **Named commands**: `sandbox.run(name, **kwargs)` calls a command registered in the sandbox server
 - **Declarative decorator**: `@sandbox` for remote function execution
 
 ### CLI Layer
 
-The `ebx` CLI (command groups, shortcuts, internals) is a separate Node.js/TypeScript project; see [CLI Architecture](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/design/architecture.md) in the `cli` repository.
+The `abx` CLI (command groups, shortcuts, internals) is a separate Node.js/TypeScript project; see [CLI Architecture](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/architecture.md) in the `cli` repository.
 
 ### Server Layer (Inside Sandbox)
 
 - **HTTP Server**: Runs inside the sandbox on port 9000
 - **Capability groups**: 8 capability groups controlling endpoint access
-- **Custom commands**: Registered via `@sandbox.register` and exposed through HTTP routes
+- **Registered commands**: Registered via `@sandbox.register` and exposed through HTTP routes
 
 ---
 
@@ -56,7 +56,7 @@ The `ebx` CLI (command groups, shortcuts, internals) is a separate Node.js/TypeS
 
 The client communicates with the Platform API over HTTPS for:
 - Creating/listing/destroying sandboxes
-- Template management (build/query)
+- Template query (templates are built and deployed with `abx template build|deploy`)
 - Authentication (API Key / AK/SK token exchange)
 
 URL format: `https://api.{region}.e2b.fc.aliyuncs.com`
@@ -91,20 +91,21 @@ sequenceDiagram
 
 ## Server-Side Capability Groups
 
-The 42 endpoints in the sandbox Server are divided into 8 capability groups:
+The sandbox Server declares 118 endpoints in one table (`agent_sandbox.server.endpoints.ENDPOINTS`). A capability group is a name for the endpoints that declare it:
 
-| Capability Group | Default State | Description |
-|------------------|---------------|-------------|
-| CORE | Always enabled | Basic endpoints (health check, etc.) |
-| COMMANDS | Enabled | Custom command routing |
-| FILE_OPS | Enabled | File CRUD operations |
-| PROCESS | Enabled | Process management |
-| TERMINAL | **Enabled** | PTY terminal |
-| SYSTEM | Enabled | System information queries |
-| DEV_TOOLS | **Disabled** | Developer tools |
-| BROWSER | **Disabled** | Browser automation |
+| Capability Group | Endpoints | Default State | Description |
+|------------------|-----------|---------------|-------------|
+| CORE | 3 | Always enabled | Health check and discovery (`/health`, `/capabilities`, `/capabilities/check`) |
+| COMMANDS | 2 | Enabled | Registered command routing |
+| FILE_OPS | 12 | Enabled | File CRUD operations and transfer |
+| PROCESS | 8 | Enabled | Shell and process management |
+| TERMINAL | 6 | Enabled | PTY terminal |
+| SYSTEM | 6 | Enabled | System information queries |
+| DEV_TOOLS | 3 | **Disabled** | Code run, git status and diff |
+| BROWSER | 8 | **Disabled** | Browser automation |
+| AGENTS | 70 | **Disabled** | Agents API (`/v1/agents/*`, `/v1/vaults`, `/v1/responses`, ...) |
 
-Disabled groups are controlled via the `EBX_SERVER_DISABLED_GROUPS` environment variable, which defaults to `DEV_TOOLS,BROWSER`.
+The endpoint rule is the only switch. A group is turned on or off by the template policy (`server.groups`, a list or a map), by `enable_group()` in `commands.py`, or on with `ABX_SERVER_ENABLED_GROUPS` (it only turns groups on). See [Server API](../design/server-api.md#2-capability-groups).
 
 ---
 
@@ -119,7 +120,7 @@ graph TB
     Decl["declarative/ — Declarative Remote Execution"]
     AgentMod["agent/ — AI Agent Integration"]
     Sess["session/ — Session Management"]
-    Compat["compat/ — E2B Compatibility Layer"]
+    Compat["compat/ — E2B migration helper"]
 
     AgentMod --> API
     Decl --> API
@@ -130,12 +131,12 @@ graph TB
 
 Files contained in each module:
 
-- **api/**: sandbox.py, files.py, commands.py, network.py, code.py, image.py
+- **api/**: sandbox.py, files.py, commands.py, network.py, code.py, server_client.py
 - **protocol/**: sandbox.py, process.py, filesystem.py, code_interpreter.py, terminal.py
 - **transport/**: http.py, auth.py, config.py, streaming.py
 - **models/**: sandbox.py, process.py, errors.py, template.py, session.py, filesystem.py
 - **declarative/**: decorator.py, serializer.py, config.py
-- **agent/**: mcp.py, tools.py, infer.py
+- **agent/**: mcp.py, tools.py
 - **session/**: local.py, base.py
 - **compat/**: sandbox.py
 
@@ -144,5 +145,5 @@ Files contained in each module:
 ## Next Steps
 
 - [Sandbox Lifecycle](sandbox-lifecycle.md) — State transitions and timeout mechanisms
-- [E2B Compatibility](e2b-compatibility.md) — Design decisions
+- [E2B Compatibility](e2b-compatibility.md) — What is and is not shared with E2B
 - [API Reference](../reference/api-reference.md) — Complete API documentation

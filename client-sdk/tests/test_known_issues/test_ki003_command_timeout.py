@@ -5,9 +5,9 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from easy_sandbox.api.commands import CommandsModule
-from easy_sandbox.models.errors import CommandTimeoutError, ConnectionError_, ExecutionError
-from easy_sandbox.protocol.process import ProcessProtocol
+from agent_sandbox.api.commands import CommandsModule
+from agent_sandbox.models.errors import CommandTimeoutError, ConnectionError_, ExecutionError
+from agent_sandbox.protocol.process import ProcessProtocol
 from tests.test_known_issues.helpers import (
     ENVD,
     body_of,

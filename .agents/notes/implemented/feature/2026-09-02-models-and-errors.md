@@ -35,13 +35,13 @@ class SessionError(SandboxError): ...          # E6xxx
 ```
 
 ## Implementation
-- **Error hierarchy**: `src/easy_sandbox/models/errors.py`
-- **Sandbox model**: `src/easy_sandbox/models/sandbox.py`
-- **Filesystem model**: `src/easy_sandbox/models/filesystem.py`
-- **Process model**: `src/easy_sandbox/models/process.py`
-- **Template model**: `src/easy_sandbox/models/template.py`
-- **Config model**: `src/easy_sandbox/models/config.py`
-- **Session model**: `src/easy_sandbox/models/session.py`
+- **Error hierarchy**: `src/agent_sandbox/models/errors.py`
+- **Sandbox model**: `src/agent_sandbox/models/sandbox.py`
+- **Filesystem model**: `src/agent_sandbox/models/filesystem.py`
+- **Process model**: `src/agent_sandbox/models/process.py`
+- **Template model**: `src/agent_sandbox/models/template.py`
+- **Config model**: `src/agent_sandbox/models/config.py`
+- **Session model**: `src/agent_sandbox/models/session.py`
 - **Tests**: `tests/test_models/`
 
 ## Alternatives considered

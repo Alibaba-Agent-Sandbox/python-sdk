@@ -1,4 +1,4 @@
-"""Tests for easy_sandbox.server.registry — stdlib-only command registry.
+"""Tests for agent_sandbox.server.registry — stdlib-only command registry.
 
 Covers registration, decorator syntax, freezing, lookup helpers, dunder
 methods, and :class:`CommandArg` type validation.
@@ -6,9 +6,11 @@ methods, and :class:`CommandArg` type validation.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
-from easy_sandbox.server.registry import (
+from agent_sandbox.server.registry import (
     CommandArg,
     CommandRegistry,
     RegisteredCommand,
@@ -316,3 +318,43 @@ class TestDefaultRegistry:
 
     def test_default_registry_is_registry_instance(self) -> None:
         assert isinstance(default_registry(), CommandRegistry)
+
+
+class TestModuleLevelDecorator:
+    """``agent_sandbox.server.command`` is the one way templates register named commands."""
+
+    def test_decorator_registers_on_the_default_registry_and_is_served(
+        self, live_server: Any
+    ) -> None:
+        from agent_sandbox.server import command
+
+        registry = default_registry()
+
+        @command("zz_double", description="Double a number")
+        def zz_double(n: int, label: str = "x") -> str:
+            return f"{label}{n * 2}"
+
+        @command(hidden=True)
+        def zz_secret() -> str:
+            return "ok"
+
+        try:
+            assert zz_double(2) == "x4"
+            live = live_server(registry=registry)
+            status, body = live.get("/commands")
+            assert status == 200
+            listed = {c["name"]: c for c in body["commands"]}
+            assert "zz_secret" not in listed
+            assert listed["zz_double"]["description"] == "Double a number"
+            assert [(a["name"], a["type"], a["required"]) for a in listed["zz_double"]["args"]] == [
+                ("n", "integer", True),
+                ("label", "string", False),
+            ]
+            status, body = live.post("/commands/zz_double", {"n": "21", "label": "v"})
+            assert (status, body) == (200, {"result": "v42"})
+            assert live.post("/commands/zz_secret", {})[1] == {"result": "ok"}
+            status, body = live.post("/commands/nope", {})
+            assert status == 404
+        finally:
+            registry._commands.pop("zz_double", None)
+            registry._commands.pop("zz_secret", None)

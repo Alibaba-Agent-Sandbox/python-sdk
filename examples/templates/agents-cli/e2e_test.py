@@ -69,8 +69,8 @@ def turn(adapter: str, needle: str) -> None:
         },
     )
     expect(f"POST session {adapter}", status, 200, created)
-    if headers.get("x-easy-sandbox-local") != "1":
-        print("missing X-Easy-Sandbox-Local")
+    if headers.get("x-agent-sandbox-local") != "1":
+        print("missing X-Agent-Sandbox-Local")
         raise SystemExit(1)
     if not isinstance(created, dict) or "id" not in created:
         print(created)

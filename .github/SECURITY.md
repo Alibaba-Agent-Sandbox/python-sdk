@@ -9,7 +9,7 @@
 
 ## Reporting a Vulnerability
 
-Easy Sandbox is an open-source project. **Please do NOT report security
+Agent Sandbox is an open-source project. **Please do NOT report security
 vulnerabilities through public GitHub issues.**
 
 Instead, report them privately by email:
@@ -18,10 +18,10 @@ Instead, report them privately by email:
 
 Alternatively, report privately through GitHub Security Advisories:
 
-🔒 https://github.com/Easy-Sandbox/python-sdk/security/advisories/new
+🔒 https://github.com/alibaba-agent-sandbox/python-sdk/security/advisories/new
 
-This applies to all security issues in the Easy Sandbox Python packages
-(`easy-sandbox` and `easy-sandbox-server`), the `ebx` CLI (maintained in the
+This applies to all security issues in the Agent Sandbox Python packages
+(`agent-sandbox` and `agent-sandbox-server`), the `abx` CLI (maintained in the
 `cli` repository, which follows the same private reporting process), and the
 project's code.
 
@@ -54,15 +54,15 @@ When reporting a vulnerability, please include:
 
 ## Security Best Practices for Users
 
-- Keep `easy-sandbox` and `easy-sandbox-server` updated to the latest version (they are released in lockstep)
+- Keep `agent-sandbox` and `agent-sandbox-server` updated to the latest version (they are released in lockstep)
 - Never commit API keys, tokens, or credentials to your repository
 - Use environment variables or the SDK's keychain for authentication
 - Review sandbox templates before deploying to production
 
 ## Scope
 
-This security policy covers the Easy Sandbox project code: the `easy-sandbox`
-and `easy-sandbox-server` Python packages, and the `ebx` CLI (in the `cli`
+This security policy covers the Agent Sandbox project code: the `agent-sandbox`
+and `agent-sandbox-server` Python packages, and the `abx` CLI (in the `cli`
 repository).
 
-Thank you for helping keep Easy Sandbox and its users safe! 🔒
+Thank you for helping keep Agent Sandbox and its users safe! 🔒

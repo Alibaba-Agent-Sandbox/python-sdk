@@ -1,8 +1,8 @@
 # 模板体系设计
 
-> **说明：** 本页出现的 `ebx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @easy-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`easy-sandbox`）与容器侧运行时（`easy-sandbox-server`）。
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox`）与容器侧运行时（`agent-sandbox-server`）。
 
-> 模板（Template）是 Easy Sandbox 的运行环境蓝图，定义了沙箱的基础镜像、预装软件、默认配置和启动行为。模板体系分为官方核心模板、社区模板和自定义模板三个层次。模板的核心分发机制基于 **GitHub tarball API（按 tag/branch/sha 拉取，无需发布 Release）**，采用类似 Go modules / GitHub Actions 的引用方式。
+> 模板（Template）是 Agent Sandbox 的运行环境蓝图，定义了沙箱的基础镜像、预装软件、默认配置和启动行为。模板体系分为官方核心模板、社区模板和自定义模板三个层次。模板的核心分发机制基于 **GitHub tarball API（按 tag/branch/sha 拉取，无需发布 Release）**，采用类似 Go modules / GitHub Actions 的引用方式。
 
 ---
 
@@ -177,9 +177,9 @@ GPU:      默认 A10（可配置 V100/A100）
 
 ```bash
 # CLI 使用
-ebx create hello/world                    # → github.com/hello/world 默认分支
-# ebx create hello/world --tag v1.2.0       # → 指定 ref（tag/branch/sha）
-ebx create myorg/python-ml --tag latest   # → 显式指定 latest
+abx create hello/world                    # → github.com/hello/world 默认分支
+# abx create hello/world --tag v1.2.0       # → 指定 ref（tag/branch/sha）
+abx create myorg/python-ml --tag latest   # → 显式指定 latest
 ```
 
 ```python
@@ -219,7 +219,7 @@ GitHub 会自动把 `ref` 解析为 tag/branch/sha，无需区分。公开仓库
 my-template/
 ├── template.yaml     # 模板规范配置（必须，详见第 4 章）
 ├── Dockerfile            # 镜像定义（可选，template.yaml 中可指定 base）
-├── AGENTS.md             # 面向外部 Agent 工具的说明文件（可选；由所使用的 Agent 工具自行消费，不属于 Easy Sandbox 能力）
+├── AGENTS.md             # 面向外部 Agent 工具的说明文件（可选；由所使用的 Agent 工具自行消费，不属于 Agent Sandbox 能力）
 ├── scripts/
 │   ├── setup.sh          # 初始化脚本（可选）
 │   └── healthcheck.sh    # 健康检查（可选）
@@ -233,18 +233,18 @@ my-template/
 
 ```bash
 # 官方模板可以用简写
-ebx create python-data-science     # 内置 Tier 1
-ebx create alicloud/sandbox-templates/browser-automation  # 官方 Tier 2
+abx create python-data-science     # 内置 Tier 1
+abx create alicloud/sandbox-templates/browser-automation  # 官方 Tier 2
 
 # 或者直接用简写别名
-ebx create browser-automation      # 自动解析为官方模板
+abx create browser-automation      # 自动解析为官方模板
 ```
 
 ### 2.6 GitHub Token 配置（私有仓库与限流）
 
-GitHub 匿名请求限流为 **60 次/小时**；携带 token 认证后提升至 **5000 次/小时**。token 依次从进程环境变量 `GITHUB_TOKEN`、`./.env`、`~/.ebx/.env` 中持久化的 `github_token` 读取；都没有时按匿名请求处理。token 不会被打印、记录日志或回显。
+GitHub 匿名请求限流为 **60 次/小时**；携带 token 认证后提升至 **5000 次/小时**。token 依次从进程环境变量 `GITHUB_TOKEN`、`./.env`、`~/.abx/.env` 中持久化的 `github_token` 读取；都没有时按匿名请求处理。token 不会被打印、记录日志或回显。
 
-通过命令行保存 token（`ebx config set github_token`，星号脱敏输入，`--token` 作为一次性覆盖）、`ebx template search` / `ebx template install` 遇到匿名限流（E5000）时提供的引导式重试，以及 CLI 的 `--token` 解析优先级，都属于 CLI 行为；见[相关：ebx CLI](#相关ebx-cli)。
+通过命令行保存 token（`abx config set github_token`，星号脱敏输入，`--token` 作为一次性覆盖）、`abx template search` / `abx template install` 遇到匿名限流（E5000）时提供的引导式重试，以及 CLI 的 `--token` 解析优先级，都属于 CLI 行为；见[相关：abx CLI](#相关abx-cli)。
 
 ### 2.7 本地缓存管理
 
@@ -268,40 +268,13 @@ GitHub 匿名请求限流为 **60 次/小时**；携带 token 认证后提升至
             └── ...
 ```
 
-列出和清理该缓存的 CLI 命令（`ebx template cache list|clean`、`ebx create --no-cache`）记录在 CLI 仓库；见[相关：ebx CLI](#相关ebx-cli)。
+列出和清理该缓存的 CLI 命令（`abx template cache list|clean`、`abx create --no-cache`）记录在 CLI 仓库；见[相关：abx CLI](#相关abx-cli)。
 
 ---
 
 ## 3. 自定义模板方式
 
-### 方式一：SDK 编程式
-
-```python
-from easy_sandbox import Image
-
-# 链式构建
-image = (
-    Image.from_template("python-base")
-    .pip_install("flask", "sqlalchemy", "celery")
-    .apt_install("postgresql-client", "redis-tools")
-    .copy_local("./config/", "/app/config/")
-    .env(
-        FLASK_ENV="production",
-        DATABASE_URL="postgresql://localhost/mydb",
-    )
-    .expose(5000, 6379)
-    .entrypoint("python /app/main.py")
-)
-
-# 构建并推送为模板
-template_id = await image.build_and_push(
-    name="my-flask-app",
-    tag="v1.0",
-    description="Flask + PostgreSQL + Celery 应用模板",
-)
-```
-
-### 方式二：CLI + Dockerfile
+### 方式一：CLI + Dockerfile
 
 ```dockerfile
 # Dockerfile
@@ -323,13 +296,13 @@ CMD ["python", "main.py"]
 
 ```bash
 # 构建
-ebx template build . --name my-flask-app --tag v1.0
+abx template build . --name my-flask-app --tag v1.0
 
 # 推送
-ebx template push my-flask-app:v1.0
+abx template push my-flask-app:v1.0
 ```
 
-### 方式三：sandbox.yaml 声明式
+### 方式二：sandbox.yaml 声明式
 
 ```yaml
 # sandbox.yaml
@@ -369,16 +342,16 @@ entrypoint: python /app/main.py
 workdir: /app
 ```
 
-### 方式四：发布到 GitHub（按 tag/branch/sha 拉取）
+### 方式三：发布到 GitHub（按 tag/branch/sha 拉取）
 
 将模板推送到 GitHub，供其他用户通过 `owner/repo[//subdir][@ref]` 格式引用（无需发布 Release）：
 
 ```bash
 # 1. 初始化模板项目（生成 template.yaml, Dockerfile 等脚手架）
-ebx template init my-template
+abx template init my-template
 
 # 2. 本地开发和测试
-ebx create ./my-template
+abx create ./my-template
 
 # 3. 发布到 GitHub（推 git tag / 分支即可，无需发 Release）
 cd my-template
@@ -386,8 +359,8 @@ git init && git add . && git commit -m "init"
 git tag v1.0.0 && git push origin v1.0.0
 
 # 4. 其他人即可使用（默认分支或指定 ref）
-ebx create yourname/my-template
-ebx create yourname/my-template@v1.0.0
+abx create yourname/my-template
+abx create yourname/my-template@v1.0.0
 ```
 
 ---
@@ -479,21 +452,9 @@ capabilities:
   - code
   - ports                             # 显式加入默认基线之外的能力
 
-# === 自定义命令（custom_commands）===
-# 模板可声明命名命令，供 `ebx run <id> <name> --arg k=v` 与 SDK `sandbox.custom("name", **kwargs)` 调用。
-# 用户传入的参数经 shlex.quote() 转义后填充 {占位符}，防注入。
-custom_commands:
-  serve:
-    cmd: "python -m http.server {port}"  # 命令模板，{占位符} 来自 args[].name
-    description: "启动静态文件服务"        # 命令说明（面向用户/Agent）
-    cwd: "/app"                          # 工作目录（默认 /app）
-    env: {}                              # 附加环境变量（默认空）
-    timeout: 60                          # 超时秒数（默认 60）
-    args:
-      - name: port
-        default: "8000"                  # 默认值
-        required: false                  # 是否必填（缺省 false）
-        description: "监听端口"
+# 命名命令不是 template.yaml 的键（客户端会拒绝 `custom_commands`）。
+# 在模板的 server 里注册（`commands.py`、`@sandbox.register`），
+# 用 `abx run <id> <name> --arg k=v` 或 `sandbox.run(\"name\", **kwargs)` 调用。
 
 # === Agent 提示 ===
 agent:
@@ -554,12 +515,6 @@ healthcheck:
 | | `startup_command` | | 启动时自动执行的命令 |
 | | `readiness_probe` | | 就绪探针配置（`type` + `port`/`command` + `timeout`） |
 | **capabilities** | （列表） | | 模板支持的标准能力集，词汇表：`shell` / `files` / `code` / `terminal` / `ports`（可扩展）。省略时继承默认基线 `{shell, files, code}`；`terminal`/`ports` 需显式声明 |
-| **custom_commands** | `<name>.cmd` | | 命令模板字符串，支持 `{占位符}`（必须） |
-| | `<name>.description` | | 命令说明 |
-| | `<name>.cwd` | | 工作目录（默认 `/app`） |
-| | `<name>.env` | | 附加环境变量（默认空） |
-| | `<name>.timeout` | | 超时秒数（默认 60） |
-| | `<name>.args` | | 参数列表，每项 `{name, default, required, description}` |
 | **agent** | `description` | | 面向 AI Agent 的场景描述 |
 | | `triggers` | | 触发关键词列表，用于自然语言模板匹配 |
 | | `instructions` | | Agent 使用指南，描述如何在此沙箱中工作 |
@@ -577,7 +532,7 @@ healthcheck:
 3. **`resources` 默认值语义**：模板声明的是推荐默认值，用户创建沙箱时可通过 SDK 参数或 CLI 选项覆盖
 4. **`readiness_probe`**：支持 `tcp`（端口探测）和 `exec`（命令执行）两种就绪检测方式，确保沙箱真正可用后才返回
 5. **`capabilities` 能力模型**：命令能力由模板声明，不再假设所有沙箱都具备 shell/upload/download。标准能力词汇表为 `shell` / `files` / `code` / `terminal` / `ports`（可扩展）。系统默认基线为单一常量 `DEFAULT_CAPABILITIES = {shell, files, code}`；模板可显式声明子集或加入 `terminal`/`ports`，省略 `capabilities` 时继承默认基线。**仅 `code` 能力在运行时强制执行（fail-closed）**：`CodeContextModule` 方法在 `code` 不在有效能力集时抛出 `CapabilityNotSupportedError`（E3004）。其他模块（`commands`、`files`、`network`）直接转发请求，无运行时门控——能力对这些模块仅用于发现和文档。详见 ADR `2026-09-03-capability-model.md`
-6. **`custom_commands` 自定义命令**：模板可声明命名命令，用户参数经 `shlex.quote()` 转义后填充 `{占位符}` 防注入；通过 CLI `ebx run` 与 SDK `sandbox.custom("name", **kwargs)` 分发。详见 ADR `2026-09-03-custom-commands-schema.md`
+6. **命名命令**：不在 `template.yaml` 中声明。它们是注册在模板 server 里的函数，通过 `abx run` 或 `sandbox.run("name", **kwargs)` 调用。
 
 ### 示例：基于 GitHub 模板的扩展
 
@@ -660,7 +615,7 @@ sb = await Sandbox.create(template="hello/world@v1.2.0")        # GitHub ref（t
 ### 版本列表
 
 ```bash
-$ ebx template info python-data-science
+$ abx template info python-data-science
 
 Template: python-data-science
 Description: 数据科学全套环境
@@ -690,7 +645,7 @@ graph TD
 
 ### CLI 命令总览
 
-市场与缓存命令（`ebx create`、`ebx template build|push|init|info|list|search|pull|cache`、`ebx config set github_token`）是 CLI 的设计笔记，与 CLI 一同保存在[模板目录 — 设计笔记：模板命令面](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/design/templates-catalog.md)。
+市场与缓存命令（`abx create`、`abx template build|push|init|info|list|search|pull|cache`、`abx config set github_token`）是 CLI 的设计笔记，与 CLI 一同保存在[模板目录 — 设计笔记：模板命令面](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/templates-catalog.md)。
 
 ### 模板安全
 
@@ -711,6 +666,6 @@ Session 管理的完整设计（包括会话保持、状态恢复、多连接共
 
 ---
 
-## 相关：ebx CLI
+## 相关：abx CLI
 
-模板体系的命令行一侧记录在 CLI 仓库：[模板目录](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/design/templates-catalog.md)（awesome-templates 索引客户端、缓存与降级、模板命令面）、[CLI 命令体系](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/design/cli-design.md)（`ebx template ...`、`ebx create`、GitHub token 处理）与[模板使用](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/using-templates.md)。
+模板体系的命令行一侧记录在 CLI 仓库：[模板目录](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/templates-catalog.md)（awesome-templates 索引客户端、缓存与降级、模板命令面）、[CLI 命令体系](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/cli-design.md)（`abx template ...`、`abx create`、GitHub token 处理）与[模板使用](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/using-templates.md)。

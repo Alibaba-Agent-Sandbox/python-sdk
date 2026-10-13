@@ -33,7 +33,7 @@ After the `/`, `name` is purely positional. Callers can freely pass
 - **Accept `*args` and unpack** — loses type safety and IDE support. Rejected.
 
 ## Files changed
-- `src/easy_sandbox/api/sandbox.py` — `custom()` and `run_command()` signatures
+- `src/agent_sandbox/api/sandbox.py` — `custom()` and `run_command()` signatures
 
 ## Acceptance criteria
 - ✅ `sandbox.custom("hello", name="World")` works without TypeError

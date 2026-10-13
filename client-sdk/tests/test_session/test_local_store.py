@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from easy_sandbox.models.session import SessionInfo
-from easy_sandbox.session.local import LocalSessionStore
+from agent_sandbox.models.session import SessionInfo
+from agent_sandbox.session.local import LocalSessionStore
 
 if TYPE_CHECKING:
     from pathlib import Path

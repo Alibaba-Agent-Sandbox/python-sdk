@@ -1,10 +1,10 @@
 # 模板服务器 HTTP API
 
-生成的模板包含 `Dockerfile`、`commands.py` 和 `template.yaml`。沙箱启动后，调用方通过 HTTP 访问它。`commands.py` 是容器的主进程：它建立路由表、注册命令，并调用 `SandboxServer.serve(port=9000)`。
+生成的模板包含 `Dockerfile`、`commands.py` 和 `template.yaml`。沙箱启动后，调用方通过 HTTP 访问它。`commands.py` 是容器的主进程：它用 `@command` 注册命名命令，并调用 `start(9000)`（或 `SandboxServer(...).serve(port=9000)`）。
 
-Dockerfile 里的 `FROM` 镜像随模板而变。本 HTTP API 不变。凡是启动 `easy_sandbox.server` 的模板，都提供下面这些路由。服务器只用 Python 标准库（`ThreadingHTTPServer`）。它接受 `GET`、`POST` 和 `DELETE`。匹配前会去掉末尾斜杠（`/health/` 即 `/health`）。
+Dockerfile 里的 `FROM` 镜像随模板而变。本 HTTP API 不变。凡是启动 `agent_sandbox.server` 的模板，都提供下面这些路由。服务器只用 Python 标准库（`ThreadingHTTPServer`）。它接受 `GET`、`POST` 和 `DELETE`。匹配前会去掉末尾斜杠（`/health/` 即 `/health`）。
 
-已经在跑的服务器可以用 [`examples/templates/python-hello/call_api.py`](../../examples/templates/python-hello/call_api.py) 这种短客户端来调用。
+已经在跑的服务器可以用 [`examples/templates/python-hello/call_api.py`](../../../examples/templates/python-hello/call_api.py) 这种短客户端来调用。
 
 ---
 
@@ -18,7 +18,7 @@ url = sandbox.network.get_url(9000)
 host = sandbox.network.get_host(9000)
 ```
 
-`{domain}` 来自创建该沙箱的提供方。终端组开启时，对 `9001` 做同样的调用就是 PTY WebSocket 端口（`EBX_PTY_PORT`，默认 `9001`）。
+`{domain}` 来自创建该沙箱的提供方。终端组开启时，对 `9001` 做同样的调用就是 PTY WebSocket 端口（`ABX_PTY_PORT`，默认 `9001`）。
 
 如果你是在本机自己执行 `python3 commands.py`，基址就是 `http://127.0.0.1:9000`。
 
@@ -36,36 +36,39 @@ headers = sandbox.network.get_access_headers()  # 可能包含 X-Access-Token
 
 ## 认证
 
-`SandboxServer` 在启动时读取一次 `EBX_SERVER_TOKEN`。
+`SandboxServer` 在启动时读取一次 `ABX_SERVER_TOKEN`。
 
-- 未设置或为空：所有路由都接受请求。这是本地模式。
-- 已设置：以 `auth_required=True` 注册的路由（默认如此）要求头 `X-Access-Token` 与该变量一致，比较方式是 `hmac.compare_digest`。缺少或错误的令牌返回 `401`：
+- 未设置或为空：所有路由都接受请求，调用方身份是 `anonymous`。这是本地模式。
+- 已设置：以 `auth_required=True` 注册的路由（默认如此）要求在 `X-Access-Token` 或 `Authorization: Bearer <token>` 里带上令牌。所有路由两种头都接受，比较方式是 `hmac.compare_digest`。缺少或错误的令牌返回 `401`：
 
 ```json
 {"error": "unauthorized", "type": "AuthError"}
 ```
 
+同一请求里出现两个不同的 `X-Access-Token` 值是 `400` `ambiguous_credentials`。
+
 `GET /health` 是唯一以 `auth_required=False` 注册的内置路由。设置了令牌时它仍然开放。
 
-`GET /capabilities` 和 `POST /capabilities/check` 以 `auth_required=True` 注册。只有在 `EBX_SERVER_TOKEN` 未设置时，它们才不带头也能应答。设置了令牌时，请发送 `X-Access-Token`。
+`GET /capabilities` 和 `POST /capabilities/check` 以 `auth_required=True` 注册。只有在 `ABX_SERVER_TOKEN` 未设置时，它们才不带头也能应答。设置了令牌时，请带上凭据。
 
-`agents` 组的 `/v1/agents/...` 路由同时接受 `Authorization: Bearer <token>`。其余路由只读取 `X-Access-Token`。这些 `/v1/` 处理函数的错误使用 OpenAI 信封 `{"error": {"message", "type", "param", "code"}}`。
+`/v1/` Agents 处理函数的错误使用 OpenAI 信封 `{"error": {"message", "type", "param", "code"}}`。
 
-不要把令牌写进 `commands.py`。用环境变量传入。`POST /env` 拒绝覆盖 `EBX_SERVER_TOKEN`，以及任何大写形式以 `EBX_` 开头的名字。
+不要把令牌写进 `commands.py`。用环境变量传入。`POST /env` 拒绝覆盖 `ABX_SERVER_TOKEN`，以及任何大写形式以 `ABX_` 开头的名字。
 
-PTY WebSocket（端口 9001，路径 `/pty`）使用同一个变量。没有策略引擎时，它要求 `?token=` 等于 `EBX_SERVER_TOKEN`。有策略引擎时，它接受 `Authorization: Bearer`、`X-Access-Token` 或 `?token=`。
+PTY WebSocket（端口 9001，路径 `/pty`）检查同样的凭据。它接受 `Authorization: Bearer`、`X-Access-Token` 或 `?token=`，并要求 `pty_connect` 端点处于启用状态。
 
 ---
 
 ## 能力组
 
-每条路由属于一个组。被关闭的组返回 `404`：
+每条路由是一个端点，有一个 id，每个端点一条规则决定它是否应答。组只是一组端点 id 的名字，没有单独的组闸门。被关闭的端点返回 `404`，并指出是哪条规则关的：
 
 ```json
-{"error": "Built-in route '<name>' is disabled", "type": "ValueError"}
+{"error": "Endpoint 'code_run' is disabled: group 'dev_tools' is opt-in. Enable the group (ABX_SERVER_ENABLED_GROUPS=dev_tools, policy groups: [dev_tools]) or this endpoint (policy endpoints.code_run.enabled: true)",
+ "type": "ValueError", "code": "endpoint_disabled", "endpoint": "code_run", "rule": "default:opt-in:dev_tools"}
 ```
 
-`core` 始终开启。`RouteTable.disable_group(CapabilityGroup.CORE)` 会抛出 `ValueError`。其他组的初始状态来自 `_DEFAULT_DISABLED`：
+`core`（`health`、`capabilities`、`capabilities_check`）始终开启。`RouteTable.disable_group(CapabilityGroup.CORE)` 会抛出 `ValueError`。其他组的初始状态如下：
 
 | 组 | 默认 | 开启的路由 |
 |----|------|------------|
@@ -77,9 +80,17 @@ PTY WebSocket（端口 9001，路径 `/pty`）使用同一个变量。没有策�
 | `system` | 开启 | `/system/info`、`/system/metrics`、`/env`、`/ports`、`/packages` |
 | `dev_tools` | 关闭 | `POST /code/run`、`GET /git/status`、`GET /git/diff` |
 | `browser` | 关闭 | `/browser/*`（Playwright；未安装时返回 `503`） |
-| `agents` | 关闭 | `/v1/agents/...`、`/v1/vaults`、`/v1/responses`、`/v1/models`、`/v1/files` 和 `/v1/webhook_endpoints`，作为 Codex 与 Qwen Code 上的本地操作。`EBX_SERVER_ENABLED_GROUPS` 包含 `agents` 之前保持关闭 |
+| `agents` | 关闭 | `/v1/agents/...`、`/v1/vaults`、`/v1/responses`、`/v1/models`、`/v1/files` 和 `/v1/webhook_endpoints`。某一层把它打开之前保持关闭 |
 
-`commands.py` 用 `default_table().enable_group(CapabilityGroup.FILE_OPS)` 打开需要的组。`EBX_SERVER_DISABLED_GROUPS` 是逗号分隔的组名，在创建路由表时生效（`core` 会被忽略）。`EBX_SERVER_ENABLED_GROUPS` 在 `SandboxServer` 启动时生效，可以把默认关闭的组重新打开。
+切换方式，最后都落成同一份逐端点规则：
+
+| 位置 | 写法 |
+|---|---|
+| `commands.py` | `default_table().enable_group(CapabilityGroup.FILE_OPS)` / `disable_group(...)` |
+| `template.yaml` `server:` | `groups: [agents, dev_tools]` 或 `groups: {process: false}`；单个 id 用 `endpoints:` |
+| 环境变量 | `ABX_SERVER_ENABLED_GROUPS=agents,dev_tools`（逗号列表，只能打开组） |
+
+没有用来关闭组的环境变量。请在 `server:` 里写 `groups: {process: false}`，或写 `endpoints` 规则。层次、具体程度和 `rule` 的写法见[细粒度能力](fine-grained-capabilities.md)。
 
 `template.yaml` 的 `capabilities`（`shell`、`files`、`code`、`terminal`、`ports`）是模板元数据。它们不会切换这些路由。生成的模板按下面的方式对齐：`files` ↔ `file_ops`，`shell` ↔ `process`，`code` ↔ `dev_tools`，`terminal` ↔ `terminal`，`ports` ↔ `system`。
 
@@ -93,13 +104,13 @@ PTY WebSocket（端口 9001，路径 `/pty`）使用同一个变量。没有策�
 {"error": "<message>", "type": "<ExceptionName>"}
 ```
 
-未知路径是 `404` `{"error": "Not found: <path>", "type": "ValueError"}`。处理函数里未捕获的异常是 `500`，带 `error` 和 `type`。策略拒绝（仅在加载了 `ServerPolicy` 时）会额外带上 `code`，有时还有 `endpoint`。
+未知路径是 `404` `{"error": "Not found: <path>", "type": "ValueError"}`。处理函数里未捕获的异常是 `500`，带 `error` 和 `type`。策略拒绝会额外带上 `code`（`endpoint_disabled`、`missing_scope`、`path_not_allowed`、`command_not_allowed`、`rate_limited` 等）和 `endpoint`。被关闭的端点还带 `rule`。重复的查询参数是 `400` `duplicate_parameter`。
 
 `POST` 和 `DELETE` 读取 JSON 对象正文。原始正文上限是 10 MiB（`413`，`code` 为 `payload_too_large`）。空正文变成 `{}`。非法 JSON 是 `400`。
 
 流式路由（`streaming=True`）返回 `text/event-stream`。每个片段是 `event: <name>\ndata: <json>\n\n`。
 
-文件路由把路径解析到 `EBX_SERVER_BASE_DIR` 之下（默认 `/home/user`）。逃出该目录的路径是 `400` `Path escapes base directory`。解码后的上传大小默认 100 MiB（`EBX_MAX_UPLOAD_SIZE`）。10 MiB 的 JSON 正文上限先生效，因此 base64 正文实际上到不了 100 MiB。
+凡是接收路径的路由（文件路由，以及 `/shell` 和进程启动的 `cwd`）都限制在 `ABX_SERVER_BASE_DIR`（默认 `/home/user`）内，或限制在策略的 `base_dir`、端点的 `paths.allow` 内。越界的路径是 `403` `path_not_allowed`。解码后的上传大小默认 100 MiB（`ABX_MAX_UPLOAD_SIZE`）。10 MiB 的 JSON 正文上限先生效，因此 base64 正文实际上到不了 100 MiB。
 
 `POST /shell` 和进程启动用 `shlex.split` 拆分命令，并以 `shell=False` 执行。管道、重定向和 `$VAR` 不会被解释。需要 shell 时请使用 `bash -c '...'`。
 
@@ -119,13 +130,14 @@ PTY WebSocket（端口 9001，路径 `/pty`）使用同一个变量。没有策�
 
 #### `GET /capabilities`
 
-发现文档。没有加载策略时，`policy.configured` 为 `false`，`identity` 为 `{"id": "anonymous", "scopes": ["*"]}`。
+发现文档。没有加载策略且没有设置令牌时，`policy.configured` 为 `false`，`identity` 为 `{"id": "anonymous", "scopes": ["*"]}`。
 
 ```json
 {
   "api_version": 2,
   "server_version": "<package version>",
   "groups": {"core": true, "commands": true, "file_ops": true, "process": true, "terminal": true, "system": true, "dev_tools": false, "browser": false, "agents": false},
+  "group_summary": {"file_ops": {"enabled": 12, "total": 12}, "dev_tools": {"enabled": 0, "total": 3}},
   "identity": {"id": "anonymous", "scopes": ["*"]},
   "policy": {"preset": "default", "revision": "<16 hex chars>", "configured": false},
   "endpoints": {
@@ -133,10 +145,12 @@ PTY WebSocket（端口 9001，路径 `/pty`）使用同一个变量。没有策�
       "method": "GET",
       "path": "/health",
       "group": "core",
+      "summary": "Liveness probe (anonymous).",
       "streaming": false,
       "enabled": true,
       "allowed": true,
       "reason": null,
+      "rule": null,
       "scopes": [],
       "limits": {},
       "params": {}
@@ -146,7 +160,7 @@ PTY WebSocket（端口 9001，路径 `/pty`）使用同一个变量。没有策�
 }
 ```
 
-`groups` 是每一个 `CapabilityGroup` 取值及其是否启用。`endpoints` 以路由名为键，并且包含 `pty_connect`（`method` 为 `WS`，路径 `/pty`），那是 9001 端口上的 WebSocket，不是 9000 端口上的 HTTP 路由。调用方不被允许时，`reason` 为 `group_disabled`、`endpoint_disabled` 或 `missing_scope`，并且省略 `limits` / `params`。没有策略文件、也没有 `EBX_SERVER_POLICY` 时，`preset` 为 `default`，`revision` 是空策略的哈希，`configured` 为 `false`。加载了策略时 `configured` 为 `true`，`preset` / `revision` 来自该文档。
+`endpoints` 是逐端点的状态，以端点 id 为键，是事实来源。它还包含 `pty_connect`（`method` 为 `WS`，路径 `/pty`），那是 9001 端口上的 WebSocket，不是 9000 端口上的 HTTP 路由。`groups`（名字到布尔值：组里至少有一个端点开着就是 `true`）和 `group_summary`（`enabled` 与 `total` 端点数）由它推导。端点关闭或调用方无权使用时，`reason` 为 `endpoint_disabled` 或 `missing_scope`，`rule` 给出决定它的规则（`policy:endpoints.shell`、`default:opt-in:browser` 等），并且省略 `limits` / `params`。没有策略文件、也没有 `ABX_SERVER_POLICY` 时，`preset` 为 `default`，`revision` 是空策略的哈希，`configured` 为 `false`。加载了策略时 `configured` 为 `true`，`preset` / `revision` 来自该文档。
 
 #### `POST /capabilities/check`
 
@@ -165,13 +179,13 @@ PTY WebSocket（端口 9001，路径 `/pty`）使用同一个变量。没有策�
 {"endpoint": "upload", "allowed": true, "code": null, "reason": null}
 ```
 
-拒绝时 `allowed` 为 `false`，并填上 `code`（`unknown_endpoint`、`endpoint_disabled` 或路径策略码）。错误的正文是 `400`。
+拒绝时 `allowed` 为 `false`，并填上 `code`（`unknown_endpoint`、`endpoint_disabled`、`missing_scope` 或路径策略码）、可读的 `reason`，以及决定它的 `rule`（有的话）。错误的正文是 `400`。
 
 ### `commands`
 
 #### `GET /commands`
 
-来自传给 `SandboxServer` 的 `CommandRegistry` 的可见命令（隐藏命令不列出）。`200`：
+来自命令注册表的可见命令（隐藏命令不列出）。命令只用 `@command` 注册，见[命名命令](#命名命令)。`200`：
 
 ```json
 {
@@ -221,8 +235,9 @@ PTY WebSocket（端口 9001，路径 `/pty`）使用同一个变量。没有策�
 
 | 状态 | 条件 |
 |------|------|
-| `400` | 缺少 `path` 或 `content_base64`、base64 非法，或路径逃出基目录 |
-| `413` | 解码后大小超过 `EBX_MAX_UPLOAD_SIZE`（默认 104857600）。有策略时正文还带 `code: "payload_too_large"` 和 `limit` |
+| `400` | 缺少 `path` 或 `content_base64`，或 base64 非法 |
+| `403` | `path_not_allowed`：路径在允许的目录之外 |
+| `413` | 解码后大小超过 `ABX_MAX_UPLOAD_SIZE`（默认 104857600）。有策略时正文还带 `code: "payload_too_large"` 和 `limit` |
 | `500` | 写入失败 |
 
 会创建父目录。有策略时，`allow_extensions` / `deny_extensions` 可以拒绝后缀（`extension_not_allowed`），`overwrite: false` 在文件已存在时返回 `409`。
@@ -235,7 +250,7 @@ PTY WebSocket（端口 9001，路径 `/pty`）使用同一个变量。没有策�
 {"path": "<resolved>", "content_base64": "<standard base64>"}
 ```
 
-路径缺失或逃逸是 `400`，不是普通文件是 `404`，超过同一字节上限是 `413`，读失败是 `500`。
+路径缺失是 `400`，越界是 `403` `path_not_allowed`，不是普通文件是 `404`，超过同一字节上限是 `413`，读失败是 `500`。
 
 #### `GET /files/list?path=`
 
@@ -333,7 +348,7 @@ SSE。查询参数：`recursive`（`false`），`interval` 秒（默认 `0.5`，
 
 ### `process`
 
-shell 和进程启动正文里的 `cwd`、`env`、`timeout` 都可选。`cwd` 必须是字符串，且是已存在的目录（加载了策略时会解析到基目录之下）。`env` 必须是值为字符串的对象。`timeout` 默认 300 秒；非正数或非数字会换回 300。策略可以降低超时（`timeout_seconds`）并限制输出（`max_output_bytes`，这会让 `/shell` 带上 `"truncated": true`）。
+shell 和进程启动正文里的 `cwd`、`env`、`timeout` 都可选。`cwd` 必须是字符串，并且是允许目录内已存在的目录（否则 `403` `path_not_allowed`）。`env` 必须是值为字符串的对象。`timeout` 默认 300 秒；非正数或非数字会换回 300。策略可以降低超时（`timeout_seconds`）并限制输出（`max_output_bytes`，这会让 `/shell` 带上 `"truncated": true`）。
 
 #### `POST /shell`
 
@@ -417,7 +432,7 @@ shell 和进程启动正文里的 `cwd`、`env`、`timeout` 都可选。`cwd` �
 
 ### `terminal`
 
-HTTP 路由管理会话。按键走 `EBX_PTY_PORT`（默认 `9001`）上的 WebSocket，仅在本组启用时才会启动。创建时允许的 shell：`/bin/bash`、`/bin/sh`、`/bin/zsh`、`/usr/bin/bash`、`/usr/bin/zsh`。最多 10 个会话。空闲 1800 秒的会话会在下次创建或列出时被回收。
+HTTP 路由管理会话。按键走 `ABX_PTY_PORT`（默认 `9001`）上的 WebSocket，仅在本组启用时才会启动。创建时允许的 shell：`/bin/bash`、`/bin/sh`、`/bin/zsh`、`/usr/bin/bash`、`/usr/bin/zsh`。最多 10 个会话。空闲 1800 秒的会话会在下次创建或列出时被回收。
 
 #### `POST /pty/sessions`
 
@@ -431,7 +446,7 @@ HTTP 路由管理会话。按键走 `EBX_PTY_PORT`（默认 `9001`）上的 WebS
 {"session_id": "<12 hex chars>", "ws_url": "ws://localhost:9001/pty?session_id=<id>", "pid": 123}
 ```
 
-`ws_url` 使用 `localhost` 拼出；当设置了 `EBX_SERVER_TOKEN` 且服务器没有按身份区分令牌时，还会带上 `&token=<经过 URL 编码的令牌>`。从沙箱外连接时，在 `sandbox.network.get_url(9001)` 的路径 `/pty` 上打开 WebSocket，查询参数相同。达到会话上限是 `429`。shell 不在名单里或尺寸不是整数是 `400`。`env` 里的 `LD_PRELOAD`、`LD_LIBRARY_PATH` 和 `DYLD_INSERT_LIBRARIES` 会被去掉。
+`ws_url` 使用 `localhost` 拼出；当设置了 `ABX_SERVER_TOKEN` 且服务器没有按身份区分令牌时，还会带上 `&token=<经过 URL 编码的令牌>`。从沙箱外连接时，在 `sandbox.network.get_url(9001)` 的路径 `/pty` 上打开 WebSocket，查询参数相同。达到会话上限是 `429`。shell 不在名单里或尺寸不是整数是 `400`。`env` 里的 `LD_PRELOAD`、`LD_LIBRARY_PATH` 和 `DYLD_INSERT_LIBRARIES` 会被去掉。
 
 #### `GET /pty/sessions`
 
@@ -503,7 +518,7 @@ HTTP 路由管理会话。按键走 `EBX_PTY_PORT`（默认 `9001`）上的 WebS
 
 #### `POST /env`
 
-`{"vars": {"LANG": "C.UTF-8"}}`。`200`：`{"updated": ["LANG"]}`。任一键是 `PATH`、`HOME`、`USER`、`SHELL`，或大写后以 `EBX_` 开头，则 `403`。`vars` 不是对象是 `400`。值以 `str()` 存入。
+`{"vars": {"LANG": "C.UTF-8"}}`。`200`：`{"updated": ["LANG"]}`。任一键是 `PATH`、`HOME`、`USER`、`SHELL`，或大写后以 `ABX_` 开头，则 `403`。`vars` 不是对象是 `400`。值以 `str()` 存入。
 
 #### `GET /ports`
 
@@ -538,7 +553,7 @@ HTTP 路由管理会话。按键走 `EBX_PTY_PORT`（默认 `9001`）上的 WebS
 
 #### `GET /git/status?path=.`
 
-`200`：`{"branch": "main", "clean": true, "files": [{"path": "a.py", "status": "modified"}]}`。`status` 为 `modified`、`added`、`deleted`、`renamed`、`untracked`、`copied` 或 `unmerged`。git 失败（不是仓库）是 `400` `GitError`。未安装 `git` 是 `500`。30 秒超时是 `408`。设置了 `EBX_SERVER_BASE_DIR` 时，`path` 必须留在该目录内。
+`200`：`{"branch": "main", "clean": true, "files": [{"path": "a.py", "status": "modified"}]}`。`status` 为 `modified`、`added`、`deleted`、`renamed`、`untracked`、`copied` 或 `unmerged`。git 失败（不是仓库）是 `400` `GitError`。未安装 `git` 是 `500`。30 秒超时是 `408`。`path` 必须留在允许的目录内（否则 `403` `path_not_allowed`）。
 
 #### `GET /git/diff`
 
@@ -569,9 +584,9 @@ screenshot 的 `selector` 匹配不到时是 `404`。策略可以限制 navigate
 
 ### `agents`（默认关闭）
 
-用 `EBX_SERVER_ENABLED_GROUPS=agents` 打开（或在 `serve()` 之前调用 `default_table().enable_group(CapabilityGroup.AGENTS)`）。目前支持 Codex CLI（`codex`）和 Qwen Code（`qwen-code`，别名 `qwen`、`qwencode`）。目前未支持的适配器名称返回 `404` `not_found_error`，并带 `x-should-retry: false`。请求没有点名适配器，且没有 `agents.default`（`EBX_AGENTS_DEFAULT`）时，创建类调用使用顺序里的第一个：`codex`。每个 Agents 路由都可以单独放行，端点 id 见[细粒度能力](fine-grained-capabilities.md)，默认 scope 是 `agents:use`。
+用 `ABX_SERVER_ENABLED_GROUPS=agents`、`server:` 里的 `groups: [agents]`，或在 `serve()` 之前调用 `default_table().enable_group(CapabilityGroup.AGENTS)` 打开。70 条路由全部已实现。有本地后端的运行时有两个：Codex CLI（`codex`）和 Qwen Code（`qwen-code`，也接受 `qwen` 和 `qwencode`）。`claude-code`、`cursor` 和 `command` 是已声明、没有本地后端的适配器。`GET /v1/agents/runtimes` 列出每个已声明的运行时，带 `implemented` 和 `installed`。选了未实现的运行时返回 `404` `not_found_error`（`agents.not_implemented_locally`，`x-should-retry: false`），响应体指向 `GET /v1/agents/runtimes`。请求体和 `agents.default`（`ABX_AGENTS_DEFAULT`）都没有指定适配器时，创建调用使用 `codex`。每条 Agents 路由都可以单独启用。端点 id 见[细粒度能力](fine-grained-capabilities.md)。默认 scope 是 `agents:use`。完整路由表见 [Agents API 参考](../reference/agents-api.md)。
 
-这里每个路由都是本地操作。每个响应都带 `X-Easy-Sandbox-Local: 1`，每个对象都带 `x_easy_sandbox` 标记（`local`、`compute`、`differences`）。服务端做不到的字段返回带 `param` 的 `400`，绝不先接受再忽略。对象归调用者所有；别人的 id 与不存在的 id 得到相同的应答。
+每个响应都带 `X-Agent-Sandbox-Local: 1`，每个对象都带 `x_agent_sandbox` 标记（`local`、`compute`、`differences`）。服务端做不到的字段是带 `param` 的 `400`，绝不会接受后忽略。对象属于调用方；别人的 id 与未知 id 的应答一样。
 
 | 路由 | 行为 |
 |------|------|
@@ -582,7 +597,7 @@ screenshot 的 `selector` 匹配不到时是 `404`。策略可以限制 navigate
 | `GET /v1/agents/sessions/{id}/events` | 会话事件的 SSE（`Accept: text/event-stream`）。 |
 | `GET .../items`、`.../turns`、`.../turns/{turn_id}`、`.../turns/{turn_id}/items` | 条目和回合。 |
 | `GET .../artifacts`、`GET` 和 `DELETE .../artifacts/{id}`、`GET .../artifacts/{id}/content` | CLI 报告的路径的不可变副本。删除只删副本。 |
-| `GET .../traces` | 除非 `EBX_AGENTS_TRACES=1`，否则为空（只含时间的 span）。 |
+| `GET .../traces` | 除非 `ABX_AGENTS_TRACES=1`，否则为空（只含时间的 span）。 |
 | `GET .../subagents`、`.../subagents/{id}`、`/items`、`/turns`、`/turns/{turn_id}`、`/turns/{turn_id}/items` | 只有 CLI 给出过的 id。 |
 | `POST`、`GET /v1/agents`，`GET`、`POST`、`DELETE /v1/agents/{agent_id}` | Agent 定义。只有 `mcp` 工具。 |
 | `POST`、`GET /v1/agents/environments`，`GET /v1/agents/environments/{id}` | 目录绑定。 |
@@ -591,43 +606,44 @@ screenshot 的 `selector` 匹配不到时是 `404`。策略可以限制 navigate
 | `POST /v1/files` | 本地 `user_data` blob，使 `file_id` 可用（JSON 正文，`data` 为 base64）。 |
 | `/v1/vaults[...]`、`/v1/vaults/{id}/credentials[...]` | 仅内存的 vault，以及只写的 `static_bearer` / `mcp_oauth` 凭据。 |
 | `POST /v1/responses`、`GET`、`DELETE /v1/responses/{id}`、`POST .../cancel`、`GET .../input_items`、`POST /v1/responses/compact` | 带标记的一次性 CLI 回合。 |
-| `GET /v1/models`、`GET /v1/models/{id}` | 定义和两个适配器。 |
+| `GET /v1/models`、`GET /v1/models/{id}` | 定义和已实现的运行时。 |
 | `/v1/webhook_endpoints[...]`、`GET /v1/webhook_event_types` | 本地带签名的 webhook 端点。 |
-| `GET /v1/agents/runtimes` | 只有 `codex` 和 `qwen-code`。 |
+| `GET /v1/agents/runtimes` | 每个已声明的运行时，带 `implemented` 和 `installed`。 |
 
-没有本地能力，返回 `404` `not_found_error`（`agents.not_implemented_locally`，`x-should-retry: false`）：`POST /v1/responses/input_tokens`、`DELETE /v1/models/{id}`，以及执行器注册和通道。
+有四条路由专门用类型化的 `404` `not_found_error`（`x-should-retry: false`）拒绝，因为服务端没有对应能力：`POST /v1/responses/input_tokens`、`DELETE /v1/models/{id}`，以及执行器注册和通道（`agents_cannot_*`）。它们和其他路由一样被声明、计数和测试。
 
-对应的 CLI 在会话真正用到时才安装。每条拒绝规则、环境变量和 difference 代码见[托管 Agent](hosted-agents.md)。目前支持的适配器、本地响应头，以及未支持名称和 `input_tokens` 的 404，见[最佳实践](hosted-agents.md#最佳实践)。
+对应的 CLI 在会话真正用到时才安装。每条拒绝规则、环境变量和 difference 代码见[托管 Agent](hosted-agents.md)。
 
 ---
 
 ## 自定义命令与自定义路由
 
-### `@registry.command`
+### 命名命令
+
+命名命令只有一种机制：用 `@command` 注册函数。`GET /commands` 列出它，`POST /commands/{name}` 运行它。客户端的 `@sandbox.register` 装饰器最终也写入同一个注册表。
 
 ```python
-from easy_sandbox.server import CommandRegistry, SandboxServer
+from agent_sandbox.server import command, start
 
-registry = CommandRegistry()
-
-@registry.command("hello", description="Say hello.")
+@command("hello", description="Say hello.")
 def hello(name: str = "World") -> str:
     return f"Hello, {name}!"
 
-@registry.command(hidden=True)
+@command(hidden=True)
 def _debug_info() -> dict:
     return {"ok": True}
 
-registry.freeze()
-SandboxServer(registry=registry).serve(port=9000)
+start(9000)
 ```
 
-`GET /commands` 列出 `hello`，不列出 `_debug_info`。`POST /commands/hello` 带 `{"name": "Ada"}` 返回 `{"result": "Hello, Ada!"}`。`POST /commands/_debug_info` 带 `{}` 仍然会执行。名字默认取函数名。参数类型来自注解：`int` → `integer`，`float` → `float`，`bool` → `boolean`，其他 → `string`。没有默认值的参数是 `required: true` 且 `default: null`。除非传入显式的 `CommandArg` 列表作为 `args`，否则每个参数的 `description` 保持 `""`。`hidden=True` 使命令不出现在 `GET /commands` 中。抛出异常即返回 `500`。在 `serve` 之前调用 `registry.freeze()`（`serve` 会再冻结一次）。
+`GET /commands` 列出 `hello`，不列出 `_debug_info`。`POST /commands/hello` 带 `{"name": "Ada"}` 返回 `{"result": "Hello, Ada!"}`。`POST /commands/_debug_info` 带 `{}` 仍然会执行。名字默认取函数名。参数类型来自注解：`int` → `integer`，`float` → `float`，`bool` → `boolean`，其他 → `string`。没有默认值的参数是 `required: true` 且 `default: null`。除非传入显式的 `CommandArg` 列表作为 `args`，否则每个参数的 `description` 保持 `""`。`scopes=(...)` 要求调用方具备这些 scope；不具备的调用方在 `GET /commands` 里看不到该命令，也不能运行它。`hidden=True` 使命令不出现在 `GET /commands` 中。抛出异常即返回 `500`。注册表在服务启动时冻结，所以要在导入时注册。
 
-### `@table.route`
+需要隔离的测试可以新建私有的 `CommandRegistry()`，作为 `SandboxServer(registry=...)` 传入。生产模板用 `@command`。
+
+### 用 `@table.route` 定义自定义路由
 
 ```python
-from easy_sandbox.server import CapabilityGroup, ServerResponse, default_table
+from agent_sandbox.server import CapabilityGroup, ServerResponse, default_table
 
 table = default_table()
 
@@ -651,9 +667,9 @@ def hello_route(request: object) -> ServerResponse:
 
 返回 `ServerResponse.ok({...})`（`200`，该对象就是正文）或 `ServerResponse.error(status, message)`（`{"error", "type"}`，`type` 默认 `ValueError`）。
 
-`auth_required=False` 使该路由在设置了 `EBX_SERVER_TOKEN` 时仍然开放。默认要求令牌。`streaming=True` 时返回 `SSEResponse(event_iterator=...)`；迭代器产出字符串 `event: <name>\ndata: <json>\n\n`。
+`auth_required=False` 使该路由在设置了 `ABX_SERVER_TOKEN` 时仍然开放。默认要求令牌。`streaming=True` 时返回 `SSEResponse(event_iterator=...)`；迭代器产出字符串 `event: <name>\ndata: <json>\n\n`。
 
-该路由不会出现在 `GET /commands` 里。它出现在 `GET /capabilities` 的 `endpoints` 中，键是路由 `name`（默认 `"GET /hello/{name}"`）。只有它所属的组处于启用状态时才会被提供。组被关闭时，与内置路由一样返回 `404`。
+该路由不会出现在 `GET /commands` 里。它出现在 `GET /capabilities` 的 `endpoints` 中，键是路由 `name`（默认 `"GET /hello/{name}"`），并计入所属组的 `group_summary`。只有它的端点处于启用状态时才会被提供。端点被关闭时，与内置路由一样返回 `404`。
 
 ---
 
@@ -662,40 +678,40 @@ def hello_route(request: object) -> ServerResponse:
 设置基址；服务器以令牌启动时再设置令牌。这两个值都不应该写进模板镜像。
 
 ```bash
-export EBX_TEMPLATE_URL="http://127.0.0.1:9000"   # 或 get_url(9000) 得到的 https 地址
-export EBX_SERVER_TOKEN=""                         # 本地模式留空
+export ABX_TEMPLATE_URL="http://127.0.0.1:9000"   # 或 get_url(9000) 得到的 https 地址
+export ABX_SERVER_TOKEN=""                         # 本地模式留空
 ```
 
 健康检查（设置了令牌时仍然开放）：
 
 ```bash
-curl -sS "$EBX_TEMPLATE_URL/health"
+curl -sS "$ABX_TEMPLATE_URL/health"
 ```
 
-列出命令（只要设置了 `EBX_SERVER_TOKEN` 就带上头）：
+列出命令（只要设置了 `ABX_SERVER_TOKEN` 就带上头）：
 
 ```bash
-curl -sS -H "X-Access-Token: $EBX_SERVER_TOKEN" "$EBX_TEMPLATE_URL/commands"
+curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" "$ABX_TEMPLATE_URL/commands"
 ```
 
 运行注册名为 `hello` 的命令：
 
 ```bash
-curl -sS -H "X-Access-Token: $EBX_SERVER_TOKEN" \
+curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"Ada"}' \
-  "$EBX_TEMPLATE_URL/commands/hello"
+  "$ABX_TEMPLATE_URL/commands/hello"
 ```
 
-上传和下载。路径必须留在 `EBX_SERVER_BASE_DIR` 之下（默认 `/home/user`）。`file_ops` 必须启用；除非 `commands.py` 或 `EBX_SERVER_DISABLED_GROUPS` 把它关掉，否则默认是开的。
+上传和下载。路径必须留在 `ABX_SERVER_BASE_DIR` 之下（默认 `/home/user`）。`file_ops` 必须启用；除非 `server:` 策略或 `commands.py` 把它关掉，否则默认是开的。
 
 ```bash
 B64=$(printf 'hello' | base64)
-curl -sS -H "X-Access-Token: $EBX_SERVER_TOKEN" \
+curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{\"path\":\"/home/user/note.txt\",\"content_base64\":\"$B64\"}" \
-  "$EBX_TEMPLATE_URL/upload"
+  "$ABX_TEMPLATE_URL/upload"
 
-curl -sS -H "X-Access-Token: $EBX_SERVER_TOKEN" \
-  "$EBX_TEMPLATE_URL/download?path=/home/user/note.txt"
+curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" \
+  "$ABX_TEMPLATE_URL/download?path=/home/user/note.txt"
 ```

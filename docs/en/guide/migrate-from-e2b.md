@@ -1,26 +1,26 @@
 # Migrating from E2B
 
-Easy Sandbox is designed to maintain a high degree of API compatibility with the E2B Python SDK. This document provides a migration guide.
+Agent Sandbox uses E2B-style method names so that most E2B call sites port with an import change. It is not a drop-in replacement: the wire protocol, credentials and several behaviours differ. This page lists what to change.
 
 ---
 
 ## API Mapping Table
 
-| E2B SDK | Easy Sandbox | Notes |
+| E2B SDK | Agent Sandbox | Notes |
 |---------|-------------|-------|
-| `from e2b import Sandbox` | `from easy_sandbox.api.sandbox import Sandbox` | Main class import |
-| `Sandbox.create()` | `Sandbox.create()` | ✅ Fully compatible |
-| `Sandbox.connect(id)` | `Sandbox.connect(id)` | ✅ Fully compatible |
-| `Sandbox.list()` | `Sandbox.list()` | ✅ Fully compatible |
-| `sandbox.kill()` | `sandbox.kill()` | ✅ Fully compatible |
+| `from e2b import Sandbox` | `from agent_sandbox.api.sandbox import Sandbox` | Main class import |
+| `Sandbox.create()` | `Sandbox.create()` | ✅ Same call shape |
+| `Sandbox.connect(id)` | `Sandbox.connect(id)` | ✅ Same call shape |
+| `Sandbox.list()` | `Sandbox.list()` | ✅ Same call shape |
+| `sandbox.kill()` | `sandbox.kill()` | ✅ Same call shape |
 | `Sandbox.kill(id)` | `Sandbox.kill_by_id(id)` | ⚠️ Different method name |
-| `sandbox.is_running()` | `sandbox.is_running()` | ✅ Fully compatible |
-| `sandbox.pause()` | `sandbox.pause()` | ✅ Fully compatible |
-| `sandbox.set_timeout(t)` | `sandbox.set_timeout(t)` | ✅ Fully compatible |
-| `sandbox.commands.run(cmd)` | `sandbox.commands.run(cmd)` | ✅ Fully compatible |
-| `sandbox.files.read(path)` | `sandbox.files.read(path)` | ✅ Fully compatible |
-| `sandbox.files.write(path, d)` | `sandbox.files.write(path, d)` | ✅ Fully compatible |
-| `sandbox.run_code(code)` | `sandbox.run_code(code)` | ✅ Fully compatible |
+| `sandbox.is_running()` | `sandbox.is_running()` | ✅ Same call shape |
+| `sandbox.pause()` | `sandbox.pause()` | ✅ Same call shape |
+| `sandbox.set_timeout(t)` | `sandbox.set_timeout(t)` | ✅ Same call shape |
+| `sandbox.commands.run(cmd)` | `sandbox.commands.run(cmd)` | ✅ Same call shape |
+| `sandbox.files.read(path)` | `sandbox.files.read(path)` | ✅ Same call shape |
+| `sandbox.files.write(path, d)` | `sandbox.files.write(path, d)` | ✅ Same call shape |
+| `sandbox.run_code(code)` | `sandbox.run_code(code)` | ✅ Same call shape |
 | `sandbox.get_host(port)` | `sandbox.network.get_host(port)` | ⚠️ Requires the network submodule |
 | `sandbox.get_upload_url(path)` | `sandbox.get_upload_url(path)` | The call fails. This data plane requires `X-Access-Token` and does not accept a signature-only URL |
 | `sandbox.get_download_url(path)` | `sandbox.get_download_url(path)` | Same as upload |
@@ -29,34 +29,34 @@ Easy Sandbox is designed to maintain a high degree of API compatibility with the
 
 ## Import Path Replacement
 
-### Direct Replacement
+### Change the Import
 
 ```python
 # E2B
 from e2b import Sandbox
 
-# Easy Sandbox (recommended)
-from easy_sandbox.api.sandbox import Sandbox
+# Agent Sandbox (recommended)
+from agent_sandbox.api.sandbox import Sandbox
 ```
 
 ### Using the Compatibility Layer
 
 ```python
 # Compatibility layer import (minimal changes)
-from easy_sandbox.compat import Sandbox
+from agent_sandbox.compat import Sandbox
 ```
 
-The compatibility layer `easy_sandbox.compat` re-exports the `Sandbox` class with an API signature consistent with the E2B SDK.
+The compatibility layer `agent_sandbox.compat` re-exports the `Sandbox` class (method names follow the E2B SDK; behaviour differences are listed below).
 
 ---
 
 ## Compatibility Layer Details
 
-The compatibility module `easy_sandbox.compat.sandbox` provides:
+The compatibility module `agent_sandbox.compat.sandbox` provides:
 
 ```python
-from easy_sandbox.compat import Sandbox
-from easy_sandbox.compat import E2BSandbox  # Alias
+from agent_sandbox.compat import Sandbox
+from agent_sandbox.compat import E2BSandbox  # Alias
 ```
 
 Both are the same `Sandbox` class, only differing in name.
@@ -65,13 +65,13 @@ Both are the same `Sandbox` class, only differing in name.
 
 ## Environment Variables
 
-Easy Sandbox uses one environment variable per setting. Set these when you move a project off E2B:
+Agent Sandbox uses one environment variable per setting. Set these when you move a project off E2B:
 
 | Setting | Environment variable |
 |---|---|
-| Sandbox API key | `EBX_SANDBOX_API_KEY` |
-| Platform API URL | `EBX_SANDBOX_BASE_URL` |
-| Data-plane domain | `EBX_SANDBOX_DOMAIN` |
+| Sandbox API key | `ABX_SANDBOX_API_KEY` |
+| Platform API URL | `ABX_SANDBOX_BASE_URL` |
+| Data-plane domain | `ABX_SANDBOX_DOMAIN` |
 
 ---
 
@@ -79,13 +79,13 @@ Easy Sandbox uses one environment variable per setting. Set these when you move 
 
 ### 1. `Sandbox.kill(id)` → `Sandbox.kill_by_id(id)`
 
-In E2B, the class method `Sandbox.kill(id)` destroys a sandbox by ID. In Easy Sandbox, this is provided by `Sandbox.kill_by_id(id)`; `sandbox.kill()` is an instance method.
+In E2B, the class method `Sandbox.kill(id)` destroys a sandbox by ID. In Agent Sandbox, this is provided by `Sandbox.kill_by_id(id)`; `sandbox.kill()` is an instance method.
 
 ```python
 # E2B
 await Sandbox.kill("sbx-xxxx")
 
-# Easy Sandbox
+# Agent Sandbox
 await Sandbox.kill_by_id("sbx-xxxx")
 ```
 
@@ -95,7 +95,7 @@ await Sandbox.kill_by_id("sbx-xxxx")
 # E2B
 host = sandbox.get_host(8080)
 
-# Easy Sandbox
+# Agent Sandbox
 host = sandbox.network.get_host(8080)
 url = sandbox.network.get_url(8080)
 ```
@@ -104,13 +104,13 @@ url = sandbox.network.get_url(8080)
 
 ### 3. `get_upload_url()` / `get_download_url()`
 
-E2B's methods return a signed URL a browser can open. The current Express envd does not accept that request: without `X-Access-Token` it returns 403 `X-Access-Token header is required`. Easy Sandbox's methods of the same name raise `FileOperationError` instead of returning a URL that cannot be used.
+E2B's methods return a signed URL a browser can open. The current Express envd does not accept that request: without `X-Access-Token` it returns 403 `X-Access-Token header is required`. Agent Sandbox's methods of the same name raise `FileOperationError` instead of returning a URL that cannot be used.
 
 Move files with `files.write()`, `files.read()`, `files.upload()`, and `files.download()`. The SDK sends the access token on those calls.
 
 ### 4. Capability model
 
-Easy Sandbox introduces a capability model. Templates declare capabilities in `template.yaml`. Only the `code` capability is **runtime-enforced (fail-closed)** — `CodeContextModule` methods raise `CapabilityNotSupportedError` (E3004) when the `code` capability is missing. Other modules forward requests without a runtime gate:
+Agent Sandbox introduces a capability model. Templates declare capabilities in `template.yaml`. Only the `code` capability is **runtime-enforced (fail-closed)** — `CodeContextModule` methods raise `CapabilityNotSupportedError` (E3004) when the `code` capability is missing. Other modules forward requests without a runtime gate:
 
 - `run_code()` / `code.*` → Requires the `code` capability — **runtime-enforced (E3004)**
 - `commands.run()` → Logically associated with `shell` (no runtime gate)
@@ -122,7 +122,7 @@ The default capability set `{shell, files, code}` covers most common operations.
 
 ### 5. Alibaba Cloud extensions
 
-Easy Sandbox adds Alibaba Cloud AK/SK authentication, which does not exist in E2B:
+Agent Sandbox adds Alibaba Cloud AK/SK authentication, which does not exist in E2B:
 
 ```python
 sandbox = await Sandbox.create(
@@ -136,7 +136,7 @@ sandbox = await Sandbox.create(
 `Sandbox.create(request_timeout=...)` mirrors E2B's `request_timeout`: it bounds
 how long the client waits for the create HTTP response and is independent of
 `timeout` (the sandbox TTL). When omitted, the global `http_timeout` /
-`EBX_HTTP_TIMEOUT` applies.
+`ABX_HTTP_TIMEOUT` applies.
 
 ```python
 sandbox = await Sandbox.create(
@@ -150,14 +150,14 @@ sandbox = await Sandbox.create(
 
 ## Migration Steps
 
-1. **Replace dependency**: `pip install easy-sandbox` (uninstall `e2b`)
+1. **Replace dependency**: `pip install agent-sandbox` (uninstall `e2b`)
 2. **Replace imports**:
-   - Minimal changes: `from e2b import Sandbox` → `from easy_sandbox.compat import Sandbox`
-   - Recommended: `from easy_sandbox.api.sandbox import Sandbox`
+   - Minimal changes: `from e2b import Sandbox` → `from agent_sandbox.compat import Sandbox`
+   - Recommended: `from agent_sandbox.api.sandbox import Sandbox`
 3. **Replace `Sandbox.kill(id)`**: Change to `Sandbox.kill_by_id(id)`
 4. **Replace `get_host()`**: Change to `sandbox.network.get_host()`
 5. **`get_upload_url` / `get_download_url`**: Use `files.write()` / `files.read()`. This data plane does not accept a signature-only URL
-6. **Set environment variables**: `EBX_SANDBOX_API_KEY` for the sandbox API key. Each setting has one variable; see [Configuration](../reference/configuration.md).
+6. **Set environment variables**: `ABX_SANDBOX_API_KEY` for the sandbox API key. Each setting has one variable; see [Configuration](../reference/configuration.md).
 
 ---
 

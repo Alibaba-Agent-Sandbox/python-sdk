@@ -23,7 +23,7 @@ Validate the CLI + SDK envd capabilities (shell/files/code) of existing platform
 templates:
 - **Templates**: `code-interpreter-v1` (templateID: `8d926meb1xzckz1a83ib`),
   `base` (templateID: `216g37mamkdfhzrauvxk`)
-- **Test content**: `ebx create`/`ebx exec` (CLI) + `Sandbox.create()`/
+- **Test content**: `abx create`/`abx exec` (CLI) + `Sandbox.create()`/
   `sandbox.commands.run()` (SDK)
 - **Capabilities covered**: shell command execution, file read/write, code interpreter
 
@@ -34,7 +34,7 @@ startup → Server capabilities:
 - **Templates**: the 10 templates under `examples/templates/` (python-hello, codex,
   node-web, browser-automation, claude-code, deepseek-harness, hermes-agent,
   openclaw, qoder, qwen-code)
-- **Test content**: `ebx template build-local` (CLI) + `DockerBuilder` (SDK) +
+- **Test content**: `abx template build-local` (CLI) + `DockerBuilder` (SDK) +
   Sandbox Server capabilities
 - **Capabilities covered**: Docker build, ACR push, template registration, sandbox
   creation, Server startup and invocation
@@ -60,7 +60,7 @@ cd <project-root>
 python3 scripts/e2e/cloud_e2e_test.py
 
 # dependencies
-pip install "easy-sandbox[cli]" httpx pyyaml python-dotenv
+pip install "agent-sandbox[cli]" httpx pyyaml python-dotenv
 ```
 
 ```python

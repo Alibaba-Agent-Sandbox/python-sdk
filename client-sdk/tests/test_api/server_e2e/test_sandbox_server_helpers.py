@@ -8,11 +8,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from easy_sandbox.api.server_client import ServerClient
-from easy_sandbox.models.errors import ConnectionError_
+from agent_sandbox.api.server_client import ServerClient
+from agent_sandbox.models.errors import ConnectionError_
 
 if TYPE_CHECKING:
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
 
 class TestServerAt:
@@ -73,7 +73,7 @@ class TestStartServer:
     ) -> None:
         client = await sandbox.start_server()
         cmd, kwargs = spy.calls[0]
-        assert cmd == "easy-sandbox-server serve --port 9000"
+        assert cmd == "agent-sandbox-server serve --port 9000"
         assert kwargs["background"] is True
         assert kwargs["env"] is None
         healthy.assert_awaited()
@@ -90,10 +90,10 @@ class TestStartServer:
             env={"A": "1"},
         )
         cmd, kwargs = spy.calls[0]
-        assert cmd.startswith("easy-sandbox-server serve --port 9100")
+        assert cmd.startswith("agent-sandbox-server serve --port 9100")
         assert "--commands '/home/user/app/my commands.py'" in cmd
         assert "--preset read-only" in cmd
-        assert kwargs["env"] == {"A": "1", "EBX_SERVER_TOKEN": "tok"}
+        assert kwargs["env"] == {"A": "1", "ABX_SERVER_TOKEN": "tok"}
         assert client.base_url == sandbox.network.get_url(9100)
         assert client.auth_headers()["Authorization"] == "Bearer tok"
         await client.aclose()
@@ -105,7 +105,7 @@ class TestStartServer:
         client = await sandbox.start_server(policy=policy)
         cmd, kwargs = spy.calls[0]
         assert "--preset" not in cmd
-        assert json.loads(kwargs["env"]["EBX_SERVER_POLICY"]) == policy
+        assert json.loads(kwargs["env"]["ABX_SERVER_POLICY"]) == policy
         await client.aclose()
 
     async def test_command_override_wins(

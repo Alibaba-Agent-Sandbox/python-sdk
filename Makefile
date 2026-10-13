@@ -6,7 +6,7 @@ SERVER := server-sdk
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-install:  ## Install both packages (easy-sandbox-server + easy-sandbox)
+install:  ## Install both packages (agent-sandbox-server + agent-sandbox)
 	pip install -e ./$(SERVER) -e ./$(CLIENT)
 
 dev:  ## Install both packages with all dev dependencies
@@ -17,8 +17,8 @@ test:  ## Run tests (client-sdk and server-sdk)
 	cd $(CLIENT) && pytest tests/ -v --tb=short
 
 test-cov:  ## Run tests with coverage
-	cd $(SERVER) && pytest tests/ -v --tb=short --cov=easy_sandbox.server --cov-report=term-missing
-	cd $(CLIENT) && pytest tests/ -v --tb=short --cov=easy_sandbox --cov-report=term-missing
+	cd $(SERVER) && pytest tests/ -v --tb=short --cov=agent_sandbox.server --cov-report=term-missing
+	cd $(CLIENT) && pytest tests/ -v --tb=short --cov=agent_sandbox --cov-report=term-missing
 
 lint:  ## Run linter
 	cd $(SERVER) && ruff check src/ tests/
@@ -29,8 +29,8 @@ format:  ## Format code
 	cd $(CLIENT) && ruff format src/ tests/
 
 typecheck:  ## Run type checker
-	cd $(SERVER) && mypy src/easy_sandbox/server/
-	cd $(CLIENT) && mypy src/easy_sandbox/
+	cd $(SERVER) && mypy src/agent_sandbox/server/
+	cd $(CLIENT) && mypy src/agent_sandbox/
 
 format-check:  ## Verify code is formatted (CI equivalent)
 	cd $(SERVER) && ruff format --check src/ tests/
@@ -52,11 +52,11 @@ ci:  ## Run local CI equivalent (single interpreter; NOT a full substitute for t
 	$(MAKE) hygiene
 	cd $(SERVER) && ruff check src/ tests/
 	cd $(SERVER) && ruff format --check src/ tests/
-	cd $(SERVER) && mypy src/easy_sandbox/server/
+	cd $(SERVER) && mypy src/agent_sandbox/server/
 	cd $(SERVER) && pytest tests/ -m "not integration"
 	cd $(CLIENT) && ruff check src/ tests/
 	cd $(CLIENT) && ruff format --check src/ tests/
-	cd $(CLIENT) && mypy src/easy_sandbox/
+	cd $(CLIENT) && mypy src/agent_sandbox/
 	cd $(CLIENT) && pytest tests/ -m "not integration"
 	$(MAKE) build
 	$(MAKE) dist-check
@@ -72,13 +72,13 @@ clean:  ## Clean build artifacts
 	rm -rf $(SERVER)/build $(SERVER)/dist $(SERVER)/*.egg-info $(SERVER)/src/*.egg-info $(SERVER)/.pytest_cache $(SERVER)/.mypy_cache $(SERVER)/.ruff_cache
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 
-e2e:  ## Real-cloud E2E suite (needs credentials in .env; sandbox cases only, Docker/ACR cases excluded)
-	cd e2e && python -m pytest -m "e2e and not e2e_docker and not e2e_slow" -ra
+e2e:  ## Real-cloud E2E suite without the slow cases (needs credentials in .env)
+	cd e2e && python -m pytest -m "e2e and not e2e_slow" -ra
 	python scripts/e2e-cleanup.py --all-tagged
 
-e2e-all:  ## Real-cloud E2E suite incl. slow and Docker/ACR cases (creates and deletes real cloud resources)
+e2e-all:  ## Real-cloud E2E suite incl. slow cases (creates and deletes real cloud sandboxes)
 	cd e2e && python -m pytest -m "e2e" -ra
 	python scripts/e2e-cleanup.py --all-tagged
 
-e2e-cleanup:  ## Delete sandboxes/templates leaked by interrupted E2E runs (dry-run; add ARGS=--yes to delete)
+e2e-cleanup:  ## Delete sandboxes leaked by interrupted E2E runs (dry-run; add ARGS=--yes to delete)
 	python scripts/e2e-cleanup.py --all-tagged $(ARGS)

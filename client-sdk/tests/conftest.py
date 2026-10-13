@@ -1,4 +1,4 @@
-"""Global pytest fixtures for Easy Sandbox tests."""
+"""Global pytest fixtures for Agent Sandbox tests."""
 
 from __future__ import annotations
 
@@ -14,10 +14,9 @@ if TYPE_CHECKING:
 # credentials to be configured.
 _CREDENTIAL_ENV_VARS: tuple[str, ...] = (
     "GITHUB_TOKEN",
-    "EBX_LLM_API_KEY",
-    "EBX_QWEN_CODE_API_KEY",
-    "EBX_LLM_BASE_URL",
-    "EBX_LLM_MODEL",
+    "ABX_LLM_API_KEY",
+    "ABX_LLM_BASE_URL",
+    "ABX_LLM_MODEL",
     "BAILIAN_CODING_PLAN_API_KEY",
     "DASHSCOPE_API_KEY",
     "OPENAI_API_KEY",
@@ -31,13 +30,13 @@ def _isolate_credential_env(monkeypatch: pytest.MonkeyPatch, tmp_path) -> Iterat
     """Remove credential env vars so tests stay deterministic.
 
     Also point the project ``.env`` reader at a missing file. The SDK
-    consults ``./.env`` before ``~/.ebx``, and this repository's ``.env``
+    consults ``./.env`` before ``~/.abx``, and this repository's ``.env``
     must not leak into that layer.
     """
     for var in _CREDENTIAL_ENV_VARS:
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setattr(
-        "easy_sandbox.transport.config._PROJECT_ENV_FILE",
+        "agent_sandbox.transport.config._PROJECT_ENV_FILE",
         tmp_path / "no-project.env",
     )
     yield

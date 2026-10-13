@@ -1,6 +1,6 @@
 # 会话持久化
 
-> **说明：** 本页出现的 `ebx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @easy-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`easy-sandbox`）与容器侧运行时（`easy-sandbox-server`）。
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox`）与容器侧运行时（`agent-sandbox-server`）。
 
 会话（Session）将沙箱与一个人类可读名称关联，方便在不同终端或时间点反复连接同一个沙箱。
 
@@ -35,7 +35,7 @@
 ### 存储位置
 
 ```text
-~/.ebx/sessions/
+~/.abx/sessions/
 ├── my-project.json       # 会话 "my-project"
 ├── my-project.json.lock  # 并发锁文件
 ├── dev-env.json          # 会话 "dev-env"
@@ -54,12 +54,12 @@
 
 ## CLI 使用
 
-> **注意**：`ebx session` CLI 命令组已从 CLI 中移除，会话功能现已完全通过 SDK API 提供。以下示例仅供参考，实际使用请通过 Python SDK。
+> **注意**：`abx session` CLI 命令组已从 CLI 中移除，会话功能现已完全通过 SDK API 提供。以下示例仅供参考，实际使用请通过 Python SDK。
 
 ### SDK 替代方案
 
 ```python
-from easy_sandbox.session import SessionManager
+from agent_sandbox.session import SessionManager
 
 manager = SessionManager()
 
@@ -81,11 +81,11 @@ await manager.stop("my-project")
 ## SDK 使用
 
 ```python
-from easy_sandbox.session.local import LocalSessionStore
-from easy_sandbox.models.session import SessionInfo
+from agent_sandbox.session.local import LocalSessionStore
+from agent_sandbox.models.session import SessionInfo
 
 # 创建存储实例
-store = LocalSessionStore()  # 默认 ~/.ebx/sessions/
+store = LocalSessionStore()  # 默认 ~/.abx/sessions/
 
 # 保存会话
 session = SessionInfo(
@@ -119,5 +119,5 @@ store = LocalSessionStore(base_dir="/path/to/custom/sessions")
 
 ## 下一步
 
-- [CLI 教程](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/cli-tutorial.md) — 完整 CLI 使用教程
+- [CLI 教程](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/cli-tutorial.md) — 完整 CLI 使用教程
 - [配置参考](../reference/configuration.md) — 配置文件位置

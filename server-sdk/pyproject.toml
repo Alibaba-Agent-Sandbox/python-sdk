@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "easy-sandbox-server"
+name = "agent-sandbox-server"
 dynamic = ["version"]
-description = "Easy Sandbox Server SDK — container-side runtime service for Easy Sandbox templates"
+description = "Agent Sandbox Server SDK — container-side runtime service for Agent Sandbox templates"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
@@ -32,9 +32,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-browser = [
-    "playwright>=1.40",
-]
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
@@ -44,28 +41,28 @@ dev = [
 ]
 
 [project.scripts]
-easy-sandbox-server = "easy_sandbox.server.__main__:main"
+agent-sandbox-server = "agent_sandbox.server.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/Easy-Sandbox/easy-sandbox"
-Documentation = "https://github.com/Easy-Sandbox/easy-sandbox/tree/main/docs"
-Repository = "https://github.com/Easy-Sandbox/easy-sandbox"
-Issues = "https://github.com/Easy-Sandbox/easy-sandbox/issues"
-Changelog = "https://github.com/Easy-Sandbox/easy-sandbox/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/alibaba-agent-sandbox/python-sdk"
+Documentation = "https://github.com/alibaba-agent-sandbox/python-sdk/tree/main/docs"
+Repository = "https://github.com/alibaba-agent-sandbox/python-sdk"
+Issues = "https://github.com/alibaba-agent-sandbox/python-sdk/issues"
+Changelog = "https://github.com/alibaba-agent-sandbox/python-sdk/blob/main/CHANGELOG.md"
 
 [tool.hatch.version]
-path = "src/easy_sandbox/server/_version.py"
+path = "src/agent_sandbox/server/_version.py"
 
-# ``easy_sandbox`` is a shared namespace with ``easy-sandbox-client``: this
-# distribution only ships ``easy_sandbox/server`` and deliberately has no
-# ``easy_sandbox/__init__.py`` of its own.
+# ``agent_sandbox`` is a shared namespace with the ``agent-sandbox`` (client) distribution: this
+# distribution only ships ``agent_sandbox/server`` and deliberately has no
+# ``agent_sandbox/__init__.py`` of its own.
 [tool.hatch.build.targets.wheel]
-packages = ["src/easy_sandbox"]
+packages = ["src/agent_sandbox"]
 artifacts = ["py.typed"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "src/easy_sandbox/",
+    "src/agent_sandbox/",
     "tests/",
     "README.md",
     "LICENSE",

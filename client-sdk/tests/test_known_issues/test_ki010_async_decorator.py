@@ -12,12 +12,12 @@ import sys
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from easy_sandbox.declarative.decorator import (
+from agent_sandbox.declarative.decorator import (
     _build_execution_script,
     _get_function_source,
     sandbox,
 )
-from easy_sandbox.models.process import ProcessResult
+from agent_sandbox.models.process import ProcessResult
 
 
 def _run_script(script: str) -> str:
@@ -73,7 +73,7 @@ def test_sync_script_is_unchanged() -> None:
     assert json.loads(_run_script(script)) == 6
 
 
-@patch("easy_sandbox.api.sandbox.Sandbox", new_callable=lambda: MagicMock)
+@patch("agent_sandbox.api.sandbox.Sandbox", new_callable=lambda: MagicMock)
 async def test_decorator_generates_an_awaiting_script_for_async_def(mock_cls: MagicMock) -> None:
     sb = AsyncMock()
     sb.commands.run = AsyncMock(
@@ -90,7 +90,7 @@ async def test_decorator_generates_an_awaiting_script_for_async_def(mock_cls: Ma
     assert json.loads(_run_script(script)) == 42
 
 
-@patch("easy_sandbox.api.sandbox.Sandbox", new_callable=lambda: MagicMock)
+@patch("agent_sandbox.api.sandbox.Sandbox", new_callable=lambda: MagicMock)
 def test_decorator_keeps_sync_functions_sync(mock_cls: MagicMock) -> None:
     sb = AsyncMock()
     sb.commands.run = AsyncMock(

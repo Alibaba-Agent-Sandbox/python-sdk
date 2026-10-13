@@ -1,9 +1,9 @@
-# Dependabot configuration for easy-sandbox (python-sdk)
+# Dependabot configuration for agent-sandbox (python-sdk)
 # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
 
 version: 2
 updates:
-  # Python (pip) dependencies — client-sdk (easy-sandbox)
+  # Python (pip) dependencies — client-sdk (agent-sandbox)
   - package-ecosystem: "pip"
     directory: "/client-sdk"
     schedule:
@@ -16,7 +16,7 @@ updates:
       prefix: "chore(deps):"
     open-pull-requests-limit: 10
 
-  # Python (pip) dependencies — server-sdk (easy-sandbox-server)
+  # Python (pip) dependencies — server-sdk (agent-sandbox-server)
   - package-ecosystem: "pip"
     directory: "/server-sdk"
     schedule:

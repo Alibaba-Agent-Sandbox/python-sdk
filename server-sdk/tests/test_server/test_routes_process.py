@@ -1,4 +1,4 @@
-"""Tests for easy_sandbox.server.routes_process — process management endpoints.
+"""Tests for agent_sandbox.server.routes_process — process management endpoints.
 
 Spins up a real server per fixture on a random free port, same pattern as test_app.py.
 """
@@ -17,15 +17,17 @@ from typing import Any
 
 import pytest
 
-import easy_sandbox.server.routes_process as _rp  # noqa: F401
-from easy_sandbox.server.app import SandboxRequestHandler
-from easy_sandbox.server.registry import CommandRegistry
-from easy_sandbox.server.router import CapabilityGroup, default_table
-from easy_sandbox.server.routes_process import (
+import agent_sandbox.server.routes_process as _rp  # noqa: F401
+from agent_sandbox.server.app import SandboxRequestHandler
+from agent_sandbox.server.registry import CommandRegistry
+from agent_sandbox.server.router import CapabilityGroup, default_table
+from agent_sandbox.server.routes_process import (
     _MAX_PROCESSES,
     _process_table,
     _ProcessInfo,
 )
+
+from ._live import wire
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -41,8 +43,7 @@ def _find_free_port() -> int:
 def _start_server(port: int) -> ThreadingHTTPServer:
     registry = CommandRegistry()
     httpd = ThreadingHTTPServer(("127.0.0.1", port), SandboxRequestHandler)
-    httpd.auth_token = None  # type: ignore[attr-defined]
-    httpd.registry = registry  # type: ignore[attr-defined]
+    wire(httpd, auth_token=None, registry=registry)
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()
     time.sleep(0.05)

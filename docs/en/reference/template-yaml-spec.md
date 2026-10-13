@@ -15,7 +15,7 @@ my-template/
 └── ...
 ```
 
-After installation, it resides at `~/.ebx/templates/<template-name>/template.yaml`.
+After installation, it resides at `~/.abx/templates/<template-name>/template.yaml`.
 
 ---
 
@@ -73,46 +73,23 @@ After installation, it resides at `~/.ebx/templates/<template-name>/template.yam
 - Explicit list → Only the listed capabilities are enabled (can be a subset or superset of the standard set)
 - Values in the list must be from the standard capability set; otherwise, validation fails (raises `TemplateParseError` E2004)
 
-### Custom Commands
+### Removed key: `custom_commands`
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `custom_commands` | `dict[str, Command]` | ❌ | `{}` | Named command mappings |
-
-**Command structure**:
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `cmd` | `str` | ✅ | — | Shell command template, supports `{placeholder}` tokens |
-| `description` | `str` | ❌ | `""` | Command description |
-| `cwd` | `str` | ❌ | `"/app"` | Working directory |
-| `timeout` | `int` | ❌ | `60` | Timeout in seconds |
-| `env` | `dict[str, str]` | ❌ | `{}` | Command-specific environment variables |
-| `args` | `list[Arg]` | ❌ | `[]` | Argument definition list |
-
-**Arg structure**:
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `name` | `str` | ✅ | — | Argument name (corresponds to `{name}` placeholder in `cmd`) |
-| `type` | `str` | ❌ | `"string"` | Type: `string` / `integer` / `float` / `boolean` |
-| `required` | `bool` | ❌ | `false` | Whether required |
-| `default` | `str \| null` | ❌ | `null` | Default value (string form) |
-| `description` | `str` | ❌ | `""` | Argument description |
+`custom_commands` is not a `template.yaml` key. The client rejects a file that contains it (`TemplateParseError`, E2004). Named commands have one mechanism: functions registered in the template's server (`@sandbox.register` in `commands.py`), called with `sandbox.run(name, **kwargs)` or `abx run <id> <name>`. See [Authoring Templates](../guide/authoring-templates.md#registered-commands).
 
 ### Server Policy (`server`)
 
 Optional. Declares which SandboxServer endpoints the template exposes and under which restrictions
 (design: [fine-grained-capabilities](../design/fine-grained-capabilities.md)). Absent = the server's default
 behaviour. The block is validated structurally by `SandboxTemplate` (unknown keys are errors); values are
-validated by `easy-sandbox-server check-config`. Tooling compiles it to `/etc/easy-sandbox/server-policy.json`, which the server
+validated by `agent-sandbox-server check-config`. Tooling compiles it to `/etc/agent-sandbox/server-policy.json`, which the server
 loads automatically.
 
 | Key | Type | Description |
 |-----|------|-------------|
 | `preset` | `str` | `default`, `transfer-only`, `read-only`, `hardened`, `locked` |
 | `base_dir` | `str` | Root for relative paths and the default path boundary |
-| `groups` | `map[str, bool]` | Enable/disable capability groups (`file_ops`, `process`, ...) |
+| `groups` | `list[str]` or `map[str, bool]` | Turn capability groups on (`[agents, dev_tools]`) or on/off (`{process: false}`). A group is an alias for its endpoint ids |
 | `defaults` | rule | Rule applied to every endpoint before its own rule |
 | `endpoints` | `map[str, rule]` | Per-endpoint rules keyed by endpoint id (`files_download_stream`, `shell`, ...) |
 | `auth` | map | `tokens` (`id`, `scopes`, `token_env` or `token_sha256`), `allow_anonymous`, `anonymous_scopes`, `legacy_scopes` |
@@ -139,7 +116,7 @@ server:
 name: flask-web
 version: "2.0.0"
 description: "Flask Web Development Environment"
-author: "Easy Sandbox Team"
+author: "Agent Sandbox Team"
 license: "MIT"
 tags:
   - python
@@ -164,42 +141,10 @@ capabilities:
   - terminal
   - ports
 
-custom_commands:
-  dev:
-    cmd: "flask run --host=0.0.0.0 --port={port}"
-    description: "Start Flask development server"
-    cwd: "/app"
-    timeout: 0
-    env:
-      FLASK_DEBUG: "1"
-    args:
-      - name: port
-        type: string
-        required: false
-        default: "5000"
-        description: "Listening port"
-
-  test:
-    cmd: "python -m pytest {path} -v --tb=short"
-    description: "Run pytest tests"
-    cwd: "/app"
-    timeout: 120
-    args:
-      - name: path
-        type: string
-        required: false
-        default: "tests/"
-        description: "Test file path"
-
-  migrate:
-    cmd: "flask db upgrade"
-    description: "Execute database migration"
-    cwd: "/app"
-    timeout: 60
 ```
 
 ---
 
 ## Build Notes
 
-`template.yaml` only defines runtime configuration (capabilities, commands, environment variables, resources). Image building is entirely handled by the `Dockerfile` in the template directory, using language-native dependency files (`requirements.txt` / `package.json`) for dependency management.
+`template.yaml` only defines runtime configuration (capabilities, server policy, environment variables, resources). Image building is entirely handled by the `Dockerfile` in the template directory, using language-native dependency files (`requirements.txt` / `package.json`) for dependency management.

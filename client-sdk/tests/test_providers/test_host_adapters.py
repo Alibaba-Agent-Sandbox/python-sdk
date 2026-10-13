@@ -9,13 +9,13 @@ from typing import Any
 
 import pytest
 
-from easy_sandbox import Sandbox
-from easy_sandbox.models import errors as E  # noqa: N812
-from easy_sandbox.models.sandbox import SandboxConfig
-from easy_sandbox.providers import exec_provider as xp
-from easy_sandbox.providers.base import FEATURES
-from easy_sandbox.providers.epp import map_error
-from easy_sandbox.transport.streaming import StreamReader
+from agent_sandbox import Sandbox
+from agent_sandbox.models import errors as E  # noqa: N812
+from agent_sandbox.models.sandbox import SandboxConfig
+from agent_sandbox.providers import exec_provider as xp
+from agent_sandbox.providers.base import FEATURES
+from agent_sandbox.providers.epp import map_error
+from agent_sandbox.transport.streaming import StreamReader
 from tests.iso import iso  # noqa: F401
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
@@ -206,8 +206,34 @@ async def test_connect_does_not_swallow_real_errors():
             raise map_error({"code": -32002, "message": "nope"}, "fake")
 
     sandbox = xp.ExecSandboxProtocol(Failing(), ALL_FEATURES)  # type: ignore[arg-type]
-    with pytest.raises(E.ProviderResourceNotFoundError):
+    with pytest.raises(E.SandboxNotFoundError) as exc:
         await sandbox.connect("x")
+    assert exc.value.code == "E2009"
+    assert exc.value.message == "nope"
+
+
+async def test_sandbox_not_found_is_one_error_for_every_sandbox_call():
+    class Gone(FakeClient):
+        async def call(self, method, params=None, **kw):
+            raise map_error({"code": -32002, "message": "gone"}, "fake")
+
+    sandbox = xp.ExecSandboxProtocol(Gone(), ALL_FEATURES)  # type: ignore[arg-type]
+    for call in (
+        sandbox.get_info("x"),
+        sandbox.set_timeout("x", 5),
+        sandbox.pause("x"),
+        sandbox.resume("x"),
+    ):
+        with pytest.raises(E.SandboxNotFoundError):
+            await call
+
+
+def test_plugin_can_name_sandbox_not_found_itself():
+    exc = map_error(
+        {"code": -32002, "message": "no such sandbox", "data": {"sdk_code": "E2009"}}, "fake"
+    )
+    assert isinstance(exc, E.SandboxNotFoundError)
+    assert exc.code == "E2009"
 
 
 async def test_port_url_requires_the_feature():
@@ -309,11 +335,11 @@ secret = true
 
 @pytest.fixture
 def echo(iso, tmp_path):  # noqa: F811
-    from easy_sandbox.providers import installer
+    from agent_sandbox.providers import installer
 
     src = tmp_path / "echo-src"
     src.mkdir()
-    (src / "ebx-provider.toml").write_text(ECHO_MANIFEST, encoding="utf-8")
+    (src / "abx-provider.toml").write_text(ECHO_MANIFEST, encoding="utf-8")
     (src / "provider.py").write_text(ECHO_PLUGIN, encoding="utf-8")
     installer.install(str(src), yes=True)
     return iso
@@ -366,7 +392,7 @@ async def test_connect_uses_get_when_plugin_has_no_connect(echo):
 
 
 async def test_builtin_network_stays_local():
-    from easy_sandbox.api.network import NetworkModule
+    from agent_sandbox.api.network import NetworkModule
 
     net = NetworkModule("sbx-1", "example.com", secure=True, access_token="t")
     url, headers = await net.resolve(80)

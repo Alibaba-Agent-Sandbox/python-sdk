@@ -11,9 +11,9 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from websockets.sync.client import connect
 
-import easy_sandbox.server.routes_agents  # noqa: F401  (registers routes)
-from easy_sandbox.server.agents.local_state import get_state
-from easy_sandbox.server.routes_agents import reset_agent_runtime
+import agent_sandbox.server.routes_agents  # noqa: F401  (registers routes)
+from agent_sandbox.server.agents.local_state import get_state
+from agent_sandbox.server.routes_agents import reset_agent_runtime
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -39,16 +39,16 @@ def _agents_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     codex.chmod(0o755)
     monkeypatch.setenv("PATH", str(bindir) + os.pathsep + os.environ.get("PATH", ""))
     for name in (
-        "EBX_AGENTS_DEFAULT",
-        "EBX_AGENTS_CONFIG",
-        "EBX_SERVER_TOKEN",
-        "EBX_AGENTS_MAX_FILE_BYTES",
+        "ABX_AGENTS_DEFAULT",
+        "ABX_AGENTS_CONFIG",
+        "ABX_SERVER_TOKEN",
+        "ABX_AGENTS_MAX_FILE_BYTES",
         "CODEX_HOME",
     ):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setenv("EBX_AGENTS_PERSIST", "0")
-    monkeypatch.setenv("EBX_AGENTS_RESPONSES_WORKSPACE", str(tmp_path / "responses-ws"))
-    monkeypatch.setenv("EBX_SERVER_ENABLED_GROUPS", "agents")
+    monkeypatch.setenv("ABX_AGENTS_PERSIST", "0")
+    monkeypatch.setenv("ABX_AGENTS_RESPONSES_WORKSPACE", str(tmp_path / "responses-ws"))
+    monkeypatch.setenv("ABX_SERVER_ENABLED_GROUPS", "agents")
     reset_agent_runtime()
     yield
     reset_agent_runtime()
@@ -89,7 +89,7 @@ class TestResponsesWebSocket:
             )
             steered = _recv_events(conn, "response.completed")[-1]["response"]
             assert steered["previous_response_id"] == first["id"]
-            assert "queued_steer" in steered["x_easy_sandbox"]["differences"]
+            assert "queued_steer" in steered["x_agent_sandbox"]["differences"]
 
             conn.send(json.dumps({"type": "response.bogus"}))
             assert json.loads(conn.recv(timeout=10))["type"] == "error"
@@ -119,7 +119,7 @@ class TestResponsesWebSocket:
     def test_token_is_required_for_the_upgrade(
         self, live_server: Callable[..., Live], monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv("EBX_SERVER_TOKEN", "s3cret")
+        monkeypatch.setenv("ABX_SERVER_TOKEN", "s3cret")
         live = live_server()
         url = f"ws://127.0.0.1:{live.port}/v1/responses"
         with socket.create_connection(("127.0.0.1", live.port), timeout=10) as sock:
@@ -138,7 +138,7 @@ class TestResponsesWebSocket:
             )
 
 
-BOUNDARY = "----ebxTestBoundary7MA4YWxkTrZu0gW"
+BOUNDARY = "----abxTestBoundary7MA4YWxkTrZu0gW"
 PAYLOAD = b"\x00\x01binary\r\nline2\r\n--not-a-boundary\xff\xfe" + bytes(range(256))
 
 
@@ -174,7 +174,7 @@ class TestMultipartFiles:
         assert blob["object"] == "file" and blob["bytes"] == len(PAYLOAD)
         assert blob["filename"] == "report.bin" and blob["purpose"] == "user_data"
 
-        stored = get_state().blobs.get("local", blob["id"])
+        stored = get_state().blobs.get("anonymous", blob["id"])
         assert stored is not None and stored.private["data"] == PAYLOAD
 
         workspace = tmp_path / "workspace"
@@ -215,5 +215,5 @@ class TestMultipartFiles:
         data = base64.b64encode(b"json-bytes").decode()
         status, blob = live.post("/v1/files", {"purpose": "user_data", "data": data})
         assert status == 200 and blob["bytes"] == len(b"json-bytes")
-        stored = get_state().blobs.get("local", blob["id"])
+        stored = get_state().blobs.get("anonymous", blob["id"])
         assert stored is not None and stored.private["data"] == b"json-bytes"

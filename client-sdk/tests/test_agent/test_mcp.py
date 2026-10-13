@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from easy_sandbox.agent.mcp import (
+from agent_sandbox.agent.mcp import (
     INVALID_REQUEST,
     MCP_PROTOCOL_VERSION,
     METHOD_NOT_FOUND,
@@ -65,7 +65,7 @@ class TestSandboxManager:
         mock_sb = AsyncMock()
         mock_sb.id = "sbx-001"
         with patch(
-            "easy_sandbox.api.sandbox.Sandbox.create",
+            "agent_sandbox.api.sandbox.Sandbox.create",
             new_callable=AsyncMock,
             return_value=mock_sb,
         ):
@@ -225,7 +225,7 @@ class TestSandboxMCPServer:
         # Mock the manager's get_sandbox
         mock_sb = AsyncMock()
         mock_sb.id = "sbx-t"
-        from easy_sandbox.models.process import CodeResult
+        from agent_sandbox.models.process import CodeResult
 
         mock_sb.run_code = AsyncMock(
             return_value=CodeResult(
@@ -402,8 +402,8 @@ class TestDefaultSandboxContract:
             created.append(sandbox)
             return sandbox
 
-        with patch("easy_sandbox.api.sandbox.Sandbox.create", new=_create):
-            from easy_sandbox.agent.tools import dispatch_tool
+        with patch("agent_sandbox.api.sandbox.Sandbox.create", new=_create):
+            from agent_sandbox.agent.tools import dispatch_tool
 
             created_result = await dispatch_tool("create_sandbox", {}, manager)
             written = await dispatch_tool(
@@ -423,7 +423,7 @@ class TestDefaultSandboxContract:
 
     async def test_kill_without_sandbox_is_an_error(self):
         manager = SandboxManager()
-        from easy_sandbox.agent.tools import dispatch_tool
+        from agent_sandbox.agent.tools import dispatch_tool
 
         result = await dispatch_tool("kill_sandbox", {}, manager)
         assert result["success"] is False
@@ -442,7 +442,7 @@ class TestDefaultSandboxContract:
             await release.wait()
             return _fake_sandbox("sb-shared", str(kwargs.get("template")))
 
-        with patch("easy_sandbox.api.sandbox.Sandbox.create", new=_create):
+        with patch("agent_sandbox.api.sandbox.Sandbox.create", new=_create):
             first = asyncio.create_task(manager.get_sandbox(None))
             second = asyncio.create_task(manager.get_sandbox(None))
             for _ in range(50):
@@ -460,7 +460,7 @@ class TestDefaultSandboxContract:
         server = SandboxMCPServer()
         mock_sb = AsyncMock()
         mock_sb.id = "sbx-t"
-        from easy_sandbox.models.process import CodeResult
+        from agent_sandbox.models.process import CodeResult
 
         mock_sb.run_code = AsyncMock(
             return_value=CodeResult(text="", stdout="", stderr="nope\n", exit_code=1)
@@ -487,7 +487,7 @@ class TestDefaultSandboxContract:
         assert resp["result"]["isError"] is True
 
     async def test_tool_error_drops_httpx_doc_link(self):
-        from easy_sandbox.agent.tools import dispatch_tool
+        from agent_sandbox.agent.tools import dispatch_tool
 
         class _BoomError(Exception):
             pass

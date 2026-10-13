@@ -7,9 +7,9 @@ import json
 
 import pytest
 
-import easy_sandbox.transport.config as cfgmod
-from easy_sandbox.models import errors as E
-from easy_sandbox.providers import (
+import agent_sandbox.transport.config as cfgmod
+from agent_sandbox.models import errors as E
+from agent_sandbox.providers import (
     Provider,
     ProviderInfra,
     doctor,
@@ -22,9 +22,9 @@ from easy_sandbox.providers import (
     registry,
     resolve_provider_id,
 )
-from easy_sandbox.providers.__main__ import main as cli_main
-from easy_sandbox.providers.rest_provider import HeaderKeyAuth, RestProvider
-from easy_sandbox.transport.config import load_config
+from agent_sandbox.providers.__main__ import main as cli_main
+from agent_sandbox.providers.rest_provider import HeaderKeyAuth, RestProvider
+from agent_sandbox.transport.config import load_config
 from tests.iso import iso  # noqa: F401
 from tests.test_providers.helpers import E2B_COMPATIBLE, LOCAL_PROCESS, write_plugin
 
@@ -71,7 +71,7 @@ class TestRegistry:
 
     def test_broken_install_is_listed_with_error_not_fatal(self, iso, tmp_path):  # noqa: F811
         installer.install(str(LOCAL_PROCESS), yes=True)
-        (installer.store.provider_dir("local-process") / "ebx-provider.toml").write_text(
+        (installer.store.provider_dir("local-process") / "abx-provider.toml").write_text(
             "garbage ["
         )
         rows = {r["id"]: r for r in list_providers()}
@@ -118,9 +118,9 @@ class TestProviderSelection:
     def test_precedence_chain(self, iso, monkeypatch, where):  # noqa: F811
         register_provider(_Py())
         if where == "env":
-            monkeypatch.setenv("EBX_PROVIDER", "py-prov")
+            monkeypatch.setenv("ABX_PROVIDER", "py-prov")
         elif where == "dotenv":
-            iso.write_env("EBX_PROVIDER=py-prov\n")
+            iso.write_env("ABX_PROVIDER=py-prov\n")
         elif where == "toml":
             iso.write_toml('[core]\nprovider = "py-prov"\n')
         got = resolve_provider_id("py-prov") if where == "override" else resolve_provider_id()
@@ -129,9 +129,9 @@ class TestProviderSelection:
     def test_override_beats_env_beats_dotenv_beats_toml(self, iso, monkeypatch):  # noqa: F811
         iso.write_toml('[core]\nprovider = "t"\n')
         assert resolve_provider_id() == "t"
-        iso.write_env("EBX_PROVIDER=d\n")
+        iso.write_env("ABX_PROVIDER=d\n")
         assert resolve_provider_id() == "d"
-        monkeypatch.setenv("EBX_PROVIDER", "e")
+        monkeypatch.setenv("ABX_PROVIDER", "e")
         assert resolve_provider_id() == "e"
         assert resolve_provider_id("o") == "o"
 
@@ -144,8 +144,8 @@ class TestCredentialIsolation:
         return iso
 
     def test_generic_keys_only_reach_builtin_and_consented_inheritors(self, installed, monkeypatch):
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "generic-key-1234")
-        monkeypatch.setenv("EBX_SANDBOX_BASE_URL", "https://generic.example")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "generic-key-1234")
+        monkeypatch.setenv("ABX_SANDBOX_BASE_URL", "https://generic.example")
         assert load_config(provider="alicloud-express").sandbox_api_key == "generic-key-1234"
         assert load_config(provider="local-process").sandbox_api_key is None
         assert load_config(provider="local-process").sandbox_base_url != "https://generic.example"
@@ -156,10 +156,10 @@ class TestCredentialIsolation:
         )
 
     def test_inherit_without_consent_is_dropped(self, installed, monkeypatch):
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "generic-key-1234")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "generic-key-1234")
         import json as _json
 
-        path = installer.store.provider_dir("e2b-compatible") / ".ebx-install.json"
+        path = installer.store.provider_dir("e2b-compatible") / ".abx-install.json"
         receipt = _json.loads(path.read_text())
         receipt["consented"]["inherit"] = []
         path.write_text(_json.dumps(receipt))
@@ -167,8 +167,8 @@ class TestCredentialIsolation:
         assert registry.get_provider("e2b-compatible").inherit == frozenset()
 
     def test_scoped_env_beats_generic_for_inheritor(self, installed, monkeypatch):
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "generic")
-        monkeypatch.setenv("EBX_E2B_COMPATIBLE_SANDBOX_API_KEY", "scoped")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "generic")
+        monkeypatch.setenv("ABX_E2B_COMPATIBLE_SANDBOX_API_KEY", "scoped")
         assert load_config(provider="e2b-compatible").sandbox_api_key == "scoped"
         assert load_config(provider="alicloud-express").sandbox_api_key == "generic"
 
@@ -180,9 +180,9 @@ class TestCredentialIsolation:
         assert load_config(provider="local-process").provider_options == {"debug": False}
         installed.write_toml("[providers.local-process]\ndebug = true\n")
         assert load_config(provider="local-process").provider_options["debug"] is True
-        installed.write_env("EBX_LOCAL_PROCESS_TOKEN=from-dotenv\n")
+        installed.write_env("ABX_LOCAL_PROCESS_TOKEN=from-dotenv\n")
         assert load_config(provider="local-process").provider_options["token"] == "from-dotenv"
-        monkeypatch.setenv("EBX_LOCAL_PROCESS_TOKEN", "from-env")
+        monkeypatch.setenv("ABX_LOCAL_PROCESS_TOKEN", "from-env")
         cfgmod.reset_config()
         assert load_config(provider="local-process").provider_options["token"] == "from-env"
         assert (
@@ -193,7 +193,7 @@ class TestCredentialIsolation:
         )
 
     def test_other_providers_options_do_not_leak(self, installed, monkeypatch):
-        monkeypatch.setenv("EBX_LOCAL_PROCESS_TOKEN", "tok")
+        monkeypatch.setenv("ABX_LOCAL_PROCESS_TOKEN", "tok")
         assert "token" not in load_config(provider="alicloud-express").provider_options
         assert load_config(provider="alicloud-express").access_key_secret is None
 
@@ -214,7 +214,7 @@ class TestRestProvider:
 
     async def test_build_infra_uses_inherited_key(self, iso, monkeypatch):  # noqa: F811
         installer.install(str(E2B_COMPATIBLE), yes=True)
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "abcd1234")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "abcd1234")
         prov = registry.get_provider("e2b-compatible")
         assert isinstance(prov, RestProvider)
         infra = await prov.build_infra(load_config(provider="e2b-compatible"))
@@ -306,7 +306,7 @@ class TestModuleCli:
         assert {f["key"] for f in info["config_fields"]} == {"token", "debug"}
         assert (
             next(f for f in info["config_fields"] if f["key"] == "token")["env"]
-            == "EBX_LOCAL_PROCESS_TOKEN"
+            == "ABX_LOCAL_PROCESS_TOKEN"
         )
 
         code, out, _ = self.run(capsys, "--json", "doctor", "local-process")

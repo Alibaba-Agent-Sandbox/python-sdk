@@ -7,7 +7,7 @@ Before the `python-sdk` repository is published, files inherited from the origin
 single repository still carried developer-machine specifics: an absolute
 home-directory path used as the benchmark working directory, `.venv/bin/python` in
 script usage text and evidence logs, a personal ACR namespace (as `.env.example`
-value and as an implicit default in the e2e scripts), a hard-coded `ebx` invocation
+value and as an implicit default in the e2e scripts), a hard-coded `abx` invocation
 in the e2e scripts, and a personal home directory in sample MCP output.
 
 ## Decision
@@ -22,9 +22,9 @@ in the e2e scripts, and a personal home directory in sample MCP output.
    - `scripts/e2e/e2e_build_and_test.py` and `scripts/e2e/quick_build_test.py` require
      `ACR_NAMESPACE` (no personal default; clear exit message), registry/repo/tag stay
      overridable (`ACR_REGISTRY`, `ACR_REPO`, `ACR_TAG`).
-   - The `ebx` executable used by `scripts/e2e/cloud_e2e_test.py` and
+   - The `abx` executable used by `scripts/e2e/cloud_e2e_test.py` and
      `examples/compat-demos/e2e_capability_validation.py` comes from `PATH`,
-     overridable with `EBX_BIN`.
+     overridable with `ABX_BIN`.
    - `.env.example`: `ACR_NAMESPACE=<your-namespace>`.
    - Docs: a user-home absolute path to `mcp.json` became `~/.cursor/mcp.json`.
    - Ignored `.agents/evidence` logs: `.venv/bin/python` / `.venv/bin/ruff` replaced

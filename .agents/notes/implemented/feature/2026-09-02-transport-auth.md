@@ -26,8 +26,8 @@ class AkSkAuth:
 ```
 
 ## Implementation
-- **Source**: `src/easy_sandbox/transport/auth.py`
-- **Config**: `src/easy_sandbox/transport/config.py` (credential source priority)
+- **Source**: `src/agent_sandbox/transport/auth.py`
+- **Config**: `src/agent_sandbox/transport/config.py` (credential source priority)
 - **Tests**: `tests/test_transport/test_auth.py`
 - **Env var aliases**: `SANDBOX_API_KEY`, `E2B_API_KEY` (E2B compatible), first-set-wins priority
 

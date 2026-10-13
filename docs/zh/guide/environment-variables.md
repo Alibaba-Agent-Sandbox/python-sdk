@@ -1,8 +1,8 @@
 # 沙箱环境变量指南
 
-> **说明：** 本页出现的 `ebx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @easy-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`easy-sandbox`）与容器侧运行时（`easy-sandbox-server`）。
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox`）与容器侧运行时（`agent-sandbox-server`）。
 
-本指南说明环境变量在 Easy Sandbox 中的工作方式，涵盖两种独立的进程作用域、注入方法、直接执行（direct-exec）语义以及推荐实践。
+本指南说明环境变量在 Agent Sandbox 中的工作方式，涵盖两种独立的进程作用域、注入方法、直接执行（direct-exec）语义以及推荐实践。
 
 > **设计决策：** SDK 不提供 `sandbox.set_env()` API。envd 进程树和 SandboxServer 的 `os.environ` 是两个独立且不可统一的作用域，提供单一的"设置环境变量"抽象会造成误导。请使用下文描述的作用域特定注入方法。
 
@@ -53,7 +53,7 @@ sandbox = await Sandbox.create(
 **CLI：**
 
 ```bash
-ebx create --template base --env DATABASE_URL=postgres://... --env APP_ENV=staging
+abx create --template base --env DATABASE_URL=postgres://... --env APP_ENV=staging
 ```
 
 **`@sandbox` 装饰器：**
@@ -83,15 +83,7 @@ result = await sandbox.run_code(
 )
 ```
 
-> **注意参数命名差异：** `commands.run()` 使用 `env=`（单数）；`run_code()` 使用 `envs=`（复数）。这遵循 E2B 兼容约定。
-
-### 通过 `sandbox.run()` 快捷调用
-
-`sandbox.run()` 是 `sandbox.commands.run()` 的顶层快捷方式：
-
-```python
-result = await sandbox.run("printenv MY_VAR", env={"MY_VAR": "hello"})
-```
+> **注意参数命名差异：** `commands.run()` 使用 `env=`（单数）；`run_code()` 使用 `envs=`（复数）。这沿用 E2B 的命名约定。
 
 ---
 
@@ -105,16 +97,16 @@ result = await sandbox.run("printenv MY_VAR", env={"MY_VAR": "hello"})
 
 ```python
 # ✅ 可用 — 管道被自动检测并包裹
-result = await sandbox.run("ls /tmp | grep log")
+result = await sandbox.commands.run("ls /tmp | grep log")
 
 # ✅ 可用 — 重定向被自动检测并包裹
-result = await sandbox.run("echo hello > /tmp/hello.txt")
+result = await sandbox.commands.run("echo hello > /tmp/hello.txt")
 
 # ✅ 可用 — && 被自动检测并包裹
-result = await sandbox.run("cd /app && python main.py")
+result = await sandbox.commands.run("cd /app && python main.py")
 
 # ✅ 可用 — 分号被自动检测并包裹
-result = await sandbox.run("mkdir -p /tmp/out; cp file.txt /tmp/out/")
+result = await sandbox.commands.run("mkdir -p /tmp/out; cp file.txt /tmp/out/")
 ```
 
 ### 变量展开仍需手动包裹
@@ -123,15 +115,15 @@ Shell 变量展开（`$VAR`、`${VAR}`）**不会**被自动检测，因为 `$` 
 
 ```python
 # ❌ 错误 — $HOME 作为字面字符串传递（不会触发自动包裹）
-result = await sandbox.run("echo $HOME")
+result = await sandbox.commands.run("echo $HOME")
 # stdout: "$HOME"（字面值）
 
 # ✅ 正确 — 使用 sh -c 进行变量展开
-result = await sandbox.run("sh -c 'echo $HOME'")
+result = await sandbox.commands.run("sh -c 'echo $HOME'")
 # stdout: "/root"
 
 # ✅ 正确 — 使用 printenv 读取单个变量
-result = await sandbox.run("printenv HOME")
+result = await sandbox.commands.run("printenv HOME")
 # stdout: "/root"
 ```
 
@@ -139,10 +131,10 @@ result = await sandbox.run("printenv HOME")
 
 ```python
 # ❌ 错误 — * 作为字面字符传递（不会触发自动包裹）
-result = await sandbox.run("ls *.py")
+result = await sandbox.commands.run("ls *.py")
 
 # ✅ 正确
-result = await sandbox.run("sh -c 'ls *.py'")
+result = await sandbox.commands.run("sh -c 'ls *.py'")
 ```
 
 ### 经验法则
@@ -204,7 +196,7 @@ print(resp.json()["updated"])  # ["MY_CONFIG"]
 Server 拒绝覆写以下变量：
 
 - 系统变量：`PATH`、`HOME`、`USER`、`SHELL`
-- SDK 内部变量：任何以 `EBX_` 开头的变量（包括 `EBX_SERVER_TOKEN`）
+- SDK 内部变量：任何以 `ABX_` 开头的变量（包括 `ABX_SERVER_TOKEN`）
 
 ---
 
@@ -225,7 +217,7 @@ sandbox = await Sandbox.create(
 )
 
 # 后续所有命令都能看到这些变量
-result = await sandbox.run("printenv DATABASE_URL")
+result = await sandbox.commands.run("printenv DATABASE_URL")
 ```
 
 ### 模式 2：按调用传 env Dict（局部覆盖）
@@ -235,7 +227,7 @@ result = await sandbox.run("printenv DATABASE_URL")
 ```python
 env = {"BATCH_ID": "batch-001", "DRY_RUN": "true"}
 
-result = await sandbox.run("sh -c 'python process.py'", env=env)
+result = await sandbox.commands.run("sh -c 'python process.py'", env=env)
 ```
 
 ### 模式 3：复用 env Dict 对象
@@ -245,8 +237,8 @@ result = await sandbox.run("sh -c 'python process.py'", env=env)
 ```python
 shared_env = {"DATABASE_URL": db_url, "LOG_LEVEL": "DEBUG"}
 
-await sandbox.run("sh -c 'python migrate.py'", env=shared_env)
-await sandbox.run("sh -c 'python seed.py'", env=shared_env)
+await sandbox.commands.run("sh -c 'python migrate.py'", env=shared_env)
+await sandbox.commands.run("sh -c 'python seed.py'", env=shared_env)
 await sandbox.run_code("import os; print(os.environ['LOG_LEVEL'])", envs=shared_env)
 ```
 
@@ -267,18 +259,18 @@ httpx.post(
 )
 
 # 该变量现在对 Server 命令处理器可见：
-result = await sandbox.custom("my_handler")
+result = await sandbox.run("my_handler")
 ```
 
 ---
 
 ## 客户端配置变量不是沙箱变量
 
-在**你的机器上**配置 SDK 和 CLI 的变量（`EBX_SANDBOX_API_KEY`、`EBX_PROVIDER`、`ALIBABA_CLOUD_REGION_ID`、`EBX_LLM_API_KEY` 等）由客户端读取，永远不会被复制进沙箱。要让某个值在沙箱内可见，请用 `envs=` / `--env` 显式传入。每项客户端设置只有一个变量。名字和优先级见[配置参考](../reference/configuration.md#环境变量)。
+在**你的机器上**配置 SDK 和 CLI 的变量（`ABX_SANDBOX_API_KEY`、`ABX_PROVIDER`、`ALIBABA_CLOUD_REGION_ID` 等）由客户端读取，永远不会被复制进沙箱。要让某个值在沙箱内可见，请用 `envs=` / `--env` 显式传入。每项客户端设置只有一个变量。名字和优先级见[配置参考](../reference/configuration.md#环境变量)。
 
 由此有两点：
 
-- 在 Server 内部，所有以 `EBX_` 开头的名字都受保护（见上文）。不要把 `EBX_*` 用作你自己的沙箱变量。
+- 在 Server 内部，所有以 `ABX_` 开头的名字都受保护（见上文）。不要把 `ABX_*` 用作你自己的沙箱变量。
 - [提供方插件](providers.md)同样不继承你的 shell 环境。插件进程以清理过的环境启动，它需要的配置值通过 `initialize` 请求发送给它。
 
 ---
@@ -289,7 +281,7 @@ result = await sandbox.custom("my_handler")
 
 2. **`GET /env` 脱敏**：Server 的 `GET /env` 端点自动隐藏名称中包含 `TOKEN`、`SECRET`、`KEY`、`PASSWORD` 或 `CREDENTIAL` 的变量。
 
-3. **受保护的 Server 变量**：`POST /env` 禁止写入 `PATH`、`HOME`、`USER`、`SHELL` 及所有 `EBX_*` 变量，防止意外破坏。
+3. **受保护的 Server 变量**：`POST /env` 禁止写入 `PATH`、`HOME`、`USER`、`SHELL` 及所有 `ABX_*` 变量，防止意外破坏。
 
 4. **无跨作用域泄漏**：通过 `POST /env` 在 Server 上设置的变量对 envd 进程不可见，反之亦然。这是安全特性，而非缺陷。
 
@@ -314,6 +306,6 @@ result = await sandbox.custom("my_handler")
 
 - [SDK 使用指南](sdk-usage.md) — `commands.run()` 与 `run_code()` 用法
 - [声明式用法](declarative-usage.md) — `@sandbox(envs=)` 装饰器
-- [CLI 教程](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/cli-tutorial.md) — `ebx create --env`
+- [CLI 教程](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/cli-tutorial.md) — `abx create --env`
 - [配置参考](../reference/configuration.md) — SDK/CLI 环境变量（每个键一个名字）
 - [提供方](providers.md) — 选择和安装沙箱提供方

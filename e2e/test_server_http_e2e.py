@@ -1,4 +1,4 @@
-"""HTTP end-to-end tests for ``python -m easy_sandbox.server serve``.
+"""HTTP end-to-end tests for ``python -m agent_sandbox.server serve``.
 
 A real subprocess listens on 127.0.0.1. Every check is a separate HTTP client
 (or a raw socket for the responses upgrade). Handlers are never called in-process.
@@ -40,11 +40,13 @@ _DROP = {
     "CODEX_API_KEY",
     "ANTHROPIC_API_KEY",
     "E2B_API_KEY",
-    "EBX_SERVER_TOKEN",
-    "EBX_SERVER_POLICY",
-    "EBX_SERVER_POLICY_FILE",
-    "EBX_AGENTS_CONFIG",
-    "EBX_AGENTS_DEFAULT",
+    "ABX_SERVER_TOKEN",
+    "ABX_SERVER_POLICY",
+    "ABX_SERVER_POLICY_FILE",
+    "ABX_SERVER_ENABLED_GROUPS",
+    "ABX_SERVER_BASE_DIR",
+    "ABX_AGENTS_CONFIG",
+    "ABX_AGENTS_DEFAULT",
 }
 
 
@@ -91,7 +93,7 @@ def _install_fakes(bindir: Path) -> None:
 
 
 class LiveServer:
-    """One ``python -m easy_sandbox.server serve`` process."""
+    """One ``python -m agent_sandbox.server serve`` process."""
 
     def __init__(self, root: Path, bindir: Path, *, token: str | None) -> None:
         self.root = root
@@ -116,17 +118,17 @@ class LiveServer:
                 env.pop(key, None)
             env["PYTHONPATH"] = str(SDK_SRC)
             env["PATH"] = str(self.bindir) + os.pathsep + env.get("PATH", "")
-            env["EBX_SERVER_ENABLED_GROUPS"] = "agents"
-            env["EBX_AGENTS_PERSIST"] = "0"
-            env["EBX_AGENTS_RESPONSES_WORKSPACE"] = str(self.root / "responses-ws")
+            env["ABX_SERVER_ENABLED_GROUPS"] = "agents"
+            env["ABX_AGENTS_PERSIST"] = "0"
+            env["ABX_AGENTS_RESPONSES_WORKSPACE"] = str(self.root / "responses-ws")
             env["HOME"] = str(self.root / "home")
             if self.token:
-                env["EBX_SERVER_TOKEN"] = self.token
+                env["ABX_SERVER_TOKEN"] = self.token
             self.proc = subprocess.Popen(
                 [
                     sys.executable,
                     "-m",
-                    "easy_sandbox.server",
+                    "agent_sandbox.server",
                     "serve",
                     "--host",
                     "127.0.0.1",
@@ -252,7 +254,7 @@ class LiveServer:
 
 @pytest.fixture(scope="module")
 def servers(tmp_path_factory: pytest.TempPathFactory) -> Any:
-    root = tmp_path_factory.mktemp("ebx-http-e2e")
+    root = tmp_path_factory.mktemp("abx-http-e2e")
     bindir = root / "bin"
     _install_fakes(bindir)
     opened = LiveServer(root / "open", bindir, token=None)
@@ -275,7 +277,7 @@ def _b64(data: bytes) -> str:
 
 
 def _workspace(server: LiveServer, name: str) -> Path:
-    path = server.root / name
+    path = server.base_dir / name
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -307,39 +309,93 @@ def test_health_is_open_with_and_without_token(servers: dict[str, LiveServer]) -
         assert result.json() == {"status": "ok"}
 
 
-def test_capabilities_and_ops_with_and_without_token(servers: dict[str, LiveServer]) -> None:
+def test_capabilities_with_and_without_token(servers: dict[str, LiveServer]) -> None:
     opened = servers["open"]
     locked = servers["token"]
 
     open_caps = opened.get("/capabilities", auth=False)
     assert open_caps.status == 200, open_caps.text
-    assert open_caps.json()["groups"]["agents"] is True
-
-    open_ops = opened.get("/ops", auth=False)
-    assert open_ops.status == 200, open_ops.text
-    assert open_ops.json()["api"] == "easy-sandbox/2"
-    assert "files.mkdir" in {row["id"] for row in open_ops.json()["ops"]}
+    doc = open_caps.json()
+    assert doc["groups"]["agents"] is True and doc["groups"]["file_ops"] is True
+    assert doc["groups"]["dev_tools"] is False and doc["groups"]["browser"] is False
+    assert doc["group_summary"]["dev_tools"]["enabled"] == 0
+    assert doc["group_summary"]["agents"]["enabled"] == doc["group_summary"]["agents"]["total"]
 
     denied_caps = locked.get("/capabilities", auth=False)
     assert denied_caps.status == 401, denied_caps.text
     assert denied_caps.json()["error"] == "unauthorized"
 
-    denied_ops = locked.get("/ops", auth=False)
-    assert denied_ops.status == 401, denied_ops.text
-    assert denied_ops.json()["error"] == "unauthorized"
-
     authed_caps = locked.get("/capabilities")
     assert authed_caps.status == 200, authed_caps.text
     assert "groups" in authed_caps.json()
 
-    authed_ops = locked.get("/ops")
-    assert authed_ops.status == 200, authed_ops.text
-    assert isinstance(authed_ops.json()["ops"], list)
-    assert authed_ops.json()["count"] == len(authed_ops.json()["ops"])
+
+def test_capabilities_name_the_rule_that_disabled_an_endpoint(
+    servers: dict[str, LiveServer],
+) -> None:
+    server = _open(servers)
+    endpoints = server.get("/capabilities").json()["endpoints"]
+    assert endpoints["shell"]["enabled"] is True and endpoints["shell"]["rule"] is None
+    code_run = endpoints["code_run"]
+    assert (code_run["enabled"], code_run["allowed"]) == (False, False)
+    assert code_run["reason"] == "endpoint_disabled"
+    assert code_run["rule"] == "default:opt-in:dev_tools"
+    assert code_run["summary"]
+
+
+def test_disabled_endpoint_answers_404_with_its_rule(servers: dict[str, LiveServer]) -> None:
+    result = _open(servers).post("/code/run", {"code": "print(1)"})
+    assert result.status == 404, result.text
+    body = result.json()
+    assert body["code"] == "endpoint_disabled" and body["endpoint"] == "code_run"
+    assert body["rule"] == "default:opt-in:dev_tools"
+    assert "dev_tools" in body["error"]
+
+
+def test_removed_ops_surface_is_gone(servers: dict[str, LiveServer]) -> None:
+    server = _open(servers)
+    assert server.get("/ops", auth=False).status == 404
+    assert server.post("/ops/files.mkdir", {"path": str(server.base_dir / "x")}).status == 404
+
+
+def test_path_outside_the_base_dir_is_a_403_path_not_allowed(
+    servers: dict[str, LiveServer],
+) -> None:
+    server = _open(servers)
+    outside = str(server.root / "outside.txt")
+    for result in (
+        server.post("/files/mkdir", {"path": outside}),
+        server.post("/upload", {"path": outside, "content_base64": _b64(b"x")}),
+        server.get("/download", query={"path": outside}),
+    ):
+        assert result.status == 403, result.text
+        assert result.json()["code"] == "path_not_allowed"
+    assert not Path(outside).exists()
+
+
+def test_capabilities_check_decides_without_touching_the_filesystem(
+    servers: dict[str, LiveServer],
+) -> None:
+    server = _open(servers)
+    inside = server.post(
+        "/capabilities/check",
+        {"endpoint": "files_mkdir", "path": str(server.base_dir / "new"), "op": "write"},
+    )
+    assert inside.status == 200, inside.text
+    assert inside.json()["allowed"] is True
+    outside = server.post(
+        "/capabilities/check",
+        {"endpoint": "files_mkdir", "path": str(server.root / "outside"), "op": "write"},
+    )
+    assert outside.json()["allowed"] is False and outside.json()["code"] == "path_not_allowed"
+    disabled = server.post("/capabilities/check", {"endpoint": "code_run"})
+    assert disabled.json()["code"] == "endpoint_disabled"
+    assert disabled.json()["rule"] == "default:opt-in:dev_tools"
+    assert not (server.base_dir / "new").exists()
 
 
 # ---------------------------------------------------------------------- #
-# Files, shell, ops parity
+# Files and shell
 # ---------------------------------------------------------------------- #
 
 
@@ -383,29 +439,6 @@ def test_shell_stdout(servers: dict[str, LiveServer]) -> None:
     assert result.json()["exit_code"] == 0
 
 
-def test_ops_file_and_core_match_legacy(servers: dict[str, LiveServer]) -> None:
-    server = _open(servers)
-    path = str(server.base_dir / f"ops-{uuid.uuid4().hex}")
-    body = {"path": path}
-    legacy = server.post("/files/mkdir", body)
-    via_ops = server.post("/ops/files.mkdir", body)
-    assert (via_ops.status, via_ops.json()) == (legacy.status, legacy.json()), (
-        via_ops.text,
-        legacy.text,
-    )
-    assert via_ops.status == 200, via_ops.text
-    assert via_ops.json()["created"] is True
-
-    legacy_core = server.get("/capabilities")
-    via_core = server.post("/ops/core.capabilities", {})
-    assert (via_core.status, via_core.json()) == (legacy_core.status, legacy_core.json()), (
-        via_core.text,
-        legacy_core.text,
-    )
-    assert via_core.status == 200
-    assert "groups" in via_core.json()
-
-
 # ---------------------------------------------------------------------- #
 # Agents
 # ---------------------------------------------------------------------- #
@@ -429,7 +462,7 @@ def test_agent_session_events_items(
     )
     assert created.status == 200, created.text
     assert created.json()["object"] == "agent.session"
-    assert created.headers.get("x-easy-sandbox-local") == "1"
+    assert created.headers.get("x-agent-sandbox-local") == "1"
     session_id = created.json()["id"]
 
     events = server.post(
@@ -451,9 +484,11 @@ def test_agent_session_events_items(
 def test_agent_runtimes_local_header(servers: dict[str, LiveServer]) -> None:
     result = _open(servers).get("/v1/agents/runtimes")
     assert result.status == 200, result.text
-    assert result.headers.get("x-easy-sandbox-local") == "1"
+    assert result.headers.get("x-agent-sandbox-local") == "1"
     rows = {row["name"]: row for row in result.json()["data"]}
-    assert set(rows) == {"codex", "qwen-code"}
+    implemented = {name for name, row in rows.items() if row.get("implemented", True)}
+    assert implemented == {"codex", "qwen-code"}, rows
+    assert {"claude-code", "cursor", "command"} <= set(rows)
     assert rows["codex"]["installed"] is True
     assert rows["qwen-code"]["installed"] is True
 
@@ -659,7 +694,7 @@ def test_responses_websocket_upgrade(servers: dict[str, LiveServer]) -> None:
         }
         expect = base64.b64encode(hashlib.sha1(key.encode() + WS_GUID).digest()).decode()
         assert headers.get("sec-websocket-accept") == expect
-        assert headers.get("x-easy-sandbox-local") == "1"
+        assert headers.get("x-agent-sandbox-local") == "1"
         _ws_send_text(
             sock, json.dumps({"type": "response.create", "model": "codex", "input": "hi"})
         )

@@ -48,10 +48,15 @@ class TestShell:
         status, body = live.post("/shell", {"command": "sleep 5", "timeout": 0.3})
         assert status == 500 and body["type"] == "TimeoutError"
 
-    def test_bad_cwd_is_400(self, live_server: Any) -> None:
+    def test_bad_cwd_is_400(self, live_server: Any, tmp_path: Path) -> None:
         live: Live = live_server()
-        status, _ = live.post("/shell", {"command": "true", "cwd": "/definitely/not/here"})
+        status, _ = live.post("/shell", {"command": "true", "cwd": str(tmp_path / "missing")})
         assert status == 400
+
+    def test_cwd_outside_the_base_dir_is_denied(self, live_server: Any) -> None:
+        live: Live = live_server()
+        status, body = live.post("/shell", {"command": "true", "cwd": "/definitely/not/here"})
+        assert status == 403 and body["code"] == "path_not_allowed"
 
     def test_stream_honours_env(self, live_server: Any) -> None:
         live: Live = live_server()
@@ -162,7 +167,7 @@ class TestFilesWatch:
         assert live.get("/files/watch")[0] == 400
         assert live.get(f"/files/watch?path={sandbox_tree}/missing")[0] == 404
         assert live.get(f"/files/watch?path={sandbox_tree}&interval=x")[0] == 400
-        assert live.get("/files/watch?path=/etc")[0] == 400
+        assert live.get("/files/watch?path=/etc")[0] == 403
 
 
 class TestPtyRest:

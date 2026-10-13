@@ -38,8 +38,8 @@ in sandbox creation.
   significant and the fix is expected. Rejected.
 
 ## Files changed
-- `src/easy_sandbox/api/sandbox.py` — default `generation=1`
-- `src/easy_sandbox/models/sandbox.py` — generation field documentation
+- `src/agent_sandbox/api/sandbox.py` — default `generation=1`
+- `src/agent_sandbox/models/sandbox.py` — generation field documentation
 
 ## Acceptance criteria
 - ✅ `sandbox.create()` defaults to generation=1

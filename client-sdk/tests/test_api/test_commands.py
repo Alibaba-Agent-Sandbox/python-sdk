@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from easy_sandbox.api.commands import CommandsModule
-from easy_sandbox.models.process import (
+from agent_sandbox.api.commands import CommandsModule
+from agent_sandbox.models.process import (
     ProcessChunk,
     ProcessChunkType,
     ProcessInfo,

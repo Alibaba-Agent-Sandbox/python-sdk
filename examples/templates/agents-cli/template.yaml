@@ -1,10 +1,10 @@
 # FIXTURE — offline example kept in this repository so the Agents API case can be
 # tested without a publish. Publishable templates live in
-# https://github.com/Easy-Sandbox/awesome-templates
+# https://github.com/alibaba-agent-sandbox/awesome-templates
 name: agents-cli
 version: "1.0.0"
 description: "Agents API for Codex and Qwen Code. The image does not preinstall either CLI."
-author: "Easy-Sandbox"
+author: "alibaba-agent-sandbox"
 tags:
   - agents-api
   - codex
@@ -21,19 +21,10 @@ capabilities:
 ports:
   - 9000
 
-env:
-  EBX_SERVER_ENABLED_GROUPS: "agents"
-
-# The group turns the gate on. ``endpoints`` names each route. ``*`` off means
-# shell, file routes, and the rest of /v1/agents/* stay closed.
+# Endpoint rules are the only switch. `"*"` closes every endpoint (shell, files, and
+# the rest of the Agents API) and the exact rules below open the six routes this
+# template serves. An exact endpoint rule also opens an endpoint of an opt-in group.
 server:
-  groups:
-    agents: true
-    file_ops: false
-    process: false
-    terminal: false
-    dev_tools: false
-    browser: false
   endpoints:
     "*":
       enabled: false

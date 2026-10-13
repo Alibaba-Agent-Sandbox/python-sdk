@@ -52,7 +52,7 @@ jobs:
         run: ruff format --check src tests
 
       - name: Mypy
-        run: mypy src/easy_sandbox
+        run: mypy src/agent_sandbox
 
       - name: Run tests
         run: pytest -v --tb=short -m 'not integration'
@@ -87,7 +87,7 @@ jobs:
         run: ruff format --check src tests
 
       - name: Mypy
-        run: mypy src/easy_sandbox/server
+        run: mypy src/agent_sandbox/server
 
       - name: Run tests
         run: pytest -v --tb=short -m 'not integration'

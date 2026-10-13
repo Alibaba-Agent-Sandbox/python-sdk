@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from easy_sandbox.transport import config as config_module
-from easy_sandbox.transport.config import (
+from agent_sandbox.transport import config as config_module
+from agent_sandbox.transport.config import (
     ENVD_PORT,
     TransportConfig,
     http_timeout_configured,
@@ -131,7 +131,7 @@ class TestLoadConfig:
 
     def test_env_var_api_key(self, monkeypatch):
         reset_config()
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "test-key-from-env")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "test-key-from-env")
         cfg = load_config()
         assert cfg.sandbox_api_key == "test-key-from-env"
 
@@ -143,13 +143,13 @@ class TestLoadConfig:
 
     def test_env_var_base_url(self, monkeypatch):
         reset_config()
-        monkeypatch.setenv("EBX_SANDBOX_BASE_URL", "https://custom.api.com")
+        monkeypatch.setenv("ABX_SANDBOX_BASE_URL", "https://custom.api.com")
         cfg = load_config()
         assert cfg.sandbox_base_url == "https://custom.api.com"
 
     def test_env_var_http_timeout(self, monkeypatch):
         reset_config()
-        monkeypatch.setenv("EBX_HTTP_TIMEOUT", "45.0")
+        monkeypatch.setenv("ABX_HTTP_TIMEOUT", "45.0")
         cfg = load_config()
         assert cfg.http_timeout == 45.0
 
@@ -169,7 +169,7 @@ class TestLoadConfig:
 
     def test_none_override_does_not_clobber(self, monkeypatch):
         reset_config()
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "env-key")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "env-key")
         cfg = load_config(sandbox_api_key=None)
         assert cfg.sandbox_api_key == "env-key"
 
@@ -195,7 +195,7 @@ class TestLoadConfig:
         reset_config()
         monkeypatch.setenv("SANDBOX_API_KEY", "sandbox-key")
         monkeypatch.setenv("E2B_API_KEY", "e2b-key")
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "canon")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "canon")
         cfg = load_config()
         assert cfg.sandbox_api_key == "canon"
 
@@ -203,7 +203,7 @@ class TestLoadConfig:
         reset_config()
         monkeypatch.setenv("SANDBOX_API_BASE_URL", "https://sandbox.api.com")
         monkeypatch.setenv("E2B_API_URL", "https://e2b.api.com")
-        monkeypatch.setenv("EBX_SANDBOX_BASE_URL", "https://canon.example")
+        monkeypatch.setenv("ABX_SANDBOX_BASE_URL", "https://canon.example")
         cfg = load_config()
         assert cfg.sandbox_base_url == "https://canon.example"
 
@@ -257,11 +257,11 @@ class TestDotenvIsolation:
         assert cfg.region == "explicit-region"
 
     def test_project_dotenv_falls_through_to_system_file(self, monkeypatch, tmp_path):
-        """A project .env that omits a key must not hide ~/.ebx/.env."""
+        """A project .env that omits a key must not hide ~/.abx/.env."""
         project = tmp_path / "project.env"
         system = tmp_path / "system.env"
         project.write_text("ALIBABA_CLOUD_REGION_ID=from-project\n", encoding="utf-8")
-        system.write_text("EBX_SANDBOX_API_KEY=from-system\n", encoding="utf-8")
+        system.write_text("ABX_SANDBOX_API_KEY=from-system\n", encoding="utf-8")
         monkeypatch.setattr(config_module, "_ENV_FILE_CANDIDATES", [project, system])
         reset_config()
 
@@ -272,8 +272,8 @@ class TestDotenvIsolation:
     def test_project_dotenv_key_beats_system_file(self, monkeypatch, tmp_path):
         project = tmp_path / "project.env"
         system = tmp_path / "system.env"
-        project.write_text("EBX_SANDBOX_API_KEY=from-project\n", encoding="utf-8")
-        system.write_text("EBX_SANDBOX_API_KEY=from-system\n", encoding="utf-8")
+        project.write_text("ABX_SANDBOX_API_KEY=from-project\n", encoding="utf-8")
+        system.write_text("ABX_SANDBOX_API_KEY=from-system\n", encoding="utf-8")
         monkeypatch.setattr(config_module, "_ENV_FILE_CANDIDATES", [project, system])
         reset_config()
 
@@ -294,12 +294,12 @@ class TestDotenvIsolation:
     def test_blank_process_env_and_override_fall_through(self, monkeypatch, tmp_path):
         """Whitespace does not hide a key stored in .env or config.toml."""
         dotenv = tmp_path / "system.env"
-        dotenv.write_text("EBX_SANDBOX_API_KEY=from-dotenv\n", encoding="utf-8")
+        dotenv.write_text("ABX_SANDBOX_API_KEY=from-dotenv\n", encoding="utf-8")
         toml = tmp_path / "config.toml"
         toml.write_text('[transport]\nregion = "cn-beijing"\n', encoding="utf-8")
         monkeypatch.setattr(config_module, "_ENV_FILE_CANDIDATES", [dotenv])
         monkeypatch.setattr(config_module, "_CONFIG_FILE", toml)
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "   ")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "   ")
         monkeypatch.setenv("ALIBABA_CLOUD_REGION_ID", "  ")
         reset_config()
 
@@ -330,7 +330,7 @@ class TestHttpTimeoutConfigured:
 
     def _isolate(self, monkeypatch, tmp_path):
         """Point all config sources at empty temp locations."""
-        monkeypatch.delenv("EBX_HTTP_TIMEOUT", raising=False)
+        monkeypatch.delenv("ABX_HTTP_TIMEOUT", raising=False)
         monkeypatch.delenv("SANDBOX_HTTP_TIMEOUT", raising=False)
         monkeypatch.setattr(config_module, "_ENV_FILE_CANDIDATES", [])
         cfg_file = tmp_path / "config.toml"
@@ -343,7 +343,7 @@ class TestHttpTimeoutConfigured:
 
     def test_true_when_env_var_set(self, monkeypatch, tmp_path):
         self._isolate(monkeypatch, tmp_path)
-        monkeypatch.setenv("EBX_HTTP_TIMEOUT", "60")
+        monkeypatch.setenv("ABX_HTTP_TIMEOUT", "60")
         assert http_timeout_configured() is True
 
     def test_true_when_toml_has_key(self, monkeypatch, tmp_path):
@@ -354,6 +354,6 @@ class TestHttpTimeoutConfigured:
     def test_true_when_dotenv_has_key(self, monkeypatch, tmp_path):
         self._isolate(monkeypatch, tmp_path)
         dotenv = tmp_path / ".env"
-        dotenv.write_text("EBX_HTTP_TIMEOUT=75\n", encoding="utf-8")
+        dotenv.write_text("ABX_HTTP_TIMEOUT=75\n", encoding="utf-8")
         monkeypatch.setattr(config_module, "_ENV_FILE_CANDIDATES", [dotenv])
         assert http_timeout_configured() is True

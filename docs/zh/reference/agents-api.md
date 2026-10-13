@@ -1,27 +1,27 @@
 # Agents API 参考
 
-沙箱服务端在 `agents` 能力组打开之后提供的全部 HTTP 接口。组默认关闭。目前支持 **Codex**（二进制 `codex`）和 **Qwen Code**（二进制 `qwen`）。目前未支持的适配器名称，包括 Claude Code、Cursor 和 Qoder，返回 404。
+沙箱服务端在 `agents` 能力组打开之后提供的全部 HTTP 接口。组默认关闭。下面 70 条路由全部已实现，每条都有测试。有本地后端的运行时只有两个：**Codex**（二进制 `codex`）和 **Qwen Code**（二进制 `qwen`）。`claude-code`、`cursor` 和 `command` 是已声明、没有本地后端的适配器：`GET /v1/agents/runtimes` 对它们报告 `implemented: false`，选中它们的请求返回 404 `agents.not_implemented_locally`，响应体指向 `GET /v1/agents/runtimes`。
 
 这不是 `sb.agent.*`。用法和案例见 [Agents API](../guide/agents-api.md)。字段级拒绝的叙述见 [托管代理](../guide/hosted-agents.md)。本页按路由列出参数和响应。
 
-路由定义在 `server-sdk/src/easy_sandbox/server/routes_agents.py`。
+端点声明在 `server-sdk/src/agent_sandbox/server/endpoints.py`，处理函数挂在 `routes_agents.py`。
 
 ## 通用约定
 
 打开这一组：
 
 ```bash
-export EBX_SERVER_ENABLED_GROUPS=agents
-python -m easy_sandbox.server serve --port 9000
+export ABX_SERVER_ENABLED_GROUPS=agents      # 或 template.yaml 里 server.groups: [agents]
+python -m agent_sandbox.server serve --port 9000
 ```
 
 | 项 | 值 |
 |---|---|
 | 基址 | `http://<host>:9000`。OpenAI 风格客户端用 `base_url=http://<host>:9000/v1` |
 | 请求体 | `Content-Type: application/json`，对象。空 body 当成 `{}` |
-| 令牌 | 设置了 `EBX_SERVER_TOKEN` 时，这些路由接受 `X-Access-Token` 或 `Authorization: Bearer`。其他路由只接受 `X-Access-Token` |
-| 本地标记 | 每个响应，包括错误，都有响应头 `X-Easy-Sandbox-Local: 1`。成功对象带 `x_easy_sandbox`。`compute` 是 `local_process`、`local_state` 或 `none`，不会是 `openai_hosted` |
-| 所有者 | 有策略时是身份 id，否则是 `local`。别人的 id 和不存在的 id 得到同样的应答 |
+| 令牌 | 设置了 `ABX_SERVER_TOKEN` 时，所有路由都接受 `X-Access-Token` 或 `Authorization: Bearer` |
+| 本地标记 | 每个响应，包括错误，都有响应头 `X-Agent-Sandbox-Local: 1`。成功对象带 `x_agent_sandbox`。`compute` 是 `local_process`、`local_state` 或 `none`，不会是 `openai_hosted` |
+| 所有者 | 调用方的身份 id（没有令牌时是 `anonymous`）。别人的 id 和不存在的 id 得到同样的应答 |
 
 错误信封：
 
@@ -36,7 +36,7 @@ python -m easy_sandbox.server serve --port 9000
 }
 ```
 
-`type` 在 404 时是 `not_found_error`。做不到的变体是 **400**，`x-should-retry: false`。没有本地能力的路由是 **404**，`code` 为 `agents.not_implemented_locally`，`x-should-retry: false`。组关闭时路径 404，正文说明路由已禁用。
+`type` 在 404 时是 `not_found_error`。做不到的变体是 **400**，`x-should-retry: false`。没有本地能力的路由，以及选中了未实现的运行时，是 **404**，`code` 为 `agents.not_implemented_locally`，`x-should-retry: false`，`x_agent_sandbox.runtimes` 指向 `/v1/agents/runtimes`。端点关闭时是 404 `endpoint_disabled`，正文带 `rule`，说明是哪条规则关的。
 
 列表信封（凡是下表写「列表」的）：
 
@@ -56,9 +56,9 @@ python -m easy_sandbox.server serve --port 9000
 }
 ```
 
-会话对象 `agent.session` 的主要字段：`id`、`object`、`agent`（`id`、`name`、`model`、`instructions`、`tools`、`multi_agent.enabled`、`reasoning`、`service_tier`、`text`）、`created_at`、`environment`（`type=self_hosted`、`id`、`workspace_directory`）、`status`、`metadata`、`usage`、`vault_ids`、`error`、`required_actions`、`last_active_at`、`x_easy_sandbox`。
+会话对象 `agent.session` 的主要字段：`id`、`object`、`agent`（`id`、`name`、`model`、`instructions`、`tools`、`multi_agent.enabled`、`reasoning`、`service_tier`、`text`）、`created_at`、`environment`（`type=self_hosted`、`id`、`workspace_directory`）、`status`、`metadata`、`usage`、`vault_ids`、`error`、`required_actions`、`last_active_at`、`x_agent_sandbox`。
 
-适配器选择顺序：请求头 `X-EBX-Adapter`，或正文 `adapter` / `runtime`，或 `agent.model` / `model` 恰好是 `codex`、`openai-codex`、`qwen-code`、`qwen`、`qwen_code`、`qwencode`。`gpt-5` 这种模型 id 会传给被选中的 CLI，不用于选择适配器。都没有时用产品顺序里的第一个：`codex`。`EBX_AGENTS_DEFAULT` 或 `EBX_AGENTS_CONFIG` 里的 `default` / `agents.default` 可以改这个默认。`GET /v1/agents/runtimes?order=asc` 按 `codex`、`qwen-code` 列出。列表默认 `order=desc`。`default: true` 标出当前默认，不看数组下标。其他名字 404 `agents.not_implemented_locally`。每个路由都可以单独放行，端点 id 的默认 scope 是 `agents:use`，见[细粒度能力](../guide/fine-grained-capabilities.md)。
+适配器选择顺序：请求头 `X-ABX-Adapter`，或正文 `adapter` / `runtime`，或 `agent.model` / `model` 恰好是 `codex`、`openai-codex`、`qwen-code`、`qwen`、`qwen_code`、`qwencode`。`gpt-5` 这种模型 id 会传给被选中的 CLI，不用于选择适配器。都没有时用产品顺序里的第一个：`codex`。`ABX_AGENTS_DEFAULT` 或 `ABX_AGENTS_CONFIG` 里的 `default` / `agents.default` 可以改这个默认。`GET /v1/agents/runtimes?order=asc` 按 `codex`、`qwen-code` 列出。列表默认 `order=desc`。`default: true` 标出当前默认，不看数组下标。已声明但未实现的适配器（`claude-code`、`cursor`、`command`）404 `agents.not_implemented_locally`；不认识的名字同样是 404。每个路由都可以单独放行，端点 id 的默认 scope 是 `agents:use`，见[细粒度能力](../guide/fine-grained-capabilities.md)。
 
 CLI 不在基础镜像里。要用时再装：
 
@@ -82,7 +82,7 @@ npm install -g @qwen-code/qwen-code
 | `metadata` | body | 字符串标量的对象。嵌套对象、数组、`null` 是 400 |
 | `environment` | body | `{ "type": "self_hosted", "id": "env_..." }` 可选 |
 | `vault_ids` | body | 可选，字符串数组 |
-| `X-EBX-Adapter` | header | 可选 |
+| `X-ABX-Adapter` | header | 可选 |
 
 `environment.type` 固定为 `self_hosted`。`workspace_directory` 默认 `/workspace`。
 
@@ -103,7 +103,7 @@ npm install -g @qwen-code/qwen-code
 删除会话，并清掉产物快照。成功 **200**：
 
 ```json
-{ "id": "agsess_...", "object": "agent.session.deleted", "deleted": true, "x_easy_sandbox": {} }
+{ "id": "agsess_...", "object": "agent.session.deleted", "deleted": true, "x_agent_sandbox": {} }
 ```
 
 ### `POST /v1/agents/sessions/{id}/events`
@@ -135,20 +135,21 @@ SSE。`Accept: text/event-stream`。查询 `after`：不带则从现在开始跟
 
 ### `GET /v1/agents/runtimes`
 
-成功 **200**，列表。每项：
+成功 **200**，列表，包含每一个已声明的运行时。已实现的在前（`codex`、`qwen-code`），之后是只声明的适配器。每项：
 
 | 字段 | 说明 |
 |---|---|
-| `id` / `name` | `codex` 或 `qwen-code` |
+| `id` / `name` | `codex`、`qwen-code`、`claude-code`、`cursor` 或 `command` |
+| `implemented` | 服务端是否有本地后端。只有 `codex` 和 `qwen-code` 为 `true`。`false` 的运行时不管 `installed` 是什么都会被拒绝 |
+| `installed` | 当前 `PATH` 上是否有该二进制 |
 | `default` | 请求没点名适配器时会不会用这一条。产品顺序是 `codex` 然后 `qwen-code`。`order=asc` 才按这个顺序排。默认 `order=desc` |
 | `object` | `agent.runtime` |
 | `aliases` | Codex：`openai-codex`。Qwen：`qwen`、`qwen_code`、`qwencode` |
-| `binary` | `codex` 或 `qwen` |
-| `installed` | 当前 `PATH` 上是否有该二进制 |
+| `binary` | 该运行时的二进制名 |
 | `path` | 找到时的路径 |
 | `install_steps` | `[["npm","install","-g","@openai/codex"]]` 或 Qwen 对应的包名 `@qwen-code/qwen-code` |
 | `auth_env_present` | 进程里是否已有该 CLI 的密钥环境变量 |
-| `x_easy_sandbox.compute` | `none` |
+| `x_agent_sandbox` | `compute: none`，以及 `installed`、`implemented` |
 
 ## 产物、追踪、子代理
 
@@ -158,7 +159,7 @@ SSE。`Accept: text/event-stream`。查询 `after`：不带则从现在开始跟
 | GET | `/v1/agents/sessions/{id}/artifacts/{artifact_id}` | 200 | 一条产物。`path` 形如 `/workspace/<相对路径>` |
 | DELETE | 同上 | 200 | 只删快照。`deleted_scope` 为 `snapshot`，不动原文件 |
 | GET | `.../artifacts/{artifact_id}/content` | 200 | 快照字节，`X-Content-Type-Options: nosniff` |
-| GET | `/v1/agents/sessions/{id}/traces` | 200 列表 | 默认空。`EBX_AGENTS_TRACES=1` 时每个已结束回合一条 trace，只有时间和条目数，没有正文 |
+| GET | `/v1/agents/sessions/{id}/traces` | 200 列表 | 默认空。`ABX_AGENTS_TRACES=1` 时每个已结束回合一条 trace，只有时间和条目数，没有正文 |
 | GET | `.../subagents` | 200 列表 | 只含 CLI 实际给出的 id |
 | GET | `.../subagents/{subagent_id}` | 200 | 一个子代理。其他 id 与不存在的 id 同为 404 `resource_not_found` |
 | GET | `.../subagents/{subagent_id}/items` | 200 列表 | |
@@ -172,12 +173,12 @@ SSE。`Accept: text/event-stream`。查询 `after`：不带则从现在开始跟
 
 ### `POST /v1/agents/environments`
 
-body：`type` 必须能落到 `self_hosted`。空的 `{ "type": "openai_hosted" }` 会被转成 `self_hosted` 并在 `x_easy_sandbox.differences` 里说明。带配置的 `openai_hosted` 是 400。
+body：`type` 必须能落到 `self_hosted`。空的 `{ "type": "openai_hosted" }` 会被转成 `self_hosted` 并在 `x_agent_sandbox.differences` 里说明。带配置的 `openai_hosted` 是 400。
 
 | 字段 | 说明 |
 |---|---|
 | `workspace_directory` | 绝对路径，不能含 `..`，不能是 `/`、`/etc`、`/proc` 等 |
-| `env` | 创建时应用，响应里不返回。拒绝 `PATH`、`HOME`、密钥、代理、`CODEX_*`、`QWEN_*`、`GIT_*`、`EBX_*` |
+| `env` | 创建时应用，响应里不返回。拒绝 `PATH`、`HOME`、密钥、代理、`CODEX_*`、`QWEN_*`、`GIT_*`、`ABX_*` |
 | `files` | 内联文件，创建时写入工作目录之下 |
 
 400：`network`、`packages`、`setup_commands`、`plugins`、`skills`、`desktop`、`container_size`、`capability_directories`。成功 **200**，环境对象。不会预置容器。
@@ -192,7 +193,7 @@ body：`type` 必须能落到 `self_hosted`。空的 `{ "type": "openai_hosted" 
 
 ### `POST /v1/agents/environments/{environment_id}/files`
 
-body：`path`、内容。路径相对工作目录。符号链接 400。已存在且内容不同是 400 `agents.file_exists`。写入 `.git/`、`.codex/`、`.claude/`、`.cursor/`、`.qwen/`、`.qoder/`、`.ssh/`，或 `.mcp.json`、`AGENTS.md`、`QWEN.md`、shell rc，是 400 `agents.path_refused`。大小上限 `EBX_AGENTS_MAX_FILE_BYTES`，默认 10 MiB。成功 **200**。
+body：`path`、内容。路径相对工作目录。符号链接 400。已存在且内容不同是 400 `agents.file_exists`。写入 `.git/`、`.codex/`、`.claude/`、`.cursor/`、`.qwen/`、`.qoder/`、`.ssh/`，或 `.mcp.json`、`AGENTS.md`、`QWEN.md`、shell rc，是 400 `agents.path_refused`。大小上限 `ABX_AGENTS_MAX_FILE_BYTES`，默认 10 MiB。成功 **200**。
 
 ### `GET /v1/agents/environments/{environment_id}/files`
 
@@ -255,7 +256,7 @@ body：`path`、内容。路径相对工作目录。符号链接 400。已存在
 
 ## Vault 与凭据
 
-Vault 只在内存里。每个所有者默认最多 `EBX_AGENTS_MAX_VAULTS`（100）个。
+Vault 只在内存里。每个所有者默认最多 `ABX_AGENTS_MAX_VAULTS`（100）个。
 
 | 方法 | 路径 | body | 成功 |
 |---|---|---|---|
@@ -296,7 +297,7 @@ Vault 只在内存里。每个所有者默认最多 `EBX_AGENTS_MAX_VAULTS`（10
 | `tools` | 仅 MCP：`server_label`、`server_url`，只写的 `headers` 和 `authorization` |
 | `reasoning.effort` | 仅 Codex |
 
-400：`tools` 里非 MCP、`conversation`、`prompt`、非 `text` 的 `text.format`、任何 `include`、`service_tier` 不是 `auto|default`、`tool_choice` 不是 `auto`、`input_image`、`input_file`、助手历史、未知参数。`temperature`、`top_p`、`max_output_tokens` 被忽略，列在响应头 `X-Easy-Sandbox-Ignored-Params`。
+400：`tools` 里非 MCP、`conversation`、`prompt`、非 `text` 的 `text.format`、任何 `include`、`service_tier` 不是 `auto|default`、`tool_choice` 不是 `auto`、`input_image`、`input_file`、助手历史、未知参数。`temperature`、`top_p`、`max_output_tokens` 被忽略，列在响应头 `X-Agent-Sandbox-Ignored-Params`。
 
 输出条目只有 CLI 实际给出的：`message`、`reasoning`、`command_execution`、`mcp_call`、其他工具的 `tool_call`（带 `tool_name`）。不会出现 `web_search_call`、`function_call`、`code_interpreter_call`、`local_shell_call`。CLI 没报告用量时 `usage` 是 `null`。
 
@@ -317,7 +318,7 @@ Vault 只在内存里。每个所有者默认最多 `EBX_AGENTS_MAX_VAULTS`（10
 
 | 方法 | 路径 | 参数 | 成功 |
 |---|---|---|---|
-| GET | `/v1/models` | 分页 | 200 列表。含调用者的定义和两个适配器。`owned_by` 为 `easy-sandbox-local` |
+| GET | `/v1/models` | 分页 | 200 列表。含调用者的定义和两个已实现的运行时。`owned_by` 为 `agent-sandbox-local` |
 | GET | `/v1/models/{model}` | 路径 `model` | 200，或 404 `model_not_found`。没有副作用 |
 | DELETE | `/v1/models/{model}` | | **404** `agents.not_implemented_locally`。删除定义用 `DELETE /v1/agents/{agent_id}` |
 | POST | `/v1/files` | JSON：`purpose` 必须是 `user_data`，`filename`，`data` 为 base64。不解析 multipart | 200。`file_id` 在内存里。没签发过的 id 之后使用是 400 |
@@ -326,7 +327,7 @@ Webhook。签名密钥 `whsec_...` 只在创建和轮换时返回一次。
 
 | 方法 | 路径 | body | 成功 |
 |---|---|---|---|
-| POST | `/v1/webhook_endpoints` | 只能有 `url`、`event_types`、`name`。`url` 必须是 `https`，无用户信息、无查询串、不是私网或回环。本地开发可设 `EBX_AGENTS_WEBHOOK_ALLOW_HTTP=1` 和 `EBX_AGENTS_ALLOW_PRIVATE_URLS=1` | 200，含一次性 `secret` |
+| POST | `/v1/webhook_endpoints` | 只能有 `url`、`event_types`、`name`。`url` 必须是 `https`，无用户信息、无查询串、不是私网或回环。本地开发可设 `ABX_AGENTS_WEBHOOK_ALLOW_HTTP=1` 和 `ABX_AGENTS_ALLOW_PRIVATE_URLS=1` | 200，含一次性 `secret` |
 | GET | `/v1/webhook_endpoints` | 分页 | 200 列表。不含 secret |
 | GET | `.../{webhook_endpoint_id}` | 无 | 200。不含 secret |
 | POST | 同上 | `url`、`event_types`、`name` | 200 |
@@ -334,6 +335,83 @@ Webhook。签名密钥 `whsec_...` 只在创建和轮换时返回一次。
 | POST | `.../rotate_secret` | `keep_old_secret_active_for_24_hours` 是 400 | 200，新 secret 只出现这一次 |
 | POST | `.../test` | `event_type` | 200。服务端按 Standard Webhooks 签名投递 |
 | GET | `/v1/webhook_event_types` | 无 | 200。接受 `agent.session.created`、`in_progress`、`idle`、`failed`。不接受 `agent.session.action_required` |
+
+## 路由索引
+
+70 条路由，端点 id 与 `GET /capabilities` 和策略里用的一致。标 `拒绝` 的四条存在的目的就是用类型化的 404 说明服务端没有这个能力（`agents.not_implemented_locally`），不是缺实现。
+
+| 端点 id | 方法 | 路径 | 状态 |
+|---|---|---|---|
+| `agents_sessions_create` | POST | `/v1/agents/sessions` | 已实现 |
+| `agents_sessions_list` | GET | `/v1/agents/sessions` | 已实现 |
+| `agents_sessions_get` | GET | `/v1/agents/sessions/{id}` | 已实现 |
+| `agents_sessions_update` | POST | `/v1/agents/sessions/{id}` | 已实现 |
+| `agents_sessions_delete` | DELETE | `/v1/agents/sessions/{id}` | 已实现 |
+| `agents_sessions_events_create` | POST | `/v1/agents/sessions/{id}/events` | 已实现 |
+| `agents_sessions_events_stream` | GET | `/v1/agents/sessions/{id}/events` | 已实现 |
+| `agents_sessions_items_list` | GET | `/v1/agents/sessions/{id}/items` | 已实现 |
+| `agents_sessions_turns_list` | GET | `/v1/agents/sessions/{id}/turns` | 已实现 |
+| `agents_sessions_turns_get` | GET | `/v1/agents/sessions/{id}/turns/{turn_id}` | 已实现 |
+| `agents_sessions_turns_items_list` | GET | `/v1/agents/sessions/{id}/turns/{turn_id}/items` | 已实现 |
+| `agents_artifacts_list` | GET | `/v1/agents/sessions/{id}/artifacts` | 已实现 |
+| `agents_artifacts_get` | GET | `/v1/agents/sessions/{id}/artifacts/{artifact_id}` | 已实现 |
+| `agents_artifacts_delete` | DELETE | `/v1/agents/sessions/{id}/artifacts/{artifact_id}` | 已实现 |
+| `agents_artifacts_content` | GET | `/v1/agents/sessions/{id}/artifacts/{artifact_id}/content` | 已实现 |
+| `agents_traces_list` | GET | `/v1/agents/sessions/{id}/traces` | 已实现 |
+| `agents_subagents_list` | GET | `/v1/agents/sessions/{id}/subagents` | 已实现 |
+| `agents_subagents_get` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}` | 已实现 |
+| `agents_subagents_items_list` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/items` | 已实现 |
+| `agents_subagents_turns_list` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns` | 已实现 |
+| `agents_subagents_turns_get` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns/{turn_id}` | 已实现 |
+| `agents_subagents_turns_items_list` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns/{turn_id}/items` | 已实现 |
+| `agents_runtimes_list` | GET | `/v1/agents/runtimes` | 已实现 |
+| `agents_environments_create` | POST | `/v1/agents/environments` | 已实现 |
+| `agents_environments_list` | GET | `/v1/agents/environments` | 已实现 |
+| `agents_environment_templates_create` | POST | `/v1/agents/environments/templates` | 已实现 |
+| `agents_environment_templates_list` | GET | `/v1/agents/environments/templates` | 已实现 |
+| `agents_environment_templates_get` | GET | `/v1/agents/environments/templates/{environment_template_id}` | 已实现 |
+| `agents_environment_templates_update` | POST | `/v1/agents/environments/templates/{environment_template_id}` | 已实现 |
+| `agents_environment_templates_delete` | DELETE | `/v1/agents/environments/templates/{environment_template_id}` | 已实现 |
+| `agents_environments_get` | GET | `/v1/agents/environments/{environment_id}` | 已实现 |
+| `agents_environment_files_create` | POST | `/v1/agents/environments/{environment_id}/files` | 已实现 |
+| `agents_environment_files_list` | GET | `/v1/agents/environments/{environment_id}/files` | 已实现 |
+| `agents_cannot_executor_registration` | POST | `/v1/agents/environments/{environment_id}/register` | 拒绝 |
+| `agents_cannot_executor_channel` | GET | `/v1/agents/environments/{environment_id}/connect` | 拒绝 |
+| `agents_definitions_create` | POST | `/v1/agents` | 已实现 |
+| `agents_definitions_list` | GET | `/v1/agents` | 已实现 |
+| `agents_definitions_get` | GET | `/v1/agents/{agent_id}` | 已实现 |
+| `agents_definitions_update` | POST | `/v1/agents/{agent_id}` | 已实现 |
+| `agents_definitions_delete` | DELETE | `/v1/agents/{agent_id}` | 已实现 |
+| `agents_vaults_create` | POST | `/v1/vaults` | 已实现 |
+| `agents_vaults_list` | GET | `/v1/vaults` | 已实现 |
+| `agents_vaults_get` | GET | `/v1/vaults/{vault_id}` | 已实现 |
+| `agents_vaults_update` | POST | `/v1/vaults/{vault_id}` | 已实现 |
+| `agents_vaults_delete` | DELETE | `/v1/vaults/{vault_id}` | 已实现 |
+| `agents_vault_credentials_create` | POST | `/v1/vaults/{vault_id}/credentials` | 已实现 |
+| `agents_vault_credentials_list` | GET | `/v1/vaults/{vault_id}/credentials` | 已实现 |
+| `agents_vault_credentials_get` | GET | `/v1/vaults/{vault_id}/credentials/{credential_id}` | 已实现 |
+| `agents_vault_credentials_update` | POST | `/v1/vaults/{vault_id}/credentials/{credential_id}` | 已实现 |
+| `agents_vault_credentials_delete` | DELETE | `/v1/vaults/{vault_id}/credentials/{credential_id}` | 已实现 |
+| `agents_responses_create` | POST | `/v1/responses` | 已实现 |
+| `agents_responses_connect` | GET | `/v1/responses` | 已实现 |
+| `agents_cannot_responses_input_tokens` | POST | `/v1/responses/input_tokens` | 拒绝 |
+| `agents_responses_compact` | POST | `/v1/responses/compact` | 已实现 |
+| `agents_responses_get` | GET | `/v1/responses/{response_id}` | 已实现 |
+| `agents_responses_delete` | DELETE | `/v1/responses/{response_id}` | 已实现 |
+| `agents_responses_cancel` | POST | `/v1/responses/{response_id}/cancel` | 已实现 |
+| `agents_responses_input_items` | GET | `/v1/responses/{response_id}/input_items` | 已实现 |
+| `agents_models_list` | GET | `/v1/models` | 已实现 |
+| `agents_models_get` | GET | `/v1/models/{model}` | 已实现 |
+| `agents_cannot_models_delete` | DELETE | `/v1/models/{model}` | 拒绝 |
+| `agents_files_create` | POST | `/v1/files` | 已实现 |
+| `agents_webhooks_create` | POST | `/v1/webhook_endpoints` | 已实现 |
+| `agents_webhooks_list` | GET | `/v1/webhook_endpoints` | 已实现 |
+| `agents_webhooks_get` | GET | `/v1/webhook_endpoints/{webhook_endpoint_id}` | 已实现 |
+| `agents_webhooks_update` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}` | 已实现 |
+| `agents_webhooks_delete` | DELETE | `/v1/webhook_endpoints/{webhook_endpoint_id}` | 已实现 |
+| `agents_webhooks_rotate_secret` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}/rotate_secret` | 已实现 |
+| `agents_webhooks_test` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}/test` | 已实现 |
+| `agents_webhook_event_types` | GET | `/v1/webhook_event_types` | 已实现 |
 
 ## 端到端覆盖
 

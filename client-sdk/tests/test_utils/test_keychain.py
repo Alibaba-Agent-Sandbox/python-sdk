@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from easy_sandbox.utils.keychain import SecretStore
+from agent_sandbox.utils.keychain import SecretStore
 
 if TYPE_CHECKING:
     from pathlib import Path

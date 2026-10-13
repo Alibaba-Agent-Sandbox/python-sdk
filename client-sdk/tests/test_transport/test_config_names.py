@@ -5,10 +5,10 @@ from __future__ import annotations
 
 import pytest
 
-import easy_sandbox.transport.config as cfgmod
-from easy_sandbox.models.errors import ProviderConfigError
-from easy_sandbox.providers import Provider, register_provider
-from easy_sandbox.transport.config import (
+import agent_sandbox.transport.config as cfgmod
+from agent_sandbox.models.errors import ProviderConfigError
+from agent_sandbox.providers import Provider, register_provider
+from agent_sandbox.transport.config import (
     TransportConfig,
     apply_migration,
     audit_config,
@@ -52,15 +52,15 @@ class TestCanonicalModel:
 @pytest.mark.parametrize(
     ("env", "field", "value"),
     [
-        ("EBX_SANDBOX_API_KEY", "sandbox_api_key", "v"),
-        ("EBX_SANDBOX_BASE_URL", "sandbox_base_url", "https://v.example"),
-        ("EBX_SANDBOX_DOMAIN", "sandbox_domain", "v.example"),
+        ("ABX_SANDBOX_API_KEY", "sandbox_api_key", "v"),
+        ("ABX_SANDBOX_BASE_URL", "sandbox_base_url", "https://v.example"),
+        ("ABX_SANDBOX_DOMAIN", "sandbox_domain", "v.example"),
         ("ALIBABA_CLOUD_REGION_ID", "region", "cn-beijing"),
         ("ALICLOUD_ACCESS_KEY_ID", "access_key_id", "id"),
         ("ALICLOUD_ACCESS_KEY_SECRET", "access_key_secret", "sec"),
-        ("EBX_HTTP_TIMEOUT", "http_timeout", 12.5),
-        ("EBX_MAX_RETRIES", "max_retries", 7),
-        ("EBX_HTTP2", "http2", False),
+        ("ABX_HTTP_TIMEOUT", "http_timeout", 12.5),
+        ("ABX_MAX_RETRIES", "max_retries", 7),
+        ("ABX_HTTP2", "http2", False),
     ],
 )
 class TestEveryNameInEveryLayer:
@@ -85,29 +85,29 @@ class TestPrecedence:
         monkeypatch.setenv("E2B_API_KEY", "compat")
         cfgmod.reset_config()
         assert load_config().sandbox_api_key is None
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "canon")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "canon")
         cfgmod.reset_config()
         assert load_config().sandbox_api_key == "canon"
 
     def test_process_env_beats_dotenv(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "from-env")
-        iso.write_env("EBX_SANDBOX_API_KEY=canon-dotenv\n")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "from-env")
+        iso.write_env("ABX_SANDBOX_API_KEY=canon-dotenv\n")
         assert load_config().sandbox_api_key == "from-env"
 
     def test_override_beats_env_beats_dotenv_beats_toml(self, iso, monkeypatch):  # noqa: F811
         iso.write_toml('[transport]\nsandbox_api_key = "toml"\n')
         assert load_config().sandbox_api_key == "toml"
-        iso.write_env("EBX_SANDBOX_API_KEY=dotenv\n")
+        iso.write_env("ABX_SANDBOX_API_KEY=dotenv\n")
         assert load_config().sandbox_api_key == "dotenv"
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "env")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "env")
         cfgmod.reset_config()
         assert load_config().sandbox_api_key == "env"
         assert load_config(api_key="kw").sandbox_api_key == "env"
         assert load_config(sandbox_api_key="kw2").sandbox_api_key == "kw2"
 
     def test_blank_override_and_env_are_ignored(self, iso, monkeypatch):  # noqa: F811
-        iso.write_env("EBX_SANDBOX_API_KEY=dotenv\n")
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "   ")
+        iso.write_env("ABX_SANDBOX_API_KEY=dotenv\n")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "   ")
         assert load_config(sandbox_api_key="  ").sandbox_api_key == "dotenv"
 
     def test_toml_ignores_retired_names(self, iso):  # noqa: F811
@@ -131,9 +131,9 @@ class TestPrecedence:
         assert load_config().region == "cn-shanghai"
 
     def test_cache_is_used_without_overrides_and_reset_clears(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "one")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "one")
         assert load_config() is load_config()
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "two")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "two")
         assert load_config().sandbox_api_key == "one"
         cfgmod.reset_config()
         assert load_config().sandbox_api_key == "two"
@@ -146,14 +146,14 @@ class TestRegionDerivation:
         assert c.sandbox_domain == "cn-beijing.e2b.fc.aliyuncs.com"
 
     def test_explicit_process_env_url_wins_and_domain_stays_default(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("EBX_SANDBOX_BASE_URL", "https://custom.example")
+        monkeypatch.setenv("ABX_SANDBOX_BASE_URL", "https://custom.example")
         c = load_config(region="cn-beijing")
         assert c.sandbox_base_url == "https://custom.example"
         assert c.sandbox_domain == "cn-hangzhou.e2b.fc.aliyuncs.com"
 
     def test_dotenv_url_is_kept_as_default_semantics(self, iso):  # noqa: F811
         iso.write_env(
-            "EBX_SANDBOX_BASE_URL=https://dotenv.example\nALIBABA_CLOUD_REGION_ID=cn-beijing\n"
+            "ABX_SANDBOX_BASE_URL=https://dotenv.example\nALIBABA_CLOUD_REGION_ID=cn-beijing\n"
         )
         c = load_config()
         assert c.sandbox_base_url == "https://dotenv.example"
@@ -170,9 +170,9 @@ class TestProviderSelectionAndOptions:
     def test_provider_from_each_layer(self, iso, monkeypatch, where):  # noqa: F811
         register_provider(_Dummy())
         if where == "env":
-            monkeypatch.setenv("EBX_PROVIDER", "my-prov")
+            monkeypatch.setenv("ABX_PROVIDER", "my-prov")
         elif where == "dotenv":
-            iso.write_env("EBX_PROVIDER=my-prov\n")
+            iso.write_env("ABX_PROVIDER=my-prov\n")
         elif where == "toml":
             iso.write_toml('[core]\nprovider = "my-prov"\n')
         cfg = load_config(provider="my-prov") if where == "override" else load_config()
@@ -191,17 +191,17 @@ class TestProviderSelectionAndOptions:
 class TestExplain:
     def test_sources_and_masking(self, iso, monkeypatch):  # noqa: F811
         iso.write_toml('[transport]\nsandbox_base_url = "https://t.example"\n')
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "abcdefghijkl")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "abcdefghijkl")
         info = explain_config()
         assert info["sandbox_api_key"]["source"] == "environ"
-        assert info["sandbox_api_key"]["name"] == "EBX_SANDBOX_API_KEY"
+        assert info["sandbox_api_key"]["name"] == "ABX_SANDBOX_API_KEY"
         assert info["sandbox_api_key"]["value"] == "****ijkl"
         assert "abcdefgh" not in str(info)
         assert info["sandbox_base_url"]["source"] == "toml"
         assert info["http_timeout"]["source"] == "default"
 
     def test_short_secrets_fully_masked(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "short")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "short")
         assert explain_config()["sandbox_api_key"]["value"] == "****"
 
 
@@ -215,7 +215,7 @@ class TestAudit:
         assert "secret-value" not in str(audit_config())
 
     def test_empty_when_clean(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "x")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "x")
         assert audit_config() == []
 
 
@@ -234,7 +234,7 @@ class TestOptInWarning:
     def test_retired_constructor_names_do_not_warn(self, iso, monkeypatch):  # noqa: F811
         import warnings
 
-        monkeypatch.setenv("EBX_WARN_DEPRECATED", "1")
+        monkeypatch.setenv("ABX_WARN_DEPRECATED", "1")
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             TransportConfig(api_key="x")

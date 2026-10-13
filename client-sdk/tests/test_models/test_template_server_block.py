@@ -5,7 +5,8 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from easy_sandbox.models.template import (
+from agent_sandbox.models.template import (
+    SERVER_GROUP_NAMES,
     SERVER_PATH_KEYS,
     SERVER_POLICY_PRESETS,
     SERVER_POLICY_TOP_KEYS,
@@ -56,12 +57,27 @@ def test_existing_templates_without_server_are_unaffected() -> None:
         ({"endpoints": {"a": {"limits": []}}}, "limits"),
         ({"endpoints": {"a": "on"}}, "expected a mapping"),
         ({"defaults": {"bogus": 1}}, "server.defaults.bogus"),
-        ({"groups": []}, "server.groups"),
+        ({"groups": ["file_ops", "nope"]}, "unknown group 'nope'"),
+        ({"groups": [1]}, "list of group names"),
+        ({"groups": "file_ops"}, "server.groups: expected a mapping"),
+        ({"groups": {"nope": True}}, "server.groups.nope"),
+        ({"groups": {"process": "off"}}, "server.groups.process: expected a boolean"),
+        ({"groups": {"core": False}}, "core group cannot be disabled"),
     ],
 )
 def test_malformed_blocks_are_rejected(block: dict[str, object], message: str) -> None:
     with pytest.raises(ValidationError, match=message.replace(".", r"\.")):
         make(block)
+
+
+@pytest.mark.parametrize(
+    "groups", [["file_ops", "dev_tools"], {"process": False, "browser": True}, []]
+)
+def test_groups_accept_a_list_or_a_map_and_keep_their_shape(groups: object) -> None:
+    template = make({"groups": groups})
+    assert template.server == {"groups": groups}
+    dumped = template.model_dump(mode="json")["server"]
+    assert dumped == {"groups": groups}
 
 
 def test_non_mapping_server_is_rejected() -> None:
@@ -76,15 +92,26 @@ def test_validator_is_usable_directly() -> None:
 
 
 def test_vocabulary_matches_the_server() -> None:
-    policy = pytest.importorskip("easy_sandbox.server.policy")
+    policy = pytest.importorskip("agent_sandbox.server.policy")
     assert SERVER_POLICY_TOP_KEYS == policy._TOP_KEYS
     assert SERVER_RULE_KEYS == policy._RULE_KEYS
     assert SERVER_PATH_KEYS == policy._PATH_KEYS
     assert frozenset(policy.PRESETS) == SERVER_POLICY_PRESETS
+    assert frozenset(policy._GROUP_NAMES) == SERVER_GROUP_NAMES
 
 
 def test_a_valid_block_is_accepted_by_the_real_server_loader() -> None:
-    policy = pytest.importorskip("easy_sandbox.server.policy")
+    policy = pytest.importorskip("agent_sandbox.server.policy")
     block = make(VALID).server
     assert block is not None
     policy.ServerPolicy.from_dict(block)
+
+
+@pytest.mark.parametrize("groups", [["file_ops"], {"process": False}])
+def test_group_forms_are_accepted_by_the_real_server_loader(groups: object) -> None:
+    policy = pytest.importorskip("agent_sandbox.server.policy")
+    block = make({"groups": groups}).server
+    assert block is not None
+    assert policy.ServerPolicy.from_dict(block).groups == (
+        {"file_ops": True} if isinstance(groups, list) else groups
+    )

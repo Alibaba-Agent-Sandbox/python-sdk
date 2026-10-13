@@ -33,9 +33,9 @@ class CommandsModule:
 ```
 
 ## Implementation
-- **Source**: `src/easy_sandbox/api/commands.py`
+- **Source**: `src/agent_sandbox/api/commands.py`
 - **Tests**: `tests/test_api/test_commands.py`
-- **Protocol dependency**: `src/easy_sandbox/protocol/process.py`
+- **Protocol dependency**: `src/agent_sandbox/protocol/process.py`
 
 ## Alternatives considered
 - **Single run method with mode parameter** — Less discoverable, confusing API

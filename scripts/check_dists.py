@@ -8,9 +8,9 @@ repository root (``make build``).
 Checks:
 
 * ``py-typed`` — each wheel ships its PEP 561 marker
-  (``easy_sandbox/py.typed`` for the client, ``easy_sandbox/server/py.typed`` for the server).
+  (``agent_sandbox/py.typed`` for the client, ``agent_sandbox/server/py.typed`` for the server).
 * ``combined-install`` — both wheels install into one fresh virtualenv and the shared
-  ``easy_sandbox`` namespace works (``import easy_sandbox`` and ``import easy_sandbox.server``).
+  ``agent_sandbox`` namespace works (``import agent_sandbox`` and ``import agent_sandbox.server``).
 
 Usage: ``python scripts/check_dists.py [py-typed|combined-install|all]``
 """
@@ -28,18 +28,18 @@ ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 
 PY_TYPED_MARKERS = {
-    "client-sdk": "easy_sandbox/py.typed",
-    "server-sdk": "easy_sandbox/server/py.typed",
+    "client-sdk": "agent_sandbox/py.typed",
+    "server-sdk": "agent_sandbox/server/py.typed",
 }
 
 IMPORT_CHECK = """
-import easy_sandbox
-import easy_sandbox.server
-from easy_sandbox import Sandbox
-from easy_sandbox.server import default_registry, start
+import agent_sandbox
+import agent_sandbox.server
+from agent_sandbox import Sandbox
+from agent_sandbox.server import default_registry, start
 
-print("easy_sandbox       :", easy_sandbox.__file__)
-print("easy_sandbox.server:", easy_sandbox.server.__file__)
+print("agent_sandbox       :", agent_sandbox.__file__)
+print("agent_sandbox.server:", agent_sandbox.server.__file__)
 """
 
 
@@ -67,7 +67,7 @@ def check_py_typed() -> None:
 
 def check_combined_install() -> None:
     server, client = _wheel("server-sdk"), _wheel("client-sdk")
-    with tempfile.TemporaryDirectory(prefix="easy-sandbox-combined-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="agent-sandbox-combined-") as tmp:
         venv = Path(tmp) / "venv"
         subprocess.run([sys.executable, "-m", "venv", str(venv)], check=True)
         bindir = "Scripts" if sys.platform == "win32" else "bin"

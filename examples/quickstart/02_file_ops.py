@@ -7,11 +7,11 @@ Shows file read/write, directory management, upload/download in a sandbox.
 import asyncio
 import os
 
-from easy_sandbox import Sandbox
+from agent_sandbox import Sandbox
 
 
 async def main() -> None:
-    api_key = os.environ.get("E2B_API_KEY", "")
+    api_key = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
     async with await Sandbox.create(
         template="base",

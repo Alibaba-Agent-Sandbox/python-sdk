@@ -8,11 +8,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from easy_sandbox.api.session_manager import SessionManager
-from easy_sandbox.models.errors import SessionAlreadyExistsError, SessionNotFoundError
-from easy_sandbox.models.sandbox import SandboxInfo
-from easy_sandbox.models.session import SessionInfo
-from easy_sandbox.session.local import LocalSessionStore
+from agent_sandbox.api.session_manager import SessionManager
+from agent_sandbox.models.errors import SessionAlreadyExistsError, SessionNotFoundError
+from agent_sandbox.models.sandbox import SandboxInfo
+from agent_sandbox.models.session import SessionInfo
+from agent_sandbox.session.local import LocalSessionStore
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -57,7 +57,7 @@ class TestStart:
     ) -> None:
         mock_sb = _mock_sandbox()
         with patch(
-            "easy_sandbox.api.session_manager.Sandbox.create",
+            "agent_sandbox.api.session_manager.Sandbox.create",
             new_callable=AsyncMock,
             return_value=mock_sb,
         ):
@@ -76,7 +76,7 @@ class TestStart:
     async def test_start_duplicate_raises(self, manager: SessionManager) -> None:
         mock_sb = _mock_sandbox()
         with patch(
-            "easy_sandbox.api.session_manager.Sandbox.create",
+            "agent_sandbox.api.session_manager.Sandbox.create",
             new_callable=AsyncMock,
             return_value=mock_sb,
         ):
@@ -85,7 +85,7 @@ class TestStart:
         with (
             pytest.raises(SessionAlreadyExistsError),
             patch(
-                "easy_sandbox.api.session_manager.Sandbox.create",
+                "agent_sandbox.api.session_manager.Sandbox.create",
                 new_callable=AsyncMock,
                 return_value=mock_sb,
             ),
@@ -109,7 +109,7 @@ class TestConnect:
 
         mock_sb = _mock_sandbox(sandbox_id="sbx-saved-001")
         with patch(
-            "easy_sandbox.api.session_manager.Sandbox.connect",
+            "agent_sandbox.api.session_manager.Sandbox.connect",
             new_callable=AsyncMock,
             return_value=mock_sb,
         ):
@@ -159,7 +159,7 @@ class TestStop:
         await store.save("to-stop", session)
 
         with patch(
-            "easy_sandbox.api.session_manager.Sandbox.kill_by_id",
+            "agent_sandbox.api.session_manager.Sandbox.kill_by_id",
             new_callable=AsyncMock,
         ) as mock_kill:
             await manager.stop("to-stop", kill=True)

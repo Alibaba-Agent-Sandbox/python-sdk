@@ -27,7 +27,7 @@ body:
     id: area
     attributes:
       label: Affected Area
-      description: Requests for the `ebx` CLI belong in the `cli` repository.
+      description: Requests for the `abx` CLI belong in the `cli` repository.
       options:
         - client-sdk / Python API
         - server-sdk (container-side runtime)

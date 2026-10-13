@@ -1,11 +1,11 @@
-# Agents API — Hosting Coding Agents in Easy Sandbox
+# Agents API — Hosting Coding Agents in Agent Sandbox
 
-> Status: **implemented** (design revised after two review rounds, see
-> [agents-api-review.md](agents-api-review.md)). CLI follow-ups:
-> [agents-api-cli-followups.md](agents-api-cli-followups.md).
-> Chinese version: [docs/zh/design/agents-api.md](../../zh/design/agents-api.md).
+> Status: **server side implemented, Python client (section 7) not** (design revised after two review rounds, see
+> [agents-api-review.md](../archive/agents-api-review.md)). The CLI has no `abx agent` command; the Agents API is the one way to run an agent in a sandbox.
+> Not shipped: section 7 (the Python client `agent_sandbox.agents` with `Agent`, `Runner`, `Session`, `sb.agents`) does not exist in the SDK, and only `codex` and `qwen-code` have a local backend. `claude-code`, `cursor` and `command` are declared adapters that `GET /v1/agents/runtimes` reports as `implemented: false`; text below about their behaviour was not checked against a real binary. The shipped routes are in the [Agents API reference](../reference/agents-api.md).
+> Chinese status page: [zh](../../zh/design/agents-api.md) (a short status page, not a translation).
 
-Easy Sandbox gains an **agent hosting layer**: a coding agent CLI (Codex CLI,
+Agent Sandbox gains an **agent hosting layer**: a coding agent CLI (Codex CLI,
 Cursor `cursor-agent`, Claude Code, Qwen Code, or any custom command) runs
 *inside* a sandbox, is configured declaratively, and is driven either through a
 Python client that mirrors the OpenAI Agents SDK, or through HTTP surfaces that
@@ -21,9 +21,9 @@ so the official `openai` Python client can talk to it.
 
 | # | Surface | What it is | Our relation |
 |---|---------|-----------|--------------|
-| 1 | **Agents API** (beta, `/v1/agents/sessions`, header `OpenAI-Beta: agents=v1`) | A *managed Codex harness*. A **session** holds a conversation, **turns** run the agent, **items** (`message`, `reasoning`, `command_execution`, `mcp_call`, `function_call`, ...) are the saved work, **events** (`agent.session.*`, `agent.output.command_execution_output.delta`, `error`) are streamed as SSE. Execution environments: `none`, `openai_hosted`, `self_hosted` (the customer runs `codex exec-server --remote <url> --environment-id <id>` with `CODEX_API_KEY` inside their own sandbox). Inputs are events: `agent.session.input.message`, `.cancel`, `.tool_result`. | The closest conceptual match to "host a coding agent in a sandbox". We serve a **subset of this wire** (sessions/turns/items/events) from the sandbox, and we ship a small helper to connect an Easy Sandbox as a `self_hosted` environment of OpenAI's own service. |
+| 1 | **Agents API** (beta, `/v1/agents/sessions`, header `OpenAI-Beta: agents=v1`) | A *managed Codex harness*. A **session** holds a conversation, **turns** run the agent, **items** (`message`, `reasoning`, `command_execution`, `mcp_call`, `function_call`, ...) are the saved work, **events** (`agent.session.*`, `agent.output.command_execution_output.delta`, `error`) are streamed as SSE. Execution environments: `none`, `openai_hosted`, `self_hosted` (the customer runs `codex exec-server --remote <url> --environment-id <id>` with `CODEX_API_KEY` inside their own sandbox). Inputs are events: `agent.session.input.message`, `.cancel`, `.tool_result`. | The closest conceptual match to "host a coding agent in a sandbox". We serve a **subset of this wire** (sessions/turns/items/events) from the sandbox, and we ship a small helper to connect an Agent Sandbox as a `self_hosted` environment of OpenAI's own service. |
 | 2 | **Responses API** (`/v1/responses`) | Stateless-by-default model API with agentic tool use: `input`, `instructions`, `previous_response_id`, `store`, `background`, `stream`, SSE `response.*` events with `sequence_number`, `/cancel`, stream resume with `starting_after`. | The *lingua franca*: every OpenAI client and the Agents SDK can use it via `base_url`. We serve a **faithful subset** with one coding agent turn = one response. |
-| 3 | **OpenAI Agents SDK** (`openai-agents-python`) | Client library: `Agent`, `Runner.run / run_sync / run_streamed`, `RunResult(.final_output, .new_items, .last_response_id)`, stream events (`RawResponsesStreamEvent`, `RunItemStreamEvent`, `AgentUpdatedStreamEvent`), `Session` memory protocol, handoffs, guardrails, tracing, MCP server classes, `SandboxAgent`, experimental `codex_tool`, custom models through `OpenAIResponsesModel(AsyncOpenAI(base_url=...))`. | We mirror **names and shapes** of `Agent`, `Runner`, `RunResult`, stream events and `Session` in `easy_sandbox.agents`, *without* depending on the package. Because surface 2 is served, the real Agents SDK also works against a sandbox via `base_url`. |
+| 3 | **OpenAI Agents SDK** (`openai-agents-python`) | Client library: `Agent`, `Runner.run / run_sync / run_streamed`, `RunResult(.final_output, .new_items, .last_response_id)`, stream events (`RawResponsesStreamEvent`, `RunItemStreamEvent`, `AgentUpdatedStreamEvent`), `Session` memory protocol, handoffs, guardrails, tracing, MCP server classes, `SandboxAgent`, experimental `codex_tool`, custom models through `OpenAIResponsesModel(AsyncOpenAI(base_url=...))`. | We mirror **names and shapes** of `Agent`, `Runner`, `RunResult`, stream events and `Session` in `agent_sandbox.agents`, *without* depending on the package. Because surface 2 is served, the real Agents SDK also works against a sandbox via `base_url`. |
 | 4 | **Assistants API** (deprecated, sunset 2026) | Threads/runs. | Out of scope (deprecated; migration guide points to Responses/Conversations). |
 
 ### Sources
@@ -79,7 +79,7 @@ Coding agents:
 1. **Runtime adapters** (server side): `codex`, `claude-code`, `cursor`,
    `qwen-code`, and generic `command`; third-party adapters through a plugin
    interface.
-2. **Hosted agent runtime** (`easy_sandbox.server.agents`), a new capability
+2. **Hosted agent runtime** (`agent_sandbox.server.agents`), a new capability
    group `agents` of the sandbox HTTP server. **Disabled by default.** It
    spawns agent CLIs per turn, keeps sessions, normalises their output to a
    common event model, enforces limits, redacts secrets.
@@ -88,11 +88,11 @@ Coding agents:
      `input_items`, `GET /v1/models`) with streaming SSE.
    * **Agents wire (subset)** — `/v1/agents/sessions` (create, retrieve, list,
      delete), `/events` (post inputs, stream events), `/turns`, `/items`.
-4. **Python client** `easy_sandbox.agents`: `Agent`/`AgentConfig`, `Runner`,
+4. **Python client** `agent_sandbox.agents`: `Agent`/`AgentConfig`, `Runner`,
    `RunResult`, stream events, `Session`, declarative `agent.yaml`,
    `AgentHost` (bootstrap + connection), one-liner `sandbox.agents.run(...)`.
 5. **OpenAI self-hosted environment helper**: run
-   `codex exec-server --remote … --environment-id …` in an Easy Sandbox so the
+   `codex exec-server --remote … --environment-id …` in an Agent Sandbox so the
    *OpenAI-hosted* Agents API can use it.
 6. Docs (en/zh), examples, offline tests with fake agent binaries.
 
@@ -114,7 +114,7 @@ Alternative considered: the client would drive CLIs through
 parser/adapter logic would have to exist twice if we also want an in-sandbox
 HTTP surface; (b) the `openai` client and non-Python callers could not use it;
 (c) sessions would die with the client. Instead: **adapters live only in
-`easy-sandbox-server`**; the Python client is a thin HTTP client plus bootstrap.
+`agent-sandbox-server`**; the Python client is a thin HTTP client plus bootstrap.
 Server-sdk stays stdlib-only (YAML is optional there; JSON is the wire format).
 
 ---
@@ -122,7 +122,7 @@ Server-sdk stays stdlib-only (YAML is optional there; JSON is the wire format).
 ## 3. Architecture
 
 ```
- your code ── easy_sandbox.agents (Agent / Runner / Session) ─┐
+ your code ── agent_sandbox.agents (Agent / Runner / Session) ─┐
  openai.OpenAI(base_url=…/v1) ───────────────────────────────┤  HTTPS + X-Access-Token / Bearer
  openai-agents (OpenAIResponsesModel) ───────────────────────┘
                                                               ▼
@@ -140,24 +140,22 @@ Server-sdk stays stdlib-only (YAML is optional there; JSON is the wire format).
  └──────────────────────────────────────────────────────────────────────┘
 ```
 
-Layering (respects `AGENTS.md`): `easy_sandbox.server.agents` imports only the
-stdlib and `easy_sandbox.server.{router,types}`; `easy_sandbox.agents` (client)
-never imports `easy_sandbox.server`.
+Layering (respects `AGENTS.md`): `agent_sandbox.server.agents` imports only the
+stdlib and `agent_sandbox.server.{router,types}`; `agent_sandbox.agents` (client)
+never imports `agent_sandbox.server`.
 
 ### Enabling the group
 
-`CapabilityGroup.AGENTS = "agents"` is added to the default-disabled set (like
-`dev_tools`, `browser`). Ways to enable:
+`CapabilityGroup.AGENTS = "agents"` is an opt-in group (like `dev_tools`,
+`browser`): its 70 endpoints are declared in `server/endpoints.py` and off by default. Ways to enable:
 
-* `EBX_SERVER_ENABLED_GROUPS=agents` (new generic env var read by
-  `SandboxServer`, mirror of `EBX_SERVER_DISABLED_GROUPS`);
-* `python -m easy_sandbox.server.agents serve --port 9100` (starts a dedicated
-  server instance with the group enabled — what the client bootstrap uses so it
-  never has to touch a template's existing server);
+* `ABX_SERVER_ENABLED_GROUPS=agents` (the only group env var, read by
+  `SandboxServer`; it turns groups on);
+* `server.groups: [agents]` in `template.yaml` (or an endpoint rule per route);
 * programmatic: `default_table().enable_group(CapabilityGroup.AGENTS)`.
 
-With the group disabled all `/v1/responses`, `/v1/agents/**`, `/agents/**`
-routes answer `404 … is disabled` (existing dispatcher behaviour). No other
+With the group disabled all `/v1/responses`, `/v1/agents/**`, `/v1/vaults/**`
+routes answer `404` `endpoint_disabled` and name the rule (`default:opt-in:agents`). No other
 default behaviour changes.
 
 ### Authentication
@@ -207,7 +205,7 @@ extra_args: ["--some-flag"]        # appended verbatim (escape hatch)
 
 * `${VAR}` is expanded by whoever *loads* the file: the Python client expands
   from the local environment (so the file in git has no secrets); a server-side
-  file (`EBX_AGENTS_CONFIG`) expands from the server's environment. An unset
+  file (`ABX_AGENTS_CONFIG`) expands from the server's environment. An unset
   variable is a configuration error naming the variable, never an empty string.
 * **Secret classification** (the only place secrets can live): `provider.api_key`,
   `workspace.git.token`, `secrets.*`, and `mcp_servers.*.headers` values that
@@ -223,14 +221,14 @@ extra_args: ["--some-flag"]        # appended verbatim (escape hatch)
   | `full_access` *(default)* | the sandbox is the isolation boundary | `sandbox_mode="danger-full-access"` | `--permission-mode bypassPermissions` (+ `IS_SANDBOX=1` when root) | `--approval-mode yolo` | `--force` |
 
   The default is `full_access` because (1) the CLI's own inner sandbox
-  (Landlock/seccomp) commonly fails inside containers, and (2) the *Easy Sandbox
+  (Landlock/seccomp) commonly fails inside containers, and (2) the *Agent Sandbox
   VM is the security boundary*; the real risk is credential exposure, handled
   by the env allowlist (section 9).
 
 ### Python spelling
 
 ```python
-from easy_sandbox.agents import Agent, Provider, Workspace, MCPServer, Limits
+from agent_sandbox.agents import Agent, Provider, Workspace, MCPServer, Limits
 
 agent = Agent(
     name="reviewer", runtime="codex", model="gpt-5-codex",
@@ -294,15 +292,15 @@ class AgentAdapter(ABC):
 
 ```python
 # my_pkg/adapter.py
-from easy_sandbox.server.agents import AgentAdapter, register_adapter
+from agent_sandbox.server.agents import AgentAdapter, register_adapter
 
 class AiderAdapter(AgentAdapter): ...
 register_adapter(AiderAdapter)
 ```
 
 Discovery order: built-ins → `importlib.metadata` entry-point group
-`easy_sandbox.agent_adapters` (value `module:Class`) → modules named in
-`EBX_AGENTS_ADAPTER_MODULES` (comma list, imported at server start) →
+`agent_sandbox.agent_adapters` (value `module:Class`) → modules named in
+`ABX_AGENTS_ADAPTER_MODULES` (comma list, imported at server start) →
 `register_adapter()` at runtime. Name clashes: later registration wins only if
 `override=True`, otherwise error. A *declarative* adapter needs no code:
 `runtime: command` with `command: {argv: [...], parser: "text"|"jsonl-claude"|"jsonl-codex", resume_argv: [...]}`
@@ -317,7 +315,7 @@ covers most "prompt in, text/JSONL out" tools.
 | resume | `codex exec resume <thread_id> …` | `--resume <session_id>` | `--resume <session_id>` | `--resume <chat_id>` | `resume_argv` or none |
 | prompt via | stdin (`-`) | stdin | stdin | argv (no stdin support); a prompt starting with `-` is prefixed with `Task: ` so it cannot be parsed as a flag | stdin or argv |
 | native session id | `thread.started.thread_id` | `system/init.session_id` / `result.session_id` | `system/session_start.session_id` | `system/init.session_id` | n/a |
-| credentials | `CODEX_API_KEY` (+ custom provider block `-c model_providers.ebx={name,base_url,env_key,wire_api}` `-c model_provider="ebx"`) | `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`, optional `ANTHROPIC_AUTH_TOKEN`; `CLAUDE_CODE_OAUTH_TOKEN` | `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `--auth-type openai` | `CURSOR_API_KEY`; **base_url unsupported** (validation error) | none |
+| credentials | `CODEX_API_KEY` (+ custom provider block `-c model_providers.abx={name,base_url,env_key,wire_api}` `-c model_provider="abx"`) | `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`, optional `ANTHROPIC_AUTH_TOKEN`; `CLAUDE_CODE_OAUTH_TOKEN` | `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `--auth-type openai` | `CURSOR_API_KEY`; **base_url unsupported** (validation error) | none |
 | MCP | `-c mcp_servers.<n>.command/args/url/bearer_token_env_var/env_http_headers` | `--mcp-config <turn_dir>/mcp.json` with `${VAR}` placeholders | `<workdir>/.qwen/settings.json` `mcpServers` (placeholders) — experimental | `<workdir>/.cursor/mcp.json` (`${env:VAR}` placeholders) — experimental | n/a |
 | system prompt | preamble on first turn | `--append-system-prompt` | `--append-system-prompt` | preamble on first turn | preamble |
 | exit semantics | 0 ok | 0 ok, `result.is_error` | 0 ok, 53 turn limit, 55 budget, 130 interrupted | 0 ok | 0 ok |
@@ -329,7 +327,7 @@ only `${VAR}` placeholders for secrets (the values travel in the child env).
 The adapter merges only the `mcpServers` key, never overwrites a file it did not
 create without merging, and adds the path to `.git/info/exclude` when the
 workdir is a git repo. These two paths are the least verified (no live binary
-here) and are marked `experimental` in `GET /agents/runtimes`.
+here) and are marked `experimental` in `GET /v1/agents/runtimes`.
 
 Codex JSONL → events: `thread.started` → `session`; `item.started/completed`
 with `item.type` ∈ `agent_message` (→ `message`), `reasoning` (→ `reasoning`),
@@ -352,16 +350,13 @@ then one consolidated duplicate that is dropped by accumulated-text comparison),
 
 ### Install & health
 
-* `GET /agents/runtimes` → `[{name, installed, path, version, experimental, auth_env_present, capabilities}]`
-  (runs `<binary> --version`, 10 s timeout, no network).
-* `POST /agents/runtimes/{name}/install` runs `install_steps` (600 s timeout)
-  and returns the redacted log tail. Enabled only when the server has
-  `EBX_AGENTS_ALLOW_INSTALL=1` (bootstrap sets it) — an authenticated caller
-  can already run arbitrary commands via `/shell`, but the default of an
-  *agents-only* server should not be able to.
-* `POST /agents/runtimes/{name}/doctor` → health + config validation for a named
-  agent (no model call). `python -m easy_sandbox.server.agents doctor [name]` is
-  the same locally.
+* `GET /v1/agents/runtimes` lists the declared adapters with `implemented`, `installed`, `default`, `path` and
+  `version` (runs `<binary> --version`, 10 s timeout, no network).
+* There is no HTTP route that installs a CLI and no `doctor` route. Install the CLI you call
+  (`npm install -g @openai/codex` or `@qwen-code/qwen-code`) in the image or with `POST /shell`. The runtime keeps an
+  `install_steps` helper that stays off unless `ABX_AGENTS_ALLOW_INSTALL=1`; nothing mounts it.
+* Not built: `python -m agent_sandbox.server.agents` (the package has no `__main__`). Start the server with
+  `python -m agent_sandbox.server` and `ABX_SERVER_ENABLED_GROUPS=agents`.
 
 ---
 
@@ -390,7 +385,7 @@ Session  id=agsess_<hex>  agent=<name>  status idle|in_progress|failed
   `status: incomplete`.
 * Retention: sessions idle > `session_ttl_s` (24 h) or beyond `max_sessions`
   (200, LRU among idle) are evicted; running sessions are never evicted.
-* Persistence: `$EBX_AGENTS_STATE_DIR` (default `~/.easy-sandbox/agents`) holds
+* Persistence: `$ABX_AGENTS_STATE_DIR` (default `~/.agent-sandbox/agents`) holds
   `sessions.json` (atomic write, 0600): session records, native ids and
   completed items, **no secrets, no event history**. On start the runtime
   reloads them (turns that were in flight are marked `failed:
@@ -464,11 +459,16 @@ messages → turn completed → idle) and are used as an oracle.
 
 All under group `agents`. JSON errors on `/v1/**` use the OpenAI envelope
 `{"error": {"message", "type", "param", "code"}}`; native `/agents/**` routes
-use the existing Easy Sandbox `{"error", "type"}` shape.
+use the existing Agent Sandbox `{"error", "type"}` shape (as of 2026-10-13 every agents route is under `/v1`).
+
+The table below is the original design. The shipped list is the 70 routes of the
+[Agents API reference](../reference/agents-api.md); `/agents/runtimes[/install|/doctor]` became
+`GET /v1/agents/runtimes` (no install/doctor), `/agents/definitions` became `/v1/agents` CRUD, and `/agents/health`
+does not exist.
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/v1/models`, `/v1/models/{id}` | registered agents as `model` objects (`owned_by: "easy-sandbox"`) |
+| GET | `/v1/models`, `/v1/models/{id}` | registered agents as `model` objects (`owned_by: "agent-sandbox"`) |
 | POST | `/v1/responses` | run one turn (stream or not, `background` supported) |
 | GET | `/v1/responses/{id}` | retrieve; `?stream=true&starting_after=N` replays/continues SSE |
 | DELETE | `/v1/responses/{id}` | forget response (and its turn) |
@@ -481,9 +481,8 @@ use the existing Easy Sandbox `{"error", "type"}` shape.
 | GET | `/v1/agents/sessions/{id}/events` | SSE stream (`Last-Event-ID`/`?after=` resume) |
 | GET | `/v1/agents/sessions/{id}/turns` · `/{turn_id}` | turns |
 | GET | `/v1/agents/sessions/{id}/items` · `/turns/{turn_id}/items` | items |
-| GET | `/agents/runtimes` · POST `/agents/runtimes/{name}/install` · `/doctor` | adapters / install / health |
-| GET PUT DELETE | `/agents/definitions[/{name}]` | register agent definitions (secrets are write-only) |
-| GET | `/agents/health` | runtime summary (no secrets) |
+| GET | `/v1/agents/runtimes` | adapters (`implemented`, `installed`, `default`) |
+| GET POST DELETE | `/v1/agents[/{agent_id}]` | register agent definitions (secrets are write-only) |
 
 #### `/v1/responses` request handling
 
@@ -509,7 +508,7 @@ use the existing Easy Sandbox `{"error", "type"}` shape.
   elsewhere) — `json_schema` formats and `conversation` → 400.
 * Sampling params (`temperature`, `top_p`, `max_output_tokens`, `truncation`,
   `parallel_tool_calls`, …) are **accepted and ignored**; ignored names are
-  returned in response header `X-Easy-Sandbox-Ignored-Params`.
+  returned in response header `X-Agent-Sandbox-Ignored-Params`.
 * Response object: all fields the official `openai.types.responses.Response`
   model requires (`id, created_at, model, object, output, parallel_tool_calls,
   tool_choice, tools, status, usage, error, incomplete_details, metadata,
@@ -555,11 +554,11 @@ use the existing Easy Sandbox `{"error", "type"}` shape.
 
 ---
 
-## 7. Python client (`easy_sandbox.agents`)
+## 7. Python client (`agent_sandbox.agents`)
 
 ```python
-from easy_sandbox import Sandbox
-from easy_sandbox.agents import Agent, Runner, Session
+from agent_sandbox import Sandbox
+from agent_sandbox.agents import Agent, Runner, Session
 
 async with await Sandbox.create(template="base") as sb:
     agent = Agent.from_yaml("agent.yaml")
@@ -617,15 +616,15 @@ Already have a URL? `AgentHost.connect(url, token=…)` skips the bootstrap
 
 ### Bootstrap (`AgentHost` via `sandbox.agents.host(agent)`)
 
-1. `commands.run("python3 -c 'import easy_sandbox.server'")`; if missing and
-   `install=True` (default) → `pip install easy-sandbox-server==<client version>`
+1. `commands.run("python3 -c 'import agent_sandbox.server'")`; if missing and
+   `install=True` (default) → `pip install agent-sandbox-server==<client version>`
    (lockstep releases; configurable `server_package=`/`index_url`).
 2. Ensure the runtime CLI: `GET /agents/runtimes` after the server is up; if not
    installed and `install=True` → `POST …/install`.
 3. Write the agent definition: `PUT /agents/definitions/{name}` (secrets in the
    body, TLS to the sandbox endpoint, write-only).
-4. Start: `commands.start("python3 -m easy_sandbox.server.agents serve --port 9100")`
-   with env `EBX_SERVER_TOKEN=<random 32 B>`, `EBX_AGENTS_ALLOW_INSTALL=1`
+4. Start: `commands.start("python3 -m agent_sandbox.server.agents serve --port 9100")`
+   with env `ABX_SERVER_TOKEN=<random 32 B>`, `ABX_AGENTS_ALLOW_INSTALL=1`
    (never on argv). Wait for `/health`.
 5. Workspace: `git clone` through `GIT_CONFIG_COUNT/KEY/VALUE` env
    (`http.extraHeader`) — token never on argv, never in `.git/config`; or upload
@@ -636,17 +635,13 @@ Already have a URL? `AgentHost.connect(url, token=…)` skips the bootstrap
 
 ### Existing wrappers
 
-`agent/builtin.py` and `api/deploy.py` are **unchanged**; they remain the
-"run a one-shot agent via `commands.run`" path. `easy_sandbox.agents` is
-documented as the richer successor (sessions, streaming, cancel).
-`BUILTIN_AGENTS` names map to adapter names (`codex-agent-api`→`codex`,
-`claude-code`→`claude-code`, `qwen-code-deploy`→`qwen-code`) in
-`easy_sandbox.agents.runtimes.from_builtin(name)` for migration.
+The built-in agent wrappers (`agent/builtin.py`, `BUILTIN_AGENTS`) and `api/deploy.py` were deleted. The Agents
+API is the one way to run an agent in a sandbox.
 
 ### OpenAI self-hosted environment helper
 
 ```python
-from easy_sandbox.agents import connect_openai_environment
+from agent_sandbox.agents import connect_openai_environment
 proc = await connect_openai_environment(sb, session.environment.remote_url,
                                         session.environment.id,
                                         executor_api_key=os.environ["OPENAI_EXECUTOR_API_KEY"])
@@ -654,7 +649,7 @@ proc = await connect_openai_environment(sb, session.environment.remote_url,
 Installs `@openai/codex@alpha` if needed and starts
 `codex exec-server --remote <url> --environment-id <id>` with `CODEX_API_KEY`
 only in the process env. Lets users drive *OpenAI's* hosted harness with an
-Easy Sandbox as the executor — the complementary direction to hosting the CLI.
+Agent Sandbox as the executor — the complementary direction to hosting the CLI.
 
 ---
 
@@ -662,7 +657,7 @@ Easy Sandbox as the executor — the complementary direction to hosting the CLI.
 
 | Failure | Behaviour |
 |---|---|
-| Binary missing | turn fails `runtime_not_installed` (Agents wire: `sandbox_error`), message includes the install hint; `GET /agents/runtimes` shows it before running |
+| Binary missing | turn fails `runtime_not_installed` (Agents wire: `sandbox_error`), message includes the install hint; `GET /v1/agents/runtimes` shows it before running |
 | Bad credentials / 401/403 on stderr or `result.is_error` | `authentication_error`, redacted message |
 | 429 / overloaded | `rate_limit_exceeded` / `server_overloaded` |
 | Timeout (wall/idle) | process group killed, `request_timeout`; partial items retained |
@@ -684,14 +679,14 @@ Easy Sandbox as the executor — the complementary direction to hosting the CLI.
 2. **Child env allowlist**: `PATH, HOME, USER, LOGNAME, SHELL, LANG, LC_*, TERM,
    TMPDIR, TZ, SSL_CERT_FILE, SSL_CERT_DIR, REQUESTS_CA_BUNDLE, NODE_EXTRA_CA_CERTS,
    HTTP(S)_PROXY, NO_PROXY, NPM_CONFIG_*`, plus names in
-   `EBX_AGENTS_PASSTHROUGH_ENV`, plus adapter credential env, plus spec
-   `env`/`secrets`. `EBX_SERVER_TOKEN` and every other server variable are
+   `ABX_AGENTS_PASSTHROUGH_ENV`, plus adapter credential env, plus spec
+   `env`/`secrets`. `ABX_SERVER_TOKEN` and every other server variable are
    **not** inherited.
 3. **Redaction**: `Redactor(secret_values)` replaces any secret value (≥ 6
    chars) and common token shapes (`sk-…`, `ghp_…`, `Bearer …`, `x-api-key`) in
    every event text, tool output, stderr tail, error message and persisted
    item. The server logs no request bodies.
-4. **Write-only secrets**: `GET /agents/definitions` returns secret *names*
+4. **Write-only secrets**: `GET /v1/agents` returns secret *names*
    (`provider.api_key: "***"`), never values; the state dir contains none.
 5. **Workspace confinement** for `workspace.path`: must be absolute, no `..`,
    created if absent; the agent itself is not confined (`full_access`) —
@@ -702,13 +697,13 @@ Easy Sandbox as the executor — the complementary direction to hosting the CLI.
    concurrency cap, output cap, SSE per-session subscriber cap (32).
 8. **State files** 0600; per-turn temp dir 0700 and removed; MCP config files
    contain placeholders only.
-9. Install endpoint disabled unless `EBX_AGENTS_ALLOW_INSTALL=1`.
+9. Install endpoint disabled unless `ABX_AGENTS_ALLOW_INSTALL=1`.
 10. **The `agents` group is remote code execution by design** (it runs a CLI
     that runs shell commands). Therefore: default-disabled; when
-    `EBX_AGENTS_LOCK_DEFINITIONS=1` the `/agents/definitions` write routes return
-    403 and only definitions from `EBX_AGENTS_CONFIG` can be run (use this when a
+    `ABX_AGENTS_LOCK_DEFINITIONS=1` the `/v1/agents` write routes return
+    403 and only definitions from `ABX_AGENTS_CONFIG` can be run (use this when a
     token is handed to a less-trusted caller); `runtime: command` and `extra_args`
-    can be disabled with `EBX_AGENTS_ALLOW_COMMAND=0` (default `1`).
+    can be disabled with `ABX_AGENTS_ALLOW_COMMAND=0` (default `1`).
 11. **Input validation**: agent names `[A-Za-z0-9._-]{1,64}`; adapter names from
     the registry only; `workspace.git.url` scheme ∈ {https, ssh, git} and must not
     start with `-` (clone uses `git clone -- <url>`); `workspace.path` absolute,
@@ -728,22 +723,20 @@ Easy Sandbox as the executor — the complementary direction to hosting the CLI.
 
 ## 10. Backward compatibility
 
-* New files only, apart from small localized edits: `router.py` (enum member +
-  default-disabled), `app.py` (route import, `EBX_SERVER_ENABLED_GROUPS`,
+* New files only, apart from small localized edits: `endpoints.py` (the 70 agents
+  endpoints, opt-in group), `app.py` (route import, `ABX_SERVER_ENABLED_GROUPS`,
   Bearer for `agents`, SSE write-failure hardening that is a no-op for healthy
-  streams), `server/__init__.py` (exports), client `api/sandbox.py` (an
-  `agents` cached property — import-lazy).
+  streams), `server/__init__.py` (exports). The planned client `agents` property of `api/sandbox.py` was not added.
 * No new dependency in either package (YAML stays under the existing
   `declarative` extra on the client; JSON on the server).
 * Existing groups, routes, auth and tests are unchanged.
 
 ## 11. Examples (`examples/agents/`)
 
-`01_quickstart.py` (one-liner), `02_agent_yaml.py` + `agent.yaml`,
-`03_streaming.py`, `04_session_continuity.py`, `05_openai_client.py` (official
-`openai` client → sandbox), `06_mcp_and_secrets.py`, `07_custom_adapter.py`,
-`08_openai_self_hosted_env.py`. All run offline-safe `--dry-run`/fake mode where
-possible.
+As shipped: `complete_case.py` (starts a local server with stand-in `codex` and `qwen` binaries and walks the
+whole session flow without a model key), `hosted_codex.py`, `hosted_qwen.py` (HTTP clients for a running server),
+`local_files_and_session.py`, `codex_agent.py`, `browser_automation.py`. The `01`-`08` numbered examples of the
+design (they need the Python client of section 7) were not written.
 
 ## 12. Testing strategy
 
@@ -770,9 +763,8 @@ possible.
   or `OPENAI_SDK_PATH=/path/to/site-packages`), tests drive the in-process server with
   `OpenAI(base_url=…).responses.create/stream`, `beta.agents.sessions.*` and the
   SDK's `sessions.stream(...).get_final_result()`; skipped otherwise.
-* Client: `Runner.run/run_streamed/run_sync`, `Session`, YAML load, bootstrap
-  against a fake `Sandbox` (records `commands.*` calls, asserts no secrets in
-  commands), `connect_openai_environment` command construction.
+* Client (section 7, not built): `Runner.run/run_streamed/run_sync`, `Session`, YAML load, bootstrap
+  against a fake `Sandbox`, `connect_openai_environment` command construction.
 * Default-behaviour regression: full existing suites + a test that
   `agents` is disabled by default and that other routes' behaviour/auth is
   unchanged.

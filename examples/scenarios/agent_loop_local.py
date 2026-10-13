@@ -1,6 +1,6 @@
 """Create a sandbox, run a command, read the result, then kill it.
 
-This process starts ``python -m easy_sandbox.server serve`` on 127.0.0.1, talks to it
+This process starts ``python -m agent_sandbox.server serve`` on 127.0.0.1, talks to it
 with ``ServerClient``, and prints every response. It does not call route handlers
 in-process and does not use a cloud API key.
 """
@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "server-sdk" / "src"), str(ROOT / "client-sdk" / "src")]
 
-from easy_sandbox.api.server_client import ServerClient  # noqa: E402
+from agent_sandbox.api.server_client import ServerClient  # noqa: E402
 
 
 def _port() -> int:
@@ -27,25 +27,25 @@ def _port() -> int:
 
 
 def main() -> int:
-    work = Path("/tmp/ebx-agent-loop")
+    work = Path("/tmp/abx-agent-loop")
     base = work / "base"
     base.mkdir(parents=True, exist_ok=True)
     port = _port()
     env = os.environ.copy()
     for name in (
-        "EBX_SERVER_TOKEN",
-        "EBX_SERVER_POLICY",
-        "EBX_SERVER_POLICY_FILE",
-        "EBX_SANDBOX_API_KEY",
+        "ABX_SERVER_TOKEN",
+        "ABX_SERVER_POLICY",
+        "ABX_SERVER_POLICY_FILE",
+        "ABX_SANDBOX_API_KEY",
         "E2B_API_KEY",
     ):
         env.pop(name, None)
-    env["EBX_SERVER_BASE_DIR"] = str(base)
+    env["ABX_SERVER_BASE_DIR"] = str(base)
     env["PYTHONPATH"] = os.pathsep.join(
         [str(ROOT / "server-sdk" / "src"), str(ROOT / "client-sdk" / "src"), env.get("PYTHONPATH", "")]
     )
     proc = subprocess.Popen(
-        [sys.executable, "-m", "easy_sandbox.server", "serve", "--host", "127.0.0.1", "--port", str(port)],
+        [sys.executable, "-m", "agent_sandbox.server", "serve", "--host", "127.0.0.1", "--port", str(port)],
         cwd=str(work),
         env=env,
         stdout=subprocess.PIPE,

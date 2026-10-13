@@ -25,8 +25,8 @@ class ConnectStreamReader:
 ```
 
 ## Implementation
-- **Source**: `src/easy_sandbox/transport/streaming.py`
-- **Codec**: `src/easy_sandbox/transport/codec.py`
+- **Source**: `src/agent_sandbox/transport/streaming.py`
+- **Codec**: `src/agent_sandbox/transport/codec.py`
 - **Tests**: `tests/test_transport/test_streaming.py`
 
 ## Alternatives considered

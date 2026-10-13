@@ -33,7 +33,7 @@ repeat the design details in `server-capability-expansion.md`.
 ### Security decisions
 
 - All file-op paths are protected by `_resolve_safe_path()` and confined under
-  `EBX_SERVER_BASE_DIR` (default `/home/user`).
+  `ABX_SERVER_BASE_DIR` (default `/home/user`).
 - Sensitive env-var fields are masked automatically (TOKEN/SECRET/KEY/PASSWORD).
 - Protected variables (PATH/HOME/USER/SHELL) cannot be overridden.
 - Process signals are restricted to a safe list; signals to PID 1 are refused.
@@ -64,7 +64,7 @@ decision on the existing 42 endpoints; endpoint contracts remain as defined in
 ## Dependencies
 - `2026-09-09-server-capability-expansion.md` (the 42-endpoint expansion decision;
   this ADR only adds the audit-decision conclusions)
-- `src/easy_sandbox/server/` (all route modules)
+- `src/agent_sandbox/server/` (all route modules)
 
 ## Test Strategy
 - Enable/disable each capability group: after disabling, endpoints return 404;
@@ -76,4 +76,4 @@ decision on the existing 42 endpoints; endpoint contracts remain as defined in
 - ✅ All 42 endpoints are retained; no redundant removals.
 - ✅ DEV_TOOLS and BROWSER are disabled by default; the rest are enabled by default.
 - ✅ Security decisions are enforced in code (path protection, env masking, signal restriction).
-- ✅ The `EBX_SERVER_DISABLED_GROUPS` environment variable configures capability groups at runtime.
+- ✅ The `ABX_SERVER_DISABLED_GROUPS` environment variable configures capability groups at runtime.

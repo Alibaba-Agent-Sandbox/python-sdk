@@ -33,7 +33,7 @@
         "sdk_code": "E1001",
         "exit_code": 3,
         "message": "bad",
-        "suggestion": "Check your EBX_SANDBOX_API_KEY environment variable or pass sandbox_api_key."
+        "suggestion": "Check your ABX_SANDBOX_API_KEY environment variable or pass sandbox_api_key."
       }
     },
     {
@@ -87,7 +87,7 @@
         "sdk_code": "E2001",
         "exit_code": 4,
         "message": "t",
-        "suggestion": "Run 'ebx template list' to see available templates."
+        "suggestion": "Run 'abx template list' to see available templates."
       }
     },
     {
@@ -127,7 +127,7 @@
         "sdk_code": "E8004",
         "exit_code": 1,
         "message": "nope",
-        "suggestion": "Run 'ebx provider info prov' to see supported features."
+        "suggestion": "Run 'abx provider info prov' to see supported features."
       }
     },
     {

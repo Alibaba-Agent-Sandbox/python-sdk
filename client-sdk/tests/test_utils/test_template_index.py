@@ -19,14 +19,14 @@ from typing import TYPE_CHECKING, Any
 import httpx
 import pytest
 
-from easy_sandbox.models.errors import (
+from agent_sandbox.models.errors import (
     GitHubRateLimitError,
     NetworkError,
     TemplateNotFoundError,
     TemplateParseError,
 )
-from easy_sandbox.utils.github_token import FINE_GRAINED_PAT_URL
-from easy_sandbox.utils.template_index import (
+from agent_sandbox.utils.github_token import FINE_GRAINED_PAT_URL
+from agent_sandbox.utils.template_index import (
     INDEX_META_FILE,
     INDEX_SCHEMA_VERSION,
     fetch_index,
@@ -37,27 +37,25 @@ from easy_sandbox.utils.template_index import (
 if TYPE_CHECKING:
     from pathlib import Path
 
-INDEX_URL = (
-    "https://raw.githubusercontent.com/Easy-Sandbox/awesome-templates/main/awesome-templates.yaml"
-)
+INDEX_URL = "https://raw.githubusercontent.com/alibaba-agent-sandbox/awesome-templates/main/awesome-templates.yaml"
 
 INDEX_YAML = """\
 schema_version: 1
 templates:
   - name: qwen-code
     description: "Qwen Code agent harness"
-    repo: https://github.com/Easy-Sandbox/awesome-templates
+    repo: https://github.com/alibaba-agent-sandbox/awesome-templates
     path: qwen-code
     tags: [qwen, ai-agent]
-    author: Easy-Sandbox
+    author: alibaba-agent-sandbox
     capabilities: [shell, files, code]
     status: official
   - name: node-web
     description: "Node.js web service"
-    repo: https://github.com/Easy-Sandbox/awesome-templates
+    repo: https://github.com/alibaba-agent-sandbox/awesome-templates
     path: node-web
     tags: [nodejs, web, deploy]
-    author: Easy-Sandbox
+    author: alibaba-agent-sandbox
     capabilities: [shell, files, code]
     status: official
 """
@@ -105,7 +103,7 @@ class TestParseIndex:
         qwen = index.entries[0]
         assert qwen.description == "Qwen Code agent harness"
         assert qwen.tags == ("qwen", "ai-agent")
-        assert qwen.author == "Easy-Sandbox"
+        assert qwen.author == "alibaba-agent-sandbox"
         assert qwen.capabilities == ("shell", "files", "code")
         assert qwen.status == "official"
 
@@ -119,7 +117,7 @@ class TestParseIndex:
         with pytest.raises(TemplateParseError) as exc_info:
             parse_index(text)
         assert "newer than supported" in str(exc_info.value)
-        assert "Upgrade easy-sandbox" in (exc_info.value.suggestion or "")
+        assert "Upgrade agent-sandbox" in (exc_info.value.suggestion or "")
 
     def test_non_integer_schema_version_is_rejected(self) -> None:
         text = INDEX_YAML.replace("schema_version: 1", 'schema_version: "one"')
@@ -129,7 +127,7 @@ class TestParseIndex:
     def test_duplicate_names_are_rejected(self) -> None:
         entry = """\
   - name: dup
-    repo: Easy-Sandbox/awesome-templates
+    repo: alibaba-agent-sandbox/awesome-templates
     path: dup
 """
         text = f"schema_version: 1\ntemplates:\n{entry}{entry}"
@@ -137,7 +135,7 @@ class TestParseIndex:
             parse_index(text)
 
     def test_missing_name_is_rejected(self) -> None:
-        text = "schema_version: 1\ntemplates:\n  - repo: Easy-Sandbox/awesome-templates\n"
+        text = "schema_version: 1\ntemplates:\n  - repo: alibaba-agent-sandbox/awesome-templates\n"
         with pytest.raises(TemplateParseError, match="missing the required 'name'"):
             parse_index(text)
 
@@ -157,7 +155,7 @@ class TestParseIndex:
     def test_tags_must_be_a_string_list(self) -> None:
         text = (
             "schema_version: 1\ntemplates:\n"
-            "  - name: x\n    repo: Easy-Sandbox/awesome-templates\n"
+            "  - name: x\n    repo: alibaba-agent-sandbox/awesome-templates\n"
             "    path: x\n    tags: [1, 2]\n"
         )
         with pytest.raises(TemplateParseError, match="'tags' must be a list of strings"):
@@ -180,18 +178,21 @@ class TestInstallRef:
         return parse_index(text).entries[0]
 
     def test_with_path(self) -> None:
-        entry = self._entry("  - name: x\n    repo: Easy-Sandbox/awesome-templates\n    path: x\n")
-        assert entry.install_ref == "Easy-Sandbox/awesome-templates//x"
+        entry = self._entry(
+            "  - name: x\n    repo: alibaba-agent-sandbox/awesome-templates\n    path: x\n"
+        )
+        assert entry.install_ref == "alibaba-agent-sandbox/awesome-templates//x"
 
     def test_without_path(self) -> None:
-        entry = self._entry("  - name: x\n    repo: Easy-Sandbox/awesome-templates\n")
-        assert entry.install_ref == "Easy-Sandbox/awesome-templates"
+        entry = self._entry("  - name: x\n    repo: alibaba-agent-sandbox/awesome-templates\n")
+        assert entry.install_ref == "alibaba-agent-sandbox/awesome-templates"
 
     def test_with_ref_pin(self) -> None:
         entry = self._entry(
-            "  - name: x\n    repo: Easy-Sandbox/awesome-templates\n    path: x\n    ref: v1.2.0\n"
+            "  - name: x\n    repo: alibaba-agent-sandbox/awesome-templates\n"
+            "    path: x\n    ref: v1.2.0\n"
         )
-        assert entry.install_ref == "Easy-Sandbox/awesome-templates//x@v1.2.0"
+        assert entry.install_ref == "alibaba-agent-sandbox/awesome-templates//x@v1.2.0"
 
     def test_github_url_repo_is_normalised(self) -> None:
         entry = self._entry(
@@ -212,7 +213,7 @@ class TestLookup:
         index = parse_index(INDEX_YAML)
         assert [e.name for e in index.filter("web")] == ["node-web"]
         assert [e.name for e in index.filter("qwen")] == ["qwen-code"]
-        assert [e.name for e in index.filter("easy-sandbox")] == ["qwen-code", "node-web"]
+        assert [e.name for e in index.filter("agent-sandbox")] == ["qwen-code", "node-web"]
 
     def test_filter_by_tag_and_status(self) -> None:
         index = parse_index(INDEX_YAML)
@@ -317,7 +318,7 @@ class TestFetchIndexNetwork:
     ) -> None:
         local = tmp_path / "env-index.yaml"
         local.write_text(INDEX_YAML, encoding="utf-8")
-        monkeypatch.setenv("EBX_TEMPLATE_INDEX_URL", str(local))
+        monkeypatch.setenv("ABX_TEMPLATE_INDEX_URL", str(local))
 
         index = await fetch_index(cache_dir=tmp_path / "cache")
 
@@ -342,7 +343,7 @@ class TestFetchIndexDegradedModes:
         with pytest.raises(NetworkError, match="Could not reach the template index") as exc:
             await fetch_index(INDEX_URL, cache_dir=tmp_path / "cache")
         # The persistent config flow is the recommended remedy (task 206).
-        assert "ebx config set github_token" in (exc.value.suggestion or "")
+        assert "abx config set github_token" in (exc.value.suggestion or "")
 
     async def test_network_error_with_cache_serves_stale(
         self, httpx_mock: Any, tmp_path: Path
@@ -387,7 +388,7 @@ class TestFetchIndexDegradedModes:
         assert "while fetching the template index" in str(exc.value)
         suggestion = exc.value.suggestion or ""
         # Persistent, masked config first; leak-prone --token stays documented.
-        assert "ebx config set github_token" in suggestion
+        assert "abx config set github_token" in suggestion
         assert FINE_GRAINED_PAT_URL in suggestion
         assert "may leak" in suggestion
         # CI sessions are pointed at secret injection…

@@ -9,8 +9,11 @@ import threading
 import time
 from typing import Any
 
-from easy_sandbox.server.app import SandboxServer
-from easy_sandbox.server.registry import CommandRegistry
+from agent_sandbox.server.app import SandboxServer
+from agent_sandbox.server.policy import ServerPolicy
+from agent_sandbox.server.registry import CommandRegistry
+from agent_sandbox.server.router import default_table
+from agent_sandbox.server.runtime import PolicyEngine
 
 
 def free_port() -> int:
@@ -18,6 +21,26 @@ def free_port() -> int:
         s.bind(("127.0.0.1", 0))
         port: int = s.getsockname()[1]
         return port
+
+
+def wire(
+    httpd: Any,
+    *,
+    auth_token: str | None = None,
+    registry: CommandRegistry | None = None,
+    policy: dict[str, Any] | None = None,
+) -> Any:
+    """Attach what :meth:`SandboxServer.serve` attaches to a bare ``ThreadingHTTPServer``."""
+    httpd.auth_token = auth_token
+    httpd.registry = registry
+    httpd.route_table = default_table()
+    httpd.policy_engine = PolicyEngine(
+        ServerPolicy.from_dict(policy or {}),
+        default_table(),
+        legacy_token=auth_token,
+        registry=registry,
+    )
+    return httpd
 
 
 class Live:

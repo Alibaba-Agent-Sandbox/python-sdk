@@ -28,9 +28,9 @@ class WebSocketTransport:
 ```
 
 ## Implementation
-- **Source**: `src/easy_sandbox/transport/ws.py`
+- **Source**: `src/agent_sandbox/transport/ws.py`
 - **Tests**: `tests/test_transport/test_ws.py`
-- **Server PTY side**: `src/easy_sandbox/server/routes_pty.py` (WebSocket PTY terminal)
+- **Server PTY side**: `src/agent_sandbox/server/routes_pty.py` (WebSocket PTY terminal)
 
 ## Alternatives considered
 - **aiohttp WebSocket** — Would require adding aiohttp as dependency

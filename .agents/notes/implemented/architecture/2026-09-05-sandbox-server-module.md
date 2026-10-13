@@ -1,4 +1,4 @@
-# Decision: easy_sandbox.server — User Opt-in In-Container HTTP Server Module
+# Decision: agent_sandbox.server — User Opt-in In-Container HTTP Server Module
 
 Status: implemented
 Implemented: 2026-09-21
@@ -8,7 +8,7 @@ Task: #118
 Users need to register and execute custom commands inside the sandbox container. The original approach (source-delivery execution: `files.write` to deliver a script + `commands.run` to execute it) requires the full chain on every call, with high latency, no persistent state, and no concurrency support. A persistent in-container HTTP server is needed to carry custom commands, while introducing no third-party dependencies (the container may have no pip package-management environment).
 
 ## Decision
-Add an `easy_sandbox.server` module: a stdlib-only, zero-dependency in-container HTTP server that the user opt-in starts.
+Add an `agent_sandbox.server` module: a stdlib-only, zero-dependency in-container HTTP server that the user opt-in starts.
 
 ### Core design principles
 
@@ -54,7 +54,7 @@ The server module ultimately expanded to **42 endpoints**, managed in **8 Capabi
 ## API Design
 ```python
 # Client side
-from easy_sandbox import Sandbox
+from agent_sandbox import Sandbox
 
 sandbox = await Sandbox.create(template="my-template")
 
@@ -80,7 +80,7 @@ commands = await sandbox.server.discover()
 ```
 
 ```python
-# In-container server module (easy_sandbox/server/)
+# In-container server module (agent_sandbox/server/)
 # Pure stdlib, zero dependencies
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -123,7 +123,7 @@ class SandboxServer:
 - Zero-dependency validation: the server module source imports no third-party package.
 
 ## Acceptance criteria
-- ✅ The `easy_sandbox.server` module uses only the Python standard library, with zero third-party dependencies.
+- ✅ The `agent_sandbox.server` module uses only the Python standard library, with zero third-party dependencies.
 - ✅ Built-in upload/download/runshell commands operate directly on the local filesystem.
 - ✅ Stable WIRE CONTRACT: `POST /commands/{name}` + JSON body → `{"result"}` or `{"error","type"}`.
 - ✅ The `GET /commands` discovery endpoint returns all registered commands and their argument schemas.

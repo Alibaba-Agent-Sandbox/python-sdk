@@ -1,13 +1,13 @@
 # API 参考
 
-本文档列出 Easy Sandbox Python SDK 的全部公开 API 签名、参数、返回值和异常。
+本文档列出 Agent Sandbox Python SDK 的全部公开 API 签名、参数、返回值和异常。
 
 ---
 
 ## Sandbox 类
 
 ```python
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 ```
 
 ### 类方法
@@ -28,7 +28,6 @@ async def create(
     memory: int | None = None,
     disk: int | None = None,
     gpu: str | None = None,
-    description: str | None = None,
     secure: bool = True,
     api_key: str | None = None,
     api_url: str | None = None,
@@ -38,7 +37,7 @@ async def create(
 ) -> Sandbox
 ```
 
-创建新沙箱。当提供 `description` 且 `template` 保持默认值 `"base"` 时，SDK 将其记录为 hint 日志条目。通过 LLM 推断模板发生在 **CLI / Agent 层**，而非 `Sandbox.create()` 自身。
+创建新沙箱。
 
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
@@ -51,7 +50,6 @@ async def create(
 | `memory` | `int` | `None` | 内存 MB |
 | `disk` | `int` | `None` | 磁盘 MB |
 | `gpu` | `str` | `None` | GPU 规格（如 `"A10"`） |
-| `description` | `str` | `None` | 自然语言提示（记录为日志条目；LLM 推断发生在 CLI / Agent 层，而非 `create()` 内部） |
 | `secure` | `bool` | `True` | 安全模式（端口访问需 token） |
 | `api_key` | `str` | `None` | API Key 覆盖 |
 | `api_url` | `str` | `None` | 平台 API URL 覆盖 |
@@ -127,39 +125,6 @@ async def kill_by_id(
 
 **同步版**：`Sandbox.kill_by_id_sync(...)`
 
-#### `Sandbox.deploy()`
-
-```python
-@classmethod
-async def deploy(
-    cls,
-    project_path: str,
-    description: str,
-    *,
-    max_wall_time: str = "10m",
-    max_session_turns: int = 100,
-    llm_api_key: str | None = None,
-    openai_base_url: str | None = None,
-    openai_model: str | None = None,
-    timeout: int = 900,
-    envs: dict[str, str] | None = None,
-    cpu: int | None = None,
-    memory: int | None = None,
-    on_progress: Callable[[str], None] | None = None,
-    api_key: str | None = None,
-    api_url: str | None = None,
-    domain: str | None = None,
-    access_key_id: str | None = None,
-    access_key_secret: str | None = None,
-) -> Sandbox
-```
-
-使用 qwen-code agent 自动部署项目。创建 `qwen-code` 模板沙箱，上传项目并自动分析、安装依赖、构建和启动服务。
-
-**返回**：`Sandbox` 实例（仍在运行），`_deploy_result` 属性包含部署结果。
-
-**同步版**：`Sandbox.deploy_sync(...)`
-
 ### 实例方法
 
 | 方法 | 签名 | 说明 | 同步版 |
@@ -220,65 +185,37 @@ async def list_commands(
     self,
     *,
     server_port: int = 9000,
-) -> list[dict[str, Any]]
+) -> list[ServerCommand]
 ```
 
-返回合并的命令目录（模板 + server）。将模板 `custom_commands`（source `"template"`）与 SandboxServer `/commands`（source `"server"`）合并。同名时模板优先，server 条目标记 `shadowed=True`。
+列出沙箱内 SandboxServer 上注册的命名命令（`GET /commands`）。命令在沙箱内通过 `@sandbox.register` 或 server 的 `CommandRegistry` 注册。
 
-**返回**：列表，每项包含 `name`、`description`、`args`、`source`、`shadowed`
+**返回**：`ServerCommand` 列表（`name`、`description`、`args`）
+
+**抛出**：provider 没有 HTTP 数据面时抛 `ProviderFeatureNotSupportedError`（E8004）；server 不可达时抛 `ConnectionError_`
+
+**同步版**：`list_commands_sync()`
 
 #### `run()`
 
 ```python
 async def run(
     self,
-    cmd: str,
-    *,
-    timeout: int = 60,
-    env: dict[str, str] | None = None,
-    cwd: str = "",
-    user: str = "",
-    background: bool = False,
-) -> ProcessResult | StreamReader[ProcessChunk]
-```
-
-执行裸 shell 命令。`sandbox.commands.run(cmd, ...)` 的快捷方式。这**不是**命名命令派发，请使用 `custom()`。
-
-**返回**：`ProcessResult`（`background=True` 时返回 `StreamReader`）
-
-#### `custom()`
-
-```python
-async def custom(
-    self,
     name: str,
-    *,
-    server_port: int = 9000,
-    **kwargs: Any,
-) -> CommandResult
-```
-
-执行命名命令，A→B 解析：先查找模板 `custom_commands`（机制 A），然后回退到 SandboxServer `POST /commands/{name}`（机制 B）。
-
-**返回**：`CommandResult`（含 `value`、`stdout`、`stderr`、`exit_code`、`execution_time`、`source`）
-
-**同步版**：`custom_sync()`
-
-#### `run_command()` *（已弃用）*
-
-```python
-async def run_command(
-    self,
-    name: str,
+    /,
     *,
     server_port: int = 9000,
     **kwargs: Any,
 ) -> Any
 ```
 
-`custom()` 的**已弃用**别名。仅返回 `CommandResult.value` 而非完整的 `CommandResult`。新代码应使用 `custom()`。
+调用沙箱内 SandboxServer 上注册的命名命令：`sandbox.run("name", x=1)` 即以 `kwargs` 作为 JSON body 的 `POST /commands/name`。这是调用命名命令的唯一方式。裸 shell 命令请使用 `sandbox.commands.run(cmd, ...)`。
 
-**同步版**：`run_command_sync()` *（同样已弃用）*
+**返回**：命令的返回值
+
+**抛出**：`CommandNotFoundError`（404）、`ServerAPIError`（其他 server 错误）、`ProviderFeatureNotSupportedError`（E8004）
+
+**同步版**：`run_sync()`
 
 ### 属性
 
@@ -391,63 +328,24 @@ sandbox.code  # CodeContextModule 实例
 
 ---
 
-## Image 类
-
-```python
-from easy_sandbox.api.image import Image
-```
-
-链式镜像构建器（Modal 风格）。
-
-### 工厂方法
-
-| 方法 | 签名 | 说明 |
-|------|------|------|
-| `from_template()` | `@classmethod def from_template(template: str) -> Image` | 基于已有模板创建 |
-| `from_image()` | `@classmethod def from_image(image: str) -> Image` | 基于 Docker 镜像创建 |
-| `official_base()` | `@classmethod def official_base(variant: str = "base", *, region=None, tag=None) -> Image` | 基于阿里云 Agent Sandbox 官方基础镜像创建 |
-
-### 链式方法
-
-| 方法 | 签名 | 说明 |
-|------|------|------|
-| `pip_install()` | `def pip_install(*packages: str) -> Image` | 安装 pip 包 |
-| `apt_install()` | `def apt_install(*packages: str) -> Image` | 安装系统包 |
-| `copy_local()` | `def copy_local(src: str, dst: str) -> Image` | 复制本地文件 |
-| `env()` | `def env(**kwargs: str) -> Image` | 设置环境变量 |
-| `run_command()` | `def run_command(cmd: str) -> Image` | 构建时执行命令 |
-| `workdir()` | `def workdir(path: str) -> Image` | 设置工作目录 |
-| `expose()` | `def expose(*ports: int) -> Image` | 暴露端口 |
-| `entrypoint()` | `def entrypoint(cmd: str) -> Image` | 设置入口命令 |
-
-### 输出方法
-
-| 方法 | 签名 | 说明 |
-|------|------|------|
-| `to_dockerfile()` | `def to_dockerfile() -> str` | 生成 Dockerfile 文本 |
-| `build()` | `async def build(*, alias=None, api_key=None, ..., timeout=600) -> TemplateInfo` | 构建为平台模板 |
-
----
-
 ## ServerClient（沙箱内 SandboxServer）
 
 ```python
-from easy_sandbox.api import ServerClient, ServerCapabilities
-from easy_sandbox.api.base_image import official_base_image, scaffold_dockerfile, lint_dockerfile
+from agent_sandbox.api import ServerClient, ServerCapabilities
 ```
 
 面向模板作者自带 SandboxServer（端口 9000，PTY WebSocket 为 9001）的类型化客户端。它与基于 envd 的
 `sandbox.files` / `sandbox.commands` 相互独立：当模板自带服务端、需要按策略/scope 受控访问，或需要 envd 没有的端点
 （`files.search`、`files.archive`、`files.watch`、`process.output`、git、浏览器）时使用 `Sandbox.server`。每个协程都有
 `*_sync` 孪生方法；异步生成器（`files.watch`、`process.shell_stream`、`process.follow`）没有同步孪生，改用收集型协程
-（`files.watch_for`、`process.run_stream`）。模型位于 `easy_sandbox.models.server`。
+（`files.watch_for`、`process.run_stream`）。模型位于 `agent_sandbox.models.server`。
 
 | 成员 | 签名 | 说明 |
 |------|------|------|
 | `ServerClient()` | `(base_url, *, token=None, headers=None, pty_url=None, timeout=30.0, http_client=None)` | `token` 以 `Authorization: Bearer` 发送；`headers` 携带网关的 `X-Access-Token` |
 | `Sandbox.server` | `cached_property -> ServerClient` | 9000 端口客户端，自动带上沙箱网关头 |
 | `Sandbox.server_at()` | `(port=9000, *, token=None, pty_port=9001, timeout=30.0) -> ServerClient` | 为其他端口/令牌创建新客户端 |
-| `Sandbox.start_server()` | `async (*, port=9000, commands=None, policy=None, token=None, env=None, command=None, wait=True, timeout=30.0) -> ServerClient` | 以 envd 后台命令启动 `easy-sandbox-server serve` 并轮询 `/health`；`policy` 为字典（`EBX_SERVER_POLICY`）或预设名；超时抛 `ConnectionError_` |
+| `Sandbox.start_server()` | `async (*, port=9000, commands=None, policy=None, token=None, env=None, command=None, wait=True, timeout=30.0) -> ServerClient` | 以 envd 后台命令启动 `agent-sandbox-server serve` 并轮询 `/health`；`policy` 为字典（`ABX_SERVER_POLICY`）或预设名；超时抛 `ConnectionError_` |
 | `health()` | `async -> bool` | `GET /health`，服务端不可达时返回 `False` 而不抛异常 |
 | `discover()` | `async -> ServerCapabilities` | `GET /capabilities`；结果缓存在 `client.capabilities`，并启用快速失败的预检查 |
 | `forget_discovery()` | `() -> None` | 丢弃缓存（策略变更后） |
@@ -471,18 +369,20 @@ from easy_sandbox.api.base_image import official_base_image, scaffold_dockerfile
 
 ### ServerCapabilities
 
-由 `discover()` 返回。服务端不支持逐端点发现时 `legacy` 为 `True`（只做能力组级别检查）。
+由 `discover()` 返回。没有 legacy 模式：`/capabilities` 中没有 `endpoints` 的服务端不受支持。
 
 | 成员 | 说明 |
 |------|------|
 | `can(endpoint)` | 端点存在、已启用且当前身份可调用时为 `True` |
-| `denial(endpoint)` | 原因字符串（`endpoint_disabled`、`group_disabled`、`unknown_endpoint`、`missing_scope`）或 `None` |
+| `denial(endpoint)` | 原因字符串（`endpoint_disabled`、`unknown_endpoint`、`missing_scope`）或 `None` |
+| `rule(endpoint)` | 禁用该端点的规则代码（`policy:groups.file_ops`、`default:opt-in:dev_tools` 等）或 `None` |
 | `require(endpoint)` | 抛出 `EndpointNotAvailableError` / `PolicyDeniedError`；否则返回 `EndpointInfo` |
 | `info(endpoint)` | `EndpointInfo`（`method`、`path`、`group`、`enabled`、`allowed`、`scopes`、`limits`、`paths`、`params`） |
 | `limit(endpoint, key, default=None)` / `param(...)` | 已配置的限制 / 参数 |
 | `paths(endpoint)` | `EndpointPaths`（`allow`、`read_only`、`deny_count`、`symlinks`） |
 | `endpoints_for(scope)` / `available()` | 某 scope 授予的端点 id / 当前可调用的端点 id |
 | `check_path(endpoint, path, op=None)`（及 `_sync`） | 服务端给出的权威路径判定（不会成为存在性探测口） |
+| `groups`、`group_summary` | `{组: 是否启用}` 和 `{组: {enabled, total}}`，都是派生视图；开关是端点规则 |
 | `identity_id`、`scopes`、`preset`、`revision`、`warnings`、`api_version`、`server_version`、`configured` | 文档元数据 |
 
 ### 错误（E9xxx）
@@ -491,20 +391,6 @@ from easy_sandbox.api.base_image import official_base_image, scaffold_dockerfile
 `FilePolicyDeniedError`（同时是 `PermissionDeniedError`）、`EndpointNotAvailableError`（E9003，同时是 `CapabilityNotSupportedError`）、
 `PayloadTooLargeError`（E9004；`limit`）、`RateLimitedError`（E9005；`retry_after`）。详见[错误码](./error-codes.md)。
 
-### 基础镜像辅助（`easy_sandbox.api.base_image`）
-
-| 名称 | 说明 |
-|------|------|
-| `official_base_image(*, region=None, variant="base", tag=None)` | `fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/<variant>:<tag>`；环境变量 `EBX_BASE_IMAGE_REGION` / `EBX_BASE_IMAGE_TAG`；格式非法抛 `ValueError` |
-| `is_official_base_image(ref)` | *ref* 是否位于官方镜像仓库命名空间 |
-| `lint_dockerfile(text)` | 建议性检查：`B001`（非官方基础镜像）、`B002`（`ENTRYPOINT`）、`B003`（末尾 `USER root`）、`B004`（保留端口）、`B005`（缺少 `FROM`） |
-| `scaffold_dockerfile(...)` | 在官方基础镜像之上安装 `easy-sandbox-server`（wheel 或固定版本的 PyPI）的 Dockerfile |
-| `BaseImageContract` | 常量：用户、家目录、应用目录、端口、启动/就绪命令 |
-| `Image.official_base(variant="base", *, region=None, tag=None)` | 以官方基础镜像为起点的 `Image`（默认 `Image()` 的基础镜像不变） |
-
-`Image.build()` 与 `DockerBuilder.build()` 会把 lint 结果以警告形式记录，永不使构建失败。`SandboxTemplate.server` 保存声明式服务端策略块
-（做结构校验，见[模板 YAML 规范](./template-yaml-spec.md)）。
-
 ---
 
 ## 数据模型
@@ -512,7 +398,7 @@ from easy_sandbox.api.base_image import official_base_image, scaffold_dockerfile
 ### SandboxStatus
 
 ```python
-from easy_sandbox.models.sandbox import SandboxStatus
+from agent_sandbox.models.sandbox import SandboxStatus
 
 class SandboxStatus(str, Enum):
     CREATING = "creating"
@@ -545,18 +431,6 @@ class SandboxStatus(str, Enum):
 | `exit_code` | `int` | 退出码 |
 | `execution_time` | `float` | 执行耗时（秒） |
 | `output_files` | `list` | 输出文件列表 |
-
-### CommandResult
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `value` | `Any` | 返回值 — 模板命令为 `stdout.strip()`，server 命令为 JSON 返回值 |
-| `stdout` | `str` | 标准输出（server 命令为空） |
-| `stderr` | `str` | 标准错误（server 命令为空） |
-| `exit_code` | `int` | 退出码（server 命令成功为 0，失败为 1） |
-| `execution_time` | `float` | 执行耗时（秒） |
-| `source` | `str` | `"template"` 或 `"server"` |
-| `success` | `bool` | `exit_code == 0`（属性） |
 
 ### OutputFile
 

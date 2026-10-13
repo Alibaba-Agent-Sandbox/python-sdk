@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Stdlib-only live smoke test of every OpenSandbox call the Easy Sandbox provider needs.
+"""Stdlib-only live smoke test of every OpenSandbox call the Agent Sandbox provider needs.
 
 Run after `local-up.sh up` (eval "$(./local-up.sh env)"):  python3 live_smoke.py
 Exits non-zero on the first failed assertion. Uses no third-party packages (same constraint
-as an `ebx provider install`ed exec plugin).
+as an `abx provider install`ed exec plugin).
 """
 
 from __future__ import annotations
@@ -97,7 +97,7 @@ def main():
             "entrypoint": ["tail", "-f", "/dev/null"],
             "resourceLimits": {"cpu": "500m", "memory": "512Mi"},
             "env": {"FOO": "bar"},
-            "metadata": {"name": "ebx-smoke", "owner": "ebx"},
+            "metadata": {"name": "abx-smoke", "owner": "abx"},
         },
     )
     check(st == 202 and body["status"]["state"] == "Running", f"create -> 202 Running ({st})")
@@ -105,12 +105,12 @@ def main():
     try:
         st, info, _ = lifecycle("GET", f"/sandboxes/{sid}")
         check(
-            st == 200 and info["image"]["uri"] == IMAGE and info["metadata"]["owner"] == "ebx",
+            st == 200 and info["image"]["uri"] == IMAGE and info["metadata"]["owner"] == "abx",
             "get",
         )
         st, lst, _ = lifecycle(
             "GET",
-            "/sandboxes?pageSize=50&state=Running&metadata=" + urllib.parse.quote("owner=ebx"),
+            "/sandboxes?pageSize=50&state=Running&metadata=" + urllib.parse.quote("owner=abx"),
         )
         check(
             st == 200 and any(i["id"] == sid for i in lst["items"]),
@@ -187,7 +187,7 @@ def main():
 
         # --- files -----------------------------------------------------------------------
         st, _, _ = jreq(
-            "POST", execd + "/directories", headers=eh, body={"/tmp/ebx/a/b": {"mode": 755}}
+            "POST", execd + "/directories", headers=eh, body={"/tmp/abx/a/b": {"mode": 755}}
         )
         check(st == 200, "mkdir -p")
         b, payload = multipart(
@@ -196,7 +196,7 @@ def main():
                     "metadata",
                     "metadata",
                     "application/json",
-                    json.dumps({"path": "/tmp/ebx/a/hello.txt", "mode": 644}).encode(),
+                    json.dumps({"path": "/tmp/abx/a/hello.txt", "mode": 644}).encode(),
                 ),
                 ("file", "hello.txt", "application/octet-stream", b"hello\nworld\n\x00\xff"),
             ]
@@ -208,37 +208,37 @@ def main():
             body=payload,
         )
         check(st == 200, "upload (metadata part must be a *file* part)")
-        resp = req("GET", f"{execd}/files/download?path=/tmp/ebx/a/hello.txt", headers=eh)
+        resp = req("GET", f"{execd}/files/download?path=/tmp/abx/a/hello.txt", headers=eh)
         check(resp.read() == b"hello\nworld\n\x00\xff", "download is byte exact")
-        st, finfo, _ = jreq("GET", f"{execd}/files/info?path=/tmp/ebx/a/hello.txt", headers=eh)
-        fi = finfo["/tmp/ebx/a/hello.txt"]
+        st, finfo, _ = jreq("GET", f"{execd}/files/info?path=/tmp/abx/a/hello.txt", headers=eh)
+        fi = finfo["/tmp/abx/a/hello.txt"]
         check(fi["type"] == "file" and fi["size"] == 14 and fi["mode"] == 644, f"stat {fi['mode']}")
-        st, lst, _ = jreq("GET", f"{execd}/directories/list?path=/tmp/ebx&depth=2", headers=eh)
+        st, lst, _ = jreq("GET", f"{execd}/directories/list?path=/tmp/abx&depth=2", headers=eh)
         check(
-            {e["path"] for e in lst} >= {"/tmp/ebx/a", "/tmp/ebx/a/b", "/tmp/ebx/a/hello.txt"},
+            {e["path"] for e in lst} >= {"/tmp/abx/a", "/tmp/abx/a/b", "/tmp/abx/a/hello.txt"},
             "list depth=2",
         )
-        st, found, _ = jreq("GET", f"{execd}/files/search?path=/tmp/ebx&pattern=*.txt", headers=eh)
-        check([f["path"] for f in found] == ["/tmp/ebx/a/hello.txt"], "search glob")
+        st, found, _ = jreq("GET", f"{execd}/files/search?path=/tmp/abx&pattern=*.txt", headers=eh)
+        check([f["path"] for f in found] == ["/tmp/abx/a/hello.txt"], "search glob")
         st, _, _ = jreq(
             "POST",
             execd + "/files/mv",
             headers=eh,
-            body=[{"src": "/tmp/ebx/a/hello.txt", "dest": "/tmp/ebx/a/b/h2.txt"}],
+            body=[{"src": "/tmp/abx/a/hello.txt", "dest": "/tmp/abx/a/b/h2.txt"}],
         )
         check(st == 200, "mv")
-        st, miss, _ = jreq("GET", f"{execd}/files/info?path=/tmp/ebx/a/hello.txt", headers=eh)
+        st, miss, _ = jreq("GET", f"{execd}/files/info?path=/tmp/abx/a/hello.txt", headers=eh)
         check(st == 404 and miss["code"] == "FILE_NOT_FOUND", "stat missing -> 404 FILE_NOT_FOUND")
-        st, _, _ = jreq("DELETE", f"{execd}/files?path=/tmp/ebx/a/b/h2.txt", headers=eh)
+        st, _, _ = jreq("DELETE", f"{execd}/files?path=/tmp/abx/a/b/h2.txt", headers=eh)
         check(st == 200, "rm file")
-        st, _, _ = jreq("DELETE", f"{execd}/files?path=/tmp/ebx/a/b/h2.txt", headers=eh)
+        st, _, _ = jreq("DELETE", f"{execd}/files?path=/tmp/abx/a/b/h2.txt", headers=eh)
         check(st == 200, "rm missing file is idempotent (200)")
-        st, bad, _ = jreq("DELETE", f"{execd}/files?path=/tmp/ebx/a", headers=eh)
+        st, bad, _ = jreq("DELETE", f"{execd}/files?path=/tmp/abx/a", headers=eh)
         check(
             st == 500 and bad["code"] == "RUNTIME_ERROR",
             "rm on a directory -> 500 RUNTIME_ERROR (needs /directories)",
         )
-        st, _, _ = jreq("DELETE", f"{execd}/directories?path=/tmp/ebx", headers=eh)
+        st, _, _ = jreq("DELETE", f"{execd}/directories?path=/tmp/abx", headers=eh)
         check(st == 200, "rmdir -rf")
 
         # --- ttl / pause / resume / metadata ---------------------------------------------

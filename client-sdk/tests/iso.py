@@ -8,14 +8,14 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-import easy_sandbox.transport.config as config_module
-from easy_sandbox.providers import registry
-from easy_sandbox.utils import config_keys as ck
+import agent_sandbox.transport.config as config_module
+from agent_sandbox.providers import registry
+from agent_sandbox.utils import config_keys as ck
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-_PREFIXES = ("EBX_", "SANDBOX_", "E2B_", "ALICLOUD_", "ALIBABA_CLOUD_", "OPENAI_")
+_PREFIXES = ("ABX_", "SANDBOX_", "E2B_", "ALICLOUD_", "ALIBABA_CLOUD_", "OPENAI_")
 
 
 def _all_env_names() -> set[str]:
@@ -52,7 +52,7 @@ def iso(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     for name in list(os.environ):
         if name.startswith(_PREFIXES) or name in _all_env_names():
             monkeypatch.delenv(name, raising=False)
-    home = tmp_path / ".ebx"
+    home = tmp_path / ".abx"
     home.mkdir()
     monkeypatch.setattr(config_module, "_CONFIG_FILE", home / "config.toml")
     monkeypatch.setattr(config_module, "_ENV_FILE_CANDIDATES", [home / ".env"])

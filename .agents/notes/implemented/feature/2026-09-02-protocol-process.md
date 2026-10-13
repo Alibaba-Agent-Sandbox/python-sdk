@@ -27,8 +27,8 @@ async def kill_process(pid: int, signal: int) -> None: ...
 ```
 
 ## Implementation
-- **Source**: `src/easy_sandbox/protocol/process.py`
-- **Models**: `src/easy_sandbox/models/process.py`
+- **Source**: `src/agent_sandbox/protocol/process.py`
+- **Models**: `src/agent_sandbox/models/process.py`
 - **Tests**: `tests/test_protocol/test_process.py`
 
 ## Alternatives considered

@@ -7,17 +7,17 @@ from typing import Any
 
 import pytest
 
-from easy_sandbox.server import SandboxServer  # noqa: F401  (registers routes)
-from easy_sandbox.server.policy import (
+from agent_sandbox.server import SandboxServer  # noqa: F401  (registers routes)
+from agent_sandbox.server.endpoints import ENDPOINTS, OPT_IN_GROUPS, endpoints_of
+from agent_sandbox.server.policy import (
     CORE_ENDPOINTS,
-    ENDPOINT_CATALOG,
     PRESETS,
     PolicyConfigError,
     ServerPolicy,
     parse_size,
     scope_granted,
 )
-from easy_sandbox.server.router import CapabilityGroup, default_table
+from agent_sandbox.server.router import CapabilityGroup, default_table
 
 
 def _engine(data: dict[str, Any]) -> Any:
@@ -25,14 +25,24 @@ def _engine(data: dict[str, Any]) -> Any:
 
 
 class TestCatalogue:
-    def test_every_builtin_route_has_a_catalogue_entry(self) -> None:
-        names = {r.name for r in default_table()._routes}
-        assert names, "routes not registered"
-        assert names <= set(ENDPOINT_CATALOG), names - set(ENDPOINT_CATALOG)
+    def test_every_declared_endpoint_is_mounted_or_virtual(self) -> None:
+        mounted = {r.name for r in default_table()._routes}
+        assert mounted, "routes not registered"
+        virtual = {e.name for e in ENDPOINTS.values() if e.virtual}
+        assert set(ENDPOINTS) == mounted | virtual
+        assert virtual == {"pty_connect"}
 
-    def test_every_catalogue_entry_is_registered_or_virtual(self) -> None:
-        names = {r.name for r in default_table()._routes}
-        assert set(ENDPOINT_CATALOG) - names <= {"pty_connect"}
+    def test_mounted_routes_carry_their_declaration(self) -> None:
+        for route in default_table()._routes:
+            declared = ENDPOINTS[route.name]
+            assert (route.method, route.path_pattern) == (declared.method, declared.path)
+            assert route.group is declared.group
+            assert route.spec is declared.spec
+
+    def test_group_is_the_expansion_of_declared_endpoints(self) -> None:
+        assert len(endpoints_of("agents")) == 70
+        assert "upload" in endpoints_of("file_ops")
+        assert sum(len(endpoints_of(g)) for g in CapabilityGroup) == len(ENDPOINTS)
 
     def test_core_endpoints_cannot_be_disabled(self) -> None:
         eng = _engine({"endpoints": {"*": {"enabled": False}}})
@@ -167,9 +177,9 @@ class TestTokens:
             ServerPolicy.from_dict({"auth": {"tokens": [{"id": "legacy", **tok}]}})
 
     def test_missing_env_var_fails_closed(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("EBX_TEST_TOK", raising=False)
+        monkeypatch.delenv("ABX_TEST_TOK", raising=False)
         policy = ServerPolicy.from_dict(
-            {"auth": {"tokens": [{"id": "a", "scopes": ["*"], "token_env": "EBX_TEST_TOK"}]}}
+            {"auth": {"tokens": [{"id": "a", "scopes": ["*"], "token_env": "ABX_TEST_TOK"}]}}
         )
         with pytest.raises(PolicyConfigError, match="not set"):
             policy.bind()
@@ -195,14 +205,14 @@ class TestScopes:
 
 
 class TestPresetsAndHelpers:
-    def test_default_preset_changes_nothing(self) -> None:
+    def test_default_preset_only_leaves_opt_in_groups_off(self) -> None:
         eng = ServerPolicy.preset("default").bind()
-        for name in ENDPOINT_CATALOG:
-            assert eng.rule_for(name).enabled
+        for name, ep in ENDPOINTS.items():
+            assert eng.rule_for(name).enabled is (ep.group not in OPT_IN_GROUPS)
 
     def test_transfer_only(self) -> None:
         eng = ServerPolicy.preset("transfer-only").bind()
-        enabled = {n for n in ENDPOINT_CATALOG if eng.rule_for(n).enabled}
+        enabled = {n for n in ENDPOINTS if eng.rule_for(n).enabled}
         assert enabled == {
             "health",
             "capabilities",
@@ -233,7 +243,7 @@ class TestPresetsAndHelpers:
         assert eng.rule_for("files_list").enabled
         assert not eng.rule_for("files_delete").enabled
         assert not eng.rule_for("upload").enabled
-        assert not eng.table.is_group_enabled(CapabilityGroup.PROCESS)
+        assert not eng.group_enabled(CapabilityGroup.PROCESS)
 
     def test_hardened_preset_denies_secrets(self) -> None:
         eng = ServerPolicy.preset("hardened").bind()
@@ -270,15 +280,15 @@ class TestPresetsAndHelpers:
             ServerPolicy.from_file(str(tmp_path / "missing.json"))
 
     def test_from_environment(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Any) -> None:
-        monkeypatch.delenv("EBX_SERVER_POLICY", raising=False)
-        monkeypatch.delenv("EBX_SERVER_POLICY_FILE", raising=False)
+        monkeypatch.delenv("ABX_SERVER_POLICY", raising=False)
+        monkeypatch.delenv("ABX_SERVER_POLICY_FILE", raising=False)
         assert ServerPolicy.from_environment() is None
-        monkeypatch.setenv("EBX_SERVER_POLICY", '{"preset":"locked"}')
+        monkeypatch.setenv("ABX_SERVER_POLICY", '{"preset":"locked"}')
         assert ServerPolicy.from_environment().preset_name == "locked"  # type: ignore[union-attr]
-        monkeypatch.delenv("EBX_SERVER_POLICY")
+        monkeypatch.delenv("ABX_SERVER_POLICY")
         f = tmp_path / "p.json"
         f.write_text('{"preset":"read-only"}')
-        monkeypatch.setenv("EBX_SERVER_POLICY_FILE", str(f))
+        monkeypatch.setenv("ABX_SERVER_POLICY_FILE", str(f))
         assert ServerPolicy.from_environment().preset_name == "read-only"  # type: ignore[union-attr]
 
 
@@ -347,21 +357,110 @@ class TestMergeOrder:
 
 
 class TestGroups:
-    def test_policy_groups_apply_to_copy_not_default_table(self) -> None:
-        before = default_table().is_group_enabled(CapabilityGroup.PROCESS)
+    """A group is only an alias that expands to endpoint rules; there is no second layer."""
+
+    def test_policy_groups_never_touch_the_table(self) -> None:
+        before = default_table().group_overrides
         srv = SandboxServer(policy={"groups": {"process": False}})
-        assert not srv.route_table.is_group_enabled(CapabilityGroup.PROCESS)
-        assert default_table().is_group_enabled(CapabilityGroup.PROCESS) is before
+        assert not srv.policy_engine.group_enabled(CapabilityGroup.PROCESS)
+        assert default_table().group_overrides == before
 
-    def test_env_kill_switch_beats_policy_enable(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("EBX_SERVER_DISABLED_GROUPS", "dev_tools")
+    def test_policy_can_enable_default_off_group(self) -> None:
         eng = ServerPolicy.from_dict({"groups": {"dev_tools": True}}).bind()
-        assert not eng.table.is_group_enabled(CapabilityGroup.DEV_TOOLS)
+        assert eng.group_enabled(CapabilityGroup.DEV_TOOLS)
+        assert eng.rule_for("code_run").enabled
 
-    def test_policy_can_enable_default_off_group(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("EBX_SERVER_DISABLED_GROUPS", raising=False)
-        eng = ServerPolicy.from_dict({"groups": {"dev_tools": True}}).bind()
-        assert eng.table.is_group_enabled(CapabilityGroup.DEV_TOOLS)
+    def test_groups_accepts_a_list_of_aliases(self) -> None:
+        eng = ServerPolicy.from_dict({"groups": ["browser", "dev_tools"]}).bind()
+        assert eng.rule_for("browser_navigate").enabled
+        assert eng.rule_for("git_status").enabled
+        assert not eng.rule_for("agents_sessions_create").enabled
+
+    def test_groups_list_rejects_unknown_names(self) -> None:
+        with pytest.raises(PolicyConfigError, match="did you mean 'browser'"):
+            ServerPolicy.from_dict({"groups": ["browsr"]})
+
+    def test_exact_endpoint_rule_beats_group_alias(self) -> None:
+        eng = ServerPolicy.from_dict(
+            {"groups": {"file_ops": False}, "endpoints": {"download": {"enabled": True}}}
+        ).bind()
+        assert eng.rule_for("download").enabled
+        assert not eng.rule_for("upload").enabled
+
+    def test_exact_enable_inside_a_default_off_group_has_a_reason_for_the_rest(self) -> None:
+        eng = ServerPolicy.only("agents_sessions_create").bind()
+        assert eng.rule_for("agents_sessions_create").enabled
+        rest = eng.rule_for("agents_definitions_list")
+        assert not rest.enabled
+        assert rest.disabled_by == "policy:endpoints.*"
+
+    def test_default_off_group_names_the_way_to_enable_it(self) -> None:
+        rule = ServerPolicy.from_dict({}).bind().rule_for("agents_sessions_create")
+        assert not rule.enabled
+        assert rule.disabled_by == "default:opt-in:agents"
+        assert "ABX_SERVER_ENABLED_GROUPS=agents" in rule.disabled_message()
+
+    def test_env_alias_expands_to_endpoints(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("ABX_SERVER_ENABLED_GROUPS", "agents, core")
+        eng = ServerPolicy.from_dict({}).bind()
+        assert all(eng.rule_for(n).enabled for n in endpoints_of("agents"))
+        assert not eng.rule_for("code_run").enabled
+
+    def test_env_alias_beats_policy_groups_but_not_exact_rules(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("ABX_SERVER_ENABLED_GROUPS", "dev_tools")
+        eng = ServerPolicy.from_dict(
+            {"groups": {"dev_tools": False}, "endpoints": {"code_run": {"enabled": False}}}
+        ).bind()
+        assert eng.rule_for("git_status").enabled
+        assert not eng.rule_for("code_run").enabled
+        assert eng.rule_for("code_run").disabled_by == "policy:endpoints.code_run"
+
+    def test_env_alias_rejects_unknown_group(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("ABX_SERVER_ENABLED_GROUPS", "agent")
+        with pytest.raises(PolicyConfigError, match="did you mean 'agents'"):
+            ServerPolicy.from_dict({}).bind()
+
+    def test_removed_disabled_groups_variable_is_ignored(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("ABX_SERVER_DISABLED_GROUPS", "file_ops")
+        assert ServerPolicy.from_dict({}).bind().rule_for("upload").enabled
+
+    def test_table_alias_is_a_lower_layer_than_the_policy(self) -> None:
+        table = default_table()
+        table.enable_group(CapabilityGroup.AGENTS)
+        eng = ServerPolicy.from_dict({}).bind(table)
+        assert eng.rule_for("agents_sessions_create").enabled
+        eng_off = ServerPolicy.from_dict({"groups": {"agents": False}}).bind(table)
+        assert not eng_off.rule_for("agents_sessions_create").enabled
+
+    def test_engine_follows_later_table_changes(self) -> None:
+        table = default_table()
+        eng = ServerPolicy.from_dict({}).bind(table)
+        assert not eng.rule_for("browser_navigate").enabled
+        table.enable_group(CapabilityGroup.BROWSER)
+        assert eng.rule_for("browser_navigate").enabled
+        table.disable_group(CapabilityGroup.BROWSER)
+        assert not eng.rule_for("browser_navigate").enabled
+
+    def test_group_summary_is_derived_from_endpoints(self) -> None:
+        eng = ServerPolicy.only("agents_sessions_create").bind()
+        summary = eng.group_summary()
+        assert summary["agents"] == {"enabled": 1, "total": 70}
+        assert eng.groups()["agents"] is True
+        assert eng.groups()["file_ops"] is False
+
+    def test_custom_route_follows_its_group_alias(self) -> None:
+        from agent_sandbox.server.router import RouteTable
+
+        table = RouteTable()
+        table.register("GET", "/x", lambda r: None, group=CapabilityGroup.BROWSER, name="x")
+        eng = ServerPolicy.from_dict({}).bind(table)
+        assert not eng.rule_for("x").enabled
+        table.enable_group(CapabilityGroup.BROWSER)
+        assert eng.rule_for("x").enabled
 
     def test_presets_reference_known_things(self) -> None:
         for name in PRESETS:

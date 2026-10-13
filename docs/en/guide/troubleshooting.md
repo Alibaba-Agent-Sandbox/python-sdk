@@ -1,6 +1,6 @@
 # Troubleshooting (FAQ)
 
-> **Note:** The `ebx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @easy-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`easy-sandbox`) and the container-side runtime (`easy-sandbox-server`).
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`).
 
 ---
 
@@ -22,14 +22,14 @@
 
 2. **Check timeout configuration**: Increase the HTTP timeout
    ```bash
-   ebx config set http_timeout 60
+   abx config set http_timeout 60
    ```
 
 3. **Check proxy**: If behind a proxy, ensure `https_proxy` is configured correctly
 
 4. **Check region**: Confirm the region setting is correct
    ```bash
-   ebx config get region
+   abx config get region
    ```
 
 ---
@@ -40,19 +40,19 @@
 
 ```text
 [E1001] API key cannot be empty
-  Suggestion: Check your E2B_API_KEY environment variable or pass api_key parameter.
+  Suggestion: Check your ABX_SANDBOX_API_KEY environment variable or pass sandbox_api_key.
 ```
 
 **Solution**:
 ```bash
 # Check configuration status
-ebx config get sandbox_api_key
+abx config get sandbox_api_key
 
 # Re-set API Key
-ebx config set sandbox_api_key your-api-key
+abx config set sandbox_api_key your-api-key
 
 # Or set the environment variable
-export E2B_API_KEY="your-api-key"
+export ABX_SANDBOX_API_KEY="your-api-key"
 ```
 
 ### E1003 — Invalid AK/SK Credentials
@@ -83,7 +83,7 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 
 ```text
 [E2001] Template 'my-template' not found
-  Suggestion: Run 'ebx template list' to see available templates.
+  Suggestion: Run 'abx template list' to see available templates.
 ```
 
 **Solution**:
@@ -91,11 +91,11 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 1. Check the template name for typos
 2. Confirm the template is installed:
    ```bash
-   ebx template install owner/repo
+   abx template install owner/repo
    ```
 3. Test with the default template:
    ```bash
-   ebx create --template base
+   abx create --template base
    ```
 
 ### E2009 — SandboxNotFoundError
@@ -106,7 +106,7 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 
 The platform answered HTTP 404 to `Sandbox.connect()`, `get_info()`, `set_timeout()`, `pause()` or `resume()` for that ID.
 
-**Solution**: Check the ID for typos and run `ebx list` to see the running sandboxes. A killed or expired sandbox cannot be reconnected; create a new one. `kill()` of an unknown ID stays idempotent and does not raise.
+**Solution**: Check the ID for typos and run `abx list` to see the running sandboxes. A killed or expired sandbox cannot be reconnected; create a new one. `kill()` of an unknown ID stays idempotent and does not raise.
 
 ---
 
@@ -121,7 +121,7 @@ The platform answered HTTP 404 to `Sandbox.connect()`, `get_info()`, `set_timeou
 
 ### Explanation
 
-Easy Sandbox uses a capability model to control sandbox features. Each capability must be explicitly declared in the template:
+Agent Sandbox uses a capability model to control sandbox features. Each capability must be explicitly declared in the template:
 
 | Capability | Included by Default | Requires Explicit Declaration |
 |------------|--------------------|-----------------------------|
@@ -163,13 +163,13 @@ capabilities:
 
 ```bash
 # View running sandboxes
-ebx list --status running
+abx list --status running
 
 # Destroy unneeded sandboxes
-ebx kill sbx-xxxx
+abx kill sbx-xxxx
 
 # Batch destroy
-ebx kill --all --yes
+abx kill --all --yes
 ```
 
 ---
@@ -190,33 +190,14 @@ ebx kill --all --yes
 result = await sandbox.commands.run("long-command", timeout=300)
 
 # Increase timeout in CLI
-ebx exec sbx-xxxx "long-command" --timeout 300
+abx exec sbx-xxxx "long-command" --timeout 300
 ```
 
 ---
 
-## Deployment Issues
+## Build and Deploy Issues
 
-### E7001 — Missing LLM Key
-
-> Raised by the SDK's `Sandbox.deploy()` only. `ebx deploy` never needs an LLM key; the CLI's AI steps (`ebx create "..."`, `ebx template init "..."`, `ebx template init --adopt`) use the Qwen Code credentials from `ebx config`.
-
-```text
-[E7001] No LLM API key found for the qwen-code agent.
-  Suggestion: Set BAILIAN_CODING_PLAN_API_KEY, DASHSCOPE_API_KEY, or OPENAI_API_KEY environment variable.
-```
-
-**Solution**: Set any LLM API Key:
-
-```bash
-export DASHSCOPE_API_KEY="your-key"
-# Or pass llm_api_key= to Sandbox.deploy(...)
-# For the CLI (create / template init): ebx config set llm_api_key your-key
-```
-
-### E7003 — Deploy Timeout
-
-**Solution**: Increase the `max_wall_time` parameter or simplify the deployment task.
+Build, push and deploy errors (the `E7xxx` codes, a missing LLM key for `abx create` / `abx template init`) are raised by the `abx` CLI, not by this SDK. See the CLI troubleshooting guide and [Build and deploy](build-and-deploy.md).
 
 ---
 
@@ -246,10 +227,10 @@ Check file permissions. The default user in the sandbox is `user`; you can speci
 
 ```bash
 # Ensure the correct package name
-pip install easy-sandbox
+pip install agent-sandbox
 
 # If dependency conflicts occur
-pip install easy-sandbox --force-reinstall
+pip install agent-sandbox --force-reinstall
 ```
 
 ### Python SDK Not Found
@@ -257,9 +238,9 @@ pip install easy-sandbox --force-reinstall
 Confirm that Python's bin directory is in your PATH:
 
 ```bash
-python -m easy_sandbox --version
+python -m agent_sandbox --version
 # Or
-pip show easy-sandbox | grep Location
+pip show agent-sandbox | grep Location
 ```
 
 ---
@@ -272,6 +253,6 @@ pip show easy-sandbox | grep Location
 
 ---
 
-## Related: the ebx CLI
+## Related: the abx CLI
 
-CLI-specific problems (`ebx` not found, `ebx deploy` with no Dockerfile, long deploy steps, invalid shortcut targets, `ebx template init --adopt` confirmations) are covered in the CLI repository: [Troubleshooting (CLI)](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/troubleshooting.md).
+CLI-specific problems (`abx` not found, `abx deploy` with no Dockerfile, long deploy steps, invalid shortcut targets, `abx template init --adopt` confirmations) are covered in the CLI repository: [Troubleshooting (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/troubleshooting.md).

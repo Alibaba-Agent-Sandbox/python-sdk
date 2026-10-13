@@ -1,41 +1,49 @@
-# easy-sandbox-server
+# agent-sandbox-server
 
-Container-side **server SDK** for Easy Sandbox templates. It is the persistent HTTP service that
+Container-side **server SDK** for Agent Sandbox templates. It is the persistent HTTP service that
 runs *inside* a sandbox image (default port 9000) and exposes files, processes, system info,
 a PTY terminal, optional dev tools / browser automation, and your own registered commands to the
-[client SDK](../client-sdk/README.md) and the `ebx` CLI.
+[client SDK](../client-sdk/README.md) and the `abx` CLI.
 
 The HTTP server is stdlib-only. `websockets` is installed for the PTY terminal endpoint.
-Import path: `easy_sandbox.server` (a namespace shared with `easy-sandbox-client`).
+Import path: `agent_sandbox.server` (a namespace shared with `agent-sandbox`).
 
 ## Install
 
 ```bash
-pip install easy-sandbox-server
-pip install "easy-sandbox-server[browser]"   # + Playwright for the browser capability group
+pip install agent-sandbox-server
 ```
+
+The opt-in browser capability group imports Playwright lazily; install `playwright` in the
+image yourself if you enable it (without it the browser endpoints answer `503`).
 
 ## Use inside a template's `commands.py`
 
 ```python
-from easy_sandbox.server import CapabilityGroup, default_registry, start
+from agent_sandbox.server import command, start
 
-@default_registry.command(description="Say hello")
+
+@command(description="Say hello")
 def hello(name: str = "world") -> dict:
     return {"message": f"Hello, {name}!"}
+
 
 start(9000)
 ```
 
-Capability groups: `CORE`, `COMMANDS`, `FILE_OPS`, `PROCESS`, `SYSTEM`, `TERMINAL` (enabled by
-default), `DEV_TOOLS`, `BROWSER` (opt-in). See `docs/en/design/server-api.md` in the
-[python-sdk docs](../docs/en/design/server-api.md).
+Every endpoint is one row of `agent_sandbox.server.endpoints.ENDPOINTS`. A capability group
+(`commands`, `file_ops`, `process`, `terminal`, `system`, `dev_tools`, `browser`, `agents`) is a
+name for the endpoints that declare it. `core` is always on, the groups through `terminal` and
+`system` start on, and `dev_tools`, `browser` and `agents` start off. Turn one on with
+`default_table().enable_group(CapabilityGroup.DEV_TOOLS)` in `commands.py`, with a policy
+`groups: [dev_tools]`, or with `ABX_SERVER_ENABLED_GROUPS=dev_tools` in the environment. See the
+[server API design](../docs/en/design/server-api.md).
 
 ## Develop
 
 ```bash
 pip install -e "./server-sdk[dev]"
-cd server-sdk && pytest && ruff check src tests && mypy src/easy_sandbox/server
+cd server-sdk && pytest && ruff check src tests && mypy src/agent_sandbox/server
 ```
 
 Licensed under Apache-2.0.

@@ -9,10 +9,10 @@ from typing import Any
 
 import pytest
 
-pytest.importorskip("easy_sandbox.server", reason="needs the easy-sandbox-server distribution")
+pytest.importorskip("agent_sandbox.server", reason="needs the agent-sandbox-server distribution")
 
-from easy_sandbox.server.app import SandboxServer  # noqa: E402
-from easy_sandbox.server.registry import CommandRegistry  # noqa: E402
+from agent_sandbox.server.app import SandboxServer  # noqa: E402
+from agent_sandbox.server.registry import CommandRegistry  # noqa: E402
 
 
 def free_port() -> int:

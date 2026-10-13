@@ -1,14 +1,14 @@
 # Agents API
 
-沙箱里的 HTTP 会话。目前支持 **Codex** 和 **Qwen Code**。基础镜像不预装这两个 CLI。要用哪一个，再安装哪一个。
+沙箱里的 HTTP 会话。70 条路由全部已实现。有本地后端的运行时有两个：**Codex** 和 **Qwen Code**。`claude-code`、`cursor` 和 `command` 是已声明、没有本地后端的适配器，`GET /v1/agents/runtimes` 会如实标出。基础镜像不预装这两个 CLI。要用哪一个，再安装哪一个。
 
-这不是 [内置 Agent 高级 API](../design/built-in-agents.md)。那一份是 `sb.agent.*` 的设计稿，本质是 `commands.run()` 的语法糖。Agents API 是另一组路由：`/v1/agents/sessions`。
+这是在沙箱里运行 Agent 的唯一方式：`/v1/agents/sessions` 下的路由。SDK 没有 `sb.agent.*` 辅助方法。
 
-路由参考（每个字段怎么拒绝）在 [托管代理](hosted-agents.md)。本页是能照着做完的说明。
+每个字段怎么拒绝，见 [托管代理](hosted-agents.md)。路由表在 [Agents API 参考](../reference/agents-api.md)。本页是能照着做完的说明。
 
 ## 安装 CLI
 
-默认只装一个。两个都装进基础镜像会把镜像做大。没在请求里点名时，服务端用产品顺序里的第一个：`codex`。要用 Qwen Code，在请求里写出来，或用 `EBX_AGENTS_DEFAULT=qwen-code` 把默认换成它。
+默认只装一个。两个都装进基础镜像会把镜像做大。没在请求里点名时，服务端用产品顺序里的第一个：`codex`。要用 Qwen Code，在请求里写出来，或用 `ABX_AGENTS_DEFAULT=qwen-code` 把默认换成它。
 
 ```bash
 npm install -g @openai/codex          # 二进制名 codex
@@ -17,16 +17,7 @@ npm install -g @qwen-code/qwen-code   # 二进制名 qwen
 
 Codex 在真正调用模型时读 `OPENAI_API_KEY` 或 `CODEX_API_KEY`。Qwen Code 读 `OPENAI_API_KEY`。密钥在创建沙箱时注入，不写进镜像，也不放进下面这个案例。
 
-模板 [agents-cli](https://github.com/Easy-Sandbox/awesome-templates/tree/main/agents-cli) 用细粒度策略，不把 `file_ops` 或 `process` 整组打开。怎么写策略、有哪些端点 id，见 [细粒度能力](fine-grained-capabilities.md)。`groups.agents: true` 只是这组路由的门。`endpoints` 里 `*` 设为 `enabled: false`，再逐个打开 `agents_sessions_create`、`agents_sessions_events_create`、`agents_sessions_items_list`、`agents_runtimes_list`。因此 `POST /shell` 和 `POST /v1/agents`（定义）保持 404。Dockerfile 里留了按需安装 CLI 的那一行。
-
-## 和内置 Agent 的差别
-
-| | Agents API | 内置 Agent 高级 API |
-|---|---|---|
-| 入口 | `POST /v1/agents/sessions` | 设计稿里的 `sb.agent.code()` |
-| 运行的东西 | `PATH` 上的 `codex` 或 `qwen` | 设想为模板里预装的 CLI，再包一层 `commands.run()` |
-| 默认是否装上 CLI | 否 | 设计稿写过预装。当前产品不把两个 CLI 打进基础镜像 |
-| 其他名字 | `claude-code`、Cursor、Qoder 是 404 | 不是这组 HTTP |
+模板 [agents-cli](https://github.com/alibaba-agent-sandbox/awesome-templates/tree/main/agents-cli) 用细粒度策略，不把 `file_ops` 或 `process` 整组打开。怎么写策略、有哪些端点 id，见 [细粒度能力](fine-grained-capabilities.md)。`endpoints` 里 `*` 设为 `enabled: false`，再逐个打开 `agents_sessions_create`、`agents_sessions_events_create`、`agents_sessions_items_list`、`agents_runtimes_list`。因此 `POST /shell` 和 `POST /v1/agents`（定义）保持 404。Dockerfile 里留了按需安装 CLI 的那一行。
 
 ## 完整案例
 
@@ -44,10 +35,10 @@ python examples/agents/complete_case.py
 POST /v1/agents/sessions  {"agent":{"model":"gpt-5"}}  200
 agent.id: codex
 agent.model: gpt-5
-X-Easy-Sandbox-Local: 1
+X-Agent-Sandbox-Local: 1
 ```
 
-`GET /v1/agents/runtimes` 和其他列表一样，默认 `order=desc`。加上 `order=asc` 才是产品顺序 `codex`、`qwen-code`。`default: true` 标出没点名时会用的那一个，不看它在数组里的位置。没有配置时标在 `codex` 上。`EBX_AGENTS_DEFAULT=qwen-code` 之后改到 `qwen-code`。
+`GET /v1/agents/runtimes` 和其他列表一样，默认 `order=desc`。加上 `order=asc` 才是产品顺序：`codex`、`qwen-code`，然后是只声明的适配器。`default: true` 标出没点名时会用的那一个，不看它在数组里的位置。没有配置时标在 `codex` 上。`ABX_AGENTS_DEFAULT=qwen-code` 之后改到 `qwen-code`。
 
 要点名另一个：
 
@@ -57,24 +48,36 @@ agent.id: qwen-code
 agent.model: gpt-5
 ```
 
-目前未支持的适配器名称，例如 `claude-code`：
+已声明但没有本地后端的适配器，例如 `claude-code`：
 
 ```text
 POST /v1/agents/sessions  adapter=claude-code  404
-X-Easy-Sandbox-Local: 1
+X-Agent-Sandbox-Local: 1
 type: not_found_error
 code: agents.not_implemented_locally
-message: adapter 'claude-code' is not available in this slice (codex, qwen-code)
+param: adapter
+message: adapter 'claude-code' is declared but has no local backend; GET /v1/agents/runtimes reports which runtimes are implemented (codex, qwen-code) and installed
 ```
 
-`GET /v1/agents/runtimes` 目前返回 `codex` 和 `qwen-code`，并带上 `install_steps`（`npm install -g ...`）。`installed` 表示这个进程的 `PATH` 上是否有该二进制。
+`GET /v1/agents/runtimes` 列出每个已声明的运行时。每一项有 `implemented`（服务端有本地后端）、`installed`（这个进程的 `PATH` 上有该二进制）、`install_steps` 和 `default`：
+
+```text
+GET /v1/agents/runtimes?order=asc  200
+codex        implemented: true   installed: false  default: true
+qwen-code    implemented: true   installed: false  default: false
+claude-code  implemented: false  installed: false  default: false
+command      implemented: false  installed: true   default: false
+cursor       implemented: false  installed: false  default: false
+```
+
+未实现的运行时，不管 `installed` 是什么都会被拒绝。有四条路由专门用同样的类型化 `404` 拒绝（`agents_cannot_*`：`POST /v1/responses/input_tokens`、`DELETE /v1/models/{id}`、执行器注册和通道）。它们的响应体同样指向 `GET /v1/agents/runtimes`。
 
 Codex 一轮：
 
 ```text
 POST /v1/agents/sessions  {"agent":{"model":"codex"}}  200
 object: agent.session
-X-Easy-Sandbox-Local: 1
+X-Agent-Sandbox-Local: 1
 
 POST /v1/agents/sessions/{id}/events  202
 body: {}
@@ -95,8 +98,8 @@ content[0].text: hello-from-fake-qwen
 对着已经开着的服务，而不是这个脚本自己起的服务：
 
 ```bash
-export EBX_SERVER_ENABLED_GROUPS=agents
-python -m easy_sandbox.server serve --port 9000
+export ABX_SERVER_ENABLED_GROUPS=agents
+python -m agent_sandbox.server serve --port 9000
 
 python examples/agents/hosted_codex.py http://127.0.0.1:9000
 python examples/agents/hosted_qwen.py http://127.0.0.1:9000

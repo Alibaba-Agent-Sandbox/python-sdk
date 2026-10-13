@@ -7,16 +7,16 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from easy_sandbox.models.errors import (
+from agent_sandbox.models.errors import (
     QuotaExceededError,
     SandboxCreationError,
     TemplateNotFoundError,
 )
-from easy_sandbox.models.sandbox import SandboxConfig, SandboxInfo, SandboxStatus
-from easy_sandbox.protocol.sandbox import SandboxProtocol
-from easy_sandbox.transport.auth import ApiKeyAuth
-from easy_sandbox.transport.config import TransportConfig
-from easy_sandbox.transport.http import HttpClient
+from agent_sandbox.models.sandbox import SandboxConfig, SandboxInfo, SandboxStatus
+from agent_sandbox.protocol.sandbox import SandboxProtocol
+from agent_sandbox.transport.auth import ApiKeyAuth
+from agent_sandbox.transport.config import TransportConfig
+from agent_sandbox.transport.http import HttpClient
 
 BASE = "https://sandbox-test.example.com"
 

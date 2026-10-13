@@ -35,8 +35,8 @@ def watch_dir(path: str) -> AsyncIterator[FileEvent]: ...
 ```
 
 ## Implementation
-- **Source**: `src/easy_sandbox/protocol/filesystem.py`
-- **Models**: `src/easy_sandbox/models/filesystem.py`
+- **Source**: `src/agent_sandbox/protocol/filesystem.py`
+- **Models**: `src/agent_sandbox/models/filesystem.py`
 - **Tests**: `tests/test_protocol/test_filesystem.py`
 
 ## Alternatives considered

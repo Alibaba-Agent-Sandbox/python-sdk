@@ -1,4 +1,4 @@
-"""``easy-sandbox-server`` command line."""
+"""``agent-sandbox-server`` command line."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from easy_sandbox.server import __version__
-from easy_sandbox.server.__main__ import _load_commands, main
+from agent_sandbox.server import __version__
+from agent_sandbox.server.__main__ import _load_commands, main
 
 if TYPE_CHECKING:
     import pytest
@@ -31,8 +31,8 @@ def test_healthcheck_ok_and_down(live_server: Any) -> None:
 def test_check_config_json_lists_endpoints(
     capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.delenv("EBX_SERVER_POLICY", raising=False)
-    monkeypatch.delenv("EBX_SERVER_POLICY_FILE", raising=False)
+    monkeypatch.delenv("ABX_SERVER_POLICY", raising=False)
+    monkeypatch.delenv("ABX_SERVER_POLICY_FILE", raising=False)
     assert main(["check-config", "--preset", "transfer-only", "--json"]) == 0
     doc = json.loads(capsys.readouterr().out)
     enabled = {row["endpoint"] for row in doc["endpoints"] if row["enabled"]}
@@ -53,8 +53,8 @@ def test_check_config_invalid_policy_exits_1(
 def test_check_config_explain_exit_codes(
     capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.delenv("EBX_SERVER_POLICY", raising=False)
-    monkeypatch.delenv("EBX_SERVER_POLICY_FILE", raising=False)
+    monkeypatch.delenv("ABX_SERVER_POLICY", raising=False)
+    monkeypatch.delenv("ABX_SERVER_POLICY_FILE", raising=False)
     assert main(["check-config", "--preset", "transfer-only", "--explain", "shell"]) == 3
     assert json.loads(capsys.readouterr().out)["allowed"] is False
     assert main(["check-config", "--preset", "transfer-only", "--explain", "upload"]) == 0
@@ -77,17 +77,17 @@ def test_load_commands_from_file_and_module(
     script.write_text(f"open({str(marker)!r}, 'w').write('loaded')\n")
     _load_commands(str(script))
     assert marker.read_text() == "loaded"
-    mod = tmp_path / "ebx_cmds_mod.py"
+    mod = tmp_path / "abx_cmds_mod.py"
     mod.write_text("LOADED = True\n")
     monkeypatch.syspath_prepend(str(tmp_path))
-    _load_commands("ebx_cmds_mod")
-    assert "ebx_cmds_mod" in sys.modules
+    _load_commands("abx_cmds_mod")
+    assert "abx_cmds_mod" in sys.modules
 
 
 def test_policy_modules_are_stdlib_only() -> None:
     import ast
 
-    import easy_sandbox.server as pkg
+    import agent_sandbox.server as pkg
 
     stdlib = set(sys.stdlib_module_names)
     for name in ("policy", "guard", "runtime", "contract", "__main__"):
@@ -101,4 +101,4 @@ def test_policy_modules_are_stdlib_only() -> None:
             for module in modules:
                 top = module.split(".")[0]
                 optional = top == "yaml"  # lazily imported for *.yaml policy files only
-                assert top in stdlib or top == "easy_sandbox" or optional, f"{name}.py: {module}"
+                assert top in stdlib or top == "agent_sandbox" or optional, f"{name}.py: {module}"

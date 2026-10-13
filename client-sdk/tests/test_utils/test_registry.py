@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from easy_sandbox.models.template import TemplateRef
-from easy_sandbox.utils.registry import (
+from agent_sandbox.models.template import TemplateRef
+from agent_sandbox.utils.registry import (
     BUILTIN_TEMPLATES,
     RegistryClient,
 )
@@ -368,7 +368,7 @@ class TestRegistryClientFetch:
         )
 
         with (
-            patch("easy_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
+            patch("agent_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
             patch("httpx.AsyncClient", return_value=_patched_async_client(mock_resp)),
         ):
             result = await client.fetch(ref)
@@ -398,7 +398,7 @@ class TestRegistryClientFetch:
         )
 
         with (
-            patch("easy_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
+            patch("agent_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
             patch("httpx.AsyncClient", return_value=_patched_async_client(mock_resp)),
             pytest.raises(ValueError, match="Subdirectory.*not found"),
         ):
@@ -420,7 +420,7 @@ class TestRegistryClientFetch:
         ref = TemplateRef(owner="owner", repo="repo", tag="v2.0")
 
         with (
-            patch("easy_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
+            patch("agent_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
             patch("httpx.AsyncClient", return_value=_patched_async_client(mock_resp)),
         ):
             result = await client.fetch(ref)
@@ -440,7 +440,7 @@ class TestRegistryClientFetch:
 
         patched = _patched_async_client(mock_resp)
         with (
-            patch("easy_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
+            patch("agent_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
             patch("httpx.AsyncClient", return_value=patched),
         ):
             result = await client.fetch(ref)
@@ -462,7 +462,7 @@ class TestRegistryClientFetch:
 
         patched = _patched_async_client(mock_resp)
         with (
-            patch("easy_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
+            patch("agent_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
             patch("httpx.AsyncClient", return_value=patched),
         ):
             first = await client.fetch(ref)
@@ -485,7 +485,7 @@ class TestRegistryClientFetch:
 
         patched = _patched_async_client(mock_resp)
         with (
-            patch("easy_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
+            patch("agent_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
             patch("httpx.AsyncClient", return_value=patched),
         ):
             result = await client.fetch(ref)
@@ -506,7 +506,7 @@ class TestRegistryClientFetch:
 
         patched = _patched_async_client(mock_resp)
         with (
-            patch("easy_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
+            patch("agent_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
             patch("httpx.AsyncClient", return_value=patched),
         ):
             result = await client.fetch(ref)
@@ -526,7 +526,7 @@ class TestRegistryClientFetch:
 
         patched = _patched_async_client(mock_resp)
         with (
-            patch("easy_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
+            patch("agent_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path),
             patch("httpx.AsyncClient", return_value=patched),
         ):
             await client.fetch(ref)
@@ -550,7 +550,7 @@ class TestRegistryClientCache:
         cache_dir.mkdir(parents=True)
         (cache_dir / "template.yaml").write_text("name: test\n")
 
-        with patch("easy_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path):
+        with patch("agent_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path):
             result = client._check_cache("owner", "repo", "v1.0")
             assert result == cache_dir
 
@@ -561,7 +561,7 @@ class TestRegistryClientCache:
         cache_dir.mkdir(parents=True)
         (cache_dir / "template.yaml").write_text("name: test\n")
 
-        with patch("easy_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path):
+        with patch("agent_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path):
             result = client._check_cache("owner", "repo", "v1.0", "templates/py")
             assert result == cache_dir
 
@@ -573,7 +573,7 @@ class TestRegistryClientCache:
         cache_dir.mkdir(parents=True)
         (cache_dir / "template.yaml").write_text("name: test\n")
 
-        with patch("easy_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path):
+        with patch("agent_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path):
             result = client._check_cache("owner", "repo", "v1.0", "templates/py")
             assert result is None
 
@@ -582,7 +582,7 @@ class TestRegistryClientCache:
         (tmp_path / "owner1").mkdir()
         (tmp_path / "owner2").mkdir()
 
-        with patch("easy_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path):
+        with patch("agent_sandbox.utils.registry.TEMPLATE_CACHE_DIR", tmp_path):
             client = RegistryClient()
             count = client.clear_cache()
             assert count == 2
@@ -604,8 +604,8 @@ class TestTarballFetchErrors:
         """403 + X-RateLimit-Remaining:0 → GitHubRateLimitError (task 206)."""
         import httpx
 
-        from easy_sandbox.models.errors import GitHubRateLimitError, NetworkError
-        from easy_sandbox.utils.github_token import FINE_GRAINED_PAT_URL
+        from agent_sandbox.models.errors import GitHubRateLimitError, NetworkError
+        from agent_sandbox.utils.github_token import FINE_GRAINED_PAT_URL
 
         client = RegistryClient()
         resp = httpx.Response(
@@ -633,7 +633,7 @@ class TestTarballFetchErrors:
         # The user-facing ref shape is preserved on the rate-limit message too.
         assert "owner/repo" in str(ei.value)
         # …while the suggestion recommends the persistent config flow first.
-        assert "ebx config set github_token" in ei.value.suggestion
+        assert "abx config set github_token" in ei.value.suggestion
         assert FINE_GRAINED_PAT_URL in ei.value.suggestion
         assert "public repositories need no extra permissions" in ei.value.suggestion
         # The --token flag stays documented, explicitly marked as leak-prone.
@@ -645,7 +645,7 @@ class TestTarballFetchErrors:
         """403 whose body says "rate limit" → same onboarding error."""
         import httpx
 
-        from easy_sandbox.models.errors import GitHubRateLimitError
+        from agent_sandbox.models.errors import GitHubRateLimitError
 
         client = RegistryClient()
         resp = httpx.Response(
@@ -658,22 +658,22 @@ class TestTarballFetchErrors:
             pytest.raises(GitHubRateLimitError) as ei,
         ):
             await client._download_and_extract(
-                "https://api.github.com/repos/Easy-Sandbox/awesome-templates/tarball/v1.0",
+                "https://api.github.com/repos/alibaba-agent-sandbox/awesome-templates/tarball/v1.0",
                 tmp_path,
                 subdir="codex-agent-api",
-                owner="Easy-Sandbox",
+                owner="alibaba-agent-sandbox",
                 repo="awesome-templates",
                 gh_ref="v1.0",
             )
         # The original owner/repo//subdir@ref shape stays visible in the message.
-        assert "Easy-Sandbox/awesome-templates//codex-agent-api@v1.0" in str(ei.value)
+        assert "alibaba-agent-sandbox/awesome-templates//codex-agent-api@v1.0" in str(ei.value)
 
     @pytest.mark.asyncio
     async def test_tarball_403_private_repo(self, tmp_path: Path) -> None:
         """403 without a rate-limit signal → private-repo hint."""
         import httpx
 
-        from easy_sandbox.models.errors import NetworkError
+        from agent_sandbox.models.errors import NetworkError
 
         client = RegistryClient()
         resp = httpx.Response(
@@ -686,18 +686,18 @@ class TestTarballFetchErrors:
             pytest.raises(NetworkError) as ei,
         ):
             await client._download_and_extract(
-                "https://api.github.com/repos/Easy-Sandbox/awesome-templates/tarball/v1.0",
+                "https://api.github.com/repos/alibaba-agent-sandbox/awesome-templates/tarball/v1.0",
                 tmp_path,
                 subdir="codex-agent-api",
-                owner="Easy-Sandbox",
+                owner="alibaba-agent-sandbox",
                 repo="awesome-templates",
                 gh_ref="v1.0",
             )
         assert "403" in str(ei.value)
         # The original owner/repo//subdir@ref shape is preserved verbatim.
-        assert "Easy-Sandbox/awesome-templates//codex-agent-api@v1.0" in str(ei.value)
+        assert "alibaba-agent-sandbox/awesome-templates//codex-agent-api@v1.0" in str(ei.value)
         # Persistent config is the recommendation; --token is the leaky fallback.
-        assert "ebx config set github_token" in ei.value.suggestion
+        assert "abx config set github_token" in ei.value.suggestion
         assert "--token" in ei.value.suggestion
         assert "may leak" in ei.value.suggestion
 
@@ -706,8 +706,8 @@ class TestTarballFetchErrors:
         """401 → token rejected hint with create/clear commands (no token echo)."""
         import httpx
 
-        from easy_sandbox.models.errors import NetworkError
-        from easy_sandbox.utils.github_token import FINE_GRAINED_PAT_URL
+        from agent_sandbox.models.errors import NetworkError
+        from agent_sandbox.utils.github_token import FINE_GRAINED_PAT_URL
 
         client = RegistryClient(token="ghp-secret-value")
         resp = httpx.Response(
@@ -720,17 +720,17 @@ class TestTarballFetchErrors:
             pytest.raises(NetworkError) as ei,
         ):
             await client._download_and_extract(
-                "https://api.github.com/repos/Easy-Sandbox/awesome-templates/tarball/v1.0",
+                "https://api.github.com/repos/alibaba-agent-sandbox/awesome-templates/tarball/v1.0",
                 tmp_path,
                 subdir="codex-agent-api",
-                owner="Easy-Sandbox",
+                owner="alibaba-agent-sandbox",
                 repo="awesome-templates",
                 gh_ref="v1.0",
             )
         assert "401" in str(ei.value)
-        assert "Easy-Sandbox/awesome-templates//codex-agent-api@v1.0" in str(ei.value)
+        assert "alibaba-agent-sandbox/awesome-templates//codex-agent-api@v1.0" in str(ei.value)
         assert FINE_GRAINED_PAT_URL in ei.value.suggestion
-        assert "ebx config set github_token" in ei.value.suggestion
+        assert "abx config set github_token" in ei.value.suggestion
         # Clearing the stored value is offered and the token is never echoed.
         assert 'github_token ""' in ei.value.suggestion
         assert "ghp-secret-value" not in str(ei.value) + ei.value.suggestion
@@ -740,7 +740,7 @@ class TestTarballFetchErrors:
         """404 → TemplateNotFoundError 提示校验 ref，不再提 Release。"""
         import httpx
 
-        from easy_sandbox.models.errors import TemplateNotFoundError
+        from agent_sandbox.models.errors import TemplateNotFoundError
 
         client = RegistryClient()
         resp = httpx.Response(
@@ -769,7 +769,7 @@ class TestTarballFetchErrors:
         """5xx → NetworkError with status code and target."""
         import httpx
 
-        from easy_sandbox.models.errors import NetworkError
+        from agent_sandbox.models.errors import NetworkError
 
         client = RegistryClient()
         resp = httpx.Response(
@@ -794,7 +794,7 @@ class TestTarballFetchErrors:
     @pytest.mark.asyncio
     async def test_empty_tarball_is_template_not_found(self, tmp_path: Path) -> None:
         """空包（tarball 无任何成员）→ TemplateNotFoundError，不静默返回空目录。"""
-        from easy_sandbox.models.errors import TemplateNotFoundError
+        from agent_sandbox.models.errors import TemplateNotFoundError
 
         client = RegistryClient()
         tarball = _make_tarball({})  # 没有任何成员
@@ -820,7 +820,7 @@ class TestTarballFetchErrors:
     @pytest.mark.asyncio
     async def test_empty_tarball_with_subdir_is_template_not_found(self, tmp_path: Path) -> None:
         """空包：即使指定 subdir 也应抛 TemplateNotFoundError（而非 subdir not found）。"""
-        from easy_sandbox.models.errors import TemplateNotFoundError
+        from agent_sandbox.models.errors import TemplateNotFoundError
 
         client = RegistryClient()
         tarball = _make_tarball({})

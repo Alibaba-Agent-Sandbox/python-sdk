@@ -5,7 +5,7 @@ edited afterwards (see [`../README.md`](../README.md)); a new run is a new file.
 `serverless-sandbox` in these files are the names that were current when they were captured.
 
 Evidence of the command-line interface lives in the
-[`cli` repository](https://github.com/Easy-Sandbox/cli/tree/main/.agents/evidence).
+[`cli` repository](https://github.com/alibaba-agent-sandbox/agent-sandbox/tree/main/.agents/evidence).
 
 ## `research/` — audits
 

@@ -5,17 +5,17 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from easy_sandbox.models.errors import (
+from agent_sandbox.models.errors import (
     AuthenticationError,
     InvalidAPIKeyError,
     InvalidCredentialsError,
     SandboxCreationError,
     SandboxError,
 )
-from easy_sandbox.protocol.sandbox import SandboxProtocol
-from easy_sandbox.transport.auth import AkSkAuth
-from easy_sandbox.transport.config import TransportConfig
-from easy_sandbox.transport.http import HttpClient
+from agent_sandbox.protocol.sandbox import SandboxProtocol
+from agent_sandbox.transport.auth import AkSkAuth
+from agent_sandbox.transport.config import TransportConfig
+from agent_sandbox.transport.http import HttpClient
 from tests.test_known_issues.helpers import API, make_http
 
 SECRET = "e2e-invalid-key-0000000000000000"
@@ -33,7 +33,7 @@ async def test_list_with_a_rejected_key_raises_authentication_error(httpx_mock) 
 
 
 async def test_create_with_a_rejected_key_is_an_authentication_error(httpx_mock) -> None:
-    from easy_sandbox.models.sandbox import SandboxConfig
+    from agent_sandbox.models.sandbox import SandboxConfig
 
     httpx_mock.add_response(method="POST", status_code=401, json={"message": "invalid api key"})
     with pytest.raises(AuthenticationError) as err:
@@ -42,7 +42,7 @@ async def test_create_with_a_rejected_key_is_an_authentication_error(httpx_mock)
 
 
 async def test_sandbox_list_api_with_wrong_key(httpx_mock) -> None:
-    from easy_sandbox.api.sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
     httpx_mock.add_response(method="GET", status_code=401, content=b"")
     with pytest.raises(AuthenticationError):

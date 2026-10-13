@@ -30,9 +30,9 @@ class HttpTransport:
 ```
 
 ## Implementation
-- **Source**: `src/easy_sandbox/transport/http.py`
+- **Source**: `src/agent_sandbox/transport/http.py`
 - **Tests**: `tests/test_transport/test_http.py`
-- **Retry logic**: `src/easy_sandbox/utils/retry.py`
+- **Retry logic**: `src/agent_sandbox/utils/retry.py`
 
 ## Alternatives considered
 - **aiohttp** — Less ergonomic API, no HTTP/2 support

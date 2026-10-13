@@ -1,10 +1,10 @@
 # Template server HTTP API
 
-A generated template ships `Dockerfile`, `commands.py`, and `template.yaml`. After the sandbox starts, callers reach it over HTTP. `commands.py` is the container's main process: it builds a route table, registers commands, and calls `SandboxServer.serve(port=9000)`.
+A generated template ships `Dockerfile`, `commands.py`, and `template.yaml`. After the sandbox starts, callers reach it over HTTP. `commands.py` is the container's main process: it registers named commands with `@command` and calls `start(9000)` (or `SandboxServer(...).serve(port=9000)`).
 
-The `FROM` image in the Dockerfile varies by template. This HTTP API does not. Every template that starts `easy_sandbox.server` exposes the routes below. The server is the Python standard library only (`ThreadingHTTPServer`). It accepts `GET`, `POST`, and `DELETE`. A trailing slash is stripped before matching (`/health/` is `/health`).
+The `FROM` image in the Dockerfile varies by template. This HTTP API does not. Every template that starts `agent_sandbox.server` exposes the routes below. The server is the Python standard library only (`ThreadingHTTPServer`). It accepts `GET`, `POST`, and `DELETE`. A trailing slash is stripped before matching (`/health/` is `/health`).
 
-A short client for a server that is already running is [`examples/templates/python-hello/call_api.py`](../../examples/templates/python-hello/call_api.py).
+A short client for a server that is already running is [`examples/templates/python-hello/call_api.py`](../../../examples/templates/python-hello/call_api.py).
 
 ---
 
@@ -18,7 +18,7 @@ url = sandbox.network.get_url(9000)
 host = sandbox.network.get_host(9000)
 ```
 
-`{domain}` comes from the provider that created the sandbox. The same call with `9001` is the PTY WebSocket port when the `terminal` group is on (`EBX_PTY_PORT`, default `9001`).
+`{domain}` comes from the provider that created the sandbox. The same call with `9001` is the PTY WebSocket port when the `terminal` group is on (`ABX_PTY_PORT`, default `9001`).
 
 On a machine where you started `python3 commands.py` yourself, the base URL is `http://127.0.0.1:9000`.
 
@@ -36,36 +36,39 @@ That gateway header is separate from the token the process inside the container 
 
 ## Authentication
 
-`SandboxServer` reads `EBX_SERVER_TOKEN` once at startup.
+`SandboxServer` reads `ABX_SERVER_TOKEN` once at startup.
 
-- Unset or empty: every route is accepted. This is local mode.
-- Set: routes registered with `auth_required=True` (the default) require the header `X-Access-Token` to match the variable, compared with `hmac.compare_digest`. A missing or wrong token is `401`:
+- Unset or empty: every route is accepted. The caller is the identity `anonymous`. This is local mode.
+- Set: routes registered with `auth_required=True` (the default) require the token in `X-Access-Token` or `Authorization: Bearer <token>`. Both headers are accepted on every route and compared with `hmac.compare_digest`. A missing or wrong token is `401`:
 
 ```json
 {"error": "unauthorized", "type": "AuthError"}
 ```
 
+Two different `X-Access-Token` values in one request are `400` `ambiguous_credentials`.
+
 `GET /health` is the only built-in route registered with `auth_required=False`. It stays open when a token is set.
 
-`GET /capabilities` and `POST /capabilities/check` are registered with `auth_required=True`. They answer without a header only while `EBX_SERVER_TOKEN` is unset. With a token set, send `X-Access-Token`.
+`GET /capabilities` and `POST /capabilities/check` are registered with `auth_required=True`. They answer without a header only while `ABX_SERVER_TOKEN` is unset. With a token set, send a credential.
 
-The `agents` group also accepts `Authorization: Bearer <token>` on its `/v1/agents/...` routes. Every other route reads only `X-Access-Token`. Errors from those `/v1/` handlers use the OpenAI envelope `{"error": {"message", "type", "param", "code"}}`.
+Errors from the `/v1/` Agents handlers use the OpenAI envelope `{"error": {"message", "type", "param", "code"}}`.
 
-Do not put the token in `commands.py`. Pass it as an environment variable. `POST /env` refuses to overwrite `EBX_SERVER_TOKEN` and any name whose uppercase form starts with `EBX_`.
+Do not put the token in `commands.py`. Pass it as an environment variable. `POST /env` refuses to overwrite `ABX_SERVER_TOKEN` and any name whose uppercase form starts with `ABX_`.
 
-The PTY WebSocket (port 9001, path `/pty`) uses the same variable. With no policy engine it requires `?token=` equal to `EBX_SERVER_TOKEN`. With a policy engine it accepts `Authorization: Bearer`, `X-Access-Token`, or `?token=`.
+The PTY WebSocket (port 9001, path `/pty`) checks the same credentials. It accepts `Authorization: Bearer`, `X-Access-Token`, or `?token=`, and requires the `pty_connect` endpoint to be enabled.
 
 ---
 
 ## Capability groups
 
-Each route belongs to one group. A disabled group answers `404`:
+Every route is an endpoint with one id, and one rule per endpoint decides whether it answers. A group is only a name for a set of endpoint ids. There is no separate group gate. A disabled endpoint answers `404` and names the rule that disabled it:
 
 ```json
-{"error": "Built-in route '<name>' is disabled", "type": "ValueError"}
+{"error": "Endpoint 'code_run' is disabled: group 'dev_tools' is opt-in. Enable the group (ABX_SERVER_ENABLED_GROUPS=dev_tools, policy groups: [dev_tools]) or this endpoint (policy endpoints.code_run.enabled: true)",
+ "type": "ValueError", "code": "endpoint_disabled", "endpoint": "code_run", "rule": "default:opt-in:dev_tools"}
 ```
 
-`core` is always on. `RouteTable.disable_group(CapabilityGroup.CORE)` raises `ValueError`. Other groups start from this set (`_DEFAULT_DISABLED`):
+`core` (`health`, `capabilities`, `capabilities_check`) is always on. `RouteTable.disable_group(CapabilityGroup.CORE)` raises `ValueError`. The other groups start like this:
 
 | Group | Default | What it turns on |
 |-------|---------|------------------|
@@ -77,9 +80,17 @@ Each route belongs to one group. A disabled group answers `404`:
 | `system` | on | `/system/info`, `/system/metrics`, `/env`, `/ports`, `/packages` |
 | `dev_tools` | off | `POST /code/run`, `GET /git/status`, `GET /git/diff` |
 | `browser` | off | `/browser/*` (Playwright; `503` if Playwright is not installed) |
-| `agents` | off | `/v1/agents/...`, `/v1/vaults`, `/v1/responses`, `/v1/models`, `/v1/files` and `/v1/webhook_endpoints` as local operations on Codex and Qwen Code. Stays off until `EBX_SERVER_ENABLED_GROUPS` includes `agents` |
+| `agents` | off | `/v1/agents/...`, `/v1/vaults`, `/v1/responses`, `/v1/models`, `/v1/files` and `/v1/webhook_endpoints`. Stays off until a layer enables it |
 
-`commands.py` turns a group on with `default_table().enable_group(CapabilityGroup.FILE_OPS)` (the name you need). `EBX_SERVER_DISABLED_GROUPS` is a comma-separated list of group values applied when the table is created (`core` is ignored). `EBX_SERVER_ENABLED_GROUPS` is applied when `SandboxServer` starts and can turn the opt-in groups back on.
+Ways to switch, all ending in the same per-endpoint rules:
+
+| Where | Form |
+|---|---|
+| `commands.py` | `default_table().enable_group(CapabilityGroup.FILE_OPS)` / `disable_group(...)` |
+| `template.yaml` `server:` | `groups: [agents, dev_tools]` or `groups: {process: false}`; `endpoints:` for single ids |
+| environment | `ABX_SERVER_ENABLED_GROUPS=agents,dev_tools` (comma list, turns groups on only) |
+
+There is no environment variable that turns a group off. Write `groups: {process: false}` in `server:` or an `endpoints` rule instead. Layers, specificity and the `rule` names are in [Fine-grained capabilities](fine-grained-capabilities.md).
 
 `template.yaml` `capabilities` (`shell`, `files`, `code`, `terminal`, `ports`) are template metadata. They do not toggle these routes. Generated templates line them up as `files` ↔ `file_ops`, `shell` ↔ `process`, `code` ↔ `dev_tools`, `terminal` ↔ `terminal`, `ports` ↔ `system`.
 
@@ -93,13 +104,13 @@ Success and error bodies are JSON (`Content-Type: application/json; charset=utf-
 {"error": "<message>", "type": "<ExceptionName>"}
 ```
 
-An unknown path is `404` `{"error": "Not found: <path>", "type": "ValueError"}`. An uncaught handler exception is `500` with `error` and `type`. A policy denial (only when a `ServerPolicy` is loaded) adds `code` and sometimes `endpoint`.
+An unknown path is `404` `{"error": "Not found: <path>", "type": "ValueError"}`. An uncaught handler exception is `500` with `error` and `type`. A policy denial adds `code` (`endpoint_disabled`, `missing_scope`, `path_not_allowed`, `command_not_allowed`, `rate_limited`, ...) and `endpoint`. A disabled endpoint also carries `rule`. A repeated query parameter is `400` `duplicate_parameter`.
 
 `POST` and `DELETE` read a JSON object body. The raw body limit is 10 MiB (`413`, `code` `payload_too_large`). An empty body becomes `{}`. Invalid JSON is `400`.
 
 Streaming routes (`streaming=True`) return `text/event-stream`. Each chunk is `event: <name>\ndata: <json>\n\n`.
 
-File routes resolve paths under `EBX_SERVER_BASE_DIR` (default `/home/user`). A path that escapes that directory is `400` `Path escapes base directory`. Decoded upload size defaults to 100 MiB (`EBX_MAX_UPLOAD_SIZE`). The 10 MiB JSON body cap applies first, so a base64 body cannot actually reach 100 MiB.
+Every route that takes a path (file routes, and the `cwd` of `/shell` and process start) is confined to `ABX_SERVER_BASE_DIR` (default `/home/user`), or to the policy's `base_dir` or per-endpoint `paths.allow`. A path outside it is `403` `path_not_allowed`. Decoded upload size defaults to 100 MiB (`ABX_MAX_UPLOAD_SIZE`). The 10 MiB JSON body cap applies first, so a base64 body cannot actually reach 100 MiB.
 
 `POST /shell` and process start split the command with `shlex.split` and run it with `shell=False`. Pipes, redirects, and `$VAR` are not interpreted. Use `bash -c '...'` when you need a shell.
 
@@ -119,13 +130,14 @@ No auth. Always `200`.
 
 #### `GET /capabilities`
 
-Discovery document. With no policy loaded, `policy.configured` is `false` and `identity` is `{"id": "anonymous", "scopes": ["*"]}`.
+Discovery document. With no policy loaded and no token set, `policy.configured` is `false` and `identity` is `{"id": "anonymous", "scopes": ["*"]}`.
 
 ```json
 {
   "api_version": 2,
   "server_version": "<package version>",
   "groups": {"core": true, "commands": true, "file_ops": true, "process": true, "terminal": true, "system": true, "dev_tools": false, "browser": false, "agents": false},
+  "group_summary": {"file_ops": {"enabled": 12, "total": 12}, "dev_tools": {"enabled": 0, "total": 3}},
   "identity": {"id": "anonymous", "scopes": ["*"]},
   "policy": {"preset": "default", "revision": "<16 hex chars>", "configured": false},
   "endpoints": {
@@ -133,10 +145,12 @@ Discovery document. With no policy loaded, `policy.configured` is `false` and `i
       "method": "GET",
       "path": "/health",
       "group": "core",
+      "summary": "Liveness probe (anonymous).",
       "streaming": false,
       "enabled": true,
       "allowed": true,
       "reason": null,
+      "rule": null,
       "scopes": [],
       "limits": {},
       "params": {}
@@ -146,7 +160,7 @@ Discovery document. With no policy loaded, `policy.configured` is `false` and `i
 }
 ```
 
-`groups` is every `CapabilityGroup` value and whether it is enabled. `endpoints` is keyed by route name and also includes `pty_connect` (`method` `WS`, path `/pty`), which is the WebSocket on port 9001, not an HTTP route on port 9000. When the caller is not allowed, `reason` is `group_disabled`, `endpoint_disabled`, or `missing_scope`, and `limits` / `params` are omitted. With no policy file and no `EBX_SERVER_POLICY`, `preset` is `default`, `revision` is the hash of an empty policy, and `configured` is `false`. A loaded policy sets `configured` to `true` and fills `preset` / `revision` from that document.
+`endpoints` is the per-endpoint state, keyed by endpoint id, and it is the source of truth. It also includes `pty_connect` (`method` `WS`, path `/pty`), which is the WebSocket on port 9001, not an HTTP route on port 9000. `groups` (name to boolean: on when at least one endpoint of the group is on) and `group_summary` (`enabled` and `total` endpoint counts) are derived from it. When the endpoint is off or the caller may not use it, `reason` is `endpoint_disabled` or `missing_scope`, `rule` names the rule that decided (`policy:endpoints.shell`, `default:opt-in:browser`, ...), and `limits` / `params` are omitted. With no policy file and no `ABX_SERVER_POLICY`, `preset` is `default`, `revision` is the hash of an empty policy, and `configured` is `false`. A loaded policy sets `configured` to `true` and fills `preset` / `revision` from that document.
 
 #### `POST /capabilities/check`
 
@@ -165,13 +179,13 @@ Does not report whether a path exists. `200`:
 {"endpoint": "upload", "allowed": true, "code": null, "reason": null}
 ```
 
-A refusal sets `allowed` to `false` and fills `code` (`unknown_endpoint`, `endpoint_disabled`, or a path-policy code). A bad body is `400`.
+A refusal sets `allowed` to `false` and fills `code` (`unknown_endpoint`, `endpoint_disabled`, `missing_scope`, or a path-policy code), a human `reason`, and `rule` when a rule decided. A bad body is `400`.
 
 ### `commands`
 
 #### `GET /commands`
 
-Visible commands from the `CommandRegistry` passed to `SandboxServer` (hidden commands are omitted). `200`:
+Visible commands from the command registry (hidden commands are omitted). Commands are registered with `@command` only; see [Named commands](#named-commands). `200`:
 
 ```json
 {
@@ -221,8 +235,9 @@ Paths are query parameters or body fields as noted. Timestamps are ISO 8601 UTC.
 
 | Status | When |
 |--------|------|
-| `400` | Missing `path` or `content_base64`, invalid base64, or the path escapes the base directory |
-| `413` | Decoded size exceeds `EBX_MAX_UPLOAD_SIZE` (default 104857600). With a policy, the body also has `code: "payload_too_large"` and `limit` |
+| `400` | Missing `path` or `content_base64`, or invalid base64 |
+| `403` | `path_not_allowed`: the path is outside the allowed directories |
+| `413` | Decoded size exceeds `ABX_MAX_UPLOAD_SIZE` (default 104857600). With a policy, the body also has `code: "payload_too_large"` and `limit` |
 | `500` | The write failed |
 
 Parent directories are created. With a policy, `allow_extensions` / `deny_extensions` can reject the suffix (`extension_not_allowed`) and `overwrite: false` returns `409` if the file exists.
@@ -235,7 +250,7 @@ Parent directories are created. With a policy, `allow_extensions` / `deny_extens
 {"path": "<resolved>", "content_base64": "<standard base64>"}
 ```
 
-`400` missing or escaping path, `404` not a file, `413` larger than the same byte limit, `500` on read errors.
+`400` missing path, `403` `path_not_allowed`, `404` not a file, `413` larger than the same byte limit, `500` on read errors.
 
 #### `GET /files/list?path=`
 
@@ -333,7 +348,7 @@ SSE. Query: `recursive` (`false`), `interval` seconds (default `0.5`, clamped to
 
 ### `process`
 
-`cwd`, `env`, and `timeout` on the shell and process-start bodies are optional. `cwd` must be a string and an existing directory (resolved under the base directory when a policy is loaded). `env` must be an object of strings. `timeout` defaults to 300 seconds; a non-positive or non-numeric value is replaced with 300. A policy can lower the timeout (`timeout_seconds`) and cap output (`max_output_bytes`, which sets `"truncated": true` on `/shell`).
+`cwd`, `env`, and `timeout` on the shell and process-start bodies are optional. `cwd` must be a string and an existing directory inside the allowed directories (`403` `path_not_allowed` otherwise). `env` must be an object of strings. `timeout` defaults to 300 seconds; a non-positive or non-numeric value is replaced with 300. A policy can lower the timeout (`timeout_seconds`) and cap output (`max_output_bytes`, which sets `"truncated": true` on `/shell`).
 
 #### `POST /shell`
 
@@ -417,7 +432,7 @@ Only when `capture_output` was true (`409` otherwise). `since` is a sequence num
 
 ### `terminal`
 
-The HTTP routes manage sessions. Keystrokes go over a WebSocket on `EBX_PTY_PORT` (default `9001`), started only while this group is enabled. Shells allowed at create time: `/bin/bash`, `/bin/sh`, `/bin/zsh`, `/usr/bin/bash`, `/usr/bin/zsh`. At most 10 sessions. A session idle for 1800 seconds is reaped when the manager next creates or lists sessions.
+The HTTP routes manage sessions. Keystrokes go over a WebSocket on `ABX_PTY_PORT` (default `9001`), started only while this group is enabled. Shells allowed at create time: `/bin/bash`, `/bin/sh`, `/bin/zsh`, `/usr/bin/bash`, `/usr/bin/zsh`. At most 10 sessions. A session idle for 1800 seconds is reaped when the manager next creates or lists sessions.
 
 #### `POST /pty/sessions`
 
@@ -431,7 +446,7 @@ The HTTP routes manage sessions. Keystrokes go over a WebSocket on `EBX_PTY_PORT
 {"session_id": "<12 hex chars>", "ws_url": "ws://localhost:9001/pty?session_id=<id>", "pid": 123}
 ```
 
-`ws_url` is built with `localhost` and, when `EBX_SERVER_TOKEN` is set and the server is not using per-identity tokens, `&token=<url-encoded token>`. From outside the sandbox, open the WebSocket on `sandbox.network.get_url(9001)` at path `/pty` with the same query. `429` when the session limit is hit. `400` for a shell outside the list or a non-integer size. `LD_PRELOAD`, `LD_LIBRARY_PATH`, and `DYLD_INSERT_LIBRARIES` are stripped from `env`.
+`ws_url` is built with `localhost` and, when `ABX_SERVER_TOKEN` is set and the server is not using per-identity tokens, `&token=<url-encoded token>`. From outside the sandbox, open the WebSocket on `sandbox.network.get_url(9001)` at path `/pty` with the same query. `429` when the session limit is hit. `400` for a shell outside the list or a non-integer size. `LD_PRELOAD`, `LD_LIBRARY_PATH`, and `DYLD_INSERT_LIBRARIES` are stripped from `env`.
 
 #### `GET /pty/sessions`
 
@@ -503,7 +518,7 @@ Memory comes from `/proc/meminfo` when present. Disk is `shutil.disk_usage("/")`
 
 #### `POST /env`
 
-`{"vars": {"LANG": "C.UTF-8"}}`. `200`: `{"updated": ["LANG"]}`. `403` if any key is `PATH`, `HOME`, `USER`, `SHELL`, or starts with `EBX_` (compared in uppercase). `400` if `vars` is not an object. Values are stored with `str()`.
+`{"vars": {"LANG": "C.UTF-8"}}`. `200`: `{"updated": ["LANG"]}`. `403` if any key is `PATH`, `HOME`, `USER`, `SHELL`, or starts with `ABX_` (compared in uppercase). `400` if `vars` is not an object. Values are stored with `str()`.
 
 #### `GET /ports`
 
@@ -538,7 +553,7 @@ Memory comes from `/proc/meminfo` when present. Disk is `shutil.disk_usage("/")`
 
 #### `GET /git/status?path=.`
 
-`200`: `{"branch": "main", "clean": true, "files": [{"path": "a.py", "status": "modified"}]}`. `status` is `modified`, `added`, `deleted`, `renamed`, `untracked`, `copied`, or `unmerged`. `400` `GitError` when git fails (not a repository). `500` if `git` is not installed. `408` on a 30 second timeout. With `EBX_SERVER_BASE_DIR` set, `path` must stay inside it.
+`200`: `{"branch": "main", "clean": true, "files": [{"path": "a.py", "status": "modified"}]}`. `status` is `modified`, `added`, `deleted`, `renamed`, `untracked`, `copied`, or `unmerged`. `400` `GitError` when git fails (not a repository). `500` if `git` is not installed. `408` on a 30 second timeout. `path` must stay inside the allowed directories (`403` `path_not_allowed`).
 
 #### `GET /git/diff`
 
@@ -569,9 +584,9 @@ All of these need Playwright. If `import playwright` fails the handler returns `
 
 ### `agents` (off until enabled)
 
-Turn the group on with `EBX_SERVER_ENABLED_GROUPS=agents` (or `default_table().enable_group(CapabilityGroup.AGENTS)` before `serve()`). Codex CLI (`codex`) and Qwen Code (`qwen-code`, also `qwen` and `qwencode`) are supported today. An adapter name that is not supported yet is `404` `not_found_error` with `x-should-retry: false`. When the body and `agents.default` (`EBX_AGENTS_DEFAULT`) do not name an adapter, create calls use the first in the product order: `codex`. Each Agents route can be enabled on its own. Endpoint ids are in [Fine-grained capabilities](fine-grained-capabilities.md). The default scope is `agents:use`.
+Turn the group on with `ABX_SERVER_ENABLED_GROUPS=agents`, `groups: [agents]` in `server:`, or `default_table().enable_group(CapabilityGroup.AGENTS)` before `serve()`. All 70 routes are implemented. Two runtimes have a local backend: Codex CLI (`codex`) and Qwen Code (`qwen-code`, also `qwen` and `qwencode`). `claude-code`, `cursor` and `command` are declared adapters without a local backend. `GET /v1/agents/runtimes` lists every declared runtime with `implemented` and `installed`. Selecting a runtime that is not implemented is `404` `not_found_error` (`agents.not_implemented_locally`) with `x-should-retry: false`, and the body points to `GET /v1/agents/runtimes`. When the body and `agents.default` (`ABX_AGENTS_DEFAULT`) do not name an adapter, create calls use `codex`. Each Agents route can be enabled on its own. Endpoint ids are in [Fine-grained capabilities](fine-grained-capabilities.md). The default scope is `agents:use`. The full route table is in the [Agents API reference](../reference/agents-api.md).
 
-Every route here is a local operation. Every response carries `X-Easy-Sandbox-Local: 1` and every object an `x_easy_sandbox` label (`local`, `compute`, `differences`). A field the server cannot honor is `400` with `param`, never accepted and ignored. Objects belong to the caller; a foreign id answers like an unknown id.
+Every response carries `X-Agent-Sandbox-Local: 1` and every object an `x_agent_sandbox` label (`local`, `compute`, `differences`). A field the server cannot honor is `400` with `param`, never accepted and ignored. Objects belong to the caller; a foreign id answers like an unknown id.
 
 | Route | Behavior |
 |------|------|
@@ -582,7 +597,7 @@ Every route here is a local operation. Every response carries `X-Easy-Sandbox-Lo
 | `GET /v1/agents/sessions/{id}/events` | SSE (`Accept: text/event-stream`) of mapped session events. |
 | `GET .../items`, `.../turns`, `.../turns/{turn_id}`, `.../turns/{turn_id}/items` | Items and turns. |
 | `GET .../artifacts`, `GET` and `DELETE .../artifacts/{id}`, `GET .../artifacts/{id}/content` | Immutable copies of the paths the CLI reported. Delete removes the copy only. |
-| `GET .../traces` | Empty unless `EBX_AGENTS_TRACES=1` (timing-only spans). |
+| `GET .../traces` | Empty unless `ABX_AGENTS_TRACES=1` (timing-only spans). |
 | `GET .../subagents`, `.../subagents/{id}`, `/items`, `/turns`, `/turns/{turn_id}`, `/turns/{turn_id}/items` | Only ids the CLI emitted. |
 | `POST`, `GET /v1/agents`, `GET`, `POST`, `DELETE /v1/agents/{agent_id}` | Agent definitions. Only `mcp` tools. |
 | `POST`, `GET /v1/agents/environments`, `GET /v1/agents/environments/{id}` | Directory bindings. |
@@ -591,43 +606,44 @@ Every route here is a local operation. Every response carries `X-Easy-Sandbox-Lo
 | `POST /v1/files` | Local `user_data` blobs so `file_id` works (JSON body with base64 `data`). |
 | `/v1/vaults[...]`, `/v1/vaults/{id}/credentials[...]` | Memory-only vaults and write-only `static_bearer` / `mcp_oauth` credentials. |
 | `POST /v1/responses`, `GET`, `DELETE /v1/responses/{id}`, `POST .../cancel`, `GET .../input_items`, `POST /v1/responses/compact` | A labeled one-shot CLI turn. |
-| `GET /v1/models`, `GET /v1/models/{id}` | Definitions and the two adapters. |
+| `GET /v1/models`, `GET /v1/models/{id}` | Definitions and the implemented runtimes. |
 | `/v1/webhook_endpoints[...]`, `GET /v1/webhook_event_types` | Local signed webhook endpoints. |
-| `GET /v1/agents/runtimes` | `codex` and `qwen-code` only. |
+| `GET /v1/agents/runtimes` | Every declared runtime with `implemented` and `installed`. |
 
-No local capability, `404` `not_found_error` (`agents.not_implemented_locally`, `x-should-retry: false`): `POST /v1/responses/input_tokens`, `DELETE /v1/models/{id}`, and executor registration and channel.
+Four routes exist to refuse with a typed `404` `not_found_error` (`x-should-retry: false`) because the server has no such capability: `POST /v1/responses/input_tokens`, `DELETE /v1/models/{id}`, and executor registration and channel (`agents_cannot_*`). They are declared, counted and tested like every other route.
 
-The CLIs are not installed until a session uses them. See [Hosted agents](hosted-agents.md) for every refusal, environment variable and difference code. Supported adapters, the local header, and the 404s for names that are not supported yet and for `input_tokens` are in [Hosted agents — Best practices](hosted-agents.md#best-practices).
+The CLIs are not installed until a session uses them. See [Hosted agents](hosted-agents.md) for every refusal, environment variable and difference code.
 
 ---
 
 ## Custom commands and custom routes
 
-### `@registry.command`
+### Named commands
+
+A named command has one mechanism: register a function with `@command`. `GET /commands` lists it and `POST /commands/{name}` runs it. The client's `@sandbox.register` decorator ends in the same registry.
 
 ```python
-from easy_sandbox.server import CommandRegistry, SandboxServer
+from agent_sandbox.server import command, start
 
-registry = CommandRegistry()
-
-@registry.command("hello", description="Say hello.")
+@command("hello", description="Say hello.")
 def hello(name: str = "World") -> str:
     return f"Hello, {name}!"
 
-@registry.command(hidden=True)
+@command(hidden=True)
 def _debug_info() -> dict:
     return {"ok": True}
 
-registry.freeze()
-SandboxServer(registry=registry).serve(port=9000)
+start(9000)
 ```
 
-`GET /commands` lists `hello` and not `_debug_info`. `POST /commands/hello` with `{"name": "Ada"}` returns `{"result": "Hello, Ada!"}`. `POST /commands/_debug_info` with `{}` still runs. The name defaults to the function name. Argument types come from annotations: `int` → `integer`, `float` → `float`, `bool` → `boolean`, anything else → `string`. A parameter with no default is `required: true` and `default: null`. `description` on each arg stays `""` unless you pass an explicit `args` list of `CommandArg`. `hidden=True` omits the command from `GET /commands`. Raise to return `500`. Call `registry.freeze()` before `serve` (`serve` freezes the registry again).
+`GET /commands` lists `hello` and not `_debug_info`. `POST /commands/hello` with `{"name": "Ada"}` returns `{"result": "Hello, Ada!"}`. `POST /commands/_debug_info` with `{}` still runs. The name defaults to the function name. Argument types come from annotations: `int` → `integer`, `float` → `float`, `bool` → `boolean`, anything else → `string`. A parameter with no default is `required: true` and `default: null`. `description` on each arg stays `""` unless you pass an explicit `args` list of `CommandArg`. `scopes=(...)` requires those scopes from the caller; a caller without them neither sees the command in `GET /commands` nor can run it. `hidden=True` omits the command from `GET /commands`. Raise to return `500`. The registry is frozen when the server starts, so register at import time.
 
-### `@table.route`
+Tests that need isolation can create a private `CommandRegistry()` and pass it as `SandboxServer(registry=...)`. Production templates use `@command`.
+
+### Custom routes with `@table.route`
 
 ```python
-from easy_sandbox.server import CapabilityGroup, ServerResponse, default_table
+from agent_sandbox.server import CapabilityGroup, ServerResponse, default_table
 
 table = default_table()
 
@@ -651,9 +667,9 @@ The dispatcher calls `GET`, `POST`, and `DELETE` only. The handler receives a re
 
 Return `ServerResponse.ok({...})` (`200` and that object as the body) or `ServerResponse.error(status, message)` (`{"error", "type"}`, `type` default `ValueError`).
 
-`auth_required=False` leaves the route open when `EBX_SERVER_TOKEN` is set. The default is to require the token. `streaming=True` means return `SSEResponse(event_iterator=...)`; the iterator yields strings `event: <name>\ndata: <json>\n\n`.
+`auth_required=False` leaves the route open when `ABX_SERVER_TOKEN` is set. The default is to require the token. `streaming=True` means return `SSEResponse(event_iterator=...)`; the iterator yields strings `event: <name>\ndata: <json>\n\n`.
 
-The route does not appear in `GET /commands`. It appears in `GET /capabilities` under `endpoints`, keyed by the route `name` (default `"GET /hello/{name}"`). It is served only while its group is enabled. A disabled group is the same `404` as a built-in route.
+The route does not appear in `GET /commands`. It appears in `GET /capabilities` under `endpoints`, keyed by the route `name` (default `"GET /hello/{name}"`), and counts in its group's `group_summary`. It is served only while its endpoint is enabled. A disabled endpoint is the same `404` as a built-in route.
 
 ---
 
@@ -662,40 +678,40 @@ The route does not appear in `GET /commands`. It appears in `GET /capabilities` 
 Set the base URL and, when the server was started with a token, the token. Neither value belongs in the template image.
 
 ```bash
-export EBX_TEMPLATE_URL="http://127.0.0.1:9000"   # or the https URL from get_url(9000)
-export EBX_SERVER_TOKEN=""                         # leave empty in local mode
+export ABX_TEMPLATE_URL="http://127.0.0.1:9000"   # or the https URL from get_url(9000)
+export ABX_SERVER_TOKEN=""                         # leave empty in local mode
 ```
 
 Health (open even when a token is set):
 
 ```bash
-curl -sS "$EBX_TEMPLATE_URL/health"
+curl -sS "$ABX_TEMPLATE_URL/health"
 ```
 
-List commands (send the header whenever `EBX_SERVER_TOKEN` is set):
+List commands (send the header whenever `ABX_SERVER_TOKEN` is set):
 
 ```bash
-curl -sS -H "X-Access-Token: $EBX_SERVER_TOKEN" "$EBX_TEMPLATE_URL/commands"
+curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" "$ABX_TEMPLATE_URL/commands"
 ```
 
 Run a command registered as `hello`:
 
 ```bash
-curl -sS -H "X-Access-Token: $EBX_SERVER_TOKEN" \
+curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"Ada"}' \
-  "$EBX_TEMPLATE_URL/commands/hello"
+  "$ABX_TEMPLATE_URL/commands/hello"
 ```
 
-Upload and download. The path must stay under `EBX_SERVER_BASE_DIR` (default `/home/user`). `file_ops` must be enabled, which it is unless `commands.py` or `EBX_SERVER_DISABLED_GROUPS` turned it off.
+Upload and download. The path must stay under `ABX_SERVER_BASE_DIR` (default `/home/user`). `file_ops` must be enabled, which it is unless a `server:` policy or `commands.py` turned it off.
 
 ```bash
 B64=$(printf 'hello' | base64)
-curl -sS -H "X-Access-Token: $EBX_SERVER_TOKEN" \
+curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{\"path\":\"/home/user/note.txt\",\"content_base64\":\"$B64\"}" \
-  "$EBX_TEMPLATE_URL/upload"
+  "$ABX_TEMPLATE_URL/upload"
 
-curl -sS -H "X-Access-Token: $EBX_SERVER_TOKEN" \
-  "$EBX_TEMPLATE_URL/download?path=/home/user/note.txt"
+curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" \
+  "$ABX_TEMPLATE_URL/download?path=/home/user/note.txt"
 ```

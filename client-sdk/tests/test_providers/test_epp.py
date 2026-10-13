@@ -13,9 +13,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from easy_sandbox.models import errors as E
-from easy_sandbox.providers import epp, store
-from easy_sandbox.providers.epp import EppClient, exit_code_for, map_error, scrubbed_env
+from agent_sandbox.models import errors as E
+from agent_sandbox.providers import epp, store
+from agent_sandbox.providers.epp import EppClient, exit_code_for, map_error, scrubbed_env
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -273,7 +273,7 @@ class TestScrubbedEnv:
                 "PATH": "/bin",
                 "HOME": "/h",
                 "LC_ALL": "C",
-                "EBX_SANDBOX_API_KEY": "secret",
+                "ABX_SANDBOX_API_KEY": "secret",
                 "E2B_API_KEY": "secret",
                 "AWS_SECRET_ACCESS_KEY": "secret",
                 "MY_PASS": "yes",
@@ -285,10 +285,10 @@ class TestScrubbedEnv:
             "HOME",
             "LC_ALL",
             "MY_PASS",
-            "EBX_PROVIDER_DATA_DIR",
+            "ABX_PROVIDER_DATA_DIR",
             "PYTHONDONTWRITEBYTECODE",
         }
-        assert env["EBX_PROVIDER_DATA_DIR"] == str(tmp_path)
+        assert env["ABX_PROVIDER_DATA_DIR"] == str(tmp_path)
 
     def test_resolve_command_confines_dot_slash(self, tmp_path):
         (tmp_path / "p.py").write_text("")
@@ -352,10 +352,10 @@ class TestMapError:
 async def test_reference_plugin_env_is_scrubbed_and_config_arrives_via_initialize(
     local_process, monkeypatch
 ):
-    from easy_sandbox.providers import registry
-    from easy_sandbox.transport.config import load_config
+    from agent_sandbox.providers import registry
+    from agent_sandbox.transport.config import load_config
 
-    monkeypatch.setenv("EBX_SANDBOX_API_KEY", "parent-secret-1")
+    monkeypatch.setenv("ABX_SANDBOX_API_KEY", "parent-secret-1")
     monkeypatch.setenv("E2B_API_KEY", "parent-secret-2")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "parent-secret-3")
     provider = registry.get_provider("local-process")
@@ -367,9 +367,9 @@ async def test_reference_plugin_env_is_scrubbed_and_config_arrives_via_initializ
         res = await infra.sandbox_protocol._c.call("debug.env", {})
         blob = json.dumps(res)
         assert "parent-secret" not in blob and "tok-abcdefgh" not in blob
-        assert res["env"]["EBX_PROVIDER_DATA_DIR"] == str(store.data_dir("local-process"))
+        assert res["env"]["ABX_PROVIDER_DATA_DIR"] == str(store.data_dir("local-process"))
         assert res["env"]["PYTHONDONTWRITEBYTECODE"] == "1"
-        assert not any(k.startswith(("EBX_SANDBOX", "E2B_", "AWS_")) for k in res["env"])
+        assert not any(k.startswith(("ABX_SANDBOX", "E2B_", "AWS_")) for k in res["env"])
         assert set(res["config_keys"]) == {"debug", "token"}
         await infra.sandbox_protocol._c.call("debug.leak", {})
         await asyncio.sleep(0.2)

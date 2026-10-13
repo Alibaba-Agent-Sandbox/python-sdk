@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-import easy_sandbox.models.errors as errors_module
-from easy_sandbox.models.errors import (
-    AICodegenError,
+import agent_sandbox.models.errors as errors_module
+from agent_sandbox.models.errors import (
     AuthenticationError,
     CodeExecutionError,
     CommandTimeoutError,
@@ -22,17 +21,13 @@ from easy_sandbox.models.errors import (
     PermissionDeniedError,
     ProcessError,
     QuotaExceededError,
-    QwenCodeStartupError,
-    QwenCodeTimeoutError,
     RegionUnavailableError,
     SandboxCreationError,
     SandboxError,
-    TemplateBuildError,
-    TemplateBuildTimeoutError,
     TemplateNotFoundError,
     TokenExpiredError,
 )
-from easy_sandbox.models.errors import (
+from agent_sandbox.models.errors import (
     __all__ as errors_all,
 )
 
@@ -99,7 +94,7 @@ class TestAuthenticationErrors:
         assert isinstance(err, AuthenticationError)
         assert isinstance(err, SandboxError)
         assert err.code == "E1001"
-        assert "EBX_SANDBOX_API_KEY" in err.suggestion
+        assert "ABX_SANDBOX_API_KEY" in err.suggestion
 
     def test_token_expired(self):
         err = TokenExpiredError("expired")
@@ -127,7 +122,7 @@ class TestCreationErrors:
         err = TemplateNotFoundError("no template")
         assert isinstance(err, SandboxCreationError)
         assert err.code == "E2001"
-        assert "ebx template list" in err.suggestion
+        assert "abx template list" in err.suggestion
 
     def test_quota_exceeded(self):
         err = QuotaExceededError("over quota")
@@ -240,28 +235,6 @@ class TestNetworkErrors:
         assert err.code == "E5000"
 
 
-# ---- AI Generation Subtypes ----
-
-
-class TestAICodegenSubtypeErrors:
-    """The classified Qwen Code failures share E2007 by design.
-
-    Like :class:`GitHubRateLimitError` above, these subtypes keep the
-    user-visible code of their parent so the CLI output never changes;
-    only the research round reads the type to derive a stable reason.
-    """
-
-    def test_timeout_error_shares_e2007(self):
-        err = QwenCodeTimeoutError("did not finish within 240s")
-        assert isinstance(err, AICodegenError)
-        assert err.code == "E2007"
-
-    def test_startup_error_shares_e2007(self):
-        err = QwenCodeStartupError("Failed to start Qwen Code: boom")
-        assert isinstance(err, AICodegenError)
-        assert err.code == "E2007"
-
-
 # ---- Unique Codes ----
 
 
@@ -287,8 +260,6 @@ class TestErrorCodeUniqueness:
             PermissionDeniedError,
             NetworkError,
             ConnectionError_,
-            TemplateBuildError,
-            TemplateBuildTimeoutError,
         ]
         codes = [cls.code for cls in all_classes]
         assert len(codes) == len(set(codes)), f"Duplicate codes found: {codes}"
@@ -311,12 +282,6 @@ class TestErrorsAll:
             "QuotaExceededError",
             "RegionUnavailableError",
             "TemplateParseError",
-            "QwenCodeNotInstalledError",
-            "QwenCodeCredentialError",
-            "AICodegenError",
-            "QwenCodeTimeoutError",
-            "QwenCodeStartupError",
-            "DescriptionClarificationError",
             "ExecutionError",
             "CommandTimeoutError",
             "ProcessError",
@@ -327,21 +292,12 @@ class TestErrorsAll:
             "FileOperationError",
             "FileNotFoundError_",
             "PermissionDeniedError",
-            "DeployError",
-            "DeployLLMKeyMissingError",
-            "DeployAgentError",
-            "DeployTimeoutError",
             "NetworkError",
             "ConnectionError_",
             "GitHubRateLimitError",
             "SessionError",
             "SessionNotFoundError",
             "SessionAlreadyExistsError",
-            "TemplateBuildError",
-            "TemplateBuildTimeoutError",
-            "DockerBuildError",
-            "ACRPushError",
-            "ACRLoginError",
             "ProviderError",
             "ProviderNotFoundError",
             "ProviderConfigError",

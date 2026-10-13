@@ -1,15 +1,15 @@
 # MCP Server 设计
 
-> **说明：** 本页出现的 `ebx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @easy-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`easy-sandbox`）与容器侧运行时（`easy-sandbox-server`）。
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox`）与容器侧运行时（`agent-sandbox-server`）。
 
-> Easy Sandbox MCP Server 将沙箱能力暴露为 MCP (Model Context Protocol) Tools，让 AI Agent（Cursor、Claude Desktop、VS Code 等）可以直接操作云端沙箱。
+> Agent Sandbox MCP Server 将沙箱能力暴露为 MCP (Model Context Protocol) Tools，让 AI Agent（Cursor、Claude Desktop、VS Code 等）可以直接操作云端沙箱。
 
-**已实现面**（与 `client-sdk/src/easy_sandbox/agent/` 保持同步）：
+**已实现面**（与 `client-sdk/src/agent_sandbox/agent/` 保持同步）：
 
 - 7 个 P0 工具（`agent/tools.py`）
-- STDIO 传输（`agent/mcp.py`）— `python -m easy_sandbox.agent.mcp`
+- STDIO 传输（`agent/mcp.py`）— `python -m agent_sandbox.agent.mcp`
 - Streamable HTTP 传输（`agent/mcp_http.py`）— Starlette ASGI 应用
-- `ebx mcp install / start / status / deploy` 命令由 Node.js CLI 提供（见[相关：ebx CLI](#相关ebx-cli)）
+- `abx mcp install / start / status / deploy` 命令由 Node.js CLI 提供（见[相关：abx CLI](#相关abx-cli)）
 
 ---
 
@@ -22,7 +22,7 @@
 ```json
 {
   "name": "create_sandbox",
-  "description": "创建一个云端沙箱，并将其设为当前会话的默认沙箱。省略 template 时使用 MCP server 配置的模板（ebx mcp start 默认为 code-interpreter-v1）。",
+  "description": "创建一个云端沙箱，并将其设为当前会话的默认沙箱。省略 template 时使用 MCP server 配置的模板（abx mcp start 默认为 code-interpreter-v1）。",
   "inputSchema": {
     "type": "object",
     "properties": {
@@ -221,7 +221,7 @@ graph TD
 
 1. `create_sandbox` 创建沙箱，并把它设为默认沙箱。随后省略 `sandbox_id` 的调用使用这只沙箱；更早创建的沙箱仍存活，直到被 `kill_sandbox` 或会话结束
 2. 还没有默认沙箱时，第一次省略 `sandbox_id` 的工具调用懒创建一只。并发的懒创建只会创建一只
-3. 默认模板：经 `ebx mcp start` 启动时为 `code-interpreter-v1`（CLI 默认值）；编程式构造 `SandboxMCPServer` / HTTP `SessionStore` 且未显式指定模板时为 `base`。`create_sandbox` 省略 `template` 时用的就是这个模板
+3. 默认模板：经 `abx mcp start` 启动时为 `code-interpreter-v1`（CLI 默认值）；编程式构造 `SandboxMCPServer` / HTTP `SessionStore` 且未显式指定模板时为 `base`。`create_sandbox` 省略 `template` 时用的就是这个模板
 4. 省略 `sandbox_id` 的 `kill_sandbox` 销毁默认沙箱；当前没有默认沙箱时返回错误。会话结束时销毁该会话里的全部沙箱 — STDIO EOF / server 关闭，或 HTTP `DELETE /mcp` / 空闲会话 TTL 到期
 5. 显式传入 `sandbox_id` 时寻址那只沙箱，不改变默认沙箱。每次使用前按创建时的 timeout 调用 `Sandbox.set_timeout` 延长存活时间
 
@@ -255,7 +255,7 @@ sequenceDiagram
 
 ```mermaid
 graph LR
-    IDE["IDE / Agent<br/>Cursor, Claude, VS Code"] <-->|"STDIO stdin/stdout<br/>换行分隔 JSON-RPC 2.0"| MCP["MCP Server<br/>python -m easy_sandbox.agent.mcp"]
+    IDE["IDE / Agent<br/>Cursor, Claude, VS Code"] <-->|"STDIO stdin/stdout<br/>换行分隔 JSON-RPC 2.0"| MCP["MCP Server<br/>python -m agent_sandbox.agent.mcp"]
     MCP --> SM[SandboxManager]
     SM --> FC[阿里云 FC]
 ```
@@ -264,7 +264,7 @@ graph LR
 - **协议版本**：`2024-11-05` —— STDIO server 唯一支持的版本。`initialize` 在请求该版本时回显，请求缺失或不支持时也回退到该版本，保持原有行为不变
 - **支持方法**：`initialize`、`notifications/initialized`、`tools/list`、`tools/call`、`ping`
 - **适用场景**：本地开发、单用户，IDE 直接拉起进程
-- **启动方式**：`python -m easy_sandbox.agent.mcp`（通常由 IDE 调用），由 `EBX_SANDBOX_API_KEY` / `EBX_SANDBOX_BASE_URL` / `EBX_SANDBOX_DOMAIN` / `EBX_DEFAULT_TEMPLATE` 配置（见下方环境变量）。CLI 的 server 是 `ebx mcp start [--template 名称] [--sandbox-api-key KEY] [--sandbox-base-url URL] [--sandbox-domain DOMAIN]`，另有 `ebx mcp stop` 与 `--http --background`
+- **启动方式**：`python -m agent_sandbox.agent.mcp`（通常由 IDE 调用），由 `ABX_SANDBOX_API_KEY` / `ABX_SANDBOX_BASE_URL` / `ABX_SANDBOX_DOMAIN` / `ABX_DEFAULT_TEMPLATE` 配置（见下方环境变量）。CLI 的 server 是 `abx mcp start [--template 名称] [--sandbox-api-key KEY] [--sandbox-base-url URL] [--sandbox-domain DOMAIN]`，另有 `abx mcp stop` 与 `--http --background`
 
 ### Streamable HTTP — 远程部署
 
@@ -285,23 +285,23 @@ graph LR
   - `GET /health` — 健康检查，返回 `{"status": "ok", "protocol": "2025-06-18"}`
 - **会话**：进程内 `SessionStore`；空闲 TTL 默认 3600 秒、并发会话上限默认 100；容量满时返回 503 与 JSON-RPC 错误 `-32000`
 - **版本协商**：`initialize` 在请求版本受支持时原样回显；本传输仅支持 `2025-06-18`，与 `GET /health` 一致。请求缺失或不支持的版本时协商到 `2025-06-18` —— 按 MCP 规范，服务器回复自己支持的版本，无法接受的客户端可自行断开。STDIO 传输独立保持 `2024-11-05`
-- **适用场景**：远程服务、团队共享、多客户端；用 CLI 的 `ebx mcp deploy` 生成的产物部署到阿里云 FC，或本地以 uvicorn 运行
-- **可选依赖**：Starlette + uvicorn（`pip install 'easy-sandbox[mcp]'`）
+- **适用场景**：远程服务、团队共享、多客户端；用 CLI 的 `abx mcp deploy` 生成的产物部署到阿里云 FC，或本地以 uvicorn 运行
+- **可选依赖**：Starlette + uvicorn（`pip install 'agent-sandbox[mcp]'`）
 
 ### 认证
 
-- **客户端 → MCP**：`Authorization: Bearer <token>`，常量时间比较校验；经 `EBX_MCP_AUTH_TOKEN` 配置。本机回环未配置时认证关闭；配置为空时 fail-closed（所有请求返回 401）。FC 产物调用 `require_auth_token`，token 为空则进程拒绝启动
-- **MCP → 沙箱**：`EBX_SANDBOX_API_KEY` 环境变量
+- **客户端 → MCP**：`Authorization: Bearer <token>`，常量时间比较校验；经 `ABX_MCP_AUTH_TOKEN` 配置。本机回环未配置时认证关闭；配置为空时 fail-closed（所有请求返回 401）。FC 产物调用 `require_auth_token`，token 为空则进程拒绝启动
+- **MCP → 沙箱**：`ABX_SANDBOX_API_KEY` 环境变量
 
 ### 环境变量
 
 | 变量 | 用途 |
 |------|------|
-| `EBX_SANDBOX_API_KEY` | 沙箱后端 API Key |
-| `EBX_SANDBOX_BASE_URL` | 平台 API URL |
-| `EBX_SANDBOX_DOMAIN` | 沙箱域名 |
-| `EBX_DEFAULT_TEMPLATE` | 默认沙箱模板 |
-| `EBX_MCP_AUTH_TOKEN` | 客户端认证 Bearer token（HTTP 传输） |
+| `ABX_SANDBOX_API_KEY` | 沙箱后端 API Key |
+| `ABX_SANDBOX_BASE_URL` | 平台 API URL |
+| `ABX_SANDBOX_DOMAIN` | 沙箱域名 |
+| `ABX_DEFAULT_TEMPLATE` | 默认沙箱模板 |
+| `ABX_MCP_AUTH_TOKEN` | 客户端认证 Bearer token（HTTP 传输） |
 
 ---
 
@@ -314,7 +314,7 @@ graph TD
         TR["工具注册表\n7 个 P0 工具 (agent/tools.py)"]
         SM["SandboxManager / SessionStore"]
         RR["JSON-RPC 路由\ninitialize / tools/list / tools/call / ping"]
-        SC["沙箱客户端\neasy_sandbox SDK"]
+        SC["沙箱客户端\nagent_sandbox SDK"]
     end
     TL --> RR
     TR --> RR
@@ -327,9 +327,9 @@ graph TD
 
 ## 5. 安装方式与 CLI
 
-Python server 与任何 STDIO MCP server 一样注册到 IDE。入口是 `python -m easy_sandbox.agent.mcp`；IDE 通过 `env` 传入凭证。示例见第 6 节。
+Python server 与任何 STDIO MCP server 一样注册到 IDE。入口是 `python -m agent_sandbox.agent.mcp`；IDE 通过 `env` 传入凭证。示例见第 6 节。
 
-`ebx mcp install --target cursor|claude|vscode`（把 `easy-sandbox` 条目合并进 IDE 配置）、`ebx mcp status`（server 名称、传输方式、工具列表、API key 是否已配置、各 IDE 的安装状态）、`ebx mcp start|stop` 与 `ebx mcp deploy` 命令属于 Node.js CLI；其设计见 CLI 的 [MCP Server 设计](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/design/mcp-server.md)。
+`abx mcp install --target cursor|claude|vscode`（把 `agent-sandbox` 条目合并进 IDE 配置）、`abx mcp status`（server 名称、传输方式、工具列表、API key 是否已配置、各 IDE 的安装状态）、`abx mcp start|stop` 与 `abx mcp deploy` 命令属于 Node.js CLI；其设计见 CLI 的 [MCP Server 设计](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/mcp-server.md)。
 
 ## 6. 配置示例
 
@@ -339,11 +339,11 @@ Python server 与任何 STDIO MCP server 一样注册到 IDE。入口是 `python
 // ~/Library/Application Support/Claude/claude_desktop_config.json
 {
   "mcpServers": {
-    "easy-sandbox": {
+    "agent-sandbox": {
       "command": "python",
-      "args": ["-m", "easy_sandbox.agent.mcp"],
+      "args": ["-m", "agent_sandbox.agent.mcp"],
       "env": {
-        "EBX_SANDBOX_API_KEY": "your-api-key"
+        "ABX_SANDBOX_API_KEY": "your-api-key"
       }
     }
   }
@@ -356,11 +356,11 @@ Python server 与任何 STDIO MCP server 一样注册到 IDE。入口是 `python
 // ~/.cursor/mcp.json
 {
   "mcpServers": {
-    "easy-sandbox": {
+    "agent-sandbox": {
       "command": "python",
-      "args": ["-m", "easy_sandbox.agent.mcp"],
+      "args": ["-m", "agent_sandbox.agent.mcp"],
       "env": {
-        "EBX_SANDBOX_API_KEY": "your-api-key"
+        "ABX_SANDBOX_API_KEY": "your-api-key"
       }
     }
   }
@@ -373,16 +373,16 @@ Python server 与任何 STDIO MCP server 一样注册到 IDE。入口是 `python
 // .vscode/mcp.json
 {
   "servers": {
-    "easy-sandbox": {
+    "agent-sandbox": {
       "type": "stdio",
       "command": "/path/to/python",
-      "args": ["-m", "easy_sandbox.agent.mcp"]
+      "args": ["-m", "agent_sandbox.agent.mcp"]
     }
   }
 }
 ```
 
-CLI 的 `ebx mcp install` 会写入等价条目，其 `command` 为 `ebx`，`args` 为 `["mcp", "start"]`。
+CLI 的 `abx mcp install` 会写入等价条目，其 `command` 为 `abx`，`args` 为 `["mcp", "start"]`。
 
 ### 远程（Streamable HTTP）
 
@@ -391,7 +391,7 @@ CLI 的 `ebx mcp install` 会写入等价条目，其 `command` 为 `ebx`，`arg
 ```json
 {
   "mcpServers": {
-    "easy-sandbox-remote": {
+    "agent-sandbox-remote": {
       "url": "https://<FC_HTTP_TRIGGER_URL>/mcp",
       "headers": {
         "Authorization": "Bearer <BEARER_TOKEN>"
@@ -403,7 +403,7 @@ CLI 的 `ebx mcp install` 会写入等价条目，其 `command` 为 `ebx`，`arg
 
 ## 7. FC 部署
 
-> **状态：** `ebx mcp deploy` 生成部署产物；自动调用 FC 部署 API **尚未实现**。生成后会打印手动部署步骤。
+> **状态：** `abx mcp deploy` 生成部署产物；自动调用 FC 部署 API **尚未实现**。生成后会打印手动部署步骤。
 
 ### 架构
 
@@ -411,48 +411,48 @@ MCP Server 可部署到阿里云函数计算 (FC) 作为 Streamable HTTP 端点�
 
 ```mermaid
 graph TB
-    CLI["ebx mcp deploy → 产物目录"]
-    FC["FC 函数: easy-sandbox-mcp（手动创建）"]
+    CLI["abx mcp deploy → 产物目录"]
+    FC["FC 函数: agent-sandbox-mcp（手动创建）"]
     Sandbox["Envd 沙箱（另一个 FC 实例）"]
 
     CLI --> FC
     FC --> Sandbox
 
     subgraph FC_Function ["FC 函数"]
-        ASGI["app.py → easy_sandbox.agent.mcp_http:asgi_app"]
+        ASGI["app.py → agent_sandbox.agent.mcp_http:asgi_app"]
         Trigger["HTTP 触发器: POST/GET/DELETE /mcp"]
         Session["会话亲和: Mcp-Session-Id"]
-        Env["环境变量: EBX_SANDBOX_API_KEY / EBX_MCP_AUTH_TOKEN / EBX_DEFAULT_TEMPLATE"]
+        Env["环境变量: ABX_SANDBOX_API_KEY / ABX_MCP_AUTH_TOKEN / ABX_DEFAULT_TEMPLATE"]
     end
 ```
 
 ### 部署命令
 
-产物由 `ebx mcp deploy` 生成（选项、区域解析、token 来源）；见 CLI 的 [MCP Server 设计](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/design/mcp-server.md#7-fc-部署) 与 [CLI 设计 — mcp deploy](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/design/cli-design.md)。以下各节描述产物及其运行的应用，二者由本 SDK 提供。
+产物由 `abx mcp deploy` 生成（选项、区域解析、token 来源）；见 CLI 的 [MCP Server 设计](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/mcp-server.md#7-fc-部署) 与 [CLI 设计 — mcp deploy](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/cli-design.md)。以下各节描述产物及其运行的应用，二者由本 SDK 提供。
 
 ### 产物内容
 
 | 文件 | 内容 |
 |------|------|
-| `requirements.txt` | `easy-sandbox[mcp]`、`uvicorn>=0.29` |
-| `app.py` | ASGI 入口，从 FC 函数环境变量读取 `EBX_MCP_AUTH_TOKEN`、`EBX_SANDBOX_API_KEY`、`EBX_SANDBOX_BASE_URL`、`EBX_SANDBOX_DOMAIN`、`EBX_DEFAULT_TEMPLATE` |
+| `requirements.txt` | `agent-sandbox[mcp]`、`uvicorn>=0.29` |
+| `app.py` | ASGI 入口，从 FC 函数环境变量读取 `ABX_MCP_AUTH_TOKEN`、`ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL`、`ABX_SANDBOX_DOMAIN`、`ABX_DEFAULT_TEMPLATE` |
 | `config.yaml` | YAML 部署清单（非 FC API 载荷）：`function_name`、`region`、`runtime`（`python3.10`）、`handler`（`app.app`）、`memory`、`timeout`、`environment_variables`、`http_trigger`（POST/GET/DELETE 方法 + `enable_session_affinity`）、可选 `custom_domain` |
 
-`ebx mcp deploy` 还会打印手动部署步骤（打包产物、经 FC 控制台或 SDK 创建函数、创建 HTTP 触发器、如支持则启用 `Mcp-Session-Id` 亲和）以及 Bearer token 打码的 IDE 配置模板。
+`abx mcp deploy` 还会打印手动部署步骤（打包产物、经 FC 控制台或 SDK 创建函数、创建 HTTP 触发器、如支持则启用 `Mcp-Session-Id` 亲和）以及 Bearer token 打码的 IDE 配置模板。
 
 ### 关键设计要点
 
 - **协议**：Streamable HTTP（MCP 规范 2025-06-18）；`initialize` 协商 `2025-06-18`，与 `GET /health` 一致（STDIO 独立保持 `2024-11-05`）
 - **会话亲和**：委托 FC 平台层通过 `Mcp-Session-Id` 头实现 — 无需应用层粘性路由
-- **认证**：双层 — 客户端→MCP 使用 `Authorization: Bearer <token>`；MCP→沙箱使用 FC 环境变量中的 `EBX_SANDBOX_API_KEY`
+- **认证**：双层 — 客户端→MCP 使用 `Authorization: Bearer <token>`；MCP→沙箱使用 FC 环境变量中的 `ABX_SANDBOX_API_KEY`
 - **生命周期**：沙箱按 MCP 会话懒创建；`DELETE /mcp` 触发清理；空闲会话 TTL 作为安全网
 - **冷启动**：FC 冷启动 (~1–3s) 可能与 MCP initialize 超时冲突；生产环境建议使用预留实例
 - **密钥**：`config.yaml` 含 API key 与 Bearer token — 切勿提交到版本控制
 
-详见 [MCP 集成指南](../guide/mcp-integration.md) 获取端到端用法；`ebx mcp deploy` 的完整参数参考在 CLI 仓库（见[部署命令](#部署命令)）。
+详见 [MCP 集成指南](../guide/mcp-integration.md) 获取端到端用法；`abx mcp deploy` 的完整参数参考在 CLI 仓库（见[部署命令](#部署命令)）。
 
 ---
 
-## 相关：ebx CLI
+## 相关：abx CLI
 
-Node.js `ebx` CLI 有自己的 MCP server 实现及相关命令：[MCP Server 设计（CLI）](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/design/mcp-server.md)（`ebx mcp install|start|stop|status|deploy`、TypeScript 实现的工具 schema、FC 部署）和 [CLI 命令体系](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/design/cli-design.md)。
+Node.js `abx` CLI 有自己的 MCP server 实现及相关命令：[MCP Server 设计（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/mcp-server.md)（`abx mcp install|start|stop|status|deploy`、TypeScript 实现的工具 schema、FC 部署）和 [CLI 命令体系](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/cli-design.md)。

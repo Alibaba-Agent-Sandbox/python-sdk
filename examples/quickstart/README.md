@@ -1,11 +1,11 @@
 # Quickstart Demos
 
-Quickstart demos showing core **Easy Sandbox** SDK capabilities — sandbox lifecycle, file operations, web services, data analysis, and declarative execution.
+Quickstart demos showing core **Agent Sandbox** SDK capabilities — sandbox lifecycle, file operations, web services, data analysis, and declarative execution.
 
 ## Prerequisites
 
 - Python 3.10+
-- `pip install easy-sandbox` (or dev install from repo root: `pip install -e ".[dev]"`)
+- `pip install agent-sandbox` (or dev install from the python-sdk repo root: `pip install -e ./server-sdk -e "./client-sdk[dev]"`)
 - Environment variables:
 
 ```bash
@@ -13,9 +13,9 @@ Quickstart demos showing core **Easy Sandbox** SDK capabilities — sandbox life
 export $(grep -v '^#' ../../.env | xargs)
 
 # Or set manually
-export E2B_API_KEY=your-api-key
-export E2B_API_URL=https://api.cn-hangzhou.e2b.fc.aliyuncs.com
-export E2B_DOMAIN=e2b.fc.aliyuncs.com
+export ABX_SANDBOX_API_KEY=your-api-key
+export ABX_SANDBOX_BASE_URL=https://api.cn-hangzhou.e2b.fc.aliyuncs.com
+export ABX_SANDBOX_DOMAIN=e2b.fc.aliyuncs.com
 ```
 
 ## Demo List
@@ -72,8 +72,8 @@ Content: 你好，Sandbox！Hello, Sandbox!
 ```
 Requires deploying a template with the `ports` capability.
 Install & deploy the node-web template from the source-of-truth repo first:
-  ebx template install node-web
-  ebx template deploy ~/.ebx/templates/Easy-Sandbox/awesome-templates/default/node-web
+  abx template install node-web
+  abx template deploy ~/.abx/templates/alibaba-agent-sandbox/awesome-templates/default/node-web
 Failure reason: template not ready, sandbox creation timed out
 ```
 

@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import pytest
 
-from easy_sandbox import Sandbox
-from easy_sandbox.models import errors as E
-from easy_sandbox.providers import registry, store
+from agent_sandbox import Sandbox
+from agent_sandbox.models import errors as E
+from agent_sandbox.providers import registry, store
 
 
 async def _create(**kw):
@@ -52,9 +52,9 @@ async def test_connect_list_and_kill_by_id(local_process):
     listed = await Sandbox.list(provider="local-process")
     assert sb.id in {i.sandbox_id for i in listed}
     await Sandbox.kill_by_id(sb.id, provider="local-process")
-    with pytest.raises(E.ProviderResourceNotFoundError) as exc:
+    with pytest.raises(E.SandboxNotFoundError) as exc:
         await Sandbox.connect(sb.id, provider="local-process")
-    assert exc.value.code == "E8005"
+    assert exc.value.code == "E2009"
     await other.close()
 
 
@@ -77,13 +77,14 @@ async def test_unsupported_features_raise_e8004(local_process):
             lambda: sb.pause(),
             lambda: sb.run_code("1 + 1"),
             lambda: sb.files.watch("/"),
+            lambda: sb.list_commands(),
+            lambda: sb.run("anything"),
         ):
             with pytest.raises(E.ProviderFeatureNotSupportedError) as exc:
                 await call()
             assert exc.value.code == "E8004"
             assert isinstance(exc.value, E.CapabilityNotSupportedError)
             assert exc.value.provider == "local-process"
-        assert await sb.list_commands() == []
     finally:
         await sb.kill()
 
@@ -92,6 +93,15 @@ async def test_set_timeout_supported(local_process):
     sb = await _create()
     try:
         await sb.set_timeout(120)
+    finally:
+        await sb.kill()
+
+
+async def test_capabilities_follow_the_declared_features(local_process):
+    sb = await _create()
+    try:
+        assert sb.capabilities == frozenset({"shell", "files"})
+        assert sb.info.region == ""
     finally:
         await sb.kill()
 
@@ -108,7 +118,7 @@ async def test_unknown_option_is_typed(local_process):
 
 
 async def test_default_provider_from_config_and_env(local_process, monkeypatch):
-    from easy_sandbox.providers import settings
+    from agent_sandbox.providers import settings
 
     settings.set_default_provider("local-process")
     sb = await Sandbox.create()
@@ -117,7 +127,7 @@ async def test_default_provider_from_config_and_env(local_process, monkeypatch):
     finally:
         await sb.kill()
     settings.set_default_provider(None)
-    monkeypatch.setenv("EBX_PROVIDER", "local-process")
+    monkeypatch.setenv("ABX_PROVIDER", "local-process")
     sb = await Sandbox.create()
     try:
         assert sb.provider == "local-process"
@@ -126,8 +136,8 @@ async def test_default_provider_from_config_and_env(local_process, monkeypatch):
 
 
 async def test_explicit_provider_beats_ambient_default(local_process, monkeypatch):
-    monkeypatch.setenv("EBX_PROVIDER", "local-process")
-    from easy_sandbox.api import sandbox as sandbox_mod
+    monkeypatch.setenv("ABX_PROVIDER", "local-process")
+    from agent_sandbox.api import sandbox as sandbox_mod
 
     prov, _ = sandbox_mod._select_provider("alicloud-express")
     assert prov is None  # built-in path
@@ -140,7 +150,7 @@ async def test_tampered_plugin_refuses_to_start(local_process):
 
 
 async def test_missing_required_config_is_a_config_error(iso, tmp_path):
-    from easy_sandbox.providers import installer
+    from agent_sandbox.providers import installer
     from tests.test_providers.helpers import write_plugin
 
     src = write_plugin(
@@ -150,11 +160,11 @@ async def test_missing_required_config_is_a_config_error(iso, tmp_path):
     installer.install(str(src), yes=True)
     with pytest.raises(E.InvalidCredentialsError) as exc:
         await Sandbox.create(provider="demo-prov")
-    assert "EBX_DEMO_PROV_API_TOKEN" in str(exc.value)
+    assert "ABX_DEMO_PROV_API_TOKEN" in str(exc.value)
 
 
 async def test_python_provider_object(iso):
-    from easy_sandbox.providers import Provider, ProviderInfra
+    from agent_sandbox.providers import Provider, ProviderInfra
 
     class Fake(Provider):
         id = "fake-py"
@@ -162,7 +172,7 @@ async def test_python_provider_object(iso):
         features = frozenset({"sandbox.lifecycle"})
 
         async def build_infra(self, config):
-            from easy_sandbox.models.sandbox import SandboxInfo
+            from agent_sandbox.models.sandbox import SandboxInfo
 
             class Proto:
                 async def create(self, cfg, *, request_timeout=None):
@@ -186,7 +196,7 @@ async def test_python_provider_object(iso):
 
 async def test_builtin_default_path_is_untouched(iso, monkeypatch):
     """No provider named anywhere: the original build path (auth + http + SandboxProtocol) is used."""
-    import easy_sandbox.api.sandbox as mod
+    import agent_sandbox.api.sandbox as mod
 
     built = {}
 
@@ -195,7 +205,7 @@ async def test_builtin_default_path_is_untouched(iso, monkeypatch):
             built["http"] = http
 
         async def create(self, cfg, *, request_timeout=None):
-            from easy_sandbox.models.sandbox import SandboxInfo
+            from agent_sandbox.models.sandbox import SandboxInfo
 
             return SandboxInfo(sandbox_id="sb-1", template=cfg.template, envd_url="https://x")
 
@@ -208,7 +218,7 @@ async def test_builtin_default_path_is_untouched(iso, monkeypatch):
 
 async def test_contract_kit_passes_for_reference_plugin(local_process):
     """Run the shipped contract tests against the reference plugin."""
-    from easy_sandbox.providers.testing import ProviderContractTests
+    from agent_sandbox.providers.testing import ProviderContractTests
 
     class Suite(ProviderContractTests):
         provider_id = "local-process"

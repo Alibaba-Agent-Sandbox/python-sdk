@@ -2,56 +2,36 @@
 
 from __future__ import annotations
 
-import threading
-from http.server import ThreadingHTTPServer
 from typing import TYPE_CHECKING, Any
 
-import pytest
-
-from easy_sandbox.server.app import SandboxRequestHandler, SandboxServer
-from easy_sandbox.server.registry import CommandRegistry
-from easy_sandbox.server.router import default_table
+from agent_sandbox.server.app import SandboxServer
+from agent_sandbox.server.router import default_table
 
 from ._live import Live, free_port
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    import pytest
 
 
-@pytest.fixture
-def bare_server(monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[int, ThreadingHTTPServer]]:
-    """Wire the handler the way pre-policy tests did (no ``policy_engine`` attribute)."""
-    monkeypatch.delenv("EBX_SERVER_POLICY", raising=False)
-    monkeypatch.delenv("EBX_SERVER_POLICY_FILE", raising=False)
-    httpd = ThreadingHTTPServer(("127.0.0.1", 0), SandboxRequestHandler)
-    httpd.auth_token = "tok"  # type: ignore[attr-defined]
-    httpd.registry = CommandRegistry()  # type: ignore[attr-defined]
-    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
-    thread.start()
-    yield httpd.server_address[1], httpd
-    httpd.shutdown()
-    httpd.server_close()
-
-
-def test_bare_handler_wiring_still_works(bare_server: Any) -> None:
-    port, _ = bare_server
-    live = Live.__new__(Live)
-    live.port = port
-    assert live.request("GET", "/health")[0] == 200
-    assert live.request("GET", "/capabilities")[0] == 401
-    status, body, _ = live.request("GET", "/capabilities", headers={"X-Access-Token": "tok"})
-    assert status == 200 and "groups" in body
-
-
-def test_unconfigured_server_has_no_engine(live_server: Any) -> None:
+def test_unconfigured_server_still_has_the_one_engine(live_server: Any) -> None:
     live: Live = live_server()
-    assert getattr(live.server._httpd, "policy_engine", None) is None
+    engine = live.server.policy_engine
+    assert engine is live.server._httpd.policy_engine  # type: ignore[union-attr]
+    assert engine.policy.configured is False
+    status, body = live.get("/capabilities")
+    assert status == 200 and body["policy"]["configured"] is False
+
+
+def test_unconfigured_server_serves_without_a_token(live_server: Any) -> None:
+    live: Live = live_server()
+    assert live.get("/health")[0] == 200
+    assert live.get("/system/info")[0] == 200
 
 
 def test_legacy_token_env_still_gates_everything(
     live_server: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("EBX_SERVER_TOKEN", "legacy-secret")
+    monkeypatch.setenv("ABX_SERVER_TOKEN", "legacy-secret")
     live: Live = live_server()
     assert live.get("/health")[0] == 200
     assert live.get("/system/info")[0] == 401
@@ -59,12 +39,10 @@ def test_legacy_token_env_still_gates_everything(
 
 
 def test_default_table_is_not_mutated_by_policy_servers(live_server: Any) -> None:
-    before = default_table().is_group_enabled
-    live_server(policy={"groups": {"dev_tools": True}})
-    from easy_sandbox.server.router import CapabilityGroup
-
-    assert before(CapabilityGroup.DEV_TOOLS) is False
-    assert default_table().is_group_enabled(CapabilityGroup.DEV_TOOLS) is False
+    before = default_table().group_overrides
+    live = live_server(policy={"groups": {"dev_tools": True}})
+    assert default_table().group_overrides == before
+    assert live.get("/git/status?path=/nonexistent")[0] != 404
 
 
 def test_policy_server_is_constructible_directly() -> None:

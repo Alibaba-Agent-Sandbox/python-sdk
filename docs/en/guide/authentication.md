@@ -1,18 +1,18 @@
 # Authentication
 
-> **Note:** The `ebx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @easy-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`easy-sandbox`) and the container-side runtime (`easy-sandbox-server`).
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`).
 
-Easy Sandbox supports two authentication modes: **API Key** and **AK/SK (Alibaba Cloud AccessKey)**.
+Agent Sandbox supports two authentication modes: **API Key** and **AK/SK (Alibaba Cloud AccessKey)**.
 
-Credentials belong to a [provider](providers.md). The built-in provider is **Alibaba Cloud Express Edition (阿里云极速版)**, id `alicloud-express`, and it is the default. The sandbox key is `EBX_SANDBOX_API_KEY`. Alibaba Cloud access keys use the official names `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. The region is `ALIBABA_CLOUD_REGION_ID`. Each key has one name.
+Credentials belong to a [provider](providers.md). The built-in provider is **Alibaba Cloud Express Edition (阿里云极速版)**, id `alicloud-express`, and it is the default. The sandbox key is `ABX_SANDBOX_API_KEY`. Alibaba Cloud access keys use the official names `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. The region is `ALIBABA_CLOUD_REGION_ID`. Each key has one name.
 
-> **Historical note**: the `ebx auth` CLI command group (`login`/`logout`/`status`/`switch`) was removed before the first stable release (`0.1.0`). Credentials are configured with the environment variables and `ebx config set sandbox_api_key` shown below; check the effective state with `ebx config list`.
+> **Historical note**: the `abx auth` CLI command group (`login`/`logout`/`status`/`switch`) was removed before the first stable release (`0.1.0`). Credentials are configured with the environment variables and `abx config set sandbox_api_key` shown below; check the effective state with `abx config list`.
 
 ---
 
 ## Authentication Overview
 
-Easy Sandbox provides three authentication paths for different scenarios:
+Agent Sandbox provides three authentication paths for different scenarios:
 
 - **API Key mode**: The most common approach. Accesses the platform API via the `Authorization: Bearer {api_key}` header. Suitable for personal development, CI/CD, SDK calls, and most other scenarios.
 - **AK/SK mode (Alibaba Cloud AccessKey) 🧪 Experimental**: Uses an Alibaba Cloud AccessKey pair to obtain a temporary API Key via token exchange. The framework is implemented but the token exchange endpoint is pending FC platform confirmation; the recommended approach is still API Key mode. Suitable for Alibaba Cloud ecosystem integration and enterprise environments using RAM role authorization.
@@ -26,34 +26,34 @@ API Key is the most common authentication method, sent to the platform API via t
 
 ### Configuration Methods
 
-#### 1. Environment variable (wins over `~/.ebx`)
+#### 1. Environment variable (wins over `~/.abx`)
 
 ```bash
-export EBX_SANDBOX_API_KEY="your-api-key"
+export ABX_SANDBOX_API_KEY="your-api-key"
 ```
 
-Set `EBX_SANDBOX_API_KEY`. That is the only environment variable for the sandbox API key.
+Set `ABX_SANDBOX_API_KEY`. That is the only environment variable for the sandbox API key.
 
-#### 2. Persisted file (`~/.ebx/.env`)
+#### 2. Persisted file (`~/.abx/.env`)
 
-The SDK also reads `~/.ebx/.env`, which the `ebx` CLI writes (`ebx config set sandbox_api_key ...`, file mode 600; see the [CLI Authentication guide](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/authentication.md)). The key is stored as `EBX_SANDBOX_API_KEY`. Access keys are stored as `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`.
+The SDK also reads `~/.abx/.env`, which the `abx` CLI writes (`abx config set sandbox_api_key ...`, file mode 600; see the [CLI Authentication guide](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authentication.md)). The key is stored as `ABX_SANDBOX_API_KEY`. Access keys are stored as `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`.
 
 #### 3. .env file
 
 Create a `.env` file in the project root directory:
 
 ```dotenv
-EBX_SANDBOX_API_KEY=your-api-key
+ABX_SANDBOX_API_KEY=your-api-key
 ```
 
-The SDK reads both `.env` files as separate layers. `./.env` wins for a key it sets. A key it omits still comes from `~/.ebx/.env`.
+The SDK reads both `.env` files as separate layers. `./.env` wins for a key it sets. A key it omits still comes from `~/.abx/.env`.
 
 1. `.env` in the current directory
-2. `~/.ebx/.env`
+2. `~/.abx/.env`
 
 #### 4. config.toml file
 
-Prefer `~/.ebx/.env` (mode 600) for the sandbox API key. `ebx config set sandbox_api_key` writes `EBX_SANDBOX_API_KEY` there. Non-secret connection settings belong in `~/.ebx/config.toml`:
+Prefer `~/.abx/.env` (mode 600) for the sandbox API key. `abx config set sandbox_api_key` writes `ABX_SANDBOX_API_KEY` there. Non-secret connection settings belong in `~/.abx/config.toml`:
 
 ```toml
 [transport]
@@ -61,10 +61,10 @@ sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
 sandbox_domain = "cn-hangzhou.e2b.fc.aliyuncs.com"
 ```
 
-#### 5. Code parameter (wins over the environment and over `~/.ebx`)
+#### 5. Code parameter (wins over the environment and over `~/.abx`)
 
 ```python
-from easy_sandbox.api.sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 # Pass directly when creating
 sandbox = await Sandbox.create(sandbox_api_key="your-api-key")
@@ -92,9 +92,9 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
 
 These are the only environment variables for the AccessKey pair. The region is `ALIBABA_CLOUD_REGION_ID`.
 
-#### 2. Persisted file (`~/.ebx/.env`)
+#### 2. Persisted file (`~/.abx/.env`)
 
-Written by `ebx config set access_key_id ...` / `access_key_secret ...` (file mode 600; see the [CLI Authentication guide](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/authentication.md)) and stored as `ALICLOUD_ACCESS_KEY_ID=...` / `ALICLOUD_ACCESS_KEY_SECRET=...` in `~/.ebx/.env`, which the SDK reads.
+Written by `abx config set access_key_id ...` / `access_key_secret ...` (file mode 600; see the [CLI Authentication guide](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authentication.md)) and stored as `ALICLOUD_ACCESS_KEY_ID=...` / `ALICLOUD_ACCESS_KEY_SECRET=...` in `~/.abx/.env`, which the SDK reads.
 
 #### 3. Code Parameters
 
@@ -122,27 +122,29 @@ Credentials are resolved in the following priority order (highest to lowest):
 
 ```mermaid
 flowchart TD
-    A["1. Code parameters (sandbox_api_key= / access_key_id= / llm_api_key=)"] --> B["2. Process environment"]
+    A["1. Code parameters (sandbox_api_key= / access_key_id=)"] --> B["2. Process environment"]
     B --> C["3. ./.env (per key; missing keys fall through)"]
-    C --> D["4. ~/.ebx (.env, then config.toml)"]
+    C --> D["4. ~/.abx (.env, then config.toml)"]
     D --> E["5. Built-in default, or InvalidAPIKeyError E1001 when a sandbox key is required"]
 ```
 
-LLM keys, the GitHub token, and the region use this same chain. A blank or whitespace-only value is skipped. Each key has one environment variable. The names and defaults are listed in [Credential resolution](../reference/configuration.md#credential-resolution).
+The GitHub token and the region use this same chain. A blank or whitespace-only value is skipped. Each key has one environment variable. The names and defaults are listed in [Credential resolution](../reference/configuration.md#credential-resolution).
 
 ### Credentials and providers
 
-The generic sandbox key (`sandbox_api_key`, environment variable `EBX_SANDBOX_API_KEY`) and the Alibaba Cloud AK/SK belong to the built-in provider. If you switch to a [provider plugin](providers.md), the plugin does **not** receive them unless its manifest asks for them and you consented at install time. A plugin has its own scoped credential keys, for example `EBX_MY_CLOUD_API_KEY` for a provider `my-cloud`. This prevents a key for one cloud from being sent to another.
+The generic sandbox key (`sandbox_api_key`, environment variable `ABX_SANDBOX_API_KEY`) and the Alibaba Cloud AK/SK belong to the built-in provider. If you switch to a [provider plugin](providers.md), the plugin does **not** receive them unless its manifest asks for them and you consented at install time. A plugin has its own scoped credential keys, for example `ABX_MY_CLOUD_API_KEY` for a provider `my-cloud`. This prevents a key for one cloud from being sent to another.
+
+Every plugin option follows one rule: the canonical name is `ABX_<PROVIDER_ID>_<FIELD>` (dashes become underscores), and a manifest may add the vendor's own variable as an alias with `env = [...]`. Secret fields (`secret = true`) live only in the environment or `.env` files (mode 0600) and are refused on the command line; other fields can also live under `[providers.<id>]` in `config.toml`. Verified with OpenSandbox on 2026-10-13: `ABX_OPENSANDBOX_API_KEY` and `ABX_OPENSANDBOX_BASE_URL` were enough to drive a real server from both the CLI and the SDK; `OPEN_SANDBOX_API_KEY` and `OPEN_SANDBOX_DOMAIN` are its declared native aliases, and the canonical name wins when both are set. A plugin that declares `[core] inherit = ["sandbox_api_key"]` receives the generic key only after you consent at install time, and `abx provider info <id>` shows that list under "Inherits".
 
 Within the same level, API Key takes precedence over AK/SK:
 - If both `sandbox_api_key` and `access_key_id` are provided, API Key is used
-- If both `EBX_SANDBOX_API_KEY` and `ALICLOUD_ACCESS_KEY_ID` are set, `EBX_SANDBOX_API_KEY` is used
+- If both `ABX_SANDBOX_API_KEY` and `ALICLOUD_ACCESS_KEY_ID` are set, `ABX_SANDBOX_API_KEY` is used
 
 ---
 
 ## Secret Storage (File-Based)
 
-Secrets are stored in `~/.ebx/secrets.json`, a plaintext JSON file protected by `chmod 600` file permissions. This is suitable for local development only.
+Secrets are stored in `~/.abx/secrets.json`, a plaintext JSON file protected by `chmod 600` file permissions. This is suitable for local development only.
 
 > **⚠️ Warning**: `secrets.json` stores secrets in **plaintext**. It relies solely on POSIX file permissions (`chmod 600`) for access control. For production environments, use a dedicated secrets management service.
 
@@ -150,12 +152,12 @@ Manage secrets via environment variables or the `.env` files, or pass `envs={"MY
 
 ```bash
 # Set API Key via environment variable (recommended)
-export EBX_SANDBOX_API_KEY="your-api-key"
+export ABX_SANDBOX_API_KEY="your-api-key"
 ```
 
-The CLI equivalents (`ebx config set`, `ebx create --env`) are in the [CLI Authentication guide](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/authentication.md).
+The CLI equivalents (`abx config set`, `abx create --env`) are in the [CLI Authentication guide](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authentication.md).
 
-> **Historical note**: macOS Keychain integration was removed in the overdesign cleanup (ADR 2026-09-23). The `ebx secret` CLI command group has also been removed. All secret management is now done through environment variables, `.env` files, or `ebx config set` (a CLI command).
+> **Historical note**: macOS Keychain integration was removed in the overdesign cleanup (ADR 2026-09-23). The `abx secret` CLI command group has also been removed. All secret management is now done through environment variables, `.env` files, or `abx config set` (a CLI command).
 
 ---
 
@@ -180,7 +182,7 @@ envd authentication requires the following HTTP headers (set automatically by th
 
 ```text
 [E1001] API key cannot be empty
-  Suggestion: Check your EBX_SANDBOX_API_KEY environment variable or pass sandbox_api_key.
+  Suggestion: Check your ABX_SANDBOX_API_KEY environment variable or pass sandbox_api_key.
 ```
 
 **Solution**: Ensure a valid API Key is configured via any of the methods above.
@@ -204,6 +206,6 @@ envd authentication requires the following HTTP headers (set automatically by th
 
 ---
 
-## Related: the ebx CLI
+## Related: the abx CLI
 
-Setting credentials from the command line (`ebx config set` / `list` / `get`, `ebx create --env`) is documented in the CLI repository: [CLI Authentication](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/authentication.md).
+Setting credentials from the command line (`abx config set` / `list` / `get`, `abx create --env`) is documented in the CLI repository: [CLI Authentication](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authentication.md).

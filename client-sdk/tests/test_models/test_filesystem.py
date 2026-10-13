@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from easy_sandbox.models.filesystem import (
+from agent_sandbox.models.filesystem import (
     FileInfo,
     FileType,
     WatchEvent,

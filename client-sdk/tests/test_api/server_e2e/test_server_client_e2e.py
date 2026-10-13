@@ -1,4 +1,4 @@
-"""``ServerClient`` against a real in-process ``SandboxServer`` (unconfigured, legacy behaviour)."""
+"""``ServerClient`` against a real in-process ``SandboxServer`` (the built-in defaults)."""
 
 from __future__ import annotations
 
@@ -13,15 +13,16 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from easy_sandbox.api.server_client import ServerClient
-from easy_sandbox.models.errors import (
+from agent_sandbox.api.server_client import ServerClient
+from agent_sandbox.models.errors import (
     CommandNotFoundError,
     CommandTimeoutError,
     EndpointNotAvailableError,
     FileNotFoundError_,
+    FilePolicyDeniedError,
     ServerAPIError,
 )
-from easy_sandbox.models.server import ShellEventType
+from agent_sandbox.models.server import ShellEventType
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def server(server_factory: Any, tree: Path) -> ServerClient:  # noqa: F811
-    from easy_sandbox.server.registry import CommandArg, CommandRegistry
+    from agent_sandbox.server.registry import CommandArg, CommandRegistry
 
     registry = CommandRegistry()
 
@@ -58,11 +59,18 @@ class TestCoreAndDiscovery:
         assert server.capabilities is None
         caps = await server.discover()
         assert server.capabilities is caps
-        assert caps.legacy is False and caps.configured is False
+        assert caps.configured is False and caps.api_version == 2
         assert caps.can("files_upload_stream") and caps.can("shell")
         assert caps.can("code_run") is False
-        assert caps.denial("code_run") == "group_disabled"
-        assert caps.groups["file_ops"] is True
+        assert caps.denial("code_run") == "endpoint_disabled"
+        assert caps.rule("code_run") == "default:opt-in:dev_tools"
+        assert caps.groups["file_ops"] is True and caps.groups["dev_tools"] is False
+        assert caps.group_summary["dev_tools"]["enabled"] == 0
+        assert caps.group_summary["file_ops"]["enabled"] == caps.group_summary["file_ops"]["total"]
+        with pytest.raises(EndpointNotAvailableError) as disabled:
+            caps.require("code_run")
+        assert "default:opt-in:dev_tools" in str(disabled.value)
+        assert disabled.value.rule == "default:opt-in:dev_tools"
 
     async def test_commands_list_and_run(self, server: ServerClient) -> None:
         commands = await server.commands.list()
@@ -177,7 +185,10 @@ class TestFiles:
 
 
 class TestProcess:
-    async def test_shell(self, server: ServerClient, tmp_path: Path) -> None:
+    async def test_shell(
+        self, server: ServerClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("ABX_SERVER_BASE_DIR", str(tmp_path))
         result = await server.process.shell("echo hi")
         assert result.success and result.stdout == "hi\n"
         result = await server.process.shell(
@@ -186,6 +197,16 @@ class TestProcess:
         assert result.stdout.split() == [str(tmp_path.resolve()), "1"]
         failed = await server.process.shell("sh -c 'exit 3'")
         assert failed.exit_code == 3 and not failed.success
+
+    async def test_shell_cwd_outside_the_base_dir_is_denied(
+        self, server: ServerClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        inside = tmp_path / "inside"
+        inside.mkdir()
+        monkeypatch.setenv("ABX_SERVER_BASE_DIR", str(inside))
+        with pytest.raises(FilePolicyDeniedError) as denied:
+            await server.process.shell("pwd", cwd=str(tmp_path))
+        assert denied.value.error_code == "path_not_allowed" and denied.value.status_code == 403
 
     async def test_shell_timeout(self, server: ServerClient) -> None:
         with pytest.raises(CommandTimeoutError):
@@ -377,7 +398,7 @@ class TestSyncTwins:
 
 
 def test_base64_is_not_leaked_into_models() -> None:
-    from easy_sandbox.models.server import ArchiveResult
+    from agent_sandbox.models.server import ArchiveResult
 
     result = ArchiveResult(content_base64=base64.b64encode(b"zz").decode(), bytes=2)
     assert result.data == b"zz" and result.size == 2

@@ -15,7 +15,7 @@ Style: E2B (imperative)
 import asyncio
 import os
 
-from easy_sandbox import Sandbox, SandboxError
+from agent_sandbox import Sandbox, SandboxError
 
 # ── 爬虫脚本（将在沙箱中执行）/ Scraper script (runs inside sandbox) ───────
 SCRAPER_SCRIPT = """\
@@ -120,7 +120,7 @@ if __name__ == "__main__":
 
 async def main() -> None:
     """E2B 风格: 命令式网页爬取演示 / E2B style: imperative web scraping demo."""
-    api_key = os.environ.get("E2B_API_KEY", "")
+    api_key = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
     print("=" * 55)
     print("  E2B 风格网页爬取 Demo / E2B-Style Web Scraper")

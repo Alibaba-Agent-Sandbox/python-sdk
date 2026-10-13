@@ -8,19 +8,15 @@ import json
 from pathlib import Path
 
 import pytest
+import tomllib
 
-try:
-    import tomllib
-except ModuleNotFoundError:  # Python 3.10
-    import tomli as tomllib
-
-from easy_sandbox.providers import store
-from easy_sandbox.providers.base import ConfigField
-from easy_sandbox.providers.epp import exit_code_for, map_error
-from easy_sandbox.transport import config as cfg
-from easy_sandbox.transport.config import ProviderSchema, _builtin_schema, resolve_all
-from easy_sandbox.utils.config_keys import Sources
-from easy_sandbox.utils.toml_write import dumps_toml
+from agent_sandbox.providers import store
+from agent_sandbox.providers.base import ConfigField
+from agent_sandbox.providers.epp import exit_code_for, map_error
+from agent_sandbox.transport import config as cfg
+from agent_sandbox.transport.config import ProviderSchema, _builtin_schema, resolve_all
+from agent_sandbox.utils.config_keys import Sources
+from agent_sandbox.utils.toml_write import dumps_toml
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 CLI_COPY = Path(__file__).resolve().parents[4] / "cli" / "docs" / "design" / "fixtures"
@@ -30,6 +26,7 @@ NAMES = (
     "tree-digest-vectors.json",
     "epp-error-mapping.json",
     "migration-vectors.json",
+    "epp-methods.json",
 )
 
 
@@ -38,7 +35,7 @@ def load(name: str):
 
 
 def _generator():
-    spec = importlib.util.spec_from_file_location("ebx_fixture_generate", FIXTURES / "generate.py")
+    spec = importlib.util.spec_from_file_location("abx_fixture_generate", FIXTURES / "generate.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -156,7 +153,7 @@ def test_migration_vectors(vector, tmp_path):
 
 
 def test_config_keys_fixture_matches_registry():
-    from easy_sandbox.utils.config_keys import export_schema
+    from agent_sandbox.utils.config_keys import export_schema
 
     assert load("config-keys.json") == export_schema()
     keys = {(k["scope"], k["key"]) for k in load("config-keys.json")["keys"]}

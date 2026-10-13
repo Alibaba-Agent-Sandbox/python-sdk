@@ -9,17 +9,17 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from easy_sandbox.models.process import (
+from agent_sandbox.models.process import (
     ProcessChunk,
     ProcessChunkType,
     ProcessInfo,
 )
-from easy_sandbox.protocol.process import (
+from agent_sandbox.protocol.process import (
     _HTTP_TIMEOUT_BUFFER,
     ProcessProtocol,
     _parse_process_chunk,
 )
-from easy_sandbox.transport.auth import EnvdTokenManager
+from agent_sandbox.transport.auth import EnvdTokenManager
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -268,7 +268,7 @@ class TestEnvdPayloadIsolation:
     envd envs → controlled exclusively by create-time and per-call params.
     """
 
-    _SERVER_INJECTED_VAR = "_EBX_BOUNDARY_SERVER_ONLY"
+    _SERVER_INJECTED_VAR = "_ABX_BOUNDARY_SERVER_ONLY"
     _SERVER_INJECTED_VALUE = "should_not_appear_in_payload"
 
     async def test_start_env_param_only_in_payload(self, envd_url: str, envd_token: Any) -> None:

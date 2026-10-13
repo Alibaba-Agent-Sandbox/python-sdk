@@ -10,9 +10,9 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from easy_sandbox.api.files import FilesModule
-from easy_sandbox.models.errors import FileOperationError
-from easy_sandbox.protocol.filesystem import FilesystemProtocol
+from agent_sandbox.api.files import FilesModule
+from agent_sandbox.models.errors import FileOperationError
+from agent_sandbox.protocol.filesystem import FilesystemProtocol
 from tests.test_known_issues.helpers import ENVD, make_http, token
 
 
@@ -28,7 +28,7 @@ async def test_upload_timeout_is_a_clear_file_operation_error(httpx_mock) -> Non
     assert "timed out" in text.lower()
     assert "/tmp/big.bin" in text
     assert "1000000" in text
-    assert "EBX_HTTP_TIMEOUT" in text
+    assert "ABX_HTTP_TIMEOUT" in text
     assert not isinstance(err.value, httpx.HTTPError)
 
 
@@ -37,4 +37,4 @@ async def test_download_timeout_is_a_clear_file_operation_error(httpx_mock) -> N
     with pytest.raises(FileOperationError) as err:
         await _files().read_bytes("/tmp/big.bin")
     assert "timed out" in str(err.value).lower()
-    assert "EBX_HTTP_TIMEOUT" in str(err.value)
+    assert "ABX_HTTP_TIMEOUT" in str(err.value)

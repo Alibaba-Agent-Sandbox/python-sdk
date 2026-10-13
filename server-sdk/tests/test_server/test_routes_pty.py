@@ -1,4 +1,4 @@
-"""Tests for easy_sandbox.server.routes_pty — PTY WebSocket terminal system.
+"""Tests for agent_sandbox.server.routes_pty — PTY WebSocket terminal system.
 
 REST tests follow the same pattern as test_app.py (_find_free_port, _start_server,
 _request).  WebSocket tests use ``websockets.connect`` async client.
@@ -21,16 +21,18 @@ import pytest
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="PTY not supported on Windows")
 
 # Import triggers route registration side-effect.
-import easy_sandbox.server.routes_pty  # noqa: F401, E402
-from easy_sandbox.server.app import SandboxRequestHandler  # noqa: E402
-from easy_sandbox.server.registry import CommandRegistry  # noqa: E402
-from easy_sandbox.server.router import CapabilityGroup, default_table  # noqa: E402
-from easy_sandbox.server.routes_pty import (  # noqa: E402
+import agent_sandbox.server.routes_pty  # noqa: F401, E402
+from agent_sandbox.server.app import SandboxRequestHandler  # noqa: E402
+from agent_sandbox.server.registry import CommandRegistry  # noqa: E402
+from agent_sandbox.server.router import CapabilityGroup, default_table  # noqa: E402
+from agent_sandbox.server.routes_pty import (  # noqa: E402
     PtySession,
     PtySessionManager,
     pty_session_manager,
     start_pty_server,
 )
+
+from ._live import wire  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Helpers (same pattern as test_app.py)
@@ -56,8 +58,7 @@ def _start_server(
     if registry is None:
         registry = CommandRegistry()
     httpd = ThreadingHTTPServer(("127.0.0.1", port), SandboxRequestHandler)
-    httpd.auth_token = auth_token  # type: ignore[attr-defined]
-    httpd.registry = registry  # type: ignore[attr-defined]
+    wire(httpd, auth_token=auth_token, registry=registry)
     # Use the default route table which has PTY routes registered.
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()

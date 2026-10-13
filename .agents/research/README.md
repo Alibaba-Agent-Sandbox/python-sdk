@@ -14,7 +14,7 @@
 | 2 | [Modal.com 设计模式深度分析](./modal-analysis.md) | 装饰器 API 体系、Image 链式构建、Sandbox 功能、Skills 系统 |
 | 3 | [云沙箱竞品深度对比](./competitor-comparison.md) | Modal vs E2B vs Daytona 功能矩阵、SDK 设计、差异化竞争点 |
 | 4 | [云沙箱用户场景全景调研](./user-scenarios.md) | 10 大使用场景、沙箱模式映射、用户需求缺口分析 |
-| 5 | [MCP 与 AI Agent 集成调研](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/.agents/research/mcp-and-agent-integration.md) | MCP 协议、现有实现、Tool 分级设计、Agent 框架集成模式、Skills 系统 |
+| 5 | [MCP 与 AI Agent 集成调研](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/research/mcp-and-agent-integration.md) | MCP 协议、现有实现、Tool 分级设计、Agent 框架集成模式、Skills 系统 |
 
 ## 阅读顺序建议
 

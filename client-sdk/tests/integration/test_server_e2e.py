@@ -22,12 +22,15 @@ import urllib.request
 from typing import Any
 
 import pytest
-from easy_sandbox.server import CommandArg, CommandRegistry, SandboxServer
-from easy_sandbox.server.routes import (
-    _KNOWN_BUILTINS,
-    _enabled_builtins,
-    disable_builtin,
-    enable_builtin,
+
+pytest.importorskip("agent_sandbox.server", reason="needs the agent-sandbox-server distribution")
+
+from agent_sandbox.server import (  # noqa: E402
+    CapabilityGroup,
+    CommandArg,
+    CommandRegistry,
+    SandboxServer,
+    default_table,
 )
 
 # ---------------------------------------------------------------------------
@@ -74,11 +77,10 @@ def _http_request(
 
 @pytest.fixture()
 def _reset_builtins():
-    """Ensure the module-level enabled-builtins set is restored after each test."""
-    original = set(_enabled_builtins)
+    """Group aliases live on the shared default table; start and end every test clean."""
+    default_table().clear_group_overrides()
     yield
-    _enabled_builtins.clear()
-    _enabled_builtins.update(original)
+    default_table().clear_group_overrides()
 
 
 @pytest.fixture()
@@ -114,12 +116,8 @@ def server_with_commands(_reset_builtins, tmp_path):
     port = _free_port()
     server = SandboxServer(host="127.0.0.1", registry=registry)
 
-    # Enable all builtins
-    for name in _KNOWN_BUILTINS:
-        enable_builtin(name)
-
     # Set base dir for upload / download path safety
-    os.environ["EBX_SERVER_BASE_DIR"] = str(tmp_path)
+    os.environ["ABX_SERVER_BASE_DIR"] = str(tmp_path)
 
     t = threading.Thread(target=server.serve, kwargs={"port": port}, daemon=True)
     t.start()
@@ -138,7 +136,7 @@ def server_with_commands(_reset_builtins, tmp_path):
     yield base_url, registry, tmp_path
 
     server.shutdown()
-    os.environ.pop("EBX_SERVER_BASE_DIR", None)
+    os.environ.pop("ABX_SERVER_BASE_DIR", None)
 
 
 # ---------------------------------------------------------------------------
@@ -255,7 +253,7 @@ class TestShellExecution:
 
     def test_shell_disabled_returns_404(self, server_with_commands):
         base_url, _, _ = server_with_commands
-        disable_builtin("shell")
+        default_table().disable_group(CapabilityGroup.PROCESS)
         status, body = _http_request(
             f"{base_url}/shell",
             method="POST",
@@ -263,8 +261,7 @@ class TestShellExecution:
         )
         assert status == 404
         assert "disabled" in body["error"].lower()
-        # Re-enable for other tests
-        enable_builtin("shell")
+        assert body["code"] == "endpoint_disabled" and body["endpoint"] == "shell"
 
 
 # ---------------------------------------------------------------------------
@@ -298,7 +295,7 @@ class TestFileUploadDownload:
         downloaded = base64.b64decode(body["content_base64"])
         assert downloaded == content
 
-    def test_path_traversal_upload_returns_400(self, server_with_commands):
+    def test_path_traversal_upload_is_denied(self, server_with_commands):
         base_url, _, tmp_path = server_with_commands
         content_b64 = base64.b64encode(b"hack").decode("ascii")
         # Try to escape the base dir
@@ -309,21 +306,22 @@ class TestFileUploadDownload:
             method="POST",
             data={"path": evil_path, "content_base64": content_b64},
         )
-        assert status == 400
-        assert "escapes" in body["error"].lower() or "path" in body["error"].lower()
+        assert status == 403
+        assert body["code"] == "path_not_allowed"
 
-    def test_path_traversal_download_returns_400(self, server_with_commands):
+    def test_path_traversal_download_is_denied(self, server_with_commands):
         base_url, _, tmp_path = server_with_commands
         evil_path = str(tmp_path / ".." / ".." / "etc" / "passwd")
 
         status, body = _http_request(
             f"{base_url}/download?path={urllib.request.quote(evil_path)}",
         )
-        assert status == 400
+        assert status == 403
+        assert body["code"] == "path_not_allowed"
 
     def test_upload_disabled_returns_404(self, server_with_commands):
         base_url, _, tmp_path = server_with_commands
-        disable_builtin("upload")
+        default_table().disable_group(CapabilityGroup.FILE_OPS)
         content_b64 = base64.b64encode(b"data").decode("ascii")
         file_path = str(tmp_path / "nope.txt")
 
@@ -333,17 +331,17 @@ class TestFileUploadDownload:
             data={"path": file_path, "content_base64": content_b64},
         )
         assert status == 404
-        enable_builtin("upload")
+        assert body["code"] == "endpoint_disabled"
 
     def test_download_disabled_returns_404(self, server_with_commands):
         base_url, _, tmp_path = server_with_commands
-        disable_builtin("download")
+        default_table().disable_group(CapabilityGroup.FILE_OPS)
 
         status, body = _http_request(
             f"{base_url}/download?path=/some/file",
         )
         assert status == 404
-        enable_builtin("download")
+        assert body["code"] == "endpoint_disabled"
 
 
 # ---------------------------------------------------------------------------
@@ -352,13 +350,13 @@ class TestFileUploadDownload:
 
 
 class TestAuthentication:
-    """Token-based auth via EBX_SERVER_TOKEN."""
+    """Token-based auth via ABX_SERVER_TOKEN."""
 
     def test_auth_required_when_token_set(self, _reset_builtins, tmp_path):
-        """Requests without a token return 401 when EBX_SERVER_TOKEN is set."""
+        """Requests without a token return 401 when ABX_SERVER_TOKEN is set."""
         token = "test-secret-token-12345"
-        os.environ["EBX_SERVER_TOKEN"] = token
-        os.environ["EBX_SERVER_BASE_DIR"] = str(tmp_path)
+        os.environ["ABX_SERVER_TOKEN"] = token
+        os.environ["ABX_SERVER_BASE_DIR"] = str(tmp_path)
 
         registry = CommandRegistry()
         registry.register("ping", lambda: "pong")
@@ -412,8 +410,8 @@ class TestAuthentication:
             assert body["result"] == "pong"
         finally:
             server.shutdown()
-            os.environ.pop("EBX_SERVER_TOKEN", None)
-            os.environ.pop("EBX_SERVER_BASE_DIR", None)
+            os.environ.pop("ABX_SERVER_TOKEN", None)
+            os.environ.pop("ABX_SERVER_BASE_DIR", None)
 
 
 # ---------------------------------------------------------------------------

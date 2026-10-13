@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""End-to-end capability validation for easy-sandbox.
+"""End-to-end capability validation for agent-sandbox.
 
 真实运行的端到端能力验证脚本。四部分：
 
   Part A — GitHub install 管线：先看 GitHub rate_limit 预算；有 token / 预算充足
            时真实拉取 GitHub 模板，否则回退本地 registry（并如实标注 GitHub 远程
            因限额 BLOCKED，代码路径已在 #43 验证）。记录 POST /templates 返回码。
-  Part B — E2B-compat 能力验证（真实 FC，template="base"）：shell / files / code /
+  Part B — E2B-style API 能力验证（真实 FC，template="base"）：shell / files / code /
            组合工作流 / 生命周期。
   Part C — Modal 风格声明式（真实 FC，template="code-interpreter-v1"）：@sandbox 装饰器。
   Part D — 从 Part A 安装的自定义模板创建沙箱（很可能因 legacy 构建未完成而失败，
            如实记录现实边界，不伪装成功）。
 
-真实后端需要 E2B_API_KEY（由 load_config 从项目根 .env 自动加载）。
+真实后端需要 ABX_SANDBOX_API_KEY（由 load_config 从项目根 .env 自动加载）。
 本脚本 **不打印任何密钥明文**，仅打印 "present: True/False"。
 每个沙箱都在 finally 中 kill，避免泄漏计费资源。
 
@@ -37,12 +37,13 @@ import traceback
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Bootstrap: locate project root & make easy_sandbox importable (src layout)
+# Bootstrap: locate project root & make agent_sandbox importable (client-sdk /
+# server-sdk src layout; both share the agent_sandbox namespace)
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-_SRC = PROJECT_ROOT / "src"
-if _SRC.is_dir() and str(_SRC) not in sys.path:
-    sys.path.insert(0, str(_SRC))
+for _src in (PROJECT_ROOT / "client-sdk" / "src", PROJECT_ROOT / "server-sdk" / "src"):
+    if _src.is_dir() and str(_src) not in sys.path:
+        sys.path.insert(0, str(_src))
 
 # ---------------------------------------------------------------------------
 # Result tracking
@@ -74,19 +75,19 @@ def _exc_summary(exc: BaseException) -> str:
 
 
 # ---------------------------------------------------------------------------
-# CLI subprocess helper (ebx is not on PATH → invoke the click group directly)
+# CLI subprocess helper (the abx CLI lives in the separate ``cli`` repository;
+# the ``abx`` executable from PATH, or ``$ABX_BIN``, is invoked)
 # ---------------------------------------------------------------------------
 def run_cli(args: list[str], timeout: int = 180) -> tuple[int, str, str]:
-    """Run the ebx CLI in a subprocess and capture (returncode, stdout, stderr).
+    """Run the abx CLI in a subprocess and capture (returncode, stdout, stderr).
 
     stdin is closed (DEVNULL) so any interactive prompt in the CLI (e.g. the
     build+deploy confirmation in ``template install``) can never block waiting
     for input — the CLI's non-TTY guard fires instead of hanging.
     """
-    code = "import sys; from easy_sandbox.cli.main import cli; cli(sys.argv[1:])"
     try:
         proc = subprocess.run(
-            [sys.executable, "-c", code, *args],
+            [os.environ.get("ABX_BIN", "abx"), *args],
             cwd=str(PROJECT_ROOT),
             stdin=subprocess.DEVNULL,
             capture_output=True,
@@ -96,6 +97,8 @@ def run_cli(args: list[str], timeout: int = 180) -> tuple[int, str, str]:
         return proc.returncode, proc.stdout, proc.stderr
     except subprocess.TimeoutExpired as exc:
         return 124, exc.stdout or "", (exc.stderr or "") + "\n<TIMEOUT>"
+    except FileNotFoundError:
+        return 127, "", "abx executable not found on PATH (npm install -g @agent-sandbox/cli)"
 
 
 def _parse_template_id(stdout: str) -> str | None:
@@ -158,7 +161,7 @@ def part_a() -> str | None:
     have_budget = token_present or (remaining is not None and remaining > 0)
 
     # A-01: GitHub remote install (only when budget/token allows)
-    github_ref = "Easy-Sandbox/awesome-templates//python-hello"
+    github_ref = "alibaba-agent-sandbox/awesome-templates//python-hello"
     if have_budget:
         # --yes: this is an automated run; skip the interactive build+deploy
         # confirmation prompt (which would otherwise block on stdin).
@@ -229,14 +232,14 @@ def part_a() -> str | None:
         )
 
     # A-03: cache landing check — 精确校验本次 install 的引用是否落缓存。
-    # 缓存布局：~/.ebx/templates/{owner}/{repo}/{ref|default}/{subdir}/template.yaml
+    # 缓存布局：~/.abx/templates/{owner}/{repo}/{ref|default}/{subdir}/template.yaml
     # 本地 in-place install 不落缓存（预期），只有真实 GitHub install 才落缓存。
-    cache_dir = Path.home() / ".ebx" / "templates"
+    cache_dir = Path.home() / ".abx" / "templates"
     if github_installed:
-        # A-01 用的引用：Easy-Sandbox/awesome-templates//python-hello（默认分支）
+        # A-01 用的引用：alibaba-agent-sandbox/awesome-templates//python-hello（默认分支）
         expected = (
             cache_dir
-            / "Easy-Sandbox"
+            / "alibaba-agent-sandbox"
             / "awesome-templates"
             / "default"
             / "python-hello"
@@ -255,7 +258,7 @@ def part_a() -> str | None:
             "A-03 cache landing",
             "BLOCKED",
             "no real GitHub install this run (A-01 BLOCKED); local in-place install "
-            "does not populate ~/.ebx/templates by design, so precise cache-ref "
+            "does not populate ~/.abx/templates by design, so precise cache-ref "
             "verification is not applicable (NA).",
         )
 
@@ -263,12 +266,12 @@ def part_a() -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# Part B — E2B-compat capability validation (real FC, template="base")
+# Part B — E2B-style API capability validation (real FC, template="base")
 # ---------------------------------------------------------------------------
 async def _part_b_core() -> None:
-    from easy_sandbox.compat import Sandbox
-    from easy_sandbox.models.errors import CapabilityNotSupportedError
-    from easy_sandbox.models.process import ProcessChunkType
+    from agent_sandbox.compat import Sandbox
+    from agent_sandbox.models.errors import CapabilityNotSupportedError
+    from agent_sandbox.models.process import ProcessChunkType
 
     # Reuse one "base" sandbox for E2B-01..05/08/09 (minimise billing);
     # lifecycle + ci-v1 probe get their own sandboxes.
@@ -471,7 +474,7 @@ async def _part_b_core() -> None:
 
 
 def part_b(api_key_present: bool) -> None:
-    hr("Part B — E2B-compat 能力验证（真实 FC, template=\"base\"）")
+    hr("Part B — E2B-style API 能力验证（真实 FC, template=\"base\"）")
     if not api_key_present:
         for case in (
             "E2B-01 shell",
@@ -485,7 +488,7 @@ def part_b(api_key_present: bool) -> None:
             "E2B-09 stream",
             "E2B-03b code@ci-v1",
         ):
-            record("B", case, "BLOCKED", "no E2B_API_KEY in env/.env → cannot reach real FC")
+            record("B", case, "BLOCKED", "no ABX_SANDBOX_API_KEY in env/.env → cannot reach real FC")
         return
     try:
         asyncio.run(_part_b_core())
@@ -501,10 +504,10 @@ def part_c(api_key_present: bool) -> None:
     hr("Part C — Modal 风格声明式（真实 FC, template=\"code-interpreter-v1\"）")
     if not api_key_present:
         for case in ("MOD-01 add", "MOD-02 numpy", "MOD-04 cross-check"):
-            record("C", case, "BLOCKED", "no E2B_API_KEY in env/.env → cannot reach real FC")
+            record("C", case, "BLOCKED", "no ABX_SANDBOX_API_KEY in env/.env → cannot reach real FC")
         return
 
-    from easy_sandbox.declarative import sandbox
+    from agent_sandbox.declarative import sandbox
 
     # MOD-01: simple add
     @sandbox(template="code-interpreter-v1", timeout=300)
@@ -550,7 +553,7 @@ def part_c(api_key_present: bool) -> None:
         modal_res = mult(6, 7)
 
         async def _e2b_side() -> int:
-            from easy_sandbox.compat import Sandbox
+            from agent_sandbox.compat import Sandbox
 
             sb = await Sandbox.create(template="base", timeout=300)
             try:
@@ -577,7 +580,7 @@ def part_c(api_key_present: bool) -> None:
 def part_d(api_key_present: bool, template_id: str | None) -> None:
     hr("Part D — 从已安装自定义模板创建沙箱（如实记录现实边界）")
     if not api_key_present:
-        record("D", "D-01 custom template", "BLOCKED", "no E2B_API_KEY → cannot reach real FC")
+        record("D", "D-01 custom template", "BLOCKED", "no ABX_SANDBOX_API_KEY → cannot reach real FC")
         return
     if not template_id:
         record(
@@ -589,7 +592,7 @@ def part_d(api_key_present: bool, template_id: str | None) -> None:
         return
 
     async def _try_create() -> str:
-        from easy_sandbox.compat import Sandbox
+        from agent_sandbox.compat import Sandbox
 
         sb = await Sandbox.create(template=template_id, timeout=120)
         try:
@@ -637,17 +640,17 @@ def summarize() -> int:
 
 
 def main() -> int:
-    hr("easy-sandbox E2E 能力验证 — 真实运行")
+    hr("agent-sandbox E2E 能力验证 — 真实运行")
     print(f"  project root: {PROJECT_ROOT}")
 
     # Load config (auto-reads .env). NEVER print the key itself.
     api_key_present = False
     try:
-        from easy_sandbox.transport.config import load_config
+        from agent_sandbox.transport.config import load_config
 
         cfg = load_config()
         api_key_present = bool(cfg.api_key)
-        print(f"  E2B_API_KEY present: {api_key_present}")
+        print(f"  ABX_SANDBOX_API_KEY present: {api_key_present}")
         print(f"  api_url: {cfg.api_url}")
         print(f"  domain:  {cfg.domain}")
     except Exception as exc:  # noqa: BLE001

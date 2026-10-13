@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from easy_sandbox.utils import config_keys as ck
-from easy_sandbox.utils.config_keys import Sources, resolve_key
+from agent_sandbox.utils import config_keys as ck
+from agent_sandbox.utils.config_keys import Sources, resolve_key
 
 ALL_KEYS = (*ck.CORE_KEYS, *ck.ALICLOUD_EXPRESS_KEYS)
 
@@ -49,11 +49,22 @@ class TestRegistry:
         assert {
             "sandbox_api_key",
             "access_key_secret",
-            "llm_api_key",
             "github_token",
-            "acr_password",
             "mcp_auth_token",
         } <= secrets
+
+    def test_registry_declares_only_keys_the_client_reads(self):
+        # Template build (ACR) and template generation (LLM) settings belong to the CLI.
+        names = {k.key for k in ALL_KEYS}
+        assert not {n for n in names if n.startswith(("acr_", "llm_"))}
+        assert "team_id" not in names
+
+    def test_endpoint_descriptions_name_the_active_provider(self):
+        for name in ("sandbox_api_key", "sandbox_base_url"):
+            key = ck.get_key(name)
+            assert key is not None
+            assert "active provider" in key.description
+            assert "E2B" not in key.description + key.description_zh
 
     def test_each_key_has_one_environment_name(self):
         for key in ALL_KEYS:
@@ -65,11 +76,8 @@ class TestRegistry:
         secret = ck.get_key("access_key_secret", "alicloud-express")
         assert secret.env == "ALICLOUD_ACCESS_KEY_SECRET"
         assert ck.get_key("region", "alicloud-express").env == "ALIBABA_CLOUD_REGION_ID"
-        assert ck.get_key("acr_namespace", "alicloud-express").env == "ACR_NAMESPACE"
-        assert ck.get_key("acr_password", "alicloud-express").env == "ACR_PASSWORD"
         assert ck.get_key("github_token").env == "GITHUB_TOKEN"
-        assert ck.get_key("sandbox_api_key").env == "EBX_SANDBOX_API_KEY"
-        assert ck.get_key("llm_api_key").env == "EBX_LLM_API_KEY"
+        assert ck.get_key("sandbox_api_key").env == "ABX_SANDBOX_API_KEY"
 
     def test_retired_names_are_not_resolved(self):
         retired = (
@@ -79,8 +87,8 @@ class TestRegistry:
             "SANDBOX_REGION",
             "AccessKey",
             "AccessSecret",
-            "EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID",
-            "EBX_ALICLOUD_EXPRESS_REGION",
+            "ABX_ALICLOUD_EXPRESS_ACCESS_KEY_ID",
+            "ABX_ALICLOUD_EXPRESS_REGION",
             "OPENAI_API_KEY",
             "DASHSCOPE_API_KEY",
         )
@@ -91,8 +99,8 @@ class TestRegistry:
     def test_env_names_order_is_scoped_then_canonical(self):
         key = ck.get_key("sandbox_api_key")
         assert ck.env_names(key, scoped_for="my-prov") == (
-            "EBX_MY_PROV_SANDBOX_API_KEY",
-            "EBX_SANDBOX_API_KEY",
+            "ABX_MY_PROV_SANDBOX_API_KEY",
+            "ABX_SANDBOX_API_KEY",
         )
 
     def test_schema_export_is_stable_and_complete(self):
@@ -116,7 +124,7 @@ class TestRegistry:
             ("a--b", False),
             ("alicloud-express", False),
             ("alicloud-foo", False),
-            ("ebx-foo", False),
+            ("abx-foo", False),
             ("x" * 41, False),
             ("1abc", False),
             ("a_b", False),
@@ -126,7 +134,7 @@ class TestRegistry:
         assert (ck.validate_provider_id(pid) is None) is ok
 
     def test_provider_env_name(self):
-        assert ck.provider_env_name("my-provider", "api_token") == "EBX_MY_PROVIDER_API_TOKEN"
+        assert ck.provider_env_name("my-provider", "api_token") == "ABX_MY_PROVIDER_API_TOKEN"
 
 
 class TestCoerce:
@@ -160,8 +168,8 @@ class TestResolvePrecedence:
     def test_layer_order(self):
         src = _src(
             overrides={"sandbox_api_key": "o"},
-            environ={"EBX_SANDBOX_API_KEY": "e"},
-            dotenv=[{"EBX_SANDBOX_API_KEY": "d1"}, {"EBX_SANDBOX_API_KEY": "d2"}],
+            environ={"ABX_SANDBOX_API_KEY": "e"},
+            dotenv=[{"ABX_SANDBOX_API_KEY": "d1"}, {"ABX_SANDBOX_API_KEY": "d2"}],
             toml={"transport": {"sandbox_api_key": "t"}},
         )
         r = resolve_key(self.KEY, src)
@@ -172,7 +180,7 @@ class TestResolvePrecedence:
         src.environ = {}
         r = resolve_key(self.KEY, src)
         assert (r.value, r.layer, r.layer_index) == ("d1", "dotenv", 0)
-        src.dotenv = [{}, {"EBX_SANDBOX_API_KEY": "d2"}]
+        src.dotenv = [{}, {"ABX_SANDBOX_API_KEY": "d2"}]
         r = resolve_key(self.KEY, src)
         assert (r.value, r.layer_index) == ("d2", 1)
         src.dotenv = []
@@ -182,20 +190,20 @@ class TestResolvePrecedence:
     def test_retired_name_does_not_beat_the_canonical_name(self):
         src = _src(
             environ={"SANDBOX_API_KEY": "legacy-env", "E2B_API_KEY": "compat-env"},
-            dotenv=[{"EBX_SANDBOX_API_KEY": "canon-dotenv"}],
+            dotenv=[{"ABX_SANDBOX_API_KEY": "canon-dotenv"}],
         )
         assert resolve_key(self.KEY, src).value == "canon-dotenv"
 
     def test_blank_values_fall_through(self):
         src = _src(
-            environ={"EBX_SANDBOX_API_KEY": "  "},
-            dotenv=[{"EBX_SANDBOX_API_KEY": "from-dotenv"}],
+            environ={"ABX_SANDBOX_API_KEY": "  "},
+            dotenv=[{"ABX_SANDBOX_API_KEY": "from-dotenv"}],
         )
         assert resolve_key(self.KEY, src).value == "from-dotenv"
 
     def test_scoped_name_beats_canonical(self):
         src = _src(
-            environ={"EBX_MY_PROV_SANDBOX_API_KEY": "scoped", "EBX_SANDBOX_API_KEY": "plain"}
+            environ={"ABX_MY_PROV_SANDBOX_API_KEY": "scoped", "ABX_SANDBOX_API_KEY": "plain"}
         )
         assert resolve_key(self.KEY, src, scoped_for="my-prov").value == "scoped"
         assert resolve_key(self.KEY, src).value == "plain"

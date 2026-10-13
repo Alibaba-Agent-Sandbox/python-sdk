@@ -42,7 +42,7 @@ def write_plugin(
     files: dict[str, str | bytes] | None = None,
 ) -> Path:
     root.mkdir(parents=True, exist_ok=True)
-    (root / "ebx-provider.toml").write_text(
+    (root / "abx-provider.toml").write_text(
         MANIFEST.format(id=id, version=version, extra=extra), encoding="utf-8"
     )
     (root / "provider.py").write_text("print('plugin')\n", encoding="utf-8")

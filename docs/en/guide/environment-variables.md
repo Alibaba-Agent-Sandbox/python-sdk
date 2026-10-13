@@ -1,8 +1,8 @@
 # Environment Variables in Sandboxes
 
-> **Note:** The `ebx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @easy-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`easy-sandbox`) and the container-side runtime (`easy-sandbox-server`).
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`).
 
-This guide explains how environment variables work inside Easy Sandbox, covering the two distinct process scopes, injection methods, the direct-exec execution model, and recommended patterns.
+This guide explains how environment variables work inside Agent Sandbox, covering the two distinct process scopes, injection methods, the direct-exec execution model, and recommended patterns.
 
 > **Design decision:** There is no `sandbox.set_env()` API. The envd process tree and the SandboxServer `os.environ` are two separate, non-unifiable scopes. Attempting to provide a single "set env" abstraction would be misleading. Use the scope-specific injection methods described below instead.
 
@@ -53,7 +53,7 @@ sandbox = await Sandbox.create(
 **CLI:**
 
 ```bash
-ebx create --template base --env DATABASE_URL=postgres://... --env APP_ENV=staging
+abx create --template base --env DATABASE_URL=postgres://... --env APP_ENV=staging
 ```
 
 **`@sandbox` decorator:**
@@ -83,15 +83,7 @@ result = await sandbox.run_code(
 )
 ```
 
-> **Note the parameter naming difference:** `commands.run()` uses `env=` (singular); `run_code()` uses `envs=` (plural). This follows the E2B compatibility convention.
-
-### Shorthand via `sandbox.run()`
-
-`sandbox.run()` is a top-level shortcut for `sandbox.commands.run()`:
-
-```python
-result = await sandbox.run("printenv MY_VAR", env={"MY_VAR": "hello"})
-```
+> **Note the parameter naming difference:** `commands.run()` uses `env=` (singular); `run_code()` uses `envs=` (plural). This follows the E2B naming convention.
 
 ---
 
@@ -105,16 +97,16 @@ Pipes, redirects, semicolons, and logical operators now work **without** manual 
 
 ```python
 # ✅ Works — pipe is auto-detected and wrapped
-result = await sandbox.run("ls /tmp | grep log")
+result = await sandbox.commands.run("ls /tmp | grep log")
 
 # ✅ Works — redirect is auto-detected and wrapped
-result = await sandbox.run("echo hello > /tmp/hello.txt")
+result = await sandbox.commands.run("echo hello > /tmp/hello.txt")
 
 # ✅ Works — && is auto-detected and wrapped
-result = await sandbox.run("cd /app && python main.py")
+result = await sandbox.commands.run("cd /app && python main.py")
 
 # ✅ Works — semicolon is auto-detected and wrapped
-result = await sandbox.run("mkdir -p /tmp/out; cp file.txt /tmp/out/")
+result = await sandbox.commands.run("mkdir -p /tmp/out; cp file.txt /tmp/out/")
 ```
 
 ### Variable Expansion Still Requires Manual Wrapping
@@ -123,15 +115,15 @@ Shell variable expansion (`$VAR`, `${VAR}`) is **not** auto-detected because `$`
 
 ```python
 # ❌ WRONG — $HOME is passed as a literal string (no auto-wrap triggered)
-result = await sandbox.run("echo $HOME")
+result = await sandbox.commands.run("echo $HOME")
 # stdout: "$HOME" (literal)
 
 # ✅ CORRECT — use sh -c for variable expansion
-result = await sandbox.run("sh -c 'echo $HOME'")
+result = await sandbox.commands.run("sh -c 'echo $HOME'")
 # stdout: "/root"
 
 # ✅ CORRECT — use printenv to read a single variable
-result = await sandbox.run("printenv HOME")
+result = await sandbox.commands.run("printenv HOME")
 # stdout: "/root"
 ```
 
@@ -139,10 +131,10 @@ result = await sandbox.run("printenv HOME")
 
 ```python
 # ❌ WRONG — * is passed literally (no auto-wrap triggered)
-result = await sandbox.run("ls *.py")
+result = await sandbox.commands.run("ls *.py")
 
 # ✅ CORRECT
-result = await sandbox.run("sh -c 'ls *.py'")
+result = await sandbox.commands.run("sh -c 'ls *.py'")
 ```
 
 ### Rule of Thumb
@@ -204,7 +196,7 @@ print(resp.json()["updated"])  # ["MY_CONFIG"]
 The Server rejects attempts to overwrite:
 
 - System variables: `PATH`, `HOME`, `USER`, `SHELL`
-- SDK internals: any variable starting with `EBX_` (including `EBX_SERVER_TOKEN`)
+- SDK internals: any variable starting with `ABX_` (including `ABX_SERVER_TOKEN`)
 
 ---
 
@@ -225,7 +217,7 @@ sandbox = await Sandbox.create(
 )
 
 # All subsequent commands see these variables
-result = await sandbox.run("printenv DATABASE_URL")
+result = await sandbox.commands.run("printenv DATABASE_URL")
 ```
 
 ### Pattern 2: Per-Call env Dict (Scoped Overrides)
@@ -235,7 +227,7 @@ Best for variables that vary between invocations:
 ```python
 env = {"BATCH_ID": "batch-001", "DRY_RUN": "true"}
 
-result = await sandbox.run("sh -c 'python process.py'", env=env)
+result = await sandbox.commands.run("sh -c 'python process.py'", env=env)
 ```
 
 ### Pattern 3: Reuse an env Dict Object
@@ -245,8 +237,8 @@ Keep a shared dict and pass it to each call:
 ```python
 shared_env = {"DATABASE_URL": db_url, "LOG_LEVEL": "DEBUG"}
 
-await sandbox.run("sh -c 'python migrate.py'", env=shared_env)
-await sandbox.run("sh -c 'python seed.py'", env=shared_env)
+await sandbox.commands.run("sh -c 'python migrate.py'", env=shared_env)
+await sandbox.commands.run("sh -c 'python seed.py'", env=shared_env)
 await sandbox.run_code("import os; print(os.environ['LOG_LEVEL'])", envs=shared_env)
 ```
 
@@ -267,18 +259,18 @@ httpx.post(
 )
 
 # This variable is now visible to Server command handlers:
-result = await sandbox.custom("my_handler")
+result = await sandbox.run("my_handler")
 ```
 
 ---
 
 ## Client Configuration Variables Are Not Sandbox Variables
 
-The variables that configure the SDK and CLI on **your** machine (`EBX_SANDBOX_API_KEY`, `EBX_PROVIDER`, `ALIBABA_CLOUD_REGION_ID`, `EBX_LLM_API_KEY`, ...) are read by the client and are never copied into a sandbox. To make a value visible inside a sandbox, pass it explicitly with `envs=` / `--env`. Each client setting has one variable. Names and precedence are in the [Configuration Reference](../reference/configuration.md#environment-variables).
+The variables that configure the SDK and CLI on **your** machine (`ABX_SANDBOX_API_KEY`, `ABX_PROVIDER`, `ALIBABA_CLOUD_REGION_ID`, ...) are read by the client and are never copied into a sandbox. To make a value visible inside a sandbox, pass it explicitly with `envs=` / `--env`. Each client setting has one variable. Names and precedence are in the [Configuration Reference](../reference/configuration.md#environment-variables).
 
 Two consequences:
 
-- Inside the Server, every name starting with `EBX_` is protected (see above). Do not use `EBX_*` for your own sandbox variables.
+- Inside the Server, every name starting with `ABX_` is protected (see above). Do not use `ABX_*` for your own sandbox variables.
 - [Provider plugins](providers.md) do not inherit your shell environment either. A plugin process starts with a scrubbed environment; the configuration values it needs are sent to it in its `initialize` request.
 
 ---
@@ -289,7 +281,7 @@ Two consequences:
 
 2. **`GET /env` redaction**: The Server's `GET /env` endpoint automatically redacts variables whose names contain `TOKEN`, `SECRET`, `KEY`, `PASSWORD`, or `CREDENTIAL`.
 
-3. **Protected Server variables**: `POST /env` blocks writes to `PATH`, `HOME`, `USER`, `SHELL`, and all `EBX_*` variables to prevent accidental breakage.
+3. **Protected Server variables**: `POST /env` blocks writes to `PATH`, `HOME`, `USER`, `SHELL`, and all `ABX_*` variables to prevent accidental breakage.
 
 4. **No cross-scope leakage**: Variables set via `POST /env` on the Server are invisible to envd processes, and vice versa. This is a security feature, not a bug.
 
@@ -314,6 +306,6 @@ Two consequences:
 
 - [SDK Usage Guide](sdk-usage.md) — `commands.run()` and `run_code()` usage
 - [Declarative Usage](declarative-usage.md) — `@sandbox(envs=)` decorator
-- [CLI Tutorial](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/cli-tutorial.md) — `ebx create --env`
+- [CLI Tutorial](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/cli-tutorial.md) — `abx create --env`
 - [Configuration Reference](../reference/configuration.md) — SDK/CLI environment variables (one name per key)
 - [Providers](providers.md) — selecting and installing sandbox providers

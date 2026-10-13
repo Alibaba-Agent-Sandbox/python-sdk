@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Bring up a real, local, secret-free OpenSandbox (lifecycle server + Docker runtime)
-# for live integration tests of the Easy Sandbox `opensandbox` provider plugin.
+# for live integration tests of the Agent Sandbox `opensandbox` provider plugin.
 #
 #   local-up.sh [up]      install (idempotent), start, wait healthy, print env
 #   opensandbox-local-up.sh down      stop the server and remove every sandbox container
@@ -16,7 +16,7 @@
 #                       v1.1.0 lacks `argv` and strips line endings in /command output)
 #   OSB_PORT            lifecycle server port                 (default 8080)
 #   OSB_API_KEY         server API key                        (default local-dev-key; NOT a secret)
-#   OSB_WORKDIR         state dir (venv, config, db, logs)    (default $XDG_CACHE_HOME/easy-sandbox/opensandbox-local)
+#   OSB_WORKDIR         state dir (venv, config, db, logs)    (default $XDG_CACHE_HOME/agent-sandbox/opensandbox-local)
 #   OSB_WITH_EGRESS=1   also pull/enable the egress sidecar (network policy tests)
 #   OSB_WITH_CODE_INTERPRETER=1  also pull opensandbox/code-interpreter (run_code tests)
 set -euo pipefail
@@ -29,7 +29,7 @@ OSB_CI_IMAGE="${OSB_CI_IMAGE:-opensandbox/code-interpreter:v1.1.0}"
 OSB_BASE_IMAGE="${OSB_BASE_IMAGE:-python:3.12-slim}"
 OSB_PORT="${OSB_PORT:-8080}"
 OSB_API_KEY="${OSB_API_KEY:-local-dev-key}"
-OSB_WORKDIR="${OSB_WORKDIR:-${XDG_CACHE_HOME:-$HOME/.cache}/easy-sandbox/opensandbox-local}"
+OSB_WORKDIR="${OSB_WORKDIR:-${XDG_CACHE_HOME:-$HOME/.cache}/agent-sandbox/opensandbox-local}"
 OSB_WITH_EGRESS="${OSB_WITH_EGRESS:-1}"
 OSB_WITH_CODE_INTERPRETER="${OSB_WITH_CODE_INTERPRETER:-0}"
 OSB_DOCKER_DATA_IMG="${OSB_DOCKER_DATA_IMG:-/var/lib/docker-loop.img}"

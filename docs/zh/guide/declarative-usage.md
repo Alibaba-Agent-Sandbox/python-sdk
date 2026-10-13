@@ -7,7 +7,7 @@
 ## 基本用法
 
 ```python
-from easy_sandbox.declarative import sandbox
+from agent_sandbox.declarative import sandbox
 
 @sandbox(template="code-interpreter-v1")
 def analyze(data):
@@ -36,7 +36,6 @@ print(result)
     api_key=None,                     # API Key 覆盖
     api_url=None,                     # 平台 API URL 覆盖
     domain=None,                      # 域名覆盖
-    image=None,                       # Image 对象（优先于 template）
     cpu=None,                         # CPU 核数
     memory=None,                      # 内存 MB
 )
@@ -58,7 +57,6 @@ def my_func():
 | `api_key` | `str` | `None` | API Key 覆盖 |
 | `api_url` | `str` | `None` | 平台 URL 覆盖 |
 | `domain` | `str` | `None` | 平台域名 |
-| `image` | `Image` | `None` | Image 对象（优先于 template） |
 | `cpu` | `int` | `None` | CPU 核数 |
 | `memory` | `int` | `None` | 内存 MB |
 
@@ -116,34 +114,12 @@ def use_flask():
 
 ---
 
-## 使用 Image 对象
-
-`image` 参数优先于 `template`，先构建镜像再创建沙箱：
-
-```python
-from easy_sandbox.api.image import Image
-from easy_sandbox.declarative import sandbox
-
-image = (
-    Image.from_template("python-base")
-    .pip_install("flask", "sqlalchemy")
-    .apt_install("postgresql-client")
-)
-
-@sandbox(image=image)
-def my_app():
-    from flask import Flask
-    return "Flask app ready"
-```
-
----
-
 ## 注册式命令
 
 除了装饰器模式，`sandbox` 对象还支持注册式命令：
 
 ```python
-from easy_sandbox.declarative import sandbox
+from agent_sandbox.declarative import sandbox
 
 @sandbox.register
 def demo(x: int, y: str) -> str:
@@ -163,12 +139,11 @@ commands = sandbox.list_registered()
 
 注册函数的参数仅支持标量类型：`str`、`int`、`float`、`bool`。
 
-### 内置路由
+这是命名命令的唯一机制。注册在模板 `commands.py` 里（或用 `@sandbox.register`）的命令由沙箱内 server 提供，普通 `Sandbox` 用 `await sandbox.run("demo", x=1, y="hello")` 调用（`POST /commands/demo`）。`template.yaml` 没有 `custom_commands` 键，客户端会拒绝它。
 
-```python
-sandbox.register.upload()    # 启用 POST /upload 路由
-sandbox.register.download()  # 启用 GET /download 路由
-```
+### 文件传输
+
+`sandbox.register` 只注册命名命令。文件上传和下载是 server `file_ops` 组的端点（默认开启），客户端用 `sandbox.files` 或 `ServerClient.files`。
 
 ### 启动 HTTP Server
 

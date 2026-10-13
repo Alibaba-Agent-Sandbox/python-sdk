@@ -7,7 +7,7 @@ This file does not start a server and does not read a model API key. The
 
     python hosted_qwen.py http://127.0.0.1:9000
 
-The base URL may also come from ``EBX_TEMPLATE_URL``. ``EBX_SERVER_TOKEN`` is
+The base URL may also come from ``ABX_TEMPLATE_URL``. ``ABX_SERVER_TOKEN`` is
 sent as ``Authorization: Bearer`` when it is set.
 """
 
@@ -22,12 +22,12 @@ import urllib.request
 
 
 def origin() -> str:
-    """Server origin from argv or ``EBX_TEMPLATE_URL`` (no ``/v1`` suffix)."""
+    """Server origin from argv or ``ABX_TEMPLATE_URL`` (no ``/v1`` suffix)."""
     raw = sys.argv[1].strip() if len(sys.argv) > 1 and sys.argv[1].strip() else ""
     if not raw:
-        raw = os.environ.get("EBX_TEMPLATE_URL", "").strip()
+        raw = os.environ.get("ABX_TEMPLATE_URL", "").strip()
     if not raw:
-        sys.exit("pass the base URL as argv[1] or set EBX_TEMPLATE_URL")
+        sys.exit("pass the base URL as argv[1] or set ABX_TEMPLATE_URL")
     raw = raw.rstrip("/")
     if raw.endswith("/v1"):
         raw = raw[:-3]
@@ -41,7 +41,7 @@ def call(base: str, method: str, path: str, body: dict | None = None) -> tuple[i
     request.add_header("Accept", "application/json")
     if data is not None:
         request.add_header("Content-Type", "application/json")
-    token = os.environ.get("EBX_SERVER_TOKEN")
+    token = os.environ.get("ABX_SERVER_TOKEN")
     if token:
         request.add_header("Authorization", f"Bearer {token}")
     try:

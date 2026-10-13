@@ -21,6 +21,3 @@ docs/en/design/repository-layout.md
 
 # This note describes the patterns the guard rejects.
 .agents/notes/implemented/process/*-open-source-hygiene.md
-
-# Documented product default for EBX_AGENTS_STATE_DIR, not a developer scratch directory.
-docs/en/design/server-sdk-v2/reviews/independent-security.md|/tmp/easy-sandbox

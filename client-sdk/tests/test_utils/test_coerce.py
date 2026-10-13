@@ -1,8 +1,7 @@
-"""Unit tests for the shared ``easy_sandbox.utils.coerce`` module.
+"""Unit tests for the shared ``agent_sandbox.utils.coerce`` module.
 
 Covers ``parse_scalar`` and ``coerce_kwargs`` with both
-:class:`CommandArg` (server) and :class:`CustomCommandArg` (declarative)
-arg types to guarantee identical behaviour after the dedup refactor.
+:class:`CommandArg` (server) and the declarative layer's argument descriptor.
 """
 
 from __future__ import annotations
@@ -10,10 +9,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from easy_sandbox.server.registry import CommandArg
 
-from easy_sandbox.models.template import CustomCommandArg
-from easy_sandbox.utils.coerce import coerce_kwargs, parse_scalar
+from agent_sandbox.declarative.decorator import _CommandArg
+from agent_sandbox.utils.coerce import coerce_kwargs, parse_scalar
+
+pytest.importorskip("agent_sandbox.server", reason="needs the agent-sandbox-server distribution")
+
+from agent_sandbox.server.registry import CommandArg  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # parse_scalar
@@ -116,17 +118,17 @@ class TestCoerceKwargsCommandArg:
 
 
 # ---------------------------------------------------------------------------
-# coerce_kwargs with CustomCommandArg (declarative Pydantic model)
+# coerce_kwargs with the declarative layer's _CommandArg
 # ---------------------------------------------------------------------------
 
 
-class TestCoerceKwargsCustomCommandArg:
-    """``coerce_kwargs`` with :class:`CustomCommandArg` (declarative layer)."""
+class TestCoerceKwargsDeclarativeArg:
+    """``coerce_kwargs`` with the declarative ``_CommandArg``."""
 
-    def _args(self) -> list[CustomCommandArg]:
+    def _args(self) -> list[_CommandArg]:
         return [
-            CustomCommandArg(name="a", type="integer", required=True),
-            CustomCommandArg(name="b", type="float", required=False, default="1.5"),
+            _CommandArg(name="a", type="integer", required=True),
+            _CommandArg(name="b", type="float", required=False, default="1.5"),
         ]
 
     def test_full_kwargs(self) -> None:
@@ -173,9 +175,9 @@ class TestCoerceBooleanDefaults:
 
 def test_client_and_server_coerce_copies_are_identical() -> None:
     """The client and server distributions each ship ``coerce``; they must not drift."""
-    import easy_sandbox.server._coerce as server_coerce
+    server_coerce = pytest.importorskip("agent_sandbox.server._coerce")
 
-    import easy_sandbox.utils.coerce as client_coerce
+    import agent_sandbox.utils.coerce as client_coerce
 
     client_src = Path(client_coerce.__file__).read_text(encoding="utf-8")
     server_src = Path(server_coerce.__file__).read_text(encoding="utf-8")

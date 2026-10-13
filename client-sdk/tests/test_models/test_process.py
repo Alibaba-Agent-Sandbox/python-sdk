@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from easy_sandbox.models.process import (
+from agent_sandbox.models.process import (
     CodeResult,
     OutputFile,
     ProcessChunk,

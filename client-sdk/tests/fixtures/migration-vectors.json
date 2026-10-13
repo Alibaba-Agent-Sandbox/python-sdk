@@ -224,7 +224,7 @@
     {
       "name": "env: canonical present wins",
       "toml": {},
-      "env": "EBX_SANDBOX_API_KEY=new\nE2B_API_KEY=old\n",
+      "env": "ABX_SANDBOX_API_KEY=new\nE2B_API_KEY=old\n",
       "plan": [
         {
           "file": "toml",
@@ -239,7 +239,7 @@
           "config_format": 2
         }
       },
-      "env_after": "EBX_SANDBOX_API_KEY=new\nE2B_API_KEY=old\n"
+      "env_after": "ABX_SANDBOX_API_KEY=new\nE2B_API_KEY=old\n"
     },
     {
       "name": "env: acr and ak legacy names",
