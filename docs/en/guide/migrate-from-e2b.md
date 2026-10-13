@@ -63,17 +63,15 @@ Both are the same `Sandbox` class, only differing in name.
 
 ---
 
-## Environment Variable Compatibility
+## Environment Variables
 
-Easy Sandbox is compatible with E2B's environment variable naming:
+Easy Sandbox uses one environment variable per setting. Set these when you move a project off E2B:
 
-| E2B Variable | Easy Sandbox Alternative | Priority |
-|-------------|--------------------------|----------|
-| `E2B_API_KEY` | `SANDBOX_API_KEY` | E2B takes precedence |
-| `E2B_API_URL` | `SANDBOX_API_BASE_URL` | E2B takes precedence |
-| `E2B_DOMAIN` | — | E2B only |
-
-When both `E2B_API_KEY` and `SANDBOX_API_KEY` are set, `E2B_API_KEY` takes precedence.
+| Setting | Environment variable |
+|---|---|
+| Sandbox API key | `EBX_SANDBOX_API_KEY` |
+| Platform API URL | `EBX_SANDBOX_BASE_URL` |
+| Data-plane domain | `EBX_SANDBOX_DOMAIN` |
 
 ---
 
@@ -145,7 +143,7 @@ sandbox = await Sandbox.create(
 `Sandbox.create(request_timeout=...)` mirrors E2B's `request_timeout`: it bounds
 how long the client waits for the create HTTP response and is independent of
 `timeout` (the sandbox TTL). When omitted, the global `http_timeout` /
-`SANDBOX_HTTP_TIMEOUT` applies unchanged.
+`EBX_HTTP_TIMEOUT` applies.
 
 ```python
 sandbox = await Sandbox.create(
@@ -166,7 +164,7 @@ sandbox = await Sandbox.create(
 3. **Replace `Sandbox.kill(id)`**: Change to `Sandbox.kill_by_id(id)`
 4. **Replace `get_host()`**: Change to `sandbox.network.get_host()`
 5. **Replace `get_upload_url` / `get_download_url`**: Use `files.write()` / `files.read()` instead
-6. **Keep environment variables**: `E2B_API_KEY` and other variables continue to work
+6. **Set environment variables**: `EBX_SANDBOX_API_KEY` for the sandbox API key. Each setting has one variable; see [Configuration](../reference/configuration.md).
 
 ---
 

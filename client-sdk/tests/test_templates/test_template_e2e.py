@@ -37,8 +37,6 @@ from unittest.mock import patch
 
 import pytest
 
-pytest.importorskip("easy_sandbox.server", reason="needs the easy-sandbox-server distribution")
-
 if TYPE_CHECKING:
     from collections.abc import Generator
 

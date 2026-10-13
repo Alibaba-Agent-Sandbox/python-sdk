@@ -50,7 +50,7 @@ one-sided (section 4).
 | `POST /files/upload-stream` | `files_upload_stream` | `files.write/upload` | `server.files.upload(path, data)`, `.upload_file(local, remote)` | NEW |
 | `GET /files/download-stream` | `files_download_stream` | `files.read/download` | `server.files.download(path)`, `.read_text`, `.download_file` | NEW |
 | `POST /files/archive` | `files_archive` | — | `server.files.archive(paths, format)` | NEW |
-| `GET /files/watch` | `files_watch` | `files.watch` (WatchDir) | `server.files.watch(path)` -> async iterator of `ServerWatchEvent` (a `WatchEvent` subclass with `is_dir`) | NEW server + client |
+| `GET /files/watch` | `files_watch` | `files.watch` (WatchDir) | `server.files.watch(path)` -> async iterator of `WatchEvent` | NEW server + client |
 | `POST /upload` (legacy) | `upload` | — | `server.files.upload_legacy(path, data)` | NEW (documented legacy) |
 | `GET /download` (legacy) | `download` | — | `server.files.download_legacy(path)` | NEW (documented legacy) |
 
@@ -76,7 +76,7 @@ one-sided (section 4).
 | `GET /pty/sessions/{id}` | `pty_detail` | — | `server.pty.get(id)` | NEW server + client |
 | `POST /pty/sessions/{id}/resize` | `pty_resize` | `TerminalSession.resize` | `server.pty.resize(id, cols, rows)` | NEW server + client |
 | `DELETE /pty/sessions/{id}` | `pty_delete_session` | `TerminalSession.close` | `server.pty.delete(id)` | NEW |
-| WS `:9001/pty?session_id=` | (scope terminal:use) | `TerminalSession` speaks the *envd* `/terminal` path | `server.pty.connect(id)` -> `PtyConnection` (async context manager speaking the server's JSON protocol: `send`, `resize`, `signal`, `recv`, `expect`, message iteration) | NEW |
+| WS `:9001/pty?session_id=` | (scope terminal:use) | `TerminalSession` speaks the *envd* `/terminal` path | `server.pty.connect(id)` -> `TerminalSession`-compatible object speaking the server's JSON protocol | NEW |
 
 ### 2.5 System
 
@@ -84,7 +84,7 @@ one-sided (section 4).
 |--------------|-------------|---------------|----------------|--------|
 | `GET /system/info` | `system_info` | — | `server.system.info()` | NEW |
 | `GET /system/metrics` | `system_metrics` | envd `GET /metrics` | `server.system.metrics()` | NEW |
-| `GET /env` | `env_get` | envd `GET /envs` | `server.system.env(names)` | NEW |
+| `GET /env` | `env_get` | envd `GET /envs` | `server.system.env(filter)` | NEW |
 | `POST /env` | `env_set` | — | `server.system.set_env(vars)` | NEW |
 | `GET /ports` | `ports` | — (`Sandbox.network` computes URLs locally) | `server.system.ports()` | NEW |
 | `GET /packages` | `packages` | — | `server.system.packages(manager)` | NEW |
@@ -140,11 +140,6 @@ one-sided (section 4).
 * **N/A-5 Template/build APIs** are control-plane.
 * **N/A-6 Raw octet-stream bodies** for large downloads: server responses are JSON (base64) by
   design of the current `ServerResponse`; limits (`max_bytes`) bound the cost. Candidate follow-up.
-* **N/A-7 The `agents` group (OpenAI-compatible Agents API) routes.** They are owned by the Agents
-  API workstream ([agents-api.md](agents-api.md)) and have their own client surface; they are
-  excluded from `ServerClient.ENDPOINT_METHODS` and from the matrix-completeness test by name
-  (`group == agents`), so adding an agents route never breaks this guard, and adding any *other*
-  route without a client method does.
 
 ## 5. Cross-cutting alignment
 
@@ -153,7 +148,7 @@ one-sided (section 4).
 | Errors | `{error,type,code,...}`, status codes | mapped to typed exceptions (fine-grained doc 7) |
 | Auth | `X-Access-Token` / `Authorization: Bearer` | `ServerClient(token=...)` sends Bearer; gateway headers from `Sandbox.network` |
 | Discovery | `GET /capabilities` v2 | `ServerCapabilities` |
-| Streaming | SSE (`shell_stream`, `files_watch`); `process_output` is cursor-polled (`process.follow()`) | async iterators with deterministic close |
+| Streaming | SSE (`shell_stream`, `files_watch`, `process_output?stream`) | async iterators with deterministic close |
 | Sync | — | `*_sync` twin for every public coroutine, same `make_sync` style |
 | Limits | per-endpoint | `caps.limit(endpoint, key)`; uploads fail fast on `max_bytes` |
 
@@ -161,8 +156,8 @@ one-sided (section 4).
 
 * Server: unit tests for each new endpoint and each changed request parameter; compat tests for
   unchanged defaults.
-* Client: `tests/test_api/server_e2e/test_server_client_*.py` run `ServerClient` against a **real in-process
-  `SandboxServer` on a free port** (fixtures in `tests/test_api/server_e2e/conftest.py`) for every
+* Client: `tests/test_api/test_server_client_*.py` run `ServerClient` against a **real in-process
+  `SandboxServer` on a free port** (fixtures in `tests/test_api/conftest_server.py`) for every
   method in the matrix; a matrix-completeness test asserts every route in the server's route table
   has a client method (via a declared mapping `ServerClient.ENDPOINT_METHODS`) so future routes
   cannot silently lose their client.
@@ -182,18 +177,3 @@ See [fine-grained-capabilities-review.md](fine-grained-capabilities-review.md) s
   support `close()`.
 * Client treats a legacy server (no `endpoints` in `/capabilities`) as `legacy=True` and maps a
   404 from a *new* endpoint to `EndpointNotAvailableError`, never to a raw HTTP error.
-
-## 8. Final tally (as implemented)
-
-* Server routes audited: 47 HTTP routes in the default table (core 3, file_ops 12, process 8,
-  terminal 5, system 6, dev_tools 3, browser 8, commands 2) plus the PTY WebSocket
-  (`pty_connect`): **48 endpoint ids, all mapped** in `ServerClient.ENDPOINT_METHODS` to 59
-  client methods (async coroutines, each with a `*_sync` twin; streaming generators have
-  collecting coroutines `watch_for` / `run_stream` instead of a sync twin).
-* Client-to-server gaps filled: `files_watch`, `process_output`, `process_stdin`,
-  `pty_resize` / session detail, `cwd`/`env`/`timeout` for `shell*`, `env`/`capture_output`/`stdin`
-  for `process_start`.
-* Deliberately one-sided: N/A-1 .. N/A-7.
-* Typed models live in `easy_sandbox.models.server`; errors in `easy_sandbox.models.errors`
-  (E9xxx); everything is exercised by `tests/test_api/server_e2e/` against a real in-process
-  `SandboxServer`.

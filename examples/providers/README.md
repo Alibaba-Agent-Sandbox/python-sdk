@@ -1,12 +1,11 @@
 # Reference providers
 
-Three provider plugins used by the test-suite and as templates for plugin authors.
+Two provider plugins used by the test-suite and as templates for plugin authors.
 Design: `docs/en/design/providers-and-credentials.md`; guide: `docs/en/guide/providers.md`.
 
 | Directory | Kind | What it shows |
 |---|---|---|
 | `local-process/` | `exec` (EPP/1, Python stdlib, ~300 lines) | lifecycle, exec (buffered and streaming), files, scoped config fields (a secret and a bool), debug methods used by tests |
-| `opensandbox/` | `exec` (EPP/1, dependency-free Node ESM) | a complete real-world plugin for an OpenSandbox server: lifecycle, pause/resume, streaming exec, files, process control, port URLs, config aliases, unit + mock + live + contract tests (`README.md`) |
 | `e2b-compatible/` | `rest` (manifest only, no code) | pointing the SDK/CLI at any E2B-protocol endpoint; consented `inherit` of the generic `sandbox_*` keys |
 
 ```bash

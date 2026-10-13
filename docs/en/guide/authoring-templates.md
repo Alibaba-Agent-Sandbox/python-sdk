@@ -198,8 +198,10 @@ The server SDK does not select a sandbox provider, and `easy_sandbox.server` doe
 
 The CLI owns the image contract. It resolves the provider with `--provider` / `EBX_PROVIDER` / the default `alicloud-express`, then renders that one profile into the Dockerfile and the template prompt:
 
-- `alicloud-express`: `FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>`, no `CMD` or `ENTRYPOINT`, platform `start_cmd` / `ready_cmd`, workdir `/home/user/app`.
-- Every other provider: the generic profile (`FROM python:3.12-slim`, `CMD ["python3", "commands.py"]`, `WORKDIR /app`) unless the plugin declares `[template]` in `ebx-provider.toml`. A missing profile is announced and is not the FC image.
+- `alicloud-express`: `FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>`, no `CMD` or `ENTRYPOINT`, platform `start_cmd` / `ready_cmd`, user `user`, workdir `/home/user/app`.
+- Every other provider: the generic profile (`FROM python:3.12-slim`, `CMD ["python3", "commands.py"]`, `WORKDIR /app`, image-default user) unless the plugin declares `[template]` in `ebx-provider.toml`. A missing profile is announced and is not the FC image.
+
+`template.yaml` records the same defaults as `user` and `workdir`. The Dockerfile `WORKDIR` matches `workdir`. `USER` is written only when `user` is non-empty, because `python:3.12-slim` has no `user` account. A later command can pass its own working directory; these two fields are the sandbox default, the same idea as E2B's template user and workdir.
 
 `commands.py` imports only `easy_sandbox.server` and calls `serve(port=9000)` under `if __name__ == "__main__"`. The image installs `easy-sandbox-server`.
 

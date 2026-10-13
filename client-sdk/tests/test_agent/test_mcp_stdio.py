@@ -165,44 +165,9 @@ class TestStdioProcess:
             second = _readline(proc, timeout=8)
             assert first["id"] == 3
             assert first["result"] == {}
-            # Ordering is the contract; the bound only catches a ping that was
-            # held for most of the tool call (the stub answers after 0.8 s).
-            assert ping_at < 0.75
+            assert ping_at < 0.5
             assert second["id"] == 2
             assert proc.poll() is None
         finally:
             _stop(proc)
             server.shutdown()
-
-    def test_sdk_is_imported_before_the_first_request_is_served(self) -> None:
-        """A cold lazy import inside the first tool call would block ping.
-
-        Importing ``easy_sandbox.api.sandbox`` takes hundreds of milliseconds on
-        a busy host and runs on the event loop. The server must pay it at
-        startup, so a ping answered before any tool call already sees it loaded.
-        """
-        probe = (
-            "import sys\n"
-            "import easy_sandbox.agent.mcp as m\n"
-            "assert 'easy_sandbox.api.sandbox' not in sys.modules\n"
-            "async def _ping(self, params):\n"
-            "    return {'loaded': 'easy_sandbox.api.sandbox' in sys.modules}\n"
-            "m.SandboxMCPServer._handle_ping = _ping\n"
-            "m.main()\n"
-        )
-        env = os.environ.copy()
-        env["E2B_API_KEY"] = "stdio-e2e-placeholder"
-        proc = subprocess.Popen(
-            [sys.executable, "-c", probe],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            env=env,
-        )
-        try:
-            _send(proc, {"jsonrpc": "2.0", "id": 1, "method": "ping", "params": {}})
-            response = _readline(proc, timeout=15)
-            assert response["result"] == {"loaded": True}
-        finally:
-            _stop(proc)

@@ -40,12 +40,12 @@ sandbox = await Sandbox.create(api_key="your-api-key-here")
 ### Option 2: Environment variable (recommended for CI/CD)
 
 ```bash
-export E2B_API_KEY="your-api-key-here"
+export EBX_SANDBOX_API_KEY="your-api-key-here"
 ```
 
 ### Option 3: Persisted file (`~/.ebx/.env`)
 
-Used when neither the environment nor the project `.env` sets the key. The file is written by the `ebx` CLI (`ebx config set sandbox_api_key your-api-key`, permissions 600; see [Related: the ebx CLI](#related-the-ebx-cli)) or edited by hand: `E2B_API_KEY=your-api-key`.
+Used when neither the environment nor the project `.env` sets the key. The file is written by the `ebx` CLI (`ebx config set sandbox_api_key your-api-key`, permissions 600; see [Related: the ebx CLI](#related-the-ebx-cli)) or edited by hand: `EBX_SANDBOX_API_KEY=your-api-key`.
 
 ## 3. Create Your First Sandbox
 

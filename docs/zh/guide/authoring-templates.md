@@ -198,8 +198,10 @@ ENV PYTHONUNBUFFERED=1
 
 镜像契约归 CLI。CLI 用 `--provider` / `EBX_PROVIDER` / 默认的 `alicloud-express` 解析提供者，再把这一份配置写进 Dockerfile 和模板提示：
 
-- `alicloud-express`：`FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>`，不写 `CMD` 或 `ENTRYPOINT`，由平台 `start_cmd` / `ready_cmd` 启动，工作目录 `/home/user/app`。
-- 其他提供者：若插件的 `ebx-provider.toml` 没有 `[template]` 表，则使用通用配置（`FROM python:3.12-slim`、`CMD ["python3", "commands.py"]`、`WORKDIR /app`）。缺少配置会被写明，并且不会退回 FC 镜像。
+- `alicloud-express`：`FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>`，不写 `CMD` 或 `ENTRYPOINT`，由平台 `start_cmd` / `ready_cmd` 启动，用户 `user`，工作目录 `/home/user/app`。
+- 其他提供者：若插件的 `ebx-provider.toml` 没有 `[template]` 表，则使用通用配置（`FROM python:3.12-slim`、`CMD ["python3", "commands.py"]`、`WORKDIR /app`、用户用镜像默认值）。缺少配置会被写明，并且不会退回 FC 镜像。
+
+`template.yaml` 用 `user` 和 `workdir` 记下同一对默认值。Dockerfile 的 `WORKDIR` 与 `workdir` 一致。只有 `user` 非空时才写 `USER`，因为 `python:3.12-slim` 里没有名为 `user` 的账户。之后的单次命令可以自带工作目录；这两个字段是沙箱的默认值，和 E2B 模板里的 user / workdir 是同一件事。
 
 `commands.py` 只导入 `easy_sandbox.server`，并在 `if __name__ == "__main__"` 下调用 `serve(port=9000)`。镜像安装 `easy-sandbox-server`。
 

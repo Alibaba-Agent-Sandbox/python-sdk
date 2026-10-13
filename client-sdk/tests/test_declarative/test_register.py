@@ -538,11 +538,6 @@ class TestSingleton:
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture
-def requires_server() -> None:
-    pytest.importorskip("easy_sandbox.server", reason="needs the easy-sandbox-server distribution")
-
-
 class TestServerProxy:
     """sandbox.server proxies to easy_sandbox.server module."""
 
@@ -554,21 +549,18 @@ class TestServerProxy:
         factory = _SandboxFactory()
         assert factory.server is factory.server  # cached
 
-    @pytest.mark.usefixtures("requires_server")
     @patch("easy_sandbox.server.start")
     def test_server_start_delegates(self, mock_start: MagicMock) -> None:
         factory = _SandboxFactory()
         factory.server.start(port=8080)
         mock_start.assert_called_once_with(port=8080, host="0.0.0.0")
 
-    @pytest.mark.usefixtures("requires_server")
     @patch("easy_sandbox.server.start")
     def test_server_start_defaults(self, mock_start: MagicMock) -> None:
         factory = _SandboxFactory()
         factory.server.start()
         mock_start.assert_called_once_with(port=9000, host="0.0.0.0")
 
-    @pytest.mark.usefixtures("requires_server")
     def test_server_getattr_proxies(self) -> None:
         """Attribute access on .server proxies to the server module."""
         factory = _SandboxFactory()
@@ -584,14 +576,12 @@ class TestServerProxy:
 class TestRegisterUploadDownload:
     """register.upload() / .download() toggle server built-in routes."""
 
-    @pytest.mark.usefixtures("requires_server")
     @patch("easy_sandbox.server.enable_builtin")
     def test_upload_enables_builtin(self, mock_enable: MagicMock) -> None:
         factory = _SandboxFactory()
         factory.register.upload()
         mock_enable.assert_called_once_with("upload")
 
-    @pytest.mark.usefixtures("requires_server")
     @patch("easy_sandbox.server.enable_builtin")
     def test_download_enables_builtin(self, mock_enable: MagicMock) -> None:
         factory = _SandboxFactory()

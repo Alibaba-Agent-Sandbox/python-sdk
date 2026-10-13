@@ -525,210 +525,6 @@ def migration_vectors() -> dict[str, Any]:
     return {"schema_version": 1, "vectors": out}
 
 
-def epp_method_table() -> dict[str, Any]:
-    """Machine-readable EPP/1 method table (the single source for params names and types)."""
-    S, I, B, O, A = "string", "integer", "boolean", "object", "array"  # noqa: N806, E741
-    SI = "string|integer"  # noqa: N806
-    NI = "number|null"  # noqa: N806
-
-    def p(typ: str, required: bool = True) -> dict[str, Any]:
-        return {"type": typ, "required": required}
-
-    sb = {"sandbox_id": p(S)}
-    proc = {
-        "cmd": p(S),
-        "args": p(A),
-        "env": p(O),
-        "cwd": p(S),
-        "user": p(S),
-        "timeout": p(I),
-    }
-
-    def m(
-        method: str,
-        feature: str | None,
-        params: dict[str, Any],
-        result: str,
-        *,
-        support: str = "required",
-        idempotent: bool = False,
-        host_calls: bool = True,
-        note: str = "",
-    ) -> dict[str, Any]:
-        out: dict[str, Any] = {
-            "method": method,
-            "feature": feature,
-            "support": support,
-            "idempotent": idempotent,
-            "host_calls": host_calls,
-            "params": params,
-            "result": result,
-        }
-        if note:
-            out["note"] = note
-        return out
-
-    methods = [
-        m(
-            "initialize",
-            None,
-            {
-                "protocol": p(S),
-                "host": p(O),
-                "provider_id": p(S),
-                "config": p(O),
-                "core": p(O),
-                "locale": p(S),
-                "data_dir": p(S),
-            },
-            "{protocol, plugin:{name,version}, features:[...]}",
-        ),
-        m("shutdown", None, {}, "{}"),
-        m(
-            "sandbox.create",
-            "sandbox.lifecycle",
-            {
-                "template": p(S),
-                "timeout": p(I),
-                "metadata": p(O),
-                "envs": p(O),
-                "cpu": p("integer|null"),
-                "memory": p("integer|null"),
-                "disk": p("integer|null"),
-                "gpu": p("string|null"),
-                "request_timeout": p(NI),
-                "secure": p(B, False),
-                "options": p(O, False),
-            },
-            "SandboxRecord",
-            note="secure is sent only when the user set it; options = the per-create provider_options minus secret fields",
-        ),
-        m("sandbox.get", "sandbox.lifecycle", dict(sb), "SandboxRecord", idempotent=True),
-        m(
-            "sandbox.connect",
-            "sandbox.lifecycle",
-            dict(sb),
-            "SandboxRecord",
-            support="optional",
-            idempotent=True,
-            note="optional; may resume a paused sandbox. The host falls back to sandbox.get on -32601",
-        ),
-        m(
-            "sandbox.list",
-            "sandbox.lifecycle",
-            {
-                "limit": p(I),
-                "status": p(S, False),
-                "cursor": p(S, False),
-                "metadata": p(O, False),
-            },
-            "{sandboxes:[SandboxRecord], next?}",
-            idempotent=True,
-        ),
-        m("sandbox.kill", "sandbox.lifecycle", dict(sb), "{}", idempotent=True),
-        m(
-            "sandbox.set_timeout",
-            "sandbox.timeout",
-            {**sb, "timeout": p(I)},
-            "{}",
-        ),
-        m("sandbox.pause", "sandbox.pause", dict(sb), "{}"),
-        m("sandbox.resume", "sandbox.pause", dict(sb), "{}"),
-        m(
-            "exec.run",
-            "exec.run",
-            {**sb, **proc, "stdin": p(S, False)},
-            "{exit_code, stdout, stderr, stdout_b64?, stderr_b64?}",
-        ),
-        m(
-            "exec.start",
-            "exec.stream",
-            {**sb, **proc, "stdin": p(S, False), "detached": p(B, False)},
-            "{process_id: string}",
-            note="followed by notifications exec.output{process_id,stream,data} and exactly one exec.exit{process_id,exit_code}; detached is an optional extension (the host does not send it yet)",
-        ),
-        m("process.list", "process.manage", dict(sb), "{processes:[{pid,command,status,...}]}"),
-        m(
-            "process.kill",
-            "process.manage",
-            {**sb, "pid": p(SI)},
-            "{}",
-            note="pid is an opaque id: the integer pid of process.list or the string process_id of exec.start",
-        ),
-        m("process.signal", "process.manage", {**sb, "pid": p(SI), "signal": p(I)}, "{}"),
-        m(
-            "process.stdin",
-            "process.manage",
-            {**sb, "pid": p(SI), "data": p(S)},
-            "{}",
-            note="a plugin without stdin support answers -32003",
-        ),
-        m(
-            "files.read",
-            "files.rw",
-            {**sb, "path": p(S), "offset": p(I, False), "length": p(I, False)},
-            "{content_b64, size}",
-            idempotent=True,
-            note="offset/length are an optional extension for chunked reads (the host does not send them yet)",
-        ),
-        m(
-            "files.write",
-            "files.rw",
-            {**sb, "path": p(S), "content_b64": p(S), "mode": p(SI, False), "append": p(B, False)},
-            "{}",
-            note="mode and append are optional extensions (the host does not send them yet)",
-        ),
-        m(
-            "files.list",
-            "files.rw",
-            {**sb, "path": p(S)},
-            "{entries:[{name,path,type,size,mtime?}]}",
-            idempotent=True,
-        ),
-        m(
-            "files.stat",
-            "files.rw",
-            {**sb, "path": p(S)},
-            "{name,path,type,size,mtime?}",
-            idempotent=True,
-        ),
-        m("files.mkdir", "files.rw", {**sb, "path": p(S)}, "{}"),
-        m("files.remove", "files.rw", {**sb, "path": p(S)}, "{}"),
-        m(
-            "files.move",
-            "files.rw",
-            {**sb, "source": p(S), "destination": p(S), "overwrite": p(B, False)},
-            "{}",
-            note="plugins may additionally accept the legacy aliases src/dest",
-        ),
-        m(
-            "files.search",
-            "files.rw",
-            {**sb, "path": p(S), "pattern": p(S)},
-            "{entries:[...]}",
-            support="extension",
-            host_calls=False,
-        ),
-        m(
-            "files.chmod",
-            "files.rw",
-            {**sb, "path": p(S), "mode": p(SI)},
-            "{}",
-            support="extension",
-            host_calls=False,
-        ),
-        m(
-            "ports.url",
-            "ports.url",
-            {**sb, "port": p(I)},
-            "{url, headers?}",
-            idempotent=True,
-            note="routed through Sandbox.network.resolve()/resolve_url()",
-        ),
-    ]
-    return {"schema_version": 1, "methods": methods}
-
-
 def _env_dict(text: str) -> dict[str, str]:
     from easy_sandbox.transport import config as cfg
 
@@ -747,7 +543,6 @@ def build_all() -> dict[str, Any]:
         "tree-digest-vectors.json": tree_digest_vectors(),
         "epp-error-mapping.json": epp_error_vectors(),
         "migration-vectors.json": migration_vectors(),
-        "epp-methods.json": epp_method_table(),
     }
 
 
@@ -756,12 +551,9 @@ def render(doc: Any) -> str:
 
 
 def main() -> None:
-    cli_copy = HERE.parents[3] / "cli" / "docs" / "design" / "fixtures"
     for name, doc in build_all().items():
         (HERE / name).write_text(render(doc), encoding="utf-8")
         print("wrote", name)
-        if cli_copy.is_dir():
-            (cli_copy / name).write_text(render(doc), encoding="utf-8")
 
 
 if __name__ == "__main__":

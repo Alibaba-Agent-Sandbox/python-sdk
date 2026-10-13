@@ -63,17 +63,15 @@ from easy_sandbox.compat import E2BSandbox  # 别名
 
 ---
 
-## 环境变量兼容
+## 环境变量
 
-Easy Sandbox 兼容 E2B 的环境变量命名：
+Easy Sandbox 的每项设置只有一个环境变量。从 E2B 迁过来时设置这些：
 
-| E2B 环境变量 | Easy Sandbox 替代 | 优先级 |
-|-------------|-------------------|--------|
-| `E2B_API_KEY` | `SANDBOX_API_KEY` | E2B 优先 |
-| `E2B_API_URL` | `SANDBOX_API_BASE_URL` | E2B 优先 |
-| `E2B_DOMAIN` | — | E2B 独有 |
-
-当同时设置 `E2B_API_KEY` 和 `SANDBOX_API_KEY` 时，`E2B_API_KEY` 优先。
+| 设置 | 环境变量 |
+|---|---|
+| 沙箱 API Key | `EBX_SANDBOX_API_KEY` |
+| 平台 API URL | `EBX_SANDBOX_BASE_URL` |
+| 数据平面域名 | `EBX_SANDBOX_DOMAIN` |
 
 ---
 
@@ -144,7 +142,7 @@ sandbox = await Sandbox.create(
 
 `Sandbox.create(request_timeout=...)` 与 E2B 的 `request_timeout` 对齐：它约束客户端
 等待创建 HTTP 响应的时长，独立于 `timeout`（沙箱生存时长 TTL）。省略时沿用全局
-`http_timeout` / `SANDBOX_HTTP_TIMEOUT` 行为不变。
+`http_timeout` / `EBX_HTTP_TIMEOUT`。
 
 ```python
 sandbox = await Sandbox.create(
@@ -165,7 +163,7 @@ sandbox = await Sandbox.create(
 3. **替换 `Sandbox.kill(id)`**：改为 `Sandbox.kill_by_id(id)`
 4. **替换 `get_host()`**：改为 `sandbox.network.get_host()`
 5. **替换 `get_upload_url` / `get_download_url`**：改用 `files.write()` / `files.read()`
-6. **保留环境变量**：`E2B_API_KEY` 等变量继续有效
+6. **设置环境变量**：沙箱 API Key 用 `EBX_SANDBOX_API_KEY`。每项设置只有一个变量，见[配置参考](../reference/configuration.md)。
 
 ---
 

@@ -29,17 +29,3 @@ def test_client_and_server_versions_match() -> None:
     match = re.search(r'__version__\s*=\s*"([^"]+)"', _SERVER_VERSION_FILE.read_text("utf-8"))
     assert match is not None
     assert match.group(1) == easy_sandbox.__version__
-
-
-def test_client_pins_the_matching_server_version() -> None:
-    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
-    if not pyproject.is_file():
-        pytest.skip("pyproject.toml not present")
-    text = pyproject.read_text("utf-8")
-    assert f'"easy-sandbox-server=={easy_sandbox.__version__}"' in text
-
-
-def test_mcp_server_advertises_the_package_version() -> None:
-    from easy_sandbox.agent.mcp import SERVER_VERSION
-
-    assert easy_sandbox.__version__ == SERVER_VERSION

@@ -4,7 +4,7 @@
 
 Easy Sandbox 支持两种认证模式：**API Key** 和 **AK/SK（阿里云 AccessKey）**。
 
-凭证属于某个[提供方](providers.md)。内置提供方是**阿里云极速版（Alibaba Cloud Express Edition）**，id 为 `alicloud-express`，也是默认提供方。本页使用规范名（`EBX_SANDBOX_API_KEY`、`EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID` 等）。早期的所有名字（`E2B_API_KEY`、`SANDBOX_API_KEY`、`ALICLOUD_ACCESS_KEY_ID`、`AccessKey` 等）仍然完全照旧工作，见[名称别名](../reference/configuration.md#名称别名)。
+凭证属于某个[提供方](providers.md)。内置提供方是**阿里云极速版（Alibaba Cloud Express Edition）**，id 为 `alicloud-express`，也是默认提供方。沙箱密钥是 `EBX_SANDBOX_API_KEY`。阿里云 AccessKey 使用官方名字 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。地域是 `ALIBABA_CLOUD_REGION_ID`。每个键只有一个名字。
 
 > **历史说明**：`ebx auth` CLI 命令组（`login`/`logout`/`status`/`switch`）已在首个正式版 `0.1.0` 之前移除。凭证通过下方介绍的环境变量与 `ebx config set sandbox_api_key` 配置；用 `ebx config list` 查看生效状态。
 
@@ -29,21 +29,14 @@ API Key 是最常用的认证方式，通过 `Authorization: Bearer {api_key}` �
 #### 1. 环境变量（优先于 `~/.ebx`）
 
 ```bash
-# 规范名
 export EBX_SANDBOX_API_KEY="your-api-key"
-
-# E2B 兼容名（永不弃用）
-export E2B_API_KEY="your-api-key"
-
-# Easy Sandbox 早期名字（仍然有效）
-export SANDBOX_API_KEY="your-api-key"
 ```
 
-同时存在多个时，顺序是 `EBX_SANDBOX_API_KEY`，然后 `E2B_API_KEY`，然后 `SANDBOX_API_KEY`。
+设置 `EBX_SANDBOX_API_KEY`。这是沙箱 API Key 唯一的环境变量。
 
 #### 2. 持久化文件（`~/.ebx/.env`）
 
-SDK 同样会读取 `~/.ebx/.env`，该文件由 `ebx` CLI 写入（`ebx config set sandbox_api_key ...`，文件权限 600；见 [CLI 认证配置指南](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/authentication.md)）。密钥存储为 `E2B_API_KEY=your-key`（存储名保持不变，以便旧工具读取同一文件；`config migrate` 会把它改成 `EBX_SANDBOX_API_KEY`，见[迁移已保存的配置](../reference/configuration.md#迁移已保存的配置)）。
+SDK 同样会读取 `~/.ebx/.env`，该文件由 `ebx` CLI 写入（`ebx config set sandbox_api_key ...`，文件权限 600；见 [CLI 认证配置指南](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/authentication.md)）。密钥存储为 `EBX_SANDBOX_API_KEY`。AccessKey 存储为 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。
 
 #### 3. .env 文件
 
@@ -53,21 +46,20 @@ SDK 同样会读取 `~/.ebx/.env`，该文件由 `ebx` CLI 写入（`ebx config 
 EBX_SANDBOX_API_KEY=your-api-key
 ```
 
-SDK 把两个 `.env` 当作各自独立的层读取。`./.env` 写了该键时优先，无论它用的是哪个名字；没写的键仍然来自 `~/.ebx/.env`。
+SDK 把两个 `.env` 当作各自独立的层读取。`./.env` 写了该键时优先；没写的键仍然来自 `~/.ebx/.env`。
 
 1. 当前目录下的 `.env`
 2. `~/.ebx/.env`
 
 #### 4. config.toml 文件
 
-在 `~/.ebx/config.toml` 中设置：
+沙箱 API Key 放在 `~/.ebx/.env`（权限 600）。`ebx config set sandbox_api_key` 把 `EBX_SANDBOX_API_KEY` 写在那里。非密钥的连接设置放在 `~/.ebx/config.toml`：
 
 ```toml
 [transport]
-api_key = "your-api-key"        # legacy 键名；TOML 里不存 "sandbox_api_key"
+sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
+sandbox_domain = "cn-hangzhou.e2b.fc.aliyuncs.com"
 ```
-
-出于兼容可以把密钥放进 `config.toml`，但更推荐 `~/.ebx/.env`（权限 600）。
 
 #### 5. 代码参数（高于环境变量和 `~/.ebx`）
 
@@ -79,9 +71,6 @@ sandbox = await Sandbox.create(sandbox_api_key="your-api-key")
 
 # 连接时直接传入
 sandbox = await Sandbox.connect("sbx-xxxx", sandbox_api_key="your-api-key")
-
-# 旧关键字 api_key= 仍然被接受，含义相同
-sandbox = await Sandbox.create(api_key="your-api-key")
 ```
 
 ---
@@ -97,13 +86,11 @@ AK/SK 模式使用阿里云 AccessKey 对，通过 token 交换获取临时 API 
 #### 1. 环境变量
 
 ```bash
-export EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID="your-access-key-id"
-export EBX_ALICLOUD_EXPRESS_ACCESS_KEY_SECRET="your-access-key-secret"
-
-# 厂商名（永不弃用）和早期的 AccessKey / AccessSecret 名字同样有效
 export ALICLOUD_ACCESS_KEY_ID="your-access-key-id"
 export ALICLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
 ```
+
+这是 AccessKey 对唯一的环境变量。地域是 `ALIBABA_CLOUD_REGION_ID`。
 
 #### 2. 持久化文件（`~/.ebx/.env`）
 
@@ -141,15 +128,15 @@ flowchart TD
     D --> E["5. 内置默认值；沙箱密钥缺失时抛 InvalidAPIKeyError E1001"]
 ```
 
-LLM 密钥、GitHub token 和区域走同一条链。空白或只含空格的值会被跳过。同一层级内，规范名 `EBX_*` 优先于 E2B / 厂商名，后者又优先于 Easy Sandbox 早期的名字。变量名和默认值见 [凭证解析](../reference/configuration.md#凭证解析)。
+LLM 密钥、GitHub token 和区域走同一条链。空白或只含空格的值会被跳过。每个键只有一个环境变量。变量名和默认值见 [凭证解析](../reference/configuration.md#凭证解析)。
 
 ### 凭证与提供方
 
-通用沙箱密钥（`sandbox_api_key`，含 `E2B_API_KEY`、`SANDBOX_API_KEY`）和阿里云 AK/SK 属于内置提供方。切换到[提供方插件](providers.md)后，除非插件的清单申请了它们且你在安装时同意，否则插件**不会**收到。插件有自己作用域的凭证键，例如提供方 `my-cloud` 的 `EBX_MY_CLOUD_API_KEY`。这样可以避免把一个云的密钥发给另一个云。
+通用沙箱密钥（`sandbox_api_key`，环境变量 `EBX_SANDBOX_API_KEY`）和阿里云 AK/SK 属于内置提供方。切换到[提供方插件](providers.md)后，除非插件的清单申请了它们且你在安装时同意，否则插件**不会**收到。插件有自己作用域的凭证键，例如提供方 `my-cloud` 的 `EBX_MY_CLOUD_API_KEY`。这样可以避免把一个云的密钥发给另一个云。
 
 在同一层级内，API Key 优先于 AK/SK：
-- 若同时提供了 `api_key` 和 `access_key_id`，使用 API Key
-- 若同时设置了 `E2B_API_KEY` 和 `ALICLOUD_ACCESS_KEY_ID`，使用 E2B_API_KEY
+- 若同时提供了 `sandbox_api_key` 和 `access_key_id`，使用 API Key
+- 若同时设置了 `EBX_SANDBOX_API_KEY` 和 `ALICLOUD_ACCESS_KEY_ID`，使用 `EBX_SANDBOX_API_KEY`
 
 ---
 
@@ -193,7 +180,7 @@ envd 认证需要以下 HTTP 头（已由 SDK 自动设置）：
 
 ```text
 [E1001] API key cannot be empty
-  Suggestion: Check your E2B_API_KEY environment variable or pass api_key parameter.
+  Suggestion: Check your EBX_SANDBOX_API_KEY environment variable or pass sandbox_api_key.
 ```
 
 **解决**：确保通过上述任一方式配置了有效的 API Key。

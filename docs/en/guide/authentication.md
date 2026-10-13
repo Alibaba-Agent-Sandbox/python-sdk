@@ -4,7 +4,7 @@
 
 Easy Sandbox supports two authentication modes: **API Key** and **AK/SK (Alibaba Cloud AccessKey)**.
 
-Credentials belong to a [provider](providers.md). The built-in provider is **Alibaba Cloud Express Edition (阿里云极速版)**, id `alicloud-express`, and it is the default. The names on this page are the canonical ones (`EBX_SANDBOX_API_KEY`, `EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID`, ...). Every earlier name (`E2B_API_KEY`, `SANDBOX_API_KEY`, `ALICLOUD_ACCESS_KEY_ID`, `AccessKey`, ...) still works exactly as before; see [Name aliases](../reference/configuration.md#name-aliases).
+Credentials belong to a [provider](providers.md). The built-in provider is **Alibaba Cloud Express Edition (阿里云极速版)**, id `alicloud-express`, and it is the default. The sandbox key is `EBX_SANDBOX_API_KEY`. Alibaba Cloud access keys use the official names `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. The region is `ALIBABA_CLOUD_REGION_ID`. Each key has one name.
 
 > **Historical note**: the `ebx auth` CLI command group (`login`/`logout`/`status`/`switch`) was removed before the first stable release (`0.1.0`). Credentials are configured with the environment variables and `ebx config set sandbox_api_key` shown below; check the effective state with `ebx config list`.
 
@@ -29,21 +29,14 @@ API Key is the most common authentication method, sent to the platform API via t
 #### 1. Environment variable (wins over `~/.ebx`)
 
 ```bash
-# Canonical name
 export EBX_SANDBOX_API_KEY="your-api-key"
-
-# E2B-compatible name (never deprecated)
-export E2B_API_KEY="your-api-key"
-
-# Earlier Easy Sandbox name (still works)
-export SANDBOX_API_KEY="your-api-key"
 ```
 
-When several are present, the order is `EBX_SANDBOX_API_KEY`, then `E2B_API_KEY`, then `SANDBOX_API_KEY`.
+Set `EBX_SANDBOX_API_KEY`. That is the only environment variable for the sandbox API key.
 
 #### 2. Persisted file (`~/.ebx/.env`)
 
-The SDK also reads `~/.ebx/.env`, which the `ebx` CLI writes (`ebx config set sandbox_api_key ...`, file mode 600; see the [CLI Authentication guide](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/authentication.md)). The key is stored as `E2B_API_KEY=your-key` (the storage name stays the same so earlier tools read the same file; `config migrate` switches it to `EBX_SANDBOX_API_KEY`, see [Migrating stored configuration](../reference/configuration.md#migrating-stored-configuration)).
+The SDK also reads `~/.ebx/.env`, which the `ebx` CLI writes (`ebx config set sandbox_api_key ...`, file mode 600; see the [CLI Authentication guide](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/authentication.md)). The key is stored as `EBX_SANDBOX_API_KEY`. Access keys are stored as `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`.
 
 #### 3. .env file
 
@@ -53,21 +46,20 @@ Create a `.env` file in the project root directory:
 EBX_SANDBOX_API_KEY=your-api-key
 ```
 
-The SDK reads both `.env` files as separate layers. `./.env` wins for a key it sets, whichever name it uses. A key it omits still comes from `~/.ebx/.env`.
+The SDK reads both `.env` files as separate layers. `./.env` wins for a key it sets. A key it omits still comes from `~/.ebx/.env`.
 
 1. `.env` in the current directory
 2. `~/.ebx/.env`
 
 #### 4. config.toml file
 
-Set in `~/.ebx/config.toml`:
+Prefer `~/.ebx/.env` (mode 600) for the sandbox API key. `ebx config set sandbox_api_key` writes `EBX_SANDBOX_API_KEY` there. Non-secret connection settings belong in `~/.ebx/config.toml`:
 
 ```toml
 [transport]
-api_key = "your-api-key"        # legacy key name; "sandbox_api_key" is not stored in TOML
+sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
+sandbox_domain = "cn-hangzhou.e2b.fc.aliyuncs.com"
 ```
-
-Storing a secret in `config.toml` is possible for compatibility, but prefer `~/.ebx/.env` (mode 600).
 
 #### 5. Code parameter (wins over the environment and over `~/.ebx`)
 
@@ -79,9 +71,6 @@ sandbox = await Sandbox.create(sandbox_api_key="your-api-key")
 
 # Pass directly when connecting
 sandbox = await Sandbox.connect("sbx-xxxx", sandbox_api_key="your-api-key")
-
-# The old keyword api_key= is still accepted and means the same
-sandbox = await Sandbox.create(api_key="your-api-key")
 ```
 
 ---
@@ -97,13 +86,11 @@ AK/SK mode uses an Alibaba Cloud AccessKey pair to obtain a temporary API Key vi
 #### 1. Environment Variables
 
 ```bash
-export EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID="your-access-key-id"
-export EBX_ALICLOUD_EXPRESS_ACCESS_KEY_SECRET="your-access-key-secret"
-
-# Vendor names (never deprecated) and the earlier AccessKey / AccessSecret names also work
 export ALICLOUD_ACCESS_KEY_ID="your-access-key-id"
 export ALICLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
 ```
+
+These are the only environment variables for the AccessKey pair. The region is `ALIBABA_CLOUD_REGION_ID`.
 
 #### 2. Persisted file (`~/.ebx/.env`)
 
@@ -141,15 +128,15 @@ flowchart TD
     D --> E["5. Built-in default, or InvalidAPIKeyError E1001 when a sandbox key is required"]
 ```
 
-LLM keys, the GitHub token, and the region use this same chain. A blank or whitespace-only value is skipped. Inside one level, the canonical `EBX_*` name beats the E2B/vendor name, which beats the earlier Easy Sandbox name. The names and defaults are listed in [Credential resolution](../reference/configuration.md#credential-resolution).
+LLM keys, the GitHub token, and the region use this same chain. A blank or whitespace-only value is skipped. Each key has one environment variable. The names and defaults are listed in [Credential resolution](../reference/configuration.md#credential-resolution).
 
 ### Credentials and providers
 
-The generic sandbox key (`sandbox_api_key`, with `E2B_API_KEY`, `SANDBOX_API_KEY`) and the Alibaba Cloud AK/SK belong to the built-in provider. If you switch to a [provider plugin](providers.md), the plugin does **not** receive them unless its manifest asks for them and you consented at install time. A plugin has its own scoped credential keys, for example `EBX_MY_CLOUD_API_KEY` for a provider `my-cloud`. This prevents a key for one cloud from being sent to another.
+The generic sandbox key (`sandbox_api_key`, environment variable `EBX_SANDBOX_API_KEY`) and the Alibaba Cloud AK/SK belong to the built-in provider. If you switch to a [provider plugin](providers.md), the plugin does **not** receive them unless its manifest asks for them and you consented at install time. A plugin has its own scoped credential keys, for example `EBX_MY_CLOUD_API_KEY` for a provider `my-cloud`. This prevents a key for one cloud from being sent to another.
 
 Within the same level, API Key takes precedence over AK/SK:
-- If both `api_key` and `access_key_id` are provided, API Key is used
-- If both `E2B_API_KEY` and `ALICLOUD_ACCESS_KEY_ID` are set, E2B_API_KEY is used
+- If both `sandbox_api_key` and `access_key_id` are provided, API Key is used
+- If both `EBX_SANDBOX_API_KEY` and `ALICLOUD_ACCESS_KEY_ID` are set, `EBX_SANDBOX_API_KEY` is used
 
 ---
 
@@ -193,7 +180,7 @@ envd authentication requires the following HTTP headers (set automatically by th
 
 ```text
 [E1001] API key cannot be empty
-  Suggestion: Check your E2B_API_KEY environment variable or pass api_key parameter.
+  Suggestion: Check your EBX_SANDBOX_API_KEY environment variable or pass sandbox_api_key.
 ```
 
 **Solution**: Ensure a valid API Key is configured via any of the methods above.

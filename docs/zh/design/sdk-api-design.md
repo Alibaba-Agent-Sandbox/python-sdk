@@ -383,7 +383,7 @@ SDK 采用零配置理念，按优先级加载配置：
 
 ```bash
 # 主认证（必须）
-export E2B_API_KEY=your-api-key
+export EBX_SANDBOX_API_KEY=your-api-key
 
 # 扩展认证（可选）
 export ALICLOUD_ACCESS_KEY_ID=your-ak
@@ -940,7 +940,7 @@ classDiagram
 
 | 错误码 | 类别 | 含义 | 修复建议 |
 |--------|------|------|----------|
-| `E1001` | 认证 | API Key 无效 | 检查 E2B_API_KEY 环境变量 |
+| `E1001` | 认证 | API Key 无效 | 检查 EBX_SANDBOX_API_KEY 环境变量 |
 | `E1002` | 认证 | Token 过期 | SDK 将自动刷新，若持续出现请检查时钟同步 |
 | `E1003` | 认证 | AK/SK 无效 | 检查 ALICLOUD_ACCESS_KEY_ID 环境变量 |
 | `E2001` | 创建 | 模板不存在 | 运行 `ebx template list` 查看可用模板 |

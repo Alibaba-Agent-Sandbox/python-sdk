@@ -43,11 +43,13 @@ Easy Sandbox 的 E2B 兼容策略是：
 
 ### 环境变量
 
-| 变量 | 状态 |
+每项设置只有一个环境变量。使用这些名字，而不是 E2B 的变量名：
+
+| 设置 | 环境变量 |
 |------|------|
-| `E2B_API_KEY` | ✅ 兼容（最高优先级） |
-| `E2B_API_URL` | ✅ 兼容 |
-| `E2B_DOMAIN` | ✅ 兼容 |
+| 沙箱 API Key | `EBX_SANDBOX_API_KEY` |
+| 平台 API URL | `EBX_SANDBOX_BASE_URL` |
+| 数据平面域名 | `EBX_SANDBOX_DOMAIN` |
 
 ### 兼容层
 

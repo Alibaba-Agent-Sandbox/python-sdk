@@ -76,7 +76,7 @@ graph TB
 | **系统架构** | [architecture.md](design/architecture.md) | 六层架构、层间依赖、双 API 层（Platform API vs Sandbox envd API） |
 | **SDK API 设计** | [sdk-api-design.md](design/sdk-api-design.md) | Sandbox 类、文件操作、代码执行、命令、网络、镜像构建器、会话管理 |
 | **沙箱类型体系** | [sandbox-types.md](design/sandbox-types.md) | 临时沙箱（已实现）、持久沙箱（远期）、沙箱生命周期 |
-| **提供方与凭证** | [providers-and-credentials.md](design/providers-and-credentials.md) | 规范配置名与别名、优先级、提供方插件（`ebx provider ...`）、安装与信任模型、EPP/1 协议、E8xxx 错误；评审记录见 [providers-and-credentials-review.md](design/providers-and-credentials-review.md) |
+| **提供方与凭证** | [providers-and-credentials.md](design/providers-and-credentials.md) | 每个配置键一个环境变量、优先级、提供方插件（`ebx provider ...`）、安装与信任模型、EPP/1 协议、E8xxx 错误；评审记录见 [providers-and-credentials-review.md](design/providers-and-credentials-review.md) |
 
 ### 模板
 
@@ -123,7 +123,7 @@ provider、capability、server-v2 与 agents-API 工作流的设计文档。它�
 | FC 部署产物应用 | **已实现** | `easy_sandbox.agent.mcp_http:asgi_app`；产物由 CLI 的 `ebx mcp deploy` 生成。见 [mcp-server.md](design/mcp-server.md#7-fc-部署) |
 | 模板 build/push/create 流水线 | **已实现** | 通过官方 CreateTemplate API |
 | E2B 兼容层 | **已实现** | `easy_sandbox.compat` |
-| 规范配置名 + 别名（SDK） | **已实现** | 见[配置参考](reference/configuration.md)；CLI 侧待实现（`cli/docs/zh/design/providers-and-credentials-cli.md`） |
+| 每个配置键一个环境变量（SDK） | **已实现** | 见[配置参考](reference/configuration.md)；CLI 规格见 `cli/docs/zh/design/providers-and-credentials-cli.md` |
 | 提供方插件（SDK，`python -m easy_sandbox.providers`） | **已实现** | 见[提供方](guide/providers.md)；CLI 的 `ebx provider` 待实现 |
 | 持久沙箱 | **远期** | 需底层平台支持 |
 | SandboxPool（预热池） | **远期** | 需底层平台支持 |

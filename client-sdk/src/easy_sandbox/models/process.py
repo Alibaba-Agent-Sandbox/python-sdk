@@ -94,6 +94,6 @@ class CodeResult(BaseModel):
 class ProcessInfo(BaseModel):
     """Information about a running process."""
 
-    pid: int | str
+    pid: int
     command: str = ""
     status: str = "running"

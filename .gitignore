@@ -64,11 +64,13 @@ diff-code.txt
 ~/.sbox/
 
 # Benchmarks output
-client-sdk/benchmarks/*.log
+benchmarks/*.log
 
-# NOTE: .agents/ (notes, evidence, research) is fully tracked; do not ignore any part of it.
+# Process artifacts (evidence snapshots & research notes)
+# NOTE: .agents/notes/ (ADR decisions) is NOT ignored — it stays tracked.
+# NOTE: .agents/design/ is deprecated (historical artifacts tracked, no new content).
+/.agents/evidence/
+/.agents/research/
 
 # awesome-templates sub-repo (has its own git)
 awesome-templates/
-
-scripts/local-paths.private

@@ -1,26 +1,20 @@
-# easy-sandbox
+# easy-sandbox-client
 
 Async Python **client SDK** for the Alibaba Cloud FC Agent Sandbox service. It is
 E2B-protocol compatible and adds Alibaba Cloud extensions (OSS, VPC, custom domains).
 
 This package is the `easy_sandbox` import namespace *except* `easy_sandbox.server`, which is
 the container-side runtime shipped separately as
-[`easy-sandbox-server`](../server-sdk/README.md) (a hard dependency pinned to the same version,
-so `pip install easy-sandbox` still provides `easy_sandbox.server`; the `[server]` extra is a
-no-op alias kept for compatibility).
-
-> **Upgrading from 0.2.x?** An in-place `pip install -U easy-sandbox` can leave
-> `easy_sandbox.server` broken. Repair it with
-> `pip install --force-reinstall --no-deps easy-sandbox-server`; see
-> [Migrating from 0.2](../docs/en/guide/migrating-from-0.2.md). The command-line tool (`ebx`) is a separate
-Node.js project that lives in the [`cli`](https://github.com/Easy-Sandbox/easy-sandbox) repository.
+[`easy-sandbox-server`](../server-sdk/README.md). The command-line tool (`ebx`) is a separate
+Node.js project that lives in the [`cli`](../../cli) repository.
 
 ## Install
 
 ```bash
-pip install easy-sandbox                 # core SDK (pulls in easy-sandbox-server of the same version)
-pip install "easy-sandbox[alicloud]"     # + template API (Alibaba Cloud FC)
-pip install "easy-sandbox[all]"          # everything (mcp, yaml, fast json, sessions, ...)
+pip install easy-sandbox-client                 # core SDK
+pip install "easy-sandbox-client[alicloud]"     # + template API (Alibaba Cloud FC)
+pip install "easy-sandbox-client[all]"          # everything (mcp, yaml, fast json, sessions, ...)
+pip install "easy-sandbox-client[server]"       # + easy-sandbox-server (for the @sandbox decorator inside templates)
 ```
 
 ## Quick start
@@ -29,21 +23,19 @@ pip install "easy-sandbox[all]"          # everything (mcp, yaml, fast json, ses
 import asyncio
 from easy_sandbox import Sandbox
 
-
 async def main():
     async with await Sandbox.create(template="python-base") as sandbox:
-        proc = await sandbox.run("echo 'Hello from sandbox!'")  # bare shell
+        proc = await sandbox.run("echo 'Hello from sandbox!'")      # bare shell
         print(proc.stdout, proc.exit_code)
 
-        result = await sandbox.run_code("print(2 ** 10)")  # code interpreter
+        result = await sandbox.run_code("print(2 ** 10)")            # code interpreter
         print(result.text)
 
-        cmd = await sandbox.custom("hello", name="Alice")  # named command
+        cmd = await sandbox.custom("hello", name="Alice")            # named command
         print(cmd.value, cmd.source)
 
         await sandbox.files.write("/tmp/data.txt", "content")
         print(await sandbox.files.read("/tmp/data.txt"))
-
 
 asyncio.run(main())
 ```

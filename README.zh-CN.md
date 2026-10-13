@@ -167,6 +167,7 @@ graph TB
 |------|------|
 | 快速入门 | [快速入门](docs/zh/guide/getting-started.md) |
 | 最佳实践 | [最佳实践](docs/zh/guide/best-practices.md) |
+| 无障碍 | [无障碍说明](ACCESSIBILITY.md) |
 | 文件与命令控制 | [文件与命令控制](docs/zh/guide/file-and-command-controls.md) |
 | 托管代理 | [托管代理](docs/zh/guide/hosted-agents.md) |
 | SDK 使用 | [SDK 使用](docs/zh/guide/sdk-usage.md) |

@@ -383,7 +383,7 @@ Code parameters > Environment variables > .env file > ~/.ebx/config.toml > Defau
 
 ```bash
 # Primary authentication (required)
-export E2B_API_KEY=your-api-key
+export EBX_SANDBOX_API_KEY=your-api-key
 
 # Extended authentication (optional)
 export ALICLOUD_ACCESS_KEY_ID=your-ak
@@ -946,7 +946,7 @@ classDiagram
 
 | Error Code | Category | Meaning | Fix Suggestion |
 |-----------|----------|---------|----------------|
-| `E1001` | Auth | API Key invalid | Check the E2B_API_KEY environment variable |
+| `E1001` | Auth | API Key invalid | Check the EBX_SANDBOX_API_KEY environment variable |
 | `E1002` | Auth | Token expired | SDK will auto-refresh; if persistent, check clock sync |
 | `E1003` | Auth | AK/SK invalid | Check the ALICLOUD_ACCESS_KEY_ID environment variable |
 | `E2001` | Creation | Template not found | Run `ebx template list` to see available templates |

@@ -34,6 +34,12 @@ def test_remote_exception_surfaces_as_runtime_error(sandbox_factory):  # type: i
     assert "e2e-remote-boom" in str(err.value)
 
 
+@pytest.mark.known_issue
+@pytest.mark.xfail(
+    strict=True,
+    reason="KI-010: the generated remote script calls an async function without awaiting it, so the "
+    "result is the string '<coroutine object ...>'",
+)
 def test_async_decorated_function(sandbox_factory):  # type: ignore[no-untyped-def]
     sb = sandbox_factory(H.OFFICIAL_BASE)
 

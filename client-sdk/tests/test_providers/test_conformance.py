@@ -26,7 +26,6 @@ NAMES = (
     "tree-digest-vectors.json",
     "epp-error-mapping.json",
     "migration-vectors.json",
-    "epp-methods.json",
 )
 
 

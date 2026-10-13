@@ -232,7 +232,7 @@ Legend — **N** native (1:1 call), **E** emulated (client-side logic or extra c
 
 ## 3. Credentials and configuration keys (proposal, naming style of the provider design doc)
 
-Provider id **`opensandbox`** (matches `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, not reserved). Canonical env = `EBX_OPENSANDBOX_<KEY>` (design doc §2 principle 3); `native` env names are the names the OpenSandbox SDKs/`osb` CLI already use, so users with a working OpenSandbox environment need no new variables (none start with `EBX_`, `E2B_`, `ALICLOUD_`, as required by the manifest rules). The plugin consumes **no core credential**: `[core] inherit = []` — it must never receive `E2B_API_KEY`/the Alibaba key (§4.6 isolation).
+Provider id **`opensandbox`** (matches `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, not reserved). Canonical env = `EBX_OPENSANDBOX_<KEY>` (design doc §2 principle 3); `native` env names are the names the OpenSandbox SDKs/`osb` CLI already use, so users with a working OpenSandbox environment need no new variables (none start with `EBX_`, `E2B_`, `ALICLOUD_`, as required by the manifest rules). The plugin consumes **no core credential**: `[core] inherit = []` — it must never receive `EBX_SANDBOX_API_KEY` or the Alibaba Cloud access key (§4.6 isolation).
 
 | Key (scoped) | Type | Secret | Canonical env | `native` env | Default | Meaning |
 |---|---|---|---|---|---|---|

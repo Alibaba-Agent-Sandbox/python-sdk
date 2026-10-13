@@ -20,7 +20,6 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .guard import OP_DELETE, OP_READ, OP_WRITE, PathGuard, open_checked
-from .guards import path_guard_from_context
 from .policy import PolicyDenied
 from .router import CapabilityGroup, default_table
 from .routes import _resolve_safe_path
@@ -141,7 +140,7 @@ def _write_checked(ctx: EndpointContext, resolved: str, data: bytes) -> None:
     if not overwrite:
         flags |= os.O_EXCL
     try:
-        fd = open_checked(path_guard_from_context(ctx), resolved, flags, OP_WRITE)
+        fd = open_checked(ctx.guard(), resolved, flags, OP_WRITE)
     except FileExistsError as exc:
         raise PolicyDenied(
             "file_exists", "File already exists", status=409, error_type="FileExistsError"
@@ -156,7 +155,7 @@ def _write_checked(ctx: EndpointContext, resolved: str, data: bytes) -> None:
 
 def _read_checked(ctx: EndpointContext, resolved: str) -> bytes | ServerResponse:
     """Read a file through a verified descriptor, honouring ``limits.max_bytes``."""
-    fd = open_checked(path_guard_from_context(ctx), resolved, os.O_RDONLY, OP_READ)
+    fd = open_checked(ctx.guard(), resolved, os.O_RDONLY, OP_READ)
     limit = ctx.limit("max_bytes")
     with os.fdopen(fd, "rb") as f:
         size = os.fstat(f.fileno()).st_size
@@ -203,7 +202,7 @@ def _handle_files_list(request: ServerRequest) -> ServerResponse:
 
     base_dir = os.environ.get("EBX_SERVER_BASE_DIR", "/home/user")
     base_dir = os.path.realpath(base_dir)
-    guard = path_guard_from_context(ctx) if ctx else None
+    guard = ctx.guard() if ctx else None
 
     entries: list[dict[str, Any]] = []
 
@@ -434,7 +433,7 @@ def _handle_files_search(request: ServerRequest) -> ServerResponse:
     if not os.path.isdir(safe_path):
         return ServerResponse.error(404, f"Directory not found: {raw_path}", "FileNotFoundError")
 
-    guard = path_guard_from_context(ctx) if ctx else None
+    guard = ctx.guard() if ctx else None
     search_timeout: float = _SEARCH_TIMEOUT_SECONDS
     if ctx is not None:
         max_depth = min(max_depth, int(ctx.limit("max_depth", max_depth)))
@@ -633,7 +632,7 @@ def _handle_files_archive(request: ServerRequest) -> ServerResponse:
     ctx = context_of(request)
     max_files = int(ctx.limit("max_files", _ARCHIVE_MAX_FILES)) if ctx else _ARCHIVE_MAX_FILES
     max_size = int(ctx.limit("max_bytes", _ARCHIVE_MAX_SIZE)) if ctx else _ARCHIVE_MAX_SIZE
-    guard = path_guard_from_context(ctx) if ctx else None
+    guard = ctx.guard() if ctx else None
 
     safe_paths: list[str] = []
     for raw in paths:
@@ -771,7 +770,7 @@ def _handle_files_watch(request: ServerRequest) -> SSEResponse | ServerResponse:
         return ServerResponse.error(400, str(exc), "ValueError")
     if not os.path.isdir(safe_path):
         return ServerResponse.error(404, f"Directory not found: {raw_path}", "FileNotFoundError")
-    guard = path_guard_from_context(ctx) if ctx else None
+    guard = ctx.guard() if ctx else None
 
     def events() -> Any:
         previous = _snapshot(safe_path, recursive, guard)

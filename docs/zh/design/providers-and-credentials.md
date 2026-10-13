@@ -2,7 +2,7 @@
 
 > **状态**：已接受（经两轮对抗式评审，见 [providers-and-credentials-review.md](providers-and-credentials-review.md)） · **范围**：Python SDK（`client-sdk`）与 Node.js `ebx` CLI · **面向 CLI 的规格**：`cli/docs/design/providers-and-credentials-cli.md`
 >
-> **本文所有设计共同遵守的兼容规则**：所有旧名字、旧文件布局和旧行为继续有效。本文只*增加*规范名和提供方层。0.x 中不删除任何东西。
+> **命名规则**：每个配置键只有一个环境变量。读取方只接受这个变量，`ebx config set` 也写入这个名字。没有第二个名字，也没有迁移命令。
 >
 > **关于本译文**：这是英文设计文档的中文版，章节编号一致。表格、协议字段、代码块与英文版逐项对应；两者出现差异时以[英文版](../../en/design/providers-and-credentials.md)为准。
 
@@ -13,7 +13,7 @@
 **目标**
 
 1. 每个凭证 / 配置键在所有位置使用同一套命名：`config.toml`、`~/.ebx/.env`、`ebx config set/get`、环境变量、SDK 的 `TransportConfig` 字段与 `Sandbox.*` 关键字参数、CLI 选项。
-2. 有文档化的优先级说明和完整的别名表。旧名字在所有位置继续有效。
+2. 每个键只有一个环境变量，列在 §3。读取方在第一个设置了该变量的层停止。
 3. 提供方抽象，使阿里云之外的后端以后可以通过**插件**加入：CLI 用 `ebx provider install <路径或 git URL>` 安装，只用 SDK 的用户用 `python -m easy_sandbox.providers install ...`；可按命令（`--provider`）、按进程（`EBX_PROVIDER`）、按项目（`./.env`）、按用户（配置）、按 SDK 调用（`Sandbox.create(provider=...)`）选择。
 4. 内置提供方保持默认，对外呈现为**阿里云极速版（Alibaba Cloud Express Edition）**，稳定 id 为 `alicloud-express`。
 
@@ -22,178 +22,204 @@
 * 在硬沙箱里运行不受信任的插件代码（跨平台做不到；我们采用同意 + 固定 + 完整性 + 环境清理，见 §8）。
 * 公共插件注册表 / 市场（清单里预留了 `source` 位置；v1 只支持目录或 git URL）。
 * 重命名 `EBX_SERVER_*`、`EBX_PTY_PORT`、`EBX_MAX_UPLOAD_SIZE`（已烘焙进已部署镜像的沙箱内 server 变量）。
-* 删除任何别名。
 
 ---
 
-## 1. 清单（盘点）
+## 1. 清单
 
-扫描范围：`transport/config.py`、`transport/auth.py`、`models/config.py`、`models/errors.py`、`api/{sandbox,deploy,docker_builder,image,fc_template}.py`、`declarative/decorator.py`、`agent/{mcp,mcp_http}.py`、`utils/{github_token,registry,template_index,logging}.py`、原 Python CLI、`agent/qwen_code.py`、`.env.example` 以及文档。逐项明细见英文版 §1；这里给出结论。
+扫描范围：`transport/config.py`、`transport/auth.py`、`models/config.py`、`models/errors.py`、`api/{sandbox,deploy,docker_builder,image,fc_template}.py`、`declarative/decorator.py`、`agent/{mcp,mcp_http}.py`、`utils/{github_token,registry,template_index,logging}.py`、CLI、`agent/qwen_code.py`、`.env.example` 以及文档。
 
-**1.1 沙箱控制面 / 传输层。** 沙箱 API Key（`sandbox_api_key` / `E2B_API_KEY` > `SANDBOX_API_KEY`）、平台地址（`api_url`、`E2B_API_URL` > `SANDBOX_API_BASE_URL`）、数据平面域名（`domain`、`E2B_DOMAIN`）、区域（`SANDBOX_REGION`）、HTTP 超时（`SANDBOX_HTTP_TIMEOUT`）、`http2`、`max_retries`（只能写在 `config.toml`）、连接池 / 保活 / WebSocket / 退避调优（只在 `config.toml`）、沙箱 TTL（`--timeout/-t`，**不是** HTTP 超时）、默认模板（`SANDBOX_TEMPLATE` > `EBX_TEMPLATE`，仅 MCP）、日志级别（`SANDBOX_LOG_LEVEL`）。
+### 1.1 沙箱控制面 / 传输层
 
-**1.2 阿里云专属。** AccessKey（`ALICLOUD_ACCESS_KEY_ID/SECRET` > `AccessKey/AccessSecret`）、ACR 全家（`ACR_NAMESPACE`、`ACR_REGISTRY`、`ACR_REPO`、`ACR_USERNAME`、`ACR_PASSWORD`、`ACREE_INSTANCE_ID`、`ACR_VPC_ID`、`ACR_VSWITCH_IDS`、`ACR_SECURITY_GROUP_ID`）、团队 id（`TEAM_ID` > `E2B_TEAM_ID`）。
+| 概念 | `ebx config` 键 | config.toml | 环境变量 | SDK 字段 |
+|---|---|---|---|---|
+| 沙箱 API Key | `sandbox_api_key` | 密钥在 `~/.ebx/.env` | `EBX_SANDBOX_API_KEY` | `sandbox_api_key` |
+| 平台地址 | `sandbox_base_url` | `[transport] sandbox_base_url` | `EBX_SANDBOX_BASE_URL` | `sandbox_base_url` |
+| 数据平面域名 | `sandbox_domain` | `[transport] sandbox_domain` | `EBX_SANDBOX_DOMAIN` | `sandbox_domain` |
+| 地域 | `region` | `[providers.alicloud-express] region` | `ALIBABA_CLOUD_REGION_ID` | `region` |
+| HTTP 超时 | `http_timeout` | `[transport] http_timeout` | `EBX_HTTP_TIMEOUT` | `http_timeout` |
+| HTTP/2 | `http2` | `http2` | `EBX_HTTP2` | `http2` |
+| 最大重试 | `max_retries` | `max_retries` | `EBX_MAX_RETRIES` | `max_retries` |
+| 日志级别 | `log_level` | `log_level` | `EBX_LOG_LEVEL` | `log_level` |
+| 默认模板 | `default_template` | `default_template` | `EBX_DEFAULT_TEMPLATE` | `default_template` |
+| 提供方 | `provider` | `[core] provider` | `EBX_PROVIDER` | `provider` |
 
-**1.3 LLM / 编码代理（与提供方无关）。** `llm_api_key`（`EBX_LLM_API_KEY` > `BAILIAN_CODING_PLAN_API_KEY` > `DASHSCOPE_API_KEY` > `OPENAI_API_KEY` > 旧的 `EBX_QWEN_CODE_API_KEY`）、`llm_base_url`（`EBX_LLM_BASE_URL` > `OPENAI_BASE_URL`）、`llm_model`（`EBX_LLM_MODEL` > `OPENAI_MODEL`）。
+沙箱 TTL（`Sandbox.create(timeout=)`、`--timeout/-t`）不是 HTTP 超时。
 
-**1.4 集成、工具、界面。** `github_token`（`GITHUB_TOKEN`；`.env.example` 里的 `SANDBOX_GITHUB_TOKEN` 从来没有代码读取，是文档错误而不是别名）、`EBX_TEMPLATE_INDEX_URL`、`EBX_TEMPLATE_DIR`、MCP 变量（`EBX_MCP_AUTH_TOKEN`、`EBX_MCP_ALLOWED_ORIGINS`、`EBX_MCP_RUNTIME_DIR`）、显示变量（`EBX_ACTIVITY_LINES`、`EBX_DISCOVER_COMMANDS`）、`[shortcuts]`、`~/.ebx/secrets.json`（不属于配置）。
+### 1.2 阿里云专属
 
-**1.5 沙箱内 server（`easy-sandbox-server`）。** `EBX_SERVER_TOKEN`、`EBX_SERVER_BASE_DIR`、`EBX_SERVER_DISABLED_GROUPS`、`EBX_PTY_PORT`、`EBX_MAX_UPLOAD_SIZE`：已存在于外部镜像里的运行时变量，不重命名。
+| 概念 | `ebx config` 键 | 环境变量 | 说明 |
+|---|---|---|---|
+| AccessKey ID | `access_key_id` | `ALICLOUD_ACCESS_KEY_ID` | `~/.ebx/.env` |
+| AccessKey Secret | `access_key_secret` | `ALICLOUD_ACCESS_KEY_SECRET` | `~/.ebx/.env` |
+| ACR 命名空间 | `acr_namespace` | `ACR_NAMESPACE` | |
+| ACR 仓库地址 | `acr_registry` | `ACR_REGISTRY` | |
+| ACR 仓库 | `acr_repo` | `ACR_REPO` | |
+| ACR 用户名 / 密码 | `acr_username` / `acr_password` | `ACR_USERNAME` / `ACR_PASSWORD` | |
+| ACR 企业版实例 | `acr_instance_id` | `ACREE_INSTANCE_ID` | |
+| ACR 网络 | `acr_vpc_id`、`acr_vswitch_ids`、`acr_security_group_id` | `ACR_VPC_ID`、`ACR_VSWITCH_IDS`、`ACR_SECURITY_GROUP_ID` | |
+| 团队 id | `team_id` | `EBX_ALICLOUD_EXPRESS_TEAM_ID` | 可选。不是必填项。 |
 
-**1.6 外部标准变量（永不重命名）。** `CI`、`GITHUB_ACTIONS`、`NO_COLOR`、`TERM`、`HTTP(S)_PROXY`、`NO_PROXY`、`DOCKER_BUILDKIT`、`HOME` 等。
+### 1.3 LLM / 编码代理（与提供方无关）
 
-**1.7 评审第 1 轮发现的其他配置面。** `sandbox.yaml` / `@sandbox(...)`（获得 `provider`、`provider_options`，旧参数不变）、`GlobalConfig`（对齐规范名）、会话存储（`SessionInfo` 增加可选 `provider`）、`Sandbox.create(secure=, request_timeout=, timeout=)`（不是凭证，不变）、编码代理 id（*编码代理*不是*提供方*）、`~/.qwen/settings.json`（外部文件，ebx 永不改写）、BYO 代理变量（原样转发）、只存在于文档里的名字（`SANDBOX_TIMEOUT`、`SANDBOX_GITHUB_TOKEN`，没有代码读取，不是别名，文档已修正）。
+| 概念 | 键 | 环境变量 |
+|---|---|---|
+| LLM API Key | `llm_api_key` | `EBX_LLM_API_KEY` |
+| LLM 地址 | `llm_base_url` | `EBX_LLM_BASE_URL` |
+| LLM 模型 | `llm_model` | `EBX_LLM_MODEL` |
+| 代理调优 | — | `EBX_QWEN_CODE_BIN`、`EBX_QWEN_RESEARCH_TIMEOUT`、`EBX_QWEN_CODEGEN_TIMEOUT` |
+
+### 1.4 集成、工具、界面
+
+| 概念 | 键 | 环境变量 | 说明 |
+|---|---|---|---|
+| GitHub token | `github_token` | `GITHUB_TOKEN` | 选项 `--token`（模板安装 / 搜索 / 更新）。存在 `~/.ebx/.env`。 |
+| 模板索引 URL | `template_index_url` | `EBX_TEMPLATE_INDEX_URL` | 仅环境变量 |
+| 模板目录 | `template_dir` | `EBX_TEMPLATE_DIR` | 仅环境变量 |
+| MCP server | `mcp_*` | `EBX_MCP_AUTH_TOKEN`、`EBX_MCP_ALLOWED_ORIGINS`、`EBX_MCP_RUNTIME_DIR` | 仅环境变量；沙箱调用用 `EBX_SANDBOX_API_KEY` |
+| CLI 显示 | — | `EBX_ACTIVITY_LINES`、`EBX_DISCOVER_COMMANDS` | 不由 `ebx config` 存储 |
+| 快捷方式 | `shortcuts`、`shortcuts.<name>` | — | `config.toml` 的 `[shortcuts]` |
+| 密钥库 | — | — | `~/.ebx/secrets.json`（SDK `SecretStore`，0600）——不是配置面 |
+
+### 1.5 沙箱内 server（`easy-sandbox-server`）
+
+`EBX_SERVER_TOKEN`、`EBX_SERVER_BASE_DIR`、`EBX_SERVER_DISABLED_GROUPS`、`EBX_PTY_PORT`、`EBX_MAX_UPLOAD_SIZE`：已存在于外部镜像里的运行时变量，不重命名。
+
+### 1.6 外部标准变量
+
+`CI`、`GITHUB_ACTIONS`、`GITLAB_CI`、`JENKINS_URL`、`NO_COLOR`、`TERM`、`HTTP_PROXY`、`HTTPS_PROXY`、`ALL_PROXY`、`NO_PROXY`、`DOCKER_BUILDKIT`、`HOME`、`APPDATA`、`COMSPEC`。
+
+### 1.7 其他配置面
+
+| 位置 | 名字 | 处理 |
+|---|---|---|
+| `sandbox.yaml` 与 `@sandbox(...)` | `template`、`timeout`、`envs`、`cpu`、`memory`，以及 `sandbox_api_key`、`sandbox_base_url`、`sandbox_domain` | 还有 `provider`、`provider_options` |
+| `GlobalConfig` | 与 `TransportConfig` 相同的字段名 | 普通数据模型 |
+| 会话存储（`SessionInfo`） | `sandbox_base_url`、`sandbox_domain`、`envd_access_token` | 可选 `provider`（默认 `""` = 内置），重新连接时仍访问同一个提供方 |
+| `Sandbox.create(secure=, request_timeout=, timeout=)` | 单次调用选项 | 不是凭证，保持不变 |
+| 编码代理 id | — | *编码代理*不是*提供方* |
+| `~/.qwen/settings.json` | Qwen Code CLI 自己的凭证文件 | 外部文件，ebx 不改写 |
+| 转发进沙箱的 BYO 代理变量 | `ANTHROPIC_API_KEY`、`QODER_PERSONAL_ACCESS_TOKEN` 以及该代理自己的密钥变量 | 沙箱内代理凭证，原样转发；不是 ebx 配置 |
 
 **术语表（不要混用）。** *提供方（provider）*：创建并运行沙箱的后端（`alicloud-express`、某个插件）。*特性（feature）*：提供方实现的某项能力（§7.2）。*模板能力（template capability）*：沙箱*镜像*提供的服务（`shell`、`files`、`code`、`terminal`、`ports`）。*编码代理（coding agent）*：用于自然语言生成模板的 LLM CLI（`qwen-code`）。*核心键（core key）*：与提供方无关的配置键。*作用域键（scoped key）*：由某个提供方声明的键。
 
-**1.8 发现的不一致（本方案要修复的）。**
+### 1.8 一个名字
 
-1. `sandbox_api_key` 带前缀，但对应的地址是裸的 `api_url` / `E2B_API_URL`，域名是裸的 `domain`。
-2. 四套环境变量前缀（`E2B_*`、`SANDBOX_*`、`ALICLOUD_*`/`AccessKey`、`EBX_*`），没有规则说明新键该属于哪一套。
-3. `http2` 和 `max_retries` 只能写在 `config.toml`，没有环境变量，而 `http_timeout` 有。
-4. 同一个 SDK 概念在各处名字不同：`api_key`（SDK）、`sandbox_api_key`（CLI 键）、`E2B_API_KEY`（环境变量）、`--api-key`。
-5. 层的顺序不统一：`load_config` 先合并 `./.env` 和 `~/.ebx/.env` 再套名字优先级（所以 `~/.ebx/.env: E2B_API_KEY` 会压过 `./.env: SANDBOX_API_KEY`），与文档里的"`./.env` 优先于 `~/.ebx/.env`"矛盾；`resolve_llm_env` 则是先按层。见 §4.3。
-6. 除 `acr_namespace` 外的 ACR 键只能从进程环境变量 / 选项读取。
-7. MCP 中 `SANDBOX_TEMPLATE` 优先于 `EBX_TEMPLATE`（与"具体优先于通用"的直觉相反）。
-8. `.env.example` 记录了一个没有任何代码读取的变量。
+§3 里的每个键只有一个环境变量。产品自己的设置用 `EBX_<KEY>`。产品采用的厂商变量就是那个唯一的名字：`ALICLOUD_ACCESS_KEY_ID`、`ALICLOUD_ACCESS_KEY_SECRET`、`ALIBABA_CLOUD_REGION_ID`、`ACR_*`、`ACREE_INSTANCE_ID`、`GITHUB_TOKEN`。`team_id` 可选，使用 `EBX_ALICLOUD_EXPRESS_TEAM_ID`。插件自己的字段使用 `EBX_<PROVIDER>_<KEY>`。
 
 ---
 
 ## 2. 命名原则
 
-1. **键是 `snake_case`，每个概念只有一个规范名，在所有位置相同。** 配置键、SDK 字段、关键字参数和选项（kebab-case）是同一个词：`sandbox_base_url` / `--sandbox-base-url`。
-2. **前缀表示这个值关于什么。** `sandbox_*` 表示沙箱控制面 / 数据面（通用、协议层）；`llm_*` 表示 LLM 配置；`acr_*` 表示容器镜像仓库；`mcp_*` 表示 MCP server；`http_*` 表示 HTTP 客户端调优；提供方作用域的键在其提供方命名空间内使用裸词（`region`、`access_key_id`）。
-3. **规范环境变量 = `EBX_` + `UPPER(key)`**（`sandbox_api_key` → `EBX_SANDBOX_API_KEY`）。提供方作用域：`EBX_` + `UPPER(提供方 id，- 换成 _)` + `_` + `UPPER(key)`（`EBX_ALICLOUD_EXPRESS_REGION`）。映射是机械的，新增键不需要再争论命名。
-4. **四类别名**，生命周期各不相同：
-
-| 类别 | 含义 | 示例 | 生命周期 |
-|---|---|---|---|
-| `canonical` | 文档推荐的名字 | `sandbox_api_key`、`EBX_SANDBOX_API_KEY` | — |
-| `compat` | 为 **E2B 协议兼容**保留（E2B 工具和文档会设置它们） | `E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN`、`E2B_TEAM_ID` | **永不弃用** |
-| `native` | 用户为其他工具已经导出的第三方 / 厂商标准名 | `ALICLOUD_ACCESS_KEY_ID/SECRET`、`GITHUB_TOKEN`、`OPENAI_*`、`DASHSCOPE_API_KEY` | **永不弃用** |
-| `legacy` | ebx 自己早期发明的名字 | `SANDBOX_API_KEY`、`SANDBOX_API_BASE_URL`、`SANDBOX_REGION`、`SANDBOX_HTTP_TIMEOUT`、`AccessKey`、`AccessSecret`、`ACR_*`、`api_url`、`domain`、`api_key`、`EBX_QWEN_CODE_API_KEY` | 文档标注为 legacy；**0.x 内无限期继续接受**；可选警告（§6） |
-
-5. **提供方作用域。** 键要么是*核心键*（与提供方无关：`provider`、`sandbox_api_key`、`sandbox_base_url`、`sandbox_domain`、`http_*`、`max_retries`、`llm_*`、`github_token`、`mcp_*` 等），要么是*提供方作用域键*（由提供方的配置 schema 声明：对 `alicloud-express` 是 `region`、`access_key_id`、`access_key_secret`、`acr_*`、`team_id`）。提供方还可以声明自己使用某些核心键，并在自己的作用域里**覆盖**它们（`providers.<id>.sandbox_api_key`），两个提供方因此可以拥有不同的 API Key。
+1. **键是 `snake_case`，每个概念只有一个名字，在所有位置相同。** 配置键、SDK 字段、关键字参数和选项（kebab-case）是同一个词：`sandbox_base_url` / `--sandbox-base-url`。
+2. **前缀表示这个值关于什么。** `sandbox_*` 表示沙箱控制面 / 数据面；`llm_*` 表示 LLM 配置；`acr_*` 表示容器镜像仓库；`mcp_*` 表示 MCP server；`http_*` 表示 HTTP 客户端调优；提供方作用域的键在其命名空间内使用裸词（`region`、`access_key_id`）。
+3. **每个键一个环境变量。** 产品设置用 `EBX_` + `UPPER(key)`（`sandbox_api_key` → `EBX_SANDBOX_API_KEY`）。厂商已经公布的变量就用那个变量，而且它是唯一的名字：阿里云 AccessKey 是 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`，地域是 `ALIBABA_CLOUD_REGION_ID`，ACR 是 `ACR_NAMESPACE` 以及对应的 `ACR_*`，GitHub token 是 `GITHUB_TOKEN`。`team_id` 可选，变量是 `EBX_ALICLOUD_EXPRESS_TEAM_ID`。插件字段是 `EBX_` + `UPPER(提供方 id，- 换成 _)` + `_` + `UPPER(key)`。
+4. **提供方作用域。** 键要么是*核心键*（`provider`、`sandbox_api_key`、`sandbox_base_url`、`sandbox_domain`、`http_*`、`max_retries`、`llm_*`、`github_token`、`mcp_*` 等），要么是*提供方作用域键*（对 `alicloud-express` 是 `region`、`access_key_id`、`access_key_secret`、`acr_*`、`team_id`）。提供方可以声明自己使用某些核心键，并在自己的作用域里覆盖它们（`providers.<id>.sandbox_api_key`）。
 
 ---
 
-## 3. 规范方案
+## 3. 方案
 
 ### 3.1 核心键
 
-| 规范键 | 类型 | 密钥 | 规范环境变量 | `compat` 环境变量 | `legacy` 环境变量 | legacy 配置 / 参数名 | 默认值 |
-|---|---|---|---|---|---|---|---|
-| `provider` | id | 否 | `EBX_PROVIDER` | — | — | — | `alicloud-express` |
-| `sandbox_api_key` | str | **是** | `EBX_SANDBOX_API_KEY` | `E2B_API_KEY` | `SANDBOX_API_KEY` | `api_key` | 无 |
-| `sandbox_base_url` | url | 否 | `EBX_SANDBOX_BASE_URL` | `E2B_API_URL` | `SANDBOX_API_BASE_URL` | `api_url`、`api_base_url` | 由提供方推导（§4.5） |
-| `sandbox_domain` | host | 否 | `EBX_SANDBOX_DOMAIN` | `E2B_DOMAIN` | — | `domain` | 由提供方推导 |
-| `http_timeout` | float ≥ 1 | 否 | `EBX_HTTP_TIMEOUT` | — | `SANDBOX_HTTP_TIMEOUT` | — | `30.0` |
-| `http2` | bool | 否 | `EBX_HTTP2` | — | — | — | `true` |
-| `max_retries` | int ≥ 0 | 否 | `EBX_MAX_RETRIES` | — | — | — | `3` |
-| `max_connections`、`max_keepalive_connections`、`keepalive_expiry`、`ws_ping_interval`、`retry_base_delay` | 数值 | 否 | `EBX_<KEY>` | — | — | — | 同现状 |
-| `log_level` | 枚举 | 否 | `EBX_LOG_LEVEL` | — | `SANDBOX_LOG_LEVEL` | — | `WARNING` |
-| `default_template` | str | 否 | `EBX_DEFAULT_TEMPLATE` | — | `SANDBOX_TEMPLATE`、`EBX_TEMPLATE`（按此顺序） | — | `base` |
-| `llm_api_key` | str | **是** | `EBX_LLM_API_KEY` | — | `native`：`BAILIAN_CODING_PLAN_API_KEY`、`DASHSCOPE_API_KEY`、`OPENAI_API_KEY`；`legacy`：`EBX_QWEN_CODE_API_KEY` | toml `llm_api_key` | 无 |
-| `llm_base_url` | url | 否 | `EBX_LLM_BASE_URL` | — | `native`：`OPENAI_BASE_URL` | toml `qwen_code_base_url` | DashScope 兼容模式 |
-| `llm_model` | str | 否 | `EBX_LLM_MODEL` | — | `native`：`OPENAI_MODEL` | toml `qwen_code_model` | `qwen3-coder-plus` |
-| `github_token` | str | **是** | `EBX_GITHUB_TOKEN` | — | `native`：`GITHUB_TOKEN` | — | 无 |
-| `template_index_url` | url | 否 | `EBX_TEMPLATE_INDEX_URL` | — | — | — | 内置索引 |
-| `template_dir` | path | 否 | `EBX_TEMPLATE_DIR` | — | — | — | 无 |
-| `mcp_auth_token` | str | **是** | `EBX_MCP_AUTH_TOKEN` | — | — | — | 无 |
-| `mcp_allowed_origins`、`mcp_runtime_dir` | str | 否 | `EBX_MCP_ALLOWED_ORIGINS`、`EBX_MCP_RUNTIME_DIR` | — | — | — | 无 |
+| 键 | 类型 | 密钥 | 环境变量 | 默认值 |
+|---|---|---|---|---|
+| `provider` | id | 否 | `EBX_PROVIDER` | `alicloud-express` |
+| `sandbox_api_key` | str | **是** | `EBX_SANDBOX_API_KEY` | 无 |
+| `sandbox_base_url` | url | 否 | `EBX_SANDBOX_BASE_URL` | 由提供方推导（§4.5） |
+| `sandbox_domain` | host | 否 | `EBX_SANDBOX_DOMAIN` | 由提供方推导 |
+| `http_timeout` | float ≥ 1 | 否 | `EBX_HTTP_TIMEOUT` | `30.0` |
+| `http2` | bool | 否 | `EBX_HTTP2` | `true` |
+| `max_retries` | int ≥ 0 | 否 | `EBX_MAX_RETRIES` | `3` |
+| `max_connections`、`max_keepalive_connections`、`keepalive_expiry`、`ws_ping_interval`、`retry_base_delay` | 数值 | 否 | `EBX_<KEY>` | 同现状 |
+| `log_level` | 枚举 | 否 | `EBX_LOG_LEVEL` | `WARNING` |
+| `default_template` | str | 否 | `EBX_DEFAULT_TEMPLATE` | `base` |
+| `llm_api_key` | str | **是** | `EBX_LLM_API_KEY` | 无 |
+| `llm_base_url` | url | 否 | `EBX_LLM_BASE_URL` | DashScope 兼容模式 |
+| `llm_model` | str | 否 | `EBX_LLM_MODEL` | `qwen3-coder-plus` |
+| `github_token` | str | **是** | `GITHUB_TOKEN` | 无 |
+| `template_index_url` | url | 否 | `EBX_TEMPLATE_INDEX_URL` | 内置索引 |
+| `template_dir` | path | 否 | `EBX_TEMPLATE_DIR` | 无 |
+| `mcp_auth_token` | str | **是** | `EBX_MCP_AUTH_TOKEN` | 无 |
+| `mcp_allowed_origins`、`mcp_runtime_dir` | str | 否 | `EBX_MCP_ALLOWED_ORIGINS`、`EBX_MCP_RUNTIME_DIR` | 无 |
 
 不是持久配置键的纯环境变量调优（见环境变量指南，不变）：`EBX_ACTIVITY_LINES`、`EBX_DISCOVER_COMMANDS`、`EBX_QWEN_CODE_BIN`、`EBX_QWEN_RESEARCH_TIMEOUT`、`EBX_QWEN_CODEGEN_TIMEOUT`，以及沙箱内 server 变量（§1.5）。
-
-`EBX_GITHUB_TOKEN` 有意排在 `GITHUB_TOKEN` 之前：CI 平台会自动注入 `GITHUB_TOKEN`，专门设置了更具体的 `EBX_GITHUB_TOKEN` 的人就是想用它。
 
 `sandbox_domain` 和 `sandbox_base_url` 是通用键，因为每个 E2B 协议后端都有控制面 URL 和数据面域名；两者都没有的提供方不在 `uses_core` 里声明它们即可。
 
 ### 3.2 提供方作用域键：内置 `alicloud-express`
 
-| 键（作用域） | 类型 | 密钥 | 规范环境变量 | `native` 环境变量 | `legacy` 环境变量 | 默认提供方的裸键别名 | 说明 |
-|---|---|---|---|---|---|---|---|
-| `region` | str | 否 | `EBX_ALICLOUD_EXPRESS_REGION` | — | `SANDBOX_REGION` | `region` | 推导基础 URL / 域名（§4.5）。默认 `cn-hangzhou`。 |
-| `access_key_id` | str | 否（id） | `EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID` | `ALICLOUD_ACCESS_KEY_ID` | `AccessKey` | `access_key_id` | `credential` |
-| `access_key_secret` | str | **是** | `EBX_ALICLOUD_EXPRESS_ACCESS_KEY_SECRET` | `ALICLOUD_ACCESS_KEY_SECRET` | `AccessSecret` | `access_key_secret` | `credential` |
-| `acr_namespace` | str | 否 | `EBX_ALICLOUD_EXPRESS_ACR_NAMESPACE` | — | `ACR_NAMESPACE` | `acr_namespace` | |
-| `acr_registry` | str | 否 | `EBX_ALICLOUD_EXPRESS_ACR_REGISTRY` | — | `ACR_REGISTRY` | `acr_registry` | |
-| `acr_repo` | str | 否 | `EBX_ALICLOUD_EXPRESS_ACR_REPO` | — | `ACR_REPO` | `acr_repo` | |
-| `acr_username` | str | 否 | `EBX_ALICLOUD_EXPRESS_ACR_USERNAME` | — | `ACR_USERNAME` | `acr_username` | |
-| `acr_password` | str | **是** | `EBX_ALICLOUD_EXPRESS_ACR_PASSWORD` | — | `ACR_PASSWORD` | `acr_password` | |
-| `acr_instance_id` | str | 否 | `EBX_ALICLOUD_EXPRESS_ACR_INSTANCE_ID` | — | `ACREE_INSTANCE_ID` | `acr_instance_id` | 选项 `--acree-instance-id` 保留 |
-| `acr_vpc_id` | str | 否 | `EBX_ALICLOUD_EXPRESS_ACR_VPC_ID` | — | `ACR_VPC_ID` | `acr_vpc_id` | |
-| `acr_vswitch_ids` | csv | 否 | `EBX_ALICLOUD_EXPRESS_ACR_VSWITCH_IDS` | — | `ACR_VSWITCH_IDS` | `acr_vswitch_ids` | |
-| `acr_security_group_id` | str | 否 | `EBX_ALICLOUD_EXPRESS_ACR_SECURITY_GROUP_ID` | — | `ACR_SECURITY_GROUP_ID` | `acr_security_group_id` | |
-| `team_id` | str | 否 | `EBX_ALICLOUD_EXPRESS_TEAM_ID` | — | `TEAM_ID` | `team_id` | `compat`：`E2B_TEAM_ID` |
+| 键 | 类型 | 密钥 | 环境变量 | 说明 |
+|---|---|---|---|---|
+| `region` | str | 否 | `ALIBABA_CLOUD_REGION_ID` | 推导基础 URL / 域名（§4.5）。默认 `cn-hangzhou`。 |
+| `access_key_id` | str | 否（id） | `ALICLOUD_ACCESS_KEY_ID` | `credential` |
+| `access_key_secret` | str | **是** | `ALICLOUD_ACCESS_KEY_SECRET` | `credential` |
+| `acr_namespace` | str | 否 | `ACR_NAMESPACE` | |
+| `acr_registry` | str | 否 | `ACR_REGISTRY` | |
+| `acr_repo` | str | 否 | `ACR_REPO` | |
+| `acr_username` | str | 否 | `ACR_USERNAME` | |
+| `acr_password` | str | **是** | `ACR_PASSWORD` | |
+| `acr_instance_id` | str | 否 | `ACREE_INSTANCE_ID` | |
+| `acr_vpc_id` | str | 否 | `ACR_VPC_ID` | |
+| `acr_vswitch_ids` | csv | 否 | `ACR_VSWITCH_IDS` | |
+| `acr_security_group_id` | str | 否 | `ACR_SECURITY_GROUP_ID` | |
+| `team_id` | str | 否 | `EBX_ALICLOUD_EXPRESS_TEAM_ID` | 可选。不是必填项。 |
 
 内置提供方是唯一隐式使用通用 `sandbox_api_key`、`sandbox_base_url`、`sandbox_domain` 的提供方（与所有提供方一样，它也使用非密钥调优键 `http_timeout`、`http2`、`max_retries` 等）。插件只能通过 §4.6 的显式 `inherit` 申请来使用通用凭证 / 端点。
-
-名字刻意写得长：CI 作业是规范环境变量名的主要使用者，在那里明确优于简短。短名字以 `native` / `legacy` 别名（`ALICLOUD_ACCESS_KEY_ID`、`ACR_NAMESPACE`）和 `ebx config` 里的**裸键**形式存在。
 
 ### 3.3 每个名字存在的位置
 
 **`~/.ebx/config.toml`**（手工编辑或由 `ebx config set` 写入；SDK 与 CLI 都读取）：
 
 ```toml
-[core]                          # 新增，可选
+[core]
 provider = "alicloud-express"   # `ebx provider default`
-config_format = 1               # 1 = 写入 legacy 存储名（默认）；2 = 写入规范存储名（`ebx config migrate` 之后）
 
-[transport]                     # 已有的段；通用键。规范名和 legacy 名都读取。
-sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"   # legacy: api_url
-sandbox_domain   = "cn-hangzhou.e2b.fc.aliyuncs.com"               # legacy: domain
+[transport]
+sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
+sandbox_domain   = "cn-hangzhou.e2b.fc.aliyuncs.com"
 http_timeout = 30.0
 http2 = true
 max_retries = 3
 
-[providers.alicloud-express]    # 新增；提供方作用域的非密钥值
-region = "cn-hangzhou"          # legacy 位置：[transport] region
+[providers.alicloud-express]
+region = "cn-hangzhou"
 
-[providers.my-cloud]            # 某个插件的值
+[providers.my-cloud]
 cluster = "prod"
 
-[shortcuts]                     # 不变
+[shortcuts]
 ps = "sandbox process list"
 ```
 
-**`~/.ebx/.env`**（权限 0600，密钥和类凭证值；环境变量风格的名字）：规范名 `EBX_SANDBOX_API_KEY`、`EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID` 等。今天写入的 legacy 名（`E2B_API_KEY`、`ALICLOUD_ACCESS_KEY_ID`、`ACR_NAMESPACE`、`EBX_LLM_API_KEY`、`GITHUB_TOKEN`）作为别名读取。
+**`~/.ebx/.env`**（权限 0600，密钥和类凭证值）。`ebx config set` 写入该键唯一的环境变量：
 
-**存储名策略（expand/contract，先扩后缩）。** Python SDK 与 Node CLI 都读这些文件，用户也可能同时运行新旧版本（编辑器启动的旧 MCP server、带旧 SDK 的 CI 镜像）。因此：
-
-* **阶段 1（本版本）：读新写旧。** 所有读取方接受规范名 + 别名。`config_format` 缺失或为 `1` 时，`ebx config set` 对有 legacy 存储名的键继续写 **legacy 存储名**（`api_url`、`E2B_API_KEY`、`ALICLOUD_ACCESS_KEY_ID` 等）；没有 legacy 存储名的键（`provider`、`sandbox_domain` 等，见下表）用规范名写入（旧版本因 `extra=ignore` 会忽略未知键）。
-* **显式迁移：** `ebx config migrate`（以及 `python -m easy_sandbox.transport.config migrate`）把存储名改写为规范名，保留 `config.toml.bak` / `.env.bak`（0600），设置 `config_format = 2`。之后 `config set` 写规范名。旧版本从此看不到这些值——这是用户自己的选择。
-* **阶段 2（后续小版本）：** 新建文件使用 `config_format = 2`；legacy 名仍然读取。不删除。
-
-阶段 1 继续写入 legacy 存储名的键：
-
-| 规范键 | 阶段 1 的存储名 |
+| 键 | 存为 |
 |---|---|
-| `sandbox_api_key` | `~/.ebx/.env` 中的 `E2B_API_KEY` |
-| `sandbox_base_url` | `[transport]` 中的 `api_url` |
-| `sandbox_domain` | `[transport]` 中的 `domain` |
-| `region` | `[transport]` 中的 `region`（legacy 位置；只有非默认提供方或格式 2 才写提供方表） |
-| `access_key_id`、`access_key_secret` | `~/.ebx/.env` 中的 `ALICLOUD_ACCESS_KEY_ID`、`ALICLOUD_ACCESS_KEY_SECRET` |
-| `acr_namespace` | `~/.ebx/.env` 中的 `ACR_NAMESPACE` |
-| `llm_api_key` | `~/.ebx/.env` 中的 `EBX_LLM_API_KEY` |
-| `github_token` | `~/.ebx/.env` 中的 `GITHUB_TOKEN` |
-| `http_timeout`、`http2`、`max_retries`、`llm_base_url`、`llm_model` | `[transport]` 中的同名键（本来就是规范名） |
-| 其他 `acr_*`、`team_id`（新的可设置键） | `[providers.alicloud-express]` 中的规范名 / 密钥 `acr_password` 以 `ACR_PASSWORD` 存入 `.env` |
+| `sandbox_api_key` | `EBX_SANDBOX_API_KEY` |
+| `access_key_id`、`access_key_secret` | `ALICLOUD_ACCESS_KEY_ID`、`ALICLOUD_ACCESS_KEY_SECRET` |
+| `acr_namespace`、`acr_password` 以及其他密钥或类凭证的 `acr_*` | 该键对应的 `ACR_*` / `ACREE_INSTANCE_ID` |
+| `llm_api_key` | `EBX_LLM_API_KEY` |
+| `github_token` | `GITHUB_TOKEN` |
+| `team_id` | `EBX_ALICLOUD_EXPRESS_TEAM_ID`（可选） |
+| `sandbox_base_url`、`sandbox_domain`、`http_timeout`、`http2`、`max_retries`、`llm_base_url`、`llm_model` | `[transport]` 中的同名键 |
+| `region` | `[providers.alicloud-express]` 中的 `region`；环境变量 `ALIBABA_CLOUD_REGION_ID` |
 | `provider` | `[core] provider` |
 
 **SDK 接口**
 
-* `TransportConfig` 字段（规范）：`provider`、`sandbox_base_url`、`sandbox_domain`、`sandbox_api_key`、`region`、`access_key_id`、`access_key_secret`、`http_timeout` 等，外加 `provider_options: dict[str, Any]`。legacy 名仍是**可读可写的属性**（`config.api_key`、`config.api_url`、`config.domain`、`config.api_base_url`），也是**被接受的构造函数 / `load_config` 关键字名**（`TransportConfig(api_key=...)`、`load_config(api_url=...)`）。`model_dump()` 输出规范名。
-* `Sandbox.create/connect/list/kill_by_id/deploy` 与 `@sandbox(...)`：新增仅限关键字的参数 `sandbox_api_key`、`sandbox_base_url`、`sandbox_domain`、`region`、`provider`、`provider_options`；旧的 `api_key`、`api_url`、`domain`、`access_key_id`、`access_key_secret` 不变。同时传规范和 legacy 关键字且**值不同**会抛 `ValueError`（值相同则接受）——一次调用内的显式冲突是 bug，不同于层之间的冲突。
+* `TransportConfig` 字段：`provider`、`sandbox_base_url`、`sandbox_domain`、`sandbox_api_key`、`region`、`access_key_id`、`access_key_secret`、`http_timeout` 等，外加 `provider_options`。`model_dump()` 输出这些名字。
+* `Sandbox.create/connect/list/kill_by_id/deploy` 与 `@sandbox(...)`：仅限关键字的参数 `sandbox_api_key`、`sandbox_base_url`、`sandbox_domain`、`region`、`provider`、`provider_options`、`access_key_id`、`access_key_secret`。
 
-**CLI 选项**（规格见 CLI 文档）：规范选项 `--sandbox-api-key`、`--sandbox-base-url`、`--sandbox-domain`、`--region/-r`、`--provider`、`--opt KEY=VALUE`；legacy 的 `--api-key`、`--api-url`、`--domain` 作为同一选项的别名保留。`--acr-*` 选项不变（本来就与 `acr_*` 一致），`--acree-instance-id` 作为 `--acr-instance-id` 的别名保留。
+**CLI 选项**（规格见 CLI 文档）：`--sandbox-api-key`、`--sandbox-base-url`、`--sandbox-domain`、`--region/-r`、`--provider`、`--opt KEY=VALUE`。`--acr-*` 选项与 `acr_*` 一致。企业版实例的环境变量是 `ACREE_INSTANCE_ID`。
 
 ### 3.4 `ebx config` 中的裸键与限定键
 
 `ebx config get|set|delete KEY` 接受：
 
-1. **核心键**（规范名或 legacy 名）。
-2. **限定的提供方键** `providers.<id>.<key>`（规范、无歧义，适用于所有提供方）。
-3. **裸提供方键**（`region`、`access_key_id` 等）。它针对该命令的 `--provider` 所选提供方解析，否则针对**默认提供方**。如果该键不在那个提供方的 schema 里，命令以退出码 2 失败，并列出每个声明了该键的已安装提供方的限定形式。内置提供方为默认时，这与今天的行为完全一致。
+1. **核心键**（`sandbox_api_key`、`sandbox_base_url`、`sandbox_domain` 等）。
+2. **限定的提供方键** `providers.<id>.<key>`（无歧义，适用于所有提供方）。
+3. **裸提供方键**（`region`、`access_key_id` 等）。它针对该命令的 `--provider` 所选提供方解析，否则针对**默认提供方**。如果该键不在那个提供方的 schema 里，命令以退出码 2 失败，并列出每个声明了该键的已安装提供方的限定形式。
 4. `shortcuts` 与 `shortcuts.<name>`（保留前缀；提供方 id 和键永远不能以 `shortcuts` 开头）。
 
 ---
@@ -205,30 +231,27 @@ ps = "sandbox process list"
 ```text
 1. explicit        代码关键字参数 / CLI 选项 / `--opt`
 2. process env     os.environ
-3. ./.env          项目 dotenv（第一个候选）      ─┐ `_ENV_FILE_CANDIDATES` 中每个存在的文件
-4. ~/.ebx/.env     用户 dotenv（第二个候选）       ─┘ 各自是一层，按列表顺序
+3. ./.env          项目 dotenv
+4. ~/.ebx/.env     用户 dotenv
 5. ~/.ebx/config.toml
 6. default         由提供方推导或内置
 ```
 
-空白或只含空格的值在每一层都视为*未设置*（不会挡住下一层）。按顺序尝试各层；**第一个对该键有任何可接受名字的层决定结果**，在该层内按下面的*名字顺序*尝试。
+空白或只含空格的值在每一层都视为未设置（不会挡住下一层）。按顺序尝试各层。第一个设置了该键唯一变量的层决定结果。
 
-### 4.2 同一层内的名字顺序（最具体的优先）
+### 4.2 一层内只有一个变量
 
-为提供方 `P` 解析键 `K`：
+为提供方 `P` 解析键 `K` 时，读取方只查找一个环境变量：
 
-1. 提供方作用域规范名：`EBX_<P>_<K>`（仅当 `K` 在 `P` 的 schema 里，或 `P` 在 `uses_core` 里声明了它）
-2. 规范名：`EBX_<K>`（核心键）
-3. `compat` / `native` 名，按表中顺序（`E2B_API_KEY`、`ALICLOUD_ACCESS_KEY_ID`、`GITHUB_TOKEN` 等）
-4. `legacy` 名，按表中顺序（`SANDBOX_API_KEY`、`AccessKey` 等）
+1. 插件自己的字段：`EBX_<P>_<K>`
+2. 产品的核心设置：`EBX_<K>`
+3. §3 把厂商变量指定为该键变量的情况（`ALICLOUD_ACCESS_KEY_ID`、`ALIBABA_CLOUD_REGION_ID`、`ACR_NAMESPACE`、`GITHUB_TOKEN` 等）
 
-在 `config.toml` 中类似：`[providers.<P>].<K>` > `[transport].<K>`（规范名）> `[transport].<legacy 名>` > 顶层扁平 legacy 键（仅当文件没有 `[transport]` 表，与今天一致）。
+同一个键没有第二个变量。在 `config.toml` 中的顺序是 `[providers.<P>].<K>`，然后 `[transport].<K>`。
 
-原有的相对顺序原样保留（`E2B_API_KEY` > `SANDBOX_API_KEY`；`E2B_API_URL` > `SANDBOX_API_BASE_URL`；`SANDBOX_TEMPLATE` > `EBX_TEMPLATE`；`ALICLOUD_*` > `AccessKey`）。唯一新规则是规范名排在它们前面。
+### 4.3 dotenv 先按层
 
-### 4.3 唯一的规范化（dotenv 先按层）
-
-此前 `load_config` 先把 `./.env` 和 `~/.ebx/.env` 按完全相同的变量名合并，**再**套名字优先级。例如 `./.env: SANDBOX_API_KEY=a` 加 `~/.ebx/.env: E2B_API_KEY=b` 结果是 `b`，尽管文档说"`./.env` 优先于 `~/.ebx/.env`"。新的解析器先按层（`resolve_llm_env` 和 CLI 的 `_effective_value` 本来就是这样）：项目文件按文档所述获胜。这是一个边角（两个文件对同一个键用不同名字）的 bug 修复，并在 CHANGELOG 中说明。其他所有组合的解析结果与之前完全一致，包括所有现有测试。
+`./.env` 和 `~/.ebx/.env` 各自是一层。项目文件写了的键由项目文件决定。项目文件没有的键仍然来自 `~/.ebx/.env`。
 
 ### 4.4 提供方选择优先级
 
@@ -241,7 +264,7 @@ explicit provider= / --provider
   > alicloud-express
 ```
 
-CLI 对*已有*沙箱的操作还接受限定引用 `provider:sandbox_id`（§7.4），其优先级与显式选项同级。
+CLI 对已有沙箱的操作还接受限定引用 `provider:sandbox_id`（§7.4），其优先级与显式选项同级。
 
 ### 4.5 推导默认值
 
@@ -253,74 +276,31 @@ sandbox_base_url = "https://api.{region}.e2b.fc.aliyuncs.com"
 sandbox_domain   = "{region}.e2b.fc.aliyuncs.com"
 ```
 
-保持今天 `load_config` 的行为不变：只有当基础 URL **没有**通过显式参数或**进程环境变量**（规范名、`compat` 或 `legacy` 名）给出时才推导；每个推导出的键按"设置默认值"语义应用，所以来自 `.env` / `config.toml` 的基础 URL / 域名会被保留，另一个仍由区域推导；当 URL 由参数 / 环境变量显式给出时域名不推导（保持提供方默认的 `cn-hangzhou…`）——为逐位兼容而保留。没有 `derive` 的提供方只使用静态默认值。
+只有当基础 URL 没有通过显式参数或进程环境变量给出时才推导。每个推导出的键按“设置默认值”语义应用，所以来自 `.env` / `config.toml` 的基础 URL / 域名会被保留，另一个仍由区域推导。当 URL 由参数 / 环境变量显式给出时域名不推导（保持提供方默认）。没有 `derive` 的提供方只使用静态默认值。
 
 ### 4.6 提供方作用域规则（凭证隔离）
 
 * **只有当 `P` 是当前提供方时，作用域键才优先于通用键**：`providers.<P>.<key>` / `EBX_<P>_<KEY>` 优先于 `P` 被允许读取的核心键的通用名字。
 * **凭证和端点绝不跨提供方。** 为提供方 `P` 解析时，永远不会查看 `Q ≠ P` 的 `EBX_<Q>_*` 或 `[providers.Q]`。
-* **通用的凭证 / 端点键（`sandbox_api_key`、`sandbox_base_url`、`sandbox_domain`，及其所有别名如 `E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN`）属于内置提供方。** 没有这条规则，切换默认提供方会悄悄把阿里云密钥发给第三方插件（反过来也会把插件的密钥发到阿里云端点）。非内置提供方**只有**在 (a) 其清单在 `[core] inherit` 里列出它们，**并且** (b) 用户在安装 / 更新时同意了，才会收到它们（回执记录同意的列表；同意界面会打印一行点名这些键的警告）。生效的列表是 `manifest.inherit ∩ receipt.consented.inherit`。参考的 `e2b-compatible` 提供方继承这三个键，所以 `E2B_API_KEY` / `E2B_API_URL` 可以用于它——通过显式、有记录的同意。
+* **通用的凭证 / 端点键（`sandbox_api_key`、`sandbox_base_url`、`sandbox_domain`）属于内置提供方。** 没有这条规则，切换默认提供方会悄悄把阿里云密钥发给第三方插件。非内置提供方只有在 (a) 其清单在 `[core] inherit` 里列出它们，并且 (b) 用户在安装 / 更新时同意了，才会收到它们（回执记录同意的列表；同意界面会打印一行点名这些键的警告）。生效的列表是 `manifest.inherit ∩ receipt.consented.inherit`。参考的 `e2b-compatible` 提供方继承这三个键，因此 `EBX_SANDBOX_API_KEY` 和 `EBX_SANDBOX_BASE_URL` 只在这份有记录的同意之下才会交给它。
 * 非密钥调优键（`http_timeout`、`http2`、`max_retries`、连接池 / WS / 退避）与所有提供方共享。
-* LLM、GitHub 和 MCP 键不是提供方凭证，**永远不会**交给提供方。
-* 插件自己的凭证是它声明的作用域字段（通常是 `api_key`；环境变量 `EBX_<P>_API_KEY`）加上插件在该字段上列出的 `native` 环境变量名（可在 `ebx provider info` 中看到）。
+* LLM、GitHub 和 MCP 键不是提供方凭证，永远不会交给提供方。
+* 插件自己的凭证是它声明的作用域字段（环境变量 `EBX_<P>_<KEY>`）。
 * 插件的值只通过 `initialize` 请求进入插件进程，绝不通过环境变量（§8.3）。
 
 ---
 
-## 5. 完整别名表
+## 5. 每个键一个环境变量
 
-`status`：`C` 规范 · `E` compat（E2B 协议）· `N` native（厂商 / 第三方标准）· `L` legacy。每一行在以前可用的所有位置继续有效。
+§3 的表就是全部。`explain_config()` 报告层和这一个变量名。密钥已脱敏。
 
-### 5.1 环境变量
-
-| 旧名 / 备选名 | 状态 | 规范键 | 作用域 | 说明 |
-|---|---|---|---|---|
-| `E2B_API_KEY` | E | `sandbox_api_key` | 核心 | 也是阶段 1 中 `ebx config set sandbox_api_key` 写入的名字 |
-| `SANDBOX_API_KEY` | L | `sandbox_api_key` | 核心 | |
-| `E2B_API_URL` | E | `sandbox_base_url` | 核心 | |
-| `SANDBOX_API_BASE_URL` | L | `sandbox_base_url` | 核心 | |
-| `E2B_DOMAIN` | E | `sandbox_domain` | 核心 | |
-| `SANDBOX_REGION` | L | `region` | `alicloud-express` | 当前提供方声明了 `region` 时适用 |
-| `SANDBOX_HTTP_TIMEOUT` | L | `http_timeout` | 核心 | |
-| `SANDBOX_LOG_LEVEL` | L | `log_level` | 核心 | |
-| `SANDBOX_TEMPLATE`、`EBX_TEMPLATE` | L | `default_template` | 核心 | 顺序保持 |
-| `ALICLOUD_ACCESS_KEY_ID` | N | `access_key_id` | `alicloud-express` | |
-| `ALICLOUD_ACCESS_KEY_SECRET` | N | `access_key_secret` | `alicloud-express` | |
-| `AccessKey` / `AccessSecret` | L | `access_key_id` / `access_key_secret` | `alicloud-express` | |
-| `ACR_NAMESPACE` `ACR_REGISTRY` `ACR_REPO` `ACR_USERNAME` `ACR_PASSWORD` `ACR_VPC_ID` `ACR_VSWITCH_IDS` `ACR_SECURITY_GROUP_ID` | L | `acr_*` | `alicloud-express` | |
-| `ACREE_INSTANCE_ID` | L | `acr_instance_id` | `alicloud-express` | |
-| `TEAM_ID` | L | `team_id` | `alicloud-express` | |
-| `E2B_TEAM_ID` | E | `team_id` | `alicloud-express` | |
-| `GITHUB_TOKEN` | N | `github_token` | 核心 | |
-| `BAILIAN_CODING_PLAN_API_KEY`、`DASHSCOPE_API_KEY`、`OPENAI_API_KEY` | N | `llm_api_key` | 核心 | 顺序保持 |
-| `EBX_QWEN_CODE_API_KEY` | L | `llm_api_key` | 核心 | 环境变量中最低；`~/.ebx` 中的用法不变 |
-| `OPENAI_BASE_URL` / `OPENAI_MODEL` | N | `llm_base_url` / `llm_model` | 核心 | |
-| `EBX_LLM_*`、`EBX_MCP_*`、`EBX_TEMPLATE_INDEX_URL`、`EBX_TEMPLATE_DIR` | C | 不变 | 核心 | 本来就是规范名 |
-| `SANDBOX_GITHUB_TOKEN` | — | — | — | 从来没有生效；**不**支持（已修正 `.env.example`） |
-
-### 5.2 `ebx config` 键、`config.toml` 键、SDK 名字、选项
-
-| 旧名字 | 在哪里可用 | 规范名 | 状态 |
-|---|---|---|---|
-| `api_key` | `ebx config` 别名；SDK 关键字 / 字段；`[transport] api_key` | `sandbox_api_key` | L（关键字 / 字段：与 C 兼容，永不删除） |
-| `api_url` | `ebx config`；SDK 关键字 / 字段；`[transport] api_url` | `sandbox_base_url` | L |
-| `api_base_url` | `load_config` 关键字；`[transport] api_base_url`；`TransportConfig.api_base_url` | `sandbox_base_url` | L |
-| `domain` | `ebx config`；SDK；`[transport] domain` | `sandbox_domain` | L |
-| `region`、`access_key_id`、`access_key_secret`、`acr_namespace` | 所有位置 | 同名键，现在属于提供方作用域（`providers.alicloud-express.<key>`）；默认提供方保留裸形式 | C |
-| `qwen_code_api_key/base_url/model` | 已移除的键；toml 值仍读取 | `llm_*` | L（行为不变：`config get/set` 会指出替代键） |
-| `--api-key`、`--api-url`、`--domain` | `ebx mcp install/start` | `--sandbox-api-key`、`--sandbox-base-url`、`--sandbox-domain` | L（选项是同一个选项的别名） |
-| `--acree-instance-id` | 模板命令 | `--acr-instance-id` | L |
+`ebx config set` 写入 §3.3 的存储名。没有第二个存储名，也没有把一个名字改写成另一个名字的命令。
 
 ---
 
-## 6. 弃用与提示策略
+## 6. 读取方接受什么
 
-1. **默认：静默。** 现有命令不会因为使用了旧名字而改变 stdout 或 stderr。环境变量、`.env` 条目、`config.toml` 键、SDK 关键字和属性永远静默，除非用户主动开启。理由：这些名字已经烘焙进 CI 密钥、Dockerfile、编辑器 MCP 配置和 E2B 兼容代码，没有人会为了一条警告去重写它们；CI 日志 / `--json` 输出里的警告噪声对使用方是回归。
-2. **基于拉取的审计（无副作用）**：`easy_sandbox.transport.config.audit_config()`（SDK）/ `ebx config check`（CLI）列出每个正在使用的 legacy 名、位置（`env`、`./.env`、`~/.ebx/.env`、`config.toml`）和规范替代名。`--strict` 在发现任何 `legacy` 名时以 1 退出（`compat` / `native` 永不触发）。输出只含名字，不含值。
-3. **主动开启的推送**：`EBX_WARN_DEPRECATED=1`（或 `[core]` 中的 `warn_deprecated = true`）使 SDK 对每个进程中的每个 legacy 名发出一次 `DeprecationWarning`（也包括 legacy 关键字参数），CLI 在启动时对每个 legacy 名打印一行 stderr。默认关闭；`--json`、`--quiet` 或 `--ci` 生效时不打印，*除非*显式设置了该环境变量（显式开启优先于安静模式）。
-4. **一条有文档的交互提示**：在 `ebx config get|set|delete` 中使用*被重命名的配置键*（`api_url`、`domain`、`api_key`、`api_base_url`）时，在 **stderr** 打印一行淡色提示——`note: 'api_url' is now 'sandbox_base_url' (the old name keeps working)`——**仅当** stderr 是 TTY，且 `--json`、`--quiet`、`--ci` 和 CI 环境都未生效时。stdout 不变。因此非交互使用方（脚本、CI、golden 测试、`--json`）看不到任何变化。这是唯一的默认行为信号，之所以存在，是因为 `config` 是人类直接键入键名的唯一地方。
-5. `compat`（E2B）和 `native` 名永远不触发以上任何一项。
-6. 移除策略：0.x 不删除任何别名。删除需要大版本、一个版本周期里把 `EBX_WARN_DEPRECATED` 的默认值翻转，以及运行一次 `config migrate`。
+读取方接受 §3 中的变量以及对应的配置键。`load_config` 和 `TransportConfig` 使用 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`。`ebx config get|set` 使用这些键。
 
 ---
 
@@ -669,9 +649,9 @@ url, headers = await sb.network.resolve(8080)                          # 声明�
 
 ## 10. 测试策略
 
-1. **键注册表 / 别名表**：表驱动测试断言 §5 的每一行（每个别名在每一层、按文档顺序解析为规范键，覆盖 `load_config`、`explain_config`、`http_timeout_configured`）。
+1. **键注册表**：表驱动测试断言 §3 的每一行（这一个环境变量在每一层解析为该键，覆盖 `load_config`、`explain_config`、`http_timeout_configured`）。
 2. **与语言无关的解析向量**（`client-sdk/tests/fixtures/config-resolution-vectors.json`，镜像到 `cli/docs/design/fixtures/`）：每个向量是 `{sources:{overrides, environ, dotenv:[{…},{…}], toml}, provider, expect:{key:{value, source, name}}}`。Python 测试针对 Python 解析器运行；CLI 工作者针对 Node 解析器运行同一个文件。当两个仓库同时存在时，一个测试断言两份拷贝相同。
-3. **向后兼容套件**：已有的 SDK 测试必须原样通过；新测试固定 `TransportConfig(api_key=…)`、`.api_key/.api_url/.domain` 读写、`load_config(api_url=…)`、`Sandbox.create(api_key=…)` 在默认提供方路径上的行为。
+3. **构造函数套件**：测试固定 `TransportConfig(sandbox_api_key=…)`、`load_config(sandbox_base_url=…)` 和 `Sandbox.create(sandbox_api_key=…)` 在默认提供方路径上的行为。
 4. **清单**：有效 / 无效清单（每条校验规则）、版本比较器、id 语法、保留 id。
 5. **存储 / 安装器**：本地目录、git（仅在测试中用带不安全标志的 `file://` 本地裸仓库）、已固定 / 未固定、符号链接 / 路径穿越 / 大小限制拒绝、URL 凭证拒绝、目录树摘要向量（与 Node 共享）、篡改后的完整性失败、重新同意的更新、回滚、卸载 / purge、默认提供方回退、并发锁行为、安装时不执行任何代码（一个 `provider.py` 会写金丝雀文件的插件证明这一点）。
 6. **EPP 客户端**对参考插件：握手、版本不匹配、特性门控、错误映射表、超时、崩溃、格式错误的行、超长的行、stderr 捕获、环境清理（插件回显它的环境）、进程组终止、取消。
@@ -686,8 +666,8 @@ url, headers = await sb.network.resolve(8080)                          # 声明�
 
 | 部分 | 模块 |
 |---|---|
-| 键注册表、别名表、解析器、schema 导出 | `easy_sandbox/utils/config_keys.py` |
-| `TransportConfig`、`load_config`、`explain_config`、`audit_config`、迁移 | `easy_sandbox/transport/config.py` |
+| 键注册表、解析器、schema 导出 | `easy_sandbox/utils/config_keys.py` |
+| `TransportConfig`、`load_config`、`explain_config` | `easy_sandbox/transport/config.py` |
 | 提供方接口、特性、注册表 | `easy_sandbox/providers/{base,registry}.py` |
 | 内置提供方 | `easy_sandbox/providers/builtin.py` |
 | 清单 + 版本比较器 | `easy_sandbox/providers/manifest.py` |

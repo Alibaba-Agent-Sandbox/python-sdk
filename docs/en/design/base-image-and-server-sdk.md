@@ -88,9 +88,8 @@ Documented in `docs/en/reference/base-image-contract.md`-equivalent sections of
   `Image.build()` and `DockerBuilder.build*()` call `lint_dockerfile` and log a warning (not an error) for
   non-official bases, naming the consequence (`envd_inject=True` required).
 * `Sandbox.start_server(...)` (remote start + readiness) and the `Sandbox.server` client.
-* `SandboxTemplate.server` (structurally validated policy block). A declarative
-  `SandboxTemplate.base_image` field was considered and **not added**: the Dockerfile is the single
-  source of truth for the base, and the lint (`B001`) reads it from there.
+* `SandboxTemplate.server` (policy block) + `SandboxTemplate.base_image` *(optional, declarative
+  record of the intended base; consumed by tooling)* — **not** implemented as build behaviour.
 
 **Not implemented (justified)**
 
@@ -123,14 +122,3 @@ never override ENTRYPOINT, use `easy-sandbox-server serve`).
 * `Image()` default base stays `ubuntu:22.04`; `Image.official_base()` is opt-in; a non-official base
   produces a logged warning only.
 * Console script name `easy-sandbox-server` verified not to clash with `ebx`.
-
-## 8. Implementation status
-
-Implemented as designed: `easy-sandbox-server` console script (`serve`, `healthcheck`,
-`check-config`, `version`), `easy_sandbox.server.contract`, `easy_sandbox.api.base_image`
-(`official_base_image`, `is_official_base_image`, `lint_dockerfile` B001-B005,
-`warn_on_dockerfile`, `scaffold_dockerfile`, `BaseImageContract`), `Image.official_base()`,
-advisory linting in `Image.build()` and `DockerBuilder.build()`, `Sandbox.server` /
-`server_at()` / `start_server()`. Tests: `client-sdk/tests/test_api/test_base_image.py`,
-`tests/test_api/server_e2e/test_sandbox_server_helpers.py`, `server-sdk/tests/test_server/test_cli_main.py`.
-Exact CLI-side changes: [cli-followups.md](cli-followups.md).

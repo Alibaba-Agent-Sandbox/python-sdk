@@ -55,74 +55,43 @@ class TestRegistry:
             "mcp_auth_token",
         } <= secrets
 
-    @pytest.mark.parametrize(
-        "legacy",
-        [
+    def test_each_key_has_one_environment_name(self):
+        for key in ALL_KEYS:
+            assert key.aliases == ()
+            assert ck.env_names(key) == (key.env,)
+
+    def test_vendor_official_names_are_the_canonical_env(self):
+        assert ck.get_key("access_key_id", "alicloud-express").env == "ALICLOUD_ACCESS_KEY_ID"
+        assert ck.get_key("access_key_secret", "alicloud-express").env == "ALICLOUD_ACCESS_KEY_SECRET"
+        assert ck.get_key("region", "alicloud-express").env == "ALIBABA_CLOUD_REGION_ID"
+        assert ck.get_key("acr_namespace", "alicloud-express").env == "ACR_NAMESPACE"
+        assert ck.get_key("acr_password", "alicloud-express").env == "ACR_PASSWORD"
+        assert ck.get_key("github_token").env == "GITHUB_TOKEN"
+        assert ck.get_key("sandbox_api_key").env == "EBX_SANDBOX_API_KEY"
+        assert ck.get_key("llm_api_key").env == "EBX_LLM_API_KEY"
+
+    def test_retired_names_are_not_resolved(self):
+        retired = (
+            "E2B_API_KEY",
             "SANDBOX_API_KEY",
-            "SANDBOX_API_BASE_URL",
-            "SANDBOX_HTTP_TIMEOUT",
-            "SANDBOX_LOG_LEVEL",
-            "SANDBOX_TEMPLATE",
-            "EBX_TEMPLATE",
-            "EBX_QWEN_CODE_API_KEY",
+            "E2B_API_URL",
             "SANDBOX_REGION",
             "AccessKey",
             "AccessSecret",
-            "ACR_NAMESPACE",
-            "ACR_REGISTRY",
-            "ACR_REPO",
-            "ACR_USERNAME",
-            "ACR_PASSWORD",
-            "ACREE_INSTANCE_ID",
-            "ACR_VPC_ID",
-            "ACR_VSWITCH_IDS",
-            "ACR_SECURITY_GROUP_ID",
-            "TEAM_ID",
-        ],
-    )
-    def test_inventory_names_are_all_known(self, legacy):
-        known = {a.name for k in ALL_KEYS for a in k.aliases if a.surface == "env"}
-        assert legacy in known
-
-    @pytest.mark.parametrize(
-        "compat",
-        [
-            "E2B_API_KEY",
-            "E2B_API_URL",
-            "E2B_DOMAIN",
-            "E2B_TEAM_ID",
-            "ALICLOUD_ACCESS_KEY_ID",
-            "ALICLOUD_ACCESS_KEY_SECRET",
-            "GITHUB_TOKEN",
+            "EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID",
+            "EBX_ALICLOUD_EXPRESS_REGION",
             "OPENAI_API_KEY",
-            "OPENAI_BASE_URL",
-            "OPENAI_MODEL",
             "DASHSCOPE_API_KEY",
-            "BAILIAN_CODING_PLAN_API_KEY",
-        ],
-    )
-    def test_compat_and_native_names_are_known(self, compat):
-        known = {
-            a.name
-            for k in ALL_KEYS
-            for a in k.aliases
-            if a.surface == "env" and a.kind in ("compat", "native")
-        }
-        assert compat in known
+        )
+        known = {k.env for k in ALL_KEYS}
+        for name in retired:
+            assert name not in known
 
-    def test_e2b_names_are_never_legacy(self):
-        for k in ALL_KEYS:
-            for a in k.aliases:
-                if a.name.startswith("E2B_"):
-                    assert a.kind == "compat"
-
-    def test_env_names_order_scoped_canonical_compat_legacy(self):
+    def test_env_names_order_is_scoped_then_canonical(self):
         key = ck.get_key("sandbox_api_key")
         assert ck.env_names(key, scoped_for="my-prov") == (
             "EBX_MY_PROV_SANDBOX_API_KEY",
             "EBX_SANDBOX_API_KEY",
-            "E2B_API_KEY",
-            "SANDBOX_API_KEY",
         )
 
     def test_schema_export_is_stable_and_complete(self):
@@ -209,31 +178,17 @@ class TestResolvePrecedence:
         r = resolve_key(self.KEY, src)
         assert (r.value, r.layer) == ("t", "toml")
 
-    def test_layer_beats_name_priority(self):
-        """A legacy name in a higher layer beats a canonical name in a lower layer."""
+    def test_retired_name_does_not_beat_the_canonical_name(self):
         src = _src(
-            environ={"SANDBOX_API_KEY": "legacy-env"},
+            environ={"SANDBOX_API_KEY": "legacy-env", "E2B_API_KEY": "compat-env"},
             dotenv=[{"EBX_SANDBOX_API_KEY": "canon-dotenv"}],
         )
-        assert resolve_key(self.KEY, src).value == "legacy-env"
-
-    @pytest.mark.parametrize(
-        "names",
-        [
-            ["EBX_SANDBOX_API_KEY", "E2B_API_KEY", "SANDBOX_API_KEY"],
-        ],
-    )
-    def test_name_order_within_layer(self, names):
-        environ = {n: n for n in names}
-        for i, n in enumerate(names):
-            r = resolve_key(self.KEY, _src(environ=environ))
-            assert r.value == n, f"step {i}"
-            environ.pop(n)
+        assert resolve_key(self.KEY, src).value == "canon-dotenv"
 
     def test_blank_values_fall_through(self):
         src = _src(
-            environ={"EBX_SANDBOX_API_KEY": "  ", "E2B_API_KEY": ""},
-            dotenv=[{"SANDBOX_API_KEY": "from-dotenv"}],
+            environ={"EBX_SANDBOX_API_KEY": "  "},
+            dotenv=[{"EBX_SANDBOX_API_KEY": "from-dotenv"}],
         )
         assert resolve_key(self.KEY, src).value == "from-dotenv"
 
@@ -252,28 +207,26 @@ class TestResolvePrecedence:
         assert resolve_key(self.KEY, _src(toml=toml), scoped_for="my-prov").value == "scoped"
         assert resolve_key(self.KEY, _src(toml=toml)).value == "plain"
 
-    def test_toml_name_order(self):
+    def test_toml_ignores_retired_names(self):
         key = ck.get_key("sandbox_base_url")
         toml = {"transport": {"api_url": "legacy", "sandbox_base_url": "canon"}}
         assert resolve_key(key, _src(toml=toml)).value == "canon"
         toml = {"transport": {"api_base_url": "b", "api_url": "a"}}
-        assert resolve_key(key, _src(toml=toml)).value == "a"
+        assert resolve_key(key, _src(toml=toml)).layer == "default"
 
-    def test_flat_legacy_toml_only_without_transport_table(self):
+    def test_flat_retired_toml_is_ignored(self):
         key = ck.get_key("sandbox_base_url")
-        assert resolve_key(key, _src(toml={"api_url": "flat"})).value == "flat"
-        got = resolve_key(key, _src(toml={"api_url": "flat", "transport": {"x": 1}}))
-        assert got.layer == "default"
+        assert resolve_key(key, _src(toml={"api_url": "flat"})).layer == "default"
 
     def test_default_applies_last_and_can_be_disabled(self):
         key = ck.get_key("http_timeout")
         assert resolve_key(key, _src()).value == 30.0
         assert resolve_key(key, _src(), use_default=False) is None
 
-    def test_overrides_accept_legacy_kwarg_names(self):
+    def test_overrides_ignore_retired_kwarg_names(self):
         key = ck.get_key("sandbox_base_url")
-        assert resolve_key(key, _src(overrides={"api_url": "u"})).value == "u"
-        assert resolve_key(key, _src(overrides={"api_base_url": "u2"})).value == "u2"
+        assert resolve_key(key, _src(overrides={"api_url": "u"})).layer == "default"
+        assert resolve_key(key, _src(overrides={"sandbox_base_url": "u2"})).value == "u2"
 
 
 @pytest.mark.parametrize("key", ALL_KEYS, ids=lambda k: f"{k.scope}.{k.key}")

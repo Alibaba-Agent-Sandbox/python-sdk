@@ -207,7 +207,7 @@ The wire methods, their parameter names and types, and which are required are li
 
 Each provider has its own scoped keys: `EBX_<PROVIDER>_<KEY>` in the environment or `.env`, `[providers.<id>]` in `config.toml`, `provider_options={...}` in the SDK. The provider receives only the keys its manifest declares, in the `initialize` request. Secrets are never put in the plugin's argv or environment.
 
-The generic keys `sandbox_api_key`, `sandbox_base_url` and `sandbox_domain` (including `E2B_API_KEY` and `E2B_API_URL`) belong to the built-in provider. A plugin gets them only if its manifest lists them in `[core] inherit` **and** you consented at install or update time. The consent screen names the keys. Your LLM, GitHub and MCP keys are never delivered to a provider.
+The generic keys `sandbox_api_key`, `sandbox_base_url` and `sandbox_domain` (`EBX_SANDBOX_API_KEY` and `EBX_SANDBOX_BASE_URL`) belong to the built-in provider. A plugin gets them only if its manifest lists them in `[core] inherit` **and** you consented at install or update time. The consent screen names the keys. Your LLM, GitHub and MCP keys are never delivered to a provider.
 
 ### What the host does to the plugin process
 

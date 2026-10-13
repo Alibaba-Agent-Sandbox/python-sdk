@@ -1,6 +1,6 @@
 # Python Hello 模板
 
-> **Fixture**：本目录是主仓库的**离线测试夹具**（`client-sdk/tests/test_templates/` 使用），
+> **Fixture**：本目录是主仓库的**离线测试夹具**（`tests/test_templates/` 使用），
 > 不是发布真源。模板内容、索引与发布以
 > [`Easy-Sandbox/awesome-templates`](https://github.com/Easy-Sandbox/awesome-templates/tree/main/python-hello)
 > 为准。
@@ -8,8 +8,6 @@
 基础 Python 开发环境模板。
 
 ## 安装
-
-> 以下 `ebx` 命令由独立 `cli` 仓库中的 `ebx` CLI 提供（`npm install -g @easy-sandbox/cli`）。
 
 ```bash
 ebx install ./examples/templates/python-hello --registry-type local
@@ -56,5 +54,4 @@ ebx download <sandbox-id> /app/remote.txt ./local_file.txt
 
 - 基础镜像: Ubuntu 22.04
 - Python 3 + pip
-- 容器内运行时: `pip install easy-sandbox-server`（提供 `easy_sandbox.server`）
 - 工作目录: /app

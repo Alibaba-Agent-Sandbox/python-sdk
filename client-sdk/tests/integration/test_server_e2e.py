@@ -22,11 +22,8 @@ import urllib.request
 from typing import Any
 
 import pytest
-
-pytest.importorskip("easy_sandbox.server", reason="needs the easy-sandbox-server distribution")
-
-from easy_sandbox.server import CommandArg, CommandRegistry, SandboxServer  # noqa: E402
-from easy_sandbox.server.routes import (  # noqa: E402
+from easy_sandbox.server import CommandArg, CommandRegistry, SandboxServer
+from easy_sandbox.server.routes import (
     _KNOWN_BUILTINS,
     _enabled_builtins,
     disable_builtin,

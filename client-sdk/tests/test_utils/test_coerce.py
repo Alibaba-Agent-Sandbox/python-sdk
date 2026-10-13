@@ -10,13 +10,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from easy_sandbox.server.registry import CommandArg
 
 from easy_sandbox.models.template import CustomCommandArg
 from easy_sandbox.utils.coerce import coerce_kwargs, parse_scalar
-
-pytest.importorskip("easy_sandbox.server", reason="needs the easy-sandbox-server distribution")
-
-from easy_sandbox.server.registry import CommandArg  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # parse_scalar
@@ -176,7 +173,7 @@ class TestCoerceBooleanDefaults:
 
 def test_client_and_server_coerce_copies_are_identical() -> None:
     """The client and server distributions each ship ``coerce``; they must not drift."""
-    server_coerce = pytest.importorskip("easy_sandbox.server._coerce")
+    import easy_sandbox.server._coerce as server_coerce
 
     import easy_sandbox.utils.coerce as client_coerce
 

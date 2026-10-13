@@ -97,7 +97,7 @@ def _build_infra(
 
     config = load_config(**config_overrides)
     auth = create_auth_provider(
-        api_key=config.api_key,
+        api_key=config.sandbox_api_key,
         access_key_id=config.access_key_id,
         access_key_secret=config.access_key_secret,
     )
@@ -628,7 +628,7 @@ class Sandbox:
                 auth=auth,
                 envd_token=envd_token,
                 sandbox_protocol=sandbox_protocol,
-                domain=domain or config.domain,
+                domain=domain or config.sandbox_domain,
                 secure=True if secure is None else secure,
                 resolved_capabilities=resolved,
             )
@@ -719,7 +719,7 @@ class Sandbox:
                 auth=auth,
                 envd_token=envd_token,
                 sandbox_protocol=sandbox_protocol,
-                domain=domain or config.domain,
+                domain=domain or config.sandbox_domain,
                 resolved_capabilities=resolved,
             )
         except Exception:

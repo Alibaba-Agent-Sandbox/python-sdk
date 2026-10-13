@@ -754,7 +754,7 @@ class DockerBuilder:
 
         config = load_config(**config_overrides)
         auth = create_auth_provider(
-            api_key=config.api_key,
+            api_key=config.sandbox_api_key,
             access_key_id=config.access_key_id,
             access_key_secret=config.access_key_secret,
         )

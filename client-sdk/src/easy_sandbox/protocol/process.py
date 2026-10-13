@@ -17,22 +17,16 @@ from __future__ import annotations
 import base64
 from typing import TYPE_CHECKING, Any
 
-import httpx
-
-from easy_sandbox.models.errors import CommandTimeoutError
 from easy_sandbox.models.process import (
     ProcessChunk,
     ProcessChunkType,
     ProcessInfo,
 )
 from easy_sandbox.transport.codec import ConnectCodec
-from easy_sandbox.transport.http import envd_status_error
 from easy_sandbox.transport.streaming import StreamReader
 from easy_sandbox.utils.logging import get_logger
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
-
     from easy_sandbox.transport.auth import EnvdTokenManager
     from easy_sandbox.transport.http import HttpClient
 
@@ -53,25 +47,6 @@ _CONNECT = _codec.build_rpc_path("process", "Process", "Connect")
 _UPDATE = _codec.build_rpc_path("process", "Process", "Update")
 _SEND_INPUT = _codec.build_rpc_path("process", "Process", "SendInput")
 _SEND_SIGNAL = _codec.build_rpc_path("process", "Process", "SendSignal")
-
-
-# envd ``Signal`` enum (process.proto): only these two can be delivered through ``SendSignal``.
-_SIGNAL_NAMES: dict[int, str] = {9: "SIGNAL_SIGKILL", 15: "SIGNAL_SIGTERM"}
-
-
-def _process_selector(pid: int | str) -> dict[str, Any]:
-    """Build envd's ``ProcessSelector`` (``{"pid": N}`` or ``{"tag": "..."}``).
-
-    A digit-only string is a pid (the CLI passes pids as text); any other string is a process tag.
-    """
-    if isinstance(pid, bool):
-        raise TypeError("pid must be an int or str, not bool")
-    if isinstance(pid, int):
-        return {"pid": pid}
-    text = str(pid).strip()
-    if text.isdigit():
-        return {"pid": int(text)}
-    return {"tag": text}
 
 
 def _parse_process_chunk(frame: dict[str, Any]) -> ProcessChunk:
@@ -170,7 +145,7 @@ class ProcessProtocol:
         if args:
             process_obj["args"] = args
         if env:
-            process_obj["envs"] = env
+            process_obj["envVars"] = env
         if cwd:
             process_obj["cwd"] = cwd
         if user:
@@ -191,68 +166,7 @@ class ProcessProtocol:
             request_timeout=http_timeout,
         )
 
-        guarded = self._guard_command_timeout(
-            raw_stream, envd_url, envd_token, timeout=timeout, http_timeout=http_timeout
-        )
-        return StreamReader(guarded, _parse_process_chunk)
-
-    async def _guard_command_timeout(
-        self,
-        raw_stream: AsyncIterator[dict[str, Any]],
-        envd_url: str,
-        envd_token: EnvdTokenManager,
-        *,
-        timeout: int,
-        http_timeout: float,
-    ) -> AsyncIterator[dict[str, Any]]:
-        """Re-raise the HTTP read timeout of a command stream as :class:`CommandTimeoutError`.
-
-        The HTTP read timeout is derived from the command timeout, so a silent command that
-        outlives it surfaces from httpx as ``ReadTimeout``.  The process is killed on a
-        best-effort basis (closing the HTTP stream does not stop it) and the SDK error is raised.
-        """
-        pid: int | None = None
-        try:
-            async for frame in raw_stream:
-                started = (frame.get("event") or {}).get("start")
-                if isinstance(started, dict) and isinstance(started.get("pid"), int):
-                    pid = started["pid"]
-                yield frame
-        except httpx.ReadTimeout as exc:
-            if pid is not None:
-                try:
-                    await self.send_signal(
-                        envd_url, envd_token, pid=pid, signal=9, request_timeout=10.0
-                    )
-                except Exception:  # best effort: the timeout is what the caller must see
-                    logger.debug("could not kill timed-out process %s", pid)
-            detail = f"no output for {http_timeout:g}s"
-            if pid is not None:
-                detail += f"; pid {pid} was asked to stop"
-            raise CommandTimeoutError(
-                f"Command did not finish within {timeout}s ({detail})."
-            ) from exc
-
-    async def _unary(
-        self,
-        envd_url: str,
-        envd_token: EnvdTokenManager,
-        rpc_path: str,
-        payload: dict[str, Any],
-        *,
-        request_timeout: float | None = None,
-    ) -> dict[str, Any]:
-        """Unary envd call whose HTTP errors surface as :class:`EnvdRpcError`."""
-        try:
-            return await self._http.envd_request(
-                envd_url,
-                rpc_path,
-                payload=payload,
-                envd_token=envd_token,
-                request_timeout=request_timeout,
-            )
-        except httpx.HTTPStatusError as exc:
-            raise envd_status_error(exc, rpc_path) from exc
+        return StreamReader(raw_stream, _parse_process_chunk)
 
     async def list_processes(
         self,
@@ -263,7 +177,12 @@ class ProcessProtocol:
 
         POST envd_url + /process.Process/List (Connect unary, 已实测验证)
         """
-        response = await self._unary(envd_url, envd_token, _LIST, {})
+        response = await self._http.envd_request(
+            envd_url,
+            _LIST,
+            payload={},
+            envd_token=envd_token,
+        )
 
         processes = response.get("processes", response.get("result", {}).get("processes", []))
         return [ProcessInfo.model_validate(p) for p in processes]
@@ -273,7 +192,7 @@ class ProcessProtocol:
         envd_url: str,
         envd_token: EnvdTokenManager,
         *,
-        pid: int | str,
+        pid: int,
     ) -> StreamReader[ProcessChunk]:
         """Connect to an existing process and stream its output.
 
@@ -282,7 +201,7 @@ class ProcessProtocol:
         raw_stream = self._http.envd_stream(
             envd_url,
             _CONNECT,
-            payload={"process": _process_selector(pid)},
+            payload={"pid": pid},
             envd_token=envd_token,
         )
         return StreamReader(raw_stream, _parse_process_chunk)
@@ -292,37 +211,38 @@ class ProcessProtocol:
         envd_url: str,
         envd_token: EnvdTokenManager,
         *,
-        pid: int | str,
+        pid: int,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Update process settings.
 
         POST envd_url + /process.Process/Update (Connect unary, 已实测验证)
         """
-        payload: dict[str, Any] = {"process": _process_selector(pid), **kwargs}
-        return await self._unary(envd_url, envd_token, _UPDATE, payload)
+        payload: dict[str, Any] = {"pid": pid, **kwargs}
+        return await self._http.envd_request(
+            envd_url,
+            _UPDATE,
+            payload=payload,
+            envd_token=envd_token,
+        )
 
     async def send_input(
         self,
         envd_url: str,
         envd_token: EnvdTokenManager,
         *,
-        pid: int | str,
+        pid: int,
         data: str,
     ) -> None:
         """Send data to a process's stdin.
 
         POST envd_url + /process.Process/SendInput (Connect unary, 已实测验证)
-
-        Body: ``{"process": {"pid": N}, "input": {"stdin": <base64>}}`` (``bytes`` fields are
-        base64 in protobuf-JSON).
         """
-        stdin = base64.b64encode(data.encode("utf-8")).decode("ascii")
-        await self._unary(
+        await self._http.envd_request(
             envd_url,
-            envd_token,
             _SEND_INPUT,
-            {"process": _process_selector(pid), "input": {"stdin": stdin}},
+            payload={"pid": pid, "data": data},
+            envd_token=envd_token,
         )
 
     async def send_signal(
@@ -330,34 +250,18 @@ class ProcessProtocol:
         envd_url: str,
         envd_token: EnvdTokenManager,
         *,
-        pid: int | str,
+        pid: int,
         signal: int = 15,
-        request_timeout: float | None = None,
     ) -> None:
-        """Send a signal to a process (SIGTERM=15 or SIGKILL=9).
+        """Send a signal to a process (e.g. SIGTERM=15, SIGKILL=9).
 
         POST envd_url + /process.Process/SendSignal (Connect unary, 已实测验证)
-
-        Body: ``{"process": {"pid": N}, "signal": "SIGNAL_SIGTERM" | "SIGNAL_SIGKILL"}``.
-        envd's ``Signal`` enum has only those two values.
-
-        The pid is envd's process id (``Commands.list()`` / the ``start`` event), which is not
-        necessarily the OS pid, so other signals cannot be emulated with ``kill``.
-
-        Raises:
-            ValueError: *signal* is neither 15 nor 9.
         """
-        name = _SIGNAL_NAMES.get(signal)
-        if name is None:
-            raise ValueError(
-                f"envd can only deliver SIGTERM (15) and SIGKILL (9) to a process; got {signal!r}"
-            )
-        await self._unary(
+        await self._http.envd_request(
             envd_url,
-            envd_token,
             _SEND_SIGNAL,
-            {"process": _process_selector(pid), "signal": name},
-            request_timeout=request_timeout,
+            payload={"pid": pid, "signal": signal},
+            envd_token=envd_token,
         )
 
     # --- backward-compat aliases ---
@@ -367,7 +271,7 @@ class ProcessProtocol:
         envd_url: str,
         envd_token: EnvdTokenManager,
         *,
-        pid: int | str,
+        pid: int,
         data: str,
     ) -> None:
         """Deprecated: use send_input(). Kept for backward compatibility."""
@@ -378,7 +282,7 @@ class ProcessProtocol:
         envd_url: str,
         envd_token: EnvdTokenManager,
         *,
-        pid: int | str,
+        pid: int,
     ) -> None:
         """Deprecated: use send_signal(). Kept for backward compatibility."""
         await self.send_signal(envd_url, envd_token, pid=pid, signal=9)

@@ -2,7 +2,7 @@
 
 > **Status**: Accepted (design reviewed in two adversarial rounds, see [providers-and-credentials-review.md](providers-and-credentials-review.md)) · **Scope**: Python SDK (`client-sdk`) and the Node.js `ebx` CLI · **CLI-facing spec**: `cli/docs/design/providers-and-credentials-cli.md`
 >
-> **Compatibility rule for everything below**: every old name, file layout and behaviour keeps working. This document only *adds* canonical names and a provider layer. Nothing is removed in 0.x.
+> **Naming rule**: each configuration key has exactly one environment variable. That variable is the only name a reader accepts, and it is the name `ebx config set` writes. There is no second name and no migration command.
 
 ---
 
@@ -11,7 +11,7 @@
 **Goals**
 
 1. One coherent naming scheme for every credential / configuration key, in every surface: `config.toml`, `~/.ebx/.env`, `ebx config set/get`, environment variables, SDK `TransportConfig` fields and `Sandbox.*` keyword arguments, CLI flags.
-2. A documented precedence story and a complete alias table. Old names keep working everywhere.
+2. One environment variable per key, documented in §3. A reader stops at the first layer that sets that variable.
 3. A provider abstraction so that backends other than Alibaba Cloud can be added later by **plugins**, installed with `ebx provider install <path-or-git-url>` (CLI) or `python -m easy_sandbox.providers install ...` (SDK-only users), selectable per command (`--provider`), per process (`EBX_PROVIDER`), per project (`./.env`), per user (config), and per SDK call (`Sandbox.create(provider=...)`).
 4. The built-in provider stays the default and is presented as **Alibaba Cloud Express Edition (阿里云极速版)** with the stable id `alicloud-express`.
 
@@ -20,63 +20,61 @@
 * Running untrusted plugin code in a hard sandbox (cross-platform it is not achievable; we do consent + pinning + integrity + env scrubbing instead, see §8).
 * A public plugin registry / marketplace (the manifest has a reserved `source` slot; v1 installs from a directory or a git URL only).
 * Renaming `EBX_SERVER_*`, `EBX_PTY_PORT`, `EBX_MAX_UPLOAD_SIZE` (in-sandbox server variables baked into deployed images).
-* Removing any alias.
 
 ---
 
-## 1. Inventory (as of `b15b88f` + the split)
+## 1. Inventory
 
-Sources scanned: `transport/config.py`, `transport/auth.py`, `models/config.py`, `models/errors.py`, `api/{sandbox,deploy,docker_builder,image,fc_template}.py`, `declarative/decorator.py`, `agent/{mcp,mcp_http}.py`, `utils/{github_token,registry,template_index,logging}.py`, the original Python CLI (`cli/commands/config_cmd.py`, `template.py`, `sandbox.py`, `mcp.py`, `cli/region.py`, `cli/main.py`), `agent/qwen_code.py`, `.env.example`, and the docs (`reference/configuration.md`, `guide/environment-variables.md`, `guide/authentication.md`).
+Sources scanned: `transport/config.py`, `transport/auth.py`, `models/config.py`, `models/errors.py`, `api/{sandbox,deploy,docker_builder,image,fc_template}.py`, `declarative/decorator.py`, `agent/{mcp,mcp_http}.py`, `utils/{github_token,registry,template_index,logging}.py`, the CLI, `agent/qwen_code.py`, `.env.example`, and the docs (`reference/configuration.md`, `guide/environment-variables.md`, `guide/authentication.md`).
 
 ### 1.1 Sandbox control plane / transport
 
-| Concept | `ebx config` key | config.toml (`[transport]`) | Env vars (priority order, process env, `./.env`, `~/.ebx/.env`) | SDK field / kwarg | CLI flag |
-|---|---|---|---|---|---|
-| Sandbox API key | `sandbox_api_key` (alias `api_key`) | `api_key` (legacy, read) | `E2B_API_KEY` > `SANDBOX_API_KEY`; `config set` writes `E2B_API_KEY` to `~/.ebx/.env` | `api_key` | `--api-key` (`mcp install`, `mcp start`) |
-| Platform base URL | `api_url` | `api_url` (`api_base_url` legacy) | `E2B_API_URL` > `SANDBOX_API_BASE_URL` | `api_url` (`api_base_url` accepted by `load_config`) | `--api-url` (`mcp`) |
-| Data-plane domain | `domain` | `domain` | `E2B_DOMAIN` | `domain` | `--domain` (`mcp`) |
-| Region | `region` | `region` | `SANDBOX_REGION` | `region` (`load_config` only) | `--region/-r` (command-level) |
-| HTTP timeout | `http_timeout` | `http_timeout` | `SANDBOX_HTTP_TIMEOUT` | `http_timeout` | — |
-| HTTP/2 | `http2` | `http2` | — | `http2` | — |
-| Max retries | `max_retries` | `max_retries` | — | `max_retries` | — |
-| Pool/keep-alive/WS/backoff | — | `max_connections`, `max_keepalive_connections`, `keepalive_expiry`, `ws_ping_interval`, `retry_base_delay` | — | same | — |
-| Sandbox TTL | — | — | — | `Sandbox.create(timeout=)` | `--timeout/-t` (global, default 300; **not** an HTTP timeout) |
-| Default template | — | — | `SANDBOX_TEMPLATE` > `EBX_TEMPLATE` (MCP only) | `GlobalConfig.default_template` | `--template` |
-| Log level | — | — | `SANDBOX_LOG_LEVEL` | — | `--log-level`, `--verbose` |
+| Concept | `ebx config` key | config.toml | Environment variable | SDK field / kwarg |
+|---|---|---|---|---|
+| Sandbox API key | `sandbox_api_key` | secret in `~/.ebx/.env` | `EBX_SANDBOX_API_KEY` | `sandbox_api_key` |
+| Platform base URL | `sandbox_base_url` | `[transport] sandbox_base_url` | `EBX_SANDBOX_BASE_URL` | `sandbox_base_url` |
+| Data-plane domain | `sandbox_domain` | `[transport] sandbox_domain` | `EBX_SANDBOX_DOMAIN` | `sandbox_domain` |
+| Region | `region` | `[providers.alicloud-express] region` | `ALIBABA_CLOUD_REGION_ID` | `region` |
+| HTTP timeout | `http_timeout` | `[transport] http_timeout` | `EBX_HTTP_TIMEOUT` | `http_timeout` |
+| HTTP/2 | `http2` | `http2` | `EBX_HTTP2` | `http2` |
+| Max retries | `max_retries` | `max_retries` | `EBX_MAX_RETRIES` | `max_retries` |
+| Log level | `log_level` | `log_level` | `EBX_LOG_LEVEL` | `log_level` |
+| Default template | `default_template` | `default_template` | `EBX_DEFAULT_TEMPLATE` | `default_template` |
+| Provider | `provider` | `[core] provider` | `EBX_PROVIDER` | `provider` |
+
+Sandbox TTL (`Sandbox.create(timeout=)`, `--timeout/-t`) is not an HTTP timeout.
 
 ### 1.2 Alibaba Cloud (provider-specific)
 
-| Concept | `ebx config` key | Storage | Env vars | SDK | CLI flag |
-|---|---|---|---|---|---|
-| AccessKey ID | `access_key_id` | `~/.ebx/.env` | `ALICLOUD_ACCESS_KEY_ID` > `AccessKey` | `access_key_id` | — |
-| AccessKey Secret | `access_key_secret` | `~/.ebx/.env` | `ALICLOUD_ACCESS_KEY_SECRET` > `AccessSecret` | `access_key_secret` | — |
-| ACR namespace | `acr_namespace` | `~/.ebx/.env` | `ACR_NAMESPACE` | `ACRConfig.namespace` | `--acr-namespace` |
-| ACR registry | — | — | `ACR_REGISTRY` (process env only) | `ACRConfig.registry` | `--acr-registry` |
-| ACR repo | — | — | `ACR_REPO` | `ACRConfig.repo` | `--acr-repo` |
-| ACR username / password | — | — | `ACR_USERNAME`, `ACR_PASSWORD` | `ACRConfig.username/password` | `--acr-username`, `--acr-password` |
-| ACR EE instance | — | — | `ACREE_INSTANCE_ID` | `ACRConfig.acree_instance_id` | `--acree-instance-id` |
-| ACR EE network | — | — | `ACR_VPC_ID`, `ACR_VSWITCH_IDS`, `ACR_SECURITY_GROUP_ID` | `ACRConfig.vpc_id` ... | `--vpc-id`, `--vswitch-ids`, `--security-group-id` |
-| Team id | — | — | `TEAM_ID` > `E2B_TEAM_ID` (flag env only) | — | `--team-id` |
+| Concept | `ebx config` key | Environment variable | Notes |
+|---|---|---|---|
+| AccessKey ID | `access_key_id` | `ALICLOUD_ACCESS_KEY_ID` | `~/.ebx/.env` |
+| AccessKey Secret | `access_key_secret` | `ALICLOUD_ACCESS_KEY_SECRET` | `~/.ebx/.env` |
+| ACR namespace | `acr_namespace` | `ACR_NAMESPACE` | |
+| ACR registry | `acr_registry` | `ACR_REGISTRY` | |
+| ACR repo | `acr_repo` | `ACR_REPO` | |
+| ACR username / password | `acr_username` / `acr_password` | `ACR_USERNAME` / `ACR_PASSWORD` | |
+| ACR EE instance | `acr_instance_id` | `ACREE_INSTANCE_ID` | |
+| ACR EE network | `acr_vpc_id`, `acr_vswitch_ids`, `acr_security_group_id` | `ACR_VPC_ID`, `ACR_VSWITCH_IDS`, `ACR_SECURITY_GROUP_ID` | |
+| Team id | `team_id` | `EBX_ALICLOUD_EXPRESS_TEAM_ID` | Optional. Not required. |
 
 ### 1.3 LLM / coding agent (provider-independent)
 
-| Concept | Key | Env vars (priority) | SDK |
-|---|---|---|---|
-| LLM API key | `llm_api_key` (stored as `EBX_LLM_API_KEY` in `~/.ebx/.env`; a legacy `[transport] llm_api_key` is still read) | `EBX_LLM_API_KEY` > `BAILIAN_CODING_PLAN_API_KEY` > `DASHSCOPE_API_KEY` > `OPENAI_API_KEY` > `EBX_QWEN_CODE_API_KEY` (legacy) | `Sandbox.deploy(llm_api_key=)` |
-| LLM base URL | `llm_base_url` (legacy toml `qwen_code_base_url`) | `EBX_LLM_BASE_URL` > `OPENAI_BASE_URL` | `openai_base_url=` |
-| LLM model | `llm_model` (legacy toml `qwen_code_model`) | `EBX_LLM_MODEL` > `OPENAI_MODEL` | `openai_model=` |
-| Removed keys | `qwen_code_api_key`, `qwen_code_base_url`, `qwen_code_model` (`config get/set` name the replacement) | `EBX_QWEN_CODE_API_KEY` still read | — |
-| Agent tuning | — | `EBX_QWEN_CODE_BIN`, `EBX_QWEN_RESEARCH_TIMEOUT`, `EBX_QWEN_CODEGEN_TIMEOUT` | — |
+| Concept | Key | Environment variable |
+|---|---|---|
+| LLM API key | `llm_api_key` | `EBX_LLM_API_KEY` |
+| LLM base URL | `llm_base_url` | `EBX_LLM_BASE_URL` |
+| LLM model | `llm_model` | `EBX_LLM_MODEL` |
+| Agent tuning | — | `EBX_QWEN_CODE_BIN`, `EBX_QWEN_RESEARCH_TIMEOUT`, `EBX_QWEN_CODEGEN_TIMEOUT` |
 
 ### 1.4 Integrations, tooling, UI
 
-| Concept | Key | Env | Notes |
+| Concept | Key | Environment variable | Notes |
 |---|---|---|---|
-| GitHub token | `github_token` (`~/.ebx/.env` as `GITHUB_TOKEN`) | `GITHUB_TOKEN` | flag `--token` (template install/search/update). `.env.example` mentions `SANDBOX_GITHUB_TOKEN` — **no code ever read it** (documentation bug, not an alias). |
-| Template index URL | — | `EBX_TEMPLATE_INDEX_URL` | `utils/template_index.py` |
-| Template dir | — | `EBX_TEMPLATE_DIR` | CLI `template build` argument |
-| Team id | see 1.2 | | |
-| MCP server | — | `EBX_MCP_AUTH_TOKEN`, `EBX_MCP_ALLOWED_ORIGINS`, `EBX_MCP_RUNTIME_DIR`, plus `E2B_API_KEY/E2B_API_URL/E2B_DOMAIN/SANDBOX_*` | `agent/mcp*.py`, `ebx mcp install/start` |
+| GitHub token | `github_token` | `GITHUB_TOKEN` | flag `--token` (template install/search/update). Stored in `~/.ebx/.env`. |
+| Template index URL | `template_index_url` | `EBX_TEMPLATE_INDEX_URL` | environment only |
+| Template dir | `template_dir` | `EBX_TEMPLATE_DIR` | environment only |
+| MCP server | `mcp_*` | `EBX_MCP_AUTH_TOKEN`, `EBX_MCP_ALLOWED_ORIGINS`, `EBX_MCP_RUNTIME_DIR` | environment only; sandbox calls use `EBX_SANDBOX_API_KEY` |
 | CLI display | — | `EBX_ACTIVITY_LINES`, `EBX_DISCOVER_COMMANDS` | not stored by `ebx config` |
 | Shortcuts | `shortcuts`, `shortcuts.<name>` | — | `[shortcuts]` table of `config.toml` |
 | Secret store | — | — | `~/.ebx/secrets.json` (SDK `SecretStore`, 0600) — not a config surface |
@@ -89,171 +87,137 @@ Sources scanned: `transport/config.py`, `transport/auth.py`, `models/config.py`,
 
 `CI`, `GITHUB_ACTIONS`, `GITLAB_CI`, `JENKINS_URL`, `NO_COLOR`, `TERM`, `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`, `DOCKER_BUILDKIT`, `HOME`, `APPDATA`, `COMSPEC`.
 
-### 1.7 Other configuration surfaces found in the review (round 1)
+### 1.7 Other configuration surfaces
 
 | Surface | Names | Treatment |
 |---|---|---|
-| `sandbox.yaml` (`SandboxDeclarativeConfig`) and `@sandbox(...)` | `template`, `timeout`, `envs`, `cpu`, `memory`, `api_key`, `api_url`, `domain` | gain `provider`, `provider_options`, canonical `sandbox_*` kwargs; old kwargs unchanged |
-| `GlobalConfig` (`models/config.py`, exported, unused by the loaders) | `api_key`, `api_url`, `domain`, `region`, `timeout` (sandbox TTL, **not** `http_timeout`), `max_retries`, `secure`, `log_level`, `default_template` | aligned to the same canonical names with legacy aliases; stays a plain data model |
-| Session store (`~/.ebx/sessions/*.json`, `SessionInfo`) | `api_url`, `domain`, `envd_access_token` | gains an optional `provider` (default `""` = built-in) so a re-attached session talks to the same provider |
+| `sandbox.yaml` (`SandboxDeclarativeConfig`) and `@sandbox(...)` | `template`, `timeout`, `envs`, `cpu`, `memory`, plus `sandbox_api_key`, `sandbox_base_url`, `sandbox_domain` | also `provider`, `provider_options` |
+| `GlobalConfig` (`models/config.py`) | the same field names as `TransportConfig` | plain data model |
+| Session store (`~/.ebx/sessions/*.json`, `SessionInfo`) | `sandbox_base_url`, `sandbox_domain`, `envd_access_token` | optional `provider` (default `""` = built-in) so a re-attached session talks to the same provider |
 | `Sandbox.create(secure=, request_timeout=, timeout=)` | per-call options | unchanged (not credentials) |
 | Coding-agent backend id (`qwen-code`, `DEFAULT_CODING_AGENT`) | — | a *coding agent* is not a *provider*; kept apart (see glossary) |
 | `~/.qwen/settings.json` | agent-owned credential file the Qwen Code CLI reads | external file, never written or renamed by ebx |
-| BYO-agent variables forwarded into sandboxes | `ANTHROPIC_API_KEY`, `QODER_PERSONAL_ACCESS_TOKEN`, `OPENAI_API_KEY`… | in-sandbox agent credentials, forwarded as-is; not ebx config |
-| Documentation-only names | `SANDBOX_TIMEOUT` (sdk-api-design.md), `SANDBOX_GITHUB_TOKEN` (`.env.example`) | **never read by any code**; not aliases; documentation fixed |
-| Developer scripts | `ACR_TAG`, `EBX_CATALOG_DIR`, `EBX_TEMPLATES_CACHE`, `FC_HTTP_TRIGGER_URL` (placeholder) | `scripts/` only; out of scope |
+| BYO-agent variables forwarded into sandboxes | `ANTHROPIC_API_KEY`, `QODER_PERSONAL_ACCESS_TOKEN`, and the agent's own key variables | in-sandbox agent credentials, forwarded as-is; not ebx config |
 
 **Glossary (terms that must not be mixed up).** *Provider*: a backend that creates and runs sandboxes (`alicloud-express`, a plugin). *Feature*: something a provider implements (§7.2). *Template capability*: what a sandbox *image* serves (`shell`, `files`, `code`, `terminal`, `ports`; `models/template.py`). *Coding agent*: the LLM CLI used for natural-language template generation (`qwen-code`). *Core key*: provider-independent configuration key. *Scoped key*: declared by one provider.
 
-### 1.8 Inconsistencies found (what the scheme fixes)
+### 1.8 One name
 
-1. `sandbox_api_key` is prefixed but the matching URL is bare `api_url` / env `E2B_API_URL`; domain is bare `domain`.
-2. Four different env-prefix families (`E2B_*`, `SANDBOX_*`, `ALICLOUD_*`/`AccessKey`, `EBX_*`) with no rule which one a new key belongs to.
-3. `http2` and `max_retries` can only be set in `config.toml`; there is no env var, while `http_timeout` has one.
-4. The same SDK concept has different names per surface: `api_key` (SDK) vs `sandbox_api_key` (CLI key) vs `E2B_API_KEY` (env) vs `--api-key`.
-5. Layer order is not uniform: `load_config` merges `./.env` and `~/.ebx/.env` first and then applies name priority (so `~/.ebx/.env: E2B_API_KEY` beats `./.env: SANDBOX_API_KEY`), contradicting the documented "`./.env` overrides `~/.ebx/.env`"; `resolve_llm_env` is layer-first. See §4.3.
-6. ACR keys other than `acr_namespace` are only readable from the process environment / flags (`.env.example` says so) while the namespace honours `.env`.
-7. `SANDBOX_TEMPLATE` beats `EBX_TEMPLATE` in MCP (reverse of the usual specific-beats-generic intuition).
-8. `.env.example` documents a variable (`SANDBOX_GITHUB_TOKEN`) nothing reads.
+Every key in §3 has one environment variable. Product settings use `EBX_<KEY>`. A vendor variable that the product adopts is that one name: `ALICLOUD_ACCESS_KEY_ID`, `ALICLOUD_ACCESS_KEY_SECRET`, `ALIBABA_CLOUD_REGION_ID`, `ACR_*`, `ACREE_INSTANCE_ID`, `GITHUB_TOKEN`. `team_id` is optional and uses `EBX_ALICLOUD_EXPRESS_TEAM_ID`. A plugin's own field uses `EBX_<PROVIDER>_<KEY>`.
 
 ---
 
 ## 2. Naming principles
 
-1. **Keys are `snake_case`, one canonical name per concept, identical in every surface.** The config key, the SDK field, the keyword argument and the flag (kebab-cased) are the same word: `sandbox_base_url` / `--sandbox-base-url`.
+1. **Keys are `snake_case`, one name per concept, identical in every surface.** The config key, the SDK field, the keyword argument and the flag (kebab-cased) are the same word: `sandbox_base_url` / `--sandbox-base-url`.
 2. **Prefix = what the value is about.** `sandbox_*` for the sandbox control/data plane (generic, protocol level); `llm_*` for the LLM profile; `acr_*` for the container registry; `mcp_*` for the MCP server; `http_*` for HTTP client tuning; bare words for provider-scoped keys inside their provider namespace (`region`, `access_key_id`).
-3. **Canonical environment variable = `EBX_` + `UPPER(key)`** (`sandbox_api_key` → `EBX_SANDBOX_API_KEY`). Provider-scoped: `EBX_` + `UPPER(provider_id with - → _)` + `_` + `UPPER(key)` (`EBX_ALICLOUD_EXPRESS_REGION`). The mapping is mechanical, so a new key never needs a naming debate. (The LLM names `EBX_LLM_*`, `EBX_MCP_*`, `EBX_TEMPLATE_*` already follow it.)
-4. **Four alias classes**, each with a different lifecycle:
-
-| Class | Meaning | Examples | Lifecycle |
-|---|---|---|---|
-| `canonical` | The documented name | `sandbox_api_key`, `EBX_SANDBOX_API_KEY` | — |
-| `compat` | Kept for **E2B protocol compatibility** (E2B tooling and docs set these) | `E2B_API_KEY`, `E2B_API_URL`, `E2B_DOMAIN`, `E2B_TEAM_ID` | **Never deprecated** |
-| `native` | Third-party/vendor standard name users already export for other tools | `ALICLOUD_ACCESS_KEY_ID/SECRET`, `GITHUB_TOKEN`, `OPENAI_*`, `DASHSCOPE_API_KEY` | **Never deprecated** |
-| `legacy` | ebx-invented older names | `SANDBOX_API_KEY`, `SANDBOX_API_BASE_URL`, `SANDBOX_REGION`, `SANDBOX_HTTP_TIMEOUT`, `AccessKey`, `AccessSecret`, `ACR_*`, `api_url`, `domain`, `api_key`, `EBX_QWEN_CODE_API_KEY` | Documented as legacy; **still accepted indefinitely in 0.x**; opt-in warnings (§6) |
-
-5. **Provider scoping.** Keys are either *core* (provider-independent: `provider`, `sandbox_api_key`, `sandbox_base_url`, `sandbox_domain`, `http_*`, `max_retries`, `llm_*`, `github_token`, `mcp_*`, ...) or *provider-scoped* (declared by a provider's config schema: `region`, `access_key_id`, `access_key_secret`, `acr_*`, `team_id` for `alicloud-express`). A provider may also declare that it consumes core keys (`uses_core`) and may **override** them in its own scope (`providers.<id>.sandbox_api_key`), which is how two providers get two different API keys.
+3. **One environment variable per key.** Product settings use `EBX_` + `UPPER(key)` (`sandbox_api_key` → `EBX_SANDBOX_API_KEY`). A vendor that already publishes a variable keeps that variable, and that variable is the only name: Alibaba Cloud access keys are `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`, the region is `ALIBABA_CLOUD_REGION_ID`, ACR settings are `ACR_NAMESPACE` and the matching `ACR_*` names, and the GitHub token is `GITHUB_TOKEN`. `team_id` is optional; its variable is `EBX_ALICLOUD_EXPRESS_TEAM_ID`. A plugin field is `EBX_` + `UPPER(provider_id with - → _)` + `_` + `UPPER(key)`.
+4. **Provider scoping.** Keys are either *core* (provider-independent: `provider`, `sandbox_api_key`, `sandbox_base_url`, `sandbox_domain`, `http_*`, `max_retries`, `llm_*`, `github_token`, `mcp_*`, ...) or *provider-scoped* (declared by a provider's config schema: `region`, `access_key_id`, `access_key_secret`, `acr_*`, `team_id` for `alicloud-express`). A provider may also declare that it consumes core keys (`uses_core`) and may **override** them in its own scope (`providers.<id>.sandbox_api_key`), which is how two providers get two different API keys.
 
 ---
 
-## 3. The canonical scheme
+## 3. The scheme
 
 ### 3.1 Core keys
 
-| Canonical key | Type | Secret | Canonical env | `compat` env | `legacy` env | Legacy config/kwarg names | Default |
-|---|---|---|---|---|---|---|---|
-| `provider` | id | no | `EBX_PROVIDER` | — | — | — | `alicloud-express` |
-| `sandbox_api_key` | str | **yes** | `EBX_SANDBOX_API_KEY` | `E2B_API_KEY` | `SANDBOX_API_KEY` | `api_key` | none |
-| `sandbox_base_url` | url | no | `EBX_SANDBOX_BASE_URL` | `E2B_API_URL` | `SANDBOX_API_BASE_URL` | `api_url`, `api_base_url` | provider-derived (see §4.5) |
-| `sandbox_domain` | host | no | `EBX_SANDBOX_DOMAIN` | `E2B_DOMAIN` | — | `domain` | provider-derived |
-| `http_timeout` | float ≥ 1 | no | `EBX_HTTP_TIMEOUT` | — | `SANDBOX_HTTP_TIMEOUT` | — | `30.0` |
-| `http2` | bool | no | `EBX_HTTP2` | — | — | — | `true` |
-| `max_retries` | int ≥ 0 | no | `EBX_MAX_RETRIES` | — | — | — | `3` |
-| `max_connections`, `max_keepalive_connections`, `keepalive_expiry`, `ws_ping_interval`, `retry_base_delay` | num | no | `EBX_<KEY>` | — | — | — | as today |
-| `log_level` | enum | no | `EBX_LOG_LEVEL` | — | `SANDBOX_LOG_LEVEL` | — | `WARNING` |
-| `default_template` | str | no | `EBX_DEFAULT_TEMPLATE` | — | `SANDBOX_TEMPLATE`, `EBX_TEMPLATE` (in that order) | — | `base` |
-| `llm_api_key` | str | **yes** | `EBX_LLM_API_KEY` | — | `native`: `BAILIAN_CODING_PLAN_API_KEY`, `DASHSCOPE_API_KEY`, `OPENAI_API_KEY`; `legacy`: `EBX_QWEN_CODE_API_KEY` | toml `llm_api_key` | none |
-| `llm_base_url` | url | no | `EBX_LLM_BASE_URL` | — | `native`: `OPENAI_BASE_URL` | toml `qwen_code_base_url` | DashScope compatible-mode |
-| `llm_model` | str | no | `EBX_LLM_MODEL` | — | `native`: `OPENAI_MODEL` | toml `qwen_code_model` | `qwen3-coder-plus` |
-| `github_token` | str | **yes** | `EBX_GITHUB_TOKEN` | — | `native`: `GITHUB_TOKEN` | — | none |
-| `template_index_url` | url | no | `EBX_TEMPLATE_INDEX_URL` | — | — | — | built-in index |
-| `template_dir` | path | no | `EBX_TEMPLATE_DIR` | — | — | — | none |
-| `mcp_auth_token` | str | **yes** | `EBX_MCP_AUTH_TOKEN` | — | — | — | none |
-| `mcp_allowed_origins`, `mcp_runtime_dir` | str | no | `EBX_MCP_ALLOWED_ORIGINS`, `EBX_MCP_RUNTIME_DIR` | — | — | — | none |
+| Key | Type | Secret | Environment variable | Default |
+|---|---|---|---|---|
+| `provider` | id | no | `EBX_PROVIDER` | `alicloud-express` |
+| `sandbox_api_key` | str | **yes** | `EBX_SANDBOX_API_KEY` | none |
+| `sandbox_base_url` | url | no | `EBX_SANDBOX_BASE_URL` | provider-derived (see §4.5) |
+| `sandbox_domain` | host | no | `EBX_SANDBOX_DOMAIN` | provider-derived |
+| `http_timeout` | float ≥ 1 | no | `EBX_HTTP_TIMEOUT` | `30.0` |
+| `http2` | bool | no | `EBX_HTTP2` | `true` |
+| `max_retries` | int ≥ 0 | no | `EBX_MAX_RETRIES` | `3` |
+| `max_connections`, `max_keepalive_connections`, `keepalive_expiry`, `ws_ping_interval`, `retry_base_delay` | num | no | `EBX_<KEY>` | as today |
+| `log_level` | enum | no | `EBX_LOG_LEVEL` | `WARNING` |
+| `default_template` | str | no | `EBX_DEFAULT_TEMPLATE` | `base` |
+| `llm_api_key` | str | **yes** | `EBX_LLM_API_KEY` | none |
+| `llm_base_url` | url | no | `EBX_LLM_BASE_URL` | DashScope compatible-mode |
+| `llm_model` | str | no | `EBX_LLM_MODEL` | `qwen3-coder-plus` |
+| `github_token` | str | **yes** | `GITHUB_TOKEN` | none |
+| `template_index_url` | url | no | `EBX_TEMPLATE_INDEX_URL` | built-in index |
+| `template_dir` | path | no | `EBX_TEMPLATE_DIR` | none |
+| `mcp_auth_token` | str | **yes** | `EBX_MCP_AUTH_TOKEN` | none |
+| `mcp_allowed_origins`, `mcp_runtime_dir` | str | no | `EBX_MCP_ALLOWED_ORIGINS`, `EBX_MCP_RUNTIME_DIR` | none |
 
 Env-only tuning that is **not** a persistent config key (documented in the environment-variable guide, unchanged): `EBX_ACTIVITY_LINES`, `EBX_DISCOVER_COMMANDS`, `EBX_QWEN_CODE_BIN`, `EBX_QWEN_RESEARCH_TIMEOUT`, `EBX_QWEN_CODEGEN_TIMEOUT`, and the in-sandbox server variables (§1.5).
-
-`EBX_GITHUB_TOKEN` outranks `GITHUB_TOKEN` on purpose: CI platforms inject `GITHUB_TOKEN` automatically; a person who sets the more specific `EBX_GITHUB_TOKEN` means it.
 
 `sandbox_domain` and `sandbox_base_url` are generic because every E2B-protocol backend has a control-plane URL and a data-plane domain; providers that have neither simply do not declare them in `uses_core`.
 
 ### 3.2 Provider-scoped keys: built-in `alicloud-express`
 
-| Key (scoped) | Type | Secret | Canonical env | `native` env | `legacy` env | Bare alias for the **default** provider | Notes |
-|---|---|---|---|---|---|---|---|
-| `region` | str | no | `EBX_ALICLOUD_EXPRESS_REGION` | — | `SANDBOX_REGION` | `region` | Derives base URL/domain (§4.5). Default `cn-hangzhou`. |
-| `access_key_id` | str | no (id) | `EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID` | `ALICLOUD_ACCESS_KEY_ID` | `AccessKey` | `access_key_id` | `credential` |
-| `access_key_secret` | str | **yes** | `EBX_ALICLOUD_EXPRESS_ACCESS_KEY_SECRET` | `ALICLOUD_ACCESS_KEY_SECRET` | `AccessSecret` | `access_key_secret` | `credential` |
-| `acr_namespace` | str | no | `EBX_ALICLOUD_EXPRESS_ACR_NAMESPACE` | — | `ACR_NAMESPACE` | `acr_namespace` | |
-| `acr_registry` | str | no | `EBX_ALICLOUD_EXPRESS_ACR_REGISTRY` | — | `ACR_REGISTRY` | `acr_registry` | |
-| `acr_repo` | str | no | `EBX_ALICLOUD_EXPRESS_ACR_REPO` | — | `ACR_REPO` | `acr_repo` | |
-| `acr_username` | str | no | `EBX_ALICLOUD_EXPRESS_ACR_USERNAME` | — | `ACR_USERNAME` | `acr_username` | |
-| `acr_password` | str | **yes** | `EBX_ALICLOUD_EXPRESS_ACR_PASSWORD` | — | `ACR_PASSWORD` | `acr_password` | |
-| `acr_instance_id` | str | no | `EBX_ALICLOUD_EXPRESS_ACR_INSTANCE_ID` | — | `ACREE_INSTANCE_ID` | `acr_instance_id` | flag `--acree-instance-id` kept |
-| `acr_vpc_id` | str | no | `EBX_ALICLOUD_EXPRESS_ACR_VPC_ID` | — | `ACR_VPC_ID` | `acr_vpc_id` | |
-| `acr_vswitch_ids` | csv | no | `EBX_ALICLOUD_EXPRESS_ACR_VSWITCH_IDS` | — | `ACR_VSWITCH_IDS` | `acr_vswitch_ids` | |
-| `acr_security_group_id` | str | no | `EBX_ALICLOUD_EXPRESS_ACR_SECURITY_GROUP_ID` | — | `ACR_SECURITY_GROUP_ID` | `acr_security_group_id` | |
-| `team_id` | str | no | `EBX_ALICLOUD_EXPRESS_TEAM_ID` | — | `TEAM_ID` | `team_id` | `compat`: `E2B_TEAM_ID` |
+| Key (scoped) | Type | Secret | Environment variable | Notes |
+|---|---|---|---|---|
+| `region` | str | no | `ALIBABA_CLOUD_REGION_ID` | Derives base URL/domain (§4.5). Default `cn-hangzhou`. |
+| `access_key_id` | str | no (id) | `ALICLOUD_ACCESS_KEY_ID` | `credential` |
+| `access_key_secret` | str | **yes** | `ALICLOUD_ACCESS_KEY_SECRET` | `credential` |
+| `acr_namespace` | str | no | `ACR_NAMESPACE` | |
+| `acr_registry` | str | no | `ACR_REGISTRY` | |
+| `acr_repo` | str | no | `ACR_REPO` | |
+| `acr_username` | str | no | `ACR_USERNAME` | |
+| `acr_password` | str | **yes** | `ACR_PASSWORD` | |
+| `acr_instance_id` | str | no | `ACREE_INSTANCE_ID` | |
+| `acr_vpc_id` | str | no | `ACR_VPC_ID` | |
+| `acr_vswitch_ids` | csv | no | `ACR_VSWITCH_IDS` | |
+| `acr_security_group_id` | str | no | `ACR_SECURITY_GROUP_ID` | |
+| `team_id` | str | no | `EBX_ALICLOUD_EXPRESS_TEAM_ID` | Optional. Not required. |
 
 The built-in provider is the only one that implicitly consumes the generic `sandbox_api_key`, `sandbox_base_url`, `sandbox_domain` (and, like every provider, the non-secret tuning keys `http_timeout`, `http2`, `max_retries`, ...). Plugins consume generic credentials/endpoints only through the explicit `inherit` opt-in of §4.6.
-
-The names are long on purpose: CI jobs are the main user of the canonical env names and explicitness beats brevity there. Short forms exist as `native`/`legacy` aliases (`ALICLOUD_ACCESS_KEY_ID`, `ACR_NAMESPACE`) and as **bare keys** in `ebx config` (below).
 
 ### 3.3 Where each name lives
 
 **`~/.ebx/config.toml`** (hand-edited or written by `ebx config set`; read by SDK and CLI):
 
 ```toml
-[core]                          # new, optional
+[core]
 provider = "alicloud-express"   # `ebx provider default`
-config_format = 1               # 1 = legacy storage names are written (default); 2 = canonical storage names (after `ebx config migrate`)
 
-[transport]                     # existing section; generic keys. Both canonical and legacy names are read.
-sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"   # legacy: api_url
-sandbox_domain   = "cn-hangzhou.e2b.fc.aliyuncs.com"               # legacy: domain
+[transport]
+sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
+sandbox_domain   = "cn-hangzhou.e2b.fc.aliyuncs.com"
 http_timeout = 30.0
 http2 = true
 max_retries = 3
 
-[providers.alicloud-express]    # new; provider-scoped non-secret values
-region = "cn-hangzhou"          # legacy location: [transport] region
+[providers.alicloud-express]
+region = "cn-hangzhou"
 
-[providers.my-cloud]            # a plugin's values
+[providers.my-cloud]
 cluster = "prod"
 
-[shortcuts]                     # unchanged
+[shortcuts]
 ps = "sandbox process list"
 ```
 
-**`~/.ebx/.env`** (0600, secrets and credential-like values; env-style names): canonical `EBX_SANDBOX_API_KEY`, `EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID`, ... The legacy names written today (`E2B_API_KEY`, `ALICLOUD_ACCESS_KEY_ID`, `ACR_NAMESPACE`, `EBX_LLM_API_KEY`, `GITHUB_TOKEN`) are read as aliases.
+**`~/.ebx/.env`** (0600, secrets and credential-like values). `ebx config set` writes the one environment variable for the key:
 
-**Storage-name policy (expand/contract).** The Python SDK and the Node CLI both read these files, and users may run an old and a new version side by side (an old MCP server started by an editor, a CI image with an older SDK). Therefore:
-
-* **Phase 1 (this release): read-new/write-old.** Every reader accepts canonical + aliases. `ebx config set` keeps writing the **legacy storage name** for keys that had one (`api_url`, `E2B_API_KEY`, `ALICLOUD_ACCESS_KEY_ID`, ...) while `config_format` is absent or `1`; keys with no legacy storage name (`provider`, `sandbox_domain`... see table) are written canonically (an old version ignores unknown keys, `extra=ignore`).
-* **Explicit migration:** `ebx config migrate` (and `python -m easy_sandbox.transport.config migrate`) rewrites storage names to canonical, keeps `config.toml.bak` / `.env.bak` (0600), sets `config_format = 2`. After that `config set` writes canonical names. Older versions then no longer see those values — the user chose that.
-* **Phase 2 (a later minor release)**: new files are created with `config_format = 2`; legacy names are still read. No removal.
-
-Which keys have a legacy storage name that Phase 1 keeps writing:
-
-| Canonical key | Phase-1 stored as |
+| Key | Stored as |
 |---|---|
-| `sandbox_api_key` | `E2B_API_KEY` in `~/.ebx/.env` |
-| `sandbox_base_url` | `api_url` in `[transport]` |
-| `sandbox_domain` | `domain` in `[transport]` |
-| `region` | `region` in `[transport]` (legacy location; provider tables are written only for non-default providers or format 2) |
-| `access_key_id`, `access_key_secret` | `ALICLOUD_ACCESS_KEY_ID`, `ALICLOUD_ACCESS_KEY_SECRET` in `~/.ebx/.env` |
-| `acr_namespace` | `ACR_NAMESPACE` in `~/.ebx/.env` |
-| `llm_api_key` | `EBX_LLM_API_KEY` in `~/.ebx/.env` |
-| `github_token` | `GITHUB_TOKEN` in `~/.ebx/.env` |
-| `http_timeout`, `http2`, `max_retries`, `llm_base_url`, `llm_model` | same name in `[transport]` (already canonical) |
-| other `acr_*`, `team_id` (new settable keys) | canonical name in `[providers.alicloud-express]` / secret `acr_password` as `ACR_PASSWORD` in `.env` |
+| `sandbox_api_key` | `EBX_SANDBOX_API_KEY` |
+| `access_key_id`, `access_key_secret` | `ALICLOUD_ACCESS_KEY_ID`, `ALICLOUD_ACCESS_KEY_SECRET` |
+| `acr_namespace`, `acr_password`, and the other secret or credential-like `acr_*` values | the `ACR_*` / `ACREE_INSTANCE_ID` variable for that key |
+| `llm_api_key` | `EBX_LLM_API_KEY` |
+| `github_token` | `GITHUB_TOKEN` |
+| `team_id` | `EBX_ALICLOUD_EXPRESS_TEAM_ID` (optional) |
+| `sandbox_base_url`, `sandbox_domain`, `http_timeout`, `http2`, `max_retries`, `llm_base_url`, `llm_model` | the same key in `[transport]` |
+| `region` | `region` in `[providers.alicloud-express]`; environment variable `ALIBABA_CLOUD_REGION_ID` |
 | `provider` | `[core] provider` |
 
 **SDK surface**
 
-* `TransportConfig` fields (canonical): `provider`, `sandbox_base_url`, `sandbox_domain`, `sandbox_api_key`, `region`, `access_key_id`, `access_key_secret`, `http_timeout`, ..., plus `provider_options: dict[str, Any]`.
-  Legacy names remain **readable and writable attributes** (`config.api_key`, `config.api_url`, `config.domain`, `config.api_base_url`) and **accepted constructor/`load_config` keyword names** (`TransportConfig(api_key=...)`, `load_config(api_url=...)`). `model_dump()` emits canonical names; `model_dump(by_alias=...)` is not used.
-* `Sandbox.create/connect/list/kill_by_id/deploy` and `@sandbox(...)`: new keyword-only parameters `sandbox_api_key`, `sandbox_base_url`, `sandbox_domain`, `region`, `provider`, `provider_options`; old `api_key`, `api_url`, `domain`, `access_key_id`, `access_key_secret` unchanged. Passing both a canonical and a legacy kwarg with **different** values is a `ValueError` (identical values are accepted) — an explicit in-call conflict is a bug, unlike a layer conflict.
+* `TransportConfig` fields: `provider`, `sandbox_base_url`, `sandbox_domain`, `sandbox_api_key`, `region`, `access_key_id`, `access_key_secret`, `http_timeout`, ..., plus `provider_options: dict[str, Any]`. `model_dump()` emits these names.
+* `Sandbox.create/connect/list/kill_by_id/deploy` and `@sandbox(...)`: keyword-only parameters `sandbox_api_key`, `sandbox_base_url`, `sandbox_domain`, `region`, `provider`, `provider_options`, `access_key_id`, `access_key_secret`.
 
-**CLI flags** (spec in the CLI doc): canonical `--sandbox-api-key`, `--sandbox-base-url`, `--sandbox-domain`, `--region/-r`, `--provider`, `--opt KEY=VALUE`; legacy `--api-key`, `--api-url`, `--domain` stay as aliases of the same option. `--acr-*` flags unchanged (they already match `acr_*`), `--acree-instance-id` stays as alias of `--acr-instance-id`.
+**CLI flags** (spec in the CLI doc): `--sandbox-api-key`, `--sandbox-base-url`, `--sandbox-domain`, `--region/-r`, `--provider`, `--opt KEY=VALUE`. `--acr-*` flags match `acr_*`. The environment variable for the enterprise instance is `ACREE_INSTANCE_ID`.
 
 ### 3.4 Bare keys vs qualified keys in `ebx config`
 
 `ebx config get|set|delete KEY` accepts:
 
-1. A **core key** (canonical or legacy name).
-2. A **qualified provider key** `providers.<id>.<key>` (canonical, unambiguous, works for every provider).
-3. A **bare provider key** (`region`, `access_key_id`, ...). It resolves against the provider selected by `--provider` for the command, else the **default provider**. If the key does not exist in that provider's schema the command fails with exit 2 and names the qualified form of every installed provider that declares it. With the built-in default this is exactly today's behaviour.
+1. A **core key** (`sandbox_api_key`, `sandbox_base_url`, `sandbox_domain`, ...).
+2. A **qualified provider key** `providers.<id>.<key>` (unambiguous, works for every provider).
+3. A **bare provider key** (`region`, `access_key_id`, ...). It resolves against the provider selected by `--provider` for the command, else the **default provider**. If the key does not exist in that provider's schema the command fails with exit 2 and names the qualified form of every installed provider that declares it.
 4. `shortcuts` and `shortcuts.<name>` (reserved prefix; provider ids and keys can never start with `shortcuts`).
 
 ---
@@ -265,30 +229,27 @@ Which keys have a legacy storage name that Phase 1 keeps writing:
 ```text
 1. explicit        code kwargs / CLI flags / `--opt`
 2. process env     os.environ
-3. ./.env          project dotenv (first candidate)      ─┐ each existing file in `_ENV_FILE_CANDIDATES`
-4. ~/.ebx/.env     user dotenv (second candidate)         ─┘ is its own layer, in list order
+3. ./.env          project dotenv (first candidate)
+4. ~/.ebx/.env     user dotenv (second candidate)
 5. ~/.ebx/config.toml
 6. default         provider-derived or built-in
 ```
 
-A blank or whitespace-only value is *unset* in every layer (it never hides the next layer). Layers are tried in order; **the first layer that has any acceptable name for the key decides**, and within that layer the names are tried in the *name order* below.
+A blank or whitespace-only value is *unset* in every layer (it never hides the next layer). Layers are tried in order. The first layer that sets the key's one variable decides.
 
-### 4.2 Name order inside one layer (most specific first)
+### 4.2 One variable inside a layer
 
-For key `K` resolved for provider `P`:
+For key `K` resolved for provider `P`, the reader looks up exactly one environment variable:
 
-1. provider-scoped canonical: `EBX_<P>_<K>` (only if `K` is in `P`'s schema or `P` declares it in `uses_core`)
-2. canonical: `EBX_<K>` (core keys)
-3. `compat`/`native` names in the table order (`E2B_API_KEY`, `ALICLOUD_ACCESS_KEY_ID`, `GITHUB_TOKEN`, ...)
-4. `legacy` names in the table order (`SANDBOX_API_KEY`, `AccessKey`, ...)
+1. a plugin's own field: `EBX_<P>_<K>`
+2. a core product setting: `EBX_<K>`
+3. a vendor variable that §3 names as the variable for that key (`ALICLOUD_ACCESS_KEY_ID`, `ALIBABA_CLOUD_REGION_ID`, `ACR_NAMESPACE`, `GITHUB_TOKEN`, ...)
 
-In `config.toml` the analogue is: `[providers.<P>].<K>` > `[transport].<K>` (canonical name) > `[transport].<legacy name>` > top-level flat legacy keys (only when the file has no `[transport]` table, as today).
+There is no second variable for the same key. In `config.toml` the order is `[providers.<P>].<K>`, then `[transport].<K>`.
 
-The pre-existing relative orders are preserved verbatim (`E2B_API_KEY` > `SANDBOX_API_KEY`; `E2B_API_URL` > `SANDBOX_API_BASE_URL`; `SANDBOX_TEMPLATE` > `EBX_TEMPLATE`; `ALICLOUD_*` > `AccessKey`). The only new rule is that canonical names sit in front of them.
+### 4.3 Layer-first dotenv
 
-### 4.3 The one normalisation (layer-first for dotenv)
-
-Before this change `load_config` merged `./.env` and `~/.ebx/.env` per exact variable name **before** applying name priority. Example: `./.env: SANDBOX_API_KEY=a` and `~/.ebx/.env: E2B_API_KEY=b` resolved to `b`, although the documentation says "`./.env` overrides `~/.ebx/.env`". The new resolver is layer-first (as `resolve_llm_env` and the CLI `_effective_value` already were): the project file wins as documented. This is a bug fix in a corner (different names for the same key in both files) and is called out in the CHANGELOG. Every other combination resolves exactly as before — including all the existing tests.
+`./.env` and `~/.ebx/.env` are separate layers. The project file wins for a key it sets. A key it omits still comes from `~/.ebx/.env`.
 
 ### 4.4 Provider selection precedence
 
@@ -313,74 +274,31 @@ sandbox_base_url = "https://api.{region}.e2b.fc.aliyuncs.com"
 sandbox_domain   = "{region}.e2b.fc.aliyuncs.com"
 ```
 
-The behaviour of today's `load_config` is preserved exactly: derivation applies only when the base URL was **not** given by an explicit argument or a **process environment** variable (canonical, `compat` or `legacy` name); each derived key is applied with "set default" semantics, so a base URL/domain coming from `.env`/`config.toml` is kept and the other one is still derived from the region; when the URL is explicit by argument/env the domain is not derived (it stays the provider default `cn-hangzhou…`) — kept for bit-for-bit compatibility. Providers without `derive` just use their static defaults.
+Derivation applies only when the base URL was **not** given by an explicit argument or a **process environment** variable. Each derived key is applied with "set default" semantics, so a base URL/domain coming from `.env`/`config.toml` is kept and the other one is still derived from the region. When the URL is explicit by argument/env the domain is not derived (it stays the provider default). Providers without `derive` just use their static defaults.
 
 ### 4.6 Provider scoping rules (credential isolation)
 
 * **Scoped beats generic** only while `P` is the active provider: `providers.<P>.<key>` / `EBX_<P>_<KEY>` outrank the generic name of a core key `P` is allowed to read.
 * **Credentials and endpoints never cross providers.** Resolving for provider `P` never looks at `EBX_<Q>_*` or `[providers.Q]` for `Q ≠ P`.
-* **The generic credential/endpoint keys (`sandbox_api_key`, `sandbox_base_url`, `sandbox_domain`, together with all their aliases such as `E2B_API_KEY`, `E2B_API_URL`, `E2B_DOMAIN`) belong to the built-in provider.** Without this rule, switching the default provider would silently send the Alibaba Cloud key to a third-party plugin (and a plugin's key to the Alibaba endpoint). A non-builtin provider receives them **only** when (a) its manifest lists them in `[core] inherit` **and** (b) the user consented to that at install/update time (the receipt records the consented list; the consent screen prints a warning line naming the keys). The effective list is `manifest.inherit ∩ receipt.consented.inherit`. The reference `e2b-compatible` provider inherits all three, so `E2B_API_KEY`/`E2B_API_URL` work with it — by explicit, recorded consent.
+* **The generic credential/endpoint keys (`sandbox_api_key`, `sandbox_base_url`, `sandbox_domain`) belong to the built-in provider.** Without this rule, switching the default provider would silently send the Alibaba Cloud key to a third-party plugin (and a plugin's key to the Alibaba endpoint). A non-builtin provider receives them **only** when (a) its manifest lists them in `[core] inherit` **and** (b) the user consented to that at install/update time (the receipt records the consented list; the consent screen prints a warning line naming the keys). The effective list is `manifest.inherit ∩ receipt.consented.inherit`. The reference `e2b-compatible` provider inherits all three, so `EBX_SANDBOX_API_KEY` and `EBX_SANDBOX_BASE_URL` are delivered to it only by that recorded consent.
 * Non-secret tuning keys (`http_timeout`, `http2`, `max_retries`, pool/WS/backoff) are shared with every provider.
 * LLM, GitHub and MCP keys are not provider credentials and are **never** delivered to a provider.
-* A plugin's own credentials are scoped fields it declares (typically `api_key`; env `EBX_<P>_API_KEY`) plus any `native` env names the plugin lists on that field (visible in `ebx provider info`).
+* A plugin's own credentials are scoped fields it declares (environment variable `EBX_<P>_<KEY>`).
 * Plugin values reach a plugin process only through the `initialize` request, never through the environment (§8.3).
 
 ---
 
-## 5. Complete alias table
+## 5. One environment variable per key
 
-`status`: `C` canonical · `E` compat (E2B protocol) · `N` native (vendor/third-party standard) · `L` legacy. Every row keeps working in every surface where the old name worked before.
+The tables in §3 are the whole set. `explain_config()` reports the layer and that one variable name. Secrets are masked.
 
-### 5.1 Environment variables
-
-| Old / alternative name | Status | Canonical key | Scope | Notes |
-|---|---|---|---|---|
-| `E2B_API_KEY` | E | `sandbox_api_key` | core | also what `ebx config set sandbox_api_key` writes in phase 1 |
-| `SANDBOX_API_KEY` | L | `sandbox_api_key` | core | |
-| `E2B_API_URL` | E | `sandbox_base_url` | core | |
-| `SANDBOX_API_BASE_URL` | L | `sandbox_base_url` | core | |
-| `E2B_DOMAIN` | E | `sandbox_domain` | core | |
-| `SANDBOX_REGION` | L | `region` | `alicloud-express` | applies to the active provider if it declares `region` |
-| `SANDBOX_HTTP_TIMEOUT` | L | `http_timeout` | core | |
-| `SANDBOX_LOG_LEVEL` | L | `log_level` | core | |
-| `SANDBOX_TEMPLATE`, `EBX_TEMPLATE` | L | `default_template` | core | order kept |
-| `ALICLOUD_ACCESS_KEY_ID` | N | `access_key_id` | `alicloud-express` | |
-| `ALICLOUD_ACCESS_KEY_SECRET` | N | `access_key_secret` | `alicloud-express` | |
-| `AccessKey` / `AccessSecret` | L | `access_key_id` / `access_key_secret` | `alicloud-express` | |
-| `ACR_NAMESPACE` `ACR_REGISTRY` `ACR_REPO` `ACR_USERNAME` `ACR_PASSWORD` `ACR_VPC_ID` `ACR_VSWITCH_IDS` `ACR_SECURITY_GROUP_ID` | L | `acr_*` | `alicloud-express` | |
-| `ACREE_INSTANCE_ID` | L | `acr_instance_id` | `alicloud-express` | |
-| `TEAM_ID` | L | `team_id` | `alicloud-express` | |
-| `E2B_TEAM_ID` | E | `team_id` | `alicloud-express` | |
-| `GITHUB_TOKEN` | N | `github_token` | core | |
-| `BAILIAN_CODING_PLAN_API_KEY`, `DASHSCOPE_API_KEY`, `OPENAI_API_KEY` | N | `llm_api_key` | core | order kept |
-| `EBX_QWEN_CODE_API_KEY` | L | `llm_api_key` | core | lowest in env; `~/.ebx` use unchanged |
-| `OPENAI_BASE_URL` / `OPENAI_MODEL` | N | `llm_base_url` / `llm_model` | core | |
-| `EBX_LLM_*`, `EBX_MCP_*`, `EBX_TEMPLATE_INDEX_URL`, `EBX_TEMPLATE_DIR` | C | unchanged | core | already canonical |
-| `SANDBOX_GITHUB_TOKEN` | — | — | — | never worked; **not** supported (fix `.env.example`) |
-
-### 5.2 `ebx config` keys, `config.toml` keys, SDK names, flags
-
-| Old name | Where it worked | Canonical | Status |
-|---|---|---|---|
-| `api_key` | `ebx config` alias; SDK kwarg/field; `[transport] api_key` | `sandbox_api_key` | L (kwarg/field: C-compatible, never removed) |
-| `api_url` | `ebx config`; SDK kwarg/field; `[transport] api_url` | `sandbox_base_url` | L |
-| `api_base_url` | `load_config` kwarg; `[transport] api_base_url`; `TransportConfig.api_base_url` | `sandbox_base_url` | L |
-| `domain` | `ebx config`; SDK; `[transport] domain` | `sandbox_domain` | L |
-| `region`, `access_key_id`, `access_key_secret`, `acr_namespace` | everywhere | same key, now provider-scoped (`providers.alicloud-express.<key>`); bare form kept for the default provider | C |
-| `qwen_code_api_key/base_url/model` | removed keys; toml values read | `llm_*` | L (unchanged behaviour: `config get/set` name the replacement) |
-| `--api-key`, `--api-url`, `--domain` | `ebx mcp install/start` | `--sandbox-api-key`, `--sandbox-base-url`, `--sandbox-domain` | L (flags are aliases of one option) |
-| `--acree-instance-id` | template commands | `--acr-instance-id` | L |
+`ebx config set` writes the stored name in §3.3. There is no second storage name and no command that rewrites one name into another.
 
 ---
 
-## 6. Deprecation and signalling policy
+## 6. What readers accept
 
-1. **Default: silent.** No existing command changes stdout or stderr because an old name was used. Env vars, `.env` entries, `config.toml` keys, SDK kwargs and attributes are all silent forever unless the user opts in. Justification: these names are baked into CI secrets, Dockerfiles, editor MCP configs and E2B-compat code that nobody will rewrite for a warning, and warning noise in CI logs/`--json` output is a regression for consumers.
-2. **Pull-based audit (no side effects)**: `easy_sandbox.transport.config.audit_config()` (SDK) / `ebx config check` (CLI) list every legacy name in use, where (`env`, `./.env`, `~/.ebx/.env`, `config.toml`), and the canonical replacement. `--strict` exits 1 if any `legacy` name is found (never for `compat`/`native`). Output contains names only, never values.
-3. **Opt-in push**: `EBX_WARN_DEPRECATED=1` (or `warn_deprecated = true` in `[core]`) makes the SDK emit one `DeprecationWarning` per legacy name per process (also for legacy kwargs) and the CLI one stderr line per legacy name at startup. Off by default; never printed when `--json`, `--quiet` or `--ci` is active *unless* the env var is set explicitly (explicit opt-in beats quiet-mode).
-4. **One documented interactive hint**: using a *renamed config key* (`api_url`, `domain`, `api_key`, `api_base_url`) in `ebx config get|set|delete` prints a single dim line on **stderr** — `note: 'api_url' is now 'sandbox_base_url' (the old name keeps working)` — **only** when stderr is a TTY and neither `--json`, `--quiet`, `--ci` nor a CI environment is active. stdout is untouched. Non-interactive consumers (scripts, CI, golden tests, `--json`) therefore observe no change. This is the only default-behaviour signal and exists because `config` is the one place where a human types key names directly.
-5. `compat` (E2B) and `native` names never trigger any of the above.
-6. Removal policy: no alias is removed in 0.x. A removal would need a major version, a one-release `EBX_WARN_DEPRECATED` default flip and a `config migrate` run.
+A reader accepts the variable in §3 and the matching config key. `load_config` and `TransportConfig` use `sandbox_api_key`, `sandbox_base_url`, and `sandbox_domain`. `ebx config get|set` uses those keys.
 
 ---
 
@@ -726,9 +644,9 @@ Missing *credential* fields (`credential = true`) raise the existing `InvalidCre
 
 ## 10. Testing strategy
 
-1. **Key registry / alias table**: table-driven tests assert every row of §5 (each alias resolves to the canonical key, in every layer, in the documented order, for `load_config`, `explain_config`, `http_timeout_configured`).
-2. **Language-neutral resolution vectors** (`client-sdk/tests/fixtures/config_resolution_vectors.json`, mirrored to `cli/docs/design/fixtures/`): each vector is `{sources:{overrides, environ, dotenv:[{…},{…}], toml}, provider, expect:{key:{value, source, name}}}`. Python tests run them against the Python resolver; the CLI worker runs the same file against the Node resolver. A test asserts the two copies are identical when both repos are present.
-3. **Back-compat suite**: the pre-existing 1348 SDK tests must pass unchanged; new tests pin `TransportConfig(api_key=…)`, `.api_key/.api_url/.domain` read/write, `load_config(api_url=…)`, `Sandbox.create(api_key=…)` default-provider path (existing mocks of `load_config/create_auth_provider/HttpClient/SandboxProtocol` keep working).
+1. **Key registry**: table-driven tests assert every row of §3 (the one environment variable resolves to the key, in every layer, for `load_config`, `explain_config`, `http_timeout_configured`).
+2. **Language-neutral resolution vectors** (`client-sdk/tests/fixtures/config_resolution_vectors.json`, mirrored to `cli/docs/design/fixtures/`): each vector is `{sources:{overrides, environ, dotenv:[{…},{…}], toml}, provider, expect:{key:{value, source, name}}}`. Python tests run them against the Python resolver; the CLI worker runs the same file against the Node resolver. A test asserts the two copies are identical when both repos are present. `name` is the one variable from §3.
+3. **Constructor suite**: tests pin `TransportConfig(sandbox_api_key=…)`, `load_config(sandbox_base_url=…)`, and `Sandbox.create(sandbox_api_key=…)` on the default-provider path (existing mocks of `load_config/create_auth_provider/HttpClient/SandboxProtocol` keep working).
 4. **Manifest**: valid/invalid manifests (every validation rule), version comparator, id grammar, reserved ids.
 5. **Store/installer**: local dir, git (local bare repo through `file://` only in tests with the insecure flag), pinned/unpinned, symlink/path-traversal/size-limit rejection, credential-in-URL rejection, tree-digest vectors (shared with Node), integrity failure after tampering, update with re-consent, rollback (including exact restoration of `data/` after a failed handshake or a failed swap), uninstall/purge, default-provider fallback, concurrent-lock behaviour, no code executed at install (a plugin whose `provider.py` writes a canary file proves it).
 6. **EPP client** against the reference plugin: handshake, version mismatch, feature gating, error mapping table, timeouts, crash, malformed lines, oversized lines, stderr capture, env scrubbing (the plugin echoes its env), process-group kill, cancel.
@@ -743,8 +661,8 @@ Missing *credential* fields (`credential = true`) raise the existing `InvalidCre
 
 | Piece | Module |
 |---|---|
-| Key registry, alias tables, resolver, schema export | `easy_sandbox/utils/config_keys.py` |
-| `TransportConfig`, `load_config`, `explain_config`, `audit_config`, `migrate` | `easy_sandbox/transport/config.py` |
+| Key registry, resolver, schema export | `easy_sandbox/utils/config_keys.py` |
+| `TransportConfig`, `load_config`, `explain_config` | `easy_sandbox/transport/config.py` |
 | Provider interface, features, registry | `easy_sandbox/providers/{base,registry}.py` |
 | Built-in provider | `easy_sandbox/providers/builtin.py` |
 | Manifest + version comparator | `easy_sandbox/providers/manifest.py` |

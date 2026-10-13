@@ -26,6 +26,7 @@ import threading
 import time
 from typing import Any
 
+from .guards import check_url
 from .policy import PolicyDenied
 from .router import CapabilityGroup, default_table
 from .runtime import EndpointContext, context_of
@@ -194,6 +195,7 @@ def handle_browser_navigate(request: ServerRequest) -> ServerResponse:
     ctx = context_of(request)
     if ctx is not None:
         _check_url(ctx, url)
+    url = check_url(url)
 
     wait_until: str = str(body.get("wait_until", "networkidle"))
     raw_timeout = body.get("timeout", 30000)

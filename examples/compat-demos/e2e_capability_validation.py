@@ -37,13 +37,12 @@ import traceback
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Bootstrap: locate project root & make easy_sandbox importable (client-sdk /
-# server-sdk src layout; both share the easy_sandbox namespace)
+# Bootstrap: locate project root & make easy_sandbox importable (src layout)
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-for _src in (PROJECT_ROOT / "client-sdk" / "src", PROJECT_ROOT / "server-sdk" / "src"):
-    if _src.is_dir() and str(_src) not in sys.path:
-        sys.path.insert(0, str(_src))
+_SRC = PROJECT_ROOT / "src"
+if _SRC.is_dir() and str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
 
 # ---------------------------------------------------------------------------
 # Result tracking
@@ -75,8 +74,7 @@ def _exc_summary(exc: BaseException) -> str:
 
 
 # ---------------------------------------------------------------------------
-# CLI subprocess helper (the ebx CLI lives in the separate ``cli`` repository;
-# the ``ebx`` executable from PATH, or ``$EBX_BIN``, is invoked)
+# CLI subprocess helper (ebx is not on PATH → invoke the click group directly)
 # ---------------------------------------------------------------------------
 def run_cli(args: list[str], timeout: int = 180) -> tuple[int, str, str]:
     """Run the ebx CLI in a subprocess and capture (returncode, stdout, stderr).
@@ -85,9 +83,10 @@ def run_cli(args: list[str], timeout: int = 180) -> tuple[int, str, str]:
     build+deploy confirmation in ``template install``) can never block waiting
     for input — the CLI's non-TTY guard fires instead of hanging.
     """
+    code = "import sys; from easy_sandbox.cli.main import cli; cli(sys.argv[1:])"
     try:
         proc = subprocess.run(
-            [os.environ.get("EBX_BIN", "ebx"), *args],
+            [sys.executable, "-c", code, *args],
             cwd=str(PROJECT_ROOT),
             stdin=subprocess.DEVNULL,
             capture_output=True,
@@ -97,8 +96,6 @@ def run_cli(args: list[str], timeout: int = 180) -> tuple[int, str, str]:
         return proc.returncode, proc.stdout, proc.stderr
     except subprocess.TimeoutExpired as exc:
         return 124, exc.stdout or "", (exc.stderr or "") + "\n<TIMEOUT>"
-    except FileNotFoundError:
-        return 127, "", "ebx executable not found on PATH (npm install -g @easy-sandbox/cli)"
 
 
 def _parse_template_id(stdout: str) -> str | None:

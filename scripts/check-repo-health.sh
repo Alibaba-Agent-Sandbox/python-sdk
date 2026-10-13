@@ -179,10 +179,10 @@ else:
             result("FAIL", "easy-sandbox does not hard-depend on easy-sandbox-server: `pip install easy-sandbox` no longer provides easy_sandbox.server (0.2.0 behaviour)")
         for name, proj in (("client-sdk", client), ("server-sdk", server)):
             urls = " ".join(proj.get("urls", {}).values())
-            if "easy-sandbox/python-sdk" in urls and "Easy-Sandbox/easy-sandbox" not in urls:
+            if "Easy-Sandbox/python-sdk" in urls and "Easy-Sandbox/easy-sandbox" not in urls:
                 result("PASS", f"{name} project URLs point at the python-sdk repository")
             else:
-                result("FAIL", f"{name} project URLs still point at the legacy single repo (expected github.com/easy-sandbox/python-sdk)")
+                result("FAIL", f"{name} project URLs still point at the legacy single repo (expected github.com/Easy-Sandbox/python-sdk)")
             if "docs/en" in proj.get("urls", {}).get("Documentation", "") or "/docs" in proj.get("urls", {}).get("Documentation", ""):
                 result("PASS", f"{name} Documentation URL is set")
             else:

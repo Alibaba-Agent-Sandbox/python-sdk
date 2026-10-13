@@ -5,16 +5,14 @@ Resolution is *layer-first* (see ``docs/en/design/providers-and-credentials.md``
     explicit kwargs > process environment > ./.env > ~/.ebx/.env
         > ~/.ebx/config.toml > defaults
 
-Inside one layer the names of a key are tried most-specific first: provider-scoped
-canonical (``EBX_<PROVIDER>_<KEY>``), canonical (``EBX_<KEY>``), E2B-compatible and
-vendor-native names (``E2B_API_KEY``, ``ALICLOUD_ACCESS_KEY_ID``), then legacy names
-(``SANDBOX_API_KEY``, ``AccessKey``). A blank or whitespace-only value is unset and
+Inside one layer a key has one environment variable. Product settings use
+``EBX_<KEY>``. A vendor that already publishes a name keeps that name
+(``ALICLOUD_ACCESS_KEY_ID``, ``ACR_NAMESPACE``, ``GITHUB_TOKEN``,
+``ALIBABA_CLOUD_REGION_ID``). A blank or whitespace-only value is unset and
 does not hide the next layer.
 
 Canonical field names are ``sandbox_api_key``, ``sandbox_base_url`` and
-``sandbox_domain``. The historical names ``api_key``, ``api_url`` (``api_base_url``)
-and ``domain`` keep working as constructor/``load_config`` keyword names, as
-attributes (read and write) and as ``config.toml`` keys.
+``sandbox_domain``.
 
 The generic ``sandbox_*`` keys belong to the built-in provider (``alicloud-express``).
 Another provider receives them only through its consented ``inherit`` list.
@@ -24,11 +22,10 @@ from __future__ import annotations
 
 import contextlib
 import os
-import warnings
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 from easy_sandbox.utils.config_keys import (
     ALICLOUD_EXPRESS_KEYS,
@@ -61,13 +58,6 @@ _PROJECT_ENV_FILE = Path(".env")
 # Module-level cache
 _cached_config: TransportConfig | None = None
 
-_LEGACY_FIELD_NAMES: dict[str, str] = {
-    "api_key": "sandbox_api_key",
-    "api_url": "sandbox_base_url",
-    "api_base_url": "sandbox_base_url",
-    "domain": "sandbox_domain",
-}
-
 DEFAULT_BASE_URL = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
 DEFAULT_DOMAIN = "cn-hangzhou.e2b.fc.aliyuncs.com"
 
@@ -75,46 +65,6 @@ _BUILTIN_DERIVE: dict[str, str] = {
     "sandbox_base_url": "https://api.{region}.e2b.fc.aliyuncs.com",
     "sandbox_domain": "{region}.e2b.fc.aliyuncs.com",
 }
-
-_warned_legacy: set[str] = set()
-
-
-def _warn_legacy_once(name: str, canonical: str, where: str) -> None:
-    """Emit one DeprecationWarning per legacy name (opt-in via ``EBX_WARN_DEPRECATED``)."""
-    flag = os.environ.get("EBX_WARN_DEPRECATED", "").strip().lower()
-    if flag not in ("1", "true", "yes", "on"):
-        return
-    token = f"{where}:{name}"
-    if token in _warned_legacy:
-        return
-    _warned_legacy.add(token)
-    warnings.warn(
-        f"{where} name '{name}' is deprecated; use '{canonical}'.",
-        DeprecationWarning,
-        stacklevel=3,
-    )
-
-
-def _merge_legacy_kwargs(data: dict[str, Any], *, source: str) -> dict[str, Any]:
-    """Map legacy names to canonical ones; different values for both names is a bug."""
-    out = dict(data)
-    for legacy, canonical in _LEGACY_FIELD_NAMES.items():
-        if legacy not in out:
-            continue
-        legacy_val = out.pop(legacy)
-        if legacy_val is None or (isinstance(legacy_val, str) and not legacy_val.strip()):
-            continue
-        _warn_legacy_once(legacy, canonical, source)
-        if canonical in out and out[canonical] not in (None, ""):
-            if out[canonical] != legacy_val:
-                raise ValueError(
-                    f"Conflicting values for '{canonical}' and its legacy name '{legacy}'; "
-                    "pass only one."
-                )
-            continue
-        out[canonical] = legacy_val
-    return out
-
 
 class TransportConfig(BaseModel):
     """Transport-layer configuration.
@@ -131,10 +81,10 @@ class TransportConfig(BaseModel):
 
     # Authentication
     sandbox_api_key: str | None = Field(
-        default=None, description="Sandbox API key (EBX_SANDBOX_API_KEY / E2B_API_KEY)", repr=False
+        default=None, description="Sandbox API key (EBX_SANDBOX_API_KEY)", repr=False
     )
     access_key_id: str | None = Field(
-        default=None, description="Alibaba Cloud AK (ALICLOUD_ACCESS_KEY_ID)"
+        default=None, description="Alibaba Cloud AccessKey ID (ALICLOUD_ACCESS_KEY_ID)"
     )
     access_key_secret: str | None = Field(
         default=None, description="Alibaba Cloud SK (ALICLOUD_ACCESS_KEY_SECRET)", repr=False
@@ -161,54 +111,10 @@ class TransportConfig(BaseModel):
 
     model_config = {"extra": "ignore"}
 
-    @model_validator(mode="before")
-    @classmethod
-    def _accept_legacy_names(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            return _merge_legacy_kwargs(data, source="TransportConfig")
-        return data
-
-    # --- backward-compat aliases (read AND write) ---
-    @property
-    def api_key(self) -> str | None:
-        """Legacy name of :attr:`sandbox_api_key`."""
-        return self.sandbox_api_key
-
-    @api_key.setter
-    def api_key(self, value: str | None) -> None:
-        self.sandbox_api_key = value
-
-    @property
-    def api_url(self) -> str:
-        """Legacy name of :attr:`sandbox_base_url`."""
-        return self.sandbox_base_url
-
-    @api_url.setter
-    def api_url(self, value: str) -> None:
-        self.sandbox_base_url = value
-
-    @property
-    def api_base_url(self) -> str:
-        """Legacy name of :attr:`sandbox_base_url`."""
-        return self.sandbox_base_url
-
-    @api_base_url.setter
-    def api_base_url(self, value: str) -> None:
-        self.sandbox_base_url = value
-
-    @property
-    def domain(self) -> str:
-        """Legacy name of :attr:`sandbox_domain`."""
-        return self.sandbox_domain
-
-    @domain.setter
-    def domain(self, value: str) -> None:
-        self.sandbox_domain = value
-
     def build_envd_url(self, sandbox_id: str) -> str:
         """构建 envd 数据平面 URL（已实测验证）。
 
-        格式: https://{ENVD_PORT}-{sandbox_id}.{domain}
+        格式: https://{ENVD_PORT}-{sandbox_id}.{sandbox_domain}
         """
         return f"https://{ENVD_PORT}-{sandbox_id}.{self.sandbox_domain}"
 
@@ -347,11 +253,7 @@ def select_provider_id(sources: Sources) -> str:
 
 
 def _normalise_overrides(overrides: dict[str, Any]) -> dict[str, Any]:
-    ov = _merge_legacy_kwargs(
-        {k: v for k, v in overrides.items() if k not in ("provider", "provider_options")},
-        source="load_config",
-    )
-    return ov
+    return {k: v for k, v in overrides.items() if k not in ("provider", "provider_options")}
 
 
 def resolve_all(
@@ -427,8 +329,8 @@ def load_config(**overrides: Any) -> TransportConfig:
 
     Priority (highest to lowest):
 
-    1. Code-level *overrides* (canonical or legacy names)
-    2. Environment variables (canonical ``EBX_*`` > ``E2B_*``/native > legacy ``SANDBOX_*``)
+    1. Code-level *overrides* (canonical names)
+    2. Environment variables (one name per key)
     3. ``./.env`` then ``~/.ebx/.env`` (layer-first)
     4. ``~/.ebx/config.toml`` (optional)
     5. Defaults
@@ -438,8 +340,7 @@ def load_config(**overrides: Any) -> TransportConfig:
     Args:
         **overrides: Code-level overrides (highest priority). ``provider`` selects the provider;
             ``provider_options`` passes provider-scoped values; ``sandbox_api_key`` /
-            ``sandbox_base_url`` / ``sandbox_domain`` and the legacy ``api_key`` / ``api_url`` /
-            ``api_base_url`` / ``domain`` are the generic endpoint settings.
+            ``sandbox_base_url`` / ``sandbox_domain`` are the generic endpoint settings.
 
     Returns:
         Merged TransportConfig instance.
@@ -453,7 +354,7 @@ def load_config(**overrides: Any) -> TransportConfig:
     ov = _normalise_overrides(overrides)
     if isinstance(provider_override, str) and provider_override.strip():
         ov["provider"] = provider_override.strip()
-    core_names = {k.key for k in CORE_KEYS} | set(_LEGACY_FIELD_NAMES)
+    core_names = {k.key for k in CORE_KEYS}
     for k, v in options.items():
         if k not in core_names:
             ov.setdefault(k, v)

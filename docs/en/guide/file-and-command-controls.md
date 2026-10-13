@@ -2,7 +2,7 @@
 
 How a template limits which paths and which programs the sandbox server will touch. The HTTP shapes of those routes are in the [template server HTTP API](template-server-api.md). The `server:` block of `template.yaml` is specified in the [template YAML spec](../reference/template-yaml-spec.md#server-policy-server). The design notes are in [Fine-grained capabilities](../design/fine-grained-capabilities.md).
 
-Two layers exist in the tree. The server routes enforce the policy below. A second guard package can express stricter patterns; those functions are not what the routes call today.
+The live routes call `check_env`, `check_url`, and `check_process` as well as the path and command checks below. `check_env` runs in `handle_env_set` (`POST /env`), in `enforce_exec_policy` (the `env` object on `POST /shell`, `POST /shell/stream`, and `POST /process/start`), and in `_handle_create_session` (`POST /pty/sessions`). `check_url` runs in `handle_browser_navigate` (`POST /browser/navigate`). `check_process` runs in `enforce_exec_policy` (argv for those shell and process routes), in `handle_code_run` (`POST /code/run`), and in `_handle_create_session` (the PTY shell). A denial is HTTP 403 with the guard's code: `env_var_denied`, `url_denied`, or `process_denied`. An empty env map stays allowed.
 
 ## What a template declares
 

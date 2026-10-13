@@ -19,7 +19,7 @@ examples/templates/
     └── README.md
 ```
 
-`python-hello` 是一个最小端到端样例，用于让 `client-sdk/tests/test_templates/` 在**无网络**
+`python-hello` 是一个最小端到端样例，用于让 `tests/test_templates/` 在**无网络**
 条件下驱动真实安装管线（`ebx install` 的本地 / GitHub 两种来源、YAML 加载、
 缓存布局、容器内命令服务器 E2E）。它与真源仓库中的同名模板保持同步，
 但**不从本仓库发布**。
@@ -27,8 +27,6 @@ examples/templates/
 ## 发现与安装真实模板（远程索引）
 
 模板通过真源仓库中的索引 `awesome-templates.yaml` 发现与安装：
-
-（以下 `ebx` 命令由独立 `cli` 仓库中的 `ebx` CLI 提供。）
 
 ```bash
 ebx template search python             # 浏览远程目录（名称 / 标签 / 描述）
@@ -57,7 +55,7 @@ https://raw.githubusercontent.com/Easy-Sandbox/awesome-templates/main/awesome-te
 
 - 真源仓库侧（内容 / 索引对账 / `commands.py` E2E）：在
   [`awesome-templates` CI](https://github.com/Easy-Sandbox/awesome-templates/actions) 中运行。
-- 本仓库侧：`cd client-sdk && python -m pytest tests/test_templates/ -q`（离线 fixture 套件，无网络、无 Docker）。
+- 本仓库侧：`python -m pytest tests/test_templates/ -q`（离线 fixture 套件，无网络、无 Docker）。
 
 ## 新增或修改模板
 

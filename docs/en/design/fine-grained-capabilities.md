@@ -227,8 +227,7 @@ another identity's secret. Unconfigured servers keep today's behaviour.
 
 Resolution order (low -> high): code defaults < well-known file
 (`/etc/easy-sandbox/server-policy.json` if present) < `EBX_SERVER_POLICY_FILE` <
-`EBX_SERVER_POLICY` (inline JSON) < `SandboxServer(policy=...)` (the highest present source wins; sources are
-not merged). Legacy env vars
+`EBX_SERVER_POLICY` (inline JSON) < `SandboxServer(policy=...)`. Legacy env vars
 (`EBX_SERVER_DISABLED_GROUPS`, `EBX_SERVER_BASE_DIR`, `EBX_MAX_UPLOAD_SIZE`, `EBX_SERVER_TOKEN`)
 keep working and are applied as the lowest-priority inputs **except** that
 `EBX_SERVER_DISABLED_GROUPS` still wins over policy `groups` (an operator kill switch).
@@ -306,15 +305,15 @@ optional `endpoint`, `scope`, `retry_after`.
 | 401 | `AuthError` | `unauthorized` |
 | 403 | `PolicyDenied` | `missing_scope`, `path_not_allowed`, `path_denied`, `read_only`, `symlink_denied`, `command_not_allowed`, `language_not_allowed`, `signal_not_allowed`, `shell_not_allowed`, `url_not_allowed`, `extension_not_allowed`, `env_var_not_allowed` |
 | 404 | `ValueError` (kept) | `endpoint_disabled` |
-| 409 | `FileExistsError` | `file_exists` (upload with `overwrite: false`) |
+| 409 | `PolicyDenied` | `file_exists` |
 | 413 | `ValueError` (kept) | `payload_too_large` (+ `limit`) |
 | 429 | `RateLimited` | `rate_limited`, `concurrency_limited` |
 
-Client exceptions (new `E9xxx` family, subclassing existing classes where the semantics match so
-current `except` clauses keep working): `ServerAPIError` (E9000), `ServerAuthError` (E9001,
-also `AuthenticationError`), `PolicyDeniedError` (E9002; `FilePolicyDeniedError` also
-`PermissionDeniedError`), `EndpointNotAvailableError` (E9003, also
-`CapabilityNotSupportedError`), `PayloadTooLargeError` (E9004), `RateLimitedError` (E9005,
+Client exceptions (new `E8xxx` family, subclassing existing classes where the semantics match so
+current `except` clauses keep working): `ServerAPIError` (E8000), `ServerAuthError` (E8001,
+also `AuthenticationError`), `PolicyDeniedError` (E8002; `FilePolicyDeniedError` also
+`PermissionDeniedError`), `EndpointNotAvailableError` (E8003, also
+`CapabilityNotSupportedError`), `PayloadTooLargeError` (E8004), `RateLimitedError` (E8005,
 `retry_after`). OS-level 404/403 map to the existing `FileNotFoundError_` /
 `PermissionDeniedError`; process timeouts to `CommandTimeoutError`.
 
@@ -369,22 +368,17 @@ Full findings: [fine-grained-capabilities-review.md](fine-grained-capabilities-r
 * **Path roles** for multi-path endpoints: `files_move` source is `delete`, destination is
   `write`; both must pass allow/deny/read-only. Archive/search/list re-check *every produced
   entry*.
-* **Byte limits**: the request body is bounded by `max_request_bytes` (default: the transfer cap)
-  applied to the validated `Content-Length` *before* the body is read, `max_bytes` bounds the
-  decoded payload; chunked `Transfer-Encoding` is rejected in policy mode; partial uploads are
-  removed on abort. (There is no counting reader: the server reads exactly the declared length.)
+* **Byte limits are enforced while streaming**, not only via `Content-Length`; chunked
+  `Transfer-Encoding` is rejected; partial uploads are removed on abort.
 * **Strict config**: unknown keys and unknown exact endpoint IDs are errors with a
   did-you-mean hint and the JSON path.
 * **HTTP hardening in all modes** (bug fixes): strict `Content-Length` (non-numeric/negative/
   duplicate -> 400), zip archives never follow symlinks that leave the boundary.
-* **Policy-mode only hardening**: duplicate query parameters and `Transfer-Encoding` rejected; boundary/deny check
+* **Policy-mode only hardening**: duplicate path parameters rejected; boundary/deny check
   before any `stat` (no existence oracle); relative paths resolve against the first allow
   root; ambiguous credential headers rejected; `Authorization: Bearer` is consulted first.
-* **Secrets**: in identities mode `GET /env` redacts the server's own secrets (`EBX_SERVER_*` and
-  every `token_env` name); `env_set` refuses them and the `EBX_` prefix; child processes get an
-  environment scrubbed of the same names only. Arbitrary user variables are never touched (legacy
-  `GET /env` still returns the full environment; use `endpoints.env_get` / `groups.system` to
-  restrict it).
+* **Secrets**: in identities mode `GET /env` redacts `EBX_SERVER_*`, `EBX_*TOKEN*` and all
+  `token_env` names; `env_set` refuses them; child processes get a scrubbed environment.
 * **PTY WebSocket** is covered by the policy (`pty_connect`, scope `terminal:use`, header
   auth); the legacy `?token=` still works.
 * **Custom routes** may declare `scopes=` and receive `request.context["policy"]`.

@@ -205,7 +205,7 @@ description = "Directory that holds sandbox working directories"
 
 每个提供方有自己作用域的键：环境变量或 `.env` 里是 `EBX_<PROVIDER>_<KEY>`，`config.toml` 里是 `[providers.<id>]`，SDK 里是 `provider_options={...}`。提供方只会在 `initialize` 请求里收到其清单声明的键。密钥绝不会放进插件的 argv 或环境变量。
 
-通用键 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`（包括 `E2B_API_KEY` 和 `E2B_API_URL`）属于内置提供方。只有当插件清单在 `[core] inherit` 里列出它们，**并且**你在安装或更新时同意了，插件才能拿到。同意界面会列出这些键的名字。你的 LLM、GitHub 和 MCP 键永远不会交给提供方。
+通用键 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`（`EBX_SANDBOX_API_KEY` 和 `EBX_SANDBOX_BASE_URL`）属于内置提供方。只有当插件清单在 `[core] inherit` 里列出它们，**并且**你在安装或更新时同意了，插件才能拿到。同意界面会列出这些键的名字。你的 LLM、GitHub 和 MCP 键永远不会交给提供方。
 
 ### 宿主如何处理插件进程
 

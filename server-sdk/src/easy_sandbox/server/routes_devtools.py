@@ -18,6 +18,7 @@ import subprocess
 import time
 from typing import Any
 
+from .guards import check_process
 from .policy import PolicyDenied
 from .router import CapabilityGroup, default_table
 from .runtime import child_env, context_of
@@ -160,6 +161,7 @@ def handle_code_run(request: ServerRequest) -> ServerResponse:
             timeout = max(1, min(timeout, int(cap)))
 
     cmd = [*_LANGUAGE_COMMANDS[language], code]
+    check_process(cmd)
 
     start_ns = time.monotonic_ns()
     try:

@@ -72,7 +72,7 @@ class InvalidAPIKeyError(AuthenticationError):
     """API Key is invalid or missing."""
 
     code = "E1001"
-    suggestion = "Check your E2B_API_KEY environment variable or pass api_key parameter."
+    suggestion = "Check your EBX_SANDBOX_API_KEY environment variable or pass sandbox_api_key."
 
 
 class TokenExpiredError(AuthenticationError):

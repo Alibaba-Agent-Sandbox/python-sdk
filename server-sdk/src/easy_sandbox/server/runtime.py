@@ -160,9 +160,7 @@ class EndpointContext:
 
     def resolve_path(self, raw: object, op: str | None = None, *, field: str = "") -> str:
         """Resolve and authorise *raw*; records the resolved path for the audit log."""
-        from .guards.paths import path_guard_from_context
-
-        resolved = path_guard_from_context(self).resolve(
+        resolved = self.guard().resolve(
             raw, op or DEFAULT_OPS.get(self.endpoint, OP_READ), field=field
         )
         if len(self.paths_touched) < 8:

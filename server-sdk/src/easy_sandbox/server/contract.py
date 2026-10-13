@@ -25,7 +25,6 @@ DEFAULT_HTTP_PORT = 9000
 DEFAULT_PTY_PORT = 9001
 
 #: Ports owned by the platform inside the official base image.
-# The FC reserved ports are the alicloud-express profile, not the HTTP API. Port 9000 stays the server default.
 ENVD_PORT = 49983
 GATEWAY_PORT = 5000
 CODE_INTERPRETER_PORT = 49999

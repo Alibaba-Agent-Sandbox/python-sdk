@@ -9,17 +9,15 @@ This directory contains complete usage examples for the Easy Sandbox SDK, coveri
 ### 1. Install the SDK
 
 ```bash
-# Full install (recommended — includes the declarative decorator, MCP server, ...)
+# Full install (recommended — includes CLI + declarative decorator)
 pip install "easy-sandbox[all]"
 
 # Or install selectively
+pip install "easy-sandbox[cli]"           # CLI only
 pip install "easy-sandbox[declarative]"   # @sandbox decorator only
 
-# From source (run from the python-sdk repository root)
-pip install -e ./server-sdk -e ./client-sdk
-
-# The ebx CLI is a separate Node.js project (the `cli` repository)
-npm install -g @easy-sandbox/cli
+# From source
+pip install -e .
 ```
 
 ### 2. Configure Credentials
@@ -28,7 +26,7 @@ npm install -g @easy-sandbox/cli
 # Option 1: Environment variable
 export E2B_API_KEY="your-api-key"
 
-# Option 2: CLI config (persisted to ~/.ebx/config.toml; requires the ebx CLI)
+# Option 2: CLI config (persisted to ~/.ebx/config.toml)
 ebx config set sandbox_api_key your-api-key
 
 # For the Codex Agent example, also set:
@@ -66,8 +64,6 @@ releases and CI — live in the single-source-of-truth repository
 [`Easy-Sandbox/awesome-templates`](https://github.com/Easy-Sandbox/awesome-templates);
 discover and install them with `ebx template search` / `ebx template install <name>`.
 
-[`templates/python-hello/call_api.py`](templates/python-hello/call_api.py) talks to a server that is already running (`GET /health`, `GET /capabilities`, `GET /commands`, one upload, one shell). The base URL comes from argv or `EBX_TEMPLATE_URL`; the token comes from `EBX_SERVER_TOKEN`. Request and response shapes are in the [template server HTTP API](../docs/en/guide/template-server-api.md) guide ([中文](../docs/zh/guide/template-server-api.md)).
-
 ## Example Catalog
 
 ### quickstart/ — Getting Started
@@ -86,9 +82,6 @@ discover and install them with `ebx template search` / `ebx template install <na
 |------|-------------|----------|
 | [`codex_agent.py`](agents/codex_agent.py) | **Codex Agent** — AI code generation & execution | AI programming |
 | [`browser_automation.py`](agents/browser_automation.py) | **Browser automation** — Playwright scraping & screenshots | Web scraping |
-| [`hosted_codex.py`](agents/hosted_codex.py) | **Hosted Codex client** — one session against a server you already started | Agents API |
-| [`hosted_qwen.py`](agents/hosted_qwen.py) | **Hosted Qwen client** — one session against a server you already started | Agents API |
-| [`local_files_and_session.py`](agents/local_files_and_session.py) | **Files plus one Codex session** — local server, fake `codex` on `PATH`, no API key | Agents API |
 
 ### compat-demos/ — Compatibility Layer
 

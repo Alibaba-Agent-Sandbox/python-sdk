@@ -1,8 +1,8 @@
 """Canonical configuration-key registry and the pure layered resolver.
 
 This module is the executable form of ``docs/en/design/providers-and-credentials.md``.
-It knows every configuration key (canonical name, environment variable names,
-legacy aliases, storage names) and resolves a key against injected *sources*
+It knows every configuration key (one canonical name, one environment variable,
+one storage name) and resolves a key against injected *sources*
 (overrides, process environment, dotenv files, ``config.toml``) without touching
 the filesystem or ``os.environ``. The Node.js CLI implements the same algorithm
 and runs the same JSON vectors (``tests/fixtures/*.json``).
@@ -163,14 +163,7 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         group=_G_AUTH,
         description="Sandbox API key (any E2B-protocol endpoint)",
         description_zh="沙箱 API Key（任意 E2B 协议端点）",
-        aliases=(
-            _a("E2B_API_KEY", "compat"),
-            _a("SANDBOX_API_KEY", "legacy"),
-            _a("api_key", "legacy", "config"),
-            _a("api_key", "legacy", "kwarg"),
-            _a("--api-key", "legacy", "flag"),
-        ),
-        storage_phase1=Storage("env", "E2B_API_KEY"),
+        storage_phase1=Storage("env", "EBX_SANDBOX_API_KEY"),
         storage_phase2=Storage("env", "EBX_SANDBOX_API_KEY"),
     ),
     ConfigKey(
@@ -180,16 +173,7 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         default=_BASE_URL_DEFAULT,
         description="Platform API URL, any E2B-protocol endpoint",
         description_zh="平台 API 地址，任意 E2B 协议端点",
-        aliases=(
-            _a("E2B_API_URL", "compat"),
-            _a("SANDBOX_API_BASE_URL", "legacy"),
-            _a("api_url", "legacy", "config"),
-            _a("api_base_url", "legacy", "config"),
-            _a("api_url", "legacy", "kwarg"),
-            _a("api_base_url", "legacy", "kwarg"),
-            _a("--api-url", "legacy", "flag"),
-        ),
-        storage_phase1=Storage("toml", "api_url", "transport"),
+        storage_phase1=Storage("toml", "sandbox_base_url", "transport"),
         storage_phase2=Storage("toml", "sandbox_base_url", "transport"),
         toml_section="transport",
     ),
@@ -199,13 +183,7 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         default=_DOMAIN_DEFAULT,
         description="Envd data-plane domain",
         description_zh="envd 数据面域名",
-        aliases=(
-            _a("E2B_DOMAIN", "compat"),
-            _a("domain", "legacy", "config"),
-            _a("domain", "legacy", "kwarg"),
-            _a("--domain", "legacy", "flag"),
-        ),
-        storage_phase1=Storage("toml", "domain", "transport"),
+        storage_phase1=Storage("toml", "sandbox_domain", "transport"),
         storage_phase2=Storage("toml", "sandbox_domain", "transport"),
         toml_section="transport",
     ),
@@ -216,7 +194,6 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         default=30.0,
         description="HTTP request timeout in seconds",
         description_zh="HTTP 请求超时（秒）",
-        aliases=(_a("SANDBOX_HTTP_TIMEOUT", "legacy"),),
         storage_phase1=Storage("toml", "http_timeout", "transport"),
         storage_phase2=Storage("toml", "http_timeout", "transport"),
         toml_section="transport",
@@ -267,7 +244,6 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         default="WARNING",
         description="Log level",
         description_zh="日志级别",
-        aliases=(_a("SANDBOX_LOG_LEVEL", "legacy"), _a("--log-level", "legacy", "flag")),
         storage_phase1=Storage("toml", "log_level", "transport"),
         storage_phase2=Storage("toml", "log_level", "transport"),
         toml_section="transport",
@@ -277,7 +253,6 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         default="base",
         description="Template used when none is given",
         description_zh="未指定模板时使用的模板",
-        aliases=(_a("SANDBOX_TEMPLATE", "legacy"), _a("EBX_TEMPLATE", "legacy")),
         storage_phase1=Storage("toml", "default_template", "transport"),
         storage_phase2=Storage("toml", "default_template", "transport"),
         toml_section="transport",
@@ -288,12 +263,6 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         group=_G_LLM,
         description="LLM API key for AI codegen",
         description_zh="AI 代码生成使用的 LLM API Key",
-        aliases=(
-            _a("BAILIAN_CODING_PLAN_API_KEY", "native"),
-            _a("DASHSCOPE_API_KEY", "native"),
-            _a("OPENAI_API_KEY", "native"),
-            _a("EBX_QWEN_CODE_API_KEY", "legacy"),
-        ),
         storage_phase1=Storage("env", "EBX_LLM_API_KEY"),
         storage_phase2=Storage("env", "EBX_LLM_API_KEY"),
     ),
@@ -304,10 +273,6 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         default="https://dashscope.aliyuncs.com/compatible-mode/v1",
         description="LLM endpoint (OpenAI-compatible)",
         description_zh="LLM 端点（OpenAI 兼容）",
-        aliases=(
-            _a("OPENAI_BASE_URL", "native"),
-            _a("qwen_code_base_url", "legacy", "config"),
-        ),
         storage_phase1=Storage("toml", "llm_base_url", "transport"),
         storage_phase2=Storage("toml", "llm_base_url", "transport"),
         toml_section="transport",
@@ -318,7 +283,6 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         default="qwen3-coder-plus",
         description="LLM model name",
         description_zh="LLM 模型名",
-        aliases=(_a("OPENAI_MODEL", "native"), _a("qwen_code_model", "legacy", "config")),
         storage_phase1=Storage("toml", "llm_model", "transport"),
         storage_phase2=Storage("toml", "llm_model", "transport"),
         toml_section="transport",
@@ -329,9 +293,9 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         group=_G_INT,
         description="GitHub token for the template index",
         description_zh="用于模板索引的 GitHub Token",
-        aliases=(_a("GITHUB_TOKEN", "native"), _a("--token", "legacy", "flag")),
+        env_override="GITHUB_TOKEN",
         storage_phase1=Storage("env", "GITHUB_TOKEN"),
-        storage_phase2=Storage("env", "EBX_GITHUB_TOKEN"),
+        storage_phase2=Storage("env", "GITHUB_TOKEN"),
     ),
     ConfigKey("template_index_url", type="url", settable=False),
     ConfigKey("template_dir", type="path", settable=False),
@@ -346,27 +310,25 @@ _ALI = BUILTIN_PROVIDER_ID
 def _ali(
     key: str,
     *,
-    legacy: Sequence[str] = (),
-    native: Sequence[str] = (),
-    compat: Sequence[str] = (),
     phase1: Storage | None = None,
+    env_override: str | None = None,
     **kw: Any,
 ) -> ConfigKey:
-    aliases = (
-        tuple(_a(n, "compat") for n in compat)
-        + tuple(_a(n, "native") for n in native)
-        + tuple(_a(n, "legacy") for n in legacy)
-    )
+    """One provider key. ``env_override`` is the only environment variable when the vendor already has a name."""
+    storage1 = phase1 or Storage("toml", key, "providers." + _ALI)
+    if env_override and storage1.file == "env":
+        storage2 = Storage("env", env_override)
+    elif storage1.file == "env":
+        storage2 = Storage("env", provider_env_name(_ALI, key))
+    else:
+        storage2 = storage1
     return ConfigKey(
         key,
         scope=_ALI,
-        aliases=aliases,
-        storage_phase1=phase1 or Storage("toml", key, "providers." + _ALI),
-        storage_phase2=(
-            Storage("env", provider_env_name(_ALI, key))
-            if phase1 is not None and phase1.file == "env"
-            else Storage("toml", key, "providers." + _ALI)
-        ),
+        aliases=(),
+        env_override=env_override,
+        storage_phase1=storage1,
+        storage_phase2=storage2,
         **kw,
     )
 
@@ -376,7 +338,7 @@ ALICLOUD_EXPRESS_KEYS: tuple[ConfigKey, ...] = (
         "region",
         default="cn-hangzhou",
         group=_G_CONN,
-        legacy=("SANDBOX_REGION",),
+        env_override="ALIBABA_CLOUD_REGION_ID",
         phase1=Storage("toml", "region", "transport"),
         description="Region id (derives the API URL and domain)",
         description_zh="地域（用于推导 API 地址和域名）",
@@ -385,8 +347,7 @@ ALICLOUD_EXPRESS_KEYS: tuple[ConfigKey, ...] = (
         "access_key_id",
         credential=True,
         group=_G_ALI,
-        native=("ALICLOUD_ACCESS_KEY_ID",),
-        legacy=("AccessKey",),
+        env_override="ALICLOUD_ACCESS_KEY_ID",
         phase1=Storage("env", "ALICLOUD_ACCESS_KEY_ID"),
         description="Alibaba Cloud AccessKey ID",
         description_zh="阿里云 AccessKey ID",
@@ -396,8 +357,7 @@ ALICLOUD_EXPRESS_KEYS: tuple[ConfigKey, ...] = (
         secret=True,
         credential=True,
         group=_G_ALI,
-        native=("ALICLOUD_ACCESS_KEY_SECRET",),
-        legacy=("AccessSecret",),
+        env_override="ALICLOUD_ACCESS_KEY_SECRET",
         phase1=Storage("env", "ALICLOUD_ACCESS_KEY_SECRET"),
         description="Alibaba Cloud AccessKey secret",
         description_zh="阿里云 AccessKey Secret",
@@ -405,47 +365,50 @@ ALICLOUD_EXPRESS_KEYS: tuple[ConfigKey, ...] = (
     _ali(
         "acr_namespace",
         group=_G_ALI,
-        legacy=("ACR_NAMESPACE",),
+        env_override="ACR_NAMESPACE",
         phase1=Storage("env", "ACR_NAMESPACE"),
         description="ACR namespace",
         description_zh="ACR 命名空间",
     ),
-    _ali("acr_registry", group=_G_ACR, legacy=("ACR_REGISTRY",), description="ACR registry host"),
-    _ali("acr_repo", group=_G_ACR, legacy=("ACR_REPO",), description="ACR repository"),
-    _ali("acr_username", group=_G_ACR, legacy=("ACR_USERNAME",), description="ACR username"),
+    _ali(
+        "acr_registry",
+        group=_G_ACR,
+        env_override="ACR_REGISTRY",
+        description="ACR registry host",
+    ),
+    _ali("acr_repo", group=_G_ACR, env_override="ACR_REPO", description="ACR repository"),
+    _ali("acr_username", group=_G_ACR, env_override="ACR_USERNAME", description="ACR username"),
     _ali(
         "acr_password",
         secret=True,
         group=_G_ACR,
-        legacy=("ACR_PASSWORD",),
+        env_override="ACR_PASSWORD",
         phase1=Storage("env", "ACR_PASSWORD"),
         description="ACR password",
     ),
     _ali(
         "acr_instance_id",
         group=_G_ACR,
-        legacy=("ACREE_INSTANCE_ID",),
+        env_override="ACREE_INSTANCE_ID",
         description="ACR Enterprise instance id",
     ),
-    _ali("acr_vpc_id", group=_G_ACR, legacy=("ACR_VPC_ID",), description="ACR VPC id"),
+    _ali("acr_vpc_id", group=_G_ACR, env_override="ACR_VPC_ID", description="ACR VPC id"),
     _ali(
         "acr_vswitch_ids",
         type="csv",
         group=_G_ACR,
-        legacy=("ACR_VSWITCH_IDS",),
+        env_override="ACR_VSWITCH_IDS",
         description="ACR vSwitch ids (comma-separated)",
     ),
     _ali(
         "acr_security_group_id",
         group=_G_ACR,
-        legacy=("ACR_SECURITY_GROUP_ID",),
+        env_override="ACR_SECURITY_GROUP_ID",
         description="ACR security group id",
     ),
     _ali(
         "team_id",
         group=_G_ACR,
-        compat=("E2B_TEAM_ID",),
-        legacy=("TEAM_ID",),
         description="Team id",
     ),
 )

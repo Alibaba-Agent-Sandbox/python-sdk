@@ -27,6 +27,7 @@ import sys
 import time
 from typing import Any
 
+from .guards import check_env
 from .policy import PolicyDenied
 from .router import CapabilityGroup, default_table
 from .runtime import PolicyEngine, context_of
@@ -351,7 +352,10 @@ def handle_env_set(request: ServerRequest) -> ServerResponse:
     if not isinstance(env_vars, dict):
         return ServerResponse.error(400, "'vars' must be an object", "ValueError")
 
-    # Validate protected keys first (explicit set + EBX_ prefix).
+    # ``EBX_*`` (any case) is ``env_var_denied``. An empty map is admitted.
+    env_vars = check_env(env_vars)
+
+    # PATH, HOME, USER, SHELL (and EBX_* again) stay on the historical 403.
     blocked = sorted(
         k
         for k in env_vars

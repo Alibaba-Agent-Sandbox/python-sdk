@@ -2,7 +2,7 @@
 
 模板如何限制沙箱服务器可以触及的路径和程序。这些路由的 HTTP 形状见[模板服务器 HTTP API](template-server-api.md)。`template.yaml` 的 `server:` 块见 [template.yaml 规范](../reference/template-yaml-spec.md#服务端策略server)。设计说明见[细粒度能力](../design/fine-grained-capabilities.md)。
 
-树里有两层。服务器路由执行下面这份策略。另一个 guard 包可以表达更严的模式；路由今天并不调用那些函数。
+实时路由会调用 `check_env`、`check_url` 和 `check_process`，下文的路径检查和命令检查也同样在路由里。`check_env` 用在 `handle_env_set`（`POST /env`）、`enforce_exec_policy`（`POST /shell`、`POST /shell/stream`、`POST /process/start` 的 `env` 对象）和 `_handle_create_session`（`POST /pty/sessions`）。`check_url` 用在 `handle_browser_navigate`（`POST /browser/navigate`）。`check_process` 用在 `enforce_exec_policy`（上述 shell 与进程的 argv）、`handle_code_run`（`POST /code/run`）和 `_handle_create_session`（PTY 的 shell）。拒绝是 HTTP 403，错误码是 guard 自己的码：`env_var_denied`、`url_denied` 或 `process_denied`。空的 env 映射仍然允许。
 
 ## 模板声明什么
 

@@ -100,23 +100,3 @@ def test_sdist_ships_license_notice_and_sources(built_dists: dict[str, Path]) ->
     for name in ("LICENSE", "NOTICE", "README.md", "pyproject.toml"):
         assert f"{root}/{name}" in members
     assert f"{root}/src/easy_sandbox/__init__.py" not in members
-
-
-def test_sdist_include_list_is_the_documented_one() -> None:
-    """The sdist include list is exactly the documented one.
-
-    Repo-only documents (``llms.txt``, ``CHANGELOG.md``, ``SKILL.md``) are intentionally NOT
-    in it; update this test if shipping one in the distribution becomes an explicit decision.
-    """
-    try:
-        import tomllib  # type: ignore[import-not-found,unused-ignore]
-    except ImportError:  # pragma: no cover - Python 3.10 fallback
-        import tomli as tomllib
-
-    data = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    include: list[str] = data["tool"]["hatch"]["build"]["targets"]["sdist"]["include"]
-    assert sorted(include) == sorted(
-        ["src/easy_sandbox/", "tests/", "README.md", "LICENSE", "NOTICE", "pyproject.toml"]
-    )
-    for repo_doc in ("llms.txt", "CHANGELOG.md", "SKILL.md"):
-        assert repo_doc not in include

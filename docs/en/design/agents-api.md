@@ -3,7 +3,7 @@
 > Status: **implemented** (design revised after two review rounds, see
 > [agents-api-review.md](agents-api-review.md)). CLI follow-ups:
 > [agents-api-cli-followups.md](agents-api-cli-followups.md).
-> Chinese version: not yet translated; this English page is the current text.
+> Chinese version: [docs/zh/design/agents-api.md](../../zh/design/agents-api.md).
 
 Easy Sandbox gains an **agent hosting layer**: a coding agent CLI (Codex CLI,
 Cursor `cursor-agent`, Claude Code, Qwen Code, or any custom command) runs

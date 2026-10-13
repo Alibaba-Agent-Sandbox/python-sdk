@@ -9,17 +9,15 @@
 ### 1. 安装 SDK
 
 ```bash
-# 完整安装（推荐，包含声明式装饰器、MCP 服务等）
+# 完整安装（推荐，包含 CLI + 声明式装饰器）
 pip install "easy-sandbox[all]"
 
 # 或按需安装
+pip install "easy-sandbox[cli]"           # 仅 CLI
 pip install "easy-sandbox[declarative]"   # 仅 @sandbox 装饰器
 
-# 从源码安装（在 python-sdk 仓库根目录执行）
-pip install -e ./server-sdk -e ./client-sdk
-
-# ebx CLI 是独立的 Node.js 项目（`cli` 仓库）
-npm install -g @easy-sandbox/cli
+# 从源码安装
+pip install -e .
 ```
 
 ### 2. 配置凭证
@@ -28,7 +26,7 @@ npm install -g @easy-sandbox/cli
 # 方式一：环境变量
 export E2B_API_KEY="your-api-key"
 
-# 方式二：CLI 配置（持久化到 ~/.ebx/config.toml；需安装 ebx CLI）
+# 方式二：CLI 配置（持久化到 ~/.ebx/config.toml）
 ebx config set sandbox_api_key your-api-key
 
 # 如需运行 Codex Agent 示例，还需配置：
@@ -69,8 +67,6 @@ examples/
     └── openclaw/
 ```
 
-[`templates/python-hello/call_api.py`](templates/python-hello/call_api.py) 调用一个已经在运行的模板服务器（`GET /health`、`GET /capabilities`、`GET /commands`、一次上传、一次 shell）。基址来自命令行参数或 `EBX_TEMPLATE_URL`，令牌来自 `EBX_SERVER_TOKEN`。请求和响应形状见[模板服务器 HTTP API](../docs/zh/guide/template-server-api.md)（[English](../docs/en/guide/template-server-api.md)）。
-
 ## 示例列表
 
 ### quickstart/ —— 快速入门
@@ -89,9 +85,6 @@ examples/
 |------|------|----------|
 | [`codex_agent.py`](agents/codex_agent.py) | **Codex Agent** —— AI 代码生成与执行 | AI 编程 |
 | [`browser_automation.py`](agents/browser_automation.py) | **浏览器自动化** —— Playwright 爬取与截图 | 网页爬取 |
-| [`hosted_codex.py`](agents/hosted_codex.py) | **托管 Codex 客户端** —— 对着已经启动的服务开一个会话 | Agents API |
-| [`hosted_qwen.py`](agents/hosted_qwen.py) | **托管 Qwen 客户端** —— 对着已经启动的服务开一个会话 | Agents API |
-| [`local_files_and_session.py`](agents/local_files_and_session.py) | **文件加一个 Codex 会话** —— 本地服务，`PATH` 上的假 `codex`，无 API key | Agents API |
 
 ### compat-demos/ —— 兼容层演示
 

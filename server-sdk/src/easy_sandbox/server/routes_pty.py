@@ -55,6 +55,7 @@ import time
 import uuid
 from typing import Any
 
+from .guards import check_env, check_process
 from .policy import PolicyDenied
 from .router import CapabilityGroup, default_table
 from .runtime import context_of
@@ -382,6 +383,9 @@ def _handle_create_session(request: ServerRequest) -> ServerResponse:
             "ValueError",
         )
     env: dict[str, str] | None = body.get("env")
+    if env is not None:
+        env = check_env(env)
+    check_process([shell])
 
     max_sessions: int | None = None
     base_env: dict[str, str] | None = None

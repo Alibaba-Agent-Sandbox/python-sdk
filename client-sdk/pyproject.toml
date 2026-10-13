@@ -30,14 +30,10 @@ dependencies = [
     "websockets>=12.0",
     "pydantic>=2.0",
     "python-dotenv>=1.0",
-    # Lock-step release: the container-side runtime (``easy_sandbox.server``) used to ship inside
-    # ``easy-sandbox`` itself, so it stays a hard dependency. Keep the pin equal to ``_version.py``.
-    "easy-sandbox-server==0.3.0",
 ]
 
 [project.optional-dependencies]
 mcp = [
-    "mcp>=1.0.0",
     "starlette>=0.37",
     "uvicorn>=0.29",
 ]
@@ -53,9 +49,12 @@ session = [
 alicloud = [
     "alibabacloud-fcsandbox20260509>=1.6.0",
 ]
-# Alias kept for ``pip install "easy-sandbox[server]"``: ``easy-sandbox-server`` is now a hard
-# dependency of ``easy-sandbox``, so this extra adds nothing.
-server = []
+# Container-side runtime (``easy_sandbox.server``), shipped as a separate
+# distribution (``python-sdk/server-sdk``) so sandbox images do not need the
+# client stack.  Needed locally by the ``@sandbox`` decorator's server proxy.
+server = [
+    "easy-sandbox-server",
+]
 all = [
     "easy-sandbox[fast,session,mcp,declarative,alicloud,server]",
 ]
@@ -71,11 +70,11 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Easy-Sandbox/python-sdk"
-Documentation = "https://github.com/Easy-Sandbox/python-sdk/tree/main/docs"
-Repository = "https://github.com/Easy-Sandbox/python-sdk"
-Issues = "https://github.com/Easy-Sandbox/python-sdk/issues"
-Changelog = "https://github.com/Easy-Sandbox/python-sdk/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/Easy-Sandbox/easy-sandbox"
+Documentation = "https://github.com/Easy-Sandbox/easy-sandbox/tree/main/docs"
+Repository = "https://github.com/Easy-Sandbox/easy-sandbox"
+Issues = "https://github.com/Easy-Sandbox/easy-sandbox/issues"
+Changelog = "https://github.com/Easy-Sandbox/easy-sandbox/blob/main/CHANGELOG.md"
 
 [tool.hatch.version]
 path = "src/easy_sandbox/_version.py"

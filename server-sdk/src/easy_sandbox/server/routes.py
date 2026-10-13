@@ -33,7 +33,7 @@ from ._compat import (  # noqa: F401  (re-exported for backward compatibility)
     is_builtin_enabled,
 )
 from .guard import OP_READ, OP_WRITE
-from .guards import check_command, path_guard_from_context
+from .guards import check_command, check_env, check_process, path_guard_from_context
 from .policy import PolicyDenied
 from .registry import CommandArg, CommandRegistry, default_registry  # noqa: F401
 from .router import CapabilityGroup, default_table
@@ -357,7 +357,9 @@ def enforce_exec_policy(
     scrubs secrets from child environments.
 
     Raises:
-        PolicyDenied: ``command_not_allowed``, ``path_*`` for ``cwd``, ``env_var_not_allowed``.
+        PolicyDenied: ``command_not_allowed``, ``path_*`` for ``cwd``,
+            ``env_var_not_allowed``, plus ``env_var_denied`` / ``env_invalid`` and
+            ``process_denied`` / ``process_invalid`` from the env and process guards.
         ValueError: malformed ``cwd`` / ``env`` / ``timeout`` values.
     """
     raw_cwd = body.get("cwd")
@@ -376,6 +378,13 @@ def enforce_exec_policy(
         timeout = default_timeout
     if timeout <= 0:
         timeout = default_timeout
+
+    # Always, including when no policy engine is attached. Empty argv is left to
+    # the caller; empty env maps are admitted by ``check_env``.
+    if args:
+        check_process(args)
+    if raw_env is not None:
+        raw_env = check_env(raw_env)
 
     cwd: str | None = raw_cwd or None
     base_env: dict[str, str] | None = None

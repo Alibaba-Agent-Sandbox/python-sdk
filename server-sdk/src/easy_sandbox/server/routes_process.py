@@ -62,7 +62,6 @@ class _Capture:
         self.size = 0
         self.next_seq = 0
         self.dropped = False
-        self.readers = 0
 
     def add(self, stream: str, text: str) -> None:
         with self.cond:
@@ -254,7 +253,6 @@ def _handle_process_start(request: ServerRequest) -> ServerResponse:
     )
     if capture_output:
         info.capture = _Capture(capture_limit)
-        info.capture.readers = 2
         for stream, name in ((proc.stdout, "stdout"), (proc.stderr, "stderr")):
             threading.Thread(target=_pump, args=(stream, name, info.capture), daemon=True).start()
     with _process_lock:
@@ -275,7 +273,6 @@ def _pump(stream: Any, name: str, capture: _Capture) -> None:
         pass
     finally:
         with capture.cond:
-            capture.readers -= 1
             capture.cond.notify_all()
 
 
@@ -450,7 +447,7 @@ def _handle_process_output(request: ServerRequest) -> ServerResponse:
         return ServerResponse.error(400, "Invalid 'since' or 'wait'", "ValueError")
     deadline = time.monotonic() + wait
     with capture.cond:
-        while capture.next_seq <= since and (info.popen.poll() is None or capture.readers > 0):
+        while capture.next_seq <= since and info.popen.poll() is None:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break

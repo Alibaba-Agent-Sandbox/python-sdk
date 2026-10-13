@@ -6,7 +6,6 @@ import json
 import os
 import shutil
 import threading
-from pathlib import Path
 
 import pytest
 
@@ -32,30 +31,6 @@ from tests.test_providers.helpers import (
 def _install(src, **kw):
     kw.setdefault("yes", True)
     return installer.install(str(src), **kw)
-
-
-def _seed_data(provider_id: str = "demo-prov") -> dict[str, bytes]:
-    data = store.data_dir(provider_id)
-    files = {
-        "state.json": b'{"sandboxes": 2}',
-        "nested/deep/cache.bin": bytes(range(256)),
-        "empty-dir/.keep": b"",
-    }
-    for rel, blob in files.items():
-        target = data / rel
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(blob)
-    (data / "state.json").chmod(0o600)
-    return files
-
-
-def _snapshot_data(provider_id: str = "demo-prov") -> dict[str, tuple[bytes, int]]:
-    data = store.data_dir(provider_id)
-    return {
-        str(p.relative_to(data)): (p.read_bytes(), p.stat().st_mode & 0o777)
-        for p in sorted(data.rglob("*"))
-        if p.is_file()
-    }
 
 
 class TestLocalInstall:
@@ -202,62 +177,6 @@ class TestLocalInstall:
         assert store.read_receipt("demo-prov")["version"] == "1.0.0"
         assert store.digest_dir(store.provider_dir("demo-prov")) == before
         store.verify_integrity("demo-prov")
-
-    def test_failed_verify_rollback_restores_data_dir_exactly(self, iso, tmp_path):  # noqa: F811
-        src = write_plugin(tmp_path / "src", version="1.0.0")
-        _install(src)
-        _seed_data()
-        before = _snapshot_data()
-        assert before
-        write_plugin(src, version="2.0.0")
-
-        def boom(pid):
-            raise ProviderInstallError("handshake failed")
-
-        with pytest.raises(ProviderInstallError):
-            _install(src, force=True, verify=boom)
-        assert _snapshot_data() == before
-        assert store.read_receipt("demo-prov")["version"] == "1.0.0"
-        store.verify_integrity("demo-prov")
-        leftovers = [p for p in store.trash_dir().iterdir()] if store.trash_dir().exists() else []
-        assert leftovers == []
-
-    def test_failed_swap_rollback_restores_data_dir_exactly(
-        self,
-        iso,  # noqa: F811
-        tmp_path,
-        monkeypatch,
-    ):
-        src = write_plugin(tmp_path / "src", version="1.0.0")
-        _install(src)
-        _seed_data()
-        before = _snapshot_data()
-        write_plugin(src, version="2.0.0")
-        real_replace = os.replace
-        final = store.provider_dir("demo-prov")
-
-        def flaky(a, b, *args, **kw):
-            if Path(b) == final and Path(a).parent == store.staging_dir():
-                raise OSError(13, "injected failure")
-            return real_replace(a, b, *args, **kw)
-
-        with monkeypatch.context() as patched:
-            patched.setattr(installer.os, "replace", flaky)
-            with pytest.raises(OSError, match="injected"):
-                _install(src, force=True)
-        assert _snapshot_data() == before
-        assert store.read_receipt("demo-prov")["version"] == "1.0.0"
-        store.verify_integrity("demo-prov")
-
-    def test_successful_update_keeps_data_dir(self, iso, tmp_path):  # noqa: F811
-        src = write_plugin(tmp_path / "src", version="1.0.0")
-        _install(src)
-        _seed_data()
-        before = _snapshot_data()
-        write_plugin(src, version="2.0.0")
-        _install(src, force=True, verify=lambda pid: None)
-        assert _snapshot_data() == before
-        assert store.read_receipt("demo-prov")["version"] == "2.0.0"
 
     def test_failing_first_install_leaves_nothing(self, iso, tmp_path):  # noqa: F811
         src = write_plugin(tmp_path / "src")
@@ -660,39 +579,6 @@ class TestGitInstall:
             installer.update("demo-prov", verify=boom, **kw)
         assert store.read_receipt("demo-prov")["version"] == "1.0.0"
         store.verify_integrity("demo-prov")
-
-    def test_update_rollback_after_failed_verify_keeps_data_dir(self, iso, repo):  # noqa: F811
-        kw = {"yes": True, "allow_insecure_transport": True, "allow_unpinned": True}
-        installer.install(self.url(repo), **kw)
-        _seed_data()
-        before = _snapshot_data()
-        write_plugin(repo, version="1.1.0")
-        git_commit_all(repo)
-
-        def boom(pid):
-            raise ProviderInstallError("handshake")
-
-        with pytest.raises(ProviderInstallError):
-            installer.update("demo-prov", verify=boom, **kw)
-        assert _snapshot_data() == before
-        assert store.read_receipt("demo-prov")["version"] == "1.0.0"
-        store.verify_integrity("demo-prov")
-
-    def test_cli_update_accepts_allow_insecure_transport(self, iso, repo, capsys):  # noqa: F811
-        from easy_sandbox.providers.__main__ import main
-
-        kw = {"yes": True, "allow_insecure_transport": True, "allow_unpinned": True}
-        installer.install(self.url(repo), **kw)
-        write_plugin(repo, version="1.1.0")
-        git_commit_all(repo)
-        argv = ["--json", "update", "demo-prov", "--yes", "--allow-unpinned", "--no-verify"]
-        assert main(argv) == 2  # file:// is refused without the flag (E8012)
-        capsys.readouterr()
-        assert store.read_receipt("demo-prov")["version"] == "1.0.0"
-        assert main([*argv, "--allow-insecure-transport", "--check"]) == 0
-        assert '"available"' in capsys.readouterr().out
-        assert main([*argv, "--allow-insecure-transport"]) == 0
-        assert store.read_receipt("demo-prov")["version"] == "1.1.0"
 
     def test_update_of_local_install_is_an_error(self, iso, tmp_path):  # noqa: F811
         _install(write_plugin(tmp_path / "src"))

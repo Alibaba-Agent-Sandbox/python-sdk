@@ -460,14 +460,6 @@ def install(
     return receipt
 
 
-def _return_data(src: Path, dest: Path) -> None:
-    """Move a plugin's ``data/`` back where it came from (rollback); never raises."""
-    if not src.exists() or dest.exists():
-        return
-    with contextlib.suppress(OSError, shutil.Error):
-        shutil.move(str(src), str(dest))
-
-
 def _swap_in(
     provider_id: str,
     entries: list[store.FileEntry],
@@ -501,7 +493,6 @@ def _swap_in(
         os.replace(stage, final)
     except BaseException:
         if trash is not None and trash.exists() and not final.exists():
-            _return_data(stage / "data", trash / "data")
             with contextlib.suppress(OSError):
                 os.replace(trash, final)
         store.remove_tree(stage)
@@ -510,12 +501,9 @@ def _swap_in(
         try:
             verify(provider_id)
         except BaseException:
+            store.remove_tree(final)
             if trash is not None and trash.exists():
-                _return_data(final / "data", trash / "data")
-                store.remove_tree(final)
                 os.replace(trash, final)
-            else:
-                store.remove_tree(final)
             raise
     if trash is not None:
         store.remove_tree(trash)

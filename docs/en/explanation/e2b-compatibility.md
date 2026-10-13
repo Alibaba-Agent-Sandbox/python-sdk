@@ -43,11 +43,13 @@ The following APIs are fully compatible with the E2B Python SDK:
 
 ### Environment Variables
 
-| Variable | Status |
+Each setting has one environment variable. Set these instead of the E2B variable names:
+
+| Setting | Environment variable |
 |----------|--------|
-| `E2B_API_KEY` | ✅ Compatible (highest priority) |
-| `E2B_API_URL` | ✅ Compatible |
-| `E2B_DOMAIN` | ✅ Compatible |
+| Sandbox API key | `EBX_SANDBOX_API_KEY` |
+| Platform API URL | `EBX_SANDBOX_BASE_URL` |
+| Data-plane domain | `EBX_SANDBOX_DOMAIN` |
 
 ### Compatibility Layer
 

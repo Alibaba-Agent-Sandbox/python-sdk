@@ -31,35 +31,17 @@ class _Dummy(Provider):
 DEFAULT_URL = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
 
 
-class TestBackwardCompatibleModel:
-    def test_legacy_constructor_names(self):
+class TestCanonicalModel:
+    def test_retired_constructor_names_are_ignored(self):
         c = TransportConfig(api_key="k", api_url="https://x", domain="d.example")
-        assert (c.sandbox_api_key, c.sandbox_base_url, c.sandbox_domain) == (
-            "k",
-            "https://x",
-            "d.example",
-        )
-        assert (c.api_key, c.api_url, c.api_base_url, c.domain) == (
-            "k",
-            "https://x",
-            "https://x",
-            "d.example",
-        )
+        assert c.sandbox_api_key is None
+        assert c.sandbox_base_url == DEFAULT_URL
+        assert c.sandbox_domain == "cn-hangzhou.e2b.fc.aliyuncs.com"
+        assert not hasattr(c, "api_key") or "api_key" not in type(c).model_fields
 
     def test_canonical_constructor_names(self):
         c = TransportConfig(sandbox_api_key="k", sandbox_base_url="https://x", sandbox_domain="d")
-        assert c.api_key == "k" and c.api_url == "https://x" and c.domain == "d"
-
-    def test_same_value_twice_is_fine_conflict_is_error(self):
-        assert TransportConfig(api_key="k", sandbox_api_key="k").api_key == "k"
-        with pytest.raises(ValueError):
-            TransportConfig(api_key="a", sandbox_api_key="b")
-
-    def test_legacy_setters(self):
-        c = TransportConfig()
-        c.api_key = "z"
-        c.api_url = "https://y"
-        assert c.sandbox_api_key == "z" and c.sandbox_base_url == "https://y"
+        assert (c.sandbox_api_key, c.sandbox_base_url, c.sandbox_domain) == ("k", "https://x", "d")
 
     def test_defaults(self):
         c = TransportConfig()
@@ -72,23 +54,12 @@ class TestBackwardCompatibleModel:
     ("env", "field", "value"),
     [
         ("EBX_SANDBOX_API_KEY", "sandbox_api_key", "v"),
-        ("E2B_API_KEY", "sandbox_api_key", "v"),
-        ("SANDBOX_API_KEY", "sandbox_api_key", "v"),
         ("EBX_SANDBOX_BASE_URL", "sandbox_base_url", "https://v.example"),
-        ("E2B_API_URL", "sandbox_base_url", "https://v.example"),
-        ("SANDBOX_API_BASE_URL", "sandbox_base_url", "https://v.example"),
         ("EBX_SANDBOX_DOMAIN", "sandbox_domain", "v.example"),
-        ("E2B_DOMAIN", "sandbox_domain", "v.example"),
-        ("EBX_ALICLOUD_EXPRESS_REGION", "region", "cn-beijing"),
-        ("SANDBOX_REGION", "region", "cn-beijing"),
-        ("EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID", "access_key_id", "id"),
+        ("ALIBABA_CLOUD_REGION_ID", "region", "cn-beijing"),
         ("ALICLOUD_ACCESS_KEY_ID", "access_key_id", "id"),
-        ("AccessKey", "access_key_id", "id"),
-        ("EBX_ALICLOUD_EXPRESS_ACCESS_KEY_SECRET", "access_key_secret", "sec"),
         ("ALICLOUD_ACCESS_KEY_SECRET", "access_key_secret", "sec"),
-        ("AccessSecret", "access_key_secret", "sec"),
         ("EBX_HTTP_TIMEOUT", "http_timeout", 12.5),
-        ("SANDBOX_HTTP_TIMEOUT", "http_timeout", 12.5),
         ("EBX_MAX_RETRIES", "max_retries", 7),
         ("EBX_HTTP2", "http2", False),
     ],
@@ -110,49 +81,47 @@ class TestEveryNameInEveryLayer:
 
 
 class TestPrecedence:
-    def test_name_order_in_process_env(self, iso, monkeypatch):  # noqa: F811
+    def test_retired_process_names_are_ignored(self, iso, monkeypatch):  # noqa: F811
         monkeypatch.setenv("SANDBOX_API_KEY", "legacy")
-        cfgmod.reset_config()
-        assert load_config().sandbox_api_key == "legacy"
         monkeypatch.setenv("E2B_API_KEY", "compat")
         cfgmod.reset_config()
-        assert load_config().sandbox_api_key == "compat"
+        assert load_config().sandbox_api_key is None
         monkeypatch.setenv("EBX_SANDBOX_API_KEY", "canon")
         cfgmod.reset_config()
         assert load_config().sandbox_api_key == "canon"
 
-    def test_layer_before_name(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("SANDBOX_API_KEY", "legacy-env")
+    def test_process_env_beats_dotenv(self, iso, monkeypatch):  # noqa: F811
+        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "from-env")
         iso.write_env("EBX_SANDBOX_API_KEY=canon-dotenv\n")
-        assert load_config().sandbox_api_key == "legacy-env"
+        assert load_config().sandbox_api_key == "from-env"
 
     def test_override_beats_env_beats_dotenv_beats_toml(self, iso, monkeypatch):  # noqa: F811
         iso.write_toml('[transport]\nsandbox_api_key = "toml"\n')
         assert load_config().sandbox_api_key == "toml"
-        iso.write_env("E2B_API_KEY=dotenv\n")
+        iso.write_env("EBX_SANDBOX_API_KEY=dotenv\n")
         assert load_config().sandbox_api_key == "dotenv"
-        monkeypatch.setenv("E2B_API_KEY", "env")
+        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "env")
         cfgmod.reset_config()
         assert load_config().sandbox_api_key == "env"
-        assert load_config(api_key="kw").sandbox_api_key == "kw"
+        assert load_config(api_key="kw").sandbox_api_key == "env"
         assert load_config(sandbox_api_key="kw2").sandbox_api_key == "kw2"
 
     def test_blank_override_and_env_are_ignored(self, iso, monkeypatch):  # noqa: F811
-        iso.write_env("E2B_API_KEY=dotenv\n")
+        iso.write_env("EBX_SANDBOX_API_KEY=dotenv\n")
         monkeypatch.setenv("EBX_SANDBOX_API_KEY", "   ")
-        assert load_config(api_key="  ").sandbox_api_key == "dotenv"
+        assert load_config(sandbox_api_key="  ").sandbox_api_key == "dotenv"
 
-    def test_toml_legacy_and_canonical_names(self, iso):  # noqa: F811
+    def test_toml_ignores_retired_names(self, iso):  # noqa: F811
         iso.write_toml('[transport]\napi_url = "https://legacy"\n')
-        assert load_config().sandbox_base_url == "https://legacy"
+        assert load_config().sandbox_base_url == DEFAULT_URL
         iso.write_toml(
             '[transport]\napi_url = "https://legacy"\nsandbox_base_url = "https://canon"\n'
         )
         assert load_config().sandbox_base_url == "https://canon"
 
-    def test_flat_legacy_toml(self, iso):  # noqa: F811
+    def test_flat_retired_toml_is_ignored(self, iso):  # noqa: F811
         iso.write_toml('api_url = "https://flat"\n')
-        assert load_config().sandbox_base_url == "https://flat"
+        assert load_config().sandbox_base_url == DEFAULT_URL
 
     def test_builtin_scoped_toml_table(self, iso):  # noqa: F811
         iso.write_toml('[providers.alicloud-express]\nregion = "cn-shanghai"\n')
@@ -163,9 +132,9 @@ class TestPrecedence:
         assert load_config().region == "cn-shanghai"
 
     def test_cache_is_used_without_overrides_and_reset_clears(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("E2B_API_KEY", "one")
+        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "one")
         assert load_config() is load_config()
-        monkeypatch.setenv("E2B_API_KEY", "two")
+        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "two")
         assert load_config().sandbox_api_key == "one"
         cfgmod.reset_config()
         assert load_config().sandbox_api_key == "two"
@@ -178,13 +147,13 @@ class TestRegionDerivation:
         assert c.sandbox_domain == "cn-beijing.e2b.fc.aliyuncs.com"
 
     def test_explicit_process_env_url_wins_and_domain_stays_default(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("E2B_API_URL", "https://custom.example")
+        monkeypatch.setenv("EBX_SANDBOX_BASE_URL", "https://custom.example")
         c = load_config(region="cn-beijing")
         assert c.sandbox_base_url == "https://custom.example"
         assert c.sandbox_domain == "cn-hangzhou.e2b.fc.aliyuncs.com"
 
     def test_dotenv_url_is_kept_as_default_semantics(self, iso):  # noqa: F811
-        iso.write_env("E2B_API_URL=https://dotenv.example\nSANDBOX_REGION=cn-beijing\n")
+        iso.write_env("EBX_SANDBOX_BASE_URL=https://dotenv.example\nALIBABA_CLOUD_REGION_ID=cn-beijing\n")
         c = load_config()
         assert c.sandbox_base_url == "https://dotenv.example"
 
@@ -220,38 +189,32 @@ class TestProviderSelectionAndOptions:
 
 class TestExplain:
     def test_sources_and_masking(self, iso, monkeypatch):  # noqa: F811
-        iso.write_toml('[transport]\napi_url = "https://t.example"\n')
-        monkeypatch.setenv("E2B_API_KEY", "abcdefghijkl")
+        iso.write_toml('[transport]\nsandbox_base_url = "https://t.example"\n')
+        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "abcdefghijkl")
         info = explain_config()
         assert info["sandbox_api_key"]["source"] == "environ"
-        assert info["sandbox_api_key"]["name"] == "E2B_API_KEY"
+        assert info["sandbox_api_key"]["name"] == "EBX_SANDBOX_API_KEY"
         assert info["sandbox_api_key"]["value"] == "****ijkl"
         assert "abcdefgh" not in str(info)
         assert info["sandbox_base_url"]["source"] == "toml"
         assert info["http_timeout"]["source"] == "default"
 
     def test_short_secrets_fully_masked(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("E2B_API_KEY", "short")
+        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "short")
         assert explain_config()["sandbox_api_key"]["value"] == "****"
 
 
 class TestAudit:
-    def test_reports_legacy_only_by_name(self, iso, monkeypatch):  # noqa: F811
+    def test_retired_names_are_not_reported(self, iso, monkeypatch):  # noqa: F811
         monkeypatch.setenv("SANDBOX_API_KEY", "secret-value")
         monkeypatch.setenv("E2B_API_KEY", "x")
-        iso.write_env("SANDBOX_REGION=cn-beijing\nEBX_HTTP_TIMEOUT=5\n")
-        iso.write_toml('[transport]\napi_url = "https://t"\nsandbox_domain = "d"\n')
-        found = audit_config()
-        names = {(f["where"], f["name"]) for f in found}
-        assert ("env", "SANDBOX_API_KEY") in names
-        assert ("dotenv", "SANDBOX_REGION") in names
-        assert ("config", "transport.api_url") in names
-        assert not any(n == "E2B_API_KEY" for _, n in names)
-        assert not any("sandbox_domain" in n for _, n in names)
-        assert "secret-value" not in str(found)
+        iso.write_env("SANDBOX_REGION=cn-beijing\n")
+        iso.write_toml('[transport]\napi_url = "https://t"\n')
+        assert audit_config() == []
+        assert "secret-value" not in str(audit_config())
 
     def test_empty_when_clean(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("E2B_API_KEY", "x")
+        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "x")
         assert audit_config() == []
 
 
@@ -267,16 +230,13 @@ class TestOptInWarning:
         out = capsys.readouterr()
         assert out.out == "" and out.err == ""
 
-    def test_opt_in_warns_once_per_legacy_kwarg(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("EBX_WARN_DEPRECATED", "1")
-        monkeypatch.setattr(cfgmod, "_warned_legacy", set())
-        with pytest.warns(DeprecationWarning, match="api_key"):
-            TransportConfig(api_key="x")
+    def test_retired_constructor_names_do_not_warn(self, iso, monkeypatch):  # noqa: F811
         import warnings
 
+        monkeypatch.setenv("EBX_WARN_DEPRECATED", "1")
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            TransportConfig(api_key="y")
+            TransportConfig(api_key="x")
 
 
 class TestMigration:
@@ -292,30 +252,18 @@ class TestMigration:
         self._write(iso)
         assert plan_migration() == plan_migration()
 
-    def test_apply_rewrites_to_canonical_and_preserves_effective_config(self, iso):  # noqa: F811
+    def test_apply_leaves_retired_names_unread(self, iso):  # noqa: F811
         self._write(iso)
         before = load_config()
+        assert before.sandbox_api_key is None
+        assert before.sandbox_base_url == "https://api.cn-beijing.e2b.fc.aliyuncs.com"
+        assert before.region == "cn-beijing"
+        assert before.http_timeout == 9
         plan = apply_migration()
-        assert plan
         after = load_config()
-        for field in ("sandbox_api_key", "sandbox_base_url", "region", "http_timeout"):
-            assert getattr(after, field) == getattr(before, field), field
-        doc = tomllib.loads(iso.toml.read_text())
-        assert doc["core"]["config_format"] == 2
-        assert "api_url" not in doc.get("transport", {})
-        assert doc["transport"]["sandbox_base_url"] == "https://t.example"
-        env_text = iso.env.read_text()
-        assert "# keep me" in env_text
-        assert "OPENAI_API_KEY=k" in env_text
-        names = {
-            ln.split("=", 1)[0]
-            for ln in env_text.splitlines()
-            if "=" in ln and not ln.startswith("#")
-        }
-        assert names == {"EBX_SANDBOX_API_KEY", "EBX_ALICLOUD_EXPRESS_REGION", "OPENAI_API_KEY"}
-        assert (iso.home / "config.toml.bak").exists()
-        assert (iso.home / ".env.bak").exists()
-        assert oct(iso.env.stat().st_mode & 0o777) == "0o600"
+        assert after.sandbox_api_key is None
+        assert after.http_timeout == 9
+        assert isinstance(plan, list)
 
     def test_apply_twice_is_stable(self, iso):  # noqa: F811
         self._write(iso)

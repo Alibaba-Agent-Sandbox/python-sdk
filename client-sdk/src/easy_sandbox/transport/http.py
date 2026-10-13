@@ -122,7 +122,7 @@ class HttpClient:
         """Get or create the Platform API client."""
         if self._platform_client is None or self._platform_client.is_closed:
             self._platform_client = httpx.AsyncClient(
-                base_url=self._config.api_url,
+                base_url=self._config.sandbox_base_url,
                 http2=self._config.http2,
                 timeout=httpx.Timeout(self._config.http_timeout),
                 limits=httpx.Limits(

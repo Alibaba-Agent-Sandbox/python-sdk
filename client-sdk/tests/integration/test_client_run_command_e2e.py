@@ -17,17 +17,14 @@ from unittest.mock import MagicMock
 
 import httpx
 import pytest
-
-from easy_sandbox.api.sandbox import Sandbox
-
-pytest.importorskip("easy_sandbox.server", reason="needs the easy-sandbox-server distribution")
-
-from easy_sandbox.server import CommandRegistry, SandboxServer  # noqa: E402
-from easy_sandbox.server.routes import (  # noqa: E402
+from easy_sandbox.server import CommandRegistry, SandboxServer
+from easy_sandbox.server.routes import (
     _KNOWN_BUILTINS,
     _enabled_builtins,
     enable_builtin,
 )
+
+from easy_sandbox.api.sandbox import Sandbox
 
 # ---------------------------------------------------------------------------
 # Helpers

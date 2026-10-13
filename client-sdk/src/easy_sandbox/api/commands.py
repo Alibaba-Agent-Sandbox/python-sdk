@@ -246,7 +246,7 @@ class CommandsModule:
             self._envd_token,
         )
 
-    async def kill(self, pid: int | str) -> None:
+    async def kill(self, pid: int) -> None:
         """Kill a process by PID."""
         await self._process.kill(
             self._envd_url,
@@ -254,7 +254,7 @@ class CommandsModule:
             pid=pid,
         )
 
-    async def send_stdin(self, pid: int | str, data: str) -> None:
+    async def send_stdin(self, pid: int, data: str) -> None:
         """Send data to a process's stdin.
 
         Deprecated: use send_input() instead.
@@ -265,7 +265,7 @@ class CommandsModule:
         """
         await self.send_input(pid, data)
 
-    async def send_input(self, pid: int | str, data: str) -> None:
+    async def send_input(self, pid: int, data: str) -> None:
         """Send data to a process's stdin.
 
         Args:
@@ -279,18 +279,12 @@ class CommandsModule:
             data=data,
         )
 
-    async def send_signal(self, pid: int | str, signal: int = 15) -> None:
-        """Send SIGTERM (15) or SIGKILL (9) to a process.
-
-        envd's ``Signal`` enum has only those two values, so they are the only
-        ones that can be delivered.
+    async def send_signal(self, pid: int, signal: int = 15) -> None:
+        """Send a signal to a process (e.g. SIGTERM=15, SIGKILL=9).
 
         Args:
             pid: Process ID.
-            signal: Signal number, 15 (SIGTERM, default) or 9 (SIGKILL).
-
-        Raises:
-            ValueError: *signal* is neither 15 nor 9 (for example 2/SIGINT).
+            signal: Signal number (default: 15/SIGTERM).
         """
         await self._process.send_signal(
             self._envd_url,

@@ -7,7 +7,7 @@ Usage:
     from easy_sandbox.transport.http import HttpClient
 
     config = load_config(api_key="...")
-    auth = create_auth_provider(api_key=config.api_key)
+    auth = create_auth_provider(api_key=config.sandbox_api_key)
     http = HttpClient(config, auth)
 
     manager = TemplateManager(http)

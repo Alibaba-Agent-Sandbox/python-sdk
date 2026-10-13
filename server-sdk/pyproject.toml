@@ -32,6 +32,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+browser = [
+    "playwright>=1.40",
+]
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
@@ -44,16 +47,16 @@ dev = [
 easy-sandbox-server = "easy_sandbox.server.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/Easy-Sandbox/python-sdk"
-Documentation = "https://github.com/Easy-Sandbox/python-sdk/tree/main/docs"
-Repository = "https://github.com/Easy-Sandbox/python-sdk"
-Issues = "https://github.com/Easy-Sandbox/python-sdk/issues"
-Changelog = "https://github.com/Easy-Sandbox/python-sdk/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/Easy-Sandbox/easy-sandbox"
+Documentation = "https://github.com/Easy-Sandbox/easy-sandbox/tree/main/docs"
+Repository = "https://github.com/Easy-Sandbox/easy-sandbox"
+Issues = "https://github.com/Easy-Sandbox/easy-sandbox/issues"
+Changelog = "https://github.com/Easy-Sandbox/easy-sandbox/blob/main/CHANGELOG.md"
 
 [tool.hatch.version]
 path = "src/easy_sandbox/server/_version.py"
 
-# ``easy_sandbox`` is a shared namespace with the ``easy-sandbox`` (client) distribution: this
+# ``easy_sandbox`` is a shared namespace with ``easy-sandbox-client``: this
 # distribution only ships ``easy_sandbox/server`` and deliberately has no
 # ``easy_sandbox/__init__.py`` of its own.
 [tool.hatch.build.targets.wheel]

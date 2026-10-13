@@ -603,10 +603,10 @@ def main() -> None:
     """Entry point for running MCP server directly."""
     import os
 
-    api_key = os.environ.get("E2B_API_KEY") or os.environ.get("SANDBOX_API_KEY")
-    api_url = os.environ.get("E2B_API_URL") or os.environ.get("SANDBOX_API_BASE_URL")
-    domain = os.environ.get("E2B_DOMAIN")
-    template = os.environ.get("SANDBOX_TEMPLATE") or os.environ.get("EBX_TEMPLATE") or "base"
+    api_key = os.environ.get("EBX_SANDBOX_API_KEY")
+    api_url = os.environ.get("EBX_SANDBOX_BASE_URL")
+    domain = os.environ.get("EBX_SANDBOX_DOMAIN")
+    template = os.environ.get("EBX_DEFAULT_TEMPLATE") or "base"
 
     server = SandboxMCPServer(
         api_key=api_key,

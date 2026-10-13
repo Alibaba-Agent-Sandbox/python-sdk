@@ -274,7 +274,7 @@ result = await sandbox.custom("my_handler")
 
 ## 客户端配置变量不是沙箱变量
 
-在**你的机器上**配置 SDK 和 CLI 的变量（`EBX_SANDBOX_API_KEY`、`E2B_API_KEY`、`EBX_PROVIDER`、`EBX_ALICLOUD_EXPRESS_REGION`、`EBX_LLM_API_KEY` 等）由客户端读取，永远不会被复制进沙箱。要让某个值在沙箱内可见，请用 `envs=` / `--env` 显式传入。客户端变量的名字、优先级和别名见[配置参考](../reference/configuration.md#环境变量)。
+在**你的机器上**配置 SDK 和 CLI 的变量（`EBX_SANDBOX_API_KEY`、`EBX_PROVIDER`、`ALIBABA_CLOUD_REGION_ID`、`EBX_LLM_API_KEY` 等）由客户端读取，永远不会被复制进沙箱。要让某个值在沙箱内可见，请用 `envs=` / `--env` 显式传入。每项客户端设置只有一个变量。名字和优先级见[配置参考](../reference/configuration.md#环境变量)。
 
 由此有两点：
 
@@ -315,5 +315,5 @@ result = await sandbox.custom("my_handler")
 - [SDK 使用指南](sdk-usage.md) — `commands.run()` 与 `run_code()` 用法
 - [声明式用法](declarative-usage.md) — `@sandbox(envs=)` 装饰器
 - [CLI 教程](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/zh/guide/cli-tutorial.md) — `ebx create --env`
-- [配置参考](../reference/configuration.md) — SDK/CLI 环境变量（`EBX_*` 规范名以及 E2B_*、SANDBOX_* 别名）
+- [配置参考](../reference/configuration.md) — SDK/CLI 环境变量（每个键一个名字）
 - [提供方](providers.md) — 选择和安装沙箱提供方

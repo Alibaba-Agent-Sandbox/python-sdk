@@ -6,16 +6,14 @@ a PTY terminal, optional dev tools / browser automation, and your own registered
 [client SDK](../client-sdk/README.md) and the `ebx` CLI.
 
 The HTTP server is stdlib-only. `websockets` is installed for the PTY terminal endpoint.
-Import path: `easy_sandbox.server` (a namespace shared with `easy-sandbox`).
+Import path: `easy_sandbox.server` (a namespace shared with `easy-sandbox-client`).
 
 ## Install
 
 ```bash
 pip install easy-sandbox-server
+pip install "easy-sandbox-server[browser]"   # + Playwright for the browser capability group
 ```
-
-The opt-in browser capability group imports Playwright lazily; install `playwright` in the
-image yourself if you enable it (without it the browser endpoints answer `503`).
 
 ## Use inside a template's `commands.py`
 

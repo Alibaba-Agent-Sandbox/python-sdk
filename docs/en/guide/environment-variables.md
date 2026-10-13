@@ -274,7 +274,7 @@ result = await sandbox.custom("my_handler")
 
 ## Client Configuration Variables Are Not Sandbox Variables
 
-The variables that configure the SDK and CLI on **your** machine (`EBX_SANDBOX_API_KEY`, `E2B_API_KEY`, `EBX_PROVIDER`, `EBX_ALICLOUD_EXPRESS_REGION`, `EBX_LLM_API_KEY`, ...) are read by the client and are never copied into a sandbox. To make a value visible inside a sandbox, pass it explicitly with `envs=` / `--env`. Names, precedence and aliases of the client variables are in the [Configuration Reference](../reference/configuration.md#environment-variables).
+The variables that configure the SDK and CLI on **your** machine (`EBX_SANDBOX_API_KEY`, `EBX_PROVIDER`, `ALIBABA_CLOUD_REGION_ID`, `EBX_LLM_API_KEY`, ...) are read by the client and are never copied into a sandbox. To make a value visible inside a sandbox, pass it explicitly with `envs=` / `--env`. Each client setting has one variable. Names and precedence are in the [Configuration Reference](../reference/configuration.md#environment-variables).
 
 Two consequences:
 
@@ -315,5 +315,5 @@ Two consequences:
 - [SDK Usage Guide](sdk-usage.md) — `commands.run()` and `run_code()` usage
 - [Declarative Usage](declarative-usage.md) — `@sandbox(envs=)` decorator
 - [CLI Tutorial](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/cli-tutorial.md) — `ebx create --env`
-- [Configuration Reference](../reference/configuration.md) — SDK/CLI environment variables (`EBX_*` canonical names and the E2B_*, SANDBOX_* aliases)
+- [Configuration Reference](../reference/configuration.md) — SDK/CLI environment variables (one name per key)
 - [Providers](providers.md) — selecting and installing sandbox providers

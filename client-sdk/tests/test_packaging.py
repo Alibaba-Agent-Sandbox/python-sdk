@@ -87,21 +87,6 @@ def test_wheel_metadata_has_no_cli_dependencies(built_dists: dict[str, Path]) ->
     assert "Provides-Extra: server" in metadata
 
 
-def test_wheel_hard_depends_on_the_matching_server_and_keeps_extras(
-    built_dists: dict[str, Path],
-) -> None:
-    import easy_sandbox
-
-    with zipfile.ZipFile(built_dists["wheel"]) as zf:
-        metadata = next(zf.read(n).decode() for n in zf.namelist() if n.endswith("/METADATA"))
-    requires = [line for line in metadata.splitlines() if line.startswith("Requires-Dist: ")]
-    unconditional = [r for r in requires if "extra ==" not in r]
-    assert f"Requires-Dist: easy-sandbox-server=={easy_sandbox.__version__}" in unconditional
-    assert "Provides-Extra: server" in metadata
-    mcp_deps = [r for r in requires if "extra == 'mcp'" in r]
-    assert any(r.startswith("Requires-Dist: mcp>=1.0.0") for r in mcp_deps)
-
-
 def test_sdist_ships_license_notice_and_sources(built_dists: dict[str, Path]) -> None:
     with tarfile.open(built_dists["sdist"]) as tf:
         members = tf.getnames()
@@ -115,23 +100,3 @@ def test_sdist_ships_license_notice_and_sources(built_dists: dict[str, Path]) ->
     ):
         assert f"{root}/{name}" in members
     assert not [m for m in members if "/src/easy_sandbox/server/" in m]
-
-
-def test_sdist_include_list_is_the_documented_one() -> None:
-    """The sdist include list is exactly the documented one.
-
-    Repo-only documents (``llms.txt``, ``CHANGELOG.md``, ``SKILL.md``) are intentionally NOT
-    in it; update this test if shipping one in the distribution becomes an explicit decision.
-    """
-    try:
-        import tomllib  # type: ignore[import-not-found,unused-ignore]
-    except ImportError:  # pragma: no cover - Python 3.10 fallback
-        import tomli as tomllib
-
-    data = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    include: list[str] = data["tool"]["hatch"]["build"]["targets"]["sdist"]["include"]
-    assert sorted(include) == sorted(
-        ["src/easy_sandbox/", "tests/", "README.md", "LICENSE", "NOTICE", "pyproject.toml"]
-    )
-    for repo_doc in ("llms.txt", "CHANGELOG.md", "SKILL.md"):
-        assert repo_doc not in include

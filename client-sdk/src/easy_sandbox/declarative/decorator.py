@@ -31,7 +31,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import functools
-import importlib
 import inspect
 import shlex
 import textwrap
@@ -104,30 +103,6 @@ class _RegisteredCommand:
 # ---------------------------------------------------------------------------
 
 
-_SERVER_MISSING_MESSAGE = (
-    "easy_sandbox.server is not available: the container-side runtime ships in the separate "
-    "'easy-sandbox-server' distribution. Install it with `pip install easy-sandbox-server` "
-    "(or `pip install -U easy-sandbox`). If it is installed but still fails to import after an "
-    "in-place upgrade from easy-sandbox 0.2.x, repair it with "
-    "`pip install --force-reinstall --no-deps easy-sandbox-server`."
-)
-
-
-def _require_server() -> Any:
-    """Import :mod:`easy_sandbox.server`, raising an actionable ``ImportError`` if it is unusable.
-
-    Covers both a missing distribution and the empty implicit namespace left behind by an
-    in-place upgrade from the 0.2.x monolith (the import succeeds but ``start`` is absent).
-    """
-    try:
-        server_mod = importlib.import_module("easy_sandbox.server")
-    except ImportError as exc:
-        raise ImportError(_SERVER_MISSING_MESSAGE) from exc
-    if not hasattr(server_mod, "start"):
-        raise ImportError(_SERVER_MISSING_MESSAGE)
-    return server_mod
-
-
 class _ServerProxy:
     """Lazy proxy to the ``easy_sandbox.server`` module.
 
@@ -142,11 +117,15 @@ class _ServerProxy:
             port: TCP port to listen on (default ``9000``).
             host: Bind address (default ``"0.0.0.0"``).
         """
-        _require_server().start(port=port, host=host)
+        from easy_sandbox.server import start as _start
+
+        _start(port=port, host=host)
 
     def __getattr__(self, name: str) -> Any:
         """Proxy attribute access to :mod:`easy_sandbox.server`."""
-        return getattr(_require_server(), name)
+        import easy_sandbox.server as _server_mod
+
+        return getattr(_server_mod, name)
 
 
 # ---------------------------------------------------------------------------
@@ -252,14 +231,18 @@ class _RegisterProxy:
 
         Calls ``easy_sandbox.server.enable_builtin("upload")``.
         """
-        _require_server().enable_builtin("upload")
+        from easy_sandbox.server import enable_builtin
+
+        enable_builtin("upload")
 
     def download(self) -> None:
         """Enable the built-in ``download`` route on the sandbox server.
 
         Calls ``easy_sandbox.server.enable_builtin("download")``.
         """
-        _require_server().enable_builtin("download")
+        from easy_sandbox.server import enable_builtin
+
+        enable_builtin("download")
 
 
 # ---------------------------------------------------------------------------
@@ -445,7 +428,6 @@ class _SandboxFactory:
                         func_source=func_source,
                         args_data=args_data,
                         serializer_type=serializer,
-                        is_async=inspect.iscoroutinefunction(fn),
                     )
 
                     # 5. 上传并执行（UUID 唯一路径）
@@ -638,29 +620,20 @@ def _build_execution_script(
     func_source: str,
     args_data: str,
     serializer_type: str,
-    is_async: bool = False,
 ) -> str:
     """构建远程执行脚本。
 
     脚本在沙箱内运行：反序列化参数 → 定义函数 → 执行 → 将结果序列化输出到 stdout。
-    ``is_async=True`` 时（``async def`` 函数）用 ``asyncio.run`` 等待协程的结果。
     """
     if serializer_type == "json":
-        return _build_json_script(func_name, func_source, args_data, is_async=is_async)
+        return _build_json_script(func_name, func_source, args_data)
     raise ValueError(f"Unknown serializer type: {serializer_type}")  # pragma: no cover
 
 
-def _build_json_script(
-    func_name: str, func_source: str, args_data: str, *, is_async: bool = False
-) -> str:
-    if is_async:
-        call = f"asyncio.run({func_name}(*args, **kwargs))"
-        imports = "import asyncio\nimport json\nimport sys"
-    else:
-        call = f"{func_name}(*args, **kwargs)"
-        imports = "import json\nimport sys"
+def _build_json_script(func_name: str, func_source: str, args_data: str) -> str:
     return f"""\
-{imports}
+import json
+import sys
 
 args_data = json.loads({repr(args_data)})
 args = args_data["args"]
@@ -668,6 +641,6 @@ kwargs = args_data["kwargs"]
 
 {func_source}
 
-result = {call}
+result = {func_name}(*args, **kwargs)
 print(json.dumps(result, default=str))
 """

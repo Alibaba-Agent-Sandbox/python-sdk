@@ -39,12 +39,12 @@ sandbox = await Sandbox.create(api_key="your-api-key-here")
 ### 方式二：环境变量（推荐用于 CI/CD）
 
 ```bash
-export E2B_API_KEY="your-api-key-here"
+export EBX_SANDBOX_API_KEY="your-api-key-here"
 ```
 
 ### 选项 3：持久化文件（`~/.ebx/.env`）
 
-环境变量和项目 `.env` 都没写这个键时，才用这里保存的值。该文件由 `ebx` CLI 写入（`ebx config set sandbox_api_key your-api-key`，权限 600；见[相关：ebx CLI](#相关ebx-cli)），也可以手工编辑：`E2B_API_KEY=your-api-key`。
+环境变量和项目 `.env` 都没写这个键时，才用这里保存的值。该文件由 `ebx` CLI 写入（`ebx config set sandbox_api_key your-api-key`，权限 600；见[相关：ebx CLI](#相关ebx-cli)），也可以手工编辑：`EBX_SANDBOX_API_KEY=your-api-key`。
 
 ## 3. 创建第一个 Sandbox
 

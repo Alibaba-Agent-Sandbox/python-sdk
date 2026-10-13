@@ -16,7 +16,7 @@
 | 1.2 | H | `api_key` 既是 `config set` 的名字，*也是* TOML 键；`load_config` 的关键字有 `api_base_url`；`domain`/`api_url` 既在顶层又在 `[transport]` 下。第一版别名表只覆盖了环境变量名。 | §5 现在分别有环境变量 / 配置文件 / SDK 关键字 / CLI 选项的别名表；扁平 TOML legacy 键**只在没有 `[transport]` 时**生效（与今天一致）。 |
 | 1.3 | H | 把 `api_url` 改名为 `sandbox_base_url` 同时又要求"stdout 不变"，对 `config list` 是矛盾的。 | §6 策略：`config list` 中的重命名就是所要求的变化，并明确指出；其他一切保持静默；`--legacy-names` / `EBX_CONFIG_LEGACY_NAMES=1` 让旧的列表再保留一个版本。 |
 | 1.4 | H | 现有测试对 `easy_sandbox.transport.config._ENV_FILE_CANDIDATES/_CONFIG_FILE/_PROJECT_ENV_FILE` 和 `easy_sandbox.api.sandbox.{load_config,create_auth_provider,HttpClient,SandboxProtocol}` 打补丁；测试会构造 `TransportConfig(api_key=…)`。注册表 / 重写可能破坏它们。 | §11 实现映射：保留这些接缝；`TransportConfig` 保留 `api_key`、`api_url`、`domain` 作为构造函数别名和属性（可读写）；`Sandbox` 中的默认（内置）路径继续使用模块级名字。有对应测试。 |
-| 1.5 | M | 存储迁移未说明：如果 `config set` 开始写规范名，同一台机器上较旧的 `ebx` / SDK 会悄悄丢掉这个值。 | 先扩后缩：阶段 1 读新**写旧**；`config migrate` 是显式的，会备份，设置 `[core] config_format = 2`；幂等；Python 参考实现 `plan_migration()` / `apply_migration()` + 供 Node 移植的向量。 |
+| 1.5 | M | 每个键的存储名必须是它那一个环境变量。 | `ebx config set` 写入这一个名字。没有第二个存储名。 |
 | 1.6 | M | 优先级怪癖：今天 dotenv 候选文件按*名字*逐个查询，所以低优先级文件可以通过排在前面的别名获胜。未文档化、无法测试。 | 规范化为**先按层，再按名字顺序**；在 CHANGELOG 和 CLI §0 中说明。没有现有测试固定旧行为。 |
 | 1.7 | M | 由 `region` 推导的默认值（`sandbox_base_url`、`sandbox_domain`）有个怪癖：环境变量显式给出 URL 会禁止域名推导。 | 保留并写成规格（§4.5）；泛化为 `[endpoint.derive]`，让插件也能声明。 |
 | 1.8 | H | 提供方契约缺少现有 SDK 接口需要的特性：`sandbox.pause`、`sandbox.timeout`、`exec.stream`、PTY、`templates.*`、指标、代码解释器、`files.watch`。没有它们，"不支持时给出类型化错误"无法被证伪。 | 能力注册表（§7.2）有 18 个命名特性，与 SDK 调用一一对应；不支持 → `E8004` `ProviderFeatureNotSupportedError`，在任何副作用*之前*抛出。 |
@@ -29,7 +29,7 @@
 
 | # | 级别 | 发现 | 处理 |
 |---|---|---|---|
-| 2.1 | **B** | **提供方之间的凭证泄露。** 如果通用的 `sandbox_api_key`/`E2B_API_KEY` 被传给任意默认提供方，`ebx provider default evil`（或插件更新）会窃取阿里云密钥；反过来会把插件的密钥发到阿里云端点。 | §4.6 隔离规则：通用沙箱键属于内置提供方。非内置提供方只能通过清单的 `[core] inherit` ∩ 安装回执中保存的已同意列表获得它们；同意界面打印警告行；`provider doctor` 对重复使用发出警告。 |
+| 2.1 | **B** | **提供方之间的凭证泄露。** 如果通用的 `sandbox_api_key`（`EBX_SANDBOX_API_KEY`）被传给任意默认提供方，`ebx provider default evil`（或插件更新）会窃取阿里云密钥；反过来会把插件的密钥发到阿里云端点。 | §4.6 隔离规则：通用沙箱键属于内置提供方。非内置提供方只能通过清单的 `[core] inherit` ∩ 安装回执中保存的已同意列表获得它们；同意界面打印警告行；`provider doctor` 对重复使用发出警告。 |
 | 2.2 | **B** | **安装不得执行代码，而 git 自己就可能执行。** `git clone` + checkout 可能运行钩子 / 过滤器 / LFS smudge，跟随符号链接，并写到目标之外。 | §8.2：`--no-checkout --filter=blob:limit`，隔离的 git 配置（无系统 / 全局配置，`protocol.allow` 白名单，禁止重定向，不从环境使用凭证助手），在用 `cat-file --batch` 写入 blob **之前**用 `ls-tree -z -l` 校验*每一个*条目（无符号链接 / 子模块 / 超大 / 大小写冲突 / 穿越）；完全不做工作树检出。 |
 | 2.3 | H | 标签 / 分支安装是可变的；基于标签的"已固定"说法是假的。 | 只有 40 位十六进制提交或 `--sha256` 目录树摘要才算固定；标签 / 分支是 `unpinned`，非交互时没有 `--allow-unpinned` 就拒绝；已固定安装的 `update` 需要显式的新 `--ref`。 |
 | 2.4 | H | 安装后篡改（编辑 `~/.ebx/providers/<id>` 里的文件）。 | 目录树摘要记录在回执 `.ebx-install.json` 中；**每次**启动前重新校验（`E8011`）；与语言无关的 `tree-digest-vectors.json`。 |

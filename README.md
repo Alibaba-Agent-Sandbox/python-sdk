@@ -171,6 +171,7 @@ Lower layers never import upper layers. Full design: [`docs/en/design/architectu
 |-------|------|
 | Getting Started | [Getting Started](docs/en/guide/getting-started.md) |
 | Best Practices | [Best Practices](docs/en/guide/best-practices.md) |
+| Accessibility | [Accessibility](ACCESSIBILITY.md) |
 | File and command controls | [File and command controls](docs/en/guide/file-and-command-controls.md) |
 | Hosted agents | [Hosted agents](docs/en/guide/hosted-agents.md) |
 | SDK Usage | [SDK Usage](docs/en/guide/sdk-usage.md) |
