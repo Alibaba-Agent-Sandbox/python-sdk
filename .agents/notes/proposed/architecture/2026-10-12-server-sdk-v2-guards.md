@@ -31,6 +31,28 @@ Behaviour:
 ## Not done (follow-ups)
 `check_env`, `check_url` and `check_process` are called from the live routes. `check_env`: `handle_env_set` (`routes_system.py`, `POST /env`), `enforce_exec_policy` (`routes.py`; the `env` object on `POST /shell` via `handle_shell`, `POST /shell/stream` via `_handle_shell_stream`, and `POST /process/start` via `_handle_process_start`), and `_handle_create_session` (`routes_pty.py`, `POST /pty/sessions`). `check_url`: `handle_browser_navigate` (`routes_browser.py`, `POST /browser/navigate`). `check_process`: `enforce_exec_policy` (argv for those shell and process routes), `handle_code_run` (`routes_devtools.py`, `POST /code/run`), and `_handle_create_session` (the PTY shell argv). Still deferred: `env_pass`/`env_set`/`ENV_NEVER` startup snapshot, `harden.py` (`PR_SET_DUMPABLE`, `RLIMIT_CORE`), `launcher.py` (rlimits, no `preexec_fn`), `exec_dirs` executable resolution, race-free `open_beneath`/`unlink_beneath`, escape-capable command lint, `{path}` with grouped short flags, rewiring `core/policy.py` to call the guards (`routes.py` and `routes_files.py` already call `path_guard_from_context` and `check_command`), `PathScope`/`CommandScope` value objects and the `Policy.allow/deny` builders (WP-2). No `core/` or `policy.py` re-export was added: `guards` imports `policy`, so re-exporting there would be circular.
 
+## Call-site audit
+No gap. Every live HTTP handler that accepts a caller environment map, a caller URL, or a caller executable argv already calls `check_env`, `check_url`, or `check_process` (or, for the agents group, a stricter local check). `POST /ops/{id}` (`core/http.py` `serve_ops`) invokes those same handlers, so it does not bypass them. No route test was added.
+
+Already guarded:
+
+- `handle_env_set` (`POST /env`) — `check_env`
+- `handle_shell` (`POST /shell`), `_handle_shell_stream` (`POST /shell/stream`), `_handle_process_start` (`POST /process/start`) — `enforce_exec_policy` calls `check_env` and `check_process`
+- `_handle_create_session` (`POST /pty/sessions`) — `check_env` on `env`, `check_process` on the shell argv (shell is also limited to the fixed allow-list)
+- `handle_browser_navigate` (`POST /browser/navigate`) — `check_url`
+- `handle_code_run` (`POST /code/run`) — `check_process` on the language argv (`python3`/`node`/`bash`). The body has no env map and no caller executable.
+
+Checked and not a gap (caller does not supply the executable, or a stricter agents check already runs):
+
+- `handle_git_status`, `handle_git_diff` — argv is fixed `git ...`; the query supplies a work tree and an optional path, not an executable
+- `handle_packages` — argv is fixed `pip` or `npm` from the `manager` enum; `_ports_via_ss` runs fixed `ss -tlnp` only as a fallback
+- `handle_environments_create`, `handle_templates_create`, `handle_templates_update` — env maps go through `check_env_map`, which refuses `EBX_*` and a wider deny list (`LD_*`, `PATH`, `HOME`, proxies, provider keys)
+- `handle_webhooks_create`, `handle_webhooks_update` — URLs go through `check_endpoint_url` → `url_check` (https, no userinfo/query/fragment, private and loopback hosts refused)
+- Agent/response tool `server_url` and vault `auth.mcp_server_url` — `url_check`. MCP tool URLs pass `allow_private=True` on purpose (local MCP). `check_url` would either duplicate that allowance or reject private MCP hosts
+- `AgentRuntime._supervise` and `prepare_workspace` — argv[0] is the adapter binary or `git`. The HTTP field allow-list rejects `command`, `extra_args`, and stdio MCP `command`. Environment create/update has no git URL field, so the clone path is not an HTTP input
+
+Other registered handlers were checked and do not accept an env map, a URL, or an executable argv: file routes, the other browser routes, process list/detail/signal/stdin/output, the other PTY routes, capabilities, system info/metrics, and `POST /commands/{name}` (a registered Python callable, not a subprocess argv).
+
 ## Dependencies
 Design 03 sections 6, 7, 15.3; plan 10 WP-3. Locked files owned by another worker were not touched.
 
