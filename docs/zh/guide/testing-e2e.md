@@ -37,3 +37,7 @@ make e2e-cleanup         # 清理遗留资源的 dry-run janitor;ARGS=--yes 才�
 6. 没有遗留沙箱或模板。
 
 完整规则以及 ADR 与证据模板见 [`.agents/notes/DEFINITION-OF-DONE.md`](../../../.agents/notes/DEFINITION-OF-DONE.md)。
+
+## 云上示例练习
+
+测试套件之外，按脚本在默认提供方上走一遍的说明见 [云上端到端练习](cloud-examples.md)。Agents API 的完整案例不在那一页，见 [Agents API](agents-api.md)。

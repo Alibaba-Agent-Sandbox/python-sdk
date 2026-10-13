@@ -37,3 +37,7 @@ A change is done when all of the following hold:
 6. No sandbox or template is leaked.
 
 The full rules and the ADR and evidence templates: [`.agents/notes/DEFINITION-OF-DONE.md`](../../../.agents/notes/DEFINITION-OF-DONE.md).
+
+## Cloud example practice
+
+Outside the test suite, the walkthrough that runs the example scripts on the default provider is [Cloud end-to-end practice](cloud-examples.md). The Agents API case is not on that page; see [Agents API](agents-api.md).

@@ -28,6 +28,7 @@ Easy Sandbox 是基于阿里云函数计算的云端沙箱 SDK，提供 E2B 兼�
 |------|------|
 | [Agents API](guide/agents-api.md) | Codex 与 Qwen Code 的 HTTP 会话。不是内置 Agent。CLI 按需安装。含完整案例 |
 | [快速开始](guide/getting-started.md) | 安装、配置、第一个沙箱 |
+| [云上端到端练习](guide/cloud-examples.md) | 在默认提供方上跑 quickstart 与 compat-demos。Agents API 案例见专页 |
 | [认证配置](guide/authentication.md) | API Key / AK-SK 双认证模式 |
 | [SDK 使用](guide/sdk-usage.md) | Python SDK 完整用法 |
 | [CLI 教程](../../../cli/docs/zh/guide/cli-tutorial.md) *（`cli` 仓库）* | 命令行快速上手 |
