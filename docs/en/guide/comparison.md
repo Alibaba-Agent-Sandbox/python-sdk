@@ -225,6 +225,7 @@ async def my_task():
 
 ## Further Reading
 
+- [Command and SDK map](command-map.md)
 - [Migrating from E2B](migrate-from-e2b.md)
 - [SDK Usage Guide](sdk-usage.md)
 - [CLI Tutorial](https://github.com/Easy-Sandbox/easy-sandbox/blob/main/docs/en/guide/cli-tutorial.md)

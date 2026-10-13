@@ -39,6 +39,7 @@ Easy Sandbox 是基于阿里云函数计算的云端沙箱 SDK，提供 E2B 兼�
 | [MCP 集成](guide/mcp-integration.md) | Cursor / Claude Desktop 集成 |
 | [会话持久化](guide/session-persistence.md) | 本地 / OSS 会话存储 |
 | [E2B 迁移](guide/migrate-from-e2b.md) | 从 E2B 迁移指南 |
+| [命令与 SDK 对照](guide/command-map.md) | `ebx` / Python SDK 与 E2B、OpenSandbox 的命令和方法对照 |
 | [提供方](guide/providers.md) | 选择沙箱提供方、安装提供方插件（`ebx provider ...`）、编写自己的提供方 |
 | [环境变量](guide/environment-variables.md) | 沙箱环境变量作用域、注入方式与直接执行语义 |
 | [故障排查](guide/troubleshooting.md) | 常见问题与解决方案 |
