@@ -8,7 +8,11 @@ import json
 from pathlib import Path
 
 import pytest
-import tomllib
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10
+    import tomli as tomllib
 
 from easy_sandbox.providers import store
 from easy_sandbox.providers.base import ConfigField

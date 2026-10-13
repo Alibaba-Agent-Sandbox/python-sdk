@@ -56,26 +56,56 @@ def _name_from_path(path: str) -> str:
     return stripped[last_sep + 1 :] if last_sep >= 0 else stripped
 
 
+def _unwrap_entry(data: dict[str, Any]) -> dict[str, Any]:
+    """Return an envd EntryInfo from a flat object or a ``result``/``entry`` wrapper."""
+    current = data
+    result = current.get("result")
+    if isinstance(result, dict):
+        current = result
+    entry = current.get("entry")
+    if isinstance(entry, dict):
+        return entry
+    return current
+
+
+def _is_directory(data: dict[str, Any]) -> bool:
+    """True for ``isDir``, ``directory``, or envd's protobuf directory type (2)."""
+    if data.get("isDir"):
+        return True
+    raw = data.get("type")
+    if isinstance(raw, bool) or raw is None:
+        return False
+    if isinstance(raw, int):
+        return raw == 2
+    if isinstance(raw, str):
+        return raw.strip() in {"2", "directory", "FILE_TYPE_DIRECTORY", "dir"}
+    return False
+
+
 def _parse_file_info(data: dict[str, Any]) -> FileInfo:
     """Parse a file info dict from the API response.
 
     * **name**: prefers an explicit non-empty ``name`` from the server;
       falls back to the last path segment of ``path``.
-    * **type**: classified as DIRECTORY when *either* ``isDir`` is truthy
-      *or* ``type == "directory"``.
+    * **type**: DIRECTORY when ``isDir`` is truthy, ``type`` is ``directory``
+      (or the envd enum ``2`` / ``FILE_TYPE_DIRECTORY``), otherwise FILE.
+    * **size**: numeric strings from protobuf JSON are coerced to ``int``.
     """
-    is_dir = bool(data.get("isDir")) or data.get("type") == "directory"
-    file_type = FileType.DIRECTORY if is_dir else FileType.FILE
+    file_type = FileType.DIRECTORY if _is_directory(data) else FileType.FILE
 
     name = data.get("name") or ""
     if not name:
         name = _name_from_path(data.get("path", ""))
 
+    size = data.get("size", 0)
+    if isinstance(size, str) and size.strip().lstrip("-").isdigit():
+        size = int(size.strip())
+
     return FileInfo(
         name=name,
         path=data.get("path", ""),
         type=file_type,
-        size=data.get("size", 0),
+        size=size,
     )
 
 
@@ -131,8 +161,7 @@ class FilesystemProtocol:
             payload={"path": path},
             envd_token=envd_token,
         )
-        data = response.get("result", response)
-        return _parse_file_info(data)
+        return _parse_file_info(_unwrap_entry(response))
 
     async def list_dir(
         self,
@@ -153,7 +182,7 @@ class FilesystemProtocol:
         )
 
         entries = response.get("entries", response.get("result", {}).get("entries", []))
-        return [_parse_file_info(entry) for entry in entries]
+        return [_parse_file_info(_unwrap_entry(entry)) for entry in entries]
 
     async def make_dir(
         self,
