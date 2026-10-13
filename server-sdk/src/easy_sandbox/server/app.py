@@ -184,9 +184,10 @@ class SandboxRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(payload)))
         # One write so a raw ``recv`` sees the JSON body with the headers. ``end_headers``
         # flushes first, and the handshake test reads once.
-        self._headers_buffer.append(b"\r\n")
+        headers = getattr(self, "_headers_buffer")
+        headers.append(b"\r\n")
         if payload:
-            self._headers_buffer.append(payload)
+            headers.append(payload)
         self.flush_headers()
 
     def send_response(self, code: int, message: str | None = None) -> None:
