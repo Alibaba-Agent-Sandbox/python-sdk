@@ -2,7 +2,7 @@
 
 Groups are the gate. Endpoint policy decides which routes inside a group can be called, and which path, command, size, and rate limits apply. `agents-cli` exposes only the session routes and leaves `POST /shell` and `POST /v1/agents` closed. That is this layer.
 
-The design note is [Fine-grained capabilities](../design/fine-grained-capabilities.md). Path and command enforcement is in [File and command controls](file-and-command-controls.md). Agents request and response shapes are in [Agents API reference](../reference/agents-api.md).
+The design note is [Fine-grained capabilities](../design/fine-grained-capabilities.md). Path and command enforcement is in [File and command controls](file-and-command-controls.md). Agents request and response shapes are in [Agents API](agents-api.md). The full route table is in the [Agents API reference](../../zh/reference/agents-api.md) (中文).
 
 ## Two switches
 
