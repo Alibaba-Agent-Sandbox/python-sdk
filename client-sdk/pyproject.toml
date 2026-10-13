@@ -45,7 +45,7 @@ fast = [
     "orjson>=3.9",
 ]
 declarative = [
-    "pyyaml>=6.0",
+    "pyyaml>=6.0.3",
 ]
 session = [
     "filelock>=3.12",
