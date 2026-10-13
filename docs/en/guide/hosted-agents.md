@@ -1,5 +1,7 @@
 # Hosted agents
 
+The user guide and the runnable case are in [Agents API](agents-api.md). This page is the route reference.
+
 This slice hosts **Codex** and **Qwen Code** only. Claude Code, Cursor, Qoder and the generic command adapter are not served here. Naming any other adapter returns HTTP 404 `not_found_error` with `x-should-retry: false`.
 
 The routes live on the sandbox server (`easy_sandbox.server`), in the opt-in `agents` capability group. They stay **off** until `EBX_SERVER_ENABLED_GROUPS` includes `agents`. With the group disabled, the same paths answer 404 and the body says the route is disabled.

@@ -268,6 +268,8 @@ def run_app():
 
 ## Paradigm 3: Built-in Agent Mode
 
+This section is the design for `sb.agent.*`. It is not the Agents API. The Agents API is the in-sandbox HTTP session API (`/v1/agents/sessions`) for Codex and Qwen Code. Install a CLI only when you call it. The guide and the complete case are in [Agents API](../guide/agents-api.md).
+
 A brand-new design — the SDK includes pre-configured AI Agents for completing complex tasks in a single line of code.
 
 ### Browser Agent

@@ -1,5 +1,7 @@
 # 托管代理
 
+用户向的说明和一条能跑完的案例在 [Agents API](agents-api.md)。本页是路由参考。
+
 这一切片**只托管 Codex 和 Qwen Code**。这里不提供 Claude Code、Cursor、Qoder 和通用 command 适配器。写出任何其他适配器名称都会得到 HTTP 404，错误类型是 `not_found_error`，响应头 `x-should-retry: false`。
 
 路由在沙箱服务端（`easy_sandbox.server`）的 `agents` 能力组上。该组默认**关闭**，只有 `EBX_SERVER_ENABLED_GROUPS` 包含 `agents` 时才打开。组关闭时，同样的路径返回 404，正文会说明路由已禁用。
