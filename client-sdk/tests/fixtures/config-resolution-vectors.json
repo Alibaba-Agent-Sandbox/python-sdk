@@ -351,11 +351,6 @@
           "source": "default",
           "name": ""
         },
-        "sandbox_api_key": {
-          "value": "v-E2B_API_KEY",
-          "source": "environ",
-          "name": "E2B_API_KEY"
-        },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
           "source": "default",
@@ -447,11 +442,6 @@
           "source": "default",
           "name": ""
         },
-        "sandbox_api_key": {
-          "value": "v-E2B_API_KEY",
-          "source": "dotenv",
-          "name": "E2B_API_KEY"
-        },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
           "source": "default",
@@ -540,11 +530,6 @@
           "value": 1.0,
           "source": "default",
           "name": ""
-        },
-        "sandbox_api_key": {
-          "value": "v-SANDBOX_API_KEY",
-          "source": "environ",
-          "name": "SANDBOX_API_KEY"
         },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
@@ -636,11 +621,6 @@
           "value": 1.0,
           "source": "default",
           "name": ""
-        },
-        "sandbox_api_key": {
-          "value": "v-SANDBOX_API_KEY",
-          "source": "dotenv",
-          "name": "SANDBOX_API_KEY"
         },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
@@ -828,11 +808,6 @@
           "source": "default",
           "name": ""
         },
-        "sandbox_api_key": {
-          "value": "c",
-          "source": "environ",
-          "name": "E2B_API_KEY"
-        },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
           "source": "default",
@@ -927,9 +902,9 @@
           "name": ""
         },
         "sandbox_api_key": {
-          "value": "legacy-env",
-          "source": "environ",
-          "name": "SANDBOX_API_KEY"
+          "value": "canon-dotenv",
+          "source": "dotenv",
+          "name": "EBX_SANDBOX_API_KEY"
         },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
@@ -1119,9 +1094,9 @@
           "name": ""
         },
         "sandbox_api_key": {
-          "value": "legacy-kw",
-          "source": "override",
-          "name": "api_key"
+          "value": "env",
+          "source": "environ",
+          "name": "EBX_SANDBOX_API_KEY"
         },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
@@ -1213,11 +1188,6 @@
           "value": 1.0,
           "source": "default",
           "name": ""
-        },
-        "sandbox_api_key": {
-          "value": "env",
-          "source": "environ",
-          "name": "E2B_API_KEY"
         },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
@@ -1313,11 +1283,6 @@
           "source": "default",
           "name": ""
         },
-        "sandbox_api_key": {
-          "value": "dot",
-          "source": "dotenv",
-          "name": "SANDBOX_API_KEY"
-        },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
           "source": "default",
@@ -1412,11 +1377,6 @@
           "source": "default",
           "name": ""
         },
-        "sandbox_api_key": {
-          "value": "project",
-          "source": "dotenv",
-          "name": "E2B_API_KEY"
-        },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
           "source": "default",
@@ -1502,28 +1462,23 @@
           "name": ""
         },
         "region": {
-          "value": "r-project",
-          "source": "dotenv",
-          "name": "SANDBOX_REGION"
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
         },
         "retry_base_delay": {
           "value": 1.0,
           "source": "default",
           "name": ""
         },
-        "sandbox_api_key": {
-          "value": "home-key",
-          "source": "dotenv",
-          "name": "E2B_API_KEY"
-        },
         "sandbox_base_url": {
-          "value": "https://api.r-project.e2b.fc.aliyuncs.com",
-          "source": "derived",
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
           "name": ""
         },
         "sandbox_domain": {
-          "value": "r-project.e2b.fc.aliyuncs.com",
-          "source": "derived",
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
           "name": ""
         },
         "ws_ping_interval": {
@@ -1612,9 +1567,9 @@
           "name": ""
         },
         "sandbox_api_key": {
-          "value": "dot",
-          "source": "dotenv",
-          "name": "E2B_API_KEY"
+          "value": "toml",
+          "source": "toml",
+          "name": "transport.sandbox_api_key"
         },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
@@ -1803,11 +1758,6 @@
           "source": "default",
           "name": ""
         },
-        "sandbox_api_key": {
-          "value": "t-legacy",
-          "source": "toml",
-          "name": "transport.api_key"
-        },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
           "source": "default",
@@ -1995,15 +1945,10 @@
           "source": "default",
           "name": ""
         },
-        "sandbox_api_key": {
-          "value": "flat",
-          "source": "toml",
-          "name": "api_key"
-        },
         "sandbox_base_url": {
-          "value": "https://flat.example",
-          "source": "toml",
-          "name": "api_url"
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
         },
         "sandbox_domain": {
           "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
@@ -2184,9 +2129,9 @@
           "name": ""
         },
         "sandbox_base_url": {
-          "value": "https://b.example",
-          "source": "toml",
-          "name": "transport.api_base_url"
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
         },
         "sandbox_domain": {
           "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
@@ -2276,9 +2221,9 @@
           "name": ""
         },
         "sandbox_base_url": {
-          "value": "https://a.example",
-          "source": "toml",
-          "name": "transport.api_url"
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
         },
         "sandbox_domain": {
           "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
@@ -2542,9 +2487,9 @@
           "name": ""
         },
         "region": {
-          "value": "cn-shanghai",
-          "source": "dotenv",
-          "name": "SANDBOX_REGION"
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
         },
         "retry_base_delay": {
           "value": 1.0,
@@ -2552,13 +2497,13 @@
           "name": ""
         },
         "sandbox_base_url": {
-          "value": "https://api.cn-shanghai.e2b.fc.aliyuncs.com",
-          "source": "derived",
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
           "name": ""
         },
         "sandbox_domain": {
-          "value": "cn-shanghai.e2b.fc.aliyuncs.com",
-          "source": "derived",
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
           "name": ""
         },
         "ws_ping_interval": {
@@ -2643,13 +2588,13 @@
           "name": ""
         },
         "sandbox_base_url": {
-          "value": "https://custom.example",
-          "source": "environ",
-          "name": "E2B_API_URL"
+          "value": "https://api.cn-beijing.e2b.fc.aliyuncs.com",
+          "source": "derived",
+          "name": ""
         },
         "sandbox_domain": {
-          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
-          "source": "default",
+          "value": "cn-beijing.e2b.fc.aliyuncs.com",
+          "source": "derived",
           "name": ""
         },
         "ws_ping_interval": {
@@ -2725,9 +2670,9 @@
           "name": ""
         },
         "region": {
-          "value": "cn-beijing",
-          "source": "dotenv",
-          "name": "SANDBOX_REGION"
+          "value": "cn-hangzhou",
+          "source": "default",
+          "name": ""
         },
         "retry_base_delay": {
           "value": 1.0,
@@ -2735,13 +2680,13 @@
           "name": ""
         },
         "sandbox_base_url": {
-          "value": "https://dot.example",
-          "source": "dotenv",
-          "name": "E2B_API_URL"
+          "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
+          "name": ""
         },
         "sandbox_domain": {
-          "value": "cn-beijing.e2b.fc.aliyuncs.com",
-          "source": "derived",
+          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
+          "source": "default",
           "name": ""
         },
         "ws_ping_interval": {
@@ -2825,13 +2770,13 @@
           "name": ""
         },
         "sandbox_base_url": {
-          "value": "https://ov.example",
-          "source": "override",
-          "name": "api_url"
+          "value": "https://api.cn-beijing.e2b.fc.aliyuncs.com",
+          "source": "derived",
+          "name": ""
         },
         "sandbox_domain": {
-          "value": "cn-hangzhou.e2b.fc.aliyuncs.com",
-          "source": "default",
+          "value": "cn-beijing.e2b.fc.aliyuncs.com",
+          "source": "derived",
           "name": ""
         },
         "ws_ping_interval": {
@@ -2954,16 +2899,6 @@
         "toml": {}
       },
       "expect": {
-        "access_key_id": {
-          "value": "ak-legacy",
-          "source": "environ",
-          "name": "AccessKey"
-        },
-        "access_key_secret": {
-          "value": "sk-legacy",
-          "source": "environ",
-          "name": "AccessSecret"
-        },
         "default_template": {
           "value": "base",
           "source": "default",
@@ -3055,9 +2990,9 @@
       },
       "expect": {
         "access_key_id": {
-          "value": "canon",
+          "value": "native",
           "source": "environ",
-          "name": "EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID"
+          "name": "ALICLOUD_ACCESS_KEY_ID"
         },
         "default_template": {
           "value": "base",
@@ -3361,9 +3296,9 @@
           "name": ""
         },
         "http_timeout": {
-          "value": 9.0,
-          "source": "dotenv",
-          "name": "SANDBOX_HTTP_TIMEOUT"
+          "value": 30.0,
+          "source": "default",
+          "name": ""
         },
         "keepalive_expiry": {
           "value": 30.0,
@@ -3470,9 +3405,9 @@
           "name": ""
         },
         "log_level": {
-          "value": "DEBUG",
-          "source": "environ",
-          "name": "SANDBOX_LOG_LEVEL"
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
         },
         "max_connections": {
           "value": 100,
@@ -3560,9 +3495,9 @@
           "name": ""
         },
         "log_level": {
-          "value": "INFO",
-          "source": "environ",
-          "name": "SANDBOX_LOG_LEVEL"
+          "value": "WARNING",
+          "source": "default",
+          "name": ""
         },
         "max_connections": {
           "value": 100,
@@ -3638,11 +3573,6 @@
           "value": 30.0,
           "source": "default",
           "name": ""
-        },
-        "llm_api_key": {
-          "value": "d",
-          "source": "environ",
-          "name": "DASHSCOPE_API_KEY"
         },
         "llm_base_url": {
           "value": "https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -3909,9 +3839,9 @@
           "name": ""
         },
         "github_token": {
-          "value": "mine",
+          "value": "gh",
           "source": "environ",
-          "name": "EBX_GITHUB_TOKEN"
+          "name": "GITHUB_TOKEN"
         },
         "http2": {
           "value": true,
@@ -3998,9 +3928,9 @@
       },
       "expect": {
         "default_template": {
-          "value": "py",
-          "source": "environ",
-          "name": "SANDBOX_TEMPLATE"
+          "value": "base",
+          "source": "default",
+          "name": ""
         },
         "http2": {
           "value": true,
@@ -5296,15 +5226,10 @@
           "source": "default",
           "name": ""
         },
-        "sandbox_api_key": {
-          "value": "generic",
-          "source": "environ",
-          "name": "E2B_API_KEY"
-        },
         "sandbox_base_url": {
-          "value": "https://g.example",
-          "source": "environ",
-          "name": "E2B_API_URL"
+          "value": "https://api.e2b.dev",
+          "source": "default",
+          "name": ""
         },
         "sandbox_domain": {
           "value": "e2b.dev",

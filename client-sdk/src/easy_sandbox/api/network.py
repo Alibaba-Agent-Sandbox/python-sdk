@@ -7,7 +7,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
 
 from easy_sandbox.models.template import DEFAULT_CAPABILITIES
 from easy_sandbox.utils.logging import get_logger
@@ -29,16 +32,14 @@ class NetworkModule:
         secure: bool = True,
         access_token: str | None = None,
         capabilities: set[str] | None = None,
-        port_resolver: Any | None = None,
+        port_resolver: Callable[[int], Awaitable[tuple[str, dict[str, str]]]] | None = None,
     ) -> None:
+        self._port_resolver = port_resolver
         self._sandbox_id = sandbox_id
         self._domain = domain
         self._secure = secure
         self._access_token = access_token
         self._capabilities = capabilities if capabilities is not None else set(DEFAULT_CAPABILITIES)
-        # Sync URL helpers keep the local host formula. The resolver is stored for callers
-        # that already pass Sandbox._port_resolver().
-        self._port_resolver = port_resolver
 
     def get_host(self, port: int) -> str:
         """获取端口访问的 host。
@@ -65,3 +66,17 @@ class NetworkModule:
         if self._secure and self._access_token:
             return {"X-Access-Token": self._access_token}
         return {}
+
+    async def resolve(self, port: int) -> tuple[str, dict[str, str]]:
+        """Return ``(url, headers)`` for *port*, asking the provider when it can answer.
+
+        Providers that declare ``ports.url`` are asked for the authoritative URL and access
+        headers; everything else falls back to :meth:`get_url` / :meth:`get_access_headers`.
+        """
+        if self._port_resolver is not None:
+            return await self._port_resolver(port)
+        return self.get_url(port), self.get_access_headers()
+
+    async def resolve_url(self, port: int) -> str:
+        """Like :meth:`get_url`, but routed through the provider's ``ports.url`` when declared."""
+        return (await self.resolve(port))[0]

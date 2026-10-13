@@ -1,7 +1,9 @@
 """``python -m easy_sandbox.providers`` — provider management without the ``ebx`` CLI.
 
 Mirrors ``ebx provider ...``: ``list``, ``info``, ``install``, ``uninstall``, ``update``,
-``default``, ``doctor``. Add ``--json`` for machine-readable output. Exit codes follow the shared
+``default``, ``doctor``, plus ``test`` (the provider contract suite).
+Add ``--json`` for machine-readable output.
+Exit codes follow the shared
 mapping (see :func:`easy_sandbox.providers.epp.exit_code_for`).
 """
 
@@ -107,7 +109,8 @@ def _cmd_update(args: argparse.Namespace) -> int:
                 yes=args.yes,
                 confirm=None if args.yes else _confirm,
                 allow_unpinned=args.allow_unpinned,
-                verify=doctor_mod.verify_handshake,
+                allow_insecure_transport=args.allow_insecure_transport,
+                verify=None if args.no_verify else doctor_mod.verify_handshake,
             )
         )
     _out(args, results, "\n".join(f"{r['id']}: {r['status']}" for r in results))
@@ -134,6 +137,52 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
     ]
     _out(args, report, "\n".join(lines))
     return 0 if report["ok"] else 2
+
+
+def _cmd_test(args: argparse.Namespace) -> int:
+    """Run the provider contract tests (needs pytest); fails when nothing was collected."""
+    try:
+        import pytest
+    except ImportError:
+        print(
+            "The contract tests need pytest: pip install pytest (or 'easy-sandbox[dev]').",
+            file=sys.stderr,
+        )
+        return 1
+    import importlib.util
+    import tempfile
+    from pathlib import Path
+
+    registry.get_provider(args.id)
+    spec = importlib.util.find_spec("easy_sandbox.providers.contract")
+    if spec is None or spec.origin is None:  # pragma: no cover - broken installation
+        print("easy_sandbox.providers.contract is missing.", file=sys.stderr)
+        return 1
+    with tempfile.TemporaryDirectory(prefix="ebx-contract-") as tmp:
+        ini = Path(tmp) / "pytest.ini"
+        ini.write_text("[pytest]\nasyncio_mode = auto\n", encoding="utf-8")
+        argv = [
+            spec.origin,
+            "-c",
+            str(ini),
+            "--rootdir",
+            tmp,
+            "-p",
+            "easy_sandbox.providers.testing",
+            "-p",
+            "no:cacheprovider",
+            "--provider-under-test",
+            args.id,
+        ]
+        for pair in args.option:
+            argv += ["--provider-option", pair]
+        extra = list(args.pytest_args or [])
+        argv += extra[1:] if extra[:1] == ["--"] else extra
+        code = int(pytest.main(argv))
+    if code == 5:
+        print(f"No contract tests were collected for '{args.id}'.", file=sys.stderr)
+        return 1
+    return code
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -170,11 +219,26 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--check", action="store_true")
     p.add_argument("--yes", "-y", action="store_true")
     p.add_argument("--allow-unpinned", action="store_true")
+    p.add_argument("--allow-insecure-transport", action="store_true")
+    p.add_argument("--no-verify", action="store_true")
     p.set_defaults(func=_cmd_update)
 
     p = sub.add_parser("default")
     p.add_argument("id", nargs="?")
     p.set_defaults(func=_cmd_default)
+
+    p = sub.add_parser("test", help="run the provider contract tests (needs pytest)")
+    p.add_argument("id")
+    p.add_argument(
+        "--option",
+        "-o",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="provider option (repeatable)",
+    )
+    p.add_argument("pytest_args", nargs="*", help="extra pytest arguments (after --)")
+    p.set_defaults(func=_cmd_test)
 
     p = sub.add_parser("doctor")
     p.add_argument("id", nargs="?")

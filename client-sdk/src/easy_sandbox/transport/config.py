@@ -439,7 +439,7 @@ def http_timeout_configured() -> bool:
     """Return True when the user explicitly configured ``http_timeout``.
 
     Checks the same sources and names as :func:`load_config` (canonical
-    ``EBX_HTTP_TIMEOUT`` and legacy ``SANDBOX_HTTP_TIMEOUT`` in the environment, ``.env`` files and
+    ``EBX_HTTP_TIMEOUT`` in the environment, ``.env`` files and
     ``~/.ebx/config.toml``) without applying defaults. The CLI uses this to decide whether a slow
     operation (e.g. sandbox create) should get a longer built-in HTTP timeout instead of the 30s
     default.

@@ -13,10 +13,16 @@ Typical usage (from a template's ``commands.py``)::
 
 from __future__ import annotations
 
+import base64
+import contextlib
+import email.parser
+import email.policy
+import hashlib
 import hmac
 import json
 import logging
 import os
+import struct
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
@@ -57,6 +63,54 @@ _BODY_METHODS = frozenset({"POST", "PUT", "DELETE"})
 
 # Maximum allowed request body size (10 MB).
 MAX_REQUEST_BODY_SIZE = 10 * 1024 * 1024
+
+_FILES_CREATE_ROUTE = "agents_files_create"
+_RESPONSES_CONNECT_ROUTE = "agents_responses_connect"
+_WS_GUID = b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+_WS_MAX_MESSAGE = 10 * 1024 * 1024
+
+
+def _parse_multipart(content_type: str, raw: bytes) -> dict[str, Any]:
+    """Parse ``multipart/form-data`` into the JSON-shaped body ``POST /v1/files`` understands.
+
+    Text parts become ``str`` fields. The part named ``file`` becomes ``bytes`` under ``file``
+    and its filename fills ``filename`` unless a ``filename`` field is also sent.
+    """
+    message = email.parser.BytesParser(policy=email.policy.HTTP).parsebytes(
+        b"Content-Type: " + content_type.encode("latin-1") + b"\r\n\r\n" + raw
+    )
+    if not message.is_multipart():
+        raise ValueError("malformed multipart body")
+    fields: dict[str, Any] = {}
+    uploaded_name: str | None = None
+    for part in message.iter_parts():
+        name = part.get_param("name", header="content-disposition")
+        if not isinstance(name, str) or not name:
+            raise ValueError("multipart part without a name")
+        payload = part.get_payload(decode=True)
+        if not isinstance(payload, bytes):
+            raise ValueError(f"multipart part {name!r} has no body")
+        if name == "file":
+            fields["file"] = payload
+            filename = part.get_filename()
+            uploaded_name = filename if isinstance(filename, str) and filename else None
+        else:
+            fields[name] = payload.decode("utf-8")
+    if uploaded_name is not None:
+        fields.setdefault("filename", uploaded_name)
+    return fields
+
+
+def _ws_frame(opcode: int, payload: bytes) -> bytes:
+    """One unmasked server frame (FIN set)."""
+    size = len(payload)
+    if size < 126:
+        head = struct.pack("!BB", 0x80 | opcode, size)
+    elif size < 1 << 16:
+        head = struct.pack("!BBH", 0x80 | opcode, 126, size)
+    else:
+        head = struct.pack("!BBQ", 0x80 | opcode, 127, size)
+    return head + payload
 
 
 class SandboxRequestHandler(BaseHTTPRequestHandler):
@@ -115,16 +169,25 @@ class SandboxRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(payload)
 
     def _send_response(self, response: ServerResponse) -> None:
-        """Send a :class:`ServerResponse` (JSON body + optional headers)."""
-        payload = json.dumps(response.body, default=str).encode("utf-8")
+        """Send a :class:`ServerResponse` (JSON body + optional headers).
+
+        An HTTP 202 whose body is an empty mapping is written with an empty
+        payload. ``POST /v1/agents/sessions/{id}/events`` uses that shape.
+        """
+        empty = response.status == 202 and response.body == {}
+        payload = b"" if empty else json.dumps(response.body, default=str).encode("utf-8")
         self.send_response(response.status)
-        if "Content-Type" not in response.headers:
+        if not empty and "Content-Type" not in response.headers:
             self.send_header("Content-Type", "application/json; charset=utf-8")
         for key, value in response.headers.items():
             self.send_header(key, value)
         self.send_header("Content-Length", str(len(payload)))
-        self.end_headers()
-        self.wfile.write(payload)
+        # One write so a raw ``recv`` sees the JSON body with the headers. ``end_headers``
+        # flushes first, and the handshake test reads once.
+        self._headers_buffer.append(b"\r\n")
+        if payload:
+            self._headers_buffer.append(payload)
+        self.flush_headers()
 
     def send_response(self, code: int, message: str | None = None) -> None:
         """Record the status code (for the audit log) and delegate."""
@@ -142,11 +205,14 @@ class SandboxRequestHandler(BaseHTTPRequestHandler):
             return None
         return int(values[0])
 
-    def _read_json_body(self, limit: int = MAX_REQUEST_BODY_SIZE) -> dict[str, Any] | None:
-        """Read and parse a JSON request body.
+    def _read_json_body(
+        self, limit: int = MAX_REQUEST_BODY_SIZE, route: Any = None
+    ) -> dict[str, Any] | None:
+        """Read and parse a JSON request body (multipart for ``POST /v1/files``).
 
         Args:
             limit: Maximum accepted body size in bytes.
+            route: The matched route; only ``POST /v1/files`` may send ``multipart/form-data``.
 
         Returns:
             Parsed dict, or ``None`` if parsing fails (a 400 response will
@@ -168,11 +234,20 @@ class SandboxRequestHandler(BaseHTTPRequestHandler):
                 },
             )
             return None
+        content_type = self.headers.get("Content-Type", "")
+        multipart = (
+            route is not None
+            and route.name == _FILES_CREATE_ROUTE
+            and content_type.lower().lstrip().startswith("multipart/form-data")
+        )
         try:
             raw = self.rfile.read(content_length)
+            if multipart:
+                return _parse_multipart(content_type, raw)
             return json.loads(raw)  # type: ignore[no-any-return]
         except (json.JSONDecodeError, ValueError) as exc:
-            self._send_json(400, {"error": f"Invalid JSON: {exc}", "type": "ValueError"})
+            what = "multipart body" if multipart else "JSON"
+            self._send_json(400, {"error": f"Invalid {what}: {exc}", "type": "ValueError"})
             return None
 
     # ------------------------------------------------------------------ #
@@ -192,6 +267,10 @@ class SandboxRequestHandler(BaseHTTPRequestHandler):
 
         route, path_params = table.match(method, path)
         if route is None:
+            from .core.http import serve_ops
+
+            if serve_ops(self, method, path, parsed.query):
+                return
             self._send_json(404, {"error": f"Not found: {path}", "type": "ValueError"})
             return
 
@@ -218,7 +297,7 @@ class SandboxRequestHandler(BaseHTTPRequestHandler):
         # Read the JSON body for methods that carry one.
         body: dict[str, Any] | None = None
         if method in _BODY_METHODS:
-            body = self._read_json_body()
+            body = self._read_json_body(route=route)
             if body is None:
                 return  # 400 already sent
 
@@ -244,6 +323,9 @@ class SandboxRequestHandler(BaseHTTPRequestHandler):
     ) -> None:
         """Run *route*'s handler and send the result; *release* runs when done."""
         try:
+            if route.name == _RESPONSES_CONNECT_ROUTE and self._is_websocket_upgrade():
+                self._serve_responses_socket(request)
+                return
             if route.streaming:
                 self._dispatch_streaming(route, request)
                 return
@@ -268,6 +350,132 @@ class SandboxRequestHandler(BaseHTTPRequestHandler):
         finally:
             if release is not None:
                 release()
+
+    # ------------------------------------------------------------------ #
+    # WebSocket (GET /v1/responses)
+    # ------------------------------------------------------------------ #
+
+    def _is_websocket_upgrade(self) -> bool:
+        return "websocket" in self.headers.get("Upgrade", "").lower()
+
+    def _ws_read_frame(self) -> tuple[int, bool, bytes]:
+        """Read one client frame: ``(opcode, fin, payload)``; ``ConnectionError`` on bad frames."""
+        head = self.rfile.read(2)
+        if len(head) < 2:
+            raise ConnectionError("closed")
+        fin, opcode = bool(head[0] & 0x80), head[0] & 0x0F
+        masked, size = bool(head[1] & 0x80), head[1] & 0x7F
+        if head[0] & 0x70 or not masked:
+            raise ConnectionError("protocol error")
+        if size == 126:
+            size = struct.unpack("!H", self.rfile.read(2))[0]
+        elif size == 127:
+            size = struct.unpack("!Q", self.rfile.read(8))[0]
+        if size > _WS_MAX_MESSAGE:
+            raise ConnectionError("message too big")
+        mask = self.rfile.read(4)
+        data = bytearray(self.rfile.read(size))
+        if len(mask) < 4 or len(data) < size:
+            raise ConnectionError("closed")
+        for i in range(size):
+            data[i] ^= mask[i % 4]
+        return opcode, fin, bytes(data)
+
+    def _ws_send(self, opcode: int, payload: bytes) -> None:
+        self.wfile.write(_ws_frame(opcode, payload))
+        self.wfile.flush()
+
+    def _ws_close(self, code: int, reason: str = "") -> None:
+        with contextlib.suppress(OSError):
+            self._ws_send(0x8, struct.pack("!H", code) + reason.encode("utf-8")[:120])
+
+    def _serve_responses_socket(self, request: ServerRequest) -> None:
+        """Upgrade ``GET /v1/responses`` and run the responses socket engine on the socket.
+
+        Auth and admission already ran in the dispatcher, so an unauthenticated peer never
+        reaches the engine. ``response.create`` and ``response.steer`` frames are JSON text.
+        """
+        from .agents.api_common import err, from_agent_exc
+        from .agents.api_responses import ResponsesSocket
+        from .agents.errors import AgentRuntimeError
+
+        key = self.headers.get("Sec-WebSocket-Key", "").strip()
+        if (
+            "upgrade" not in self.headers.get("Connection", "").lower()
+            or self.headers.get("Sec-WebSocket-Version", "").strip() != "13"
+            or not key
+        ):
+            self._send_response(
+                err(
+                    400,
+                    "invalid WebSocket handshake: Connection: Upgrade, Sec-WebSocket-Key and "
+                    "Sec-WebSocket-Version: 13 are required",
+                    code="agents.websocket_handshake_invalid",
+                )
+            )
+            return
+        accept = base64.b64encode(hashlib.sha1(key.encode("ascii", "ignore") + _WS_GUID).digest())
+        self.protocol_version = "HTTP/1.1"
+        self.send_response(101, "Switching Protocols")
+        self.send_header("Upgrade", "websocket")
+        self.send_header("Connection", "Upgrade")
+        self.send_header("Sec-WebSocket-Accept", accept.decode("ascii"))
+        self.send_header("X-Easy-Sandbox-Local", "1")
+        self.end_headers()
+        self.wfile.flush()
+        self.close_connection = True
+
+        engine = ResponsesSocket(request)
+        message = bytearray()
+        text_message = False
+        try:
+            while True:
+                opcode, fin, payload = self._ws_read_frame()
+                if opcode == 0x8:
+                    self._ws_close(1000)
+                    return
+                if opcode == 0x9:
+                    self._ws_send(0xA, payload)
+                    continue
+                if opcode == 0xA:
+                    continue
+                if opcode in (0x1, 0x2):
+                    message = bytearray(payload)
+                    text_message = opcode == 0x1
+                elif opcode == 0x0:
+                    message += payload
+                else:
+                    self._ws_close(1002, "unknown opcode")
+                    return
+                if len(message) > _WS_MAX_MESSAGE:
+                    self._ws_close(1009, "message too big")
+                    return
+                if not fin:
+                    continue
+                if not text_message:
+                    self._ws_close(1003, "text frames only")
+                    return
+                try:
+                    frame = json.loads(bytes(message).decode("utf-8"))
+                    if not isinstance(frame, dict):
+                        raise ValueError("a client event is a JSON object")
+                    events = engine.handle(frame)
+                except AgentRuntimeError as exc:
+                    events = [{"type": "error", "error": from_agent_exc(exc).body["error"]}]
+                except ValueError as exc:
+                    events = [
+                        {"type": "error", "error": {"message": str(exc), "code": "bad_frame"}}
+                    ]
+                except Exception as exc:
+                    logging.getLogger(__name__).exception("responses socket: %s", exc)
+                    events = [
+                        {"type": "error", "error": {"message": str(exc), "code": "server_error"}}
+                    ]
+                for event in events:
+                    self._ws_send(0x1, json.dumps(event, default=str).encode("utf-8"))
+                message = bytearray()
+        except (ConnectionError, OSError):
+            self._ws_close(1002)
 
     def _send_denied(self, exc: PolicyDenied) -> None:
         """Send the JSON body for a :class:`PolicyDenied` (adds ``Retry-After`` on 429)."""
@@ -363,7 +571,7 @@ class SandboxRequestHandler(BaseHTTPRequestHandler):
                     )
                     return
                 limit = int(ctx.limit("max_request_bytes", MAX_REQUEST_BODY_SIZE))
-                body = self._read_json_body(limit)
+                body = self._read_json_body(limit, route)
                 if body is None:
                     code = "bad_body"
                     return

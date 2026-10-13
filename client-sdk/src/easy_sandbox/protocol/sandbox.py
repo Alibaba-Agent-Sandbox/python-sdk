@@ -15,6 +15,7 @@ import httpx
 from easy_sandbox.models.errors import (
     QuotaExceededError,
     SandboxCreationError,
+    SandboxNotFoundError,
     TemplateNotFoundError,
 )
 from easy_sandbox.models.sandbox import SandboxConfig, SandboxInfo, SandboxStatus
@@ -31,6 +32,23 @@ class SandboxProtocol:
 
     def __init__(self, http_client: HttpClient) -> None:
         self._http = http_client
+
+    async def _sandbox_request(
+        self,
+        method: str,
+        sandbox_id: str,
+        suffix: str = "",
+        **kwargs: Any,
+    ) -> httpx.Response:
+        """Request ``/sandboxes/{id}{suffix}``; a 404 raises :class:`SandboxNotFoundError`."""
+        try:
+            return await self._http.platform_request(
+                method, f"/sandboxes/{sandbox_id}{suffix}", **kwargs
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                raise SandboxNotFoundError(f"Sandbox '{sandbox_id}' was not found.") from exc
+            raise
 
     async def create(
         self,
@@ -113,7 +131,7 @@ class SandboxProtocol:
         GET /sandboxes/{sandboxId} → 200（已实测验证）
         """
         # 已实测验证
-        response = await self._http.platform_request("GET", f"/sandboxes/{sandbox_id}")
+        response = await self._sandbox_request("GET", sandbox_id)
         data = response.json()
         return SandboxInfo.model_validate(data)
 
@@ -137,11 +155,7 @@ class SandboxProtocol:
         POST /sandboxes/{sandbox_id}/timeout → 204（已实测验证）
         """
         # 已实测验证：POST（非 PUT）
-        await self._http.platform_request(
-            "POST",
-            f"/sandboxes/{sandbox_id}/timeout",
-            json={"timeout": timeout},
-        )
+        await self._sandbox_request("POST", sandbox_id, "/timeout", json={"timeout": timeout})
 
     async def connect(self, sandbox_id: str) -> SandboxInfo:
         """Connect to an existing sandbox (fetch current info).
@@ -149,7 +163,7 @@ class SandboxProtocol:
         GET /sandboxes/{sandbox_id} → 200（已实测验证）
         """
         # 已实测验证
-        response = await self._http.platform_request("GET", f"/sandboxes/{sandbox_id}")
+        response = await self._sandbox_request("GET", sandbox_id)
         data = response.json()
         return SandboxInfo.model_validate(data)
 
@@ -171,10 +185,7 @@ class SandboxProtocol:
         # 注意：REST 路径基于 E2B SDK 逆向推断，未经官方文档确认
         """
         # 注意：REST 路径基于 E2B SDK 逆向推断，未经官方文档确认
-        await self._http.platform_request(
-            "POST",
-            f"/sandboxes/{sandbox_id}/pause",
-        )
+        await self._sandbox_request("POST", sandbox_id, "/pause")
 
     async def resume(self, sandbox_id: str) -> None:
         """Resume a paused sandbox.
@@ -183,10 +194,7 @@ class SandboxProtocol:
         # 注意：REST 路径基于 E2B SDK 逆向推断，未经官方文档确认
         """
         # 注意：REST 路径基于 E2B SDK 逆向推断，未经官方文档确认
-        await self._http.platform_request(
-            "POST",
-            f"/sandboxes/{sandbox_id}/resume",
-        )
+        await self._sandbox_request("POST", sandbox_id, "/resume")
 
     def _handle_create_error(self, exc: httpx.HTTPStatusError) -> None:
         """Convert HTTP errors to typed exceptions for create."""

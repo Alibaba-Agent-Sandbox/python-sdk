@@ -99,7 +99,7 @@ class TestAuthenticationErrors:
         assert isinstance(err, AuthenticationError)
         assert isinstance(err, SandboxError)
         assert err.code == "E1001"
-        assert "E2B_API_KEY" in err.suggestion
+        assert "EBX_SANDBOX_API_KEY" in err.suggestion
 
     def test_token_expired(self):
         err = TokenExpiredError("expired")

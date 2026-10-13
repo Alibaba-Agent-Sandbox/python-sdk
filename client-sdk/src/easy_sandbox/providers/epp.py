@@ -121,7 +121,14 @@ def map_error(
         if sdk_code in _SDK_CODE_CLASSES:
             return by_sdk_code(E.ProviderError)
         return E.ProviderError(message, **kwargs)
-    return E.ProviderProtocolError(message, **kwargs)
+    exc = E.ProviderProtocolError(message, **kwargs)
+    exc.rpc_code = code  # type: ignore[attr-defined]
+    return exc
+
+
+def is_method_not_found(exc: BaseException) -> bool:
+    """True for a ``-32601`` answer: the plugin does not implement the (optional) method."""
+    return getattr(exc, "rpc_code", None) == -32601
 
 
 def exit_code_for(exc: BaseException) -> int:
@@ -132,6 +139,7 @@ def exit_code_for(exc: BaseException) -> int:
         exc,
         (
             E.TemplateNotFoundError,
+            E.SandboxNotFoundError,
             E.FileNotFoundError_,
             E.ProviderNotFoundError,
             E.ProviderResourceNotFoundError,

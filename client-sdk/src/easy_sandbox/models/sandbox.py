@@ -43,6 +43,16 @@ class SandboxConfig(BaseModel):
     memory: int | None = Field(default=None, description="内存大小 (MB)")
     disk: int | None = Field(default=None, description="磁盘大小 (MB)")
     gpu: str | None = Field(default=None, description="GPU 规格，如 'A10'")
+    secure: bool | None = Field(
+        default=None,
+        exclude=True,
+        description="User-requested secure mode; None = not specified",
+    )
+    provider_options: dict[str, Any] = Field(
+        default_factory=dict,
+        exclude=True,
+        description="Per-create provider options forwarded to plugin providers as 'options'",
+    )
 
     model_config = {"populate_by_name": True}
 

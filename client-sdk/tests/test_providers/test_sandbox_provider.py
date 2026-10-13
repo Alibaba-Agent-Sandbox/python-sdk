@@ -219,6 +219,8 @@ async def test_contract_kit_passes_for_reference_plugin(local_process):
     loop = asyncio.get_running_loop()
 
     def run_all():
+        import inspect
+
         for name in (
             "test_declared_features_are_known",
             "test_lifecycle",
@@ -226,6 +228,8 @@ async def test_contract_kit_passes_for_reference_plugin(local_process):
             "test_files_roundtrip",
             "test_undeclared_feature_fails_with_e8004",
         ):
-            getattr(suite, name)("local-process")
+            method = getattr(suite, name)
+            args = ["local-process", {}][: len(inspect.signature(method).parameters)]
+            method(*args)
 
     await loop.run_in_executor(None, run_all)

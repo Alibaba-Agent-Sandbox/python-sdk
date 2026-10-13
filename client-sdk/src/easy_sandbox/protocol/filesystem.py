@@ -15,8 +15,11 @@ HTTP file API（非 Connect RPC，已实测验证）:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NoReturn
 
+import httpx
+
+from easy_sandbox.models.errors import FileNotFoundError_, FileOperationError, PermissionDeniedError
 from easy_sandbox.models.filesystem import FileInfo, FileType, WatchEvent, WatchEventType
 from easy_sandbox.transport.codec import ConnectCodec
 from easy_sandbox.transport.streaming import StreamReader
@@ -109,6 +112,31 @@ def _parse_file_info(data: dict[str, Any]) -> FileInfo:
     )
 
 
+def _raise_transfer_timeout(
+    exc: httpx.TimeoutException, verb: str, path: str, size: int
+) -> NoReturn:
+    """A transfer outlived the HTTP timeout; name the operation, the size and the knob."""
+    sized = f" ({size} bytes)" if size >= 0 else ""
+    raise FileOperationError(
+        f"{verb} {path}{sized} timed out; the transfer took longer than the HTTP timeout.",
+        suggestion=(
+            "Raise the HTTP timeout (EBX_HTTP_TIMEOUT / http_timeout) or transfer smaller chunks."
+        ),
+    ) from exc
+
+
+def _raise_file_error(exc: httpx.HTTPStatusError, path: str) -> NoReturn:
+    """Translate an envd HTTP error into the SDK's filesystem errors (no URL in the text)."""
+    status = exc.response.status_code
+    if status == 404:
+        raise FileNotFoundError_(f"File or directory not found in the sandbox: {path}") from exc
+    if status == 403:
+        raise PermissionDeniedError(f"Permission denied in the sandbox: {path}") from exc
+    detail = exc.response.text.strip()[:200]
+    message = f"envd file operation failed (HTTP {status}) for {path}"
+    raise FileOperationError(f"{message}: {detail}" if detail else message) from exc
+
+
 def _parse_watch_event(frame: dict[str, Any]) -> WatchEvent:
     """Parse a streaming watch event frame."""
     data = frame.get("result", frame)
@@ -142,6 +170,26 @@ class FilesystemProtocol:
     def __init__(self, http_client: HttpClient) -> None:
         self._http = http_client
 
+    async def _rpc(
+        self,
+        envd_url: str,
+        envd_token: EnvdTokenManager,
+        rpc_path: str,
+        path: str,
+        *,
+        payload: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Unary envd call; HTTP errors become SDK filesystem errors for *path*."""
+        try:
+            return await self._http.envd_request(
+                envd_url,
+                rpc_path,
+                payload=payload if payload is not None else {"path": path},
+                envd_token=envd_token,
+            )
+        except httpx.HTTPStatusError as exc:
+            _raise_file_error(exc, path)
+
     # --- Connect RPC methods（已实测验证）---
 
     async def stat(
@@ -155,12 +203,7 @@ class FilesystemProtocol:
 
         POST envd_url + /filesystem.Filesystem/Stat（已实测验证）
         """
-        response = await self._http.envd_request(
-            envd_url,
-            _STAT,
-            payload={"path": path},
-            envd_token=envd_token,
-        )
+        response = await self._rpc(envd_url, envd_token, _STAT, path)
         return _parse_file_info(_unwrap_entry(response))
 
     async def list_dir(
@@ -174,14 +217,13 @@ class FilesystemProtocol:
 
         POST envd_url + /filesystem.Filesystem/ListDir（已实测验证）
         """
-        response = await self._http.envd_request(
-            envd_url,
-            _LIST_DIR,
-            payload={"path": path},
-            envd_token=envd_token,
-        )
+        response = await self._rpc(envd_url, envd_token, _LIST_DIR, path)
 
         entries = response.get("entries", response.get("result", {}).get("entries", []))
+        if not entries:
+            # envd answers HTTP 200 with no entries for a missing path; Stat tells the cases
+            # apart (raises FileNotFoundError_ when the path does not exist).
+            await self.stat(envd_url, envd_token, path=path)
         return [_parse_file_info(_unwrap_entry(entry)) for entry in entries]
 
     async def make_dir(
@@ -195,12 +237,7 @@ class FilesystemProtocol:
 
         POST envd_url + /filesystem.Filesystem/MakeDir（已实测验证）
         """
-        await self._http.envd_request(
-            envd_url,
-            _MAKE_DIR,
-            payload={"path": path},
-            envd_token=envd_token,
-        )
+        await self._rpc(envd_url, envd_token, _MAKE_DIR, path)
 
     async def remove(
         self,
@@ -213,12 +250,7 @@ class FilesystemProtocol:
 
         POST envd_url + /filesystem.Filesystem/Remove（已实测验证）
         """
-        await self._http.envd_request(
-            envd_url,
-            _REMOVE,
-            payload={"path": path},
-            envd_token=envd_token,
-        )
+        await self._rpc(envd_url, envd_token, _REMOVE, path)
 
     async def move(
         self,
@@ -232,11 +264,12 @@ class FilesystemProtocol:
 
         POST envd_url + /filesystem.Filesystem/Move（已实测验证）
         """
-        await self._http.envd_request(
+        await self._rpc(
             envd_url,
+            envd_token,
             _MOVE,
+            source,
             payload={"source": source, "destination": destination},
-            envd_token=envd_token,
         )
 
     async def watch_dir(
@@ -273,14 +306,19 @@ class FilesystemProtocol:
 
         POST envd_url/files?path={path}&username=user → 201（已实测验证）
         """
-        await self._http.envd_http_request(
-            envd_url,
-            "POST",
-            "/files",
-            envd_token=envd_token,
-            params={"path": path, "username": username},
-            files={"file": ("file", content)},
-        )
+        try:
+            await self._http.envd_http_request(
+                envd_url,
+                "POST",
+                "/files",
+                envd_token=envd_token,
+                params={"path": path, "username": username},
+                files={"file": ("file", content)},
+            )
+        except httpx.TimeoutException as exc:
+            _raise_transfer_timeout(exc, "Upload", path, len(content))
+        except httpx.HTTPStatusError as exc:
+            _raise_file_error(exc, path)
 
     async def download_file(
         self,
@@ -294,13 +332,18 @@ class FilesystemProtocol:
 
         GET envd_url/files?path={path}&username=user → 200（已实测验证）
         """
-        response = await self._http.envd_http_request(
-            envd_url,
-            "GET",
-            "/files",
-            envd_token=envd_token,
-            params={"path": path, "username": username},
-        )
+        try:
+            response = await self._http.envd_http_request(
+                envd_url,
+                "GET",
+                "/files",
+                envd_token=envd_token,
+                params={"path": path, "username": username},
+            )
+        except httpx.TimeoutException as exc:
+            _raise_transfer_timeout(exc, "Download", path, -1)
+        except httpx.HTTPStatusError as exc:
+            _raise_file_error(exc, path)
         return response.content
 
     # --- convenience wrappers ---

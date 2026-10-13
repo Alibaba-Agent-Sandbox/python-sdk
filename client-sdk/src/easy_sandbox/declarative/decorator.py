@@ -428,6 +428,7 @@ class _SandboxFactory:
                         func_source=func_source,
                         args_data=args_data,
                         serializer_type=serializer,
+                        is_async=inspect.iscoroutinefunction(fn),
                     )
 
                     # 5. 上传并执行（UUID 唯一路径）
@@ -620,20 +621,29 @@ def _build_execution_script(
     func_source: str,
     args_data: str,
     serializer_type: str,
+    is_async: bool = False,
 ) -> str:
     """构建远程执行脚本。
 
     脚本在沙箱内运行：反序列化参数 → 定义函数 → 执行 → 将结果序列化输出到 stdout。
+    ``is_async=True`` 时（``async def`` 函数）用 ``asyncio.run`` 等待协程的结果。
     """
     if serializer_type == "json":
-        return _build_json_script(func_name, func_source, args_data)
+        return _build_json_script(func_name, func_source, args_data, is_async=is_async)
     raise ValueError(f"Unknown serializer type: {serializer_type}")  # pragma: no cover
 
 
-def _build_json_script(func_name: str, func_source: str, args_data: str) -> str:
+def _build_json_script(
+    func_name: str, func_source: str, args_data: str, *, is_async: bool = False
+) -> str:
+    if is_async:
+        call = f"asyncio.run({func_name}(*args, **kwargs))"
+        imports = "import asyncio\nimport json\nimport sys"
+    else:
+        call = f"{func_name}(*args, **kwargs)"
+        imports = "import json\nimport sys"
     return f"""\
-import json
-import sys
+{imports}
 
 args_data = json.loads({repr(args_data)})
 args = args_data["args"]
@@ -641,6 +651,6 @@ kwargs = args_data["kwargs"]
 
 {func_source}
 
-result = {func_name}(*args, **kwargs)
+result = {call}
 print(json.dumps(result, default=str))
 """

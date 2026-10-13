@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 from easy_sandbox._version import __version__
 from easy_sandbox.models.errors import (
+    CommandTimeoutError,
     ProviderFeatureNotSupportedError,
     ProviderProtocolError,
     ProviderResourceNotFoundError,
@@ -19,7 +20,13 @@ from easy_sandbox.models.process import ProcessChunk, ProcessChunkType
 from easy_sandbox.models.sandbox import SandboxConfig, SandboxInfo, SandboxStatus
 from easy_sandbox.providers import store
 from easy_sandbox.providers.base import Provider, ProviderInfra
-from easy_sandbox.providers.epp import PROTOCOL, EppClient, resolve_command, scrubbed_env
+from easy_sandbox.providers.epp import (
+    PROTOCOL,
+    EppClient,
+    is_method_not_found,
+    resolve_command,
+    scrubbed_env,
+)
 from easy_sandbox.transport.streaming import StreamReader
 
 if TYPE_CHECKING:
@@ -94,10 +101,32 @@ class _Unsupported:
 class ExecSandboxProtocol:
     """``SandboxProtocol`` over EPP."""
 
-    def __init__(self, client: EppClient, supported: frozenset[str]) -> None:
+    def __init__(
+        self,
+        client: EppClient,
+        supported: frozenset[str],
+        secret_option_keys: frozenset[str] = frozenset(),
+    ) -> None:
         self._c = client
         self._features = supported
         self._pid = client.provider_id
+        self._secret_option_keys = secret_option_keys
+        self._has_connect = True
+
+    @property
+    def has_port_url(self) -> bool:
+        return "ports.url" in self._features
+
+    async def port_url(self, sandbox_id: str, port: int) -> tuple[str, dict[str, str]]:
+        """Ask the plugin for the public URL (and access headers) of *port*."""
+        self._need("ports.url")
+        res = await self._c.call("ports.url", {"sandbox_id": sandbox_id, "port": int(port)})
+        url = res.get("url")
+        if not isinstance(url, str) or not url:
+            raise ProviderProtocolError(f"Provider '{self._pid}' returned no url for ports.url.")
+        raw = res.get("headers")
+        headers = {str(k): str(v) for k, v in raw.items()} if isinstance(raw, dict) else {}
+        return url, headers
 
     def _need(self, feature: str) -> None:
         if feature not in self._features:
@@ -116,16 +145,32 @@ class ExecSandboxProtocol:
             "memory": config.memory,
             "disk": config.disk,
             "gpu": config.gpu,
-            "secure": True,
             "request_timeout": request_timeout,
         }
+        if config.secure is not None:
+            params["secure"] = config.secure
+        options = {
+            k: v for k, v in config.provider_options.items() if k not in self._secret_option_keys
+        }
+        if options:
+            params["options"] = options
         rec = await self._c.call("sandbox.create", params, timeout=request_timeout)
         return record_to_info(rec, self._pid)
 
     async def connect(self, sandbox_id: str) -> SandboxInfo:
+        """``sandbox.connect`` when the plugin has it (it may resume), else ``sandbox.get``."""
         self._need("sandbox.lifecycle")
+        if self._has_connect:
+            try:
+                return record_to_info(
+                    await self._c.call("sandbox.connect", {"sandbox_id": sandbox_id}), self._pid
+                )
+            except ProviderProtocolError as exc:
+                if not is_method_not_found(exc):
+                    raise
+                self._has_connect = False
         return record_to_info(
-            await self._c.call("sandbox.connect", {"sandbox_id": sandbox_id}), self._pid
+            await self._c.call("sandbox.get", {"sandbox_id": sandbox_id}), self._pid
         )
 
     async def get_info(self, sandbox_id: str) -> SandboxInfo:
@@ -247,7 +292,14 @@ class ExecProcessProtocol:
         queue = self._c.open_stream(process_id)
         try:
             while True:
-                note = await asyncio.wait_for(queue.get(), float(timeout) + 5.0)
+                try:
+                    note = await asyncio.wait_for(queue.get(), float(timeout) + 5.0)
+                except asyncio.TimeoutError:
+                    raise CommandTimeoutError(
+                        f"Command did not finish within {timeout}s (provider '{self._pid}' "
+                        "reported no exit).",
+                        suggestion="Raise the command timeout or fix the plugin's timeout handling",
+                    ) from None
                 if note is None:
                     if self._c.failure is not None:
                         raise self._c.failure
@@ -280,7 +332,7 @@ class ExecProcessProtocol:
         await self._c.call(method, {"sandbox_id": _sandbox_id_from(envd_url), **params})
 
     async def send_input(
-        self, envd_url: str, envd_token: EnvdTokenManager, *, pid: int, data: str
+        self, envd_url: str, envd_token: EnvdTokenManager, *, pid: int | str, data: str
     ) -> None:
         if not is_epp_url(envd_url):
             assert self._native is not None
@@ -289,7 +341,7 @@ class ExecProcessProtocol:
         await self._simple("process.stdin", envd_url, envd_token, pid=pid, data=data)
 
     async def send_signal(
-        self, envd_url: str, envd_token: EnvdTokenManager, *, pid: int, signal: int = 15
+        self, envd_url: str, envd_token: EnvdTokenManager, *, pid: int | str, signal: int = 15
     ) -> None:
         if not is_epp_url(envd_url):
             assert self._native is not None
@@ -298,11 +350,11 @@ class ExecProcessProtocol:
         await self._simple("process.signal", envd_url, envd_token, pid=pid, signal=signal)
 
     async def send_stdin(
-        self, envd_url: str, envd_token: EnvdTokenManager, *, pid: int, data: str
+        self, envd_url: str, envd_token: EnvdTokenManager, *, pid: int | str, data: str
     ) -> None:
         await self.send_input(envd_url, envd_token, pid=pid, data=data)
 
-    async def kill(self, envd_url: str, envd_token: EnvdTokenManager, *, pid: int) -> None:
+    async def kill(self, envd_url: str, envd_token: EnvdTokenManager, *, pid: int | str) -> None:
         if not is_epp_url(envd_url):
             assert self._native is not None
             await self._native.kill(envd_url, envd_token, pid=pid)
@@ -549,7 +601,11 @@ class ExecProvider(Provider):
             config=config,
             auth=auth,
             http_client=http_client,
-            sandbox_protocol=ExecSandboxProtocol(client, supported),
+            sandbox_protocol=ExecSandboxProtocol(
+                client,
+                supported,
+                frozenset(f.key for f in self.config_fields if f.secret),
+            ),
             process_protocol=ExecProcessProtocol(client, supported, native.get("process")),
             filesystem_protocol=ExecFilesystemProtocol(client, supported, native.get("files")),
             code_interpreter_protocol=_Unsupported(self.id, "code.interpret"),

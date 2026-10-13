@@ -21,7 +21,7 @@ ENVD = "https://49983-sbx-ki.sandbox-test.example.com"
 
 
 def make_http(api_key: str = "test-key") -> HttpClient:
-    return HttpClient(TransportConfig(api_url=API, http2=False), ApiKeyAuth(api_key))
+    return HttpClient(TransportConfig(sandbox_base_url=API, http2=False), ApiKeyAuth(api_key))
 
 
 def token() -> EnvdTokenManager:

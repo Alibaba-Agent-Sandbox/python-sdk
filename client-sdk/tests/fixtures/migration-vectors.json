@@ -33,12 +33,6 @@
       "plan": [
         {
           "file": "toml",
-          "action": "rename",
-          "from": "transport.api_url",
-          "to": "transport.sandbox_base_url"
-        },
-        {
-          "file": "toml",
           "action": "set",
           "from": null,
           "to": "core.config_format",
@@ -47,8 +41,8 @@
       ],
       "toml_after": {
         "transport": {
-          "http_timeout": 9,
-          "sandbox_base_url": "https://t.example"
+          "api_url": "https://t.example",
+          "http_timeout": 9
         },
         "core": {
           "config_format": 2
@@ -67,12 +61,6 @@
       "plan": [
         {
           "file": "toml",
-          "action": "rename",
-          "from": "transport.api_base_url",
-          "to": "transport.sandbox_base_url"
-        },
-        {
-          "file": "toml",
           "action": "set",
           "from": null,
           "to": "core.config_format",
@@ -81,7 +69,7 @@
       ],
       "toml_after": {
         "transport": {
-          "sandbox_base_url": "https://t.example"
+          "api_base_url": "https://t.example"
         },
         "core": {
           "config_format": 2
@@ -101,12 +89,6 @@
       "plan": [
         {
           "file": "toml",
-          "action": "drop",
-          "from": "transport.api_url",
-          "to": "transport.sandbox_base_url"
-        },
-        {
-          "file": "toml",
           "action": "set",
           "from": null,
           "to": "core.config_format",
@@ -115,6 +97,7 @@
       ],
       "toml_after": {
         "transport": {
+          "api_url": "https://old",
           "sandbox_base_url": "https://new"
         },
         "core": {
@@ -204,18 +187,6 @@
       "env": "# keep me\nE2B_API_KEY=abc\nSANDBOX_REGION=cn-shanghai\nOPENAI_API_KEY=k\n",
       "plan": [
         {
-          "file": "env",
-          "action": "rename",
-          "from": "E2B_API_KEY",
-          "to": "EBX_SANDBOX_API_KEY"
-        },
-        {
-          "file": "env",
-          "action": "rename",
-          "from": "SANDBOX_REGION",
-          "to": "EBX_ALICLOUD_EXPRESS_REGION"
-        },
-        {
           "file": "toml",
           "action": "set",
           "from": null,
@@ -228,7 +199,7 @@
           "config_format": 2
         }
       },
-      "env_after": "# keep me\nEBX_SANDBOX_API_KEY=abc\nEBX_ALICLOUD_EXPRESS_REGION=cn-shanghai\nOPENAI_API_KEY=k\n"
+      "env_after": "# keep me\nE2B_API_KEY=abc\nSANDBOX_REGION=cn-shanghai\nOPENAI_API_KEY=k\n"
     },
     {
       "name": "env: shadowed legacy dropped",
@@ -236,18 +207,6 @@
       "env": "E2B_API_KEY=abc\nSANDBOX_API_KEY=old\n",
       "plan": [
         {
-          "file": "env",
-          "action": "rename",
-          "from": "E2B_API_KEY",
-          "to": "EBX_SANDBOX_API_KEY"
-        },
-        {
-          "file": "env",
-          "action": "drop",
-          "from": "SANDBOX_API_KEY",
-          "to": "EBX_SANDBOX_API_KEY"
-        },
-        {
           "file": "toml",
           "action": "set",
           "from": null,
@@ -260,7 +219,7 @@
           "config_format": 2
         }
       },
-      "env_after": "EBX_SANDBOX_API_KEY=abc\n"
+      "env_after": "E2B_API_KEY=abc\nSANDBOX_API_KEY=old\n"
     },
     {
       "name": "env: canonical present wins",
@@ -268,12 +227,6 @@
       "env": "EBX_SANDBOX_API_KEY=new\nE2B_API_KEY=old\n",
       "plan": [
         {
-          "file": "env",
-          "action": "drop",
-          "from": "E2B_API_KEY",
-          "to": "EBX_SANDBOX_API_KEY"
-        },
-        {
           "file": "toml",
           "action": "set",
           "from": null,
@@ -286,7 +239,7 @@
           "config_format": 2
         }
       },
-      "env_after": "EBX_SANDBOX_API_KEY=new\n"
+      "env_after": "EBX_SANDBOX_API_KEY=new\nE2B_API_KEY=old\n"
     },
     {
       "name": "env: acr and ak legacy names",
@@ -294,36 +247,6 @@
       "env": "ACR_REGISTRY=r\nACR_PASSWORD=p\nAccessKey=ak\nAccessSecret=sk\nTEAM_ID=7\n",
       "plan": [
         {
-          "file": "env",
-          "action": "rename",
-          "from": "AccessKey",
-          "to": "EBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID"
-        },
-        {
-          "file": "env",
-          "action": "rename",
-          "from": "AccessSecret",
-          "to": "EBX_ALICLOUD_EXPRESS_ACCESS_KEY_SECRET"
-        },
-        {
-          "file": "env",
-          "action": "rename",
-          "from": "ACR_REGISTRY",
-          "to": "EBX_ALICLOUD_EXPRESS_ACR_REGISTRY"
-        },
-        {
-          "file": "env",
-          "action": "rename",
-          "from": "ACR_PASSWORD",
-          "to": "EBX_ALICLOUD_EXPRESS_ACR_PASSWORD"
-        },
-        {
-          "file": "env",
-          "action": "rename",
-          "from": "TEAM_ID",
-          "to": "EBX_ALICLOUD_EXPRESS_TEAM_ID"
-        },
-        {
           "file": "toml",
           "action": "set",
           "from": null,
@@ -336,7 +259,7 @@
           "config_format": 2
         }
       },
-      "env_after": "EBX_ALICLOUD_EXPRESS_ACR_REGISTRY=r\nEBX_ALICLOUD_EXPRESS_ACR_PASSWORD=p\nEBX_ALICLOUD_EXPRESS_ACCESS_KEY_ID=ak\nEBX_ALICLOUD_EXPRESS_ACCESS_KEY_SECRET=sk\nEBX_ALICLOUD_EXPRESS_TEAM_ID=7\n"
+      "env_after": "ACR_REGISTRY=r\nACR_PASSWORD=p\nAccessKey=ak\nAccessSecret=sk\nTEAM_ID=7\n"
     },
     {
       "name": "env: export prefix and blank values",
@@ -344,12 +267,6 @@
       "env": "export SANDBOX_REGION=cn-beijing\nSANDBOX_API_KEY=\n",
       "plan": [
         {
-          "file": "env",
-          "action": "rename",
-          "from": "SANDBOX_REGION",
-          "to": "EBX_ALICLOUD_EXPRESS_REGION"
-        },
-        {
           "file": "toml",
           "action": "set",
           "from": null,
@@ -362,7 +279,7 @@
           "config_format": 2
         }
       },
-      "env_after": "export EBX_ALICLOUD_EXPRESS_REGION=cn-beijing\nSANDBOX_API_KEY=\n"
+      "env_after": "export SANDBOX_REGION=cn-beijing\nSANDBOX_API_KEY=\n"
     }
   ]
 }

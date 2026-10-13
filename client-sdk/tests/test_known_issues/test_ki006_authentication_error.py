@@ -46,7 +46,7 @@ async def test_sandbox_list_api_with_wrong_key(httpx_mock) -> None:
 
     httpx_mock.add_response(method="GET", status_code=401, content=b"")
     with pytest.raises(AuthenticationError):
-        await Sandbox.list(api_key=SECRET, api_url=API)
+        await Sandbox.list(api_key=SECRET, sandbox_base_url=API)
 
 
 async def test_aksk_auth_maps_to_invalid_credentials(httpx_mock) -> None:
@@ -58,7 +58,7 @@ async def test_aksk_auth_maps_to_invalid_credentials(httpx_mock) -> None:
             return {}
 
     httpx_mock.add_response(method="GET", status_code=401, content=b"")
-    client = HttpClient(TransportConfig(api_url=API, http2=False), _Aksk())
+    client = HttpClient(TransportConfig(sandbox_base_url=API, http2=False), _Aksk())
     with pytest.raises(InvalidCredentialsError):
         await client.platform_request("GET", "/sandboxes")
 

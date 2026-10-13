@@ -82,10 +82,12 @@ def _build_infra(
     (``alicloud-express``) path; other providers go through :func:`_provider_infra`.
     """
     config_overrides: dict[str, Any] = {}
+    # Callers pass the already-resolved value (legacy ``api_key`` / ``api_url`` included).
+    # ``load_config`` only honours the canonical override names.
     if api_key is not None:
-        config_overrides["api_key"] = api_key
+        config_overrides["sandbox_api_key"] = api_key
     if api_url is not None:
-        config_overrides["api_url"] = api_url
+        config_overrides["sandbox_base_url"] = api_url
     if access_key_id is not None:
         config_overrides["access_key_id"] = access_key_id
     if access_key_secret is not None:

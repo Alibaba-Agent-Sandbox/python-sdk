@@ -232,7 +232,10 @@ class TestSendStdin:
 
         mock_http.envd_request.assert_awaited_once()
         call_kwargs = mock_http.envd_request.call_args
-        assert call_kwargs.kwargs["payload"] == {"pid": 42, "data": "input\n"}
+        assert call_kwargs.kwargs["payload"] == {
+            "process": {"pid": 42},
+            "input": {"stdin": base64.b64encode(b"input\n").decode()},
+        }
 
 
 class TestKillProcess:
@@ -245,7 +248,10 @@ class TestKillProcess:
 
         mock_http.envd_request.assert_awaited_once()
         call_kwargs = mock_http.envd_request.call_args
-        assert call_kwargs.kwargs["payload"] == {"pid": 42, "signal": 9}
+        assert call_kwargs.kwargs["payload"] == {
+            "process": {"pid": 42},
+            "signal": "SIGNAL_SIGKILL",
+        }
 
 
 # =============================================================================
@@ -259,7 +265,7 @@ class TestEnvdPayloadIsolation:
     Server-side POST /env modifications to os.environ must NOT leak into the
     envd RPC payload.  This confirms the documented boundary:
     server os.environ → inherited by local subprocess only;
-    envd envVars → controlled exclusively by create-time and per-call params.
+    envd envs → controlled exclusively by create-time and per-call params.
     """
 
     _SERVER_INJECTED_VAR = "_EBX_BOUNDARY_SERVER_ONLY"
@@ -291,9 +297,9 @@ class TestEnvdPayloadIsolation:
             per_call_env = {"MY_CALL_VAR": "hello"}
             await proto.start(envd_url, envd_token, cmd="echo", args=["test"], env=per_call_env)
 
-            # The payload's process.envVars must contain ONLY the per-call env.
+            # The payload's process.envs must contain ONLY the per-call env.
             process_obj = captured_payload["process"]
-            assert process_obj["envVars"] == {"MY_CALL_VAR": "hello"}
+            assert process_obj["envs"] == {"MY_CALL_VAR": "hello"}
             # The server-injected var must NOT be in the payload anywhere.
             payload_str = json.dumps(captured_payload)
             assert self._SERVER_INJECTED_VAR not in payload_str
@@ -307,7 +313,7 @@ class TestEnvdPayloadIsolation:
     async def test_start_no_env_param_means_no_env_vars_key(
         self, envd_url: str, envd_token: Any
     ) -> None:
-        """When env= is omitted, payload must not contain envVars at all."""
+        """When env= is omitted, payload must not contain envs at all."""
         import os
 
         original = os.environ.get(self._SERVER_INJECTED_VAR)
@@ -332,7 +338,8 @@ class TestEnvdPayloadIsolation:
             await proto.start(envd_url, envd_token, cmd="ls")
 
             process_obj = captured_payload["process"]
-            # No envVars key should exist in the payload.
+            # No envs key should exist in the payload.
+            assert "envs" not in process_obj
             assert "envVars" not in process_obj
             # Server-injected var must not appear.
             payload_str = json.dumps(captured_payload)

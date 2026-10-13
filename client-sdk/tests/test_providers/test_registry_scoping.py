@@ -144,8 +144,8 @@ class TestCredentialIsolation:
         return iso
 
     def test_generic_keys_only_reach_builtin_and_consented_inheritors(self, installed, monkeypatch):
-        monkeypatch.setenv("E2B_API_KEY", "generic-key-1234")
-        monkeypatch.setenv("E2B_API_URL", "https://generic.example")
+        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "generic-key-1234")
+        monkeypatch.setenv("EBX_SANDBOX_BASE_URL", "https://generic.example")
         assert load_config(provider="alicloud-express").sandbox_api_key == "generic-key-1234"
         assert load_config(provider="local-process").sandbox_api_key is None
         assert load_config(provider="local-process").sandbox_base_url != "https://generic.example"
@@ -156,7 +156,7 @@ class TestCredentialIsolation:
         )
 
     def test_inherit_without_consent_is_dropped(self, installed, monkeypatch):
-        monkeypatch.setenv("E2B_API_KEY", "generic-key-1234")
+        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "generic-key-1234")
         import json as _json
 
         path = installer.store.provider_dir("e2b-compatible") / ".ebx-install.json"
@@ -167,7 +167,7 @@ class TestCredentialIsolation:
         assert registry.get_provider("e2b-compatible").inherit == frozenset()
 
     def test_scoped_env_beats_generic_for_inheritor(self, installed, monkeypatch):
-        monkeypatch.setenv("E2B_API_KEY", "generic")
+        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "generic")
         monkeypatch.setenv("EBX_E2B_COMPATIBLE_SANDBOX_API_KEY", "scoped")
         assert load_config(provider="e2b-compatible").sandbox_api_key == "scoped"
         assert load_config(provider="alicloud-express").sandbox_api_key == "generic"
@@ -214,7 +214,7 @@ class TestRestProvider:
 
     async def test_build_infra_uses_inherited_key(self, iso, monkeypatch):  # noqa: F811
         installer.install(str(E2B_COMPATIBLE), yes=True)
-        monkeypatch.setenv("E2B_API_KEY", "abcd1234")
+        monkeypatch.setenv("EBX_SANDBOX_API_KEY", "abcd1234")
         prov = registry.get_provider("e2b-compatible")
         assert isinstance(prov, RestProvider)
         infra = await prov.build_infra(load_config(provider="e2b-compatible"))

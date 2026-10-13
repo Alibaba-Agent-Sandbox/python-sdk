@@ -23,7 +23,7 @@ BASE = "https://sandbox-test.example.com"
 
 @pytest.fixture
 def transport_config():
-    return TransportConfig(api_url=BASE, http2=False)
+    return TransportConfig(sandbox_base_url=BASE, http2=False)
 
 
 @pytest.fixture

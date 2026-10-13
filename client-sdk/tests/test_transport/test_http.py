@@ -64,7 +64,7 @@ def mock_stream_transport(chunks_factory, status: int = 200):
 
 def make_stream_test_client() -> HttpClient:
     """HttpClient instance for streaming tests (mock auth, HTTP/1.1)."""
-    config = TransportConfig(api_url="https://test.example.com", http2=False)
+    config = TransportConfig(sandbox_base_url="https://test.example.com", http2=False)
     return HttpClient(config=config, auth=MagicMock())
 
 
@@ -80,7 +80,7 @@ def patch_stream_client_init(transport: httpx.MockTransport, **kwargs: Any):
 @pytest.fixture
 def transport_config():
     return TransportConfig(
-        api_url="https://sandbox-test.example.com",
+        sandbox_base_url="https://sandbox-test.example.com",
         http2=False,  # Disable HTTP/2 for test mocking
     )
 
@@ -395,7 +395,7 @@ class TestRequestTimeoutPropagation:
         transport = mock_stream_transport(lambda: _empty_chunks())
 
         config = TransportConfig(
-            api_url="https://test.example.com",
+            sandbox_base_url="https://test.example.com",
             http2=False,
             http_timeout=30.0,
         )
@@ -420,7 +420,7 @@ class TestRequestTimeoutPropagation:
         transport = mock_stream_transport(lambda: _empty_chunks())
 
         config = TransportConfig(
-            api_url="https://test.example.com",
+            sandbox_base_url="https://test.example.com",
             http2=False,
             http_timeout=42.0,  # custom default
         )
