@@ -18,6 +18,8 @@ The template server listens on **port 9000**. Point an OpenAI-shaped client at `
 * Codex and Qwen Code are supported today. A body that names an adapter that is not supported yet is HTTP 404 `not_found_error` with `x-should-retry: false`.
 * Treat every response as local. Read the header `X-Easy-Sandbox-Local: 1` (errors included). `x_easy_sandbox.compute` is `local_process`, `local_state`, or `none`.
 * Do not call `POST /v1/responses/input_tokens`. It is 404 `agents.not_implemented_locally` with `x-should-retry: false`. No tokenizer matches the model the CLI will call.
+* Install one CLI in the image. A request that does not name an adapter uses the first in the product order (`codex`). Name `adapter`, `runtime`, or `X-EBX-Adapter`, or set `EBX_AGENTS_DEFAULT`, to use another.
+* Open endpoints one id at a time. `groups.agents: true` is only the gate. Each route's default scope is `agents:use`. See [Fine-grained capabilities](fine-grained-capabilities.md).
 * Leave the group off until a session needs it. Start the process with `EBX_SERVER_ENABLED_GROUPS=agents`.
 * Keep model API keys out of the HTTP client. The server token, when set, is the only credential these examples send.
 
@@ -62,8 +64,9 @@ Selection order:
 1. `X-EBX-Adapter` header, or a body field `adapter` / `runtime` (top-level or under `agent`)
 2. `agent.model` or `model` when that string is one of the names above (a real model id such as `gpt-5-codex` is passed through to the CLI and does not choose an adapter)
 3. Config `agents.default`: the `EBX_AGENTS_DEFAULT` environment variable, or in `EBX_AGENTS_CONFIG` a JSON string at `default` or `agents.default`
+4. Otherwise the first runtime in the product order: `codex`, then `qwen-code`
 
-If none of those names an adapter, the response is **400** `agents.adapter_required`.
+`GET /v1/agents/runtimes` defaults to `order=desc`. `order=asc` is the product order above. `default: true` marks the runtime step 4 selected. It does not follow the array index. A real model id (`gpt-5`) is passed to that CLI and does not change the adapter. Name the other runtime in the request to use it.
 
 ## Sessions, events, items, turns
 
@@ -97,7 +100,7 @@ curl -s -D - -o /dev/null -X POST \
 
 `GET .../items`, `GET .../turns`, `GET .../turns/{turn_id}`, and `GET .../turns/{turn_id}/items` return the list envelope `{object, data, first_id, last_id, has_more}`. `limit` is 1–100 (default 20) and `order` is `asc` or `desc` (default `desc`).
 
-`GET /v1/agents/runtimes` lists **codex** and **qwen-code** only, including whether each binary is on `PATH`.
+`GET /v1/agents/runtimes` lists **codex** and **qwen-code** only, including whether each binary is on `PATH`. Each object has `default`. That flag is true for the runtime used when the request does not name one. `order=asc` is `codex`, then `qwen-code`. The default `order` is `desc`.
 
 ## Agent definitions
 

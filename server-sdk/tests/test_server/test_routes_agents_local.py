@@ -326,8 +326,9 @@ class TestLabelContract:
             )
         ids = [m["id"] for m in ok(call("GET", "/v1/models"))["data"]]
         assert ids == ["codex", "qwen-code"]
-        names = {r["name"] for r in ok(call("GET", "/v1/agents/runtimes?limit=100"))["data"]}
-        assert names == {"codex", "qwen-code"}
+        runtimes = ok(call("GET", "/v1/agents/runtimes?limit=100&order=asc"))["data"]
+        assert [r["name"] for r in runtimes] == ["codex", "qwen-code"]
+        assert [r["default"] for r in runtimes] == [True, False]
 
     def test_group_disabled_hides_every_new_route(self) -> None:
         table = default_table()
@@ -2029,12 +2030,14 @@ class TestResponses:
         header = response.headers["X-Easy-Sandbox-Ignored-Params"]
         assert set(header.split(",")) == {"temperature", "top_p", "max_output_tokens"}
 
-    def test_adapter_required_without_default(self) -> None:
-        refused(
-            call("POST", "/v1/responses", {"model": "gpt-5", "input": "x"}),
-            400,
-            code="agents.adapter_required",
+    def test_omitted_adapter_uses_the_first_runtime(self) -> None:
+        response = ok(call("POST", "/v1/responses", {"model": "gpt-5", "input": "x"}))
+        assert response["model"] == "gpt-5"
+        assert response["output"][0]["content"][0]["text"] == "codex-fake-ok"
+        named = ok(
+            call("POST", "/v1/responses", {"model": "gpt-5", "input": "x", "adapter": "qwen-code"})
         )
+        assert named["output"][0]["content"][0]["text"] == "qwen-fake-ok"
 
     def test_previous_response_continues_the_cli_session_only_from_the_latest(
         self, install: Callable[..., Path], tmp_path: Path

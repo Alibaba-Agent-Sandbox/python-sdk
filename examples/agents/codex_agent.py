@@ -4,7 +4,7 @@
 Shows how to create a Codex sandbox, configure API keys, and run AI coding tasks.
 
 前置条件:
-  - 设置环境变量 E2B_API_KEY（沙箱平台 Key）
+  - 设置环境变量 EBX_SANDBOX_API_KEY（沙箱平台 Key）
   - 设置环境变量 OPENAI_API_KEY（OpenAI Key，传入沙箱）
 """
 
@@ -15,16 +15,16 @@ from easy_sandbox import Sandbox
 
 
 async def main() -> None:
-    api_key = os.environ.get("E2B_API_KEY", "")
+    api_key = os.environ.get("EBX_SANDBOX_API_KEY", "")
     openai_key = os.environ.get("OPENAI_API_KEY", "")
 
     if not openai_key:
         print("⚠ 未设置 OPENAI_API_KEY 环境变量，部分功能将使用模拟模式")
 
     # ── 1. 创建沙箱并注入 OpenAI API Key ─────────────────────────────
-    # 使用 codex 模板，预装了 openai SDK 和 Node.js 环境
+    # 平台模板目录里没有名为 codex 的模板。用 base，再在沙箱里安装 openai。
     async with await Sandbox.create(
-        template="codex",
+        template="base",
         api_key=api_key,
         timeout=600,
         envs={

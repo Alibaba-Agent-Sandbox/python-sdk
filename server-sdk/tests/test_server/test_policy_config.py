@@ -26,7 +26,7 @@ def _engine(data: dict[str, Any]) -> Any:
 
 class TestCatalogue:
     def test_every_builtin_route_has_a_catalogue_entry(self) -> None:
-        names = {r.name for r in default_table()._routes if r.group != CapabilityGroup.AGENTS}
+        names = {r.name for r in default_table()._routes}
         assert names, "routes not registered"
         assert names <= set(ENDPOINT_CATALOG), names - set(ENDPOINT_CATALOG)
 
@@ -42,6 +42,19 @@ class TestCatalogue:
     def test_core_group_cannot_be_disabled(self) -> None:
         with pytest.raises(PolicyConfigError, match="core"):
             ServerPolicy.from_dict({"groups": {"core": False}})
+
+    def test_agents_endpoints_enable_one_at_a_time(self) -> None:
+        eng = ServerPolicy.only("agents_sessions_create").bind()
+        create = eng.rule_for("agents_sessions_create")
+        assert create.enabled
+        assert create.scopes == ("agents:use",)
+        assert not eng.rule_for("agents_sessions_events_create").enabled
+        assert not eng.rule_for("agents_definitions_create").enabled
+        assert not eng.rule_for("shell").enabled
+        with pytest.raises(PolicyConfigError, match="not applicable"):
+            ServerPolicy.from_dict(
+                {"endpoints": {"agents_sessions_create": {"paths": {"allow": ["/srv"]}}}}
+            ).bind()
 
 
 class TestValidation:

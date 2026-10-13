@@ -50,15 +50,15 @@ async def scrape():
             print(f"  [{text.strip()}] -> {href}")
 
         # ── 截图保存 ──────────────────────────────────────────────
-        screenshot_path = "/app/screenshot.png"
+        screenshot_path = "/tmp/screenshot.png"
         await page.screenshot(path=screenshot_path, full_page=True)
         print(f"\\n截图已保存: {screenshot_path}")
 
         # ── 获取页面 HTML ─────────────────────────────────────────
         html = await page.content()
-        with open("/app/page.html", "w") as f:
+        with open("/tmp/page.html", "w") as f:
             f.write(html)
-        print(f"HTML 已保存: /app/page.html ({len(html)} 字符)")
+        print(f"HTML 已保存: /tmp/page.html ({len(html)} 字符)")
 
         await browser.close()
         print("\\n浏览器已关闭")
@@ -68,7 +68,7 @@ asyncio.run(scrape())
 
 
 async def main() -> None:
-    api_key = os.environ.get("E2B_API_KEY", "")
+    api_key = os.environ.get("EBX_SANDBOX_API_KEY", "")
 
     # 使用 base 模板，因为需要手动安装 Playwright 和 Chromium。
     # 如果已部署了 browser-automation 模板，可直接使用 template="browser-automation"
@@ -95,7 +95,7 @@ async def main() -> None:
 
         # 安装浏览器二进制（只安装 chromium 以节省时间）
         result = await sandbox.commands.run(
-            "playwright install chromium --with-deps",
+            "python -m playwright install chromium --with-deps",
             timeout=300,
         )
         if not result.success:
@@ -104,11 +104,11 @@ async def main() -> None:
         print("  ✓ Chromium 浏览器安装完成")
 
         # ── 2. 上传并执行爬取脚本 ────────────────────────────────────
-        await sandbox.files.write("/app/scraper.py", SCRAPER_SCRIPT)
+        await sandbox.files.write("/tmp/scraper.py", SCRAPER_SCRIPT)
         print("\n⏳ 正在执行网页爬取...\n")
 
         result = await sandbox.commands.run(
-            "python /app/scraper.py",
+            "python /tmp/scraper.py",
             timeout=60,
         )
 
@@ -120,19 +120,19 @@ async def main() -> None:
                 print(f"stderr: {result.stderr[:500]}")
 
         # ── 3. 验证截图文件 ──────────────────────────────────────────
-        screenshot_exists = await sandbox.files.exists("/app/screenshot.png")
+        screenshot_exists = await sandbox.files.exists("/tmp/screenshot.png")
         if screenshot_exists:
-            info = await sandbox.files.get_info("/app/screenshot.png")
+            info = await sandbox.files.get_info("/tmp/screenshot.png")
             print(f"\n截图文件大小: {info.size:,} bytes")
 
             # 下载截图到本地（可选）
-            # await sandbox.files.download("/app/screenshot.png", "./screenshot.png")
+            # await sandbox.files.download("/tmp/screenshot.png", "./screenshot.png")
             # print("✓ 截图已下载到本地")
 
         # ── 4. 查看保存的 HTML ───────────────────────────────────────
-        html_exists = await sandbox.files.exists("/app/page.html")
+        html_exists = await sandbox.files.exists("/tmp/page.html")
         if html_exists:
-            html_content = await sandbox.files.read("/app/page.html")
+            html_content = await sandbox.files.read("/tmp/page.html")
             print(f"HTML 内容前 200 字符:\n{html_content[:200]}...")
 
         # ── 5. 列出生成的文件 ────────────────────────────────────────

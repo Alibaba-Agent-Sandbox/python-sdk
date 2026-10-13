@@ -253,10 +253,15 @@ class TestRoutesAgents:
                 "/v1/agents/sessions",
                 {"agent": {"model": "gpt-5-codex"}, "environment": env},
             )
-            assert status == 400
-            assert body["error"]["code"] == "agents.adapter_required"
-            assert body["error"]["type"] == "invalid_request_error"
-            assert headers.get("x-should-retry") == "false"
+            assert status == 200, body
+            assert body["agent"]["id"] == "codex"
+            assert body["agent"]["model"] == "gpt-5-codex"
+            assert headers.get("x-easy-sandbox-local") == "1"
+
+            status, runtimes, _ = _request(port, "GET", "/v1/agents/runtimes?limit=100&order=asc")
+            assert status == 200
+            assert [item["name"] for item in runtimes["data"]] == ["codex", "qwen-code"]
+            assert [item["default"] for item in runtimes["data"]] == [True, False]
 
             status, body, headers = _request(
                 port,
@@ -289,8 +294,11 @@ class TestRoutesAgents:
                 assert status == 200, created
                 assert created["agent"]["id"] == "qwen-code"
 
-            os.environ["EBX_AGENTS_DEFAULT"] = "codex"
+            os.environ["EBX_AGENTS_DEFAULT"] = "qwen-code"
             reset_agent_runtime()
+            status, runtimes, _ = _request(port, "GET", "/v1/agents/runtimes?limit=100&order=asc")
+            assert status == 200
+            assert [item["default"] for item in runtimes["data"]] == [False, True]
             status, created, _ = _request(
                 port,
                 "POST",
@@ -298,7 +306,7 @@ class TestRoutesAgents:
                 {"agent": {"model": "gpt-5-codex"}, "environment": env},
             )
             assert status == 200, created
-            assert created["agent"]["id"] == "codex"
+            assert created["agent"]["id"] == "qwen-code"
             assert created["agent"]["model"] == "gpt-5-codex"
 
             config = tmp_path / "agents.json"
@@ -410,8 +418,9 @@ class TestRoutesAgents:
 
             status, runtimes, _ = _request(port, "GET", "/v1/agents/runtimes?limit=100")
             assert status == 200
-            names = {item["name"] for item in runtimes["data"]}
-            assert names == {"codex", "qwen-code"}
+            assert [item["name"] for item in runtimes["data"]] == ["qwen-code", "codex"]
+            by_name = {item["name"]: item["default"] for item in runtimes["data"]}
+            assert by_name == {"codex": True, "qwen-code": False}
 
             status, _, _ = _request(port, "DELETE", f"/v1/agents/sessions/{session_id}")
             assert status == 200

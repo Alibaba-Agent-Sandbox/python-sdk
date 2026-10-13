@@ -105,7 +105,7 @@ SandboxServer(route_table=default_table(), policy=policy).serve(port=9000)
 
 所有端点都能写的 limits：`max_request_bytes`、`rate_per_minute`、`max_concurrency`。
 
-目录里没有单独列出的路由（当前是全部 Agents API 路由）只能写 `enabled`、`scopes`、`audit` 和上面三个通用 limits。给它们写 `paths` 或专用 `params` 时，策略加载失败。
+Agents 端点已经在内置目录里，默认 scope 是 `agents:use`。和 `upload` 一样，可以把某一个端点 id 单独设为 `enabled: true`。这些端点没有 `paths`，也没有专用 `params`，所以除此之外只能写 `enabled`、`scopes`、`audit` 和上面三个通用 limits。写上 `paths` 或专用 `params` 时，策略加载失败。
 
 预设，写在你的端点规则之前：
 
@@ -123,80 +123,80 @@ SandboxServer(route_table=default_table(), policy=policy).serve(port=9000)
 
 ## 端点目录
 
-下表是进程导入服务端时实际登记的路由。Agents 行的「可配项」比文件和 shell 少，因为它们还没有进内置目录。
+下表是进程导入服务端时实际登记的路由。Agents 行的 scope 是 `agents:use`。可配项比带路径的文件路由少，因为这些接口不接收路径或专用参数。
 
 | 组 | 方法 | 路径 | 端点 id | scope | 可配项 |
 |---|---|---|---|---|---|
-| `agents` | GET | `/v1/agents/sessions/{id}/artifacts/{artifact_id}/content` | `agents_artifacts_content` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | DELETE | `/v1/agents/sessions/{id}/artifacts/{artifact_id}` | `agents_artifacts_delete` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}/artifacts/{artifact_id}` | `agents_artifacts_get` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}/artifacts` | `agents_artifacts_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/environments/{environment_id}/connect` | `agents_cannot_executor_channel` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/agents/environments/{environment_id}/register` | `agents_cannot_executor_registration` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | DELETE | `/v1/models/{model}` | `agents_cannot_models_delete` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/responses/input_tokens` | `agents_cannot_responses_input_tokens` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/agents` | `agents_definitions_create` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | DELETE | `/v1/agents/{agent_id}` | `agents_definitions_delete` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/{agent_id}` | `agents_definitions_get` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents` | `agents_definitions_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/agents/{agent_id}` | `agents_definitions_update` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/agents/environments/{environment_id}/files` | `agents_environment_files_create` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/environments/{environment_id}/files` | `agents_environment_files_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/agents/environments/templates` | `agents_environment_templates_create` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | DELETE | `/v1/agents/environments/templates/{environment_template_id}` | `agents_environment_templates_delete` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/environments/templates/{environment_template_id}` | `agents_environment_templates_get` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/environments/templates` | `agents_environment_templates_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/agents/environments/templates/{environment_template_id}` | `agents_environment_templates_update` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/agents/environments` | `agents_environments_create` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/environments/{environment_id}` | `agents_environments_get` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/environments` | `agents_environments_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/files` | `agents_files_create` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/models/{model}` | `agents_models_get` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/models` | `agents_models_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/responses/{response_id}/cancel` | `agents_responses_cancel` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/responses/compact` | `agents_responses_compact` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/responses` | `agents_responses_connect` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/responses` | `agents_responses_create` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | DELETE | `/v1/responses/{response_id}` | `agents_responses_delete` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/responses/{response_id}` | `agents_responses_get` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/responses/{response_id}/input_items` | `agents_responses_input_items` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/runtimes` | `agents_runtimes_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/agents/sessions` | `agents_sessions_create` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | DELETE | `/v1/agents/sessions/{id}` | `agents_sessions_delete` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/agents/sessions/{id}/events` | `agents_sessions_events_create` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}/events` | `agents_sessions_events_stream` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}` | `agents_sessions_get` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}/items` | `agents_sessions_items_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions` | `agents_sessions_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}/turns/{turn_id}` | `agents_sessions_turns_get` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}/turns/{turn_id}/items` | `agents_sessions_turns_items_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}/turns` | `agents_sessions_turns_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/agents/sessions/{id}` | `agents_sessions_update` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}` | `agents_subagents_get` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/items` | `agents_subagents_items_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}/subagents` | `agents_subagents_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns/{turn_id}` | `agents_subagents_turns_get` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns/{turn_id}/items` | `agents_subagents_turns_items_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns` | `agents_subagents_turns_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/agents/sessions/{id}/traces` | `agents_traces_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/vaults/{vault_id}/credentials` | `agents_vault_credentials_create` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | DELETE | `/v1/vaults/{vault_id}/credentials/{credential_id}` | `agents_vault_credentials_delete` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/vaults/{vault_id}/credentials/{credential_id}` | `agents_vault_credentials_get` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/vaults/{vault_id}/credentials` | `agents_vault_credentials_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/vaults/{vault_id}/credentials/{credential_id}` | `agents_vault_credentials_update` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/vaults` | `agents_vaults_create` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | DELETE | `/v1/vaults/{vault_id}` | `agents_vaults_delete` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/vaults/{vault_id}` | `agents_vaults_get` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/vaults` | `agents_vaults_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/vaults/{vault_id}` | `agents_vaults_update` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/webhook_event_types` | `agents_webhook_event_types` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/webhook_endpoints` | `agents_webhooks_create` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | DELETE | `/v1/webhook_endpoints/{webhook_endpoint_id}` | `agents_webhooks_delete` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/webhook_endpoints/{webhook_endpoint_id}` | `agents_webhooks_get` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | GET | `/v1/webhook_endpoints` | `agents_webhooks_list` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}/rotate_secret` | `agents_webhooks_rotate_secret` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}/test` | `agents_webhooks_test` | — | enabled、scopes、audit；仅通用 limits |
-| `agents` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}` | `agents_webhooks_update` | — | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/artifacts/{artifact_id}/content` | `agents_artifacts_content` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | DELETE | `/v1/agents/sessions/{id}/artifacts/{artifact_id}` | `agents_artifacts_delete` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/artifacts/{artifact_id}` | `agents_artifacts_get` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/artifacts` | `agents_artifacts_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/environments/{environment_id}/connect` | `agents_cannot_executor_channel` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/agents/environments/{environment_id}/register` | `agents_cannot_executor_registration` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | DELETE | `/v1/models/{model}` | `agents_cannot_models_delete` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/responses/input_tokens` | `agents_cannot_responses_input_tokens` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/agents` | `agents_definitions_create` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | DELETE | `/v1/agents/{agent_id}` | `agents_definitions_delete` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/{agent_id}` | `agents_definitions_get` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents` | `agents_definitions_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/agents/{agent_id}` | `agents_definitions_update` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/agents/environments/{environment_id}/files` | `agents_environment_files_create` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/environments/{environment_id}/files` | `agents_environment_files_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/agents/environments/templates` | `agents_environment_templates_create` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | DELETE | `/v1/agents/environments/templates/{environment_template_id}` | `agents_environment_templates_delete` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/environments/templates/{environment_template_id}` | `agents_environment_templates_get` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/environments/templates` | `agents_environment_templates_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/agents/environments/templates/{environment_template_id}` | `agents_environment_templates_update` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/agents/environments` | `agents_environments_create` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/environments/{environment_id}` | `agents_environments_get` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/environments` | `agents_environments_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/files` | `agents_files_create` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/models/{model}` | `agents_models_get` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/models` | `agents_models_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/responses/{response_id}/cancel` | `agents_responses_cancel` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/responses/compact` | `agents_responses_compact` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/responses` | `agents_responses_connect` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/responses` | `agents_responses_create` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | DELETE | `/v1/responses/{response_id}` | `agents_responses_delete` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/responses/{response_id}` | `agents_responses_get` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/responses/{response_id}/input_items` | `agents_responses_input_items` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/runtimes` | `agents_runtimes_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/agents/sessions` | `agents_sessions_create` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | DELETE | `/v1/agents/sessions/{id}` | `agents_sessions_delete` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/agents/sessions/{id}/events` | `agents_sessions_events_create` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/events` | `agents_sessions_events_stream` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}` | `agents_sessions_get` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/items` | `agents_sessions_items_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions` | `agents_sessions_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/turns/{turn_id}` | `agents_sessions_turns_get` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/turns/{turn_id}/items` | `agents_sessions_turns_items_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/turns` | `agents_sessions_turns_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/agents/sessions/{id}` | `agents_sessions_update` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}` | `agents_subagents_get` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/items` | `agents_subagents_items_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/subagents` | `agents_subagents_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns/{turn_id}` | `agents_subagents_turns_get` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns/{turn_id}/items` | `agents_subagents_turns_items_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns` | `agents_subagents_turns_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/agents/sessions/{id}/traces` | `agents_traces_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/vaults/{vault_id}/credentials` | `agents_vault_credentials_create` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | DELETE | `/v1/vaults/{vault_id}/credentials/{credential_id}` | `agents_vault_credentials_delete` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/vaults/{vault_id}/credentials/{credential_id}` | `agents_vault_credentials_get` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/vaults/{vault_id}/credentials` | `agents_vault_credentials_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/vaults/{vault_id}/credentials/{credential_id}` | `agents_vault_credentials_update` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/vaults` | `agents_vaults_create` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | DELETE | `/v1/vaults/{vault_id}` | `agents_vaults_delete` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/vaults/{vault_id}` | `agents_vaults_get` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/vaults` | `agents_vaults_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/vaults/{vault_id}` | `agents_vaults_update` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/webhook_event_types` | `agents_webhook_event_types` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/webhook_endpoints` | `agents_webhooks_create` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | DELETE | `/v1/webhook_endpoints/{webhook_endpoint_id}` | `agents_webhooks_delete` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/webhook_endpoints/{webhook_endpoint_id}` | `agents_webhooks_get` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | GET | `/v1/webhook_endpoints` | `agents_webhooks_list` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}/rotate_secret` | `agents_webhooks_rotate_secret` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}/test` | `agents_webhooks_test` | agents:use | enabled、scopes、audit；仅通用 limits |
+| `agents` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}` | `agents_webhooks_update` | agents:use | enabled、scopes、audit；仅通用 limits |
 | `browser` | POST | `/browser/click` | `browser_click` | browser:use | 仅通用 limits |
 | `browser` | GET | `/browser/console` | `browser_console` | browser:use | 仅通用 limits |
 | `browser` | GET | `/browser/content` | `browser_content` | browser:use | 仅通用 limits |

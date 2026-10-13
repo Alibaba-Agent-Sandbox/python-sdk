@@ -49,6 +49,8 @@ __all__ = [
     "page",
     "principal_of",
     "reset_agent_runtime",
+    "DEFAULT_AGENT_ORDER",
+    "default_runtime_name",
     "select_adapter",
     "select_or_response",
     "text_of",
@@ -61,6 +63,8 @@ LOCAL_HEADER = "X-Easy-Sandbox-Local"
 # Canonical runtimes served by this slice. Aliases resolve through the registry.
 SLICE = frozenset({"codex", "qwen-code"})
 SLICE_LABEL = "codex, qwen-code"
+# Product order. The first entry is the default when the request does not name one.
+DEFAULT_AGENT_ORDER = ("codex", "qwen-code")
 
 #: The one table of stable difference codes carried in ``x_easy_sandbox.differences``.
 DIFFERENCES: dict[str, str] = {
@@ -505,17 +509,31 @@ def explicit_adapter(request: ServerRequest, body: dict[str, Any]) -> str | None
     return None
 
 
+def implicit_adapter() -> str:
+    """Configured default, otherwise the first agent in :data:`DEFAULT_AGENT_ORDER`."""
+    return _config_default() or DEFAULT_AGENT_ORDER[0]
+
+
+def default_runtime_name() -> str | None:
+    """Canonical runtime used when the request does not name one.
+
+    ``None`` when a configured default is outside this slice.
+    """
+    canonical = default_adapters().resolve_name(implicit_adapter())
+    if canonical in SLICE:
+        return str(canonical)
+    return None
+
+
 def select_adapter(request: ServerRequest, body: dict[str, Any]) -> str:
-    """Return the canonical runtime, or raise :class:`AgentRuntimeError`."""
-    raw = explicit_adapter(request, body) or _config_default()
-    if not raw:
-        missing = AgentRuntimeError(
-            "adapter is required: set adapter to codex or qwen-code "
-            "(aliases qwen, qwencode), send X-EBX-Adapter, or configure agents.default",
-            param="adapter",
-        )
-        missing.code = "agents.adapter_required"
-        raise missing
+    """Return the canonical runtime, or raise :class:`AgentRuntimeError`.
+
+    An explicit adapter (header, ``adapter`` / ``runtime``, or a model string that
+    is an adapter name) wins. Otherwise the configured default is used. If that
+    is also unset, the first agent in :data:`DEFAULT_AGENT_ORDER` is used.
+    Name another adapter in the request to select it.
+    """
+    raw = explicit_adapter(request, body) or implicit_adapter()
     canonical = default_adapters().resolve_name(raw)
     if canonical not in SLICE:
         raise AgentNotFoundError(
@@ -530,8 +548,6 @@ def select_or_response(request: ServerRequest, body: dict[str, Any]) -> str | Se
     try:
         return select_adapter(request, body)
     except AgentRuntimeError as exc:
-        if exc.code == "agents.adapter_required":
-            return err(400, exc.message, code="agents.adapter_required", param="adapter")
         if isinstance(exc, AgentNotFoundError):
             return err(
                 404,

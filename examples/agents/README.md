@@ -24,7 +24,7 @@ Point `base_url` at that process. The template server listens on **port 9000** (
 | Codex | `codex` (alias `openai-codex`) | `codex` | `npm install -g @openai/codex` |
 | Qwen Code | `qwen-code`, `qwen`, `qwencode` (alias `qwen_code`) | `qwen` | `npm install -g @qwen-code/qwen-code` |
 
-Any other adapter name (`claude-code`, `cursor`, `command`, …) is HTTP 404 `not_found_error` with `x-should-retry: false`. If the body does not name one of these two and `agents.default` is unset, the server returns 400 `agents.adapter_required`.
+Any other adapter name (`claude-code`, `cursor`, `command`, …) is HTTP 404 `not_found_error` with `x-should-retry: false`. If the body does not name one of these two and `agents.default` is unset, the server uses the first in the product order: `codex`. Set `adapter` to `qwen-code` to use the other one. `GET /v1/agents/runtimes` marks the current default with `default: true`.
 
 `agents.default` is `EBX_AGENTS_DEFAULT` or, in the JSON file `EBX_AGENTS_CONFIG`, a top-level `default` or `agents.default` string.
 

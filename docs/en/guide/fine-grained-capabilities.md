@@ -105,7 +105,7 @@ If any matching rule at the same layer sets `enabled: false`, the endpoint is of
 
 Limits every endpoint accepts: `max_request_bytes`, `rate_per_minute`, `max_concurrency`.
 
-Routes that are not in the built-in catalogue (every Agents API route today) accept only `enabled`, `scopes`, `audit`, and those three limits. A `paths` or specialised `params` block on them fails policy load.
+Agents endpoints are in the built-in catalogue. The default scope is `agents:use`. Enable one endpoint id with `enabled: true`, the same way as `upload`. They have no `paths` and no specialised `params`, so the only other keys are `enabled`, `scopes`, `audit`, and the three limits above. A `paths` or specialised `params` block on them fails policy load.
 
 Presets apply before your endpoint rules:
 
@@ -123,80 +123,80 @@ The checker warns (L1) when one identity can both read scoped files and run `she
 
 ## Endpoint catalogue
 
-This is the route table registered when the server package is imported. Agents rows have fewer knobs because they are not in the built-in catalogue yet.
+This is the route table registered when the server package is imported. Agents rows use the scope `agents:use`. They have fewer knobs than file routes that take a path, because these routes do not accept paths or specialised parameters.
 
 | Group | Method | Path | Endpoint id | Scope | Knobs |
 |---|---|---|---|---|---|
-| `agents` | GET | `/v1/agents/sessions/{id}/artifacts/{artifact_id}/content` | `agents_artifacts_content` | — | enabled, scopes, audit; common limits only |
-| `agents` | DELETE | `/v1/agents/sessions/{id}/artifacts/{artifact_id}` | `agents_artifacts_delete` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}/artifacts/{artifact_id}` | `agents_artifacts_get` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}/artifacts` | `agents_artifacts_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/environments/{environment_id}/connect` | `agents_cannot_executor_channel` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/agents/environments/{environment_id}/register` | `agents_cannot_executor_registration` | — | enabled, scopes, audit; common limits only |
-| `agents` | DELETE | `/v1/models/{model}` | `agents_cannot_models_delete` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/responses/input_tokens` | `agents_cannot_responses_input_tokens` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/agents` | `agents_definitions_create` | — | enabled, scopes, audit; common limits only |
-| `agents` | DELETE | `/v1/agents/{agent_id}` | `agents_definitions_delete` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/{agent_id}` | `agents_definitions_get` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents` | `agents_definitions_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/agents/{agent_id}` | `agents_definitions_update` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/agents/environments/{environment_id}/files` | `agents_environment_files_create` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/environments/{environment_id}/files` | `agents_environment_files_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/agents/environments/templates` | `agents_environment_templates_create` | — | enabled, scopes, audit; common limits only |
-| `agents` | DELETE | `/v1/agents/environments/templates/{environment_template_id}` | `agents_environment_templates_delete` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/environments/templates/{environment_template_id}` | `agents_environment_templates_get` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/environments/templates` | `agents_environment_templates_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/agents/environments/templates/{environment_template_id}` | `agents_environment_templates_update` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/agents/environments` | `agents_environments_create` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/environments/{environment_id}` | `agents_environments_get` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/environments` | `agents_environments_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/files` | `agents_files_create` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/models/{model}` | `agents_models_get` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/models` | `agents_models_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/responses/{response_id}/cancel` | `agents_responses_cancel` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/responses/compact` | `agents_responses_compact` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/responses` | `agents_responses_connect` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/responses` | `agents_responses_create` | — | enabled, scopes, audit; common limits only |
-| `agents` | DELETE | `/v1/responses/{response_id}` | `agents_responses_delete` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/responses/{response_id}` | `agents_responses_get` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/responses/{response_id}/input_items` | `agents_responses_input_items` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/runtimes` | `agents_runtimes_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/agents/sessions` | `agents_sessions_create` | — | enabled, scopes, audit; common limits only |
-| `agents` | DELETE | `/v1/agents/sessions/{id}` | `agents_sessions_delete` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/agents/sessions/{id}/events` | `agents_sessions_events_create` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}/events` | `agents_sessions_events_stream` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}` | `agents_sessions_get` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}/items` | `agents_sessions_items_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions` | `agents_sessions_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}/turns/{turn_id}` | `agents_sessions_turns_get` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}/turns/{turn_id}/items` | `agents_sessions_turns_items_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}/turns` | `agents_sessions_turns_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/agents/sessions/{id}` | `agents_sessions_update` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}` | `agents_subagents_get` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/items` | `agents_subagents_items_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}/subagents` | `agents_subagents_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns/{turn_id}` | `agents_subagents_turns_get` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns/{turn_id}/items` | `agents_subagents_turns_items_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns` | `agents_subagents_turns_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/agents/sessions/{id}/traces` | `agents_traces_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/vaults/{vault_id}/credentials` | `agents_vault_credentials_create` | — | enabled, scopes, audit; common limits only |
-| `agents` | DELETE | `/v1/vaults/{vault_id}/credentials/{credential_id}` | `agents_vault_credentials_delete` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/vaults/{vault_id}/credentials/{credential_id}` | `agents_vault_credentials_get` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/vaults/{vault_id}/credentials` | `agents_vault_credentials_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/vaults/{vault_id}/credentials/{credential_id}` | `agents_vault_credentials_update` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/vaults` | `agents_vaults_create` | — | enabled, scopes, audit; common limits only |
-| `agents` | DELETE | `/v1/vaults/{vault_id}` | `agents_vaults_delete` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/vaults/{vault_id}` | `agents_vaults_get` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/vaults` | `agents_vaults_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/vaults/{vault_id}` | `agents_vaults_update` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/webhook_event_types` | `agents_webhook_event_types` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/webhook_endpoints` | `agents_webhooks_create` | — | enabled, scopes, audit; common limits only |
-| `agents` | DELETE | `/v1/webhook_endpoints/{webhook_endpoint_id}` | `agents_webhooks_delete` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/webhook_endpoints/{webhook_endpoint_id}` | `agents_webhooks_get` | — | enabled, scopes, audit; common limits only |
-| `agents` | GET | `/v1/webhook_endpoints` | `agents_webhooks_list` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}/rotate_secret` | `agents_webhooks_rotate_secret` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}/test` | `agents_webhooks_test` | — | enabled, scopes, audit; common limits only |
-| `agents` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}` | `agents_webhooks_update` | — | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/artifacts/{artifact_id}/content` | `agents_artifacts_content` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | DELETE | `/v1/agents/sessions/{id}/artifacts/{artifact_id}` | `agents_artifacts_delete` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/artifacts/{artifact_id}` | `agents_artifacts_get` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/artifacts` | `agents_artifacts_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/environments/{environment_id}/connect` | `agents_cannot_executor_channel` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/agents/environments/{environment_id}/register` | `agents_cannot_executor_registration` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | DELETE | `/v1/models/{model}` | `agents_cannot_models_delete` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/responses/input_tokens` | `agents_cannot_responses_input_tokens` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/agents` | `agents_definitions_create` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | DELETE | `/v1/agents/{agent_id}` | `agents_definitions_delete` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/{agent_id}` | `agents_definitions_get` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents` | `agents_definitions_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/agents/{agent_id}` | `agents_definitions_update` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/agents/environments/{environment_id}/files` | `agents_environment_files_create` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/environments/{environment_id}/files` | `agents_environment_files_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/agents/environments/templates` | `agents_environment_templates_create` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | DELETE | `/v1/agents/environments/templates/{environment_template_id}` | `agents_environment_templates_delete` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/environments/templates/{environment_template_id}` | `agents_environment_templates_get` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/environments/templates` | `agents_environment_templates_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/agents/environments/templates/{environment_template_id}` | `agents_environment_templates_update` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/agents/environments` | `agents_environments_create` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/environments/{environment_id}` | `agents_environments_get` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/environments` | `agents_environments_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/files` | `agents_files_create` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/models/{model}` | `agents_models_get` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/models` | `agents_models_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/responses/{response_id}/cancel` | `agents_responses_cancel` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/responses/compact` | `agents_responses_compact` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/responses` | `agents_responses_connect` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/responses` | `agents_responses_create` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | DELETE | `/v1/responses/{response_id}` | `agents_responses_delete` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/responses/{response_id}` | `agents_responses_get` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/responses/{response_id}/input_items` | `agents_responses_input_items` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/runtimes` | `agents_runtimes_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/agents/sessions` | `agents_sessions_create` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | DELETE | `/v1/agents/sessions/{id}` | `agents_sessions_delete` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/agents/sessions/{id}/events` | `agents_sessions_events_create` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/events` | `agents_sessions_events_stream` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}` | `agents_sessions_get` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/items` | `agents_sessions_items_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions` | `agents_sessions_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/turns/{turn_id}` | `agents_sessions_turns_get` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/turns/{turn_id}/items` | `agents_sessions_turns_items_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/turns` | `agents_sessions_turns_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/agents/sessions/{id}` | `agents_sessions_update` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}` | `agents_subagents_get` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/items` | `agents_subagents_items_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/subagents` | `agents_subagents_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns/{turn_id}` | `agents_subagents_turns_get` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns/{turn_id}/items` | `agents_subagents_turns_items_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/subagents/{subagent_id}/turns` | `agents_subagents_turns_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/agents/sessions/{id}/traces` | `agents_traces_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/vaults/{vault_id}/credentials` | `agents_vault_credentials_create` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | DELETE | `/v1/vaults/{vault_id}/credentials/{credential_id}` | `agents_vault_credentials_delete` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/vaults/{vault_id}/credentials/{credential_id}` | `agents_vault_credentials_get` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/vaults/{vault_id}/credentials` | `agents_vault_credentials_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/vaults/{vault_id}/credentials/{credential_id}` | `agents_vault_credentials_update` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/vaults` | `agents_vaults_create` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | DELETE | `/v1/vaults/{vault_id}` | `agents_vaults_delete` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/vaults/{vault_id}` | `agents_vaults_get` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/vaults` | `agents_vaults_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/vaults/{vault_id}` | `agents_vaults_update` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/webhook_event_types` | `agents_webhook_event_types` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/webhook_endpoints` | `agents_webhooks_create` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | DELETE | `/v1/webhook_endpoints/{webhook_endpoint_id}` | `agents_webhooks_delete` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/webhook_endpoints/{webhook_endpoint_id}` | `agents_webhooks_get` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | GET | `/v1/webhook_endpoints` | `agents_webhooks_list` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}/rotate_secret` | `agents_webhooks_rotate_secret` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}/test` | `agents_webhooks_test` | agents:use | enabled, scopes, audit; common limits only |
+| `agents` | POST | `/v1/webhook_endpoints/{webhook_endpoint_id}` | `agents_webhooks_update` | agents:use | enabled, scopes, audit; common limits only |
 | `browser` | POST | `/browser/click` | `browser_click` | browser:use | common limits only |
 | `browser` | GET | `/browser/console` | `browser_console` | browser:use | common limits only |
 | `browser` | GET | `/browser/content` | `browser_content` | browser:use | common limits only |

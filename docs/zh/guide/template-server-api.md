@@ -569,7 +569,7 @@ screenshot 的 `selector` 匹配不到时是 `404`。策略可以限制 navigate
 
 ### `agents`（默认关闭）
 
-用 `EBX_SERVER_ENABLED_GROUPS=agents` 打开（或在 `serve()` 之前调用 `default_table().enable_group(CapabilityGroup.AGENTS)`）。这一批只托管 Codex CLI（`codex`）和 Qwen Code（`qwen-code`，别名 `qwen`、`qwencode`）。其它适配器名称返回 `404` `not_found_error`，并带 `x-should-retry: false`。请求体和 `agents.default`（`EBX_AGENTS_DEFAULT`）都没有指定这两个适配器时，创建类调用返回 `400` `agents.adapter_required`。
+用 `EBX_SERVER_ENABLED_GROUPS=agents` 打开（或在 `serve()` 之前调用 `default_table().enable_group(CapabilityGroup.AGENTS)`）。目前支持 Codex CLI（`codex`）和 Qwen Code（`qwen-code`，别名 `qwen`、`qwencode`）。目前未支持的适配器名称返回 `404` `not_found_error`，并带 `x-should-retry: false`。请求没有点名适配器，且没有 `agents.default`（`EBX_AGENTS_DEFAULT`）时，创建类调用使用顺序里的第一个：`codex`。每个 Agents 路由都可以单独放行，端点 id 见[细粒度能力](fine-grained-capabilities.md)，默认 scope 是 `agents:use`。
 
 这里每个路由都是本地操作。每个响应都带 `X-Easy-Sandbox-Local: 1`，每个对象都带 `x_easy_sandbox` 标记（`local`、`compute`、`differences`）。服务端做不到的字段返回带 `param` 的 `400`，绝不先接受再忽略。对象归调用者所有；别人的 id 与不存在的 id 得到相同的应答。
 
@@ -597,7 +597,7 @@ screenshot 的 `selector` 匹配不到时是 `404`。策略可以限制 navigate
 
 没有本地能力，返回 `404` `not_found_error`（`agents.not_implemented_locally`，`x-should-retry: false`）：`POST /v1/responses/input_tokens`、`DELETE /v1/models/{id}`，以及执行器注册和通道。
 
-对应的 CLI 在会话真正用到时才安装。每条拒绝规则、环境变量和 difference 代码见[托管 Agent](hosted-agents.md)。最佳实践（只托管 Codex 和 Qwen、本地响应头、Claude / Cursor / Qoder 的 404，以及 `input_tokens` 的 404）见[最佳实践](hosted-agents.md#最佳实践)。
+对应的 CLI 在会话真正用到时才安装。每条拒绝规则、环境变量和 difference 代码见[托管 Agent](hosted-agents.md)。目前支持的适配器、本地响应头，以及未支持名称和 `input_tokens` 的 404，见[最佳实践](hosted-agents.md#最佳实践)。
 
 ---
 

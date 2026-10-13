@@ -31,7 +31,7 @@ python -m easy_sandbox.server serve --port 9000
     "message": "说明",
     "type": "invalid_request_error",
     "param": "字段名或 null",
-    "code": "agents.adapter_required"
+    "code": "agents.not_implemented_locally"
   }
 }
 ```
@@ -58,7 +58,7 @@ python -m easy_sandbox.server serve --port 9000
 
 会话对象 `agent.session` 的主要字段：`id`、`object`、`agent`（`id`、`name`、`model`、`instructions`、`tools`、`multi_agent.enabled`、`reasoning`、`service_tier`、`text`）、`created_at`、`environment`（`type=self_hosted`、`id`、`workspace_directory`）、`status`、`metadata`、`usage`、`vault_ids`、`error`、`required_actions`、`last_active_at`、`x_easy_sandbox`。
 
-适配器选择顺序：请求头 `X-EBX-Adapter`，或正文 `adapter` / `runtime`，或 `agent.model` / `model` 恰好是 `codex`、`openai-codex`、`qwen-code`、`qwen`、`qwen_code`、`qwencode`。`gpt-5` 这种模型 id 会传给 CLI，不用于选择适配器。都没有时 400 `agents.adapter_required`。其他名字 404 `agents.not_implemented_locally`。
+适配器选择顺序：请求头 `X-EBX-Adapter`，或正文 `adapter` / `runtime`，或 `agent.model` / `model` 恰好是 `codex`、`openai-codex`、`qwen-code`、`qwen`、`qwen_code`、`qwencode`。`gpt-5` 这种模型 id 会传给被选中的 CLI，不用于选择适配器。都没有时用产品顺序里的第一个：`codex`。`EBX_AGENTS_DEFAULT` 或 `EBX_AGENTS_CONFIG` 里的 `default` / `agents.default` 可以改这个默认。`GET /v1/agents/runtimes?order=asc` 按 `codex`、`qwen-code` 列出。列表默认 `order=desc`。`default: true` 标出当前默认，不看数组下标。其他名字 404 `agents.not_implemented_locally`。每个路由都可以单独放行，端点 id 的默认 scope 是 `agents:use`，见[细粒度能力](../guide/fine-grained-capabilities.md)。
 
 CLI 不在基础镜像里。要用时再装：
 
@@ -140,6 +140,7 @@ SSE。`Accept: text/event-stream`。查询 `after`：不带则从现在开始跟
 | 字段 | 说明 |
 |---|---|
 | `id` / `name` | `codex` 或 `qwen-code` |
+| `default` | 请求没点名适配器时会不会用这一条。产品顺序是 `codex` 然后 `qwen-code`。`order=asc` 才按这个顺序排。默认 `order=desc` |
 | `object` | `agent.runtime` |
 | `aliases` | Codex：`openai-codex`。Qwen：`qwen`、`qwen_code`、`qwencode` |
 | `binary` | `codex` 或 `qwen` |
@@ -338,7 +339,7 @@ Webhook。签名密钥 `whsec_...` 只在创建和轮换时返回一次。
 
 | 案例 | 覆盖的接口 | 说明 |
 |---|---|---|
-| `examples/agents/complete_case.py` | `POST /v1/agents/sessions`、`POST .../events`、`GET .../items`、`GET /v1/agents/runtimes`，以及 400 `agents.adapter_required`、404 `claude-code` | 事件响应是空 body 的 202。示例里的助手文本来自 `PATH` 上的本地程序，不读取模型密钥 |
+| `examples/agents/complete_case.py` | `POST /v1/agents/sessions`、`POST .../events`、`GET .../items`、`GET /v1/agents/runtimes`。未点名适配器时 `agent.id` 为 `codex`。`claude-code` 为 404 | 事件响应是空 body 的 202。示例里的助手文本来自 `PATH` 上的本地程序，不读取模型密钥 |
 | `examples/agents/hosted_codex.py`、`hosted_qwen.py` | 同一组会话接口，对着已经启动的服务 | 与上面相同的 200 / 202 / 条目文本 |
 | `examples/scenarios/agent_loop_local.py` | 不是 Agents API。是沙箱命令：health、shell、读文件、SIGTERM | stdout `'4\n'`，读回 `answer=4`，返回 -15 |
 

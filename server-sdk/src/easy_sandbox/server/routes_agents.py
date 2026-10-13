@@ -8,7 +8,10 @@ from :mod:`easy_sandbox.server.agents.wire_sessions`; the other operations live 
 the ``agents.api_*`` modules.
 
 This slice serves ``codex`` and ``qwen-code`` (aliases ``qwen``, ``qwencode``,
-``qwen_code``). Any other adapter name is ``404 not_found_error``.
+``qwen_code``). Any other adapter name is ``404 not_found_error``. A request
+that does not name one uses the first entry of
+:data:`~easy_sandbox.server.agents.api_common.DEFAULT_AGENT_ORDER` (``codex``),
+unless ``EBX_AGENTS_DEFAULT`` or ``EBX_AGENTS_CONFIG`` names another.
 
 Everything here is a local operation. Every response carries
 ``X-Easy-Sandbox-Local: 1`` and every object an ``x_easy_sandbox`` label (see
@@ -24,6 +27,15 @@ import json
 from typing import TYPE_CHECKING, Any
 
 from .agents.api_common import (
+    DEFAULT_AGENT_ORDER,
+    default_runtime_name,
+    get_agent_runtime,
+    label,
+    local,
+    reset_agent_runtime,
+    select_or_response,
+)
+from .agents.api_common import (
     body_of as _body,
 )
 from .agents.api_common import (
@@ -34,13 +46,6 @@ from .agents.api_common import (
 )
 from .agents.api_common import (
     from_agent_exc as _from_agent_exc,
-)
-from .agents.api_common import (
-    get_agent_runtime,
-    label,
-    local,
-    reset_agent_runtime,
-    select_or_response,
 )
 from .agents.api_common import (
     header as _header,
@@ -494,13 +499,18 @@ def handle_turn_items_list(request: ServerRequest) -> ServerResponse:
 
 
 def handle_runtimes_list(request: ServerRequest) -> ServerResponse:
-    """``GET /v1/agents/runtimes`` — codex and qwen-code only."""
+    """``GET /v1/agents/runtimes`` — codex, then qwen-code.
+
+    ``default`` is true for the runtime a request uses when it does not name one.
+    """
     runtime = get_agent_runtime()
+    chosen = default_runtime_name()
     data: list[dict[str, Any]] = []
-    for name in ("codex", "qwen-code"):
+    for name in DEFAULT_AGENT_ORDER:
         info = dict(runtime.runtime_info(name))
         info["id"] = info["name"]
         info["object"] = "agent.runtime"
+        info["default"] = info["name"] == chosen
         info["x_easy_sandbox"] = label(compute="none", installed=bool(info.get("installed")))
         data.append(info)
     return _page(data, request.query)

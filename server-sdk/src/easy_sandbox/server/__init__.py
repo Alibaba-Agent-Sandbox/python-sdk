@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from ._version import __version__
 from .app import SandboxServer, start
+from .policy import PolicyDenied, ServerPolicy
 from .registry import CommandArg, CommandRegistry, RegisteredCommand, default_registry
 from .router import CapabilityGroup, RouteInfo, RouteTable, default_table
 from .routes import (
@@ -40,6 +41,8 @@ __all__ = [
     "__version__",
     "SandboxServer",
     "start",
+    "ServerPolicy",
+    "PolicyDenied",
     "enable_builtin",
     "disable_builtin",
     "is_builtin_enabled",

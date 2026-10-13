@@ -28,6 +28,51 @@ Agents 路由保持关闭，直到进程以 `EBX_SERVER_ENABLED_GROUPS=agents` �
 
 目前支持 Codex 和 Qwen Code。检查清单、本地响应头和 404 见[托管代理 — 最佳实践](hosted-agents.md#最佳实践)。
 
+## 默认一个 agent
+
+镜像里只安装要调用的那一个 CLI。Codex 和 Qwen Code 都装进去会把镜像做大。
+
+服务端的顺序是 `codex`，然后 `qwen-code`。请求没有点名适配器时，用第一个。`GET /v1/agents/runtimes?order=asc` 按这个顺序返回。列表默认的 `order` 是 `desc`。`default: true` 标出当前默认，不看数组下标。
+
+```bash
+npm install -g @openai/codex
+```
+
+要用 Qwen Code，在请求里写 `adapter`、`runtime` 或请求头 `X-EBX-Adapter`，或把 `model` 写成 `qwen-code`（别名 `qwen`、`qwencode`）。`gpt-5` 这种模型 id 会传给被选中的 CLI，不会用来换适配器。
+
+把默认从第一个换成另一个：
+
+```bash
+export EBX_AGENTS_DEFAULT=qwen-code
+```
+
+`EBX_AGENTS_CONFIG` 指向的 JSON 里，顶层 `default` 或 `agents.default` 作用相同。`claude-code`、Cursor、Qoder 仍然是 404。
+
+## 按接口打开 Agents 路由
+
+`groups.agents: true` 只是这组路由的门。和 `upload`、`shell` 一样，每个 Agents 路由有自己的端点 id，默认 scope 是 `agents:use`。只打开创建会话：
+
+```python
+from easy_sandbox.server import SandboxServer, ServerPolicy, default_table
+
+policy = ServerPolicy.only("agents_sessions_create").with_options(groups={"agents": True})
+server = SandboxServer(route_table=default_table(), policy=policy)
+```
+
+同一份策略写成 YAML：
+
+```yaml
+groups:
+  agents: true
+endpoints:
+  "*":
+    enabled: false
+  agents_sessions_create:
+    enabled: true
+```
+
+这些端点不接受 `paths` 和专用 `params`。写上会在加载策略时失败。完整端点 id 见[细粒度能力](fine-grained-capabilities.md)。
+
 ## 密钥不会被回显
 
 `GET /env` 会略过名称里含有 `TOKEN`、`SECRET`、`KEY`、`PASSWORD` 或 `CREDENTIAL` 的变量。加载了策略时，还会略过 `EBX_SERVER_TOKEN`、`EBX_SERVER_POLICY`、`EBX_SERVER_POLICY_FILE`、每一个 `token_env` 名称，以及每一个以 `EBX_SERVER_` 开头的名称。

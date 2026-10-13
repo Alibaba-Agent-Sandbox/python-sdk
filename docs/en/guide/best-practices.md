@@ -28,6 +28,51 @@ The Agents routes stay off until the process is started with `EBX_SERVER_ENABLED
 
 Codex and Qwen Code are supported today. Checklist, the local header, and the 404s: [Hosted agents — Best practices](hosted-agents.md#best-practices).
 
+## One agent by default
+
+Install only the CLI you are going to call. Installing both Codex and Qwen Code makes the image large.
+
+The server's order is `codex`, then `qwen-code`. A request that does not name an adapter uses the first. `GET /v1/agents/runtimes?order=asc` returns them in that order. The list's default `order` is `desc`. `default: true` marks the one in effect. It does not follow the array index.
+
+```bash
+npm install -g @openai/codex
+```
+
+To use Qwen Code, send `adapter`, `runtime`, or the `X-EBX-Adapter` header, or set `model` to `qwen-code` (aliases `qwen` and `qwencode`). A model id such as `gpt-5` is passed to the selected CLI. It does not switch the adapter.
+
+Move the default off the first entry:
+
+```bash
+export EBX_AGENTS_DEFAULT=qwen-code
+```
+
+A JSON file named by `EBX_AGENTS_CONFIG` does the same with a top-level `default` or `agents.default`. `claude-code`, Cursor, and Qoder stay 404.
+
+## Open Agents routes one endpoint at a time
+
+`groups.agents: true` is only the gate for this group. Each Agents route has its own endpoint id, the same way `upload` and `shell` do. The default scope is `agents:use`. This opens session create and nothing else:
+
+```python
+from easy_sandbox.server import SandboxServer, ServerPolicy, default_table
+
+policy = ServerPolicy.only("agents_sessions_create").with_options(groups={"agents": True})
+server = SandboxServer(route_table=default_table(), policy=policy)
+```
+
+The same policy in YAML:
+
+```yaml
+groups:
+  agents: true
+endpoints:
+  "*":
+    enabled: false
+  agents_sessions_create:
+    enabled: true
+```
+
+These endpoints do not accept `paths` or specialised `params`. A policy that sets either fails to load. The full endpoint id list is in [Fine-grained capabilities](fine-grained-capabilities.md).
+
 ## Secrets are not echoed
 
 `GET /env` omits a variable whose name contains `TOKEN`, `SECRET`, `KEY`, `PASSWORD`, or `CREDENTIAL`. When a policy is loaded it also omits `EBX_SERVER_TOKEN`, `EBX_SERVER_POLICY`, `EBX_SERVER_POLICY_FILE`, every `token_env` name, and every name that starts with `EBX_SERVER_`.

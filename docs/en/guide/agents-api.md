@@ -8,7 +8,7 @@ Field-by-field refusals are in [Hosted agents](hosted-agents.md). This page is t
 
 ## Install a CLI
 
-Neither CLI is installed by default. Installing both into the base image makes the image large.
+Install one CLI. Installing both into the base image makes the image large. When the request does not name an adapter, the server uses the first in the product order: `codex`. Name Qwen Code in the request, or set `EBX_AGENTS_DEFAULT=qwen-code`, to use the other one.
 
 ```bash
 npm install -g @openai/codex          # binary name: codex
@@ -38,12 +38,23 @@ python examples/agents/complete_case.py
 
 The shapes below are what the server returns. The server assigns the session id.
 
-A model id such as `gpt-5` does not select a CLI:
+When the request does not name an adapter, the server uses the first in the product order (`codex`). A model id such as `gpt-5` is passed to that CLI. It does not switch the adapter:
 
 ```text
-POST /v1/agents/sessions  400
+POST /v1/agents/sessions  {"agent":{"model":"gpt-5"}}  200
+agent.id: codex
+agent.model: gpt-5
 X-Easy-Sandbox-Local: 1
-code: agents.adapter_required
+```
+
+`GET /v1/agents/runtimes` uses the same paging as the other lists, so the default `order` is `desc`. Pass `order=asc` to see the product order `codex`, then `qwen-code`. `default: true` marks the runtime used when the request does not name one. The flag does not follow the array index. With no config it is on `codex`. After `EBX_AGENTS_DEFAULT=qwen-code` it moves to `qwen-code`.
+
+Name the other one:
+
+```text
+POST /v1/agents/sessions  {"adapter":"qwen-code","agent":{"model":"gpt-5"}}  200
+agent.id: qwen-code
+agent.model: gpt-5
 ```
 
 An adapter name that is not supported today, for example `claude-code`:

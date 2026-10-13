@@ -8,7 +8,7 @@
 
 ## 安装 CLI
 
-默认不装。两个都装进基础镜像会把镜像做大。
+默认只装一个。两个都装进基础镜像会把镜像做大。没在请求里点名时，服务端用产品顺序里的第一个：`codex`。要用 Qwen Code，在请求里写出来，或用 `EBX_AGENTS_DEFAULT=qwen-code` 把默认换成它。
 
 ```bash
 npm install -g @openai/codex          # 二进制名 codex
@@ -38,12 +38,23 @@ python examples/agents/complete_case.py
 
 下面是响应形状。会话 id 由服务端生成。
 
-未给出适配器名，模型 id `gpt-5` 不会用来选 CLI：
+未给出适配器名时，用顺序里的第一个（`codex`）。模型 id `gpt-5` 传给这个 CLI，不用来换适配器：
 
 ```text
-POST /v1/agents/sessions  400
+POST /v1/agents/sessions  {"agent":{"model":"gpt-5"}}  200
+agent.id: codex
+agent.model: gpt-5
 X-Easy-Sandbox-Local: 1
-code: agents.adapter_required
+```
+
+`GET /v1/agents/runtimes` 和其他列表一样，默认 `order=desc`。加上 `order=asc` 才是产品顺序 `codex`、`qwen-code`。`default: true` 标出没点名时会用的那一个，不看它在数组里的位置。没有配置时标在 `codex` 上。`EBX_AGENTS_DEFAULT=qwen-code` 之后改到 `qwen-code`。
+
+要点名另一个：
+
+```text
+POST /v1/agents/sessions  {"adapter":"qwen-code","agent":{"model":"gpt-5"}}  200
+agent.id: qwen-code
+agent.model: gpt-5
 ```
 
 目前未支持的适配器名称，例如 `claude-code`：

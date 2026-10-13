@@ -18,6 +18,8 @@ python -m easy_sandbox.server
 * 目前支持 **Codex** 和 **Qwen Code**。正文里写出目前未支持的适配器名称，是 HTTP 404 `not_found_error`，并带 `x-should-retry: false`。
 * 把每个响应都当成本地操作。读取响应头 `X-Easy-Sandbox-Local: 1`（错误响应也有）。`x_easy_sandbox.compute` 是 `local_process`、`local_state` 或 `none`。
 * 不要调用 `POST /v1/responses/input_tokens`。它是 404 `agents.not_implemented_locally`，并带 `x-should-retry: false`。没有与 CLI 将要调用的模型一致的分词器。
+* 镜像里只装一个 CLI。请求没点名时用顺序里的第一个（`codex`）。要用另一个，写 `adapter` / `runtime` / `X-EBX-Adapter`，或设置 `EBX_AGENTS_DEFAULT`。
+* 按端点 id 打开，不要整组放行。`groups.agents: true` 只是门。每个路由的默认 scope 是 `agents:use`。见[细粒度能力](fine-grained-capabilities.md)。
 * 在会话需要之前保持该组关闭。用 `EBX_SERVER_ENABLED_GROUPS=agents` 启动进程。
 * HTTP 客户端里不要放模型 API key。这些示例在设置了服务器令牌时，只发送那一个凭证。
 
@@ -62,8 +64,9 @@ python -m easy_sandbox.server
 1. 请求头 `X-EBX-Adapter`，或正文里的 `adapter` / `runtime`（顶层或 `agent` 内）
 2. `agent.model` 或 `model`，且这个字符串是上面的名字之一（`gpt-5-codex` 这种真实模型 id 会传给 CLI，不会用来选适配器）
 3. 配置 `agents.default`：环境变量 `EBX_AGENTS_DEFAULT`，或 `EBX_AGENTS_CONFIG` 指向的 JSON 里的 `default` / `agents.default`
+4. 都没有时，用产品顺序里的第一个：`codex`，然后才是 `qwen-code`
 
-都没有指定适配器时，响应是 **400** `agents.adapter_required`。
+`GET /v1/agents/runtimes` 默认 `order=desc`。`order=asc` 才是上面的产品顺序。`default: true` 标出第 4 步选中的那一个，不看数组下标。真实模型 id（`gpt-5`）传给被选中的 CLI，不改变适配器。要换一个，在请求里点名。
 
 ## 会话、事件、条目、回合
 

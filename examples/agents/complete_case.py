@@ -5,8 +5,9 @@ This is not ``sb.agent.*``. That name is a different design (sugar over
 ``commands.run()``). This script talks to the sandbox HTTP Agents API.
 
 The image does not contain the CLIs. This case writes two local programs
-named ``codex`` and ``qwen`` and puts them on ``PATH``. A real deployment
-installs only the one it calls:
+named ``codex`` and ``qwen`` and puts them on ``PATH`` so both can be
+demonstrated. A real deployment installs only the one it calls. When the
+request does not name an adapter, the server uses the first, ``codex``:
 
     npm install -g @openai/codex
     npm install -g @qwen-code/qwen-code
@@ -184,9 +185,16 @@ def main() -> int:
     print(f"server {base}")
     print("CLIs on PATH: codex, qwen (local programs; no model key)")
 
-    status, missing, headers = call(base, "POST", "/v1/agents/sessions", {"agent": {"model": "gpt-5"}})
-    _show("POST session without an adapter name", status, missing, headers)
-    _expect(status, 400, "adapter required")
+    status, created_default, headers = call(
+        base, "POST", "/v1/agents/sessions", {"agent": {"model": "gpt-5"}}
+    )
+    _show("POST session without an adapter name", status, created_default, headers)
+    _expect(status, 200, "default agent is the first")
+    agent = created_default.get("agent") if isinstance(created_default, dict) else None
+    if not isinstance(agent, dict) or agent.get("id") != "codex":
+        sys.exit(f"expected default agent codex, got {created_default}")
+    if created_default.get("agent", {}).get("model") != "gpt-5":
+        sys.exit(f"expected model pass-through gpt-5, got {created_default}")
 
     status, refused, headers = call(
         base,

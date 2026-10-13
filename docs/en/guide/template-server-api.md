@@ -569,7 +569,7 @@ All of these need Playwright. If `import playwright` fails the handler returns `
 
 ### `agents` (off until enabled)
 
-Turn the group on with `EBX_SERVER_ENABLED_GROUPS=agents` (or `default_table().enable_group(CapabilityGroup.AGENTS)` before `serve()`). This slice hosts the Codex CLI (`codex`) and Qwen Code (`qwen-code`, also `qwen` and `qwencode`). Any other adapter name is `404` `not_found_error` with `x-should-retry: false`. If the body and `agents.default` (`EBX_AGENTS_DEFAULT`) name neither adapter, create calls are `400` `agents.adapter_required`.
+Turn the group on with `EBX_SERVER_ENABLED_GROUPS=agents` (or `default_table().enable_group(CapabilityGroup.AGENTS)` before `serve()`). Codex CLI (`codex`) and Qwen Code (`qwen-code`, also `qwen` and `qwencode`) are supported today. An adapter name that is not supported yet is `404` `not_found_error` with `x-should-retry: false`. When the body and `agents.default` (`EBX_AGENTS_DEFAULT`) do not name an adapter, create calls use the first in the product order: `codex`. Each Agents route can be enabled on its own. Endpoint ids are in [Fine-grained capabilities](fine-grained-capabilities.md). The default scope is `agents:use`.
 
 Every route here is a local operation. Every response carries `X-Easy-Sandbox-Local: 1` and every object an `x_easy_sandbox` label (`local`, `compute`, `differences`). A field the server cannot honor is `400` with `param`, never accepted and ignored. Objects belong to the caller; a foreign id answers like an unknown id.
 
@@ -597,7 +597,7 @@ Every route here is a local operation. Every response carries `X-Easy-Sandbox-Lo
 
 No local capability, `404` `not_found_error` (`agents.not_implemented_locally`, `x-should-retry: false`): `POST /v1/responses/input_tokens`, `DELETE /v1/models/{id}`, and executor registration and channel.
 
-The CLIs are not installed until a session uses them. See [Hosted agents](hosted-agents.md) for every refusal, environment variable and difference code. Best practices (Codex and Qwen only, the local header, 404 for Claude, Cursor, and Qoder, and 404 for `input_tokens`) are in [Hosted agents — Best practices](hosted-agents.md#best-practices).
+The CLIs are not installed until a session uses them. See [Hosted agents](hosted-agents.md) for every refusal, environment variable and difference code. Supported adapters, the local header, and the 404s for names that are not supported yet and for `input_tokens` are in [Hosted agents — Best practices](hosted-agents.md#best-practices).
 
 ---
 
