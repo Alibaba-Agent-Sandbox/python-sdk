@@ -325,7 +325,7 @@ A provider declares which **features** it implements. The SDK/CLI check the feat
 | `pty` | interactive terminal | `get_terminal` | `connect --pty` |
 | `files.rw` | read/write/list/stat/mkdir/remove/move | `files.*` | `files`, `upload`, `download` |
 | `files.watch` | watch directories | `files.watch` | — |
-| `files.transfer` | signed upload/download URLs | `get_upload_url/get_download_url` | — |
+| `files.transfer` | signed upload/download URLs | `upload_url/download_url` (this data plane raises `FileOperationError`) | — |
 | `code.interpret` | stateful code contexts | `run_code`, `code.*` | `sandbox code` |
 | `templates.read` | list/get templates | `Template*` read | `template list/info` |
 | `templates.build` | build/deploy/delete templates (image build + register) | — (CLI only) | `template build/deploy/delete`, `deploy`, `install` |

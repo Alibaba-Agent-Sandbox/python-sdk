@@ -78,7 +78,7 @@ Agent Sandbox sends only signal 15 (SIGTERM) and signal 9 (SIGKILL). OpenSandbox
 | Search | `abx sandbox files search` | — | — | — | `osb file search` | `files.search` |
 | Exists | — | `files.exists` | — | `files.exists` | — | a failed read or stat means it is absent |
 | Watch | — | `files.watch` | — | `files.watch_dir` | — | — |
-| Signed file URL | — | The same method names raise `FileOperationError`. This envd requires `X-Access-Token` | — | `get_upload_url`, `get_download_url` | — | `get_endpoint` resolves a port, not a signed URL for one file |
+| Signed file URL | — | `upload_url` / `download_url` raise `FileOperationError`. `files.upload_url` still requires `X-Access-Token` | — | `upload_url`, `download_url` | — | `get_endpoint` resolves a port, not a signed URL for one file |
 
 E2B file operations live on the SDK. The CLI reaches files through `e2b sandbox exec`. OpenSandbox `file download` replaces the local destination only after the whole download succeeds.
 

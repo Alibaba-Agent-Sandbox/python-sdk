@@ -327,7 +327,7 @@ sandbox_domain   = "{region}.e2b.fc.aliyuncs.com"
 | `pty` | 交互式终端 | `get_terminal` | `connect --pty` |
 | `files.rw` | 读 / 写 / 列出 / stat / mkdir / 删除 / 移动 | `files.*` | `files`、`upload`、`download` |
 | `files.watch` | 监听目录 | `files.watch` | — |
-| `files.transfer` | 带签名的上传 / 下载 URL | `get_upload_url/get_download_url` | — |
+| `files.transfer` | 带签名的上传 / 下载 URL | `upload_url/download_url`（当前数据面抛出 `FileOperationError`） | — |
 | `code.interpret` | 有状态的代码上下文 | `run_code`、`code.*` | `sandbox code` |
 | `templates.read` | 列出 / 查看模板 | `Template*` 读取 | `template list/info` |
 | `templates.build` | 构建 / 部署 / 删除模板（镜像构建 + 注册） | —（仅 CLI） | `template build/deploy/delete`、`deploy`、`install` |

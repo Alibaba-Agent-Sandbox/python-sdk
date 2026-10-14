@@ -287,8 +287,8 @@ sandbox.files  # FilesModule 实例
 | `move()` | `async def move(source, destination) -> None` | 移动/重命名 |
 | `rename()` | `async def rename(old_path, new_path) -> None` | （已弃用）同 `move()` |
 | `get_info()` | `async def get_info(path) -> FileInfo` | 获取文件信息 |
-| `upload_url()` | `async def upload_url(path) -> str` | 获取上传 URL（兼容用） |
-| `download_url()` | `async def download_url(path) -> str` | 获取下载 URL（兼容用） |
+| `upload_url()` | `async def upload_url(path) -> str` | envd `/files` 地址。请求必须带 `X-Access-Token`，不是签名 URL |
+| `download_url()` | `async def download_url(path) -> str` | 同上 |
 
 逻辑上关联 `files` 能力（在 `template.yaml` 中声明；无运行时门控）。每个异步方法都有 `_sync` 后缀的同步版本。
 

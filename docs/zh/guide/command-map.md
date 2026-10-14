@@ -78,7 +78,7 @@ Agent Sandbox 只发送信号 15（SIGTERM）和 9（SIGKILL）。OpenSandbox �
 | 搜索 | `abx sandbox files search` | — | — | — | `osb file search` | `files.search` |
 | 是否存在 | — | `files.exists` | — | `files.exists` | — | 读或 stat 失败即不存在 |
 | 监听变化 | — | `files.watch` | — | `files.watch_dir` | — | — |
-| 签名文件 URL | — | 同名方法会抛出 `FileOperationError`。当前 envd 要求 `X-Access-Token` | — | `get_upload_url`、`get_download_url` | — | `get_endpoint` 解析的是端口，不是单个文件的签名 URL |
+| 签名文件 URL | — | `upload_url` / `download_url` 抛出 `FileOperationError`。`files.upload_url` 仍要 `X-Access-Token` | — | `upload_url`、`download_url` | — | `get_endpoint` 解析的是端口，不是单个文件的签名 URL |
 
 E2B 的文件操作在 SDK 里。命令行用 `e2b sandbox exec` 间接碰文件。OpenSandbox 的 `file download` 在整次下载成功之后才替换本机目标文件。
 

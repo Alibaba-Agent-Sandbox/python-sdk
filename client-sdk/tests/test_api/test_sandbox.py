@@ -559,6 +559,26 @@ class TestSandboxSignedFileUrls:
         with pytest.raises(FileOperationError, match="X-Access-Token"):
             await sandbox.get_download_url("/app/data.csv")
 
+    @pytest.mark.asyncio
+    async def test_e2b_upload_url_name_refuses_signature_only_url(
+        self,
+        sandbox: Sandbox,
+    ) -> None:
+        from agent_sandbox.models.errors import FileOperationError
+
+        with pytest.raises(FileOperationError, match="upload_url"):
+            await sandbox.upload_url("/app/data.csv")
+
+    @pytest.mark.asyncio
+    async def test_e2b_download_url_name_refuses_signature_only_url(
+        self,
+        sandbox: Sandbox,
+    ) -> None:
+        from agent_sandbox.models.errors import FileOperationError
+
+        with pytest.raises(FileOperationError, match="download_url"):
+            await sandbox.download_url("/app/data.csv")
+
 
 class TestSandboxTerminal:
     """Test terminal wiring."""

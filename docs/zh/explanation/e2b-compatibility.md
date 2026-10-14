@@ -79,11 +79,11 @@ from agent_sandbox.compat import Sandbox
 
 **原因**：将网络相关功能聚合到 `network` 子模块，与 `commands`、`files` 等子模块保持一致的组织结构。同时，`network` 方法需要 `ports` 能力门禁检查。
 
-### 3. `get_upload_url()` / `get_download_url()`
+### 3. `upload_url()` / `download_url()`
 
-**E2B**：返回带签名的 URL，浏览器可以直接上传或下载一个文件。
+**E2B**：`sandbox.upload_url(path)` / `sandbox.download_url(path)`（JavaScript 是 `uploadUrl` / `downloadUrl`）返回带 `signature` 的 URL。浏览器只凭这个 URL 就能上传或下载一个文件，不必带 `X-Access-Token`。
 
-**Agent Sandbox**：同名方法会抛出 `FileOperationError`。对线上极速版沙箱的请求表明，envd 忽略查询参数里的签名，并要求 `X-Access-Token`。不返回一个会得到 403 的 URL。
+**Agent Sandbox**：同名方法抛出 `FileOperationError`。当前数据面不认这套签名。不带 `X-Access-Token` 的 `/files` 请求是 403，正文为 `access denied: X-Access-Token header is required`，文件不会写入。带上该 header 才能传文件，`signature` 查询参数不起作用。`get_upload_url()` / `get_download_url()` 是别名。`files.upload_url()` 返回的地址仍然要求这个 header。
 
 ### 4. 能力门禁
 

@@ -22,8 +22,8 @@ Agent Sandbox uses E2B-style method names so that most E2B call sites port with 
 | `sandbox.files.write(path, d)` | `sandbox.files.write(path, d)` | ✅ Same call shape |
 | `sandbox.run_code(code)` | `sandbox.run_code(code)` | ✅ Same call shape |
 | `sandbox.get_host(port)` | `sandbox.network.get_host(port)` | ⚠️ Requires the network submodule |
-| `sandbox.get_upload_url(path)` | `sandbox.get_upload_url(path)` | The call fails. This data plane requires `X-Access-Token` and does not accept a signature-only URL |
-| `sandbox.get_download_url(path)` | `sandbox.get_download_url(path)` | Same as upload |
+| `sandbox.upload_url(path)` | `sandbox.upload_url(path)` | Raises `FileOperationError`. E2B returns a URL that works from the signature alone; this data plane does not accept that |
+| `sandbox.download_url(path)` | `sandbox.download_url(path)` | Same as upload |
 
 ---
 
@@ -102,9 +102,13 @@ url = sandbox.network.get_url(8080)
 
 > **Note**: `network.get_host()` and `network.get_url()` are local URL-computation helpers. They are logically associated with the `ports` capability but **do not** perform a runtime capability check — calls succeed regardless of the template's capability declaration.
 
-### 3. `get_upload_url()` / `get_download_url()`
+### 3. `upload_url()` / `download_url()`
 
-E2B's methods return a signed URL a browser can open. The current Express envd does not accept that request: without `X-Access-Token` it returns 403 `X-Access-Token header is required`. Agent Sandbox's methods of the same name raise `FileOperationError` instead of returning a URL that cannot be used.
+The E2B Python SDK methods are `sandbox.upload_url(path)` and `sandbox.download_url(path)` (JavaScript: `uploadUrl` / `downloadUrl`). They return `https://49983-<sandbox>.<domain>/files?path=...&signature=v1_...`. A browser POSTs that URL with a multipart field named `file`, or GETs it, and does not send `X-Access-Token`. The access token is not in the URL.
+
+The Express data plane does not offer this. A `/files` request without `X-Access-Token` is 403 `access denied: X-Access-Token header is required`, and the file is not written. The request succeeds only with that header. A `signature` query parameter does not authorize it. The URL returned by the official E2B SDK against this same data plane behaves the same way.
+
+Agent Sandbox `sandbox.upload_url()` / `sandbox.download_url()` therefore raise `FileOperationError` instead of returning a URL that cannot be used. `get_upload_url()` / `get_download_url()` are aliases and do the same. `files.upload_url()` / `files.download_url()` return an unsigned `/files` URL; the caller still has to send `X-Access-Token`.
 
 Move files with `files.write()`, `files.read()`, `files.upload()`, and `files.download()`. The SDK sends the access token on those calls.
 
@@ -156,7 +160,7 @@ sandbox = await Sandbox.create(
    - Recommended: `from agent_sandbox.api.sandbox import Sandbox`
 3. **Replace `Sandbox.kill(id)`**: Change to `Sandbox.kill_by_id(id)`
 4. **Replace `get_host()`**: Change to `sandbox.network.get_host()`
-5. **`get_upload_url` / `get_download_url`**: Use `files.write()` / `files.read()`. This data plane does not accept a signature-only URL
+5. **`upload_url` / `download_url`**: These calls raise `FileOperationError`. Use `files.write()` / `files.read()`. `files.upload_url()` is not a signed URL a browser can open on its own
 6. **Set environment variables**: `ABX_SANDBOX_API_KEY` for the sandbox API key. Each setting has one variable; see [Configuration](../reference/configuration.md).
 
 ---

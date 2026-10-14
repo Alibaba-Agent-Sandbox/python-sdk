@@ -79,11 +79,11 @@ The `compat` module is a migration helper. It re-exports the `Sandbox` class wit
 
 **Rationale**: Network-related functionality is consolidated under the `network` submodule, maintaining a consistent organizational structure with `commands`, `files`, and other submodules. Additionally, `network` methods require `ports` capability gating.
 
-### 3. `get_upload_url()` / `get_download_url()`
+### 3. `upload_url()` / `download_url()`
 
-**E2B**: Returns a signed URL so a browser can upload or download one file.
+**E2B**: `sandbox.upload_url(path)` / `sandbox.download_url(path)` (JavaScript: `uploadUrl` / `downloadUrl`) return a URL with a `signature`. A browser can upload or download one file with that URL alone, without `X-Access-Token`.
 
-**Agent Sandbox**: The methods of the same name raise `FileOperationError`. A request to a live Express sandbox showed that envd ignores a query signature and requires `X-Access-Token`. The SDK does not return a URL that would get 403.
+**Agent Sandbox**: The methods of the same name raise `FileOperationError`. This data plane does not honor that signature. A `/files` request without `X-Access-Token` is 403 `access denied: X-Access-Token header is required`, and the file is not written. The header is what authorizes the call; the `signature` query parameter does not. `get_upload_url()` / `get_download_url()` are aliases. The URL from `files.upload_url()` still requires the header.
 
 ### 4. Capability Gating
 

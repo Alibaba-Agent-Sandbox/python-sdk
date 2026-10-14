@@ -1147,13 +1147,23 @@ class Sandbox:
 
     # ---- E2B-shaped URL stubs ----
 
+    async def upload_url(self, path: str, **_kwargs: object) -> str:
+        """E2B ``Sandbox.upload_url``. This data plane does not accept a signature-only URL."""
+        _ = path
+        _reject_signature_only_file_url("upload_url")
+
+    async def download_url(self, path: str, **_kwargs: object) -> str:
+        """E2B ``Sandbox.download_url``. This data plane does not accept a signature-only URL."""
+        _ = path
+        _reject_signature_only_file_url("download_url")
+
     async def get_upload_url(self, path: str, **_kwargs: object) -> str:
-        """Not available: this data plane does not accept a signature-only upload URL."""
+        """Alias of :meth:`upload_url`."""
         _ = path
         _reject_signature_only_file_url("get_upload_url")
 
     async def get_download_url(self, path: str, **_kwargs: object) -> str:
-        """Not available: this data plane does not accept a signature-only download URL."""
+        """Alias of :meth:`download_url`."""
         _ = path
         _reject_signature_only_file_url("get_download_url")
 
@@ -1183,6 +1193,8 @@ class Sandbox:
     resume_sync = make_sync(resume)
     refresh_info_sync = make_sync(refresh_info)
     get_terminal_sync = make_sync(get_terminal)
+    upload_url_sync = make_sync(upload_url)
+    download_url_sync = make_sync(download_url)
     get_upload_url_sync = make_sync(get_upload_url)
     get_download_url_sync = make_sync(get_download_url)
     run_sync = make_sync(run)

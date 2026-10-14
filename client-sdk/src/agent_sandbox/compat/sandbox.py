@@ -25,13 +25,16 @@ E2B SDK                            agent_sandbox
 ``sandbox.files.write(path, d)``   ``sandbox.files.write(path, d)``
 ``sandbox.run_code(code)``         ``sandbox.run_code(code)``
 ``sandbox.get_host(port)``         ``sandbox.network.get_host(port)``
-``sandbox.get_upload_url(path)``   raises ``FileOperationError`` [1]_
-``sandbox.get_download_url(path)`` raises ``FileOperationError`` [1]_
+``sandbox.upload_url(path)``       raises ``FileOperationError`` [1]_
+``sandbox.download_url(path)``     raises ``FileOperationError`` [1]_
 =================================  ====================================
 
-.. [1] The envd data plane requires ``X-Access-Token`` on ``/files`` and does
-   not accept a signature-only URL.  Use ``files.write`` / ``files.read`` /
-   ``files.upload`` / ``files.download``.
+.. [1] E2B returns a ``signature`` URL that a browser can use without
+   ``X-Access-Token``. This data plane rejects that request. ``get_upload_url``
+   and ``get_download_url`` are aliases and raise the same error.
+   ``files.upload_url`` returns an unsigned ``/files`` URL that still requires
+   the header. Use ``files.write`` / ``files.read`` / ``files.upload`` /
+   ``files.download``.
 """
 
 from __future__ import annotations

@@ -22,8 +22,8 @@ Agent Sandbox 沿用 E2B 风格的方法名，所以大多数 E2B 调用点只�
 | `sandbox.files.write(path, d)` | `sandbox.files.write(path, d)` | ✅ 调用形式相同 |
 | `sandbox.run_code(code)` | `sandbox.run_code(code)` | ✅ 调用形式相同 |
 | `sandbox.get_host(port)` | `sandbox.network.get_host(port)` | ⚠️ 需通过 network 子模块 |
-| `sandbox.get_upload_url(path)` | `sandbox.get_upload_url(path)` | 调用会失败。当前数据面要求 `X-Access-Token`，不接受只靠签名的 URL |
-| `sandbox.get_download_url(path)` | `sandbox.get_download_url(path)` | 同上 |
+| `sandbox.upload_url(path)` | `sandbox.upload_url(path)` | 抛出 `FileOperationError`。E2B 返回只靠签名就能用的 URL；当前数据面不接受 |
+| `sandbox.download_url(path)` | `sandbox.download_url(path)` | 同上 |
 
 ---
 
@@ -102,9 +102,13 @@ url = sandbox.network.get_url(8080)
 
 > **注意**：`network.get_host()` 和 `network.get_url()` 是本地 URL 计算辅助函数。它们在逻辑上关联 `ports` 能力，但**不会**执行运行时能力检查——无论模板是否声明了该能力，调用均会成功。
 
-### 3. `get_upload_url()` / `get_download_url()`
+### 3. `upload_url()` / `download_url()`
 
-E2B 的这两个方法返回一个浏览器可以直接打开的签名 URL。当前极速版 envd 不接受这种请求：不带 `X-Access-Token` 时返回 403，正文是 `X-Access-Token header is required`。因此 Agent Sandbox 的同名方法会抛出 `FileOperationError`，不会返回一个打不开的链接。
+E2B Python SDK 的方法是 `sandbox.upload_url(path)` 和 `sandbox.download_url(path)`（JavaScript 是 `uploadUrl` / `downloadUrl`）。它们返回 `https://49983-<sandbox>.<domain>/files?path=...&signature=v1_...`。浏览器拿着这个 URL，用 multipart 字段 `file` 去 POST，或直接 GET，不必再带 `X-Access-Token`。访问令牌不在 URL 里。
+
+当前极速版数据面不提供这个能力。不带 `X-Access-Token` 的 `/files` 请求是 403，正文为 `access denied: X-Access-Token header is required`，文件不会写入。带上这个 header 才能上传或下载；查询参数里的 `signature` 不起作用。官方 E2B SDK 在这套数据面上拿到的签名 URL 也一样。
+
+Agent Sandbox 的 `sandbox.upload_url()` / `sandbox.download_url()` 因此抛出 `FileOperationError`，不返回一个打不开的链接。`get_upload_url()` / `get_download_url()` 是这两个方法的别名，结果相同。`files.upload_url()` / `files.download_url()` 只返回不带签名的 `/files` 地址，调用方仍然要自己带 `X-Access-Token`。
 
 传文件用 `files.write()`、`files.read()`、`files.upload()`、`files.download()`。这些调用由 SDK 带上访问令牌。
 
@@ -155,7 +159,7 @@ sandbox = await Sandbox.create(
    - 推荐：`from agent_sandbox.api.sandbox import Sandbox`
 3. **替换 `Sandbox.kill(id)`**：改为 `Sandbox.kill_by_id(id)`
 4. **替换 `get_host()`**：改为 `sandbox.network.get_host()`
-5. **`get_upload_url` / `get_download_url`**：改用 `files.write()` / `files.read()`。当前数据面不接受只靠签名的 URL
+5. **`upload_url` / `download_url`**：这两个调用会抛出 `FileOperationError`。改用 `files.write()` / `files.read()`。`files.upload_url()` 不是浏览器可直接打开的签名链接
 6. **设置环境变量**：沙箱 API Key 用 `ABX_SANDBOX_API_KEY`。每项设置只有一个变量，见[配置参考](../reference/configuration.md)。
 
 ---

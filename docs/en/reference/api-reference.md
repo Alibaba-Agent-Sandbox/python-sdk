@@ -287,8 +287,8 @@ sandbox.files  # FilesModule instance
 | `move()` | `async def move(source, destination) -> None` | Move/rename |
 | `rename()` | `async def rename(old_path, new_path) -> None` | (Deprecated) Same as `move()` |
 | `get_info()` | `async def get_info(path) -> FileInfo` | Get file info |
-| `upload_url()` | `async def upload_url(path) -> str` | Get upload URL (for compatibility) |
-| `download_url()` | `async def download_url(path) -> str` | Get download URL (for compatibility) |
+| `upload_url()` | `async def upload_url(path) -> str` | envd `/files` URL. The request must send `X-Access-Token`; this is not a signed URL |
+| `download_url()` | `async def download_url(path) -> str` | Same as upload |
 
 Logically associated with the `files` capability (declared in `template.yaml`; no runtime gate). Each async method has a `_sync` suffixed sync version.
 
