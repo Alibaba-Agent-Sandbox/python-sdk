@@ -10,7 +10,7 @@
 
 > Cloud sandboxes for AI agents — create, execute, and manage isolated environments in seconds.
 
-**Agent Sandbox** is a Python SDK for sandboxes. The default provider is Alibaba Cloud Express (`alicloud-express`, Function Compute). OpenSandbox, the container edition, CubeSandbox, and E2B are catalog plugins in `awesome-providers`, installed with `registry:<id>`. The `abx` CLI loads Express only. It is the
+**Agent Sandbox** is a Python SDK for sandboxes. The default provider is Alibaba Cloud Express (`alicloud-express`, Function Compute). OpenSandbox, the container edition, CubeSandbox, and E2B are catalog `node` plugins in `awesome-providers` (`provider.mjs`). Install one with `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` (or `python -m agent_sandbox.providers install registry:<id> --yes`). After that, both `abx --provider <id>` and `Sandbox.create(provider="<id>")` use it. The Python SDK reaches a `node` provider through the local engine (`abx provider engine serve`; `abx` on `PATH` or `ABX_BIN`). The CLI loads Express plus installed `node`, `exec` and `rest` plugins. It is the
 **runtime** client: create, use and kill sandboxes. Building and deploying templates is done with
 `abx template build|deploy` from the CLI. The SDK uses E2B-shaped method names so that E2B code
 ports with few changes; it is not a drop-in replacement (see [Migrate from E2B](docs/en/guide/migrate-from-e2b.md)).

@@ -271,7 +271,7 @@ The variables that configure the SDK and CLI on **your** machine (`ABX_SANDBOX_A
 Two consequences:
 
 - Inside the Server, every name starting with `ABX_` is protected (see above). Do not use `ABX_*` for your own sandbox variables.
-- [Provider plugins](providers.md) do not inherit your shell environment either. A plugin process starts with a scrubbed environment; the configuration values it needs are sent to it in its `initialize` request.
+- [Provider plugins](providers.md) do not inherit your shell environment either. An `exec` plugin process starts with a scrubbed environment; the configuration values it needs are sent in its `initialize` request. A `node` provider is not that process: the Python SDK sends the resolved options on each call to the local engine.
 
 ---
 

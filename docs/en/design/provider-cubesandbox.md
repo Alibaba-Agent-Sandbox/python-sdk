@@ -1,6 +1,6 @@
 # CubeSandbox provider
 
-CubeSandbox is a catalog provider. The source is `awesome-providers/cubesandbox` and the id is `cubesandbox`. Install with `abx provider install registry:cubesandbox --yes` (or `python -m agent_sandbox.providers install registry:cubesandbox --yes`). `Sandbox.create(provider="cubesandbox")` and `abx --provider cubesandbox` talk to CubeAPI with the host's E2B protocol classes plus a few overrides in `provider.mjs`.
+CubeSandbox is a catalog provider. The source is `awesome-providers/cubesandbox` and the id is `cubesandbox`. Install with `abx provider install alibaba-agent-sandbox/awesome-providers//cubesandbox --allow-unpinned --yes` (or `python -m agent_sandbox.providers install registry:cubesandbox --yes`). `Sandbox.create(provider="cubesandbox")` and `abx --provider cubesandbox` talk to CubeAPI with the host's E2B protocol classes plus a few overrides in `provider.mjs`.
 
 The manifest is `kind = "node"`: the Node.js host loads `provider.mjs`, and the Python SDK reaches it through the local engine (`abx provider engine serve`). Its own notes are `awesome-providers/cubesandbox/docs/README.md`.
 

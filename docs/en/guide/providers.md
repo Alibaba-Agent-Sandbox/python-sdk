@@ -12,11 +12,11 @@ A **provider** is a sandbox backend. The SDK and the CLI ship only `alicloud-exp
 | `e2b` | E2B | catalog plugin, `node`; CLI and every SDK after install | no |
 | `opensandbox` | OpenSandbox | catalog plugin, `node` (ES module, EPP methods run in the host process); CLI and every SDK after install | no |
 
-The four non-default ids live in `awesome-providers`. Install with `abx provider install registry:<id> --yes` or `python -m agent_sandbox.providers install registry:<id> --yes`, then select with `Sandbox.create(provider="…")` or `abx --provider <id>`. They are written once in Node.js and hosted by the TypeScript CLI. The CLI runs them directly; the Python SDK reaches the `node` ones through the local engine (`abx provider engine serve`, started on demand, so `abx` must be on `PATH` or in `ABX_BIN`) and runs the `exec` one itself. See the CLI's [Engine HTTP API](https://github.com/Alibaba-Agent-Sandbox/cli/blob/main/docs/en/reference/engine-api.md).
+The four non-default ids live in `awesome-providers`. Install with `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` or, once the public index is published, `python -m agent_sandbox.providers install registry:<id> --yes` (the `abx` CLI has no `registry:` form), then select with `Sandbox.create(provider="…")` or `abx --provider <id>`. All four are `runtime.kind = "node"` (an ES module, `provider.mjs`), written once in Node.js. The CLI loads them in-process. The Python SDK reaches them through the local Node engine (`abx provider engine serve`, started on demand, so `abx` must be on `PATH` or in `ABX_BIN`) using `EngineProvider` (`engine://<provider>/<sandbox-id>`). A third-party `exec` or `rest` manifest still runs in the Python process. The built-in `alicloud-express` is the Python builtin provider. There is no installable `python` kind. See the CLI's [Engine HTTP API](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md).
 
 | Id | How to use it |
 |---|---|
-| `opensandbox` | [OpenSandbox provider](../design/provider-opensandbox-mapping.md). HTTP stays in the plugin process. `ABX_OPENSANDBOX_BASE_URL` defaults to `http://127.0.0.1:8080`. |
+| `opensandbox` | [OpenSandbox provider](../design/provider-opensandbox-mapping.md). HTTP is made from the Node host process that loads `provider.mjs`. `ABX_OPENSANDBOX_BASE_URL` defaults to `http://127.0.0.1:8080`. |
 | `alicloud-container` | [Container edition](../design/provider-alicloud-container.md). Needs `ABX_ALICLOUD_CONTAINER_DOMAIN`. Does not read `ABX_SANDBOX_API_KEY`. |
 | `cubesandbox` | [CubeSandbox provider](../design/provider-cubesandbox.md). Default origin `http://127.0.0.1:3000`. |
 | `e2b` | [E2B provider](../design/provider-e2b.md). Key is `ABX_E2B_API_KEY`. Does not read `ABX_SANDBOX_API_KEY` or `E2B_API_KEY`. |
@@ -122,10 +122,10 @@ Everything outside `data/` is hashed into the digest, **including a `tests/` dir
 | `builtin` | `alicloud-express` | n/a | SDK and CLI |
 | `rest` | A manifest only: an E2B-protocol endpoint with its own base URL and key | yes | SDK and CLI |
 | `exec` | A program that speaks EPP/1 (JSON-RPC 2.0, one JSON object per line, over stdin/stdout) | yes | SDK and CLI |
-| `node` | An ES module (`provider.mjs`, `export default create(kit)`) that the Node.js host loads in-process. `e2b`, `cubesandbox` and `alicloud-container` are this kind | yes | SDK (through the engine) and CLI |
+| `node` | An ES module (`provider.mjs`, `export default create(kit)`) that the Node.js host loads in-process. `opensandbox`, `e2b`, `cubesandbox` and `alicloud-container` are this kind | yes | SDK (through the engine) and CLI |
 | `python` | A `Provider` subclass in code, registered with `register_provider` or a pip entry point. A manifest with `kind = "python"` cannot be installed | no | SDK only |
 
-The `exec` kind is the primary extension point: one plugin works for both the Python SDK and the Node CLI, in any language. A backend that already speaks the E2B envd data-plane protocol only needs to implement the control plane (create, connect, list, kill) and return the envd URL; commands, files and terminals then use the fast native transports. A backend without envd implements the data-plane methods (`exec.run`, `files.*`) as well.
+The four catalog providers are `node`. `exec` is the extension point for a third-party plugin in any language: one process works for both the Python SDK and the Node CLI. A backend that already speaks the E2B envd data-plane protocol only needs to implement the control plane (create, connect, list, kill) and return the envd URL; commands, files and terminals then use the fast native transports. A backend without envd implements the data-plane methods (`exec.run`, `files.*`) as well.
 
 ### Capability matrix
 
@@ -152,13 +152,14 @@ The manifest flag is enforced at run time, for every provider kind:
 |---|---|---|
 | `exec` | the EPP adapters, before the request is written to the plugin | E8004 |
 | `rest` | `feature_gate` around the built-in protocol classes, before any HTTP request | E8004 |
+| `node` | `EngineProvider` before the engine call; the CLI gates the same call in-process | E8004 |
 | `python` | `Provider.require(feature)` in the provider's own code | E8004 |
 
 A feature that is declared but fails inside the backend is not E8004; the backend's error is mapped (see Errors below). Two different "not found" outcomes are kept apart on purpose: an unknown **sandbox id** is `SandboxNotFoundError` (E2009) on every provider and every `sandbox.*` call (`connect`, `info`, `set_timeout`, `pause`, `resume`; `kill` stays idempotent), and a missing template, file or process is E4001/E2001 or, with no `sdk_code`, `ProviderResourceNotFoundError` (E8005).
 
 ### What you can call after installing
 
-Installing a provider does not enable every SDK method or every `abx` command. The SDK and the CLI call **the same installed plugin**. Each method and command needs one feature from the table above. If the plugin does not declare it, the call raises `ProviderFeatureNotSupportedError` (E8004) before any request is sent. `exec` and `rest` plugins work from both hosts. A `python` provider registered in-process works from the SDK only.
+Installing a provider does not enable every SDK method or every `abx` command. The SDK and the CLI call **the same installed plugin**. Each method and command needs one feature from the table above. If the plugin does not declare it, the call raises `ProviderFeatureNotSupportedError` (E8004) before any request is sent. `node`, `exec` and `rest` plugins work from both hosts. A `python` provider registered in-process works from the SDK only. A manifest with `kind = "python"` cannot be installed.
 
 | Feature | Python SDK | CLI |
 |---|---|---|
@@ -203,7 +204,7 @@ The capability table is [OpenSandbox provider](../design/provider-opensandbox-ma
 
 The 18 feature ids above are the shared tool surface. A provider that has operations outside that list registers them on `Provider.extensions`. They do not appear in `features`, so `provider list` does not print them, and another provider does not gain them.
 
-`describe()["extensions"]` always shows the provider's full registration. `extensions_for(sandbox_id=...)` shows only the entries that match that sandbox: `code` only on a `code-interpreter` image, `networkpolicy` only when egress was requested, `command.logs` only when a command id is known. An entry with `implemented=False` is visible under those rules and still raises `E8004` from `require_extension`. OpenSandbox registers `code`, `session`, `command.logs`, `snapshot`, `networkpolicy`, `metadata.patch`, `diagnostics` and `metrics` this way. None of them is implemented yet.
+`describe()["extensions"]` always shows the provider's full registration. `extensions_for(sandbox_id=...)` shows only the entries that match that sandbox: `code` only on a `code-interpreter` image, `networkpolicy` only when egress was requested, `command.logs` only when a command id is known. An entry with `implemented=False` is visible under those rules and still raises `E8004` from `require_extension`. An earlier Python OpenSandbox provider registered `code`, `session`, `command.logs`, `snapshot`, `networkpolicy`, `metadata.patch`, `diagnostics` and `metrics` this way. The current catalog provider is `kind = "node"` (`EngineProvider`); its `extensions` tuple is empty.
 
 ---
 
@@ -248,11 +249,11 @@ Two working examples are in this repository:
 - `examples/providers/local-process/` — an `exec` provider in about 200 lines of Python standard library (lifecycle, commands, files).
 - `examples/providers/e2b-compatible/` — a `rest` provider that is only a manifest.
 
-OpenSandbox is a catalog `node` provider (a dependency-free ES module whose EPP/1 methods the host runs in its own process; `node provider.mjs` still serves EPP/1 on stdio) in [awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox). It talks to an [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) server from the host process (streaming exec, files, process control, a terminal, pause/resume, port URLs). Install it with `abx provider install registry:opensandbox --yes` (or the Python module), then `Sandbox.create(provider="opensandbox")` or `abx --provider opensandbox`. For a backend that is E2B-shaped, a `node` plugin is shorter: see `awesome-providers/e2b/provider.mjs`.
+OpenSandbox is a catalog `node` provider (a dependency-free ES module whose EPP/1 methods the host runs in its own process; `node provider.mjs` still serves EPP/1 on stdio) in [awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox). It talks to an [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) server from the host process (streaming exec, files, process control, a terminal, pause/resume, port URLs). Install it with `abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox --allow-unpinned --yes` (or the Python module), then `Sandbox.create(provider="opensandbox")` or `abx --provider opensandbox`. For a backend that is E2B-shaped, a `node` plugin is shorter: see `awesome-providers/e2b/provider.mjs`.
 
 ### Authoring checklist
 
-1. **Manifest**: `manifest_version = 1`, a valid id, `[compat] protocol = "epp/1"` and `requires`, `[runtime] kind = "exec"` (or a `rest` endpoint), `[config.fields.*]` for every option with `secret = true` on secrets and `env = [...]` for the vendor's own variable names. Errors are `E8014` with the broken field named.
+1. **Manifest**: `manifest_version = 1` and a valid id. A catalog-style provider is `[compat] protocol = "node/1"` and `[runtime] kind = "node"` with `entry` a relative `.mjs` or `.js` file. An `exec` plugin is `protocol = "epp/1"` and `kind = "exec"` with `command`. A `rest` provider is an endpoint and no program. A manifest with `kind = "python"` cannot be installed. `[config.fields.*]` names every option, with `secret = true` on secrets and `env = [...]` for the vendor's own variable names. Errors are `E8014` with the broken field named. Items 2–6 are the `exec` checklist.
 2. **Required methods**: `initialize` (return the features you implement), `shutdown`, and for `sandbox.lifecycle` `sandbox.create|get|list|kill`. Everything else is per feature (see "Methods a plugin answers").
 3. **Feature flags**: declare exactly what works and nothing else. The host answers E8004 for the rest without calling you.
 4. **Errors**: `-32003` for a feature you lack, `-32002` for a missing sandbox (`sdk_code` `E2009` if you want to be explicit), `sdk_code` on everything that has an SDK class, never a credential in a message.
@@ -295,6 +296,8 @@ Each provider has its own scoped keys: `ABX_<PROVIDER>_<KEY>` in the environment
 The generic keys `sandbox_api_key`, `sandbox_base_url` and `sandbox_domain` (`ABX_SANDBOX_API_KEY` and `ABX_SANDBOX_BASE_URL`) belong to the built-in provider. A plugin gets them only if its manifest lists them in `[core] inherit` **and** you consented at install or update time. The consent screen names the keys. Your LLM, GitHub and MCP keys are never delivered to a provider.
 
 ### What the host does to the plugin process
+
+This is the `exec` child process. A `node` provider is loaded in the Node host (the CLI in-process, or `abx provider engine serve` for the Python SDK). It is not spawned this way.
 
 - Starts it with a scrubbed environment: `PATH`, `HOME`, temp and locale variables, names listed in `env_passthrough`, and `ABX_PROVIDER_DATA_DIR`. No `ABX_*`, `E2B_*`, `ALICLOUD_*`, `GITHUB_TOKEN` or `OPENAI_*` leak in. The working directory is the plugin's `data/` directory.
 - Limits a protocol line to 8 MiB and keeps the last 64 KiB of stderr for crash messages. Values it sent in `initialize` are redacted from captured stderr and errors.

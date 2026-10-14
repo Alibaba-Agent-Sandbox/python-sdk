@@ -6,9 +6,9 @@
 
 ## Current adapter (2026-10-14)
 
-OpenSandbox is a catalog provider. The source is `awesome-providers/opensandbox`, id `opensandbox`. Install with `abx provider install registry:opensandbox --yes` (or `python -m agent_sandbox.providers install registry:opensandbox --yes`). `Sandbox.create(provider="opensandbox")` and `abx --provider opensandbox` talk to OpenSandbox HTTP, execd SSE, and the execd WebSocket from the plugin process.
+OpenSandbox is a catalog provider. The source is `awesome-providers/opensandbox`, id `opensandbox`. Install with `abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox --allow-unpinned --yes` (or `python -m agent_sandbox.providers install registry:opensandbox --yes`). After install, `Sandbox.create(provider="opensandbox")` and `abx --provider opensandbox` both work. They talk to OpenSandbox HTTP, execd SSE, and the execd WebSocket from the Node host process that loads `provider.mjs`. The Python SDK reaches that module through the local engine (`abx provider engine serve`, started on demand; `abx` must be on `PATH` or in `ABX_BIN`) using `EngineProvider`. Sandbox URLs from that provider look like `engine://opensandbox/<sandbox-id>`.
 
-The manifest is `kind = "exec"`: a dependency-free Node program (`provider.mjs`) that the host starts and speaks EPP/1 with. The terminal needs the global `WebSocket` of Node 22+. Before install, `abx --provider opensandbox sandbox create` exits 4 with `E8001`. Its own notes are `awesome-providers/opensandbox/docs/README.md`.
+The manifest is `kind = "node"` and `protocol = "node/1"`: a dependency-free ES module (`provider.mjs`). The host runs its EPP/1 methods in-process. `node provider.mjs` still serves EPP/1 on stdio. The terminal needs the global `WebSocket` of Node 22+. Before install, `abx --provider opensandbox sandbox create` exits 4 with `E8001`. Its own notes are `awesome-providers/opensandbox/docs/README.md`.
 
 | Setting | Environment |
 |---|---|
@@ -77,7 +77,7 @@ Alicloud `run_code("print(6*7)")` got HTTP 404 from the code interpreter and fel
 
 ### Registering more capabilities
 
-The OpenSandbox-only APIs stay out of the fixed 18 feature ids. Putting them there would add them to `alicloud-express` and to the contract tests. A provider registers them on `Provider.extensions`.
+The OpenSandbox-only APIs stay out of the fixed 18 feature ids. Putting them there would add them to `alicloud-express` and to the contract tests. A Python `Provider` subclass registers them on `Provider.extensions`. The installed catalog provider is `EngineProvider` (`kind = "node"`); its `extensions` tuple is empty. The tables below describe a subclass that sets `extensions`. They do not describe the installed `opensandbox` provider.
 
 Registration means the provider knows about the operation. `implemented=False` still raises `E8004` on a call. Seeing an extension and calling it are different.
 
@@ -88,7 +88,7 @@ Registration means the provider knows about the operation. `implemented=False` s
 | `provider.describe()["extensions"]`, and later `provider info` | Every extension this provider registered. The image and the sandbox do not matter |
 | `extensions_for(sandbox_id=...)` | Only the extensions whose condition matches this sandbox |
 | Another provider, such as `alicloud-express` | None of these ids. Its `extensions` is empty |
-| CLI `abx --provider opensandbox` | Nothing today. The CLI does not load this provider, so create exits `E8001` |
+| CLI `abx --provider opensandbox` | After install, the CLI loads this provider and create works. `abx provider list` prints `features` only. These extension ids are not on the `node` provider. An id that is not installed still exits 4 with `E8001` |
 
 **When a sandbox does not show it**
 
@@ -122,7 +122,7 @@ class Example(Provider):
     )
 ```
 
-`when` is one of `sandbox`, `code_interpreter_image`, `egress`, `command`. OpenSandbox's eight entries are `opensandbox_provider.EXTENSIONS`.
+`when` is one of `sandbox`, `code_interpreter_image`, `egress`, `command`. An earlier Python provider kept OpenSandbox's eight entries on `opensandbox_provider.EXTENSIONS`. That module is gone. The current catalog provider does not register them.
 
 An exec or rest manifest will use the block below. The parser does not accept it yet:
 
@@ -142,18 +142,11 @@ Do not put these ids in `[features] supported`. That list accepts only the fixed
 from agent_sandbox.providers.registry import get_provider
 
 provider = get_provider("opensandbox")  # after `registry:opensandbox` is installed
-provider.describe()["extensions"]          # all eight
-provider.extensions_for()                  # () until a sandbox id exists
-provider.extensions_for(image="python:3.12-slim", sandbox_id="sb-1")
-provider.extensions_for(
-    image="opensandbox/code-interpreter:v1.1.0",
-    sandbox_id="sb-1",
-    egress=True,
-    command_id="c1",
-)
-provider.require_extension("code")         # E8004: registered, not implemented
+provider.kind                              # "node"
+provider.describe()["extensions"]          # () on EngineProvider
+provider.extensions_for(sandbox_id="sb-1") # ()
 ```
 
-When an entry is implemented, set `implemented=True` and add the HTTP call in `awesome-providers/opensandbox`. Until then `require_extension` stays `E8004`.
+A Python subclass that sets `extensions` still filters with `extensions_for` and raises `E8004` from `require_extension` while `implemented` is false. When an entry is implemented, set `implemented=True` and add the HTTP call in `awesome-providers/opensandbox/provider.mjs`.
 
 The research that produced the first plugin, including the 2026-10-13 exec-plugin record, is [provider-opensandbox-research.md](../archive/provider-opensandbox-research.md). It is not the adapter above.

@@ -1,6 +1,6 @@
 # E2B provider
 
-E2B is a catalog provider. The source is `awesome-providers/e2b` and the id is `e2b`. Install with `abx provider install registry:e2b --yes` (or `python -m agent_sandbox.providers install registry:e2b --yes`). `Sandbox.create(provider="e2b")` and `abx --provider e2b` talk to the public E2B API with the host's E2B protocol classes.
+E2B is a catalog provider. The source is `awesome-providers/e2b` and the id is `e2b`. Install with `abx provider install alibaba-agent-sandbox/awesome-providers//e2b --allow-unpinned --yes` (or `python -m agent_sandbox.providers install registry:e2b --yes`). `Sandbox.create(provider="e2b")` and `abx --provider e2b` talk to the public E2B API with the host's E2B protocol classes.
 
 It is not compiled into the SDK. The manifest is `kind = "node"`: `provider.mjs` is loaded by the Node.js host, and the Python SDK reaches it through the local engine (`abx provider engine serve`). Its own notes are `awesome-providers/e2b/docs/README.md`.
 

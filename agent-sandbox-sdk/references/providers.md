@@ -8,7 +8,7 @@
 python -m agent_sandbox.providers install registry:opensandbox --yes
 ```
 
-Each provider's config, paths, and `E8004` list are in `awesome-providers/<id>/docs/README.md`. The CLI does not load those `python` plugins.
+Each provider's config, paths, and `E8004` list are in `awesome-providers/<id>/docs/README.md`. All four are `runtime.kind = "node"` (an ES module, `provider.mjs`). There is no `python`-kind catalog plugin; a manifest with `kind = "python"` cannot be installed. An in-code `Provider` subclass still works from the SDK. Install with `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` or the Python module above, then `abx --provider <id>` or `Sandbox.create(provider="<id>")`. The Python SDK reaches a `node` provider through the local Node engine (`abx provider engine serve`, started on demand; `abx` must be on `PATH` or in `ABX_BIN`) using `EngineProvider`. Python `exec` and `rest` manifests still run in the Python process. The built-in `alicloud-express` is the Python builtin provider.
 
 Express is the only provider that reads `ABX_SANDBOX_API_KEY`. None of the catalog providers read `E2B_*`.
 

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Exercise every OpenSandbox feature through the in-engine adapter.
+"""Exercise every OpenSandbox feature through ``Sandbox.create(provider="opensandbox")``.
+
+The catalog provider is ``kind = "node"``. The Python SDK reaches ``provider.mjs``
+through the local Node engine (``abx provider engine serve``), not the Python
+gRPC engine.
 
 The local server is ``http://127.0.0.1:8080`` unless ``ABX_OPENSANDBOX_BASE_URL``
 is set. The API key is ``ABX_OPENSANDBOX_API_KEY`` or the local-up default

@@ -1,6 +1,6 @@
 # CubeSandbox 提供方
 
-CubeSandbox 是目录提供方，源码在 `awesome-providers/cubesandbox`，id 是 `cubesandbox`。用 `abx provider install registry:cubesandbox --yes`（或 `python -m agent_sandbox.providers install registry:cubesandbox --yes`）安装。`Sandbox.create(provider="cubesandbox")` 和 `abx --provider cubesandbox` 用宿主里的 E2B 协议类，加上 `provider.mjs` 里的几处覆盖，访问 CubeAPI。
+CubeSandbox 是目录提供方，源码在 `awesome-providers/cubesandbox`，id 是 `cubesandbox`。用 `abx provider install alibaba-agent-sandbox/awesome-providers//cubesandbox --allow-unpinned --yes`（或 `python -m agent_sandbox.providers install registry:cubesandbox --yes`）安装。`Sandbox.create(provider="cubesandbox")` 和 `abx --provider cubesandbox` 用宿主里的 E2B 协议类，加上 `provider.mjs` 里的几处覆盖，访问 CubeAPI。
 
 清单是 `kind = "node"`：Node.js 宿主加载 `provider.mjs`，Python SDK 通过本机引擎（`abx provider engine serve`）使用它。自己的说明在 `awesome-providers/cubesandbox/docs/README.md`。
 

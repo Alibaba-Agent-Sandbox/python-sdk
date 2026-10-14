@@ -10,7 +10,7 @@
 
 > 为 AI Agent 打造的云沙箱 —— 秒级创建、执行、管理隔离环境。
 
-**Agent Sandbox** 是沙箱的 Python SDK。默认提供方是阿里云极速版（`alicloud-express`，函数计算）。OpenSandbox、容器版、CubeSandbox 和 E2B 在 `awesome-providers` 里，用 `registry:<id>` 安装。`abx` CLI 只加载极速版。它是**运行时**客户端：
+**Agent Sandbox** 是沙箱的 Python SDK。默认提供方是阿里云极速版（`alicloud-express`，函数计算）。OpenSandbox、容器版、CubeSandbox 和 E2B 都是 `awesome-providers` 里的目录 `node` 插件（`provider.mjs`）。用 `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes`（或 `python -m agent_sandbox.providers install registry:<id> --yes`）安装。装好之后，`abx --provider <id>` 和 `Sandbox.create(provider="<id>")` 都能用。Python SDK 通过本机引擎（`abx provider engine serve`；`abx` 在 `PATH` 里或由 `ABX_BIN` 指定）使用 `node` 提供方。CLI 加载极速版，以及已安装的 `node`、`exec` 和 `rest` 插件。它是**运行时**客户端：
 创建、使用、销毁沙箱。模板的构建和部署由 CLI 的 `abx template build|deploy` 完成。SDK 的方法名参考了 E2B，
 方便 E2B 代码迁移，但它不是 E2B 的直接替代品（见[从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md)）。
 

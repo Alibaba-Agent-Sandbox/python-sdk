@@ -12,11 +12,11 @@
 | `e2b` | E2B | 目录插件，`node`；安装后 CLI 和所有 SDK 可用 | 否 |
 | `opensandbox` | OpenSandbox | 目录插件，`node`（ES 模块，EPP 方法在宿主进程内）；安装后 CLI 和所有 SDK 可用 | 否 |
 
-除默认项以外的四个 id 在 `awesome-providers`，用 `abx provider install registry:<id> --yes` 或 `python -m agent_sandbox.providers install registry:<id> --yes` 安装。装好之后用 `Sandbox.create(provider="…")` 或 `abx --provider <id>` 选择。它们只用 Node.js 写一次，由 TypeScript 的 CLI 承载：CLI 直接运行；Python SDK 通过本机引擎（`abx provider engine serve`，按需启动，所以 `abx` 要在 `PATH` 里或用 `ABX_BIN` 指定）使用 `node` 类型的，`exec` 类型的则自己运行。见 CLI 的[引擎 HTTP API](https://github.com/Alibaba-Agent-Sandbox/cli/blob/main/docs/zh/reference/engine-api.md)。
+除默认项以外的四个 id 在 `awesome-providers`，用 `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` 安装；公开索引发布后也可用 `python -m agent_sandbox.providers install registry:<id> --yes`（`abx` 没有 `registry:` 写法）。装好之后用 `Sandbox.create(provider="…")` 或 `abx --provider <id>` 选择。四个都是 `runtime.kind = "node"`（ES 模块 `provider.mjs`），只用 Node.js 写一次。CLI 在进程内加载它们。Python SDK 通过本机 Node 引擎（`abx provider engine serve`，按需启动，所以 `abx` 要在 `PATH` 里或用 `ABX_BIN` 指定）用 `EngineProvider` 访问（`engine://<provider>/<sandbox-id>`）。第三方的 `exec` 或 `rest` 清单仍在 Python 进程里运行。内置的 `alicloud-express` 是 Python 内置提供方。没有可安装的 `python` 类型。见 CLI 的[引擎 HTTP API](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/engine-api.md)。
 
 | Id | 怎么用 |
 |---|---|
-| `opensandbox` | [OpenSandbox 提供方](../design/provider-opensandbox-mapping.md)。HTTP 留在插件进程里。`ABX_OPENSANDBOX_BASE_URL` 默认 `http://127.0.0.1:8080`。 |
+| `opensandbox` | [OpenSandbox 提供方](../design/provider-opensandbox-mapping.md)。HTTP 由加载 `provider.mjs` 的 Node 宿主进程发出。`ABX_OPENSANDBOX_BASE_URL` 默认 `http://127.0.0.1:8080`。 |
 | `alicloud-container` | [容器版](../design/provider-alicloud-container.md)。需要 `ABX_ALICLOUD_CONTAINER_DOMAIN`。不读取 `ABX_SANDBOX_API_KEY`。 |
 | `cubesandbox` | [CubeSandbox 提供方](../design/provider-cubesandbox.md)。默认地址 `http://127.0.0.1:3000`。 |
 | `e2b` | [E2B 提供方](../design/provider-e2b.md)。密钥是 `ABX_E2B_API_KEY`。不读取 `ABX_SANDBOX_API_KEY`，也不读取 `E2B_API_KEY`。 |
@@ -120,10 +120,10 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 | `builtin` | `alicloud-express` | 不适用 | SDK 和 CLI |
 | `rest` | 只有清单：一个 E2B 协议端点，带自己的基础 URL 和密钥 | 是 | SDK 和 CLI |
 | `exec` | 一个说 EPP/1 的程序（JSON-RPC 2.0，每行一个 JSON 对象，经 stdin/stdout） | 是 | SDK 和 CLI |
-| `node` | 一个 ES 模块（`provider.mjs`，`export default create(kit)`），由 Node.js 宿主在进程内加载。`e2b`、`cubesandbox`、`alicloud-container` 是这种 | 是 | SDK（经引擎）和 CLI |
+| `node` | 一个 ES 模块（`provider.mjs`，`export default create(kit)`），由 Node.js 宿主在进程内加载。`opensandbox`、`e2b`、`cubesandbox`、`alicloud-container` 都是这种 | 是 | SDK（经引擎）和 CLI |
 | `python` | 代码里的 `Provider` 子类，用 `register_provider` 或 pip 入口点登记。`kind = "python"` 的清单不能安装 | 否 | 仅 SDK |
 
-`exec` 类型是主要的扩展点：一个插件可以同时服务 Python SDK 和 Node CLI，并可用任何语言编写。已经说 E2B envd 数据平面协议的后端只需实现控制面（创建、连接、列出、销毁）并返回 envd URL，之后命令、文件和终端都走快速的原生传输。没有 envd 的后端还需要实现数据平面方法（`exec.run`、`files.*`）。
+四个目录提供方都是 `node`。`exec` 是第三方插件的扩展点：一个进程可以同时服务 Python SDK 和 Node CLI，并可用任何语言编写。已经说 E2B envd 数据平面协议的后端只需实现控制面（创建、连接、列出、销毁）并返回 envd URL，之后命令、文件和终端都走快速的原生传输。没有 envd 的后端还需要实现数据平面方法（`exec.run`、`files.*`）。
 
 ### 能力矩阵
 
@@ -150,13 +150,14 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 |---|---|---|
 | `exec` | EPP 适配器，在请求写给插件之前 | E8004 |
 | `rest` | 包在内置协议类外面的 `feature_gate`，在任何 HTTP 请求之前 | E8004 |
+| `node` | Python 侧在发给引擎之前由 `EngineProvider` 拦住；CLI 在进程内做同样的拦截 | E8004 |
 | `python` | 提供方自己代码里的 `Provider.require(feature)` | E8004 |
 
 已声明的特性在后端内部失败不属于 E8004，而是映射后端的错误（见下文「错误」）。两种「未找到」被有意区分开：未知的**沙箱 id** 在所有提供方、所有 `sandbox.*` 调用（`connect`、`info`、`set_timeout`、`pause`、`resume`；`kill` 仍然幂等）上都是 `SandboxNotFoundError`（E2009）；缺失的模板、文件或进程是 E4001/E2001，没有 `sdk_code` 时是 `ProviderResourceNotFoundError`（E8005）。
 
 ### 安装之后能调用什么
 
-安装一个提供商，并不会打开全部 SDK 方法或全部 `abx` 命令。SDK 和 CLI 调用的是**同一份已安装插件**。每个方法和命令都对应上表里的一项能力。插件没有声明时，调用会在发出请求之前抛出 `ProviderFeatureNotSupportedError`（E8004）。`exec`、`rest` 和 `node` 插件两边都能用。进程内注册的 `python` 提供商只给 SDK 用。
+安装一个提供商，并不会打开全部 SDK 方法或全部 `abx` 命令。SDK 和 CLI 调用的是**同一份已安装插件**。每个方法和命令都对应上表里的一项能力。插件没有声明时，调用会在发出请求之前抛出 `ProviderFeatureNotSupportedError`（E8004）。`node`、`exec` 和 `rest` 插件两边都能用。进程内注册的 `python` 提供商只给 SDK 用。`kind = "python"` 的清单不能安装。
 
 | 能力 | Python SDK | CLI |
 |---|---|---|
@@ -201,7 +202,7 @@ await sb.kill()
 
 上面 18 个 feature id 是工具的公共面。提供方在这之外的操作登记到 `Provider.extensions`。它们不进 `features`，所以 `provider list` 的一行摘要里没有，别的提供方也不会带上。
 
-`describe()["extensions"]` 始终给出该提供方的全部登记。`extensions_for(sandbox_id=...)` 只给出这个沙箱满足条件的项：`code` 只在镜像名包含 `code-interpreter` 时出现，`networkpolicy` 只在创建时要了 egress 时出现，`command.logs` 只在已经有命令 id 时出现。`implemented=False` 的项在这些条件下可见，`require_extension` 仍然返回 `E8004`。OpenSandbox 这样登记了 `code`、`session`、`command.logs`、`snapshot`、`networkpolicy`、`metadata.patch`、`diagnostics`、`metrics`。它们都还没有实现。
+`describe()["extensions"]` 始终给出该提供方的全部登记。`extensions_for(sandbox_id=...)` 只给出这个沙箱满足条件的项：`code` 只在镜像名包含 `code-interpreter` 时出现，`networkpolicy` 只在创建时要了 egress 时出现，`command.logs` 只在已经有命令 id 时出现。`implemented=False` 的项在这些条件下可见，`require_extension` 仍然返回 `E8004`。早先的 Python 版 OpenSandbox 提供方这样登记了 `code`、`session`、`command.logs`、`snapshot`、`networkpolicy`、`metadata.patch`、`diagnostics`、`metrics`。现行目录提供方是 `kind = "node"`（`EngineProvider`），它的 `extensions` 是空的。
 
 ---
 
@@ -246,11 +247,11 @@ description = "Directory that holds sandbox working directories"
 - `examples/providers/local-process/` —— 约 200 行 Python 标准库写成的 `exec` 提供方（生命周期、命令、文件）。
 - `examples/providers/e2b-compatible/` —— 只有清单的 `rest` 提供方。
 
-OpenSandbox 是 [awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox) 里的目录 `node` 提供方（一个无依赖的 ES 模块，宿主进程内运行它的 EPP/1 方法；直接 `node provider.mjs` 仍可在 stdio 上提供 EPP/1）。它在宿主进程里访问 [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) 服务：流式 exec、文件、进程控制、终端、暂停 / 恢复和端口 URL。安装命令是 `abx provider install registry:opensandbox --yes`（或 Python 模块），然后 `Sandbox.create(provider="opensandbox")` 或 `abx --provider opensandbox`。后端是 E2B 形状时，写 `node` 插件更短：见 `awesome-providers/e2b/provider.mjs`。
+OpenSandbox 是 [awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox) 里的目录 `node` 提供方（一个无依赖的 ES 模块，宿主进程内运行它的 EPP/1 方法；直接 `node provider.mjs` 仍可在 stdio 上提供 EPP/1）。它在宿主进程里访问 [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) 服务：流式 exec、文件、进程控制、终端、暂停 / 恢复和端口 URL。安装命令是 `abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox --allow-unpinned --yes`（或 Python 模块），然后 `Sandbox.create(provider="opensandbox")` 或 `abx --provider opensandbox`。后端是 E2B 形状时，写 `node` 插件更短：见 `awesome-providers/e2b/provider.mjs`。
 
 ### 编写检查清单
 
-1. **清单**：`manifest_version = 1`、合法的 id、`[compat] protocol = "epp/1"` 与 `requires`、`[runtime] kind = "exec"`（或 `rest` 端点）；每个选项都写进 `[config.fields.*]`，密钥加 `secret = true`，厂商自己的变量名写进 `env = [...]`。清单有错时返回 `E8014`，并指出出错的字段。
+1. **清单**：`manifest_version = 1`、合法的 id。目录风格的提供方是 `[compat] protocol = "node/1"`、`[runtime] kind = "node"`，`entry` 是相对的 `.mjs` 或 `.js`。`exec` 插件是 `protocol = "epp/1"`、`kind = "exec"`，并带 `command`。`rest` 只有端点，没有程序。`kind = "python"` 的清单不能安装。每个选项都写进 `[config.fields.*]`，密钥加 `secret = true`，厂商自己的变量名写进 `env = [...]`。清单有错时返回 `E8014`，并指出出错的字段。第 2 到第 6 条是 `exec` 的检查清单。
 2. **必须实现的方法**：`initialize`（返回你实现的特性）、`shutdown`，以及 `sandbox.lifecycle` 的 `sandbox.create|get|list|kill`。其余都按特性划分（见「插件要响应的方法」）。
 3. **特性标志**：只声明确实可用的特性。其余的宿主直接返回 E8004，不会调用你。
 4. **错误**：缺少特性返回 `-32003`；沙箱不存在返回 `-32002`（想写明的话加 `sdk_code` `E2009`）；凡是有对应 SDK 类的都带 `sdk_code`；信息里绝不出现凭证。
@@ -293,6 +294,8 @@ OpenSandbox 是 [awesome-providers/opensandbox](https://github.com/alibaba-agent
 通用键 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`（`ABX_SANDBOX_API_KEY` 和 `ABX_SANDBOX_BASE_URL`）属于内置提供方。只有当插件清单在 `[core] inherit` 里列出它们，**并且**你在安装或更新时同意了，插件才能拿到。同意界面会列出这些键的名字。你的 LLM、GitHub 和 MCP 键永远不会交给提供方。
 
 ### 宿主如何处理插件进程
+
+下面说的是 `exec` 子进程。`node` 提供方由 Node 宿主加载（CLI 在进程内，Python SDK 则是 `abx provider engine serve`），不会按下面这种方式拉起。
 
 - 以清理过的环境启动：`PATH`、`HOME`、临时目录和语言环境变量、`env_passthrough` 中列出的名字，以及 `ABX_PROVIDER_DATA_DIR`。不会泄入 `ABX_*`、`E2B_*`、`ALICLOUD_*`、`GITHUB_TOKEN` 或 `OPENAI_*`。工作目录是插件的 `data/` 目录。
 - 单行协议消息限制为 8 MiB，并为崩溃信息保留 stderr 的最后 64 KiB。在 `initialize` 里发送过的值会从捕获的 stderr 和错误信息中被遮蔽。

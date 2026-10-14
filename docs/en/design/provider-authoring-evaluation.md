@@ -1,5 +1,7 @@
 # Provider authoring evaluation — how hard is it to add a provider?
 
+> **Historical.** This page evaluates the first `exec` plugin. The current OpenSandbox adapter is the `node` provider in [provider-opensandbox-mapping.md](provider-opensandbox-mapping.md). Node provider architecture: [node-provider-architecture.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/node-provider-architecture.md).
+
 > **Status**: Evaluation (evidence-based) with a resolution pass applied (see §10) · **Subject**: the `opensandbox` exec-provider plugin ([awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox)) written against the SDK docs, then driven against a real local OpenSandbox server. The plugin source is that catalog, not this repository. · **Companion docs**: [providers-and-credentials.md](providers-and-credentials.md) (normative design), [provider-opensandbox-mapping.md](provider-opensandbox-mapping.md) (research that fed the plugin), `../guide/providers.md` (user/author guide) · **中文**: [../../zh/design/provider-authoring-evaluation.md](../../zh/design/provider-authoring-evaluation.md)
 >
 > **Method.** One author (an AI coding agent) started from the repository docs and the reference plugin, built the plugin, and recorded every place the docs, the host adapters or the tooling forced a detour. Claims are tagged **[ran]** (reproduced by running something; the command is in §9), **[read]** (read in source or docs) or **[est]** (estimate). "Time" figures are wall-clock estimates of the session, not instrumented measurements.
@@ -239,4 +241,4 @@ Redundancy check. `exec_provider` (EPP adapters) and `rest_provider` (E2B preset
 
 Trust model check. The installer already fetched without a checkout, allowed only regular files, recorded a tree digest, verified it on every start and rolled back a failed update. Confirmation and pinning were present but had a hole (`--yes` plus a branch); that is closed. `provider install` from a git URL is therefore **not** experimental.
 
-Open: template commands ignore `--provider`; the capability set is not derived from provider features; no pause/resume CLI command; `SandboxInfo` still has built-in defaults for region and timeout; the awesome-providers catalog needs the `abx` rename (`cli/e2e/providers/awesome-providers-abx-rename.patch`).
+Open: template commands ignore `--provider`; the capability set is not derived from provider features; no pause/resume CLI command; `SandboxInfo` still has built-in defaults for region and timeout.

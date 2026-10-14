@@ -106,7 +106,7 @@ graph TB
 | **客户端 / 服务端对齐** | [client-server-alignment.md](design/client-server-alignment.md) | 每条服务端路由与客户端的差距矩阵 |
 | **基础镜像与 Server SDK** | [base-image-and-server-sdk.md](design/base-image-and-server-sdk.md)、[CLI 跟进项](archive/cli-followups.md) | 官方 FC Agent 沙箱基础镜像与 Server SDK；对 `abx` CLI 的确切修改规格 |
 | **Server SDK v2** | [server-sdk-v2/](archive/server-sdk-v2/README.md) | Server SDK 的目标操作模型设计（首页列出已实现与未实现部分） |
-| **OpenSandbox provider** | [provider-opensandbox-mapping.md](design/provider-opensandbox-mapping.md) | 现行的引擎内适配器和真实调用对照表 |
+| **OpenSandbox provider** | [provider-opensandbox-mapping.md](design/provider-opensandbox-mapping.md) | 现行的 `node` 目录提供方和真实调用对照表 |
 | **容器版** | [provider-alicloud-container.md](design/provider-alicloud-container.md) | ACS/ACK sandbox-manager，E2B 形状的 HTTP，不是极速版 |
 | **CubeSandbox** | [provider-cubesandbox.md](design/provider-cubesandbox.md) | CubeAPI 控制面 |
 | **E2B** | [provider-e2b.md](design/provider-e2b.md) | E2B 云 API，api.e2b.app |
@@ -126,7 +126,7 @@ graph TB
 | 模板 build/push/deploy | **在 CLI 中** | `abx template build` 与 `abx template deploy`；SDK 不构建模板 |
 | E2B 迁移辅助 | **已实现（部分）** | `agent_sandbox.compat` |
 | 每个配置键一个环境变量（SDK） | **已实现** | 见[配置参考](reference/configuration.md)；CLI 规格见 `cli/docs/zh/design/providers-and-credentials-cli.md` |
-| 提供方插件（SDK，`python -m agent_sandbox.providers`） | **已实现** | 见[提供方](guide/providers.md)；CLI 的 `abx provider` 待实现 |
+| 提供方插件（SDK，`python -m agent_sandbox.providers`） | **已实现** | 见[提供方](guide/providers.md)。CLI 加载已安装的 `node`、`exec` 和 `rest` 插件（`abx provider`、`abx --provider`） |
 | 持久沙箱 | **远期** | 需底层平台支持 |
 | SandboxPool（预热池） | **远期** | 需底层平台支持 |
 

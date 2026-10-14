@@ -1,6 +1,6 @@
 ---
 name: agent-sandbox-provider
-description: Write an Agent Sandbox provider plugin so Sandbox.create(provider=...) can talk to a new sandbox backend. Use when the task is abx-provider.toml, a rest or exec provider, feature ids, or E8004. Do not use this to call an existing sandbox; that is agent-sandbox-sdk.
+description: Write an Agent Sandbox provider plugin so Sandbox.create(provider=...) can talk to a new sandbox backend. Use when the task is abx-provider.toml, a rest, exec, or node provider, feature ids, or E8004. Do not use this to call an existing sandbox; that is agent-sandbox-sdk.
 ---
 
 # Write an Agent Sandbox provider
@@ -17,12 +17,17 @@ official catalog ids in `awesome-providers`. Install those with
 `abx-`, `alicloud-`, or `shortcuts`.
 
 The CLI loads `alicloud-express` plus installed `rest`, `exec` and `node`
-plugins. It rejects `kind = "python"`. Catalog providers are `exec`
-(opensandbox) or `node` (e2b, cubesandbox, alicloud-container): install with
-`abx provider install registry:<id> --yes` (or
+plugins. It rejects `kind = "python"`. An in-code `Provider` subclass still
+works from the Python SDK. Catalog providers (`opensandbox`, `e2b`,
+`cubesandbox`, `alicloud-container`) are all `node` (an ES module,
+`provider.mjs`): install with
+`abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` (or
 `python -m agent_sandbox.providers install registry:<id> --yes`), then
 `abx --provider <id>` or `Sandbox.create(provider="<id>")`. The Python SDK
-reaches `node` plugins through the local engine (`abx provider engine serve`). The catalog guide is
+reaches `node` plugins through the local engine (`abx provider engine serve`,
+started on demand; `abx` must be on `PATH` or in `ABX_BIN`) using
+`EngineProvider`. Python `exec` and `rest` manifests still run in the Python
+process. The catalog guide is
 `awesome-providers/docs/zh/principle.md`. The official site is
 https://www.agent-sandbox.com. The registry website is
 https://registry.agent-sandbox.com. The installer index is

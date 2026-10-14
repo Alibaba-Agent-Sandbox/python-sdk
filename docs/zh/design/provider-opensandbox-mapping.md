@@ -2,11 +2,11 @@
 
 > 状态：现行记录，2026-10-14。机器可读的同一张表是 `awesome-providers/opensandbox/provider.mjs` 里的 `FEATURES` 和方法表。
 >
-> 第 1 节到第 8 节的调研，以及 2026-10-13 的 exec 插件实测，在 [provider-opensandbox-research.md](../../en/archive/provider-opensandbox-research.md)。那些页描述的 Node `provider.mjs` 就是现在的实现。
+> 调研和第 2026-10-13 的 exec 插件实测在 [provider-opensandbox-research.md](../../en/archive/provider-opensandbox-research.md)。那是历史记录，不是下面的适配器。现行实现是 `kind = "node"` 的 `provider.mjs`。
 
-OpenSandbox 是目录提供方，源码在 `awesome-providers/opensandbox`，id 是 `opensandbox`。用 `abx provider install registry:opensandbox --yes`（或 `python -m agent_sandbox.providers install registry:opensandbox --yes`）安装。`Sandbox.create(provider="opensandbox")` 和 `abx --provider opensandbox` 在插件进程里打 OpenSandbox 的 HTTP、execd 的 SSE 和 WebSocket。
+OpenSandbox 是目录提供方，源码在 `awesome-providers/opensandbox`，id 是 `opensandbox`。用 `abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox --allow-unpinned --yes`（或 `python -m agent_sandbox.providers install registry:opensandbox --yes`）安装。装好之后，`Sandbox.create(provider="opensandbox")` 和 `abx --provider opensandbox` 都能用。它们从加载 `provider.mjs` 的 Node 宿主进程打 OpenSandbox 的 HTTP、execd 的 SSE 和 WebSocket。Python SDK 通过本机引擎（`abx provider engine serve`，按需启动；`abx` 在 `PATH` 里或由 `ABX_BIN` 指定）用 `EngineProvider` 到达这个模块。这个提供方给出的沙箱地址形如 `engine://opensandbox/<sandbox-id>`。
 
-清单是 `kind = "exec"`：一个无依赖的 Node 程序（`provider.mjs`），宿主启动它并用 EPP/1 通信。终端需要 Node 22+ 的全局 `WebSocket`。没安装时 `abx --provider opensandbox` 是 `E8001`。自己的说明在 `awesome-providers/opensandbox/docs/README.md`。
+清单是 `kind = "node"`、`protocol = "node/1"`：一个无依赖的 ES 模块（`provider.mjs`）。宿主在进程内运行它的 EPP/1 方法。`node provider.mjs` 仍可在 stdio 上提供 EPP/1。终端需要 Node 22+ 的全局 `WebSocket`。没安装时 `abx --provider opensandbox sandbox create` 退出码 4，错误 `E8001`。自己的说明在 `awesome-providers/opensandbox/docs/README.md`。
 
 配置：
 
@@ -79,7 +79,7 @@ OpenSandbox 是目录提供方，源码在 `awesome-providers/opensandbox`，id 
 
 ## 提供方登记更多能力
 
-上面「OpenSandbox 有，当前工具没接」的接口不放进固定的 18 个 feature id。放进去会让 `alicloud-express` 的能力表和契约测试都出现它们。它们登记在 `Provider.extensions`。
+上面「OpenSandbox 有，当前工具没接」的接口不放进固定的 18 个 feature id。放进去会让 `alicloud-express` 的能力表和契约测试都出现它们。Python 的 `Provider` 子类把它们登记在 `Provider.extensions`。已经安装的目录提供方是 `EngineProvider`（`kind = "node"`），它的 `extensions` 是空的。下面的表描述的是设置了 `extensions` 的子类，不是已安装的 `opensandbox`。
 
 登记只表示「这个提供方知道这件事」。`implemented=False` 时调用仍然是 `E8004`。看见和能调用是两回事。
 
@@ -90,7 +90,7 @@ OpenSandbox 是目录提供方，源码在 `awesome-providers/opensandbox`，id 
 | `provider.describe()["extensions"]`，以及以后的 `provider info` | 该提供方登记的全部扩展。不看镜像，也不看沙箱是否存在 |
 | `extensions_for(sandbox_id=...)` | 只看这个沙箱满足条件的扩展 |
 | 另一个提供方，例如 `alicloud-express` | 看不到这些 id。它的 `extensions` 是空的 |
-| CLI `abx --provider opensandbox` | 现在看不到。CLI 还没加载这个提供方，创建直接是 `E8001` |
+| CLI `abx --provider opensandbox` | 安装之后 CLI 会加载这个提供方，创建可用。`abx provider list` 只打印 `features`。这些扩展 id 不在 `node` 提供方上。没安装的 id 仍然退出码 4、错误 `E8001` |
 
 ### 什么时候在沙箱上看不到
 
@@ -124,7 +124,7 @@ class Example(Provider):
     )
 ```
 
-`when` 只有四个值：`sandbox`、`code_interpreter_image`、`egress`、`command`。OpenSandbox 的八项登记在 `opensandbox_provider.EXTENSIONS`。
+`when` 只有四个值：`sandbox`、`code_interpreter_image`、`egress`、`command`。早先的 Python 提供方把 OpenSandbox 的八项登记在 `opensandbox_provider.EXTENSIONS`。那个模块已经没有了。现行目录提供方不再登记它们。
 
 exec / rest 插件以后用清单登记，解析器还没接受这段，写进去现在不会生效：
 
@@ -144,18 +144,9 @@ when = "sandbox"
 from agent_sandbox.providers.registry import get_provider
 
 provider = get_provider("opensandbox")  # 先安装 registry:opensandbox
-catalog = provider.describe()["extensions"]          # 八项都在
-hidden = provider.extensions_for()                   # ()，还没有沙箱
-slim = provider.extensions_for(
-    image="python:3.12-slim", sandbox_id="sb-1",
-)                                                    # 没有 code，没有 networkpolicy
-coded = provider.extensions_for(
-    image="opensandbox/code-interpreter:v1.1.0",
-    sandbox_id="sb-1",
-    egress=True,
-    command_id="c1",
-)                                                    # code、networkpolicy、command.logs 都在
-provider.require_extension("code")                   # E8004，已登记但未实现
+provider.kind                              # "node"
+provider.describe()["extensions"]          # EngineProvider 上是 ()
+provider.extensions_for(sandbox_id="sb-1") # ()
 ```
 
-实现某一项时，把对应 `Extension` 的 `implemented` 改成 `True`，并在引擎适配器里加上那个 HTTP 调用。在此之前，`require_extension` 保持 `E8004`。
+Python 子类如果设置了 `extensions`，仍然用 `extensions_for` 过滤；`implemented` 为 false 时 `require_extension` 返回 `E8004`。实现某一项时，把对应 `Extension` 的 `implemented` 改成 `True`，并在 `awesome-providers/opensandbox/provider.mjs` 里加上那个 HTTP 调用。

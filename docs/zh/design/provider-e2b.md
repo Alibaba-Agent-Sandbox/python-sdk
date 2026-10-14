@@ -1,6 +1,6 @@
 # E2B 提供方
 
-E2B 是目录提供方，源码在 `awesome-providers/e2b`，id 是 `e2b`。用 `abx provider install registry:e2b --yes`（或 `python -m agent_sandbox.providers install registry:e2b --yes`）安装。`Sandbox.create(provider="e2b")` 和 `abx --provider e2b` 用宿主里的 E2B 协议类访问 E2B 公开 API。
+E2B 是目录提供方，源码在 `awesome-providers/e2b`，id 是 `e2b`。用 `abx provider install alibaba-agent-sandbox/awesome-providers//e2b --allow-unpinned --yes`（或 `python -m agent_sandbox.providers install registry:e2b --yes`）安装。`Sandbox.create(provider="e2b")` 和 `abx --provider e2b` 用宿主里的 E2B 协议类访问 E2B 公开 API。
 
 它不是随 SDK 编译进去的。清单是 `kind = "node"`：`provider.mjs` 由 Node.js 宿主加载，Python SDK 通过本机引擎（`abx provider engine serve`）使用它。自己的说明在 `awesome-providers/e2b/docs/README.md`。
 

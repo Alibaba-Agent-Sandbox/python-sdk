@@ -1,6 +1,6 @@
 # 阿里云智能体沙箱容器版
 
-> 状态：现行记录。这不是极速版 `alicloud-express`。源码在 `awesome-providers/alicloud-container`，用 `abx provider install registry:alicloud-container --yes`（或 `python -m agent_sandbox.providers install registry:alicloud-container --yes`）安装。清单是 `kind = "node"`：Node.js 宿主加载 `provider.mjs`，所以 CLI 和（经本机引擎的）所有 SDK 都能用。自己的说明在 `awesome-providers/alicloud-container/docs/README.md`。
+> 状态：现行记录。这不是极速版 `alicloud-express`。源码在 `awesome-providers/alicloud-container`，用 `abx provider install alibaba-agent-sandbox/awesome-providers//alicloud-container --allow-unpinned --yes`（或 `python -m agent_sandbox.providers install registry:alicloud-container --yes`）安装。清单是 `kind = "node"`：Node.js 宿主加载 `provider.mjs`，所以 CLI 和（经本机引擎的）所有 SDK 都能用。自己的说明在 `awesome-providers/alicloud-container/docs/README.md`。
 
 容器版是 ACS 或 ACK 上的 OpenKruise Agents sandbox-manager。它兼容 E2B HTTP，不是极速版的全托管 Endpoint。
 

@@ -1,6 +1,6 @@
 # Alibaba Cloud Agent Sandbox, container edition
 
-> Status: current. This is not Express (`alicloud-express`). The source is `awesome-providers/alicloud-container`. Install with `abx provider install registry:alicloud-container --yes` (or `python -m agent_sandbox.providers install registry:alicloud-container --yes`). The manifest is `kind = "node"`: the Node.js host loads `provider.mjs`, so the CLI and, through the local engine, every SDK can use it. Its own notes are `awesome-providers/alicloud-container/docs/README.md`.
+> Status: current. This is not Express (`alicloud-express`). The source is `awesome-providers/alicloud-container`. Install with `abx provider install alibaba-agent-sandbox/awesome-providers//alicloud-container --allow-unpinned --yes` (or `python -m agent_sandbox.providers install registry:alicloud-container --yes`). The manifest is `kind = "node"`: the Node.js host loads `provider.mjs`, so the CLI and, through the local engine, every SDK can use it. Its own notes are `awesome-providers/alicloud-container/docs/README.md`.
 
 Container edition is the OpenKruise Agents sandbox-manager on ACS or ACK. It speaks E2B-shaped HTTP. It is not the Express hosted endpoint.
 

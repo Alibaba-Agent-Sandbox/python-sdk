@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""End-to-end check of the ``opensandbox`` exec-provider plugin against a live OpenSandbox server.
+"""End-to-end check of the catalog ``opensandbox`` ``node`` provider.
+
+The provider is ``provider.mjs`` (``kind = "node"``) against a live OpenSandbox server.
 
 Stages (each prints PASS/FAIL; exit code is non-zero if any fails):
 
