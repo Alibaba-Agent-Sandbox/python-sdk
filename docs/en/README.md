@@ -31,45 +31,63 @@ These pages are reviews or target design, not the current specification.
 - [OpenSandbox end-to-end notes](archive/opensandbox-e2e-adversarial.md)
 - [CLI follow-ups](archive/cli-followups.md)
 
+## Two parts
+
+| | Client SDK | Server SDK |
+|---|---|---|
+| Where it runs | Your machine | Inside the sandbox image |
+| What it does | Create a sandbox and use it | Build the HTTP service the sandbox keeps running |
+| Package | `agent-sandbox` | `agent-sandbox-server` |
+| Import | `agent_sandbox` | `agent_sandbox.server` |
+| Start | [Client SDK](guide/client-sdk.md) | [Server SDK](guide/server-sdk.md) |
+
 ## User Guides
 
-### [`guide/`](guide/) — Tutorials & How-to Guides
+### Client SDK — use a sandbox
 
 | Guide | Description |
 |-------|-------------|
-| [Agents API](guide/agents-api.md) | HTTP sessions for Codex and Qwen Code, the one way to run an agent in a sandbox. CLIs install on demand. Includes the complete case |
+| [Client SDK](guide/client-sdk.md) | What this side is, and how the guides below fit together |
 | [Getting Started](guide/getting-started.md) | Install, configure, first sandbox |
-| [Cloud end-to-end practice](guide/cloud-examples.md) | Run the quickstart and compat demos on the default provider. The Agents API case stays on its own page |
-| [Best Practices](guide/best-practices.md) | Provider-free server, capability groups, agents opt-in, secrets not echoed |
-| [Fine-grained capabilities](guide/fine-grained-capabilities.md) | How to enable routes one endpoint at a time, with every endpoint id, scope, and knob |
-| [File and command controls](guide/file-and-command-controls.md) | How a template limits paths and commands |
-| [Hosted agents](guide/hosted-agents.md) | Codex and Qwen Code on the local Agents API |
-| [Authentication](guide/authentication.md) | API Key / AK-SK authentication |
-| [SDK Usage](guide/sdk-usage.md) | Python SDK complete usage, including the agent workflow pattern |
-| [Authoring Templates](guide/authoring-templates.md) | `template.yaml`, capability declarations, server-registered commands, Dockerfile |
-| [Template server HTTP API](guide/template-server-api.md) | Routes the template's `commands.py` server actually serves |
-| [Build & Deploy](guide/build-and-deploy.md) | Building and deploying templates with `abx template build` and `abx template deploy` |
-| [Declarative Usage](guide/declarative-usage.md) | `@sandbox` decorator |
-| [MCP Integration](guide/mcp-integration.md) | Python MCP server, IDE configuration, Streamable HTTP, FC artifact |
-| [Session Persistence](guide/session-persistence.md) | Local session storage |
-| [Migrate from E2B](guide/migrate-from-e2b.md) | Migration guide from E2B SDK |
-| [Providers](guide/providers.md) | Choose a sandbox provider, install provider plugins, write your own |
-| [Environment Variables](guide/environment-variables.md) | Sandbox env var scopes, injection, and direct-exec semantics |
-| [Troubleshooting](guide/troubleshooting.md) | Common issues and solutions |
-| [Testing & Definition of Done](guide/testing-e2e.md) | Real-cloud E2E suite (`make e2e`) and the Definition of Done |
-| [Comparison](guide/comparison.md) | Agent Sandbox compared with E2B, Modal and Docker Sandbox |
-| [Command and SDK map](guide/command-map.md) | `abx` and the Python SDK next to the E2B and OpenSandbox commands and methods |
+| [SDK Usage](guide/sdk-usage.md) | Commands, files, the code interpreter, named commands |
+| [Cloud end-to-end practice](guide/cloud-examples.md) | Run the quickstart and compat demos on the default provider |
+| [Authentication](guide/authentication.md) | API key / AK-SK |
+| [Declarative usage](guide/declarative-usage.md) | `@sandbox` decorator |
+| [MCP integration](guide/mcp-integration.md) | Hand sandbox operations to an IDE |
+| [Session persistence](guide/session-persistence.md) | Local session storage |
+| [Migrate from E2B](guide/migrate-from-e2b.md) | Move from the E2B SDK |
+| [Providers](guide/providers.md) | Choose, install, and write a provider |
+| [Environment variables](guide/environment-variables.md) | Injection and reads inside the sandbox |
+| [Troubleshooting](guide/troubleshooting.md) | Common failures |
+| [Comparison](guide/comparison.md) | Next to E2B, Modal, and Docker Sandbox |
+| [Command and SDK map](guide/command-map.md) | Commands and methods next to E2B and OpenSandbox |
+
+### Server SDK — build the service inside the sandbox
+
+| Guide | Description |
+|-------|-------------|
+| [Server SDK](guide/server-sdk.md) | What this side is, and how `commands.py` starts |
+| [Authoring templates](guide/authoring-templates.md) | `template.yaml`, capabilities, registered commands, Dockerfile |
+| [Template server HTTP API](guide/template-server-api.md) | Routes `commands.py` actually serves |
+| [Best practices](guide/best-practices.md) | The server carries no provider; turn groups on only when needed |
+| [Fine-grained capabilities](guide/fine-grained-capabilities.md) | Enable routes one endpoint at a time |
+| [File and command controls](guide/file-and-command-controls.md) | Limit paths and commands |
+| [Agents API](guide/agents-api.md) | Codex and Qwen Code HTTP sessions inside the sandbox |
+| [Hosted agents](guide/hosted-agents.md) | How those routes refuse and what they return |
+| [Build and deploy](guide/build-and-deploy.md) | `abx template build` and `abx template deploy` |
+
+How a change counts as tested: [Testing and the Definition of Done](guide/testing-e2e.md).
 
 ### [`reference/`](reference/) — API / Configuration Reference
 
 | Document | Description |
 |----------|-------------|
-| [API Reference](reference/api-reference.md) | Complete SDK API documentation |
-| [Configuration](reference/configuration.md) | Environment variables, config files, credential resolution |
+| [API Reference](reference/api-reference.md) | Client SDK public API |
+| [Configuration](reference/configuration.md) | Client SDK environment variables, config files, credential resolution |
 | [Error Codes](reference/error-codes.md) | E1xxx–E8xxx error code index |
-| [Template YAML Spec](reference/template-yaml-spec.md) | Template definition format (the `template.yaml` contract) |
-| [Server HTTP API](reference/server-http-api.md) | In-sandbox server HTTP API reference |
-| [Agents API reference](reference/agents-api.md) | Every `/v1/agents/**`, `/v1/vaults` and `/v1/responses` route: parameters and responses |
+| [Template YAML Spec](reference/template-yaml-spec.md) | Server SDK template definition (`template.yaml`) |
+| [Server HTTP API](reference/server-http-api.md) | HTTP API of the Server SDK inside the sandbox |
+| [Agents API reference](reference/agents-api.md) | Parameters and responses for each Agents route on the Server SDK |
 
 ### [`explanation/`](explanation/) — Concepts & Architecture
 
@@ -91,8 +109,8 @@ These pages are reviews or target design, not the current specification.
 
 ### By role
 
-- **SDK user**: [Best Practices](guide/best-practices.md) → [SDK Usage](guide/sdk-usage.md) → [API Reference](reference/api-reference.md)
-- **AI Agent developer**: [Hosted agents](guide/hosted-agents.md) → [File and command controls](guide/file-and-command-controls.md) → [MCP Integration](guide/mcp-integration.md)
+- **Use a sandbox (Client SDK)**: [Client SDK](guide/client-sdk.md) → [Getting Started](guide/getting-started.md) → [SDK Usage](guide/sdk-usage.md)
+- **Build the service inside the sandbox (Server SDK)**: [Server SDK](guide/server-sdk.md) → [Authoring Templates](guide/authoring-templates.md) → [Template server HTTP API](guide/template-server-api.md)
 - **Architect**: [Architecture](design/architecture.md) → [Server API](design/server-api.md)
 
 ### By feature

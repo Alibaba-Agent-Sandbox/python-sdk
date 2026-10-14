@@ -1,7 +1,8 @@
 # agent-sandbox
 
-Async Python **runtime client** for the Alibaba Cloud FC Agent Sandbox service: create, use and kill
-sandboxes. Template build and deploy are done by the CLI (`abx template build|deploy`). Method names are
+**Client SDK.** This package runs on your machine: create a sandbox, use it, and kill it. The HTTP service inside the image is [`agent-sandbox-server`](../server-sdk/README.md). Guide: [Client SDK](../docs/en/guide/client-sdk.md).
+
+Template build and deploy are done by the CLI (`abx template build|deploy`). Method names are
 E2B-shaped to ease migration; this is not a drop-in replacement (see the "Migrate from E2B" guide).
 
 This package is the `agent_sandbox` import namespace *except* `agent_sandbox.server`, which is

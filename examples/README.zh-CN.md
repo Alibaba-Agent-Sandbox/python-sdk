@@ -2,7 +2,11 @@
 
 [English](README.md) | **中文**
 
-本目录包含 Agent Sandbox SDK 的完整使用示例，覆盖从基础操作到高级场景。
+示例按它们用的是哪一个包分开。
+
+**Client SDK** 的脚本跑在你的机器上。它们创建沙箱，或调用一个已经起来的沙箱：`quickstart/`、`compat-demos/`、`agents/`、`scenarios/`，以及 `templates/python-hello/call_api.py`。
+
+**Server SDK** 的代码跑在沙箱镜像里面。就是 `templates/python-hello/` 和 `templates/agents-cli/` 里的 `commands.py`。它们导入 `agent_sandbox.server` 并调用 `start(9000)`。它们不创建云上沙箱。
 
 ## 前置条件
 
@@ -37,39 +41,33 @@ export OPENAI_API_KEY="your-openai-key-here"
 
 > **环境变量：** envd 使用直接执行（direct exec）—— Shell 特性（`$VAR` 展开、管道、重定向）需要 `sh -c '...'`。用 `printenv VAR` 读取变量值。详见[环境变量指南（中文）](../docs/zh/guide/environment-variables.md) | [Environment Variables (EN)](../docs/en/guide/environment-variables.md)。
 
+## Client SDK 示例
+
 ## 目录结构
 
 ```
 examples/
-├── quickstart/                # 快速入门示例
-│   ├── 01_hello.py            # 基础沙箱操作 —— 创建、执行命令、生命周期
-│   ├── 02_file_ops.py         # 文件操作 —— 读写文件、目录管理
-│   ├── 03_web_service.py      # Web 服务 —— 启动服务、获取公网 URL
-│   ├── 04_data_analysis.py    # 数据分析 —— CSV 上传、pandas 分析
-│   └── 05_decorator_usage.py  # @sandbox 装饰器 —— 声明式远程执行
-├── agents/                    # Agent 集成示例
-│   ├── complete_case.py       # Agents API 完整案例（Codex + Qwen Code，无模型密钥）
-│   ├── hosted_codex.py        # Agents API 客户端（Codex）
-│   ├── hosted_qwen.py         # Agents API 客户端（Qwen Code）
-│   ├── local_files_and_session.py  # 本地服务 + 名为 codex 的本地程序，不需要模型密钥
-│   ├── codex_agent.py         # 云上 Codex 沙箱，需要提供方
-│   └── browser_automation.py  # 浏览器自动化，需要提供方
-├── compat-demos/              # E2B/Modal 兼容层演示
-│   ├── e2b_data_analysis.py   # E2B 风格数据分析
-│   ├── e2b_web_scraper.py     # E2B 风格网页爬取
-│   ├── modal_compute.py       # Modal 风格科学计算
-│   ├── modal_data_analysis.py # Modal 风格数据分析
-│   └── comparison.py          # E2B vs Modal 风格对比
-└── templates/                 # 离线夹具（发布真源是 awesome-templates）
-    ├── python-hello/
-    └── agents-cli/            # Codex / Qwen Code 的 Agents API，镜像不预装 CLI
+├── quickstart/                # Client SDK — 创建并使用沙箱
+├── agents/                    # Client SDK — 调用 Agents API 或云上沙箱
+├── compat-demos/              # Client SDK — E2B 风格和 Modal 风格的调用
+├── scenarios/                 # Client SDK — 本地创建、执行、读取、销毁
+└── templates/                 # Server SDK — commands.py 在镜像里启动
+    ├── python-hello/commands.py
+    ├── python-hello/call_api.py   # Client SDK：对已经在听的服务发 HTTP
+    └── agents-cli/commands.py
 ```
 
-[`templates/python-hello/call_api.py`](templates/python-hello/call_api.py) 调用一个已经在运行的模板服务器（`GET /health`、`GET /capabilities`、`GET /commands`、一次上传、一次 shell）。基址来自命令行参数或 `ABX_TEMPLATE_URL`，令牌来自 `ABX_SERVER_TOKEN`。请求和响应形状见[模板服务器 HTTP API](../docs/zh/guide/template-server-api.md)（[English](../docs/en/guide/template-server-api.md)）。
+## Server SDK 示例
+
+### templates/ —— Server SDK
+
+[`python-hello/commands.py`](templates/python-hello/commands.py) 和 [`agents-cli/commands.py`](templates/agents-cli/commands.py) 随镜像启动。它们导入 `agent_sandbox.server`。
+
+[`call_api.py`](templates/python-hello/call_api.py) 是 Client SDK。它调用一个已经在运行的模板服务器（`GET /health`、`GET /capabilities`、`GET /commands`、一次上传、一次 shell）。基址来自命令行参数或 `ABX_TEMPLATE_URL`，令牌来自 `ABX_SERVER_TOKEN`。请求和响应形状见[模板服务器 HTTP API](../docs/zh/guide/template-server-api.md)（[English](../docs/en/guide/template-server-api.md)）。
 
 ## 示例列表
 
-### quickstart/ —— 快速入门
+### quickstart/ —— Client SDK
 
 | 文件 | 说明 | 适用场景 |
 |------|------|----------|
@@ -79,7 +77,7 @@ examples/
 | [`04_data_analysis.py`](quickstart/04_data_analysis.py) | **数据分析** —— 上传 CSV、pandas 分析、run_code | 数据科学 |
 | [`05_decorator_usage.py`](quickstart/05_decorator_usage.py) | **@sandbox 装饰器** —— 声明式远程执行 | 简化调用 |
 
-### agents/ —— Agent 集成
+### agents/ —— Client SDK
 
 | 文件 | 说明 | 适用场景 |
 |------|------|----------|
@@ -90,7 +88,7 @@ examples/
 | [`hosted_qwen.py`](agents/hosted_qwen.py) | **托管 Qwen 客户端** —— 对着已经启动的服务开一个会话 | Agents API |
 | [`local_files_and_session.py`](agents/local_files_and_session.py) | **文件加一个 Codex 会话** —— 本地服务，`PATH` 上名为 `codex` 的本地程序，无 API key | Agents API |
 
-### compat-demos/ —— 兼容层演示
+### compat-demos/ —— Client SDK演示
 
 | 文件 | 说明 | 适用场景 |
 |------|------|----------|

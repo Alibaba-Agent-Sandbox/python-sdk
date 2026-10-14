@@ -1,6 +1,8 @@
 # Getting Started
 
-This tutorial walks you through the complete sandbox lifecycle, from installation to teardown.
+This is the **Client SDK**: install it on your machine, create a sandbox, and use it. The service that starts inside the image is the [Server SDK](server-sdk.md).
+
+This tutorial covers the lifecycle from install through teardown.
 
 ---
 

@@ -1,9 +1,8 @@
 # agent-sandbox-server
 
-Container-side **server SDK** for Agent Sandbox templates. It is the persistent HTTP service that
-runs *inside* a sandbox image (default port 9000) and exposes files, processes, system info,
-a PTY terminal, optional dev tools / browser automation, and your own registered commands to the
-[client SDK](../client-sdk/README.md) and the `abx` CLI.
+**Server SDK.** This package runs *inside* a sandbox image. It is the HTTP service the image starts (default port 9000). It does not create the sandbox. Creating and calling the sandbox is the [client SDK](../client-sdk/README.md) or the `abx` CLI. Guide: [Server SDK](../docs/en/guide/server-sdk.md).
+
+It exposes files, processes, system info, a PTY terminal, optional dev tools / browser automation, and your own registered commands.
 
 The HTTP server is stdlib-only. `websockets` is installed for the PTY terminal endpoint.
 Import path: `agent_sandbox.server` (a namespace shared with `agent-sandbox`).

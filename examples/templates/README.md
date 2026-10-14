@@ -1,5 +1,7 @@
 # Template Fixtures（离线测试夹具）
 
+**Server SDK。** 每个模板里的 `commands.py` 随镜像启动，在沙箱里面听 HTTP。`python-hello/call_api.py` 是例外：它跑在沙箱外面，对已经在听的服务发请求，属于 Client SDK。
+
 > ⚠️ **本目录不是模板发布真源（This directory is NOT the publishing source）。**
 >
 > 官方与社区模板的**唯一真源**是独立仓库

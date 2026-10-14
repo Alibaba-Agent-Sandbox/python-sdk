@@ -1,0 +1,45 @@
+# Server SDK
+
+The Server SDK runs **inside the sandbox**. It is the HTTP service the image keeps listening on, port 9000 by default. The package is `agent-sandbox-server`. Import `agent_sandbox.server`. A template's `commands.py` uses it to register commands, turn capabilities on, and call `start(9000)`.
+
+```bash
+pip install agent-sandbox-server
+```
+
+```python
+from agent_sandbox.server import command, start
+
+
+@command(description="Say hello")
+def hello(name: str = "world") -> dict:
+    return {"message": f"Hello, {name}!"}
+
+
+if __name__ == "__main__":
+    start(9000)
+```
+
+This code does not create a cloud sandbox and does not read a sandbox API key. Creating the sandbox and calling these routes is the [Client SDK](client-sdk.md) or the `abx` CLI.
+
+## Start here
+
+| Guide | What it covers |
+|------|----------------|
+| [Authoring templates](authoring-templates.md) | `template.yaml`, the Dockerfile, `commands.py` |
+| [Template server HTTP API](template-server-api.md) | The routes the process actually serves |
+| [Best practices](best-practices.md) | The server carries no provider; turn groups on only when needed |
+| [Fine-grained capabilities](fine-grained-capabilities.md) | Enable routes one endpoint at a time |
+| [File and command controls](file-and-command-controls.md) | Limit paths and commands |
+| [Agents API](agents-api.md) | HTTP sessions for Codex and Qwen Code inside the sandbox |
+| [Hosted agents](hosted-agents.md) | How those routes refuse and what they return |
+
+Reference: [Server HTTP API](../reference/server-http-api.md), [template.yaml](../reference/template-yaml-spec.md), [Agents API reference](../reference/agents-api.md), [Server API design](../design/server-api.md).
+
+## Examples
+
+These `commands.py` files start with the image. See the [example index](../../../examples/README.md#server-sdk-examples):
+
+- `examples/templates/python-hello/commands.py` — the smallest command server
+- `examples/templates/agents-cli/commands.py` — only the session Agents routes are open
+
+`examples/templates/python-hello/call_api.py` is not the Server SDK. It runs outside the sandbox and sends HTTP to a server that is already listening. That script is a Client SDK example.

@@ -1,5 +1,7 @@
 # Hosted agents (Codex and Qwen Code)
 
+**Client SDK.** `hosted_codex.py`, `hosted_qwen.py`, `complete_case.py`, and `local_files_and_session.py` run on your machine and call an Agents API. The process that serves that API inside a sandbox image is `examples/templates/agents-cli/commands.py` (Server SDK).
+
 The sandbox server speaks a local Agents API. Codex and Qwen Code are supported today.
 
 The examples `hosted_codex.py` and `hosted_qwen.py` do not start a server and do not embed an API key. They are HTTP clients. Pass the server origin as the first argument, or set `ABX_TEMPLATE_URL`.

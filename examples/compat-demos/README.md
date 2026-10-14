@@ -1,5 +1,7 @@
 # E2B-style and Modal-style Demos
 
+**Client SDK.** These scripts run on your machine and call `Sandbox` or `@sandbox`.
+
 These demos showcase **E2B-style** (imperative) and **Modal-style** (declarative) API patterns, plus a full E2E capability validation suite. Agent Sandbox uses E2B-style method names, so code written that way ports with few changes (it is not a drop-in replacement; see the Migrate from E2B guide). It also offers the more concise `@sandbox` decorator.
 
 ## Prerequisites

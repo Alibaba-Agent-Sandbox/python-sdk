@@ -2,6 +2,8 @@
 
 > **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox`）与容器侧运行时（`agent-sandbox-server`）。
 
+这是 **Server SDK**：`commands.py` 随镜像启动，在沙箱里面提供 HTTP 服务。在你的机器上创建并调用沙箱见 [Client SDK](client-sdk.md)。
+
 本文档介绍如何创建自定义 Agent Sandbox 模板，包括目录结构、字段参考、能力声明、注册命令和发布流程。
 
 模板是一个由纯文件组成的目录，可手写也可生成。`abx template init` 命令有三种生成方式（内置脚手架、一句话描述、适配已有源码的项目）；该工作流记录在 CLI 仓库：[模板编写（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authoring-templates.md)。

@@ -25,18 +25,27 @@ Node.js 项目，位于 [`cli`](https://github.com/alibaba-agent-sandbox/agent-s
 两个分发包共享 `agent_sandbox` 命名空间（client 提供 `agent_sandbox/__init__.py`，server 只包含
 `agent_sandbox/server/`），并以相同版本号**同步发布**。
 
+**Client SDK** 跑在你的机器上：创建沙箱并使用它。说明见 [Client SDK](docs/zh/guide/client-sdk.md)。示例在 `examples/quickstart/`、`examples/compat-demos/`、`examples/agents/`、`examples/scenarios/`。
+
+**Server SDK** 跑在沙箱镜像里面：镜像启动的 HTTP 服务。说明见 [Server SDK](docs/zh/guide/server-sdk.md)。示例是 `examples/templates/python-hello/commands.py` 和 `examples/templates/agents-cli/commands.py`。
+
 ---
 
-## 特性
+## Client SDK
 
-- **异步优先 SDK** —— `Sandbox.create()`，Shell 执行、代码解释、文件读写、端口转发、WebSocket 流。
-- **三种执行原语** —— `sandbox.commands.run()`（裸 Shell）、`sandbox.run_code()`（代码解释器）、`sandbox.run("name", **kwargs)`（调用注册在沙箱 server 里的命令）。
-- **模板** —— 可复用的沙箱镜像（Python、Node、浏览器自动化、AI Agent Harness……），用 `abx template build|deploy` 构建和部署。
+- **异步优先** —— `Sandbox.create()`，Shell 执行、代码解释、文件读写、端口转发、WebSocket 流。
+- **三种执行原语** —— `sandbox.commands.run()`（裸 Shell）、`sandbox.run_code()`（代码解释器）、`sandbox.run("name", **kwargs)`（调用 Server SDK 注册的命令）。
 - **MCP Server** —— 将沙箱操作暴露为 MCP 工具，供 LLM Agent 调用。
 - **声明式装饰器** —— `@sandbox` 将普通函数变为远程沙箱执行，自动序列化。
 - **会话持久化** —— 跨运行保存和恢复沙箱状态。
-- **E2B 迁移辅助** —— 方法名与 E2B 相近，另有 `agent_sandbox.compat`；只是部分对应，见[从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md)。
-- **Agents API** —— 沙箱内 HTTP 会话。目前支持 Codex 和 Qwen Code。CLI 按需安装，不打进基础镜像。说明和完整案例见 [Agents API](docs/zh/guide/agents-api.md)。
+- **E2B 风格方法名** —— `agent_sandbox.compat` 覆盖一部分 E2B 表面，见[从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md)。
+
+## Server SDK
+
+- **镜像内 HTTP 服务** —— `commands.py` 导入 `agent_sandbox.server` 并调用 `start(9000)`。
+- **注册命令** —— `@command` 函数变成路由，Client SDK 用 `sandbox.run` 调用。
+- **Agents API** —— 沙箱里的 Codex 与 Qwen Code HTTP 会话。CLI 按需安装。说明见 [Agents API](docs/zh/guide/agents-api.md)。
+- **模板** —— 镜像和 `template.yaml` 用 `abx template build|deploy` 构建和部署。
 
 ## 安装
 

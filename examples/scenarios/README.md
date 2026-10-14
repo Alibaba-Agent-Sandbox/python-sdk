@@ -1,5 +1,7 @@
 # Scenario: create, exec, read, kill
 
+**Client SDK.** This script runs on your machine. It starts a local Server SDK process only so the client has something to call.
+
 This is the local form of an agent loop. A real `Sandbox.create` needs a provider and an API key. The steps below use the same server the template runs (`agent-sandbox-server`) and the Python `ServerClient`. Nothing is called in-process.
 
 ```bash

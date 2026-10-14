@@ -1,5 +1,7 @@
 # 场景：创建、执行、读取、销毁
 
+**Client SDK。** 这个脚本跑在你的机器上。它在本地拉起一个 Server SDK 进程，只是为了让客户端有服务可调。
+
 这是智能体循环的本地形态。真正的 `Sandbox.create` 需要提供商和 API key。下面的步骤使用模板里同一个服务（`agent-sandbox-server`）和 Python `ServerClient`。没有在进程内直接调用路由。
 
 ```bash

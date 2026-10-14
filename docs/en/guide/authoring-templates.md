@@ -2,6 +2,8 @@
 
 > **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`).
 
+This is the **Server SDK**: `commands.py` starts with the image and serves HTTP inside the sandbox. Creating and calling a sandbox from your machine is the [Client SDK](client-sdk.md).
+
 This document explains how to create custom Agent Sandbox templates, including directory structure, field reference, capability declarations, registered commands, and publishing.
 
 A template is a directory of plain files, written by hand or generated. The `abx template init` command generates one three ways (built-in scaffold, a one-sentence description, or adopting a project that already has source code); that workflow is documented in the CLI repository: [Authoring Templates (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authoring-templates.md).

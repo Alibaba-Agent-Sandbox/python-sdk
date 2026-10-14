@@ -4,6 +4,8 @@
 > publishing source. Publishable templates live in
 > [alibaba-agent-sandbox/awesome-templates](https://github.com/alibaba-agent-sandbox/awesome-templates).
 
+**Server SDK。** `commands.py` 在沙箱里面启动，只打开发话相关的 Agents 路由。外面怎么调用见 `examples/agents/`（Client SDK）。
+
 Codex 和 Qwen Code 的 Agents API 模板。镜像里**不预装**这两个 CLI。要用哪一个，再安装哪一个。
 
 English follows the Chinese section.

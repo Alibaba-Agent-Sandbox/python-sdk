@@ -31,45 +31,63 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 - [OpenSandbox 端到端记录](archive/opensandbox-e2e-adversarial.md)
 - [CLI 跟进项](archive/cli-followups.md)
 
+## 两部分
+
+| | Client SDK | Server SDK |
+|---|---|---|
+| 跑在哪里 | 你的机器 | 沙箱镜像里面 |
+| 做什么 | 创建沙箱并使用它 | 构建沙箱里一直听着的 HTTP 服务 |
+| 包 | `agent-sandbox` | `agent-sandbox-server` |
+| 导入 | `agent_sandbox` | `agent_sandbox.server` |
+| 入口 | [Client SDK](guide/client-sdk.md) | [Server SDK](guide/server-sdk.md) |
+
 ## 用户文档
 
-### [`guide/`](guide/) — 使用教程与 How-to 指南
+### Client SDK — 使用沙箱
 
 | 文档 | 说明 |
 |------|------|
-| [Agents API](guide/agents-api.md) | Codex 与 Qwen Code 的 HTTP 会话，是在沙箱里运行 Agent 的唯一方式。CLI 按需安装。含完整案例 |
+| [Client SDK](guide/client-sdk.md) | 这一侧是什么，以及下面这些文档怎么串起来 |
 | [快速开始](guide/getting-started.md) | 安装、配置、第一个沙箱 |
-| [云上端到端练习](guide/cloud-examples.md) | 在默认提供方上跑 quickstart 与 compat-demos。Agents API 案例见专页 |
-| [最佳实践](guide/best-practices.md) | 服务器不携带提供者、按需打开能力组、agents 默认关闭、密钥不回显 |
-| [细粒度能力](guide/fine-grained-capabilities.md) | 如何按端点打开路由，以及全部端点 id、scope 和可配项 |
-| [文件与命令控制](guide/file-and-command-controls.md) | 模板如何限制路径和命令 |
-| [托管代理](guide/hosted-agents.md) | 本地 Agents API 上的 Codex 与 Qwen Code |
-| [认证配置](guide/authentication.md) | API Key / AK-SK 双认证模式 |
-| [SDK 使用](guide/sdk-usage.md) | Python SDK 完整用法，含 Agent 工作流模式 |
-| [模板编写](guide/authoring-templates.md) | `template.yaml`、能力声明、服务端注册命令、Dockerfile |
-| [模板服务器 HTTP API](guide/template-server-api.md) | 模板 `commands.py` 里的服务器实际提供的路由 |
-| [构建与部署](guide/build-and-deploy.md) | 用 `abx template build` 和 `abx template deploy` 构建和部署模板 |
+| [SDK 使用](guide/sdk-usage.md) | 命令、文件、代码解释器、命名命令 |
+| [云上端到端练习](guide/cloud-examples.md) | 在默认提供方上跑 quickstart 与 compat-demos |
+| [认证配置](guide/authentication.md) | API Key / AK-SK |
 | [声明式用法](guide/declarative-usage.md) | `@sandbox` 装饰器 |
-| [MCP 集成](guide/mcp-integration.md) | Python MCP server、IDE 配置、Streamable HTTP、FC 产物 |
+| [MCP 集成](guide/mcp-integration.md) | 把沙箱操作交给 IDE |
 | [会话持久化](guide/session-persistence.md) | 本地会话存储 |
-| [E2B 迁移](guide/migrate-from-e2b.md) | 从 E2B 迁移指南 |
-| [提供方](guide/providers.md) | 选择沙箱提供方、安装提供方插件、编写自己的提供方 |
-| [环境变量](guide/environment-variables.md) | 沙箱环境变量作用域、注入方式与直接执行语义 |
-| [故障排查](guide/troubleshooting.md) | 常见问题与解决方案 |
-| [测试与完成定义](guide/testing-e2e.md) | 真实云 E2E 套件(`make e2e`)与完成定义 |
-| [对比](guide/comparison.md) | Agent Sandbox 与 E2B、Modal、Docker Sandbox 的对比 |
-| [命令与 SDK 对照](guide/command-map.md) | `abx` / Python SDK 与 E2B、OpenSandbox 的命令和方法对照 |
+| [E2B 迁移](guide/migrate-from-e2b.md) | 从 E2B 迁移 |
+| [提供方](guide/providers.md) | 选择、安装、编写提供方 |
+| [环境变量](guide/environment-variables.md) | 注入与沙箱内读取 |
+| [故障排查](guide/troubleshooting.md) | 常见问题 |
+| [对比](guide/comparison.md) | 与 E2B、Modal、Docker Sandbox |
+| [命令与 SDK 对照](guide/command-map.md) | 与 E2B、OpenSandbox 的命令和方法 |
+
+### Server SDK — 构建沙箱里的服务
+
+| 文档 | 说明 |
+|------|------|
+| [Server SDK](guide/server-sdk.md) | 这一侧是什么，以及 `commands.py` 怎么启动 |
+| [模板编写](guide/authoring-templates.md) | `template.yaml`、能力声明、注册命令、Dockerfile |
+| [模板服务器 HTTP API](guide/template-server-api.md) | `commands.py` 实际提供的路由 |
+| [最佳实践](guide/best-practices.md) | 服务器不携带提供者、按需打开能力组 |
+| [细粒度能力](guide/fine-grained-capabilities.md) | 按端点打开路由 |
+| [文件与命令控制](guide/file-and-command-controls.md) | 限制路径和命令 |
+| [Agents API](guide/agents-api.md) | 沙箱里的 Codex 与 Qwen Code HTTP 会话 |
+| [托管代理](guide/hosted-agents.md) | 这些路由的拒绝和响应 |
+| [构建与部署](guide/build-and-deploy.md) | `abx template build` 与 `abx template deploy` |
+
+测试如何算完成，见[测试与完成定义](guide/testing-e2e.md)。
 
 ### [`reference/`](reference/) — API / 配置参考
 
 | 文档 | 说明 |
 |------|------|
-| [API 参考](reference/api-reference.md) | SDK 公开 API 完整文档 |
-| [配置参考](reference/configuration.md) | 环境变量、配置文件、凭证解析 |
+| [API 参考](reference/api-reference.md) | Client SDK 公开 API |
+| [配置参考](reference/configuration.md) | Client SDK 的环境变量、配置文件、凭证解析 |
 | [错误码](reference/error-codes.md) | E1xxx–E8xxx 错误码索引 |
-| [template.yaml 规范](reference/template-yaml-spec.md) | 模板定义格式（`template.yaml` 契约） |
-| [Server HTTP API](reference/server-http-api.md) | 沙箱内 Server HTTP API 参考 |
-| [Agents API 参考](reference/agents-api.md) | 每条 `/v1/agents/**`、`/v1/vaults`、`/v1/responses` 路由的参数与响应 |
+| [template.yaml 规范](reference/template-yaml-spec.md) | Server SDK 模板定义（`template.yaml`） |
+| [Server HTTP API](reference/server-http-api.md) | 沙箱内 Server SDK 的 HTTP API |
+| [Agents API 参考](reference/agents-api.md) | Server SDK 上每条 Agents 路由的参数与响应 |
 
 ### [`explanation/`](explanation/) — 概念解释与架构综述
 
@@ -91,8 +109,8 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 
 ### 按角色
 
-- **SDK 用户**：[最佳实践](guide/best-practices.md) → [SDK 使用](guide/sdk-usage.md) → [API 参考](reference/api-reference.md)
-- **AI Agent 开发者**：[托管代理](guide/hosted-agents.md) → [文件与命令控制](guide/file-and-command-controls.md) → [MCP 集成](guide/mcp-integration.md)
+- **使用沙箱（Client SDK）**：[Client SDK](guide/client-sdk.md) → [快速开始](guide/getting-started.md) → [SDK 使用](guide/sdk-usage.md)
+- **构建沙箱里的服务（Server SDK）**：[Server SDK](guide/server-sdk.md) → [模板编写](guide/authoring-templates.md) → [模板服务器 HTTP API](guide/template-server-api.md)
 - **架构师**：[系统架构](design/architecture.md) → [Server API](design/server-api.md)
 
 ### 按功能

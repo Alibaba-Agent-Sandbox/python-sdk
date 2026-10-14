@@ -1,5 +1,7 @@
 # Python Hello 模板
 
+**Server SDK。** `commands.py` 在沙箱里面启动。`call_api.py` 是 Client SDK：在外面调用已经起来的服务。
+
 > **Fixture**：本目录是主仓库的**离线测试夹具**（`client-sdk/tests/test_templates/` 使用），
 > 不是发布真源。模板内容、索引与发布以
 > [`alibaba-agent-sandbox/awesome-templates`](https://github.com/alibaba-agent-sandbox/awesome-templates/tree/main/python-hello)

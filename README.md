@@ -27,18 +27,27 @@ distributions. The `abx` command-line tool is a separate Node.js project that li
 Both distributions share the `agent_sandbox` namespace (the client owns `agent_sandbox/__init__.py`,
 the server only ships `agent_sandbox/server/`) and are **released in lockstep** with the same version number.
 
+**Client SDK** runs on your machine: create a sandbox and use it. Guide: [Client SDK](docs/en/guide/client-sdk.md). Examples: `examples/quickstart/`, `examples/compat-demos/`, `examples/agents/`, `examples/scenarios/`.
+
+**Server SDK** runs inside the sandbox image: the HTTP service the image starts. Guide: [Server SDK](docs/en/guide/server-sdk.md). Examples: `examples/templates/python-hello/commands.py`, `examples/templates/agents-cli/commands.py`.
+
 ---
 
-## Features
+## Client SDK
 
-- **Async-first SDK** — `Sandbox.create()`, shell execution, code interpretation, file I/O, port forwarding, and WebSocket streaming.
-- **Three execution primitives** — `sandbox.commands.run()` (bare shell), `sandbox.run_code()` (code interpreter), `sandbox.run("name", **kwargs)` (a command registered in the sandbox server).
-- **Templates** — reusable sandbox images (Python, Node, browser automation, AI agent harnesses, …), built and deployed with `abx template build|deploy`.
+- **Async-first** — `Sandbox.create()`, shell execution, code interpretation, file I/O, port forwarding, and WebSocket streaming.
+- **Three execution primitives** — `sandbox.commands.run()` (bare shell), `sandbox.run_code()` (code interpreter), `sandbox.run("name", **kwargs)` (a command the Server SDK registered).
 - **MCP server** — expose sandbox operations as MCP tools for LLM agents.
 - **Declarative decorator** — `@sandbox` turns a plain function into a remote sandbox execution with automatic serialisation.
 - **Session persistence** — save and restore sandbox state across runs.
-- **E2B migration helper** — E2B-shaped methods and `agent_sandbox.compat`; partial, see [Migrate from E2B](docs/en/guide/migrate-from-e2b.md).
-- **Agents API** — in-sandbox HTTP sessions. Codex and Qwen Code are supported today. Install a CLI when you call it; the base image does not carry both. Guide and complete case: [Agents API](docs/en/guide/agents-api.md).
+- **E2B-shaped methods** — `agent_sandbox.compat` covers part of the E2B surface; see [Migrate from E2B](docs/en/guide/migrate-from-e2b.md).
+
+## Server SDK
+
+- **In-image HTTP service** — `commands.py` imports `agent_sandbox.server` and calls `start(9000)`.
+- **Registered commands** — `@command` functions become routes the Client SDK calls with `sandbox.run`.
+- **Agents API** — Codex and Qwen Code HTTP sessions inside the sandbox. Install a CLI when you call it. Guide: [Agents API](docs/en/guide/agents-api.md).
+- **Templates** — the image and `template.yaml` are built and deployed with `abx template build|deploy`.
 
 ## Installation
 

@@ -2,7 +2,11 @@
 
 **English** | [中文](README.zh-CN.md)
 
-This directory contains complete usage examples for the Agent Sandbox SDK, covering everything from basic operations to advanced scenarios.
+Examples are split by which package they exercise.
+
+**Client SDK** scripts run on your machine. They create a sandbox or talk to one that is already up: `quickstart/`, `compat-demos/`, `agents/`, `scenarios/`, and `templates/python-hello/call_api.py`.
+
+**Server SDK** code runs inside the sandbox image. It is `commands.py` in `templates/python-hello/` and `templates/agents-cli/`. Those files import `agent_sandbox.server` and call `start(9000)`. They do not create the cloud sandbox.
 
 ## Prerequisites
 
@@ -37,31 +41,20 @@ export OPENAI_API_KEY="your-openai-key-here"
 
 > **Environment variables:** envd uses direct exec — shell features (`$VAR`, pipes, redirects) require `sh -c '...'`. Use `printenv VAR` to read a variable. See the [Environment Variables guide (EN)](../docs/en/guide/environment-variables.md) | [环境变量指南 (中文)](../docs/zh/guide/environment-variables.md) for details.
 
+## Client SDK examples
+
 ## Directory Structure
 
 ```
 examples/
-├── quickstart/                # Quick start examples
-│   ├── 01_hello.py            # Basic sandbox ops — create, execute, lifecycle
-│   ├── 02_file_ops.py         # File operations — read/write, directory management
-│   ├── 03_web_service.py      # Web service — start server, get public URL
-│   ├── 04_data_analysis.py    # Data analysis — CSV upload, pandas analysis
-│   └── 05_decorator_usage.py  # @sandbox decorator — declarative remote execution
-├── agents/                    # Agent integration examples
-│   ├── codex_agent.py         # Cloud Codex sandbox — needs a provider and OPENAI_API_KEY
-│   ├── browser_automation.py  # Browser automation — needs a provider
-│   ├── hosted_codex.py        # Agents API client for a server that is already up
-│   ├── hosted_qwen.py         # Agents API client for Qwen Code
-│   └── local_files_and_session.py  # Local server, local codex program, no model key
-├── compat-demos/              # E2B/Modal compatibility demos
-│   ├── e2b_data_analysis.py   # E2B-style data analysis
-│   ├── e2b_web_scraper.py     # E2B-style web scraping
-│   ├── modal_compute.py       # Modal-style scientific computing
-│   ├── modal_data_analysis.py # Modal-style data analysis
-│   └── comparison.py          # E2B vs Modal style comparison
-└── templates/                 # Offline fixtures (NOT the publishing source)
-    ├── python-hello/          # Publishable templates: github.com/alibaba-agent-sandbox/awesome-templates
-    └── agents-cli/            # Agents API for Codex and Qwen Code; CLIs are not preinstalled
+├── quickstart/                # Client SDK — create and use a sandbox
+├── agents/                    # Client SDK — call an Agents API or a cloud sandbox
+├── compat-demos/              # Client SDK — E2B-style and Modal-style calls
+├── scenarios/                 # Client SDK — local create, exec, read, kill
+└── templates/                 # Server SDK — commands.py starts inside the image
+    ├── python-hello/commands.py
+    ├── python-hello/call_api.py   # Client SDK: HTTP to a server that is already up
+    └── agents-cli/commands.py
 ```
 
 > `templates/` keeps only the minimal `python-hello` **fixture** used by offline
@@ -70,11 +63,17 @@ releases and CI — live in the single-source-of-truth repository
 [`alibaba-agent-sandbox/awesome-templates`](https://github.com/alibaba-agent-sandbox/awesome-templates);
 discover and install them with `abx template search` / `abx template install <name>`.
 
-[`templates/python-hello/call_api.py`](templates/python-hello/call_api.py) talks to a server that is already running (`GET /health`, `GET /capabilities`, `GET /commands`, one upload, one shell). The base URL comes from argv or `ABX_TEMPLATE_URL`; the token comes from `ABX_SERVER_TOKEN`. Request and response shapes are in the [template server HTTP API](../docs/en/guide/template-server-api.md) guide ([中文](../docs/zh/guide/template-server-api.md)).
+## Server SDK examples
+
+### templates/ — Server SDK
+
+`commands.py` in [`python-hello`](templates/python-hello/commands.py) and [`agents-cli`](templates/agents-cli/commands.py) is what the image starts. It imports `agent_sandbox.server`.
+
+[`call_api.py`](templates/python-hello/call_api.py) is Client SDK. It talks to a server that is already running (`GET /health`, `GET /capabilities`, `GET /commands`, one upload, one shell). The base URL comes from argv or `ABX_TEMPLATE_URL`; the token comes from `ABX_SERVER_TOKEN`. Request and response shapes are in the [template server HTTP API](../docs/en/guide/template-server-api.md) guide ([中文](../docs/zh/guide/template-server-api.md)).
 
 ## Example Catalog
 
-### quickstart/ — Getting Started
+### quickstart/ — Client SDK
 
 | File | Description | Use Case |
 |------|-------------|----------|
@@ -84,7 +83,7 @@ discover and install them with `abx template search` / `abx template install <na
 | [`04_data_analysis.py`](quickstart/04_data_analysis.py) | **Data analysis** — upload CSV, pandas analysis, run_code | Data science |
 | [`05_decorator_usage.py`](quickstart/05_decorator_usage.py) | **@sandbox decorator** — declarative remote execution | Simplified calls |
 
-### agents/ — Agent Integration
+### agents/ — Client SDK
 
 | File | Description | Use Case |
 |------|-------------|----------|
@@ -95,7 +94,7 @@ discover and install them with `abx template search` / `abx template install <na
 | [`hosted_qwen.py`](agents/hosted_qwen.py) | **Hosted Qwen client** — one session against a server you already started | Agents API |
 | [`local_files_and_session.py`](agents/local_files_and_session.py) | **Files plus one Codex session** — local server, a local program named `codex` on `PATH`, no API key | Agents API |
 
-### compat-demos/ — Compatibility Layer
+### compat-demos/ — Client SDK
 
 | File | Description | Use Case |
 |------|-------------|----------|
