@@ -95,9 +95,9 @@ Each topic below has its own dedicated design document with complete specificati
 |-------|----------|---------|
 | **Server API** | [server-api.md](design/server-api.md) | Sandbox Server SDK routes, capability groups, browser instance architecture |
 
-### Maintainer Design Documents (English only)
+### Maintainer design documents
 
-Working design documents for the provider, capability, server-v2 and agents-API workstreams. They have no Chinese counterpart.
+Chinese copies of these pages live under `docs/zh/`. `repository-layout.md` is English only.
 
 | Topic | Document | Summary |
 |-------|----------|---------|
@@ -106,7 +106,11 @@ Working design documents for the provider, capability, server-v2 and agents-API 
 | **Client / server alignment** | [client-server-alignment.md](design/client-server-alignment.md) | Gap matrix of every server route against the client |
 | **Base image and server SDK** | [base-image-and-server-sdk.md](design/base-image-and-server-sdk.md), [CLI follow-ups](archive/cli-followups.md) | The official FC Agent Sandbox base image and the server SDK; the exact `abx` CLI changes it needs |
 | **Server SDK v2** | [server-sdk-v2/](archive/server-sdk-v2/README.md) | Target operation-model design for the server SDK (status and not-implemented list on the first page) |
-| **OpenSandbox provider research** | [provider-opensandbox-mapping.md](design/provider-opensandbox-mapping.md) | API mapping, config keys and test plan for an OpenSandbox provider |
+| **OpenSandbox provider** | [provider-opensandbox-mapping.md](design/provider-opensandbox-mapping.md) | Current `node` catalog provider and the live capability table |
+| **Container edition** | [provider-alicloud-container.md](design/provider-alicloud-container.md) | ACS/ACK sandbox-manager, E2B-shaped HTTP, not Express |
+| **CubeSandbox** | [provider-cubesandbox.md](design/provider-cubesandbox.md) | CubeAPI control plane |
+| **E2B** | [provider-e2b.md](design/provider-e2b.md) | E2B cloud API at api.e2b.app |
+| **Provider readiness** | [provider-readiness.md](design/provider-readiness.md) | Logical review of CubeSandbox, E2B, and the container edition before a live backend exists |
 | **Repository layout** | [repository-layout.md](design/repository-layout.md) | Layout review of the `python-sdk` and `cli` repositories |
 
 ---
@@ -122,7 +126,7 @@ Working design documents for the provider, capability, server-v2 and agents-API 
 | Template build/push/deploy | **In the CLI** | `abx template build` and `abx template deploy`; the SDK does not build templates |
 | E2B migration helper | **Implemented (partial)** | `agent_sandbox.compat` |
 | One environment variable per configuration key (SDK) | **Implemented** | See [Configuration](reference/configuration.md); CLI spec in `cli/docs/design/providers-and-credentials-cli.md` |
-| Provider plugins (SDK, `python -m agent_sandbox.providers`) | **Implemented** | See [Providers](guide/providers.md); `abx provider` pending in the CLI |
+| Provider plugins (SDK, `python -m agent_sandbox.providers`) | **Implemented** | See [Providers](guide/providers.md). The CLI loads installed `node`, `exec` and `rest` plugins (`abx provider`, `abx --provider`) |
 | Persistent sandbox | **Future** | Requires underlying platform support |
 | SandboxPool (warm pool) | **Future** | Requires underlying platform support |
 

@@ -52,12 +52,12 @@ E2B 形状的少量方法也可以从 `agent_sandbox.compat` 导入。差异和�
 | 做什么 | abx | Agent Sandbox SDK | e2b | E2B SDK | osb | OpenSandbox SDK |
 |---|---|---|---|---|---|---|
 | 跑一条命令 | `abx exec <id> <命令>` | `sandbox.commands.run(cmd)` | `e2b sandbox exec <id> <命令>` | `sandbox.commands.run(cmd)` | `osb command run <id> -- <命令>`，短写是 `osb exec` | `sandbox.commands.run(cmd)` |
-| 后台命令 | `abx sandbox process start` | `sandbox.commands.start(…, background=True)` | `e2b sandbox exec -b` | `commands.run` 的后台参数 | `osb command run --background` | `commands.run` 后用 `get_command_status` |
+| 后台命令 | `abx exec <id> --background -- <command>` | `sandbox.commands.start(…, background=True)` | `e2b sandbox exec -b` | `commands.run` 的后台参数 | `osb command run --background` | `commands.run` 后用 `get_command_status` |
 | 看后台输出 | — | `commands.stream` | — | 命令流 | `osb command logs <id> <execution-id>` | `commands.get_background_command_logs` |
 | 中断 | `abx sandbox process signal` | `commands.send_signal(pid, 15 或 9)` | — | 结束对应进程 | `osb command interrupt <id> <execution-id>` | `commands.interrupt(execution.id)` |
 | 列进程 | `abx sandbox process list` | `commands.list()` | — | — | — | — |
 | 持久 shell | `abx connect` 的每一行都是新进程 | — | `e2b sandbox connect` | PTY | `osb command session create`，然后 `session run` | `commands.create_session`，`run_in_session`，`delete_session` |
-| 交互终端 | `abx sandbox shell-stream` | `sandbox.get_terminal()` | `e2b sandbox connect` | `sandbox.pty` | — | execd 的 PTY WebSocket |
+| 交互终端 | `abx connect <id>` 是按行 REPL。CLI 没有 PTY 命令 | `sandbox.get_terminal()` | `e2b sandbox connect` | `sandbox.pty` | — | execd 的 PTY WebSocket |
 | 跑一段代码 | — | `sandbox.run_code(code)` | — | `sandbox.run_code(code)` | — | 代码解释器镜像上的 `/code`，SDK 包是 `opensandbox-code-interpreter` |
 | 注册命令 | `abx run <id> <命令名> --arg k=v` | `sandbox.run(name, **kwargs)` | — | — | — | — |
 | 列出注册命令 | `abx command list <id>` | `sandbox.list_commands()` | — | — | — | — |

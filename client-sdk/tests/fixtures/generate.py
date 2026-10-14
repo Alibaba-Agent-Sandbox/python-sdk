@@ -9,11 +9,15 @@ reviewed in the diff. ``tests/test_providers/test_conformance.py`` fails when a 
 from __future__ import annotations
 
 import json
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
 
-import tomllib
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 HERE = Path(__file__).resolve().parent
 

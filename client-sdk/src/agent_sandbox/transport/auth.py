@@ -166,9 +166,14 @@ class EnvdTokenManager:
         self,
         token: str | None = None,
         sandbox_id: str | None = None,
+        *,
+        allow_missing: bool = False,
+        basic_user: str = "user",
     ) -> None:
         self._token = token
         self._sandbox_id = sandbox_id
+        self._allow_missing = allow_missing
+        self._basic_user = basic_user or "user"
 
     @property
     def token(self) -> str | None:
@@ -191,15 +196,15 @@ class EnvdTokenManager:
         Returns dict with X-Access-Token, E2b-Sandbox-Id, E2b-Sandbox-Port,
         and Authorization (Basic) headers.
         """
-        if self._token is None:
+        basic = base64.b64encode(f"{self._basic_user}:".encode()).decode("ascii")
+        headers = {"Authorization": f"Basic {basic}"}
+        if self._token:
+            headers[ENVD_AUTH_HEADER] = self._token
+        elif not self._allow_missing:
             raise TokenExpiredError(
                 "envdAccessToken not available. Sandbox may not be created or connected.",
                 suggestion="Create or connect to a sandbox first.",
             )
-        headers = {
-            ENVD_AUTH_HEADER: self._token,
-            "Authorization": f"Basic {_ENVD_BASIC_AUTH}",
-        }
         if self._sandbox_id is not None:
             headers[ENVD_SANDBOX_ID_HEADER] = self._sandbox_id
         headers[ENVD_SANDBOX_PORT_HEADER] = "49983"

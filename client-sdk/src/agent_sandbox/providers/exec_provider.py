@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import contextlib
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -243,6 +244,93 @@ def _sandbox_id_from(envd_url: str) -> str:
     return envd_url.rsplit("/", 1)[-1]
 
 
+class ExecTerminal:
+    """A terminal the plugin hosts (``pty.*``); output arrives as ``pty.output`` notifications."""
+
+    def __init__(
+        self,
+        client: EppClient,
+        sandbox_id: str,
+        pty_id: str,
+        queue: asyncio.Queue[dict[str, Any] | None],
+    ) -> None:
+        self._c = client
+        self._sandbox_id = sandbox_id
+        self._pty_id = pty_id
+        self._queue = queue
+        self._open = True
+
+    @property
+    def is_connected(self) -> bool:
+        return self._open
+
+    async def send(self, data: str) -> None:
+        await self.send_bytes(data.encode("utf-8"))
+
+    async def send_bytes(self, data: bytes) -> None:
+        await self._c.call(
+            "pty.write",
+            {
+                "sandbox_id": self._sandbox_id,
+                "process_id": self._pty_id,
+                "data_b64": base64.b64encode(data).decode("ascii"),
+            },
+        )
+
+    async def resize(self, cols: int, rows: int) -> None:
+        await self._c.call(
+            "pty.resize",
+            {
+                "sandbox_id": self._sandbox_id,
+                "process_id": self._pty_id,
+                "cols": cols,
+                "rows": rows,
+            },
+        )
+
+    async def _next(self, timeout: float | None) -> bytes | None:
+        while True:
+            note = await (
+                self._queue.get()
+                if timeout is None
+                else asyncio.wait_for(self._queue.get(), timeout)
+            )
+            if note is None or note.get("method") == "pty.exit":
+                self._open = False
+                return None
+            if note.get("method") == "pty.output":
+                return base64.b64decode(str(note.get("data_b64", "")))
+
+    async def receive(self, timeout: float | None = None) -> bytes:
+        chunk = await self._next(timeout)
+        if chunk is None:
+            raise RuntimeError("terminal stream closed")
+        return chunk
+
+    async def output_stream(self) -> AsyncIterator[bytes]:
+        while True:
+            chunk = await self._next(None)
+            if chunk is None:
+                return
+            yield chunk
+
+    async def close(self) -> None:
+        was_open = self._open
+        self._open = False
+        self._c.close_stream(self._pty_id)
+        if was_open:
+            with contextlib.suppress(Exception):
+                await self._c.call(
+                    "pty.close", {"sandbox_id": self._sandbox_id, "process_id": self._pty_id}
+                )
+
+    async def __aenter__(self) -> ExecTerminal:
+        return self
+
+    async def __aexit__(self, *args: Any) -> None:
+        await self.close()
+
+
 class ExecProcessProtocol:
     """``ProcessProtocol`` over EPP; delegates to the native envd transport in hybrid mode."""
 
@@ -329,6 +417,15 @@ class ExecProcessProtocol:
                     return
         finally:
             self._c.close_stream(process_id)
+
+    async def open_terminal(
+        self, sandbox_id: str, *, cols: int = 80, rows: int = 24
+    ) -> ExecTerminal:
+        if "pty" not in self._features:
+            raise ProviderFeatureNotSupportedError(self._pid, "pty")
+        res = await self._c.call("pty.open", {"sandbox_id": sandbox_id, "cols": cols, "rows": rows})
+        pty_id = str(res.get("process_id"))
+        return ExecTerminal(self._c, sandbox_id, pty_id, self._c.open_stream(pty_id))
 
     async def list_processes(self, envd_url: str, envd_token: EnvdTokenManager) -> list[Any]:
         if not is_epp_url(envd_url):

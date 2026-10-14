@@ -14,8 +14,7 @@
     "shortcuts",
     "core",
     "transport",
-    "providers",
-    "e2b"
+    "providers"
   ],
   "reserved_provider_prefixes": [
     "abx-",

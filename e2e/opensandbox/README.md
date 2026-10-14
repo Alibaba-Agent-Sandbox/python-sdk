@@ -31,7 +31,7 @@ These files are not pytest tests (no `test_*` names) and are never collected by 
 
 ## Provider plugin E2E
 
-Two further scripts exercise the exec-provider plugin against the same local server. The plugin
+Two further scripts exercise the catalog `node` provider (`provider.mjs`) against the same local server. `node provider.mjs` still speaks EPP/1 on stdio, which the `node-live` stage drives. The plugin
 source is [alibaba-agent-sandbox/awesome-providers](https://github.com/alibaba-agent-sandbox/awesome-providers)
 (`opensandbox/`). The scripts clone that catalog (or use `ABX_OPENSANDBOX_PLUGIN` /
 `ABX_AWESOME_PROVIDERS`); they are not a copy of the plugin. They use a throwaway `HOME` (your real

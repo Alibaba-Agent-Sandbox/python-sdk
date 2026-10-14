@@ -8,12 +8,11 @@ Design: `docs/en/design/providers-and-credentials.md`; guide: `docs/en/guide/pro
 | `local-process/` | `exec` (EPP/1, Python stdlib, ~300 lines) | lifecycle, exec (buffered and streaming), files, scoped config fields (a secret and a bool), debug methods used by tests |
 | `e2b-compatible/` | `rest` (manifest only, no code) | pointing the SDK/CLI at any E2B-protocol endpoint; consented `inherit` of the generic `sandbox_*` keys |
 
-The OpenSandbox plugin is not in this repository. Install it from
-[alibaba-agent-sandbox/awesome-providers](https://github.com/alibaba-agent-sandbox/awesome-providers)
-(`opensandbox/`, a dependency-free Node `exec` plugin):
+OpenSandbox is a catalog `node` provider in `awesome-providers/opensandbox` (ES module `provider.mjs`). The CLI loads it in-process. The Python SDK reaches it through the local engine (`abx provider engine serve`). HTTP is made from that Node host process:
 
 ```bash
-abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox --yes
+abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox --allow-unpinned --yes
+# or: python -m agent_sandbox.providers install registry:opensandbox --yes
 ```
 
 ```bash

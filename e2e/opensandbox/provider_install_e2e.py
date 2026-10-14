@@ -242,8 +242,8 @@ def run_all(tmp: Path) -> None:
     )
     rc, data, _ = env.cli("list")
     check(
-        "list shows opensandbox as exec/local",
-        any(r["id"] == "opensandbox" and r["kind"] == "exec" for r in (data or [])),
+        "list shows opensandbox as node/local",
+        any(r["id"] == "opensandbox" and r["kind"] == "node" for r in (data or [])),
     )
     rc, _, err = env.cli("install", str(PLUGIN))
     check("non-interactive install without --yes is refused", rc != 0, err)

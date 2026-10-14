@@ -1,5 +1,7 @@
 # 提供方编写体验评估 —— 接入一个新提供方有多难？
 
+> **历史记录。** 本页评估的是第一个 `exec` 插件。现行的 OpenSandbox 适配器是 [provider-opensandbox-mapping.md](provider-opensandbox-mapping.md) 里的 `node` 提供方。Node 提供方架构：[node-provider-architecture.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/node-provider-architecture.md)。
+
 > **状态**：评估（基于证据），已应用一轮修复（见第 10 节） · **对象**：`opensandbox` exec 提供方插件（[awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox)）。插件源码在该目录，不在本仓库。评估依据 SDK 文档，并在真实的本地 OpenSandbox 服务上驱动 · **配套文档**：[providers-and-credentials.md](providers-and-credentials.md)（规范性设计）、[provider-opensandbox-mapping.md](../../en/design/provider-opensandbox-mapping.md)（调研，仅英文）、`../guide/providers.md`（使用/编写指南） · **English**：[../../en/design/provider-authoring-evaluation.md](../../en/design/provider-authoring-evaluation.md)
 >
 > **关于本译文**：这是英文评估文档的中文版，章节编号一致；两者有差异时以[英文版](../../en/design/provider-authoring-evaluation.md)为准。
@@ -241,4 +243,4 @@ cd awesome-providers/opensandbox && node tests/run.mjs
 
 信任模型检查：安装器本来就不检出工作树、只允许普通文件、记录树摘要、每次启动校验、更新失败时回滚。确认与固定本来就有，但存在漏洞（`--yes` 加分支名），现已堵上。因此从 git URL 安装提供方**不是**实验性功能。
 
-未解决：模板命令忽略 `--provider`；能力集合不是由提供方特性推导的；没有 pause/resume 的 CLI 命令；`SandboxInfo` 的区域和超时仍带有内置默认值；awesome-providers 目录需要 `abx` 改名（`cli/e2e/providers/awesome-providers-abx-rename.patch`）。
+未解决：模板命令忽略 `--provider`；能力集合不是由提供方特性推导的；没有 pause/resume 的 CLI 命令；`SandboxInfo` 的区域和超时仍带有内置默认值。

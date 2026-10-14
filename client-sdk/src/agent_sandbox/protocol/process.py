@@ -121,7 +121,11 @@ def _parse_process_chunk(frame: dict[str, Any]) -> ProcessChunk:
     # 进程结束事件
     if "end" in event:
         end_data = event["end"]
-        exit_code = end_data.get("exitCode", 0)
+        exit_code = end_data.get("exitCode")
+        if exit_code is None:
+            status = str(end_data.get("status") or "")
+            tail = status.rsplit(" ", 1)[-1] if status else ""
+            exit_code = int(tail) if tail.isdigit() else 0
         return ProcessChunk(
             type=ProcessChunkType.EXIT,
             exit_code=exit_code,
@@ -175,8 +179,10 @@ class ProcessProtocol:
             process_obj["cwd"] = cwd
         if user:
             process_obj["user"] = user
-
-        payload: dict[str, Any] = {"process": process_obj}
+        # StartRequest.stdin sits beside process. A missing flag defaults to
+        # true, so a reader waits until the HTTP timeout. Proto JSON drops an
+        # unknown field nested under process.
+        payload: dict[str, Any] = {"process": process_obj, "stdin": False}
 
         # Derive the HTTP read timeout from the process-level timeout so
         # that long-running commands (e.g. ``pip install``) are not killed

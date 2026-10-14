@@ -18,7 +18,7 @@ A complete template directory structure is as follows:
 my-template/
 ├── template.yaml      # Required — template definition
 ├── Dockerfile         # Optional — custom Docker build (takes priority over build steps in template.yaml)
-├── commands.py        # Optional — register commands via @sandbox.register
+├── commands.py        # Optional — named commands via @command
 └── README.md          # Optional — template description
 ```
 
@@ -101,39 +101,36 @@ The process started by `commands.py` serves a fixed HTTP API on port 9000. The D
 There is one mechanism for named commands: functions registered in the template's server. `template.yaml` has no `custom_commands` key (the client rejects it). Register Python functions with the decorator in `commands.py`:
 
 ```python
-from agent_sandbox.declarative import sandbox
+from agent_sandbox.server import command, start
 
-@sandbox.register
+@command("demo", description="Echo the arguments.")
 def demo(x: int, y: str) -> str:
     return f"{y}={x}"
+
+if __name__ == "__main__":
+    start(9000)
 ```
 
-File upload and download are server endpoints (`/files/*`, `/upload`, `/download`) of the `file_ops` group, which is on by default. They are not registered from `commands.py`; turn a group on or off with `server.groups` in `template.yaml`.
+File upload and download are server endpoints (`/files/*`, `/upload`, `/download`) of the `file_ops` group, which is on by default. They are not registered from `commands.py`. Deploy does not apply a `server:` block. Turn an opt-in group on with `default_table().enable_group(CapabilityGroup.DEV_TOOLS)` (a `CapabilityGroup`, not a string) or `ABX_SERVER_ENABLED_GROUPS`. `dev_tools`, `browser`, and `agents` start disabled.
 
-Registered commands are served by the in-sandbox HTTP server (`POST /commands/{name}`). Clients call them with `await sandbox.run("demo", x=1, y="hello")` or `abx run <id> demo --arg x=1 --arg y=hello`, and list them with `sandbox.list_commands()` or `abx command list <id>`. A bare shell command is a different call: `sandbox.commands.run(cmd)`.
+Registered commands are served by the in-sandbox HTTP server (`POST /commands/{name}`). Clients call them with `await sandbox.run("demo", x=1, y="hello")` or `abx run <id> demo --arg x=1 --arg y=hello`, and list them with `sandbox.list_commands()` or `abx sandbox command list <id>`. A bare shell command is a different call: `sandbox.commands.run(cmd)`.
 
 ---
 
 ## Dockerfile Customization
 
-The actual build process uses `Dockerfile` directly along with language-native dependency files (`requirements.txt` / `package.json`):
+The `Dockerfile` in the template directory is the image when one is present. `template.yaml` does not install packages. `base`, `system_packages`, `python_packages`, `node_packages`, and `commands` are not build inputs.
+
+The default provider is `alicloud-express`. Its Dockerfile starts from the FC base image and has no `CMD` or `ENTRYPOINT`. `<region>` defaults to `cn-hangzhou`. `<tag>` defaults to `v0.0.49`. Extra packages are `RUN` lines on that base. `FROM python:3.11-slim` is not this image.
 
 ```dockerfile
-FROM python:3.11-slim
-
-RUN apt-get update && apt-get install -y \
-    curl git \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN pip install --no-cache-dir \
-    pandas matplotlib numpy
-
-WORKDIR /app
-
-ENV PYTHONUNBUFFERED=1
+FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
+WORKDIR /home/user/app
+COPY commands.py /home/user/app/commands.py
+EXPOSE 9000
 ```
 
-The `Dockerfile` in the template directory is the sole source for building images. `template.yaml` only defines runtime configuration (capabilities, commands, environment variables, resources) and does not contain build instructions.
+OpenSandbox and a provider with no `[template]` profile use `FROM python:3.12-slim`, `WORKDIR /app`, and `CMD ["python3", "commands.py"]`. The copy-paste files, including the server wheel install, are in `agent-sandbox-sdk/SKILL.md`.
 
 ## Provider template profile
 
@@ -146,7 +143,7 @@ The CLI owns the image contract. It resolves the provider with `--provider` / `A
 
 `template.yaml` records the same defaults as `user` and `workdir`. The Dockerfile `WORKDIR` matches `workdir`. `USER` is written only when `user` is non-empty, because `python:3.12-slim` has no `user` account. A later command can pass its own working directory; these two fields are the sandbox default, the same idea as E2B's template user and workdir.
 
-`commands.py` imports only `agent_sandbox.server` and calls `serve(port=9000)` under `if __name__ == "__main__"`. The image installs `agent-sandbox-server`.
+`commands.py` imports only `agent_sandbox.server` and calls `start(port)` under `if __name__ == "__main__"`. The image installs `agent-sandbox-server`.
 
 ---
 

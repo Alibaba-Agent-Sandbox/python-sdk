@@ -155,6 +155,9 @@ class TestStart:
 
         assert "request_timeout" in captured_kwargs
         assert captured_kwargs["request_timeout"] == 60.0 + _HTTP_TIMEOUT_BUFFER
+        payload = captured_kwargs["payload"]
+        assert payload["stdin"] is False
+        assert "stdin" not in payload["process"]
 
     async def test_start_passes_custom_timeout_to_http(self, envd_url, envd_token):
         """start(timeout=300) should pass request_timeout=305.0."""

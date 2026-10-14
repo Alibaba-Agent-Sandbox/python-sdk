@@ -154,6 +154,19 @@ class _InfraCloser:
             await self._infra.http_client.close()
 
 
+def _envd_token(prov: Any, info: Any) -> Any:
+    """A provider may accept a missing envd token and a non-default basic user."""
+    from agent_sandbox.transport.auth import EnvdTokenManager
+
+    kwargs: dict[str, Any] = {}
+    if getattr(prov, "envd_allow_missing", False):
+        kwargs = {
+            "allow_missing": True,
+            "basic_user": getattr(prov, "envd_basic_user", "root") or "root",
+        }
+    return EnvdTokenManager(info.envd_access_token, sandbox_id=info.sandbox_id, **kwargs)
+
+
 async def _provider_infra(
     prov: Any, overrides: dict[str, Any], options: dict[str, Any] | None
 ) -> Any:
@@ -226,6 +239,7 @@ class Sandbox:
         resolved_capabilities: ResolvedCapabilities | None = None,
         declared_capabilities: frozenset[str] | None = None,
         provider_id: str = BUILTIN_PROVIDER_ID,
+        engine_data: bool = False,
     ) -> None:
         self._info = info
         self._config = config
@@ -256,6 +270,7 @@ class Sandbox:
         # What a provider declares; the module gates stay permissive so the provider's own
         # protocol gate refuses a missing feature with E8004 naming it.
         self._declared_capabilities = declared_capabilities
+        self._engine_data = engine_data
 
     # ---- Properties ----
 
@@ -319,6 +334,7 @@ class Sandbox:
             sandbox_protocol=self._sandbox_protocol,
             sandbox_id=self.id,
             capabilities=self._capabilities,
+            provider_id=self._provider_id,
         )
 
     def _port_resolver(self) -> Any:
@@ -589,18 +605,27 @@ class Sandbox:
             provider_options=provider_options,
         )
 
+        info = None
         try:
-            sandbox_config = SandboxConfig(  # type: ignore[call-arg]
-                template=template,
+            from agent_sandbox.engine.client import Engine
+
+            # The built-in provider's platform HTTP call runs inside the engine.
+            info = await Engine().create(
+                template,
                 timeout=timeout,
                 metadata=metadata or {},
-                env_vars=envs or {},
+                envs=envs or {},
+                api_key=config.sandbox_api_key,
+                api_url=config.sandbox_base_url,
+                access_key_id=config.access_key_id,
+                access_key_secret=config.access_key_secret,
+                region=config.region or region,
+                request_timeout=request_timeout,
                 cpu=cpu,
                 memory=memory,
                 disk=disk,
                 gpu=gpu,
             )
-            info = await sandbox_protocol.create(sandbox_config, request_timeout=request_timeout)
 
             envd_token = EnvdTokenManager(info.envd_access_token, sandbox_id=info.sandbox_id)
 
@@ -609,6 +634,11 @@ class Sandbox:
             # Resolve capabilities for the template
             resolved = await resolve_capabilities(template)
 
+            from agent_sandbox.engine.protocols import (
+                EngineFilesystemProtocol,
+                EngineProcessProtocol,
+            )
+
             return cls(
                 info=info,
                 config=config,
@@ -616,11 +646,25 @@ class Sandbox:
                 auth=auth,
                 envd_token=envd_token,
                 sandbox_protocol=sandbox_protocol,
+                process_protocol=EngineProcessProtocol(info.sandbox_id),  # type: ignore[arg-type]
+                filesystem_protocol=EngineFilesystemProtocol(info.sandbox_id),  # type: ignore[arg-type]
                 domain=domain or config.sandbox_domain,
                 secure=True if secure is None else secure,
                 resolved_capabilities=resolved,
+                engine_data=True,
             )
         except Exception:
+            if info is not None:
+                try:
+                    await sandbox_protocol.kill(info.sandbox_id)
+                except Exception:
+                    logger.debug("failed to kill orphaned sandbox %s", info.sandbox_id)
+                try:
+                    from agent_sandbox.engine.client import Engine
+
+                    await Engine().op("release", sandbox_id=info.sandbox_id)
+                except Exception:
+                    logger.debug("engine session release failed for %s", info.sandbox_id)
             await http_client.close()
             raise
 
@@ -855,6 +899,14 @@ class Sandbox:
             await sandbox_protocol.kill(sandbox_id)
             logger.info("Sandbox killed (by ID): %s", sandbox_id)
         finally:
+            # Built-in create holds an engine session. Release is a no-op when this
+            # id was never registered with the local engine.
+            from agent_sandbox.engine.client import Engine
+
+            try:
+                await Engine().op("release", sandbox_id=sandbox_id)
+            except Exception:
+                logger.debug("engine session release failed for %s", sandbox_id)
             await http_client.close()
 
     @classmethod
@@ -894,7 +946,7 @@ class Sandbox:
             info = await infra.sandbox_protocol.create(
                 sandbox_config, request_timeout=request_timeout
             )
-            envd_token = EnvdTokenManager(info.envd_access_token, sandbox_id=info.sandbox_id)
+            envd_token = _envd_token(prov, info)
             logger.info("Sandbox created: %s (provider %s)", info.sandbox_id, prov.id)
             resolved = ResolvedCapabilities(
                 capabilities=set(DEFAULT_CAPABILITIES) | set(prov.capabilities())
@@ -914,6 +966,7 @@ class Sandbox:
                 resolved_capabilities=resolved,
                 declared_capabilities=frozenset(prov.capabilities()),
                 provider_id=prov.id,
+                engine_data=bool(getattr(prov, "uses_engine_data", False)),
             )
         except Exception:
             await closer.close()
@@ -933,7 +986,7 @@ class Sandbox:
         closer = _InfraCloser(infra)
         try:
             info = await infra.sandbox_protocol.connect(sandbox_id)
-            envd_token = EnvdTokenManager(info.envd_access_token, sandbox_id=info.sandbox_id)
+            envd_token = _envd_token(prov, info)
             logger.info("Connected to sandbox: %s (provider %s)", sandbox_id, prov.id)
             resolved = ResolvedCapabilities(
                 capabilities=set(DEFAULT_CAPABILITIES) | set(prov.capabilities())
@@ -952,6 +1005,7 @@ class Sandbox:
                 resolved_capabilities=resolved,
                 declared_capabilities=frozenset(prov.capabilities()),
                 provider_id=prov.id,
+                engine_data=bool(getattr(prov, "uses_engine_data", False)),
             )
         except Exception:
             await closer.close()
@@ -972,6 +1026,13 @@ class Sandbox:
             self._killed = True
             logger.info("Sandbox killed: %s", self.id)
         finally:
+            if self._engine_data:
+                from agent_sandbox.engine.client import Engine
+
+                try:
+                    await Engine().op("release", sandbox_id=self.id)
+                except Exception:
+                    logger.debug("engine session release failed for %s", self.id)
             await self._http_client.close()
 
     async def close(self) -> None:
@@ -1068,6 +1129,13 @@ class Sandbox:
             rows: Terminal rows (default 24).
             shell: Shell binary (default ``/bin/bash``).
         """
+        opener = getattr(self._process_protocol, "open_terminal", None)
+        if opener is not None:
+            return await opener(self.id, cols=cols, rows=rows)  # type: ignore[no-any-return]
+        if self._engine_data:
+            from agent_sandbox.engine.protocols import open_terminal
+
+            return await open_terminal(self.id, cols=cols, rows=rows)  # type: ignore[return-value]
         from agent_sandbox.protocol.terminal import TerminalSession
 
         return await TerminalSession.create(
@@ -1139,11 +1207,14 @@ class Sandbox:
             return await client.commands.run(name, **kwargs)
 
     def _require_data_plane(self, feature: str) -> None:
-        """Providers that route over EPP (no envd URL) cannot reach an in-sandbox HTTP server."""
-        if str(self._info.envd_url or "").startswith("epp://"):
-            from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+        """Named commands need an HTTP envd. Other URL schemes are refused before any I/O."""
+        del feature
+        url = str(self._info.envd_url or "")
+        if url.startswith(("http://", "https://")):
+            return
+        from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
 
-            raise ProviderFeatureNotSupportedError(self._provider_id, feature)
+        raise ProviderFeatureNotSupportedError(self._provider_id, "sessions")
 
     # ---- E2B-shaped URL stubs ----
 

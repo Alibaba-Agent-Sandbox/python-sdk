@@ -271,7 +271,7 @@ result = await sandbox.run("my_handler")
 由此有两点：
 
 - 在 Server 内部，所有以 `ABX_` 开头的名字都受保护（见上文）。不要把 `ABX_*` 用作你自己的沙箱变量。
-- [提供方插件](providers.md)同样不继承你的 shell 环境。插件进程以清理过的环境启动，它需要的配置值通过 `initialize` 请求发送给它。
+- [提供方插件](providers.md)同样不继承你的 shell 环境。`exec` 插件进程以清理过的环境启动，它需要的配置值通过 `initialize` 请求发送。`node` 提供方不是这个进程：Python SDK 把解析好的选项随每次调用发给本机引擎。
 
 ---
 

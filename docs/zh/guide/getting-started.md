@@ -9,7 +9,7 @@
 ## 前置条件
 
 - Python 3.10 或更高版本
-- 一个有效的 API Key（从 Agent Sandbox 平台获取）
+- 默认提供方是 `alicloud-express`。API Key 从[智能体沙箱产品文档](https://help.aliyun.com/zh/functioncompute/product-overview-of-fc-agent-sandbox)获取。变量名是 `ABX_SANDBOX_API_KEY`。SDK 不读取 `E2B_API_KEY`。
 - 网络可访问阿里云杭州区域（默认 `cn-hangzhou`）
 
 ## 1. 安装
@@ -34,7 +34,7 @@ pip install "agent-sandbox[all]"
 ```python
 from agent_sandbox.api.sandbox import Sandbox
 
-sandbox = await Sandbox.create(api_key="your-api-key-here")
+sandbox = await Sandbox.create(sandbox_api_key="your-api-key-here")
 ```
 
 ### 方式二：环境变量（推荐用于 CI/CD）
@@ -63,6 +63,8 @@ async def main():
 
 asyncio.run(main())
 ```
+
+`base` 是默认模板（`Sandbox.create()` 不传 template 时就是它）。仓库 README 使用 `python-base`，因为那张镜像注册了 README 里的 `hello` 命令。
 
 ### 使用 SDK（同步）
 

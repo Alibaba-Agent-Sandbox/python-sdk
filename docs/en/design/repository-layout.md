@@ -212,6 +212,9 @@ python-sdk/
 ├── README.md  README.zh-CN.md          # product + two-package table + docs map + link to agent-sandbox/agent-sandbox
 ├── LICENSE  NOTICE  CHANGELOG.md       # one Keep-a-Changelog file, entries tagged [client] / [server]
 ├── AGENTS.md  llms.txt
+├── agent-sandbox-sdk/                  # Agent Skill (folder name matches frontmatter name)
+│   ├── SKILL.md
+│   └── references/templates.md
 ├── pyproject.toml                      # tooling-only: uv workspace + shared ruff; no [project]
 ├── ruff.toml  Makefile  .python-version  .editorconfig  .env.example
 ├── .pre-commit-config.yaml  .githooks/  .secrets.baseline  .gitignore

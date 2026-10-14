@@ -5,10 +5,10 @@ from __future__ import annotations
 import base64
 import importlib.util
 import json
+import sys
 from pathlib import Path
 
 import pytest
-import tomllib
 
 from agent_sandbox.providers import store
 from agent_sandbox.providers.base import ConfigField
@@ -17,6 +17,11 @@ from agent_sandbox.transport import config as cfg
 from agent_sandbox.transport.config import ProviderSchema, _builtin_schema, resolve_all
 from agent_sandbox.utils.config_keys import Sources
 from agent_sandbox.utils.toml_write import dumps_toml
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 CLI_COPY = Path(__file__).resolve().parents[4] / "cli" / "docs" / "design" / "fixtures"

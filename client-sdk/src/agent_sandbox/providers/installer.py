@@ -68,7 +68,7 @@ class InstallPlan:
             "trust": self.trust,
             "runtime": list(m.command)
             if m.kind == "exec"
-            else ["rest", m.endpoint.get("base_url", "")],
+            else [m.kind, m.endpoint.get("base_url", "")],
             "kind": m.kind,
             "features": sorted(m.features),
             "security": m.security,
@@ -489,6 +489,13 @@ def install(
     roll back (used by update to run the plugin's ``initialize``).
     """
     interactive = (confirm is not None) if interactive is None else interactive
+    catalog_source: dict[str, Any] | None = None
+    if source.startswith("registry:"):
+        from agent_sandbox.providers.catalog import materialize, registry_url
+
+        catalog_id = source.split(":", 1)[1].strip()
+        catalog_source = {"type": "catalog", "id": catalog_id, "registry": registry_url()}
+        source = materialize(catalog_id)
     plan, entries = prepare(
         source,
         ref=ref,
@@ -508,7 +515,8 @@ def install(
     _refuse_unpinned(plan, interactive=interactive, yes=yes, allow_unpinned=allow_unpinned)
 
     existing = store.read_receipt(manifest.id)
-    if manifest.id == BUILTIN_PROVIDER_ID:
+    reserved = {BUILTIN_PROVIDER_ID}
+    if manifest.id in reserved:
         raise ProviderConflictError("The built-in provider id is reserved.")
     if existing is not None and not force:
         raise ProviderConflictError(
@@ -530,6 +538,8 @@ def install(
         if not confirm(plan):
             raise ProviderTrustError("Installation cancelled.")
 
+    if catalog_source is not None and plan.source.get("type") == "local":
+        plan.source = catalog_source
     receipt = _receipt(plan, installed_by, manifest.sha256)
     with store.store_lock():
         _swap_in(manifest.id, entries, receipt, link=plan.trust == "link", verify=verify)
@@ -600,6 +610,61 @@ def _swap_in(
 # ---------------------------------------------------------------- update / uninstall
 
 
+def _update_catalog(
+    provider_id: str,
+    src: dict[str, Any],
+    receipt: dict[str, Any],
+    *,
+    check: bool,
+    yes: bool,
+    verify: VerifyFn | None,
+) -> dict[str, Any]:
+    """Re-fetch a ``registry:`` install. ``check`` only compares versions."""
+    from agent_sandbox.providers.catalog import fetch_index, find
+
+    recorded = str(src.get("registry") or "")
+    previous = os.environ.get("ABX_PROVIDER_REGISTRY")
+    if recorded:
+        os.environ["ABX_PROVIDER_REGISTRY"] = recorded
+    try:
+        index = fetch_index()
+        row = find(index, str(src.get("id") or provider_id))
+        remote = str(row.get("version") or "")
+        installed = str(receipt.get("version") or "")
+        if check or remote == installed:
+            return {
+                "id": provider_id,
+                "status": "up-to-date" if remote == installed else "available",
+                "installed": installed,
+                "available": remote,
+                "changes": [],
+            }
+        if not yes:
+            raise ProviderTrustError(
+                f"Updating '{provider_id}' to {remote} requires confirmation.",
+                suggestion=f"Re-run with --yes after reviewing version {remote}.",
+            )
+        new_receipt = install(
+            f"registry:{src.get('id') or provider_id}",
+            force=True,
+            yes=True,
+            verify=verify,
+        )
+    finally:
+        if previous is None:
+            os.environ.pop("ABX_PROVIDER_REGISTRY", None)
+        else:
+            os.environ["ABX_PROVIDER_REGISTRY"] = previous
+    return {
+        "id": provider_id,
+        "status": "updated",
+        "installed": installed,
+        "available": remote,
+        "changes": [],
+        "receipt": new_receipt,
+    }
+
+
 def update(
     provider_id: str,
     *,
@@ -621,6 +686,15 @@ def update(
     if receipt is None:
         raise ProviderNotFoundError(f"Provider '{provider_id}' is not installed.")
     src = receipt.get("source", {})
+    if src.get("type") == "catalog":
+        return _update_catalog(
+            provider_id,
+            src,
+            receipt,
+            check=check,
+            yes=yes,
+            verify=verify,
+        )
     if src.get("type") != "git":
         raise ProviderInstallError(
             f"Provider '{provider_id}' was installed from a local directory; reinstall it with "

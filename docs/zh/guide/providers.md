@@ -2,11 +2,26 @@
 
 > **说明：** 本页的 `abx provider ...` 命令由 `cli` 仓库中的 Node.js CLI 提供。只用 Python 的用户可以用 `python -m agent_sandbox.providers ...` 完成同样的操作。两者使用相同的安装目录、相同的回执和相同的目录树摘要。
 
-**提供方**就是一个沙箱后端。Agent Sandbox 自带一个内置提供方，并且可以从插件加载更多提供方。
+**提供方**就是一个沙箱后端。SDK 和 CLI 只内置 `alicloud-express`。其余提供方用 `python -m agent_sandbox.providers install registry:<id> --yes` 安装，索引是 `https://registry.agent-sandbox.cn/providers/index.json`。启动时会在后台对照这份索引检查更新，结果写到 `~/.abx/providers/updates.json`。`ABX_PROVIDER_UPDATE_CHECK=0` 关掉检查。`ABX_PROVIDER_REGISTRY` 可以改索引地址。官网是 <https://www.agent-sandbox.com>。提供方注册站是 <https://registry.agent-sandbox.com>。
 
 | Id | 名称 | 类型 | 默认 |
 |---|---|---|---|
 | `alicloud-express` | 阿里云极速版（Alibaba Cloud Express Edition） | 内置 | 是 |
+| `alicloud-container` | 阿里云智能体沙箱容器版 | 目录插件，`node`；安装后 CLI 和所有 SDK 可用 | 否 |
+| `cubesandbox` | CubeSandbox | 目录插件，`node`；安装后 CLI 和所有 SDK 可用 | 否 |
+| `e2b` | E2B | 目录插件，`node`；安装后 CLI 和所有 SDK 可用 | 否 |
+| `opensandbox` | OpenSandbox | 目录插件，`node`（ES 模块，EPP 方法在宿主进程内）；安装后 CLI 和所有 SDK 可用 | 否 |
+
+除默认项以外的四个 id 在 `awesome-providers`，用 `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` 安装；公开索引发布后也可用 `python -m agent_sandbox.providers install registry:<id> --yes`（`abx` 没有 `registry:` 写法）。装好之后用 `Sandbox.create(provider="…")` 或 `abx --provider <id>` 选择。四个都是 `runtime.kind = "node"`（ES 模块 `provider.mjs`），只用 Node.js 写一次。CLI 在进程内加载它们。Python SDK 通过本机 Node 引擎（`abx provider engine serve`，按需启动，所以 `abx` 要在 `PATH` 里或用 `ABX_BIN` 指定）用 `EngineProvider` 访问（`engine://<provider>/<sandbox-id>`）。第三方的 `exec` 或 `rest` 清单仍在 Python 进程里运行。内置的 `alicloud-express` 是 Python 内置提供方。没有可安装的 `python` 类型。见 CLI 的[引擎 HTTP API](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/engine-api.md)。
+
+| Id | 怎么用 |
+|---|---|
+| `opensandbox` | [OpenSandbox 提供方](../design/provider-opensandbox-mapping.md)。HTTP 由加载 `provider.mjs` 的 Node 宿主进程发出。`ABX_OPENSANDBOX_BASE_URL` 默认 `http://127.0.0.1:8080`。 |
+| `alicloud-container` | [容器版](../design/provider-alicloud-container.md)。需要 `ABX_ALICLOUD_CONTAINER_DOMAIN`。不读取 `ABX_SANDBOX_API_KEY`。 |
+| `cubesandbox` | [CubeSandbox 提供方](../design/provider-cubesandbox.md)。默认地址 `http://127.0.0.1:3000`。 |
+| `e2b` | [E2B 提供方](../design/provider-e2b.md)。密钥是 `ABX_E2B_API_KEY`。不读取 `ABX_SANDBOX_API_KEY`，也不读取 `E2B_API_KEY`。 |
+
+还没有后端的三个提供方，逻辑上能不能用，写在 [可用性审查](../design/provider-readiness.md)。让代理写一个新的提供方插件，用技能 `agent-sandbox-provider`（`agent-sandbox-provider/SKILL.md`）。
 
 如果你从不接触提供方，一切照旧：每个命令、每种输出和每个环境变量的行为都和以前一样。id `alicloud-express` 是稳定的，只有显示名称可能改变。
 
@@ -105,9 +120,10 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 | `builtin` | `alicloud-express` | 不适用 | SDK 和 CLI |
 | `rest` | 只有清单：一个 E2B 协议端点，带自己的基础 URL 和密钥 | 是 | SDK 和 CLI |
 | `exec` | 一个说 EPP/1 的程序（JSON-RPC 2.0，每行一个 JSON 对象，经 stdin/stdout） | 是 | SDK 和 CLI |
-| `python` | 在进程内注册的 `Provider` 子类 | 否（pip 入口点或 `register_provider`） | 仅 SDK |
+| `node` | 一个 ES 模块（`provider.mjs`，`export default create(kit)`），由 Node.js 宿主在进程内加载。`opensandbox`、`e2b`、`cubesandbox`、`alicloud-container` 都是这种 | 是 | SDK（经引擎）和 CLI |
+| `python` | 代码里的 `Provider` 子类，用 `register_provider` 或 pip 入口点登记。`kind = "python"` 的清单不能安装 | 否 | 仅 SDK |
 
-`exec` 类型是主要的扩展点：一个插件可以同时服务 Python SDK 和 Node CLI，并可用任何语言编写。已经说 E2B envd 数据平面协议的后端只需实现控制面（创建、连接、列出、销毁）并返回 envd URL，之后命令、文件和终端都走快速的原生传输。没有 envd 的后端还需要实现数据平面方法（`exec.run`、`files.*`）。
+四个目录提供方都是 `node`。`exec` 是第三方插件的扩展点：一个进程可以同时服务 Python SDK 和 Node CLI，并可用任何语言编写。已经说 E2B envd 数据平面协议的后端只需实现控制面（创建、连接、列出、销毁）并返回 envd URL，之后命令、文件和终端都走快速的原生传输。没有 envd 的后端还需要实现数据平面方法（`exec.run`、`files.*`）。
 
 ### 能力矩阵
 
@@ -134,13 +150,14 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 |---|---|---|
 | `exec` | EPP 适配器，在请求写给插件之前 | E8004 |
 | `rest` | 包在内置协议类外面的 `feature_gate`，在任何 HTTP 请求之前 | E8004 |
+| `node` | Python 侧在发给引擎之前由 `EngineProvider` 拦住；CLI 在进程内做同样的拦截 | E8004 |
 | `python` | 提供方自己代码里的 `Provider.require(feature)` | E8004 |
 
 已声明的特性在后端内部失败不属于 E8004，而是映射后端的错误（见下文「错误」）。两种「未找到」被有意区分开：未知的**沙箱 id** 在所有提供方、所有 `sandbox.*` 调用（`connect`、`info`、`set_timeout`、`pause`、`resume`；`kill` 仍然幂等）上都是 `SandboxNotFoundError`（E2009）；缺失的模板、文件或进程是 E4001/E2001，没有 `sdk_code` 时是 `ProviderResourceNotFoundError`（E8005）。
 
 ### 安装之后能调用什么
 
-安装一个提供商，并不会打开全部 SDK 方法或全部 `abx` 命令。SDK 和 CLI 调用的是**同一份已安装插件**。每个方法和命令都对应上表里的一项能力。插件没有声明时，调用会在发出请求之前抛出 `ProviderFeatureNotSupportedError`（E8004）。`exec` 和 `rest` 插件两边都能用。进程内注册的 `python` 提供商只给 SDK 用。
+安装一个提供商，并不会打开全部 SDK 方法或全部 `abx` 命令。SDK 和 CLI 调用的是**同一份已安装插件**。每个方法和命令都对应上表里的一项能力。插件没有声明时，调用会在发出请求之前抛出 `ProviderFeatureNotSupportedError`（E8004）。`node`、`exec` 和 `rest` 插件两边都能用。进程内注册的 `python` 提供商只给 SDK 用。`kind = "python"` 的清单不能安装。
 
 | 能力 | Python SDK | CLI |
 |---|---|---|
@@ -148,7 +165,7 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 | `sandbox.timeout` | `set_timeout` | `sandbox timeout` |
 | `sandbox.pause` | `pause`、`resume` | `sandbox pause`、`sandbox resume` |
 | `exec.run` | `commands.run`、`sandbox.run` | `exec`、`run` |
-| `exec.stream` | `commands.stream` | `sandbox shell-stream` |
+| `exec.stream` | `commands.stream` | `exec --stream` |
 | `process.manage` | `commands.list`、`kill`、`send_stdin` | `sandbox process ...` |
 | `pty` | `get_terminal` | PTY 会话 |
 | `files.rw` | `files.*` | `upload`、`download`、`sandbox files ...` |
@@ -165,11 +182,11 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 
 ### OpenSandbox
 
-```bash
-abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox
-```
+OpenSandbox 是目录插件，不在这个包里。先安装再创建：
 
-`//opensandbox` 是目录仓库里的子目录，和 `abx template install alibaba-agent-sandbox/awesome-templates//python-hello` 的写法相同。然后：
+```bash
+python -m agent_sandbox.providers install registry:opensandbox --yes
+```
 
 ```python
 sb = await Sandbox.create(template="base", provider="opensandbox")
@@ -179,17 +196,13 @@ print(await sb.files.read("/tmp/note.txt"))
 await sb.kill()
 ```
 
-**已验证的状态（2026-10-13）**：在真实的 `opensandbox-server` 1.1.1（Docker 运行时）上，分别通过 Node CLI 和 `Sandbox.create(provider="opensandbox")` 验证（证据：[2026-10-13-opensandbox-provider-e2e](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/.agents/evidence/verify/2026-10-13-opensandbox-provider-e2e.md)）：
+能力对照在 [OpenSandbox 提供方](../design/provider-opensandbox-mapping.md)。同一份说明在 `awesome-providers/opensandbox/docs/README.md`。
 
-| 可用（真实运行过） | 不可用 |
-|---|---|
-| 按提交固定从 git 安装、doctor、18 个用例的契约套件（两端均 18/18）；用镜像 URI create、info、list、按 id connect、kill（幂等）、已 kill 的沙箱返回 `E2009`；`commands.run` 的退出码、stderr、环境变量；300 KB 二进制与 Unicode 文件往返、目录列表、缺失文件返回类型化的 `E4001`；进程列表（3 个进程）；`set_timeout`、`pause`（状态 `paused`）、`resume`（命令再次可执行）；`network.resolve(9000)`（服务器代理 URL）；篡改已安装文件后所有命令以 `E8011` 停止 | `run_code`、PTY、`files.watch`、模板构建/部署、签名传输 URL、域名、OSS、VPC：全部返回点名该特性的 `E8004`。未验证：egress 边车网络策略（`network_policy` 选项）、私有镜像仓库、`secure_access` 令牌流程、带 `process.manage` 的 `send_stdin` |
+### 扩展能力
 
-已发现、但不属于提供方的一个缺口：awesome-providers 目录仍带着改名前的 `ebx-provider.toml`，直接从 GitHub 安装会以 `E8014`（插件根目录没有 `abx-provider.toml`）失败。
+上面 18 个 feature id 是工具的公共面。提供方在这之外的操作登记到 `Provider.extensions`。它们不进 `features`，所以 `provider list` 的一行摘要里没有，别的提供方也不会带上。
 
-OpenSandbox 声明了九项能力：`sandbox.lifecycle`、`sandbox.timeout`、`sandbox.pause`、`exec.run`、`exec.stream`、`process.manage`、`files.rw`、`ports.url`、`sessions`。对应的 SDK 方法和 CLI 命令可用。这些会以 E8004 拒绝：`run_code`、PTY、模板列出/构建/部署、文件监听、签名传输 URL、自定义域名、OSS、VPC。进程的列出、终止、发信号可用；`send_stdin` 返回 E8004，对 execd 命令 id 的终止只能发 SIGKILL。
-
-插件是没有 npm 依赖的 Node.js 程序，所以 SDK 需要 `PATH` 上有 `node`。默认服务地址是 `http://127.0.0.1:8080`（`providers.opensandbox.base_url`）。模板名是容器镜像；未设置 `default_image` 时，`base` 表示 `python:3.12-slim`。逐字段说明见 [opensandbox/README.zh-CN.md](https://github.com/alibaba-agent-sandbox/awesome-providers/blob/main/opensandbox/README.zh-CN.md)。
+`describe()["extensions"]` 始终给出该提供方的全部登记。`extensions_for(sandbox_id=...)` 只给出这个沙箱满足条件的项：`code` 只在镜像名包含 `code-interpreter` 时出现，`networkpolicy` 只在创建时要了 egress 时出现，`command.logs` 只在已经有命令 id 时出现。`implemented=False` 的项在这些条件下可见，`require_extension` 仍然返回 `E8004`。早先的 Python 版 OpenSandbox 提供方这样登记了 `code`、`session`、`command.logs`、`snapshot`、`networkpolicy`、`metadata.patch`、`diagnostics`、`metrics`。现行目录提供方是 `kind = "node"`（`EngineProvider`），它的 `extensions` 是空的。
 
 ---
 
@@ -234,11 +247,11 @@ description = "Directory that holds sandbox working directories"
 - `examples/providers/local-process/` —— 约 200 行 Python 标准库写成的 `exec` 提供方（生命周期、命令、文件）。
 - `examples/providers/e2b-compatible/` —— 只有清单的 `rest` 提供方。
 
-OpenSandbox 插件不在本仓库里，它是可单独安装的提供方：[opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox)（[alibaba-agent-sandbox/awesome-providers](https://github.com/alibaba-agent-sandbox/awesome-providers)）。这是面向 [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) 服务的无依赖 Node `exec` 提供方：流式 exec、文件、进程控制、暂停 / 恢复和端口 URL，带 mock 服务器测试和在线测试。安装命令：`abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox`。
+OpenSandbox 是 [awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox) 里的目录 `node` 提供方（一个无依赖的 ES 模块，宿主进程内运行它的 EPP/1 方法；直接 `node provider.mjs` 仍可在 stdio 上提供 EPP/1）。它在宿主进程里访问 [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) 服务：流式 exec、文件、进程控制、终端、暂停 / 恢复和端口 URL。安装命令是 `abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox --allow-unpinned --yes`（或 Python 模块），然后 `Sandbox.create(provider="opensandbox")` 或 `abx --provider opensandbox`。后端是 E2B 形状时，写 `node` 插件更短：见 `awesome-providers/e2b/provider.mjs`。
 
 ### 编写检查清单
 
-1. **清单**：`manifest_version = 1`、合法的 id、`[compat] protocol = "epp/1"` 与 `requires`、`[runtime] kind = "exec"`（或 `rest` 端点）；每个选项都写进 `[config.fields.*]`，密钥加 `secret = true`，厂商自己的变量名写进 `env = [...]`。清单有错时返回 `E8014`，并指出出错的字段。
+1. **清单**：`manifest_version = 1`、合法的 id。目录风格的提供方是 `[compat] protocol = "node/1"`、`[runtime] kind = "node"`，`entry` 是相对的 `.mjs` 或 `.js`。`exec` 插件是 `protocol = "epp/1"`、`kind = "exec"`，并带 `command`。`rest` 只有端点，没有程序。`kind = "python"` 的清单不能安装。每个选项都写进 `[config.fields.*]`，密钥加 `secret = true`，厂商自己的变量名写进 `env = [...]`。清单有错时返回 `E8014`，并指出出错的字段。第 2 到第 6 条是 `exec` 的检查清单。
 2. **必须实现的方法**：`initialize`（返回你实现的特性）、`shutdown`，以及 `sandbox.lifecycle` 的 `sandbox.create|get|list|kill`。其余都按特性划分（见「插件要响应的方法」）。
 3. **特性标志**：只声明确实可用的特性。其余的宿主直接返回 E8004，不会调用你。
 4. **错误**：缺少特性返回 `-32003`；沙箱不存在返回 `-32002`（想写明的话加 `sdk_code` `E2009`）；凡是有对应 SDK 类的都带 `sdk_code`；信息里绝不出现凭证。
@@ -281,6 +294,8 @@ OpenSandbox 插件不在本仓库里，它是可单独安装的提供方：[open
 通用键 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`（`ABX_SANDBOX_API_KEY` 和 `ABX_SANDBOX_BASE_URL`）属于内置提供方。只有当插件清单在 `[core] inherit` 里列出它们，**并且**你在安装或更新时同意了，插件才能拿到。同意界面会列出这些键的名字。你的 LLM、GitHub 和 MCP 键永远不会交给提供方。
 
 ### 宿主如何处理插件进程
+
+下面说的是 `exec` 子进程。`node` 提供方由 Node 宿主加载（CLI 在进程内，Python SDK 则是 `abx provider engine serve`），不会按下面这种方式拉起。
 
 - 以清理过的环境启动：`PATH`、`HOME`、临时目录和语言环境变量、`env_passthrough` 中列出的名字，以及 `ABX_PROVIDER_DATA_DIR`。不会泄入 `ABX_*`、`E2B_*`、`ALICLOUD_*`、`GITHUB_TOKEN` 或 `OPENAI_*`。工作目录是插件的 `data/` 目录。
 - 单行协议消息限制为 8 MiB，并为崩溃信息保留 stderr 的最后 64 KiB。在 `initialize` 里发送过的值会从捕获的 stderr 和错误信息中被遮蔽。
@@ -346,7 +361,7 @@ python -m agent_sandbox.providers doctor my-cloud --no-handshake
 
 ---
 
-## Python 插件（仅 SDK）
+## 代码里的 Python 提供方（仅 SDK）
 
 ```python
 from agent_sandbox.providers import Provider, register_provider

@@ -6,13 +6,29 @@ import asyncio
 import concurrent.futures
 from typing import Any
 
-from agent_sandbox.models.errors import SandboxError
+from agent_sandbox.models.errors import (
+    InvalidAPIKeyError,
+    InvalidCredentialsError,
+    ProviderConfigError,
+    SandboxError,
+)
 from agent_sandbox.providers import registry, store
 from agent_sandbox.utils.config_keys import BUILTIN_PROVIDER_ID
 
 
 def _check(name: str, ok: bool, detail: str = "") -> dict[str, Any]:
     return {"name": name, "ok": ok, "detail": detail}
+
+
+async def _close_infra(infra: Any) -> None:
+    """Release whatever ``build_infra`` opened. ``close`` is optional."""
+    close = getattr(infra, "close", None)
+    if close is not None:
+        await close()
+        return
+    http_client = getattr(infra, "http_client", None)
+    if http_client is not None:
+        await http_client.close()
 
 
 async def doctor_async(provider_id: str, *, handshake: bool = True) -> dict[str, Any]:
@@ -36,7 +52,7 @@ async def doctor_async(provider_id: str, *, handshake: bool = True) -> dict[str,
         return finish()
 
     receipt = store.read_receipt(provider_id) if provider_id != BUILTIN_PROVIDER_ID else None
-    if receipt is not None and receipt.get("trust") != "link" and provider.kind != "python":
+    if receipt is not None and receipt.get("trust") != "link":
         try:
             store.verify_integrity(provider_id)
             checks.append(_check("integrity", True, str(receipt.get("tree_sha256", ""))[:16]))
@@ -55,13 +71,17 @@ async def doctor_async(provider_id: str, *, handshake: bool = True) -> dict[str,
     if handshake and provider_id != BUILTIN_PROVIDER_ID:
         try:
             infra = await provider.build_infra(config)
+        except (InvalidAPIKeyError, InvalidCredentialsError, ProviderConfigError) as exc:
+            # Install must succeed before the operator has a key. Create reports this.
+            checks.append(_check("config", False, exc.message))
+            return finish()
         except SandboxError as exc:
             checks.append(_check("handshake", False, exc.message))
             return finish()
         try:
             checks.append(_check("handshake", True))
         finally:
-            await infra.close()
+            await _close_infra(infra)
     return finish()
 
 

@@ -1,5 +1,7 @@
 # Providers and Credentials — Naming Scheme and Provider Plugin Architecture
 
+> **Status: superseded for catalog providers** wherever this page describes a gRPC or localhost plugin server as the way an SDK reaches a provider. The current design is the Node engine: HTTP, SSE and WebSocket on `127.0.0.1`, protocol `abx-engine/1`. See [cli/docs/en/reference/engine-api.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md) and [Node provider architecture](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/node-provider-architecture.md). The v1 tradeoff table below is kept as history.
+
 > **Status**: Accepted (design reviewed in two adversarial rounds, see [providers-and-credentials-review.md](../archive/providers-and-credentials-review.md)) · **Scope**: Python SDK (`client-sdk`) and the Node.js `abx` CLI · **CLI-facing spec**: `cli/docs/design/providers-and-credentials-cli.md`
 >
 > **Naming rule**: each configuration key has exactly one environment variable. That variable is the only name a reader accepts, and it is the name `abx config set` writes. There is no second name and no migration command.
@@ -320,7 +322,7 @@ A provider declares which **features** it implements. The SDK/CLI check the feat
 | `sandbox.timeout` | change TTL | `set_timeout`, `refresh` | `sandbox timeout` |
 | `sandbox.pause` | pause / resume | `pause`, `resume` | `sandbox pause/resume` |
 | `exec.run` | run a command, buffered result | `commands.run` | `exec`, `run`, `shell` |
-| `exec.stream` | streamed output | `commands.stream` | `shell-stream` |
+| `exec.stream` | streamed output | `commands.stream` | `exec --stream` |
 | `process.manage` | list/kill/signal/stdin of processes | `commands.list/kill/send_*` | `sandbox process ...` |
 | `pty` | interactive terminal | `get_terminal` | `connect --pty` |
 | `files.rw` | read/write/list/stat/mkdir/remove/move | `files.*` | `files`, `upload`, `download` |
@@ -346,10 +348,10 @@ Requirement: one plugin should serve **both** the Python SDK and the Node CLI.
 | **A. Native per language** (Python entry point; npm module) | No — two implementations per provider | pip/npm execute build/setup code at install | In-process: full trust, can crash/hang the host | Best | Low per language | **Keep only as SDK-side advanced path** (`register_provider()`, entry-point group `agent_sandbox.providers`); not installable by `abx provider install` |
 | **B. Executable + JSON-RPC over stdio (EPP/1)** | **Yes** | None (copy + validate; nothing runs) | Separate process: crash/hang/timeouts contained, env scrubbed, can be wrapped by OS sandbox later | Good for control plane; file bytes are base64-in-JSON (use C for heavy data) | Medium (one client per language) | **Primary** |
 | **C. REST-compatible `base_url`** (E2B protocol, declarative manifest) | **Yes**, no code at all | None | Nothing to isolate | Native speed (built-in transport) | Lowest | **Primary for E2B-protocol backends** |
-| D. gRPC/HTTP plugin server on localhost | Yes | None | Process, but port allocation, auth of the local port, firewall prompts | Best streaming | High (codegen, lifecycle, ports) | Rejected for v1; EPP/2 may add it as an alternative transport |
+| D. gRPC/HTTP plugin server on localhost | Yes | None | Process, but port allocation, auth of the local port, firewall prompts | Best streaming | High (codegen, lifecycle, ports) | Rejected for v1. A later evaluation of gRPC as the SDK-to-provider transport for catalog providers was not adopted; those providers use the Node engine named in the status at the top of this page |
 | E. WASM component | Yes | None | Strong | Limited I/O story today | Very high | Rejected for v1 |
 
-**Decision: B + C, plus A as an SDK-only escape hatch.** Both B and C describe a plugin with a *manifest* (`abx-provider.toml`); the manifest's `runtime.kind` is `rest` (C) or `exec` (B). The recommended architecture for a new backend is: *implement the E2B envd data-plane protocol* (or reuse it) and ship an `exec` plugin for **only the control plane** (create/connect/list/kill returning `envd_url` + token) — the data plane (exec, files, PTY, code) then flows through the fast native transports in the SDK and CLI. A backend with no envd compatibility implements the data-plane methods (`exec.run`, `files.*`) in the plugin too, accepting base64 overhead.
+**Decision: B + C, plus A as an SDK-only escape hatch.** Both B and C describe a plugin with a *manifest* (`abx-provider.toml`); the manifest's `runtime.kind` is `rest` (C) or `exec` (B). The recommended architecture for a new backend is: *implement the E2B envd data-plane protocol* (or reuse it) and ship an `exec` plugin for **only the control plane** (create/connect/list/kill returning `envd_url` + token) — the data plane (exec, files, PTY, code) then flows through the fast native transports in the SDK and CLI. A backend with no envd compatibility implements the data-plane methods (`exec.run`, `files.*`) in the plugin too, accepting base64 overhead. That paragraph is the v1 loading decision and is kept. Catalog providers since then are `node` (`node/1`): the Node host loads `provider.mjs`. See the status at the top of this page.
 
 ### 7.4 The provider contract
 
@@ -404,7 +406,8 @@ The table below is normative and is also shipped as `client-sdk/tests/fixtures/e
 | `files.search` / `files.chmod` | `{sandbox_id, path, pattern \| mode}` | `{entries}` / `{}` | `files.rw` | X |
 | `ports.url` | `{sandbox_id, port}` | `{url, headers?}` | `ports.url` | R (the SDK calls it from `network.resolve()`) |
 | `templates.list/get/delete/build/build_status` | | | `templates.read` / `templates.build` | R |
-| `pty.open/write/resize/close` | | notification `pty.output` | `pty` | R |
+| `pty.open` | `{sandbox_id, cols?, rows?}` | `{process_id}`, then notifications `pty.output{process_id, data_b64}` and one `pty.exit{process_id}` | `pty` | R |
+| `pty.write` / `pty.resize` / `pty.close` | `{sandbox_id, process_id, data_b64 \| cols, rows \| —}` | `{}` | `pty` | R |
 
 Parameter conventions: `secure` is sent **only** when the caller passed `secure=True/False` to `Sandbox.create` (otherwise absent, so the plugin's own default applies; the built-in provider behaves as `secure=True`). `options` is the caller's `provider_options` (declared config fields only) **minus secret fields**, for per-create settings (network policy, platform, image pull settings); a plugin must whitelist the keys it accepts per create and never let `options` change the server address or credentials. `process_id` (from `exec.start`) is a **string**; the `pid` of `process.*` is an opaque `string | integer`: the integer `pid` of a `process.list` entry or a `process_id`, and the SDK's `ProcessInfo.pid` and `commands.kill/send_signal/send_input` accept both. `sandbox.get` is the only required lookup; `sandbox.connect` is for plugins whose "connect" does more (resume). Unknown parameters must be ignored by both sides.
 

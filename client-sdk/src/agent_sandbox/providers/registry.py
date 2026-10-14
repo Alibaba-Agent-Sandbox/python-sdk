@@ -12,6 +12,7 @@ from agent_sandbox.providers.base import Provider, ordered_features
 from agent_sandbox.providers.builtin import AlicloudExpressProvider
 from agent_sandbox.utils.config_keys import (
     BUILTIN_PROVIDER_ID,
+    OFFICIAL_CATALOG_IDS,
     validate_provider_id,
 )
 from agent_sandbox.utils.logging import get_logger
@@ -96,6 +97,7 @@ def plugin_root(provider_id: str, receipt: dict[str, Any]) -> Path:
 
 def load_installed(provider_id: str) -> Provider:
     """Build a provider object from the store (verifies the receipt, not the tree digest)."""
+    from agent_sandbox.providers.engine_provider import EngineProvider
     from agent_sandbox.providers.exec_provider import ExecProvider
     from agent_sandbox.providers.manifest import load_manifest
     from agent_sandbox.providers.rest_provider import RestProvider
@@ -111,6 +113,10 @@ def load_installed(provider_id: str) -> Provider:
         if receipt.get("trust") != "link":
             store.verify_integrity(provider_id)
         return RestProvider(manifest, receipt)
+    if manifest.kind == "node":
+        if receipt.get("trust") != "link":
+            store.verify_integrity(provider_id)
+        return EngineProvider(manifest, root, receipt)
     return ExecProvider(manifest, root, receipt)
 
 
@@ -143,14 +149,24 @@ def _hint(wanted: str) -> str:
 
     known = [p["id"] for p in list_providers()]
     close = difflib.get_close_matches(wanted, known, n=1, cutoff=0.6)
-    base = "Run 'abx provider list'; install with 'abx provider install <path-or-git-url>'."
+    if wanted in OFFICIAL_CATALOG_IDS:
+        base = (
+            "This is a catalog provider. Install it with "
+            f"'python -m agent_sandbox.providers install registry:{wanted} --yes'."
+        )
+    else:
+        base = "Run 'abx provider list'; install with 'abx provider install <path-or-git-url>'."
     return f"Did you mean '{close[0]}'? {base}" if close else base
 
 
 def list_providers() -> list[dict[str, Any]]:
-    """Summaries of every known provider: built-in first, then others sorted by id."""
-    out: list[dict[str, Any]] = [_summary(builtin_provider(), trust="builtin")]
-    seen = {BUILTIN_PROVIDER_ID}
+    """Summaries of every known provider: the built-in first, then installed ones."""
+    from agent_sandbox.providers.catalog import schedule_update_check
+
+    schedule_update_check()
+    builtins = [builtin_provider()]
+    out: list[dict[str, Any]] = [_summary(prov, trust="builtin") for prov in builtins]
+    seen = {prov.id for prov in builtins}
     others: list[dict[str, Any]] = []
     with _lock:
         registered = dict(_registered)
