@@ -41,14 +41,14 @@ def fetch_index(*, timeout: float = 5, url: str | None = None) -> dict[str, Any]
     url = (url or registry_url()).strip()
     path = _local_path(url)
     if path is not None:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
         data["_base"] = str(path.parent)
         return data
     request = urllib.request.Request(url, headers={"Accept": "application/json"})
     with urllib.request.urlopen(request, timeout=timeout) as response:
-        data = json.loads(response.read().decode("utf-8"))
-    data["_base"] = url
-    return data
+        remote: dict[str, Any] = json.loads(response.read().decode("utf-8"))
+    remote["_base"] = url
+    return remote
 
 
 def _local_path(url: str) -> Path | None:

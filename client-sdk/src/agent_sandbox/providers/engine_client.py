@@ -302,7 +302,7 @@ class EngineClient:
         query = "&".join(f"{k}={v}" for k, v in (params or {}).items())
         url = f"ws://{record.host}:{record.port}{path}" + (f"?{query}" if query else "")
         headers = self._headers(record)
-        kwargs = {"additional_headers": headers}
+        kwargs: dict[str, Any] = {"additional_headers": headers}
         try:
             return await websockets.connect(url, **kwargs)
         except TypeError:  # websockets < 14 names the argument extra_headers

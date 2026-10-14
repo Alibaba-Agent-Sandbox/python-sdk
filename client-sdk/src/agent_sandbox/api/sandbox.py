@@ -646,8 +646,8 @@ class Sandbox:
                 auth=auth,
                 envd_token=envd_token,
                 sandbox_protocol=sandbox_protocol,
-                process_protocol=EngineProcessProtocol(info.sandbox_id),
-                filesystem_protocol=EngineFilesystemProtocol(info.sandbox_id),
+                process_protocol=EngineProcessProtocol(info.sandbox_id),  # type: ignore[arg-type]
+                filesystem_protocol=EngineFilesystemProtocol(info.sandbox_id),  # type: ignore[arg-type]
                 domain=domain or config.sandbox_domain,
                 secure=True if secure is None else secure,
                 resolved_capabilities=resolved,

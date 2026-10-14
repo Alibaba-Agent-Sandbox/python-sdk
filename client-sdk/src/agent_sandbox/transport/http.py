@@ -111,7 +111,7 @@ class _DialTransport(httpx.AsyncBaseTransport):
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
         original = request.url.netloc
         request.url = request.url.copy_with(host=self._host, port=self._port)
-        request.headers["host"] = original
+        request.headers["host"] = original.decode("latin-1")
         return await self._inner.handle_async_request(request)
 
     async def aclose(self) -> None:
@@ -290,7 +290,7 @@ class HttpClient:
         if self._envelope:
             body = self._codec.encode_request(payload or {})
             content_type = "application/json"
-            framed = {}
+            framed: dict[str, str] = {}
         else:
             body, framed = self._connect_body(payload)
             content_type = CONNECT_CONTENT_TYPE

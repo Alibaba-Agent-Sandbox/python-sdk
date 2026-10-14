@@ -186,9 +186,12 @@ class EngineTerminal:
         await self._ws.send(data)
 
     async def receive(self, timeout: float | None = None) -> str | bytes:
+        message: str | bytes
         if timeout is None:
-            return await self._ws.recv()  # type: ignore[no-any-return]
-        return await asyncio.wait_for(self._ws.recv(), timeout)  # type: ignore[no-any-return]
+            message = await self._ws.recv()
+        else:
+            message = await asyncio.wait_for(self._ws.recv(), timeout)
+        return message
 
     async def output_stream(self) -> AsyncIterator[str | bytes]:
         async for message in self._ws:
@@ -467,7 +470,7 @@ class EngineCodeProtocol:
 class EngineProvider(Provider):
     """A provider whose code is an installed ES module, run by the local engine."""
 
-    kind = "node"  # type: ignore[assignment]
+    kind = "node"
     envd_allow_missing = True
 
     def __init__(
