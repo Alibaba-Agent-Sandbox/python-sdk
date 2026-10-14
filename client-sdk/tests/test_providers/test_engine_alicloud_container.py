@@ -12,11 +12,11 @@ import os
 import shutil
 import signal
 import subprocess
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
-import tomllib
 
 from agent_sandbox import Sandbox
 from agent_sandbox.models.errors import (
@@ -37,6 +37,11 @@ from tests.iso import iso  # noqa: F401
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 REPO = Path(__file__).resolve().parents[4]
 CLI = REPO / "cli"

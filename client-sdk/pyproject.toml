@@ -32,6 +32,7 @@ dependencies = [
     "python-dotenv>=1.0",
     "grpcio>=1.66",
     "protobuf>=5",
+    "tomli>=2.0; python_version < '3.11'",
     # Lock-step release: the container-side runtime (``agent_sandbox.server``) used to ship inside
     # ``agent-sandbox`` itself, so it stays a hard dependency. Keep the pin equal to ``_version.py``.
     "agent-sandbox-server==0.3.0",
