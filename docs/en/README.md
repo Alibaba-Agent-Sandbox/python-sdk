@@ -4,32 +4,16 @@ Agent Sandbox is a sandbox SDK with pluggable providers. The default provider is
 
 > **Scope:** this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`). The `abx` CLI is a separate Node.js project with its own documentation set; see [Related: the abx CLI](#related-the-abx-cli).
 
+## Sites
+
+| Site | URL |
+|---|---|
+| Official site | https://www.agent-sandbox.com |
+| Provider registry | https://registry.agent-sandbox.com |
+
+The installer fetches the catalog index at `https://registry.agent-sandbox.cn/providers/index.json`. `ABX_PROVIDER_REGISTRY` overrides that URL.
+
 ---
-
-## Design Documents
-
-| # | Document | Description |
-|---|----------|-------------|
-| 1 | [Architecture Design](design/architecture.md) | Layered architecture overview |
-| 2 | [SDK API Design](design/sdk-api-design.md) | SDK public API specification |
-| 3 | [Sandbox Types](design/sandbox-types.md) | Sandbox type taxonomy |
-| 4 | [MCP Server](design/mcp-server.md) | MCP tool server design (Python server, HTTP app, FC artifact) |
-| 5 | [Template System](design/template-system.md) | Template resolution, versioning and registry |
-| 6 | [Server API](design/server-api.md) | In-sandbox HTTP server endpoints |
-| 7 | [Providers and Credentials](design/providers-and-credentials.md) | Canonical configuration names, provider plugins, EPP/1 |
-
-The user-facing Agents API is [Agents API](guide/agents-api.md) (Codex and Qwen Code, install a CLI only when you call it). Other maintainer notes are indexed in [DESIGN.md](DESIGN.md).
-
-## Archive
-
-These pages are reviews or target design, not the current specification.
-
-- [Server SDK v2 target design](archive/server-sdk-v2/README.md)
-- [Agents API review](archive/agents-api-review.md)
-- [Fine-grained capabilities review](archive/fine-grained-capabilities-review.md)
-- [Providers and credentials review](archive/providers-and-credentials-review.md)
-- [OpenSandbox end-to-end notes](archive/opensandbox-e2e-adversarial.md)
-- [CLI follow-ups](archive/cli-followups.md)
 
 ## Two parts
 
@@ -50,6 +34,7 @@ These pages are reviews or target design, not the current specification.
 | [Client SDK](guide/client-sdk.md) | What this side is, and how the guides below fit together |
 | [Getting Started](guide/getting-started.md) | Install, configure, first sandbox |
 | [SDK Usage](guide/sdk-usage.md) | Commands, files, the code interpreter, named commands |
+| [SDK skill](guide/sdk-skill.md) | What a coding agent loads before writing a client or a template |
 | [Cloud end-to-end practice](guide/cloud-examples.md) | Run the quickstart and compat demos on the default provider |
 | [Authentication](guide/authentication.md) | API key / AK-SK |
 | [Declarative usage](guide/declarative-usage.md) | `@sandbox` decorator |
@@ -96,6 +81,38 @@ How a change counts as tested: [Testing and the Definition of Done](guide/testin
 | [Architecture Overview](explanation/architecture-overview.md) | Layered architecture concepts |
 | [E2B Compatibility](explanation/e2b-compatibility.md) | What the E2B-shaped API shares with E2B, and where it differs |
 | [Sandbox Lifecycle](explanation/sandbox-lifecycle.md) | Create → Run → Hibernate → Destroy |
+
+## Design Documents
+
+Start here only when you are changing the product. Day-to-day use is in the guides above. The user-facing Agents API is [Agents API](guide/agents-api.md).
+
+| # | Document | Description |
+|---|----------|-------------|
+| 1 | [Architecture Design](design/architecture.md) | Layered architecture overview |
+| 2 | [SDK API Design](design/sdk-api-design.md) | SDK public API specification |
+| 3 | [Sandbox Types](design/sandbox-types.md) | Sandbox type taxonomy |
+| 4 | [MCP Server](design/mcp-server.md) | MCP tool server design (Python server, HTTP app, FC artifact) |
+| 5 | [Template System](design/template-system.md) | Template resolution, versioning and registry |
+| 6 | [Server API](design/server-api.md) | In-sandbox HTTP server endpoints |
+| 7 | [Providers and Credentials](design/providers-and-credentials.md) | Canonical configuration names, provider plugins, EPP/1 |
+| 8 | [OpenSandbox provider](design/provider-opensandbox-mapping.md) | Current adapter and the live capability table |
+| 9 | [Container edition](design/provider-alicloud-container.md) | `alicloud-container` |
+| 10 | [CubeSandbox provider](design/provider-cubesandbox.md) | `cubesandbox` |
+| 11 | [E2B provider](design/provider-e2b.md) | `e2b` |
+
+Other maintainer notes are indexed in [DESIGN.md](DESIGN.md).
+
+## Archive
+
+These pages are reviews or target design, not the current specification.
+
+- [Server SDK v2 target design](archive/server-sdk-v2/README.md)
+- [Agents API review](archive/agents-api-review.md)
+- [Fine-grained capabilities review](archive/fine-grained-capabilities-review.md)
+- [Providers and credentials review](archive/providers-and-credentials-review.md)
+- [OpenSandbox research](archive/provider-opensandbox-research.md)
+- [OpenSandbox end-to-end notes](archive/opensandbox-e2e-adversarial.md)
+- [CLI follow-ups](archive/cli-followups.md)
 
 ## Project Planning
 

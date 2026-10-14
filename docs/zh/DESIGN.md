@@ -95,18 +95,22 @@ graph TB
 |------|------|------|
 | **Server API** | [server-api.md](design/server-api.md) | Sandbox Server SDK 路由、能力组、Browser 实例架构 |
 
-### 维护者设计文档（仅英文）
+### 维护者设计文档
 
-provider、capability、server-v2 与 agents-API 工作流的设计文档。它们没有中文对应版本。
+这些页面有中文副本，就在本目录。只有仓库布局仍是英文。
 
 | 专题 | 文档 | 摘要 |
 |------|------|------|
-| **Agents API** | [agents-api.md](../en/design/agents-api.md)、[评审](../en/archive/agents-api-review.md) | 在 Agent Sandbox 中托管编码 Agent |
+| **Agents API** | [agents-api.md](design/agents-api.md)、[评审](archive/agents-api-review.md) | 在 Agent Sandbox 中托管编码 Agent |
 | **细粒度 capability** | [fine-grained-capabilities.md](design/fine-grained-capabilities.md)、[评审](archive/fine-grained-capabilities-review.md) | `agent-sandbox-server` 与 `template.yaml` 中的 capability 范围与权限 |
 | **客户端 / 服务端对齐** | [client-server-alignment.md](design/client-server-alignment.md) | 每条服务端路由与客户端的差距矩阵 |
 | **基础镜像与 Server SDK** | [base-image-and-server-sdk.md](design/base-image-and-server-sdk.md)、[CLI 跟进项](archive/cli-followups.md) | 官方 FC Agent 沙箱基础镜像与 Server SDK；对 `abx` CLI 的确切修改规格 |
-| **Server SDK v2** | [server-sdk-v2/](../en/archive/server-sdk-v2/README.md) | Server SDK 的目标操作模型设计（首页列出已实现与未实现部分） |
-| **OpenSandbox provider 调研** | [provider-opensandbox-mapping.md](../en/design/provider-opensandbox-mapping.md) | OpenSandbox provider 的 API 映射、配置键与测试计划 |
+| **Server SDK v2** | [server-sdk-v2/](archive/server-sdk-v2/README.md) | Server SDK 的目标操作模型设计（首页列出已实现与未实现部分） |
+| **OpenSandbox provider** | [provider-opensandbox-mapping.md](design/provider-opensandbox-mapping.md) | 现行的引擎内适配器和真实调用对照表 |
+| **容器版** | [provider-alicloud-container.md](design/provider-alicloud-container.md) | ACS/ACK sandbox-manager，E2B 形状的 HTTP，不是极速版 |
+| **CubeSandbox** | [provider-cubesandbox.md](design/provider-cubesandbox.md) | CubeAPI 控制面 |
+| **E2B** | [provider-e2b.md](design/provider-e2b.md) | E2B 云 API，api.e2b.app |
+| **提供方可用性** | [provider-readiness.md](design/provider-readiness.md) | CubeSandbox、E2B、容器版在没有真实后端之前的逻辑审查 |
 | **仓库布局** | [repository-layout.md](../en/design/repository-layout.md) | `python-sdk` 与 `cli` 仓库的布局评审 |
 
 ---

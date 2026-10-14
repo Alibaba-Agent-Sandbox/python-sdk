@@ -37,6 +37,7 @@ PROCESS_RULES: dict[str, tuple[str, ...]] = {
     "send_signal": ("process.manage",),
     "send_stdin": ("process.manage",),
     "kill": ("process.manage",),
+    "open_terminal": ("pty",),
 }
 
 _FILE_METHODS = (

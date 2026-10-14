@@ -144,6 +144,17 @@ def _raise_file_error(exc: httpx.HTTPStatusError, path: str) -> NoReturn:
 def _parse_watch_event(frame: dict[str, Any]) -> WatchEvent:
     """Parse a streaming watch event frame."""
     data = frame.get("result", frame)
+    filesystem = data.get("filesystem") if isinstance(data.get("filesystem"), dict) else None
+    if filesystem is not None:
+        raw = str(filesystem.get("type") or "")
+        mapped = {
+            "EVENT_TYPE_CREATE": WatchEventType.CREATED,
+            "EVENT_TYPE_WRITE": WatchEventType.MODIFIED,
+            "EVENT_TYPE_REMOVE": WatchEventType.DELETED,
+            "EVENT_TYPE_RENAME": WatchEventType.RENAMED,
+            "EVENT_TYPE_CHMOD": WatchEventType.MODIFIED,
+        }.get(raw, WatchEventType.MODIFIED)
+        return WatchEvent(type=mapped, path=str(filesystem.get("name") or ""))
     event_type_str = data.get("type", data.get("eventType", "modified"))
 
     type_map = {

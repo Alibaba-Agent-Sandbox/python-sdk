@@ -9,7 +9,7 @@ This tutorial covers the lifecycle from install through teardown.
 ## Prerequisites
 
 - Python 3.10 or later
-- A valid API Key (obtained from the Agent Sandbox platform)
+- For the default provider (`alicloud-express`): an API key from the [Agent Sandbox product docs](https://help.aliyun.com/zh/functioncompute/product-overview-of-fc-agent-sandbox). The variable is `ABX_SANDBOX_API_KEY`. The SDK does not read `E2B_API_KEY`.
 - Network access to the Alibaba Cloud Hangzhou region (default `cn-hangzhou`)
 
 ## 1. Installation
@@ -35,7 +35,7 @@ There are three ways to configure credentials. When a call actually needs the ke
 ```python
 from agent_sandbox.api.sandbox import Sandbox
 
-sandbox = await Sandbox.create(api_key="your-api-key-here")
+sandbox = await Sandbox.create(sandbox_api_key="your-api-key-here")
 ```
 
 ### Option 2: Environment variable (recommended for CI/CD)
@@ -64,6 +64,8 @@ async def main():
 
 asyncio.run(main())
 ```
+
+`base` is the default template (`Sandbox.create()` with no template argument). The repository README uses `python-base` because that image registers the `hello` command shown there.
 
 ### Using the SDK (sync)
 

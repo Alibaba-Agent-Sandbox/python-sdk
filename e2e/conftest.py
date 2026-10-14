@@ -38,7 +38,9 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
     missing = H.missing_env(H.REQUIRED_ENV)
     for item in items:
         item.add_marker(pytest.mark.e2e)
-        if missing:
+        # Provider live tests decide for themselves. OpenSandbox, CubeSandbox,
+        # E2B, and the container edition do not use the Express API key.
+        if missing and item.get_closest_marker("provider_live") is None:
             item.add_marker(
                 pytest.mark.skip(
                     reason=f"E2E skipped: missing credentials {missing}; fill python-sdk/.env "

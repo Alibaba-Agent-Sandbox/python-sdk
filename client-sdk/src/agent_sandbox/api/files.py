@@ -34,10 +34,12 @@ class FilesModule:
         sandbox_protocol: SandboxProtocol | None = None,
         sandbox_id: str | None = None,
         capabilities: set[str] | None = None,
+        provider_id: str = "provider",
     ) -> None:
         self._envd_url = envd_url
         self._envd_token = envd_token
         self._fs = filesystem_protocol
+        self._provider_id = provider_id
         self._sandbox_protocol = sandbox_protocol
         self._sandbox_id = sandbox_id
         self._capabilities = capabilities if capabilities is not None else set(DEFAULT_CAPABILITIES)
@@ -229,6 +231,7 @@ class FilesModule:
         This is not a signature-only URL. A client that only has the URL is
         denied by the data plane.
         """
+        self._require_envd_file_url()
         return f"{self._envd_url}/files?path={path}&username=user"
 
     async def download_url(self, path: str) -> str:
@@ -237,7 +240,16 @@ class FilesModule:
         This is not a signature-only URL. A client that only has the URL is
         denied by the data plane.
         """
+        self._require_envd_file_url()
         return f"{self._envd_url}/files?path={path}&username=user"
+
+    def _require_envd_file_url(self) -> None:
+        """Signed-style file URLs exist only on an envd HTTP data plane."""
+        if self._envd_url.startswith(("http://", "https://")):
+            return
+        from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+
+        raise ProviderFeatureNotSupportedError(self._provider_id, "files.transfer")
 
     # Sync variants
     read_sync = make_sync(read)

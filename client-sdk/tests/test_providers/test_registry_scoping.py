@@ -62,7 +62,11 @@ class TestRegistry:
         register_provider(_Py())
         installer.install(str(LOCAL_PROCESS), yes=True)
         rows = list_providers()
-        assert [r["id"] for r in rows] == ["alicloud-express", "local-process", "py-prov"]
+        assert [r["id"] for r in rows] == [
+            "alicloud-express",
+            "local-process",
+            "py-prov",
+        ]
         assert {r["id"]: r["trust"] for r in rows} == {
             "alicloud-express": "builtin",
             "local-process": "local",

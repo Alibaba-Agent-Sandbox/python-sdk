@@ -116,7 +116,8 @@ class TestRegistry:
         ("pid", "ok"),
         [
             ("my-provider", True),
-            ("e2b", False),
+            ("e2b", True),
+            ("alicloud-container", True),
             ("e2b-compat", True),
             ("a", False),
             ("My-Provider", False),

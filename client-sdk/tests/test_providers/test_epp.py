@@ -376,3 +376,51 @@ async def test_reference_plugin_env_is_scrubbed_and_config_arrives_via_initializ
         assert "tok-abcdefgh" not in infra.sandbox_protocol._c.stderr_tail
     finally:
         await infra.close()
+
+
+@pytest.mark.asyncio
+async def test_exec_terminal_round_trip() -> None:
+    import asyncio
+    import base64
+
+    from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+    from agent_sandbox.providers.exec_provider import ExecProcessProtocol
+
+    class FakeClient:
+        provider_id = "fake"
+
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, dict]] = []
+            self.queue: asyncio.Queue = asyncio.Queue()
+
+        async def call(self, method: str, params: dict, **_: object) -> dict:
+            self.calls.append((method, params))
+            return {"process_id": "p1"} if method == "pty.open" else {}
+
+        def open_stream(self, process_id: str) -> asyncio.Queue:
+            assert process_id == "p1"
+            return self.queue
+
+        def close_stream(self, process_id: str) -> None:
+            pass
+
+    client = FakeClient()
+    with pytest.raises(ProviderFeatureNotSupportedError):
+        await ExecProcessProtocol(client, frozenset(), None).open_terminal("sbx")  # type: ignore[arg-type]
+
+    proto = ExecProcessProtocol(client, frozenset({"pty"}), None)  # type: ignore[arg-type]
+    async with await proto.open_terminal("sbx", cols=90, rows=20) as term:
+        assert client.calls[0] == ("pty.open", {"sandbox_id": "sbx", "cols": 90, "rows": 20})
+        await term.send("ls\n")
+        assert client.calls[1][0] == "pty.write"
+        assert base64.b64decode(client.calls[1][1]["data_b64"]) == b"ls\n"
+        await term.resize(100, 30)
+        client.queue.put_nowait(
+            {"method": "pty.output", "data_b64": base64.b64encode(b"out").decode()}
+        )
+        assert await term.receive(timeout=1) == b"out"
+        client.queue.put_nowait({"method": "pty.exit", "process_id": "p1"})
+        with pytest.raises(RuntimeError):
+            await term.receive(timeout=1)
+        assert not term.is_connected
+    assert [c[0] for c in client.calls] == ["pty.open", "pty.write", "pty.resize"]

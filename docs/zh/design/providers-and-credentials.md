@@ -1,5 +1,7 @@
 # 提供方与凭证 —— 命名方案与提供方插件架构
 
+> **状态：对目录提供方已被取代**——本页把 gRPC 或本机插件服务写成 SDK 到达提供方的方式时，以这句为准。现行设计是 Node 引擎：`127.0.0.1` 上的 HTTP、SSE 和 WebSocket，协议 `abx-engine/1`。见 [cli/docs/zh/reference/engine-api.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/engine-api.md) 和 [Node 提供方架构](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/node-provider-architecture.md)。下面的 v1 取舍表作为历史保留。
+
 > **状态**：已接受（经两轮对抗式评审，见 [providers-and-credentials-review.md](../archive/providers-and-credentials-review.md)） · **范围**：Python SDK（`client-sdk`）与 Node.js `abx` CLI · **面向 CLI 的规格**：`cli/docs/design/providers-and-credentials-cli.md`
 >
 > **命名规则**：每个配置键只有一个环境变量。读取方只接受这个变量，`abx config set` 也写入这个名字。没有第二个名字，也没有迁移命令。
@@ -322,7 +324,7 @@ sandbox_domain   = "{region}.e2b.fc.aliyuncs.com"
 | `sandbox.timeout` | 修改 TTL | `set_timeout`、`refresh` | `sandbox timeout` |
 | `sandbox.pause` | 暂停 / 恢复 | `pause`、`resume` | `sandbox pause/resume` |
 | `exec.run` | 运行命令，缓冲结果 | `commands.run` | `exec`、`run`、`shell` |
-| `exec.stream` | 流式输出 | `commands.stream` | `shell-stream` |
+| `exec.stream` | 流式输出 | `commands.stream` | `exec --stream` |
 | `process.manage` | 列出 / 终止 / 发信号 / 写 stdin | `commands.list/kill/send_*` | `sandbox process ...` |
 | `pty` | 交互式终端 | `get_terminal` | `connect --pty` |
 | `files.rw` | 读 / 写 / 列出 / stat / mkdir / 删除 / 移动 | `files.*` | `files`、`upload`、`download` |
@@ -348,10 +350,10 @@ sandbox_domain   = "{region}.e2b.fc.aliyuncs.com"
 | **A. 各语言原生**（Python 入口点；npm 模块） | 否——每个提供方两份实现 | pip / npm 在安装时执行构建 / setup 代码 | 进程内：完全信任，可能让宿主崩溃 / 卡死 | 最好 | 每种语言较低 | **只作为 SDK 侧的高级路径保留**（`register_provider()`，入口点组 `agent_sandbox.providers`）；不能用 `abx provider install` 安装 |
 | **B. 可执行程序 + stdio 上的 JSON-RPC（EPP/1）** | **是** | 无（只复制 + 校验；不运行任何东西） | 独立进程：崩溃 / 卡死 / 超时被隔离，环境被清理，以后可由 OS 沙箱包装 | 控制面良好；文件字节在 JSON 里是 base64（重数据请用 C） | 中（每种语言一个客户端） | **主要方案** |
 | **C. 兼容 REST 的 `base_url`**（E2B 协议，声明式清单） | **是**，完全没有代码 | 无 | 无需隔离 | 原生速度（内置传输） | 最低 | **E2B 协议后端的主要方案** |
-| D. localhost 上的 gRPC / HTTP 插件服务 | 是 | 无 | 进程级，但要处理端口分配、本地端口认证、防火墙提示 | 流式最好 | 高（代码生成、生命周期、端口） | v1 否决；EPP/2 可能作为备选传输加入 |
+| D. localhost 上的 gRPC / HTTP 插件服务 | 是 | 无 | 进程级，但要处理端口分配、本地端口认证、防火墙提示 | 流式最好 | 高（代码生成、生命周期、端口） | v1 否决。后来把 gRPC 评估为目录提供方的 SDK 到提供方传输，没有采用；这些提供方使用本页顶部状态里写的 Node 引擎 |
 | E. WASM 组件 | 是 | 无 | 强 | 目前 I/O 方案有限 | 非常高 | v1 否决 |
 
-**决定：B + C，外加 A 作为仅限 SDK 的逃生口。** B 和 C 都用*清单*（`abx-provider.toml`）描述插件；清单的 `runtime.kind` 为 `rest`（C）或 `exec`（B）。新后端的推荐架构是：*实现 E2B envd 数据面协议*（或复用它），并只为**控制面**（创建 / 连接 / 列出 / 销毁，返回 `envd_url` + token）提供一个 `exec` 插件——数据面（exec、文件、PTY、代码）随后经 SDK 和 CLI 里快速的原生传输流动。没有 envd 兼容性的后端也在插件里实现数据面方法（`exec.run`、`files.*`），接受 base64 的开销。
+**决定：B + C，外加 A 作为仅限 SDK 的逃生口。** B 和 C 都用*清单*（`abx-provider.toml`）描述插件；清单的 `runtime.kind` 为 `rest`（C）或 `exec`（B）。新后端的推荐架构是：*实现 E2B envd 数据面协议*（或复用它），并只为**控制面**（创建 / 连接 / 列出 / 销毁，返回 `envd_url` + token）提供一个 `exec` 插件——数据面（exec、文件、PTY、代码）随后经 SDK 和 CLI 里快速的原生传输流动。没有 envd 兼容性的后端也在插件里实现数据面方法（`exec.run`、`files.*`），接受 base64 的开销。上一段是 v1 的加载决定，予以保留。此后的目录提供方是 `node`（`node/1`）：Node 宿主加载 `provider.mjs`。见本页顶部的状态。
 
 ### 7.4 提供方契约
 
@@ -406,7 +408,8 @@ class Provider(ABC):
 | `files.search` / `files.chmod` | `{sandbox_id, path, pattern \| mode}` | `{entries}` / `{}` | `files.rw` | X |
 | `ports.url` | `{sandbox_id, port}` | `{url, headers?}` | `ports.url` | R（SDK 在 `network.resolve()` 中调用） |
 | `templates.list/get/delete/build/build_status` | | | `templates.read` / `templates.build` | R |
-| `pty.open/write/resize/close` | | 通知 `pty.output` | `pty` | R |
+| `pty.open` | `{sandbox_id, cols?, rows?}` | `{process_id}`，之后是通知 `pty.output{process_id, data_b64}` 和一次 `pty.exit{process_id}` | `pty` | R |
+| `pty.write` / `pty.resize` / `pty.close` | `{sandbox_id, process_id, data_b64 \| cols, rows \| —}` | `{}` | `pty` | R |
 
 参数约定：`secure` **仅**在调用者给 `Sandbox.create` 传了 `secure=True/False` 时发送（否则缺失，由插件自己的默认值决定；内置提供方按 `secure=True` 处理）。`options` 是调用者的 `provider_options`（仅已声明的配置字段）**去掉密钥字段**，用于每次创建的设置（网络策略、平台、镜像拉取设置）；插件必须对每次创建接受的键做白名单，并且绝不能让 `options` 改变服务地址或凭证。`process_id`（来自 `exec.start`）是**字符串**；`process.*` 的 `pid` 是不透明的 `string | integer`：`process.list` 条目的整数 `pid` 或某个 `process_id`，SDK 的 `ProcessInfo.pid` 以及 `commands.kill/send_signal/send_input` 两者都接受。`sandbox.get` 是唯一必需的查询；`sandbox.connect` 用于“连接”含义更多（恢复）的插件。双方都必须忽略未知参数。
 

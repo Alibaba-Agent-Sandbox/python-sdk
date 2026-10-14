@@ -17,12 +17,13 @@ class TestSandboxStatus:
         assert SandboxStatus.CREATING == "creating"
         assert SandboxStatus.RUNNING == "running"
         assert SandboxStatus.PAUSED == "paused"
+        assert SandboxStatus.PAUSING == "pausing"
         assert SandboxStatus.STOPPING == "stopping"
         assert SandboxStatus.STOPPED == "stopped"
         assert SandboxStatus.ERROR == "error"
 
     def test_enum_count(self):
-        assert len(SandboxStatus) == 6
+        assert len(SandboxStatus) == 7
 
 
 class TestSandboxConfig:

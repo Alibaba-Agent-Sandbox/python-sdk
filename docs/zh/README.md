@@ -4,32 +4,16 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 
 > **范围：** 本仓库记录 Python SDK（`agent-sandbox`）与容器侧运行时（`agent-sandbox-server`）。`abx` CLI 是独立的 Node.js 项目，拥有自己的文档集；见[相关：abx CLI](#相关abx-cli)。
 
+## 网站
+
+| 网站 | 地址 |
+|---|---|
+| 官网 | https://www.agent-sandbox.com |
+| 提供方注册站 | https://registry.agent-sandbox.com |
+
+安装器拉取的目录索引是 `https://registry.agent-sandbox.cn/providers/index.json`。`ABX_PROVIDER_REGISTRY` 可以改这个地址。
+
 ---
-
-## 设计文档
-
-| # | 文档 | 说明 |
-|---|------|------|
-| 1 | [系统架构设计](design/architecture.md) | 六层分层架构总览、各层职责、目录结构 |
-| 2 | [SDK API 设计](design/sdk-api-design.md) | **核心文档** — 两种使用范式、命令与错误模型、SDK 边界 |
-| 3 | [沙箱类型体系](design/sandbox-types.md) | 临时/持久/休眠三种模式、生命周期状态机、计费模型 |
-| 4 | [MCP Server](design/mcp-server.md) | 7 个 P0 工具定义、会话绑定、STDIO 与 Streamable HTTP 传输、IDE 配置 |
-| 5 | [模板体系](design/template-system.md) | 官方模板、自定义模板、sandbox.yaml 规范、版本管理、模板市场 |
-| 6 | [Server API](design/server-api.md) | 容器内 HTTP Server 端点定义、42 端点、8 个能力组 |
-| 7 | [Provider 与凭证](design/providers-and-credentials.md) | 规范配置名、provider 插件、EPP/1 |
-
-用户向的 Agents API 在 [托管代理](guide/hosted-agents.md)（Codex 与 Qwen Code，CLI 按需安装）。其余维护者设计稿在 [DESIGN.md](DESIGN.md) 中索引。
-
-## 归档
-
-这些页面是评审记录或目标设计，不是现行规范。
-
-- [Server SDK v2 目标设计](archive/server-sdk-v2/README.md)
-- [Agents API 评审](archive/agents-api-review.md)
-- [细粒度能力评审](archive/fine-grained-capabilities-review.md)
-- [提供方与凭证评审](archive/providers-and-credentials-review.md)
-- [OpenSandbox 端到端记录](archive/opensandbox-e2e-adversarial.md)
-- [CLI 跟进项](archive/cli-followups.md)
 
 ## 两部分
 
@@ -50,6 +34,7 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 | [Client SDK](guide/client-sdk.md) | 这一侧是什么，以及下面这些文档怎么串起来 |
 | [快速开始](guide/getting-started.md) | 安装、配置、第一个沙箱 |
 | [SDK 使用](guide/sdk-usage.md) | 命令、文件、代码解释器、命名命令 |
+| [SDK skill](guide/sdk-skill.md) | 编码 agent 在写客户端或模板之前加载的说明 |
 | [云上端到端练习](guide/cloud-examples.md) | 在默认提供方上跑 quickstart 与 compat-demos |
 | [认证配置](guide/authentication.md) | API Key / AK-SK |
 | [声明式用法](guide/declarative-usage.md) | `@sandbox` 装饰器 |
@@ -96,6 +81,38 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 | [架构综述](explanation/architecture-overview.md) | 六层分层架构概念解释 |
 | [E2B 兼容性](explanation/e2b-compatibility.md) | E2B 风格 API 与 E2B 的共同点和差异 |
 | [沙箱生命周期](explanation/sandbox-lifecycle.md) | 创建→运行→休眠→销毁 |
+
+## 设计文档
+
+改产品时再看这里。日常使用从上面的用户文档进入。用户向的 Agents API 在 [Agents API](guide/agents-api.md)（Codex 与 Qwen Code，CLI 按需安装）。
+
+| # | 文档 | 说明 |
+|---|------|------|
+| 1 | [系统架构设计](design/architecture.md) | 六层分层架构总览、各层职责、目录结构 |
+| 2 | [SDK API 设计](design/sdk-api-design.md) | 两种使用范式、命令与错误模型、SDK 边界 |
+| 3 | [沙箱类型体系](design/sandbox-types.md) | 临时/持久/休眠三种模式、生命周期状态机、计费模型 |
+| 4 | [MCP Server](design/mcp-server.md) | 7 个 P0 工具定义、会话绑定、STDIO 与 Streamable HTTP 传输、IDE 配置 |
+| 5 | [模板体系](design/template-system.md) | 官方模板、自定义模板、sandbox.yaml 规范、版本管理、模板市场 |
+| 6 | [Server API](design/server-api.md) | 容器内 HTTP Server 端点定义 |
+| 7 | [Provider 与凭证](design/providers-and-credentials.md) | 规范配置名、provider 插件、EPP/1 |
+| 8 | [OpenSandbox 提供方](design/provider-opensandbox-mapping.md) | 现行适配器与真实调用对照 |
+| 9 | [容器版](design/provider-alicloud-container.md) | `alicloud-container` |
+| 10 | [CubeSandbox 提供方](design/provider-cubesandbox.md) | `cubesandbox` |
+| 11 | [E2B 提供方](design/provider-e2b.md) | `e2b` |
+
+其余维护者设计稿在 [DESIGN.md](DESIGN.md) 中索引。
+
+## 归档
+
+这些页面是评审记录或目标设计，不是现行规范。
+
+- [Server SDK v2 目标设计](archive/server-sdk-v2/README.md)
+- [Agents API 评审](archive/agents-api-review.md)
+- [细粒度能力评审](archive/fine-grained-capabilities-review.md)
+- [提供方与凭证评审](archive/providers-and-credentials-review.md)
+- [OpenSandbox 调研](../en/archive/provider-opensandbox-research.md)
+- [OpenSandbox 端到端记录](archive/opensandbox-e2e-adversarial.md)
+- [CLI 跟进项](archive/cli-followups.md)
 
 ## 项目规划
 

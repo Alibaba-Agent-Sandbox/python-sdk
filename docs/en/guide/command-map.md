@@ -52,12 +52,12 @@ Pause depends on the runtime. On Docker, OpenSandbox pause is a cgroup freeze, a
 | Job | abx | Agent Sandbox SDK | e2b | E2B SDK | osb | OpenSandbox SDK |
 |---|---|---|---|---|---|---|
 | Run one command | `abx exec <id> <command>` | `sandbox.commands.run(cmd)` | `e2b sandbox exec <id> <command>` | `sandbox.commands.run(cmd)` | `osb command run <id> -- <command>`; the short form is `osb exec` | `sandbox.commands.run(cmd)` |
-| Background command | `abx sandbox process start` | `sandbox.commands.start(…, background=True)` | `e2b sandbox exec -b` | the background argument of `commands.run` | `osb command run --background` | `commands.run`, then `get_command_status` |
+| Background command | `abx exec <id> --background -- <command>` | `sandbox.commands.start(…, background=True)` | `e2b sandbox exec -b` | the background argument of `commands.run` | `osb command run --background` | `commands.run`, then `get_command_status` |
 | Read background output | — | `commands.stream` | — | the command stream | `osb command logs <id> <execution-id>` | `commands.get_background_command_logs` |
 | Interrupt | `abx sandbox process signal` | `commands.send_signal(pid, 15 or 9)` | — | stop that process | `osb command interrupt <id> <execution-id>` | `commands.interrupt(execution.id)` |
 | List processes | `abx sandbox process list` | `commands.list()` | — | — | — | — |
 | Persistent shell | each line of `abx connect` is a new process | — | `e2b sandbox connect` | PTY | `osb command session create`, then `session run` | `commands.create_session`, `run_in_session`, `delete_session` |
-| Interactive terminal | `abx sandbox shell-stream` | `sandbox.get_terminal()` | `e2b sandbox connect` | `sandbox.pty` | — | execd's PTY WebSocket |
+| Interactive terminal | `abx connect <id>` is a line REPL. The CLI has no PTY command | `sandbox.get_terminal()` | `e2b sandbox connect` | `sandbox.pty` | — | execd's PTY WebSocket |
 | Run a snippet | — | `sandbox.run_code(code)` | — | `sandbox.run_code(code)` | — | `/code` on a code-interpreter image; the package is `opensandbox-code-interpreter` |
 | Registered command | `abx run <id> <name> --arg k=v` | `sandbox.run(name, **kwargs)` | — | — | — | — |
 | List registered commands | `abx command list <id>` | `sandbox.list_commands()` | — | — | — | — |

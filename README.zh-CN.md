@@ -10,7 +10,7 @@
 
 > 为 AI Agent 打造的云沙箱 —— 秒级创建、执行、管理隔离环境。
 
-**Agent Sandbox** 是基于阿里云函数计算（FC）Agent Sandbox 服务的 Python SDK，定位是**运行时**客户端：
+**Agent Sandbox** 是沙箱的 Python SDK。默认提供方是阿里云极速版（`alicloud-express`，函数计算）。OpenSandbox、容器版、CubeSandbox 和 E2B 在 `awesome-providers` 里，用 `registry:<id>` 安装。`abx` CLI 只加载极速版。它是**运行时**客户端：
 创建、使用、销毁沙箱。模板的构建和部署由 CLI 的 `abx template build|deploy` 完成。SDK 的方法名参考了 E2B，
 方便 E2B 代码迁移，但它不是 E2B 的直接替代品（见[从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md)）。
 
@@ -28,6 +28,15 @@ Node.js 项目，位于 [`cli`](https://github.com/alibaba-agent-sandbox/agent-s
 **Client SDK** 跑在你的机器上：创建沙箱并使用它。说明见 [Client SDK](docs/zh/guide/client-sdk.md)。示例在 `examples/quickstart/`、`examples/compat-demos/`、`examples/agents/`、`examples/scenarios/`。
 
 **Server SDK** 跑在沙箱镜像里面：镜像启动的 HTTP 服务。说明见 [Server SDK](docs/zh/guide/server-sdk.md)。示例是 `examples/templates/python-hello/commands.py` 和 `examples/templates/agents-cli/commands.py`。
+
+## 网站
+
+| 网站 | 地址 |
+|---|---|
+| 官网 | https://www.agent-sandbox.com |
+| 提供方注册站 | https://registry.agent-sandbox.com |
+
+安装器拉取的目录索引是 `https://registry.agent-sandbox.cn/providers/index.json`。`ABX_PROVIDER_REGISTRY` 可以改这个地址。
 
 ---
 
@@ -70,6 +79,8 @@ pip install -e ./server-sdk -e "./client-sdk[dev]"
 [`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) 仓库分发（见[相关：abx CLI](#相关abx-cli)）。
 
 ## 快速开始
+
+第一次创建之前先设置 `ABX_SANDBOX_API_KEY`。SDK 不读取 `E2B_API_KEY`。下面的例子用 `python-base`，因为这张镜像注册了 `hello`。不传 template 的 `Sandbox.create()` 使用 `base`。
 
 ```python
 import asyncio
@@ -196,6 +207,7 @@ graph TB
 | 贡献指南 | [CONTRIBUTING.md](.github/CONTRIBUTING.md) |
 | 许可证 | [Apache-2.0](LICENSE) |
 | 示例代码 | [examples/](examples/) |
+| SDK skill | [agent-sandbox-sdk/SKILL.md](agent-sandbox-sdk/SKILL.md) — agent 如何写客户端和模板 |
 
 ## 相关：abx CLI
 

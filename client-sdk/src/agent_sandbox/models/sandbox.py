@@ -18,6 +18,7 @@ class SandboxStatus(str, enum.Enum):
     CREATING = "creating"  # SDK 自定义过渡态
     RUNNING = "running"  # 已实测验证
     PAUSED = "paused"
+    PAUSING = "pausing"  # CubeSandbox while a pause is in progress
     STOPPING = "stopping"  # SDK 自定义过渡态
     STOPPED = "stopped"
     ERROR = "error"
@@ -105,6 +106,7 @@ class SandboxInfo(BaseModel):
 
     # 通用字段
     metadata: dict[str, str] = Field(default_factory=dict)
+    reported_domain: str | None = Field(default=None, alias="domain")
     timeout: int = 300
     region: str = "cn-hangzhou"
     envd_url: str | None = Field(default=None, alias="envdUrl")

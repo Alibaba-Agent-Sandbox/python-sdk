@@ -18,7 +18,7 @@
 my-template/
 ├── template.yaml      # 必须 — 模板定义
 ├── Dockerfile         # 可选 — 自定义 Docker 构建（优先于 template.yaml 中的构建步骤）
-├── commands.py        # 可选 — 通过 @sandbox.register 注册命令
+├── commands.py        # 可选 — 用 @command 注册命名命令
 └── README.md          # 可选 — 模板说明
 ```
 
@@ -101,39 +101,36 @@ capabilities:
 命名命令只有一种机制：注册在模板 server 里的函数。`template.yaml` 没有 `custom_commands` 键（客户端会拒绝它）。在 `commands.py` 中用装饰器注册 Python 函数：
 
 ```python
-from agent_sandbox.declarative import sandbox
+from agent_sandbox.server import command, start
 
-@sandbox.register
+@command("demo", description="回显参数。")
 def demo(x: int, y: str) -> str:
     return f"{y}={x}"
+
+if __name__ == "__main__":
+    start(9000)
 ```
 
-文件上传和下载是 server 的端点（`/files/*`、`/upload`、`/download`），属于默认开启的 `file_ops` 组，不在 `commands.py` 里注册。组的开关用 `template.yaml` 的 `server.groups`。
+文件上传和下载是 server 的端点（`/files/*`、`/upload`、`/download`），属于默认开启的 `file_ops` 组，不在 `commands.py` 里注册。部署不会应用 `server:` 块。可选组用 `default_table().enable_group(CapabilityGroup.DEV_TOOLS)`（参数是 `CapabilityGroup`，不是字符串）或 `ABX_SERVER_ENABLED_GROUPS` 打开。`dev_tools`、`browser`、`agents` 默认关闭。
 
-注册的命令由沙箱内 HTTP server 提供（`POST /commands/{name}`）。客户端用 `await sandbox.run("demo", x=1, y="hello")` 或 `abx run <id> demo --arg x=1 --arg y=hello` 调用，用 `sandbox.list_commands()` 或 `abx command list <id>` 列出。裸 shell 命令是另一个调用：`sandbox.commands.run(cmd)`。
+注册的命令由沙箱内 HTTP server 提供（`POST /commands/{name}`）。客户端用 `await sandbox.run("demo", x=1, y="hello")` 或 `abx run <id> demo --arg x=1 --arg y=hello` 调用，用 `sandbox.list_commands()` 或 `abx sandbox command list <id>` 列出。裸 shell 命令是另一个调用：`sandbox.commands.run(cmd)`。
 
 ---
 
 ## Dockerfile 自定义
 
-实际构建流程直接使用 `Dockerfile` + 语言原生依赖文件（`requirements.txt` / `package.json`）：
+目录里有 `Dockerfile` 时，镜像就是这个文件。`template.yaml` 不安装软件包。`base`、`system_packages`、`python_packages`、`node_packages`、`commands` 不是构建输入。
+
+默认提供者是 `alicloud-express`。它的 Dockerfile 从 FC 基础镜像开始，不写 `CMD` 或 `ENTRYPOINT`。`<region>` 默认 `cn-hangzhou`，`<tag>` 默认 `v0.0.49`。额外的包写成这个基础镜像上的 `RUN`。`FROM python:3.11-slim` 不是这张镜像。
 
 ```dockerfile
-FROM python:3.11-slim
-
-RUN apt-get update && apt-get install -y \
-    curl git \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN pip install --no-cache-dir \
-    pandas matplotlib numpy
-
-WORKDIR /app
-
-ENV PYTHONUNBUFFERED=1
+FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
+WORKDIR /home/user/app
+COPY commands.py /home/user/app/commands.py
+EXPOSE 9000
 ```
 
-模板目录中的 `Dockerfile` 是构建镜像的唯一来源。`template.yaml` 只定义运行时配置（能力、命令、环境变量、资源），不包含构建指令。
+OpenSandbox 以及没有 `[template]` 配置的提供者使用 `FROM python:3.12-slim`、`WORKDIR /app` 和 `CMD ["python3", "commands.py"]`。可直接复制的文件（含 server wheel 安装）在 `agent-sandbox-sdk/SKILL.md`。
 
 ## 提供者模板配置
 
@@ -146,7 +143,7 @@ ENV PYTHONUNBUFFERED=1
 
 `template.yaml` 用 `user` 和 `workdir` 记下同一对默认值。Dockerfile 的 `WORKDIR` 与 `workdir` 一致。只有 `user` 非空时才写 `USER`，因为 `python:3.12-slim` 里没有名为 `user` 的账户。之后的单次命令可以自带工作目录；这两个字段是沙箱的默认值，和 E2B 模板里的 user / workdir 是同一件事。
 
-`commands.py` 只导入 `agent_sandbox.server`，并在 `if __name__ == "__main__"` 下调用 `serve(port=9000)`。镜像安装 `agent-sandbox-server`。
+`commands.py` 只导入 `agent_sandbox.server`，并在 `if __name__ == "__main__"` 下调用 `start(port)`。镜像安装 `agent-sandbox-server`。
 
 ---
 

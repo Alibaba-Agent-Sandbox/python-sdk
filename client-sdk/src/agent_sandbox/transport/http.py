@@ -8,6 +8,7 @@ envd URL 格式: https://49983-{sandbox_id}.{domain}（已实测验证）
 
 from __future__ import annotations
 
+import struct
 from typing import TYPE_CHECKING, Any, NoReturn
 
 import httpx
@@ -99,6 +100,24 @@ def envd_status_error(exc: httpx.HTTPStatusError, rpc_path: str) -> EnvdRpcError
     return _build_envd_rpc_error(exc.response.content, exc.response.status_code, rpc_path)
 
 
+class _DialTransport(httpx.AsyncBaseTransport):
+    """Open the TCP connection to *host*:*port* and keep the original Host."""
+
+    def __init__(self, host: str, port: int) -> None:
+        self._host = host
+        self._port = port
+        self._inner = httpx.AsyncHTTPTransport()
+
+    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        original = request.url.netloc
+        request.url = request.url.copy_with(host=self._host, port=self._port)
+        request.headers["host"] = original
+        return await self._inner.handle_async_request(request)
+
+    async def aclose(self) -> None:
+        await self._inner.aclose()
+
+
 class HttpClient:
     """Async HTTP client for Platform API and envd API.
 
@@ -111,12 +130,34 @@ class HttpClient:
         self,
         config: TransportConfig,
         auth: AuthProvider,
+        *,
+        envelope_connect: bool = False,
+        envd_dial: tuple[str, int] | None = None,
+        envd_headers: dict[str, str] | None = None,
     ) -> None:
         self._config = config
         self._auth = auth
         self._codec = ConnectCodec()
+        self._envelope = envelope_connect
+        self._dial = envd_dial
+        self._envd_headers = dict(envd_headers or {})
         self._platform_client: httpx.AsyncClient | None = None
         self._envd_clients: dict[str, httpx.AsyncClient] = {}
+
+    def _connect_body(self, payload: dict[str, Any] | None) -> tuple[bytes, dict[str, str]]:
+        raw = self._codec.encode_request(payload or {})
+        if not self._envelope:
+            return raw, {}
+        framed = struct.pack(">BI", 0, len(raw)) + raw
+        return framed, {
+            "Connect-Protocol-Version": "1",
+            "Connect-Content-Encoding": "identity",
+        }
+
+    def _envd_client_kwargs(self) -> dict[str, Any]:
+        if self._dial is None:
+            return {}
+        return {"transport": _DialTransport(*self._dial)}
 
     async def _get_platform_client(self) -> httpx.AsyncClient:
         """Get or create the Platform API client."""
@@ -142,6 +183,7 @@ class HttpClient:
             base_url=envd_url,
             http2=self._config.http2,
             timeout=httpx.Timeout(self._config.http_timeout),
+            **self._envd_client_kwargs(),
         )
         self._envd_clients[envd_url] = client
         return client
@@ -243,14 +285,23 @@ class HttpClient:
         client = self._create_envd_client(envd_url)
         auth_headers = envd_token.get_headers()
 
+        # Unary filesystem RPCs are raw JSON. The 5-byte Connect frame is only
+        # for streams. Express leaves envelope off and keeps application/connect+json.
+        if self._envelope:
+            body = self._codec.encode_request(payload or {})
+            content_type = "application/json"
+            framed = {}
+        else:
+            body, framed = self._connect_body(payload)
+            content_type = CONNECT_CONTENT_TYPE
         all_headers = {
-            "Content-Type": CONNECT_CONTENT_TYPE,
+            "Content-Type": content_type,
+            **framed,
             **auth_headers,
+            **self._envd_headers,
         }
         if headers:
             all_headers.update(headers)
-
-        body = self._codec.encode_request(payload or {})
 
         # Build optional per-request timeout override
         extra_kwargs: dict[str, Any] = {}
@@ -351,14 +402,15 @@ class HttpClient:
         """
         auth_headers = envd_token.get_headers()
 
+        body, framed = self._connect_body(payload)
         all_headers = {
             "Content-Type": CONNECT_CONTENT_TYPE,
+            **framed,
             **auth_headers,
+            **self._envd_headers,
         }
         if headers:
             all_headers.update(headers)
-
-        body = self._codec.encode_request(payload or {})
         effective_timeout = (
             request_timeout if request_timeout is not None else self._config.http_timeout
         )
@@ -371,6 +423,7 @@ class HttpClient:
             async with httpx.AsyncClient(
                 http2=self._config.http2,
                 timeout=httpx.Timeout(effective_timeout),
+                **self._envd_client_kwargs(),
             ) as client:
                 url = envd_url.rstrip("/") + rpc_path
                 async with client.stream(
@@ -423,7 +476,7 @@ class HttpClient:
         client = self._create_envd_client(envd_url)
         auth_headers = envd_token.get_headers()
 
-        all_headers = {**auth_headers}
+        all_headers = {**auth_headers, **self._envd_headers}
         if headers:
             all_headers.update(headers)
 

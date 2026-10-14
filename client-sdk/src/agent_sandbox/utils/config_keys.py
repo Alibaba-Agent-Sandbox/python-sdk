@@ -43,9 +43,11 @@ RESERVED_PROVIDER_IDS = (
     "core",
     "transport",
     "providers",
-    "e2b",
 )
 RESERVED_PROVIDER_PREFIXES = ("abx-", "alicloud-", "shortcuts")
+# Official catalog ids. alicloud-express stays reserved; these are installed
+# from registry.agent-sandbox.cn, not compiled into the SDK.
+OFFICIAL_CATALOG_IDS = frozenset({"opensandbox", "cubesandbox", "e2b", "alicloud-container"})
 
 KEY_TYPES = ("str", "url", "int", "float", "bool", "enum", "path", "csv")
 ALIAS_KINDS = ("compat", "native", "legacy")
@@ -125,6 +127,8 @@ def validate_provider_id(provider_id: str) -> str | None:
             "provider id must be 2-40 chars of lowercase letters, digits and single "
             "hyphens, starting with a letter"
         )
+    if provider_id in OFFICIAL_CATALOG_IDS:
+        return None
     if provider_id in RESERVED_PROVIDER_IDS or provider_id.startswith(RESERVED_PROVIDER_PREFIXES):
         return f"provider id '{provider_id}' is reserved"
     return None

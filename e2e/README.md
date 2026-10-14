@@ -46,6 +46,7 @@ Third-party providers are not part of this suite's cloud run. They follow the sa
 | `test_05_network_and_code.py` | port URLs and in-sandbox HTTP services, code execution |
 | `test_06_server_sdk.py` | `agent-sandbox-server` inside a real sandbox (template `python-hello`): `/commands`, `/files/*`, `/process/*`, `/capabilities`, `/system/info`, `/env`, `/ports`, custom routes |
 | `test_07_declarative.py` | `@sandbox` declarative remote execution |
+| `test_08_providers.py` | Live calls for `opensandbox`, `alicloud-express` (SDK and CLI), `cubesandbox`, `e2b`, and `alicloud-container`. A provider with no backend of its own is skipped and does not receive the Express key. |
 
 Markers: `e2e` (everything), `e2e_slow` (> ~60 s),
 `known_issue` (strict xfail documenting a recorded bug, see [KNOWN-ISSUES.md](KNOWN-ISSUES.md)).

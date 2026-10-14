@@ -10,7 +10,7 @@
 
 > Cloud sandboxes for AI agents — create, execute, and manage isolated environments in seconds.
 
-**Agent Sandbox** is a Python SDK for the Alibaba Cloud FC Agent Sandbox service. It is the
+**Agent Sandbox** is a Python SDK for sandboxes. The default provider is Alibaba Cloud Express (`alicloud-express`, Function Compute). OpenSandbox, the container edition, CubeSandbox, and E2B are catalog plugins in `awesome-providers`, installed with `registry:<id>`. The `abx` CLI loads Express only. It is the
 **runtime** client: create, use and kill sandboxes. Building and deploying templates is done with
 `abx template build|deploy` from the CLI. The SDK uses E2B-shaped method names so that E2B code
 ports with few changes; it is not a drop-in replacement (see [Migrate from E2B](docs/en/guide/migrate-from-e2b.md)).
@@ -30,6 +30,15 @@ the server only ships `agent_sandbox/server/`) and are **released in lockstep** 
 **Client SDK** runs on your machine: create a sandbox and use it. Guide: [Client SDK](docs/en/guide/client-sdk.md). Examples: `examples/quickstart/`, `examples/compat-demos/`, `examples/agents/`, `examples/scenarios/`.
 
 **Server SDK** runs inside the sandbox image: the HTTP service the image starts. Guide: [Server SDK](docs/en/guide/server-sdk.md). Examples: `examples/templates/python-hello/commands.py`, `examples/templates/agents-cli/commands.py`.
+
+## Sites
+
+| Site | URL |
+|---|---|
+| Official site | https://www.agent-sandbox.com |
+| Provider registry | https://registry.agent-sandbox.com |
+
+The installer fetches the catalog index at `https://registry.agent-sandbox.cn/providers/index.json`. `ABX_PROVIDER_REGISTRY` overrides that URL.
 
 ---
 
@@ -73,6 +82,8 @@ console script); it is distributed from the [`cli`](https://github.com/alibaba-a
 (see [Related: the abx CLI](#related-the-abx-cli)).
 
 ## Quick Start
+
+Set `ABX_SANDBOX_API_KEY` before the first create. The SDK does not read `E2B_API_KEY`. This snippet uses `python-base` because that image registers `hello`. `Sandbox.create()` with no template uses `base`.
 
 ```python
 import asyncio
@@ -203,6 +214,7 @@ Lower layers never import upper layers. Full design: [`docs/en/design/architectu
 | Contributing Guide | [CONTRIBUTING.md](.github/CONTRIBUTING.md) |
 | License | [Apache-2.0](LICENSE) |
 | Examples | [examples/](examples/) |
+| SDK skill | [agent-sandbox-sdk/SKILL.md](agent-sandbox-sdk/SKILL.md) — how an agent writes a client and a template |
 
 ## Related: the abx CLI
 

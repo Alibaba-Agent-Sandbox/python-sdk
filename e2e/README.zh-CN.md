@@ -41,6 +41,7 @@ cd e2e && python -m pytest -m "not e2e_slow" -ra               # 等同 `make e2
 | `test_05_network_and_code.py` | 端口 URL 与沙箱内 HTTP 服务、代码执行 |
 | `test_06_server_sdk.py` | 真实沙箱(模板 `python-hello`)内的 `agent-sandbox-server`:`/commands`、`/files/*`、`/process/*`、`/capabilities`、`/system/info`、`/env`、`/ports`、自定义路由 |
 | `test_07_declarative.py` | `@sandbox` 声明式远程执行 |
+| `test_08_providers.py` | 真实后端调用：内置 `alicloud-express`（SDK 和 CLI），以及已安装的目录提供方 `opensandbox`、`cubesandbox`、`e2b`、`alicloud-container`。没有自己的后端时跳过，并且不会把极速版密钥发给它。 |
 
 标记:`e2e`(全部)、`e2e_slow`(> 约 60 秒)、`known_issue`(记录已知缺陷的严格 xfail,见
 [KNOWN-ISSUES.zh-CN.md](KNOWN-ISSUES.zh-CN.md))。

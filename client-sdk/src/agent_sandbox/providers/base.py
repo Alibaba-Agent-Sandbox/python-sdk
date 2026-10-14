@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
 from agent_sandbox.models.errors import (
     InvalidCredentialsError,
@@ -100,6 +100,41 @@ def consented_inherit(declared: Iterable[str], receipt: Mapping[str, Any] | None
     return frozenset(k for k in declared if k in consented)
 
 
+class Extension(NamedTuple):
+    """A capability outside the fixed 18 feature ids.
+
+    ``when`` decides whether a live sandbox shows it. The provider catalog
+    (``describe``) always lists every extension the provider registered.
+
+    * ``sandbox`` — visible once a sandbox id exists.
+    * ``code_interpreter_image`` — visible only when the image name contains ``code-interpreter``.
+    * ``egress`` — visible only when this sandbox was created with an egress sidecar.
+    * ``command`` — visible only when the caller has an execd command id.
+    """
+
+    id: str
+    summary: str
+    summary_zh: str
+    implemented: bool
+    when: str
+
+
+def _image_is_code_interpreter(image: str) -> bool:
+    return "code-interpreter" in image
+
+
+def _extension_visible(ext: Extension, *, image: str, egress: bool, command_id: str) -> bool:
+    if ext.when == "sandbox":
+        return True
+    if ext.when == "code_interpreter_image":
+        return _image_is_code_interpreter(image)
+    if ext.when == "egress":
+        return egress
+    if ext.when == "command":
+        return bool(command_id)
+    return False
+
+
 #: Template capability token implied by a provider feature (design §7.2).
 FEATURE_TO_CAPABILITY: dict[str, str] = {
     "exec.run": "shell",
@@ -109,7 +144,7 @@ FEATURE_TO_CAPABILITY: dict[str, str] = {
     "ports.url": "ports",
 }
 
-ProviderKind = Literal["builtin", "rest", "exec", "python"]
+ProviderKind = Literal["builtin", "rest", "exec", "node", "python"]
 
 
 @dataclass(frozen=True)
@@ -185,6 +220,7 @@ class Provider(ABC):
     version: str = "0.0.0"
     kind: ProviderKind = "python"
     features: frozenset[str] = frozenset()
+    extensions: tuple[Extension, ...] = ()
     config_fields: tuple[ConfigField, ...] = ()
     #: Generic keys (``sandbox_api_key``, ``sandbox_base_url``, ``sandbox_domain``) it reads.
     inherit: frozenset[str] = frozenset()
@@ -202,6 +238,34 @@ class Provider(ABC):
 
     def supports(self, feature: str) -> bool:
         return feature in self.features
+
+    def extensions_for(
+        self,
+        *,
+        image: str = "",
+        sandbox_id: str = "",
+        egress: bool = False,
+        command_id: str = "",
+    ) -> tuple[Extension, ...]:
+        """Extensions visible on this sandbox. An empty ``sandbox_id`` shows none.
+
+        The catalog (``describe()["extensions"]``) is the full registration and
+        does not use this filter.
+        """
+        if not sandbox_id:
+            return ()
+        return tuple(
+            ext
+            for ext in self.extensions
+            if _extension_visible(ext, image=image, egress=egress, command_id=command_id)
+        )
+
+    def require_extension(self, extension_id: str) -> Extension:
+        """Return the extension, or raise ``E8004`` when it is missing or not implemented."""
+        found = next((ext for ext in self.extensions if ext.id == extension_id), None)
+        if found is None or not found.implemented:
+            raise ProviderFeatureNotSupportedError(self.id, extension_id)
+        return found
 
     def validate_config(self, config: TransportConfig) -> None:
         """Raise when required fields or every credential group in ``auth_any_of`` are missing."""
@@ -254,6 +318,16 @@ class Provider(ABC):
             "version": self.version,
             "kind": self.kind,
             "features": sorted(self.features),
+            "extensions": [
+                {
+                    "id": ext.id,
+                    "summary": ext.summary,
+                    "summary_zh": ext.summary_zh,
+                    "implemented": ext.implemented,
+                    "when": ext.when,
+                }
+                for ext in self.extensions
+            ],
             "config_fields": [
                 {
                     "key": f.key,

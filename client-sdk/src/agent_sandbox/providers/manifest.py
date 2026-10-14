@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 MANIFEST_NAME = "abx-provider.toml"
 MANIFEST_MAX_BYTES = 256 * 1024
-SUPPORTED_PROTOCOLS = {"exec": "epp/1", "rest": "e2b-rest/1"}
+SUPPORTED_PROTOCOLS = {"exec": "epp/1", "rest": "e2b-rest/1", "node": "node/1"}
 FIELD_TYPES = ("string", "int", "float", "bool", "enum", "path", "url", "csv")
 _FIELD_TYPE_TO_KEY_TYPE = {"string": "str"}
 FILESYSTEM_SCOPES = ("data_dir", "cwd", "home", "any")
@@ -39,7 +39,7 @@ class Manifest:
     name_zh: str
     version: str
     description: str
-    kind: str  # exec | rest
+    kind: str  # exec | rest | node
     protocol: str
     requires: dict[str, str]
     command: tuple[str, ...]
@@ -62,6 +62,8 @@ class Manifest:
         return {
             "runtime": list(self.command)
             if self.kind == "exec"
+            else ["node", *(self.command or ("provider.mjs",))]
+            if self.kind == "node"
             else ["rest", self.endpoint.get("base_url", "")],
             "security": self.security,
             "features": sorted(self.features),
@@ -214,8 +216,13 @@ def parse_manifest(data: bytes | str) -> Manifest:
 
     runtime = _table(doc, "runtime", required=True)
     kind = _str(runtime, "kind", "runtime", required=True)
+    if kind == "python":
+        raise _err(
+            "runtime.kind 'python' is no longer supported; write the provider as 'node' "
+            "(an ES module the engine loads) or 'exec' (a process that speaks EPP/1)"
+        )
     if kind not in SUPPORTED_PROTOCOLS:
-        raise _err("runtime.kind must be 'exec' or 'rest'")
+        raise _err("runtime.kind must be 'exec', 'rest', or 'node'")
     compat = _table(doc, "compat")
     protocol = _str(compat, "protocol", "compat", default=SUPPORTED_PROTOCOLS[kind])
     if protocol != SUPPORTED_PROTOCOLS[kind]:
@@ -255,6 +262,19 @@ def parse_manifest(data: bytes | str) -> Manifest:
             if normalized == ".." or normalized.startswith("../"):
                 raise _err("runtime.command executable must stay inside the plugin directory")
         command = tuple(cmd)
+    elif kind == "node":
+        entry = runtime.get("entry")
+        if (
+            not isinstance(entry, str)
+            or not entry.endswith((".mjs", ".js"))
+            or "\x00" in entry
+            or entry.startswith(("/", "\\"))
+        ):
+            raise _err("runtime.entry must be a relative .mjs or .js file inside the plugin")
+        normalized = posixpath.normpath(entry.replace("\\", "/"))
+        if normalized == ".." or normalized.startswith("../"):
+            raise _err("runtime.entry must stay inside the plugin directory")
+        command = (normalized,)
     else:
         endpoint = dict(_table(doc, "endpoint", required=True))
         base = endpoint.get("base_url")
