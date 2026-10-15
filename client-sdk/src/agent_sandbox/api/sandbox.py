@@ -383,9 +383,11 @@ class Sandbox:
     def server(self) -> ServerClient:
         """Typed client for the template's SandboxServer on port 9000.
 
-        Uses the sandbox's gateway headers.  For a server protected by its own token use
-        :meth:`server_at` (``token=...``).  Discovery is explicit: call
-        ``await sandbox.server.discover()`` to enable fail-fast capability checks.
+        Does not send the sandbox access token. On Express that header is
+        forwarded to the process, and an ``agent-sandbox-server`` with no
+        ``ABX_SERVER_TOKEN`` answers HTTP 401. Pass ``token=`` to
+        :meth:`server_at` when the server has its own token. Discovery is
+        explicit: call ``await sandbox.server.discover()``.
         """
         return self.server_at(9000)
 
@@ -401,7 +403,10 @@ class Sandbox:
 
         Args:
             port: SandboxServer HTTP port.
-            token: Server token (sent as ``Authorization: Bearer``), if the server has one.
+            token: Server token (sent as ``Authorization: Bearer``) when the server
+                was started with ``ABX_SERVER_TOKEN``. Omit it on Express: the
+                sandbox access token is not a server credential, and sending it
+                is HTTP 401.
             pty_port: Port of the PTY WebSocket server.
             timeout: Default per-request timeout in seconds.
         """
@@ -410,7 +415,12 @@ class Sandbox:
         return ServerClient(
             self.network.get_url(port),
             token=token,
-            headers=self.network.get_access_headers(),
+            # Express publishes port 9000 without requiring the sandbox access
+            # token. Forwarding X-Access-Token makes an unconfigured
+            # agent-sandbox-server return 401 (it treats any presented
+            # credential as a login). Callers that need the gateway header
+            # use network.get_access_headers() themselves.
+            headers=None,
             pty_url=self.network.get_url(pty_port),
             timeout=timeout,
         )
@@ -738,6 +748,9 @@ class Sandbox:
         try:
             info = await sandbox_protocol.connect(sandbox_id)
             envd_token = EnvdTokenManager(info.envd_access_token, sandbox_id=info.sandbox_id)
+            from agent_sandbox.transport.http import stream_envelope_for_envd
+
+            http_client._stream_envelope = stream_envelope_for_envd(info.envd_version)
 
             logger.info("Connected to sandbox: %s", sandbox_id)
 

@@ -161,8 +161,33 @@ class TestEnvdRequest:
             envd_token=envd_token,
         )
         request = httpx_mock.get_request()
-        assert request.headers["content-type"] == CONNECT_CONTENT_TYPE
+        assert request.headers["content-type"] == "application/json"
+        assert json.loads(request.content) == {"command": "ls"}
         assert result == {"pid": 123}
+
+    async def test_gen1_unary_keeps_connect_content_type(self, envd_token, httpx_mock):
+        """envd 0.5.x accepts application/connect+json on unary RPCs."""
+        client = HttpClient(
+            config=TransportConfig(
+                sandbox_base_url="https://sandbox-test.example.com", http2=False
+            ),
+            auth=MagicMock(),
+            stream_envelope=False,
+        )
+        httpx_mock.add_response(
+            url="https://envd.example.com/filesystem.Filesystem/ListDir",
+            json={"entries": []},
+        )
+        await client.envd_request(
+            "https://envd.example.com",
+            "/filesystem.Filesystem/ListDir",
+            payload={"path": "/home/user"},
+            envd_token=envd_token,
+        )
+        request = httpx_mock.get_request()
+        assert request.headers["content-type"] == CONNECT_CONTENT_TYPE
+        assert json.loads(request.content) == {"path": "/home/user"}
+        await client.close()
 
     async def test_sends_envd_auth_header(self, http_client, envd_token, httpx_mock):
         httpx_mock.add_response(
@@ -611,15 +636,43 @@ class TestEnvdStreamStreaming:
         ]
         await client.close()
 
-    async def test_trailer_and_error_frames_skipped(self, envd_token):
-        """End-of-stream (0x02) frames — empty or with error JSON — are skipped."""
+    async def test_error_trailer_raises_with_code_and_message(self, envd_token):
+        """An end-stream error trailer is not a data frame. It fails the call."""
 
         async def chunks():
             yield make_envd_frame({"event": {"data": {"stdout": "MQ=="}}})
-            # Trailer carrying a Connect error payload must not be yielded
-            # (matches parse_streaming_frames semantics).
-            yield make_envd_frame({"error": {"code": "internal", "message": "boom"}}, flags=0x02)
-            # Empty data frame is skipped too.
+            yield make_envd_frame(
+                {
+                    "error": {
+                        "code": "invalid_argument",
+                        "message": "protocol error: promised 5 bytes in enveloped message",
+                    }
+                },
+                flags=0x02,
+            )
+
+        transport = mock_stream_transport(chunks)
+        client = self._make_client()
+        frames: list[dict[str, Any]] = []
+        with self._patch(transport), pytest.raises(EnvdRpcError, match="invalid_argument") as ei:
+            async for frame in client.envd_stream(
+                "https://envd.example.com",
+                "/process.Process/Start",
+                envd_token=envd_token,
+            ):
+                frames.append(frame)
+        assert frames == [{"event": {"data": {"stdout": "MQ=="}}}]
+        assert "protocol error: promised 5 bytes" in ei.value.message
+        assert ei.value.rpc_path == "/process.Process/Start"
+        assert ei.value.envd_error is not None
+        assert ei.value.envd_error["error"]["code"] == "invalid_argument"
+        await client.close()
+
+    async def test_success_trailer_is_skipped(self, envd_token):
+        """An empty end-stream trailer does not fail the call."""
+
+        async def chunks():
+            yield make_envd_frame({"event": {"data": {"stdout": "MQ=="}}})
             yield make_envd_frame({}, flags=0x02)
 
         transport = mock_stream_transport(chunks)
@@ -1068,5 +1121,100 @@ class TestEnvdStreamStreaming:
         assert req.url.path == "/process.Process/Start"
         assert req.headers["content-type"] == CONNECT_CONTENT_TYPE
         assert req.headers["x-access-token"] == "test-envd-token"
-        assert json.loads(req.content) == {"process": {"cmd": "ls"}}
+        assert req.headers["connect-protocol-version"] == "1"
+        body = req.content
+        assert body[0] == 0
+        assert int.from_bytes(body[1:5], "big") == len(body) - 5
+        assert json.loads(body[5:]) == {"process": {"cmd": "ls"}}
+        await client.close()
+
+    async def test_gen2_envd_rejects_unenveloped_body(self, envd_token):
+        """Mock envd that insists on the Connect envelope, like envd v0.6.1."""
+        import base64
+
+        payload = {"process": {"cmd": "echo", "args": ["hi"]}}
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = request.content
+            enveloped = (
+                len(body) >= 5
+                and body[0] == 0
+                and int.from_bytes(body[1:5], "big") == len(body) - 5
+            )
+            if not enveloped:
+                promised = int.from_bytes(body[1:5], "big") if len(body) >= 5 else 0
+                message = (
+                    f"protocol error: promised {promised} bytes in enveloped message, "
+                    f"got {len(body)} bytes"
+                )
+                return httpx.Response(
+                    200,
+                    content=make_envd_frame(
+                        {"error": {"code": "invalid_argument", "message": message}},
+                        flags=0x02,
+                    ),
+                )
+            stdout = base64.b64encode(b"hi\n").decode("ascii")
+            frames = b"".join(
+                [
+                    make_envd_frame({"event": {"start": {"pid": 7}}}),
+                    make_envd_frame({"event": {"data": {"stdout": stdout}}}),
+                    make_envd_frame({"event": {"end": {"exitCode": 0, "exited": True}}}),
+                    make_envd_frame({}, flags=0x02),
+                ]
+            )
+            return httpx.Response(200, content=frames)
+
+        client = self._make_client()
+        with self._patch(httpx.MockTransport(handler)):
+            frames = [
+                f
+                async for f in client.envd_stream(
+                    "https://envd.example.com",
+                    "/process.Process/Start",
+                    payload=payload,
+                    envd_token=envd_token,
+                )
+            ]
+        assert frames[-1]["event"]["end"]["exitCode"] == 0
+        assert frames[1]["event"]["data"]["stdout"]
+        await client.close()
+
+        raw_client = HttpClient(
+            config=TransportConfig(sandbox_base_url="https://test.example.com", http2=False),
+            auth=MagicMock(),
+            stream_envelope=False,
+        )
+        with (
+            self._patch(httpx.MockTransport(handler)),
+            pytest.raises(EnvdRpcError, match="invalid_argument: protocol error: promised"),
+        ):
+            async for _ in raw_client.envd_stream(
+                "https://envd.example.com",
+                "/process.Process/Start",
+                payload=payload,
+                envd_token=envd_token,
+            ):
+                pass
+        await raw_client.close()
+
+    async def test_raw_json_error_body_keeps_envd_message(self, envd_token):
+        """A non-enveloped error body still surfaces code and message."""
+        message = "protocol error: promised 577794671 bytes in enveloped message, got 49 bytes"
+
+        async def chunks():
+            yield json.dumps({"error": {"code": "invalid_argument", "message": message}}).encode()
+
+        client = self._make_client()
+        with (
+            self._patch(mock_stream_transport(chunks)),
+            pytest.raises(EnvdRpcError, match="invalid_argument") as ei,
+        ):
+            async for _ in client.envd_stream(
+                "https://envd.example.com",
+                "/process.Process/Start",
+                envd_token=envd_token,
+            ):
+                pass
+        assert "577794671" in ei.value.message
         await client.close()

@@ -139,6 +139,16 @@ print(result.execution_time)
 print(result.success)  # exit_code == 0
 ```
 
+`on_stdout` 和 `on_stderr` 在每个输出块到达时调用：
+
+```python
+result = await sandbox.commands.run(
+    "echo hi",
+    on_stdout=lambda text: print(text, end=""),
+    on_stderr=lambda text: print(text, end=""),
+)
+```
+
 ### 流式输出
 
 ```python
@@ -273,7 +283,8 @@ url = sandbox.network.get_url(8080)
 host = sandbox.network.get_host(8080)
 # => "8080-sbx-xxxx.cn-hangzhou.e2b.fc.aliyuncs.com"
 
-# 获取访问头（secure 模式下含 X-Access-Token）
+# secure 模式：给平台网关的 X-Access-Token（envd /files）。
+# sandbox.run 和 sandbox.server 不会把这个头发到端口 9000。
 headers = sandbox.network.get_access_headers()
 ```
 

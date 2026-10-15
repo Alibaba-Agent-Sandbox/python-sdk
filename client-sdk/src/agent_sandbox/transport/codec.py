@@ -165,10 +165,20 @@ class EnvelopeStreamParser:
       :meth:`pending_bytes` so the caller can log a warning at EOF)
     """
 
-    __slots__ = ("_buf",)
+    __slots__ = ("_buf", "_stream_error")
 
     def __init__(self) -> None:
         self._buf = bytearray()
+        self._stream_error: dict[str, Any] | None = None
+
+    @property
+    def stream_error(self) -> dict[str, Any] | None:
+        """Connect end-stream trailer that carried an ``error`` object, if any."""
+        return self._stream_error
+
+    def buffered(self) -> bytes:
+        """Bytes of an incomplete frame still waiting for more input."""
+        return bytes(self._buf)
 
     def feed(self, chunk: bytes) -> list[dict[str, Any]]:
         """Absorb *chunk* and return frames completed by this chunk.
@@ -199,16 +209,17 @@ class EnvelopeStreamParser:
             del buf[:frame_end]
 
             if flags == ConnectCodec.FRAME_FLAG_TRAILER:
-                # End-of-stream/trailer frame, skip (kept for diagnostics —
-                # an error trailer means the RPC itself failed, but the
-                # historic parse_streaming_frames semantics skip it and
-                # rely on HTTP-level error mapping instead).
+                # End-of-stream trailer. An ``error`` object means the RPC
+                # failed; the caller raises after yielding any data frames
+                # from this chunk. A success trailer is empty and is skipped.
                 if payload:
                     try:
                         trailer = json_decode(payload)
                     except Exception:
                         trailer = None
                     if isinstance(trailer, dict) and trailer.get("error"):
+                        if self._stream_error is None:
+                            self._stream_error = trailer
                         logger.warning(
                             "Connect stream ended with error trailer: %s",
                             trailer["error"],

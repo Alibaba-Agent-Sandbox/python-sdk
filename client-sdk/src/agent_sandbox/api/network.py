@@ -59,9 +59,12 @@ class NetworkModule:
         return f"{scheme}://{self.get_host(port)}"
 
     def get_access_headers(self) -> dict[str, str]:
-        """获取端口访问所需的 HTTP headers。
+        """端口访问所需的 HTTP headers。
 
-        secure 模式下需要 X-Access-Token header。
+        secure 模式下包含 ``X-Access-Token``（envd 与部分网关）。Express 上
+        端口 9000 的 ``agent-sandbox-server`` 在未设置 ``ABX_SERVER_TOKEN`` 时
+        会把这个头当成登录失败（HTTP 401）。命名命令走 :meth:`Sandbox.run`，
+        不带这个头。
         """
         if self._secure and self._access_token:
             return {"X-Access-Token": self._access_token}

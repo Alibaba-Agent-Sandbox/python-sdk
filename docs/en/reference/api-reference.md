@@ -306,7 +306,7 @@ All methods are local computations with no network requests. Logically associate
 |--------|-----------|-------------|
 | `get_host()` | `def get_host(port: int) -> str` | Returns `{port}-{sandbox_id}.{domain}` |
 | `get_url()` | `def get_url(port: int) -> str` | Returns `https://{port}-{sandbox_id}.{domain}` |
-| `get_access_headers()` | `def get_access_headers() -> dict[str, str]` | Returns HTTP headers required for port access |
+| `get_access_headers()` | `def get_access_headers() -> dict[str, str]` | Secure mode: `X-Access-Token` for the platform gateway. Not sent by `sandbox.run` |
 
 ---
 
@@ -344,8 +344,8 @@ you want policy-scoped, scope-checked access, or need endpoints envd lacks (`fil
 | Member | Signature | Description |
 |--------|-----------|-------------|
 | `ServerClient()` | `(base_url, *, token=None, headers=None, pty_url=None, timeout=30.0, http_client=None)` | `token` is sent as `Authorization: Bearer`; `headers` carry the gateway `X-Access-Token` |
-| `Sandbox.server` | `cached_property -> ServerClient` | Client for port 9000 with the sandbox gateway headers |
-| `Sandbox.server_at()` | `(port=9000, *, token=None, pty_port=9001, timeout=30.0) -> ServerClient` | A fresh client for another port/token |
+| `Sandbox.server` | `cached_property -> ServerClient` | Client for port 9000. Does not send the sandbox access token |
+| `Sandbox.server_at()` | `(port=9000, *, token=None, pty_port=9001, timeout=30.0) -> ServerClient` | A fresh client. Does not send the sandbox access token; `token` is `ABX_SERVER_TOKEN` |
 | `Sandbox.start_server()` | `async (*, port=9000, commands=None, policy=None, token=None, env=None, command=None, wait=True, timeout=30.0) -> ServerClient` | Starts `agent-sandbox-server serve` as a background envd command and polls `/health`; `policy` is a dict (`ABX_SERVER_POLICY`) or a preset name; raises `ConnectionError_` on timeout |
 | `health()` | `async -> bool` | `GET /health`, never raises for an unreachable server |
 | `discover()` | `async -> ServerCapabilities` | `GET /capabilities`; caches the result in `client.capabilities` and enables fail-fast pre-checks |

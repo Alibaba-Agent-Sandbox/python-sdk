@@ -175,7 +175,7 @@ Existing exception classes are reused where they already fit: HTTP 404 `FileNotF
 
 1. `await sandbox.server.discover()` then `caps.info("<endpoint>")` / `caps.denial("<endpoint>")` shows why an endpoint is unavailable (disabled, missing scope, path rules).
 2. `await caps.check_path("files_download_stream", "/some/path", op="read")` asks the server for the authoritative path decision without touching the filesystem.
-3. For E9001, pass `Sandbox.server_at(port, token=...)`; the token is sent as `Authorization: Bearer`, the gateway header stays separate.
+3. For E9001, pass `Sandbox.server_at(port, token=...)`. That token is `ABX_SERVER_TOKEN`, sent as `Authorization: Bearer`. Do not send the sandbox access token to port 9000.
 4. Validate a policy before shipping: `agent-sandbox-server check-config --policy server-policy.json --explain files_download_stream --path /home/user/out/a.txt`.
 
 ---

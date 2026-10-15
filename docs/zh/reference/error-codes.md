@@ -175,7 +175,7 @@ except CapabilityNotSupportedError as e:
 
 1. 先 `await sandbox.server.discover()`，再用 `caps.info("<endpoint>")` / `caps.denial("<endpoint>")` 查看端点不可用的原因（被禁用、缺少 scope、路径规则）。
 2. `await caps.check_path("files_download_stream", "/some/path", op="read")` 向服务端询问权威的路径判定，不会触碰文件系统。
-3. E9001：使用 `Sandbox.server_at(port, token=...)`；令牌以 `Authorization: Bearer` 发送，网关头独立传递。
+3. E9001：使用 `Sandbox.server_at(port, token=...)`。该令牌是 `ABX_SERVER_TOKEN`，以 `Authorization: Bearer` 发送。不要把沙箱访问令牌发到端口 9000。
 4. 发布前校验策略：`agent-sandbox-server check-config --policy server-policy.json --explain files_download_stream --path /home/user/out/a.txt`。
 
 ---

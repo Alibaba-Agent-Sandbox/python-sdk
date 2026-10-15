@@ -139,6 +139,16 @@ print(result.execution_time)
 print(result.success)  # exit_code == 0
 ```
 
+`on_stdout` and `on_stderr` run once per chunk as the command produces it:
+
+```python
+result = await sandbox.commands.run(
+    "echo hi",
+    on_stdout=lambda text: print(text, end=""),
+    on_stderr=lambda text: print(text, end=""),
+)
+```
+
 ### Streaming Output
 
 ```python
@@ -273,7 +283,8 @@ url = sandbox.network.get_url(8080)
 host = sandbox.network.get_host(8080)
 # => "8080-sbx-xxxx.cn-hangzhou.e2b.fc.aliyuncs.com"
 
-# Get access headers (includes X-Access-Token in secure mode)
+# Secure mode: X-Access-Token for the platform gateway (envd /files).
+# sandbox.run and sandbox.server do not send this header to port 9000.
 headers = sandbox.network.get_access_headers()
 ```
 

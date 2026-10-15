@@ -33,6 +33,7 @@ The installer fetches the catalog index at `https://registry.agent-sandbox.cn/pr
 |-------|-------------|
 | [Client SDK](guide/client-sdk.md) | What this side is, and how the guides below fit together |
 | [Getting Started](guide/getting-started.md) | Install, configure, first sandbox |
+| [Express quickstart](guide/express-quickstart.md) | Deploy a generation-2 template and call a named command |
 | [SDK Usage](guide/sdk-usage.md) | Commands, files, the code interpreter, named commands |
 | [SDK skill](guide/sdk-skill.md) | What a coding agent loads before writing a client or a template |
 | [Cloud end-to-end practice](guide/cloud-examples.md) | Run the quickstart and compat demos on the default provider |

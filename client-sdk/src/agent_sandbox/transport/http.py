@@ -20,7 +20,12 @@ from agent_sandbox.models.errors import (
     InvalidCredentialsError,
 )
 from agent_sandbox.transport.auth import AkSkAuth
-from agent_sandbox.transport.codec import CONNECT_CONTENT_TYPE, ConnectCodec, EnvelopeStreamParser
+from agent_sandbox.transport.codec import (
+    CONNECT_CONTENT_TYPE,
+    ConnectCodec,
+    EnvelopeStreamParser,
+    json_decode,
+)
 from agent_sandbox.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -91,6 +96,87 @@ def _build_envd_rpc_error(raw: bytes, status_code: int, rpc_path: str) -> EnvdRp
     )
 
 
+def stream_envelope_for_envd(version: str | None) -> bool:
+    """Whether streaming Connect calls to this envd must use the 5-byte envelope.
+
+    Express generation 2 reports envd 0.6 and newer. That envd reads a streaming
+    body as an enveloped message and rejects raw JSON (``promised N bytes in
+    enveloped message``). Generation 1 envd 0.5.x accepted the raw body. An
+    unknown or unparsable version uses the envelope.
+    """
+    if version is None or not version.strip():
+        return True
+    numbers: list[int] = []
+    for part in version.strip().lstrip("vV").split("."):
+        digits = ""
+        for char in part:
+            if char.isdigit():
+                digits += char
+            else:
+                break
+        if not digits:
+            break
+        numbers.append(int(digits))
+    if len(numbers) < 2:
+        return True
+    return not (numbers[0] == 0 and numbers[1] < 6)
+
+
+def _trailer_error(trailer: dict[str, Any], rpc_path: str) -> EnvdRpcError:
+    """``EnvdRpcError`` for a Connect end-stream trailer (or a raw JSON error body)."""
+    err = trailer.get("error")
+    code = ""
+    detail = ""
+    if isinstance(err, dict):
+        raw_code = err.get("code")
+        raw_message = err.get("message")
+        if isinstance(raw_code, str):
+            code = raw_code
+        if isinstance(raw_message, str):
+            detail = raw_message
+        if not detail:
+            detail = _envd_error_detail(trailer)
+    elif isinstance(err, str):
+        detail = err
+    else:
+        detail = _envd_error_detail(trailer)
+    if code and detail and not detail.startswith(code):
+        detail = f"{code}: {detail}"
+    elif code and not detail:
+        detail = code
+    message = f"envd RPC {rpc_path} failed"
+    if detail:
+        message = f"{message}: {detail}"
+    return EnvdRpcError(
+        message,
+        rpc_path=rpc_path,
+        envd_error=trailer,
+        body_text=detail,
+    )
+
+
+def _error_from_buffered_body(raw: bytes, rpc_path: str) -> EnvdRpcError | None:
+    """Parse a leftover body that was not a sequence of data frames.
+
+    A gen2 envd can answer a bad streaming call with one enveloped error, or
+    with a raw JSON object. Either shape carries ``error.code`` / ``error.message``.
+    """
+    body = raw.strip()
+    if len(body) >= 5 and body[0] in (0, 2):
+        length = struct.unpack(">I", body[1:5])[0]
+        if length == len(body) - 5:
+            body = body[5:]
+    if not body:
+        return None
+    try:
+        parsed = json_decode(body)
+    except Exception:
+        return None
+    if isinstance(parsed, dict) and parsed.get("error"):
+        return _trailer_error(parsed, rpc_path)
+    return None
+
+
 def envd_status_error(exc: httpx.HTTPStatusError, rpc_path: str) -> EnvdRpcError:
     """Convert the ``HTTPStatusError`` of a unary envd call into an :class:`EnvdRpcError`.
 
@@ -132,6 +218,7 @@ class HttpClient:
         auth: AuthProvider,
         *,
         envelope_connect: bool = False,
+        stream_envelope: bool = True,
         envd_dial: tuple[str, int] | None = None,
         envd_headers: dict[str, str] | None = None,
     ) -> None:
@@ -139,6 +226,9 @@ class HttpClient:
         self._auth = auth
         self._codec = ConnectCodec()
         self._envelope = envelope_connect
+        # Streaming RPCs (process start/connect) use the 5-byte Connect envelope.
+        # Unary RPCs stay raw JSON. Generation-1 envd opts out via ``stream_envelope``.
+        self._stream_envelope = stream_envelope
         self._dial = envd_dial
         self._envd_headers = dict(envd_headers or {})
         self._platform_client: httpx.AsyncClient | None = None
@@ -150,6 +240,20 @@ class HttpClient:
             return raw, {}
         framed = struct.pack(">BI", 0, len(raw)) + raw
         return framed, {
+            "Connect-Protocol-Version": "1",
+            "Connect-Content-Encoding": "identity",
+        }
+
+    def _stream_body(self, payload: dict[str, Any] | None) -> tuple[bytes, dict[str, str]]:
+        """Connect streaming body: 5-byte envelope around the JSON message.
+
+        Generation-2 envd (v0.6+) rejects an unenveloped body. The first bytes of
+        raw JSON are read as a length, which is the ``promised N bytes`` error.
+        """
+        raw = self._codec.encode_request(payload or {})
+        if not self._stream_envelope:
+            return raw, {}
+        return struct.pack(">BI", 0, len(raw)) + raw, {
             "Connect-Protocol-Version": "1",
             "Connect-Content-Encoding": "identity",
         }
@@ -285,9 +389,10 @@ class HttpClient:
         client = self._create_envd_client(envd_url)
         auth_headers = envd_token.get_headers()
 
-        # Unary filesystem RPCs are raw JSON. The 5-byte Connect frame is only
-        # for streams. Express leaves envelope off and keeps application/connect+json.
-        if self._envelope:
+        # Unary RPCs are raw JSON (no 5-byte frame). Generation-2 envd answers
+        # ``application/connect+json`` with HTTP 415 and wants ``application/json``.
+        # Generation-1 envd (``stream_envelope`` off) keeps ``application/connect+json``.
+        if self._stream_envelope or self._envelope:
             body = self._codec.encode_request(payload or {})
             content_type = "application/json"
             framed: dict[str, str] = {}
@@ -402,7 +507,7 @@ class HttpClient:
         """
         auth_headers = envd_token.get_headers()
 
-        body, framed = self._connect_body(payload)
+        body, framed = self._stream_body(payload)
         all_headers = {
             "Content-Type": CONNECT_CONTENT_TYPE,
             **framed,
@@ -442,8 +547,15 @@ class HttpClient:
                     async for chunk in response.aiter_bytes():
                         for frame in parser.feed(chunk):
                             yield frame
+                        if parser.stream_error is not None:
+                            raise _trailer_error(parser.stream_error, rpc_path)
 
+                    if parser.stream_error is not None:
+                        raise _trailer_error(parser.stream_error, rpc_path)
                     if parser.pending_bytes():
+                        buffered_error = _error_from_buffered_body(parser.buffered(), rpc_path)
+                        if buffered_error is not None:
+                            raise buffered_error
                         logger.warning(
                             "envd STREAM %s ended with %d truncated byte(s); "
                             "incomplete final frame dropped",

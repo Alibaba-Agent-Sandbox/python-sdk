@@ -20,8 +20,9 @@ class TestServerAt:
         client = sandbox.server_at(9000)
         assert client.base_url == sandbox.network.get_url(9000)
         assert client.pty_url == sandbox.network.get_url(9001).replace("https://", "wss://")
-        for key, value in sandbox.network.get_access_headers().items():
-            assert client.auth_headers()[key] == value
+        # The gateway access token is not a SandboxServer credential.
+        assert "X-Access-Token" not in client.auth_headers()
+        assert "Authorization" not in client.auth_headers()
         await client.aclose()
 
     async def test_token_is_sent_as_bearer(self, sandbox: Sandbox) -> None:

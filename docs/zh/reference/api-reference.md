@@ -306,7 +306,7 @@ sandbox.network  # NetworkModule 实例
 |------|------|------|
 | `get_host()` | `def get_host(port: int) -> str` | 返回 `{port}-{sandbox_id}.{domain}` |
 | `get_url()` | `def get_url(port: int) -> str` | 返回 `https://{port}-{sandbox_id}.{domain}` |
-| `get_access_headers()` | `def get_access_headers() -> dict[str, str]` | 返回端口访问所需 HTTP 头 |
+| `get_access_headers()` | `def get_access_headers() -> dict[str, str]` | secure 模式返回给平台网关的 `X-Access-Token`。`sandbox.run` 不发送它 |
 
 ---
 
@@ -343,8 +343,8 @@ from agent_sandbox.api import ServerClient, ServerCapabilities
 | 成员 | 签名 | 说明 |
 |------|------|------|
 | `ServerClient()` | `(base_url, *, token=None, headers=None, pty_url=None, timeout=30.0, http_client=None)` | `token` 以 `Authorization: Bearer` 发送；`headers` 携带网关的 `X-Access-Token` |
-| `Sandbox.server` | `cached_property -> ServerClient` | 9000 端口客户端，自动带上沙箱网关头 |
-| `Sandbox.server_at()` | `(port=9000, *, token=None, pty_port=9001, timeout=30.0) -> ServerClient` | 为其他端口/令牌创建新客户端 |
+| `Sandbox.server` | `cached_property -> ServerClient` | 9000 端口客户端。不发送沙箱访问令牌 |
+| `Sandbox.server_at()` | `(port=9000, *, token=None, pty_port=9001, timeout=30.0) -> ServerClient` | 新客户端。不发送沙箱访问令牌；`token` 是 `ABX_SERVER_TOKEN` |
 | `Sandbox.start_server()` | `async (*, port=9000, commands=None, policy=None, token=None, env=None, command=None, wait=True, timeout=30.0) -> ServerClient` | 以 envd 后台命令启动 `agent-sandbox-server serve` 并轮询 `/health`；`policy` 为字典（`ABX_SERVER_POLICY`）或预设名；超时抛 `ConnectionError_` |
 | `health()` | `async -> bool` | `GET /health`，服务端不可达时返回 `False` 而不抛异常 |
 | `discover()` | `async -> ServerCapabilities` | `GET /capabilities`；结果缓存在 `client.capabilities`，并启用快速失败的预检查 |

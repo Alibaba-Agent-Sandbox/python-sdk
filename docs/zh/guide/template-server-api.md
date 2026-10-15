@@ -24,13 +24,16 @@ host = sandbox.network.get_host(9000)
 
 `template.yaml` 的 `ports` 必须包含 `9000`（使用终端时还要包含 `9001`），平台才会发布该端口。`sandbox.network.get_url` 只拼出主机名；容器里必须有进程在监听。
 
-安全模式下，平台网关会要求它自己的访问头：
+命名命令走 `sandbox.run`（或 `sandbox.server`）。这个客户端不发送沙箱访问令牌。在 Express 上，向没有设置 `ABX_SERVER_TOKEN` 的 `agent-sandbox-server` 发送 `X-Access-Token`，在本版本之前构建的镜像里会返回 HTTP 401。
+
+安全模式下，平台网关有自己的访问头。把它用于 envd，以及你手工访问已发布端口的请求，不要把它交给 `sandbox.run`：
 
 ```python
-headers = sandbox.network.get_access_headers()  # 可能包含 X-Access-Token
+headers = sandbox.network.get_access_headers()
+# {"X-Access-Token": <沙箱访问令牌>}
 ```
 
-这个网关头和容器内进程校验的令牌是两回事。两者都使用头名称 `X-Access-Token`。下一节是容器内的校验。
+服务端以 `ABX_SERVER_TOKEN` 启动时，把该值传给 `sandbox.server_at(9000, token=...)`。它以 `Authorization: Bearer` 发送。
 
 ---
 
@@ -38,7 +41,7 @@ headers = sandbox.network.get_access_headers()  # 可能包含 X-Access-Token
 
 `SandboxServer` 在启动时读取一次 `ABX_SERVER_TOKEN`。
 
-- 未设置或为空：所有路由都接受请求，调用方身份是 `anonymous`。这是本地模式。
+- 未设置或为空：所有路由都接受请求，调用方身份是 `anonymous`。出示的凭据对不上任何已配置令牌时，身份同样保持 `anonymous`（网关的 `X-Access-Token` 不是服务端登录）。本版本之前构建的镜像对这个头返回 `401`；`sandbox.run` 不带它，那些镜像仍然可用。
 - 已设置：以 `auth_required=True` 注册的路由（默认如此）要求在 `X-Access-Token` 或 `Authorization: Bearer <token>` 里带上令牌。所有路由两种头都接受，比较方式是 `hmac.compare_digest`。缺少或错误的令牌返回 `401`：
 
 ```json
