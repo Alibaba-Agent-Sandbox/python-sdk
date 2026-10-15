@@ -17,7 +17,7 @@ from agent_sandbox.utils.async_bridge import make_sync
 from agent_sandbox.utils.logging import get_logger
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Callable
 
     from agent_sandbox.protocol.process import ProcessProtocol
     from agent_sandbox.transport.auth import EnvdTokenManager
@@ -99,6 +99,8 @@ class CommandsModule:
         user: str = "",
         background: bool = False,
         shell: bool = False,
+        on_stdout: Callable[[str], None] | None = None,
+        on_stderr: Callable[[str], None] | None = None,
     ) -> ProcessResult | StreamReader[ProcessChunk]:
         """Run a command and wait for completion.
 
@@ -110,10 +112,13 @@ class CommandsModule:
             user: OS user to run the command as.
             background: If True, delegate to start() and return a
                 StreamReader handle immediately without blocking.
+                ``on_stdout`` / ``on_stderr`` are not called in that case.
             shell: When True, always run ``cmd`` via ``sh -c`` so variable
                 expansion, ``cd``, and other shell syntax work. The MCP
                 ``run_command`` tool sets this. The default keeps the existing
                 split-or-wrap behavior for SDK and CLI callers.
+            on_stdout: Called with each stdout chunk as it arrives.
+            on_stderr: Called with each stderr chunk as it arrives.
 
         Returns:
             ProcessResult with stdout, stderr, exit_code when
@@ -156,9 +161,15 @@ class CommandsModule:
 
         async for chunk in reader:
             if chunk.type == ProcessChunkType.STDOUT:
-                stdout_parts.append(chunk.data)
+                if chunk.data:
+                    stdout_parts.append(chunk.data)
+                    if on_stdout is not None:
+                        on_stdout(chunk.data)
             elif chunk.type == ProcessChunkType.STDERR:
-                stderr_parts.append(chunk.data)
+                if chunk.data:
+                    stderr_parts.append(chunk.data)
+                    if on_stderr is not None:
+                        on_stderr(chunk.data)
             elif chunk.type == ProcessChunkType.EXIT:
                 exit_code = chunk.exit_code or 0
 

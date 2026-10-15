@@ -81,6 +81,34 @@ class TestCommandsRun:
         assert result.exit_code == 0
 
     @pytest.mark.asyncio
+    async def test_run_invokes_stdout_and_stderr_callbacks(
+        self,
+        commands_module: CommandsModule,
+        mock_process_protocol: AsyncMock,
+    ) -> None:
+        mock_process_protocol.start.return_value = _MockStreamReader(
+            [
+                ProcessChunk(type=ProcessChunkType.STDOUT, data=""),
+                ProcessChunk(type=ProcessChunkType.STDOUT, data="hi\n"),
+                ProcessChunk(type=ProcessChunkType.STDERR, data="warn\n"),
+                ProcessChunk(type=ProcessChunkType.EXIT, exit_code=3),
+            ]
+        )
+        stdout: list[str] = []
+        stderr: list[str] = []
+        result = await commands_module.run(
+            "echo hi",
+            on_stdout=stdout.append,
+            on_stderr=stderr.append,
+        )
+        assert isinstance(result, ProcessResult)
+        assert result.stdout == "hi\n"
+        assert result.stderr == "warn\n"
+        assert result.exit_code == 3
+        assert stdout == ["hi\n"]
+        assert stderr == ["warn\n"]
+
+    @pytest.mark.asyncio
     async def test_run_passes_parsed_command(
         self,
         commands_module: CommandsModule,

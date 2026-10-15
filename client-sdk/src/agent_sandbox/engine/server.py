@@ -218,6 +218,11 @@ class ProviderEngine(_grpc.ProviderEngineServicer):
                 )
                 if kind == "exit":
                     return
+        except StopAsyncIteration:
+            await abort_exc(
+                context,
+                RuntimeError("envd stream ended before the process exited"),
+            )
         except Exception as exc:
             await abort_exc(context, exc)
 
@@ -306,6 +311,7 @@ async def _alicloud_create(request: Any) -> tuple[Any, Session]:
     from agent_sandbox.protocol.filesystem import FilesystemProtocol
     from agent_sandbox.protocol.process import ProcessProtocol
     from agent_sandbox.transport.auth import EnvdTokenManager
+    from agent_sandbox.transport.http import stream_envelope_for_envd
 
     _config, _auth, http_client, protocol = _build_infra(
         api_key=_opt(request.api_key),
@@ -333,6 +339,7 @@ async def _alicloud_create(request: Any) -> tuple[Any, Session]:
         raise
     if not info.envd_url and info.sandbox_id:
         info.envd_url = _config.build_envd_url(info.sandbox_id)
+    http_client._stream_envelope = stream_envelope_for_envd(info.envd_version)
     token = EnvdTokenManager(info.envd_access_token, sandbox_id=info.sandbox_id)
     session = Session(
         sandbox_id=info.sandbox_id,

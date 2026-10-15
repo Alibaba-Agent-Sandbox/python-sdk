@@ -24,13 +24,16 @@ On a machine where you started `python3 commands.py` yourself, the base URL is `
 
 `template.yaml` `ports` must include `9000` (and `9001` when you use the terminal) or the platform will not publish the port. `sandbox.network.get_url` only builds the host string; something in the container has to be listening.
 
-In secure mode the platform gateway asks for its own access header:
+Named commands go through `sandbox.run` (or `sandbox.server`). That client does not send the sandbox access token. On Express, sending `X-Access-Token` to an `agent-sandbox-server` that has no `ABX_SERVER_TOKEN` is HTTP 401 on images built before this release.
+
+In secure mode the platform gateway has its own header. Use it for envd and for a manual request to a published port, not for `sandbox.run`:
 
 ```python
-headers = sandbox.network.get_access_headers()  # may include X-Access-Token
+headers = sandbox.network.get_access_headers()
+# {"X-Access-Token": <sandbox access token>}
 ```
 
-That gateway header is separate from the token the process inside the container checks. Both use the header name `X-Access-Token`. The next section is the in-container check.
+When the server was started with `ABX_SERVER_TOKEN`, pass that value as `sandbox.server_at(9000, token=...)`. It is sent as `Authorization: Bearer`.
 
 ---
 
@@ -38,7 +41,7 @@ That gateway header is separate from the token the process inside the container 
 
 `SandboxServer` reads `ABX_SERVER_TOKEN` once at startup.
 
-- Unset or empty: every route is accepted. The caller is the identity `anonymous`. This is local mode.
+- Unset or empty: every route is accepted. The caller is the identity `anonymous`. A presented credential that matches no configured token stays anonymous as well (a gateway `X-Access-Token` is not a server login). Images built before this release returned `401` for that header; `sandbox.run` omits it so those images keep working.
 - Set: routes registered with `auth_required=True` (the default) require the token in `X-Access-Token` or `Authorization: Bearer <token>`. Both headers are accepted on every route and compared with `hmac.compare_digest`. A missing or wrong token is `401`:
 
 ```json

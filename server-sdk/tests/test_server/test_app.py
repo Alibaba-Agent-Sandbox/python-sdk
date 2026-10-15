@@ -318,6 +318,20 @@ class TestShell:
 class TestAuth:
     """Token-based authentication (X-Access-Token header)."""
 
+    def test_gateway_token_is_anonymous_when_unconfigured(self, server_port: int) -> None:
+        """Express forwards the sandbox access token. An unconfigured server accepts it."""
+        status, body = _request(
+            server_port,
+            "GET",
+            "/commands",
+            headers={
+                "X-Access-Token": "gateway-envd-token",
+                "Authorization": "Bearer gateway-envd-token",
+            },
+        )
+        assert status == 200
+        assert "commands" in body
+
     def test_missing_token_401(self, auth_server_port: int) -> None:
         status, body = _request(auth_server_port, "GET", "/commands")
         assert status == 401

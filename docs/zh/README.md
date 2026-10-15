@@ -33,6 +33,7 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 |------|------|
 | [Client SDK](guide/client-sdk.md) | 这一侧是什么，以及下面这些文档怎么串起来 |
 | [快速开始](guide/getting-started.md) | 安装、配置、第一个沙箱 |
+| [Express 快速开始](guide/express-quickstart.md) | 部署 generation-2 模板并调用命名命令 |
 | [SDK 使用](guide/sdk-usage.md) | 命令、文件、代码解释器、命名命令 |
 | [SDK skill](guide/sdk-skill.md) | 编码 agent 在写客户端或模板之前加载的说明 |
 | [云上端到端练习](guide/cloud-examples.md) | 在默认提供方上跑 quickstart 与 compat-demos |

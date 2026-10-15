@@ -50,4 +50,10 @@ def process_stream(*events: dict[str, Any]) -> bytes:
 
 
 def body_of(request: Any) -> dict[str, Any]:
-    return json.loads(request.content)  # type: ignore[no-any-return]
+    """JSON body of an envd request. Streaming calls are Connect-enveloped."""
+    raw = bytes(request.content)
+    if len(raw) >= 5 and raw[0] in (0, 1, 2):
+        length = int.from_bytes(raw[1:5], "big")
+        if length == len(raw) - 5:
+            raw = raw[5:]
+    return json.loads(raw)  # type: ignore[no-any-return]

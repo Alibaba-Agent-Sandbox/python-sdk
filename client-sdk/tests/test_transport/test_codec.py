@@ -214,6 +214,7 @@ class TestEnvelopeStreamParser:
             out = parser.feed(_frame({"a": 1}) + _frame({"error": {"code": "boom"}}, flags=0x02))
 
         assert out == [{"a": 1}]  # error trailer never yielded
+        assert parser.stream_error == {"error": {"code": "boom"}}
         assert any("error trailer" in r.message for r in caplog.records)
 
     def test_success_trailer_not_logged(self, caplog):

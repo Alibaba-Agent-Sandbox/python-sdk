@@ -10,12 +10,28 @@ import grpc
 from agent_sandbox.models.errors import SandboxError
 
 
+def _public_message(exc: BaseException) -> str:
+    """A non-empty message. ``str(StopAsyncIteration())`` and some RPC errors are blank."""
+    text = str(exc).strip()
+    if text:
+        return text
+    details = getattr(exc, "details", None)
+    if callable(details):
+        try:
+            rendered = details()
+        except Exception:
+            rendered = ""
+        if isinstance(rendered, str) and rendered.strip():
+            return rendered.strip()
+    return type(exc).__name__
+
+
 def encode_error(exc: BaseException) -> str:
     """JSON status detail. The client rebuilds the same exception type."""
     if isinstance(exc, SandboxError):
-        payload = {
+        payload: dict[str, Any] = {
             "type": type(exc).__name__,
-            "message": exc.message,
+            "message": exc.message or _public_message(exc),
             "code": exc.code,
             "suggestion": exc.suggestion,
         }
@@ -24,8 +40,20 @@ def encode_error(exc: BaseException) -> str:
         if provider and feature:
             payload["provider"] = provider
             payload["feature"] = feature
+        envd_error = getattr(exc, "envd_error", None)
+        if isinstance(envd_error, dict):
+            payload["envd_error"] = envd_error
+        rpc_path = getattr(exc, "rpc_path", None)
+        if isinstance(rpc_path, str) and rpc_path:
+            payload["rpc_path"] = rpc_path
+        status_code = getattr(exc, "status_code", None)
+        if isinstance(status_code, int) and status_code:
+            payload["status_code"] = status_code
+        body_text = getattr(exc, "body_text", None)
+        if isinstance(body_text, str) and body_text:
+            payload["body_text"] = body_text
     else:
-        payload = {"type": "RuntimeError", "message": str(exc)}
+        payload = {"type": type(exc).__name__, "message": _public_message(exc)}
     return json.dumps(payload)
 
 
@@ -61,7 +89,9 @@ def reraise(exc: BaseException) -> NoReturn:
         raise RuntimeError(str(payload.get("message") or text)) from exc
     code = payload.get("code") or None
     suggestion = payload.get("suggestion") or None
-    message = str(payload.get("message") or "")
+    message = str(payload.get("message") or "").strip() or str(
+        payload.get("type") or "RuntimeError"
+    )
     if payload.get("provider") and payload.get("feature"):
         raise cls(
             str(payload["provider"]),
@@ -70,4 +100,13 @@ def reraise(exc: BaseException) -> NoReturn:
             code=code,
             suggestion=suggestion,
         ) from exc
-    raise cls(message, code=code, suggestion=suggestion) from exc
+    extra: dict[str, Any] = {}
+    if isinstance(payload.get("envd_error"), dict):
+        extra["envd_error"] = payload["envd_error"]
+    if isinstance(payload.get("rpc_path"), str) and payload["rpc_path"]:
+        extra["rpc_path"] = payload["rpc_path"]
+    if isinstance(payload.get("status_code"), int):
+        extra["status_code"] = payload["status_code"]
+    if isinstance(payload.get("body_text"), str):
+        extra["body_text"] = payload["body_text"]
+    raise cls(message, code=code, suggestion=suggestion, **extra) from exc

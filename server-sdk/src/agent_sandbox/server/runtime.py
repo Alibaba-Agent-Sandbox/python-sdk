@@ -309,6 +309,11 @@ class PolicyEngine:
             identity = self._match_token(candidate)
             if identity is not None:
                 return identity
+        # No server token is configured. A presented value that matches
+        # nothing is not a login: callers sometimes send the gateway
+        # ``X-Access-Token``, which this process does not own.
+        if not self._auth_required and self._anonymous is not None:
+            return self._anonymous
         return None
 
     def _match_token(self, presented: str) -> Identity | None:
