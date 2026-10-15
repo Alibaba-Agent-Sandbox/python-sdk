@@ -4,7 +4,7 @@
 > [fine-grained-capabilities-review.md](../archive/fine-grained-capabilities-review.md); the resolutions
 > are folded in below and summarised in section 11.
 > Scope: `agent-sandbox-server` (`agent_sandbox.server`) enforcement, `template.yaml`
-> declarative config, and `agent-sandbox` (`agent_sandbox`) client discovery / errors / helpers.
+> declarative config, and `agent-sandbox-client` (`agent_sandbox`) client discovery / errors / helpers.
 > Companion docs: [client-server-alignment.md](client-server-alignment.md),
 > [base-image-and-server-sdk.md](base-image-and-server-sdk.md),
 > [server-api.md](server-api.md).

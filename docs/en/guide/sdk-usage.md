@@ -7,8 +7,10 @@ This document covers the complete usage of the Agent Sandbox Python SDK.
 ## Installation
 
 ```bash
-pip install agent-sandbox
+pip install agent-sandbox-client
 ```
+
+Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
 
 ## Import
 

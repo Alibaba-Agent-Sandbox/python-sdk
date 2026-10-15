@@ -20,7 +20,7 @@ We want to keep things organized so everyone can find what they need:
 ## 🚀 Quick Start
 
 ```bash
-pip install agent-sandbox
+pip install agent-sandbox-client
 ```
 
 ```python

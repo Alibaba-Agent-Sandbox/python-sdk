@@ -1,6 +1,6 @@
 # MCP Integration
 
-> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`).
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
 Agent Sandbox provides an MCP (Model Context Protocol) Server, enabling AI IDEs and tools to operate sandboxes directly.
 
@@ -13,7 +13,7 @@ MCP (Model Context Protocol) is an open protocol that allows AI models to intera
 ### Requirements
 
 ```bash
-pip install agent-sandbox            # the SDK's own MCP STDIO server: python -m agent_sandbox.agent.mcp
+pip install agent-sandbox-client            # the SDK's own MCP STDIO server: python -m agent_sandbox.agent.mcp
 export ABX_SANDBOX_API_KEY=your-api-key
 ```
 
@@ -86,7 +86,7 @@ For team sharing or remote access, run the MCP Server as a Streamable HTTP servi
 ### Run Locally with uvicorn
 
 ```bash
-pip install "agent-sandbox[mcp]"
+pip install "agent-sandbox-client[mcp]"
 
 export ABX_MCP_AUTH_TOKEN=replace_me   # Bearer token (omit to disable auth)
 export ABX_SANDBOX_API_KEY=your-api-key
@@ -155,7 +155,7 @@ The artifact directory contains:
 
 | File | Content |
 |------|---------|
-| `requirements.txt` | `agent-sandbox[mcp]`, `uvicorn>=0.29` |
+| `requirements.txt` | `agent-sandbox-client[mcp]`, `uvicorn>=0.29` |
 | `app.py` | ASGI entry point reading FC env vars (`ABX_MCP_AUTH_TOKEN`, `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL`, `ABX_SANDBOX_DOMAIN`, `ABX_DEFAULT_TEMPLATE`) |
 | `config.yaml` | YAML manifest with function name, region, runtime `python3.10`, handler `app.app`, memory/timeout, env vars, HTTP trigger (POST/GET/DELETE), session affinity |
 

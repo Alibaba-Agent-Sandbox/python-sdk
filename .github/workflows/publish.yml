@@ -6,7 +6,7 @@ on:
 
 jobs:
   publish:
-    name: Build & Publish (agent-sandbox-server, then agent-sandbox)
+    name: Build & Publish (agent-sandbox-server, then agent-sandbox-client)
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -35,7 +35,7 @@ jobs:
 
           versions = {}
           for name, path in {
-              "agent-sandbox": "client-sdk/src/agent_sandbox/_version.py",
+              "agent-sandbox-client": "client-sdk/src/agent_sandbox/_version.py",
               "agent-sandbox-server": "server-sdk/src/agent_sandbox/server/_version.py",
           }.items():
               match = re.search(r'__version__\s*=\s*"([^"]+)"', Path(path).read_text(encoding="utf-8"))
@@ -62,7 +62,7 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: twine upload dist/server-sdk/*
 
-      - name: Upload agent-sandbox to PyPI
+      - name: Upload agent-sandbox-client to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}

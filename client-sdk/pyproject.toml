@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "agent-sandbox"
+name = "agent-sandbox-client"
 dynamic = ["version"]
 description = "Agent Sandbox SDK — Create, manage, and interact with cloud sandboxes for AI agents"
 readme = "README.md"
@@ -34,7 +34,7 @@ dependencies = [
     "protobuf>=5",
     "tomli>=2.0; python_version < '3.11'",
     # Lock-step release: the container-side runtime (``agent_sandbox.server``) used to ship inside
-    # ``agent-sandbox`` itself, so it stays a hard dependency. Keep the pin equal to ``_version.py``.
+    # ``agent-sandbox-client`` itself, so it stays a hard dependency. Keep the pin equal to ``_version.py``.
     "agent-sandbox-server==0.3.0",
 ]
 
@@ -53,14 +53,14 @@ declarative = [
 session = [
     "filelock>=3.12",
 ]
-# Alias kept for ``pip install "agent-sandbox[server]"``: ``agent-sandbox-server`` is now a hard
-# dependency of ``agent-sandbox``, so this extra adds nothing.
+# Alias kept for ``pip install "agent-sandbox-client[server]"``: ``agent-sandbox-server`` is now a hard
+# dependency of ``agent-sandbox-client``, so this extra adds nothing.
 server = []
 all = [
-    "agent-sandbox[fast,session,mcp,declarative,server]",
+    "agent-sandbox-client[fast,session,mcp,declarative,server]",
 ]
 dev = [
-    "agent-sandbox[all]",
+    "agent-sandbox-client[all]",
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
     "pytest-httpx>=0.30",

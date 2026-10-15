@@ -1,6 +1,6 @@
 # MCP Server 设计
 
-> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox`）与容器侧运行时（`agent-sandbox-server`）。
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
 > Agent Sandbox MCP Server 将沙箱能力暴露为 MCP (Model Context Protocol) Tools，让 AI Agent（Cursor、Claude Desktop、VS Code 等）可以直接操作云端沙箱。
 
@@ -286,7 +286,7 @@ graph LR
 - **会话**：进程内 `SessionStore`；空闲 TTL 默认 3600 秒、并发会话上限默认 100；容量满时返回 503 与 JSON-RPC 错误 `-32000`
 - **版本协商**：`initialize` 在请求版本受支持时原样回显；本传输仅支持 `2025-06-18`，与 `GET /health` 一致。请求缺失或不支持的版本时协商到 `2025-06-18` —— 按 MCP 规范，服务器回复自己支持的版本，无法接受的客户端可自行断开。STDIO 传输独立保持 `2024-11-05`
 - **适用场景**：远程服务、团队共享、多客户端；用 CLI 的 `abx mcp deploy` 生成的产物部署到阿里云 FC，或本地以 uvicorn 运行
-- **可选依赖**：Starlette + uvicorn（`pip install 'agent-sandbox[mcp]'`）
+- **可选依赖**：Starlette + uvicorn（`pip install 'agent-sandbox-client[mcp]'`）
 
 ### 认证
 
@@ -434,7 +434,7 @@ graph TB
 
 | 文件 | 内容 |
 |------|------|
-| `requirements.txt` | `agent-sandbox[mcp]`、`uvicorn>=0.29` |
+| `requirements.txt` | `agent-sandbox-client[mcp]`、`uvicorn>=0.29` |
 | `app.py` | ASGI 入口，从 FC 函数环境变量读取 `ABX_MCP_AUTH_TOKEN`、`ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL`、`ABX_SANDBOX_DOMAIN`、`ABX_DEFAULT_TEMPLATE` |
 | `config.yaml` | YAML 部署清单（非 FC API 载荷）：`function_name`、`region`、`runtime`（`python3.10`）、`handler`（`app.app`）、`memory`、`timeout`、`environment_variables`、`http_trigger`（POST/GET/DELETE 方法 + `enable_session_affinity`）、可选 `custom_domain` |
 

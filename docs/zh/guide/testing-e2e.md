@@ -1,6 +1,6 @@
 # 测试与完成定义
 
-Python SDK(`agent-sandbox`)与沙箱内服务(`agent-sandbox-server`)如何做端到端验证,以及判定一项变更"算完成"的规则。
+Python SDK(`agent-sandbox-client`)与沙箱内服务(`agent-sandbox-server`)如何做端到端验证,以及判定一项变更"算完成"的规则。
 
 > English version: [../../en/guide/testing-e2e.md](../../en/guide/testing-e2e.md)
 

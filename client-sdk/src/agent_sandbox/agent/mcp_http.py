@@ -58,7 +58,7 @@ try:
 except ImportError as _exc:  # pragma: no cover
     _STARLETTE_IMPORT_ERROR = (
         "Starlette is required for MCP HTTP transport but is not installed. "
-        "Install it with: pip install 'agent-sandbox[mcp]' "
+        "Install it with: pip install 'agent-sandbox-client[mcp]' "
         "or: pip install starlette uvicorn"
     )
 

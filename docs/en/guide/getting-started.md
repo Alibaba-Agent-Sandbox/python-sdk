@@ -16,14 +16,16 @@ This tutorial covers the lifecycle from install through teardown.
 
 ```bash
 # Install the SDK
-pip install agent-sandbox
+pip install agent-sandbox-client
 
 # Install with all extras (recommended)
-pip install "agent-sandbox[all]"
+pip install "agent-sandbox-client[all]"
 ```
 
+Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
+
 The `abx` CLI is not part of the Python package (there is no `[cli]` extra); it is a separate Node.js project, see [Related: the abx CLI](#related-the-abx-cli). The container-side runtime
-(`agent_sandbox.server`) is the separate `agent-sandbox-server` package (`pip install agent-sandbox-server`); `agent-sandbox`
+(`agent_sandbox.server`) is the separate `agent-sandbox-server` package (`pip install agent-sandbox-server`); `agent-sandbox-client`
 depends on it, so installing the client provides it too.
 
 ## 2. Configure the API Key

@@ -1,6 +1,6 @@
 # 模板体系设计
 
-> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox`）与容器侧运行时（`agent-sandbox-server`）。
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
 > 模板（Template）是 Agent Sandbox 的运行环境蓝图，定义了沙箱的基础镜像、预装软件、默认配置和启动行为。模板体系分为官方核心模板、社区模板和自定义模板三个层次。模板的核心分发机制基于 **GitHub tarball API（按 tag/branch/sha 拉取，无需发布 Release）**，采用类似 Go modules / GitHub Actions 的引用方式。
 

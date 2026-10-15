@@ -7,8 +7,10 @@
 ## 安装
 
 ```bash
-pip install agent-sandbox
+pip install agent-sandbox-client
 ```
+
+不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。
 
 ## 导入
 

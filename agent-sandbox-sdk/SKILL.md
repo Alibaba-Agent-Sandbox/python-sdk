@@ -13,11 +13,12 @@ Two packages share one version:
 
 | Package | Import | Where it runs |
 |---|---|---|
-| `agent-sandbox` | `agent_sandbox` | The caller's machine |
+| `agent-sandbox-client` | `agent_sandbox` | The caller's machine |
 | `agent-sandbox-server` | `agent_sandbox.server` | Inside the image, port 9000 |
 
-`pip install agent-sandbox` installs the client and depends on
+`pip install agent-sandbox-client` installs the client and depends on
 `agent-sandbox-server`. The image installs only `agent-sandbox-server`.
+Do not run `pip install agent-sandbox`. That PyPI name is an unrelated project.
 
 ## Credentials
 

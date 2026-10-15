@@ -5,7 +5,7 @@
 > `abx` CLI. E2B-shaped method names ease migration; see docs/en/guide/migrate-from-e2b.md.
 >
 > This repository (python-sdk) contains the Python SDK as two lock-step PyPI
-> distributions: client-sdk/ (`agent-sandbox`, import `agent_sandbox`) and
+> distributions: client-sdk/ (`agent-sandbox-client`, import `agent_sandbox`) and
 > server-sdk/ (`agent-sandbox-server`, import `agent_sandbox.server`, the
 > container-side runtime). The `abx` command-line tool is a separate Node.js project in the
 > `cli` repository (https://github.com/alibaba-agent-sandbox/agent-sandbox).

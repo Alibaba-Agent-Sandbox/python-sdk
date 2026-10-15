@@ -6,7 +6,7 @@ SERVER := server-sdk
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-install:  ## Install both packages (agent-sandbox-server + agent-sandbox)
+install:  ## Install both packages (agent-sandbox-server + agent-sandbox-client)
 	pip install -e ./$(SERVER) -e ./$(CLIENT)
 
 dev:  ## Install both packages with all dev dependencies

@@ -8,6 +8,8 @@ description: Write an Agent Sandbox provider plugin so Sandbox.create(provider=.
 This file is instructions for a coding agent. It is not executed by the SDK.
 Calling `Sandbox.create` against a backend that already exists is
 `agent-sandbox-sdk`. This skill only covers the provider you add.
+The client distribution is `agent-sandbox-client` (`pip install agent-sandbox-client`,
+import `agent_sandbox`). Do not install `agent-sandbox`; that PyPI project is unrelated.
 
 Only `alicloud-express` is built in. Do not reinstall it and do not reuse
 its id. `opensandbox`, `cubesandbox`, `e2b`, and `alicloud-container` are

@@ -21,7 +21,7 @@ Please use the right channel for your needs:
 ## 🚀 Quick Start
 
 ```bash
-pip install agent-sandbox
+pip install agent-sandbox-client
 ```
 
 ```python

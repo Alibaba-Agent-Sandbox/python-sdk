@@ -1,6 +1,6 @@
 # Troubleshooting (FAQ)
 
-> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`).
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
 ---
 
@@ -227,10 +227,10 @@ Check file permissions. The default user in the sandbox is `user`; you can speci
 
 ```bash
 # Ensure the correct package name
-pip install agent-sandbox
+pip install agent-sandbox-client
 
 # If dependency conflicts occur
-pip install agent-sandbox --force-reinstall
+pip install agent-sandbox-client --force-reinstall
 ```
 
 ### Python SDK Not Found
@@ -240,7 +240,7 @@ Confirm that Python's bin directory is in your PATH:
 ```bash
 python -m agent_sandbox --version
 # Or
-pip show agent-sandbox | grep Location
+pip show agent-sandbox-client | grep Location
 ```
 
 ---

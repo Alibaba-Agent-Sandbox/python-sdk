@@ -8,9 +8,9 @@
 
 ## 项目概述
 
-**Agent Sandbox**（PyPI 包名 `agent-sandbox`）是面向阿里云 FC Agent 沙箱服务的 Python SDK。它是运行时客户端：创建、使用、销毁沙箱；模板用 `abx template build|deploy` 构建和部署。方法名参考了 E2B，方便迁移，但它不是 E2B 的直接替代品（见[从 E2B 迁移](guide/migrate-from-e2b.md)）。
+**Agent Sandbox**（PyPI 包名 `agent-sandbox-client`）是面向阿里云 FC Agent 沙箱服务的 Python SDK。它是运行时客户端：创建、使用、销毁沙箱；模板用 `abx template build|deploy` 构建和部署。方法名参考了 E2B，方便迁移，但它不是 E2B 的直接替代品（见[从 E2B 迁移](guide/migrate-from-e2b.md)）。
 
-本仓库包含 Python SDK，以两个版本同步发布的 PyPI 分发包提供——`agent-sandbox`（`client-sdk/`，导入 `agent_sandbox`）与 `agent-sandbox-server`（`server-sdk/`，导入 `agent_sandbox.server`，容器侧运行时）。`abx` CLI 是 `cli` 仓库中的 Node.js/TypeScript 项目，CLI 自己的设计与指南文档也在该仓库（见[相关：abx CLI](#相关abx-cli)）。
+本仓库包含 Python SDK，以两个版本同步发布的 PyPI 分发包提供——`agent-sandbox-client`（`client-sdk/`，导入 `agent_sandbox`）与 `agent-sandbox-server`（`server-sdk/`，导入 `agent_sandbox.server`，容器侧运行时）。`abx` CLI 是 `cli` 仓库中的 Node.js/TypeScript 项目，CLI 自己的设计与指南文档也在该仓库（见[相关：abx CLI](#相关abx-cli)）。
 
 ### 核心设计原则
 
@@ -21,7 +21,7 @@
 ### 快速上手
 
 ```bash
-pip install agent-sandbox
+pip install agent-sandbox-client
 export ABX_SANDBOX_API_KEY=your-api-key
 ```
 

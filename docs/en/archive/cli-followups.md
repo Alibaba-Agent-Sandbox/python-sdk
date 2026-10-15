@@ -39,7 +39,7 @@ The current Python/Node/minimal scaffolds start `FROM python:3.11-slim` / `node:
     && rm -f /tmp/agent_sandbox_server-*.whl
    ```
 
-   (`pip install agent-sandbox` is wrong for an in-container runtime; keep the glob narrow so
+   (`pip install agent-sandbox-client` is wrong for an in-container runtime; keep the glob narrow so
    the injected wheel is not confused with other wheels.)
 3. `WORKDIR /home/user/app`, `COPY commands.py /home/user/app/commands.py`, `EXPOSE 9000 9001`,
    `ENV ABX_SERVER_BASE_DIR=/home/user`. Do **not** emit `ENTRYPOINT` (the gateway is PID 1)

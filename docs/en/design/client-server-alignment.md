@@ -1,6 +1,6 @@
 # Client / Server Alignment: Gap Matrix
 
-> Status: **v2 (reviewed; see fine-grained-capabilities-review.md)** — audit of every `agent-sandbox-server` route against `agent-sandbox`
+> Status: **v2 (reviewed; see fine-grained-capabilities-review.md)** — audit of every `agent-sandbox-server` route against `agent-sandbox-client`
 > (`api/`, `protocol/`) and the envd (E2B) protocol the client otherwise speaks. The "Status" column
 > is updated when the work lands (see the end of this file for the final tally).
 > Related: [fine-grained-capabilities.md](fine-grained-capabilities.md).

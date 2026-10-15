@@ -1,6 +1,6 @@
 # Template System Design
 
-> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`).
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
 > A Template is the runtime environment blueprint for Agent Sandbox, defining the sandbox's base image, pre-installed software, default configuration, and startup behavior. The template system is organized into three tiers: official core templates, community templates, and custom templates. The core distribution mechanism is based on the **GitHub tarball API (fetched by tag/branch/sha, no Release required)**, using a reference style similar to Go modules / GitHub Actions.
 

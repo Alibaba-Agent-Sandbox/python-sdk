@@ -36,7 +36,7 @@ body:
       label: Steps to Reproduce
       description: Steps to reproduce the behavior
       placeholder: |
-        1. Install the SDK `pip install agent-sandbox`
+        1. Install the SDK `pip install agent-sandbox-client`
         2. Run `await Sandbox.create(template="base")`
         3. See error...
     validations:

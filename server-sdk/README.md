@@ -5,7 +5,7 @@
 It exposes files, processes, system info, a PTY terminal, optional dev tools / browser automation, and your own registered commands.
 
 The HTTP server is stdlib-only. `websockets` is installed for the PTY terminal endpoint.
-Import path: `agent_sandbox.server` (a namespace shared with `agent-sandbox`).
+Import path: `agent_sandbox.server` (a namespace shared with `agent-sandbox-client`).
 
 ## Install
 
