@@ -174,9 +174,9 @@ else:
     if client and server:
         deps = [d.replace(" ", "") for d in client.get("dependencies", [])]
         if any(d.startswith("agent-sandbox-server") for d in deps):
-            result("PASS", "agent-sandbox hard-depends on agent-sandbox-server (keeps `from agent_sandbox.server import` working after `pip install agent-sandbox`)")
+            result("PASS", "agent-sandbox-client hard-depends on agent-sandbox-server (keeps `from agent_sandbox.server import` working after `pip install agent-sandbox-client`)")
         else:
-            result("FAIL", "agent-sandbox does not hard-depend on agent-sandbox-server: `pip install agent-sandbox` no longer provides agent_sandbox.server (0.2.0 behaviour)")
+            result("FAIL", "agent-sandbox-client does not hard-depend on agent-sandbox-server: `pip install agent-sandbox-client` no longer provides agent_sandbox.server (0.2.0 behaviour)")
         for name, proj in (("client-sdk", client), ("server-sdk", server)):
             urls = " ".join(proj.get("urls", {}).values())
             if "agent-sandbox/python-sdk" in urls and "alibaba-agent-sandbox/agent-sandbox" not in urls:

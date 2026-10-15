@@ -1,6 +1,6 @@
 # MCP 集成
 
-> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox`）与容器侧运行时（`agent-sandbox-server`）。
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
 Agent Sandbox 提供 MCP（Model Context Protocol）Server，使 AI IDE 和工具能够直接操作沙箱。
 
@@ -13,7 +13,7 @@ MCP（Model Context Protocol）是一个开放协议，允许 AI 模型与外部
 ### 环境要求
 
 ```bash
-pip install agent-sandbox            # SDK 自带的 MCP STDIO server：python -m agent_sandbox.agent.mcp
+pip install agent-sandbox-client            # SDK 自带的 MCP STDIO server：python -m agent_sandbox.agent.mcp
 export ABX_SANDBOX_API_KEY=your-api-key
 ```
 
@@ -86,7 +86,7 @@ printf '%s\n' \
 ### 本地以 uvicorn 运行
 
 ```bash
-pip install "agent-sandbox[mcp]"
+pip install "agent-sandbox-client[mcp]"
 
 export ABX_MCP_AUTH_TOKEN=replace_me   # Bearer token（省略则关闭认证）
 export ABX_SANDBOX_API_KEY=your-api-key
@@ -155,7 +155,7 @@ token 比较使用常量时间算法。可用 `openssl rand -base64 32` 生成�
 
 | 文件 | 内容 |
 |------|------|
-| `requirements.txt` | `agent-sandbox[mcp]`、`uvicorn>=0.29` |
+| `requirements.txt` | `agent-sandbox-client[mcp]`、`uvicorn>=0.29` |
 | `app.py` | ASGI 入口，读取 FC 环境变量（`ABX_MCP_AUTH_TOKEN`、`ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL`、`ABX_SANDBOX_DOMAIN`、`ABX_DEFAULT_TEMPLATE`） |
 | `config.yaml` | YAML 清单：函数名、地域、运行时 `python3.10`、handler `app.app`、内存/超时、环境变量、HTTP 触发器（POST/GET/DELETE）、会话亲和 |
 

@@ -5,13 +5,13 @@
 
 ## Project Overview
 
-**Agent Sandbox** (`agent-sandbox` on PyPI) is a Python SDK for the Alibaba Cloud FC Agent Sandbox service. It is the **runtime** client (create, use, kill sandboxes); templates are built and deployed with `abx template build|deploy`. Method names are E2B-shaped to ease migration; it is not a drop-in replacement (see `docs/en/guide/migrate-from-e2b.md`).
+**Agent Sandbox** (`agent-sandbox-client` on PyPI) is a Python SDK for the Alibaba Cloud FC Agent Sandbox service. It is the **runtime** client (create, use, kill sandboxes); templates are built and deployed with `abx template build|deploy`. Method names are E2B-shaped to ease migration; it is not a drop-in replacement (see `docs/en/guide/migrate-from-e2b.md`).
 
 This repository (`python-sdk`) holds the **Python SDK only**, split into two PyPI distributions that share the `agent_sandbox` namespace and are **released in lockstep** (same version number):
 
 | Folder | PyPI distribution | Import path | Source |
 |--------|-------------------|-------------|--------|
-| `client-sdk/` | `agent-sandbox` | `agent_sandbox` | `client-sdk/src/agent_sandbox/` |
+| `client-sdk/` | `agent-sandbox-client` | `agent_sandbox` | `client-sdk/src/agent_sandbox/` |
 | `server-sdk/` | `agent-sandbox-server` | `agent_sandbox.server` | `server-sdk/src/agent_sandbox/server/` (container-side runtime; no `agent_sandbox/__init__.py` of its own) |
 
 The `abx` CLI is **not** part of this repository: it is a Node.js/TypeScript project (`@agent-sandbox/cli`) that lives in the [`cli` repository](https://github.com/alibaba-agent-sandbox/agent-sandbox). There is no `agent_sandbox.cli` module, no `[cli]`/`[binary]` extra and no `abx` console script in the Python packages.
@@ -27,7 +27,7 @@ The `abx` CLI is **not** part of this repository: it is a Node.js/TypeScript pro
 
 ```
 python-sdk/
-├── client-sdk/                # PyPI: agent-sandbox (import agent_sandbox)
+├── client-sdk/                # PyPI: agent-sandbox-client (import agent_sandbox)
 │   ├── pyproject.toml
 │   ├── src/agent_sandbox/      # SDK source
 │   │   ├── models/                # Data models: config, errors, sandbox, template, session, filesystem, process

@@ -2,7 +2,7 @@
 
 Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云极速版（函数计算）。同一套 API 还有 Modal 风格的 `@sandbox` 装饰器，以及沙箱内的 Agents API（Codex 与 Qwen Code，按需安装 CLI）。
 
-> **范围：** 本仓库记录 Python SDK（`agent-sandbox`）与容器侧运行时（`agent-sandbox-server`）。`abx` CLI 是独立的 Node.js 项目，拥有自己的文档集；见[相关：abx CLI](#相关abx-cli)。
+> **范围：** 本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。`abx` CLI 是独立的 Node.js 项目，拥有自己的文档集；见[相关：abx CLI](#相关abx-cli)。
 
 ## 网站
 
@@ -21,7 +21,7 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 |---|---|---|
 | 跑在哪里 | 你的机器 | 沙箱镜像里面 |
 | 做什么 | 创建沙箱并使用它 | 构建沙箱里一直听着的 HTTP 服务 |
-| 包 | `agent-sandbox` | `agent-sandbox-server` |
+| 包 | `agent-sandbox-client` | `agent-sandbox-server` |
 | 导入 | `agent_sandbox` | `agent_sandbox.server` |
 | 入口 | [Client SDK](guide/client-sdk.md) | [Server SDK](guide/server-sdk.md) |
 

@@ -1,6 +1,6 @@
 # Express 快速开始
 
-2026-10-15 在阿里云 Express（`alicloud-express`）上用 `agent-sandbox` 0.3.0 验证。模板是 generation 2，启动命令运行 `agent-sandbox-server`。
+2026-10-15 在阿里云 Express（`alicloud-express`）上用 `agent-sandbox-client` 0.3.0 验证。模板是 generation 2，启动命令运行 `agent-sandbox-server`。
 
 ## 部署
 

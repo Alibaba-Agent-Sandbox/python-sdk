@@ -80,7 +80,7 @@ def test_wheel_excludes_server_and_cli(built_dists: dict[str, Path]) -> None:
 def test_wheel_metadata_has_no_cli_dependencies(built_dists: dict[str, Path]) -> None:
     with zipfile.ZipFile(built_dists["wheel"]) as zf:
         metadata = next(zf.read(n).decode() for n in zf.namelist() if n.endswith("/METADATA"))
-    assert "Name: agent-sandbox\n" in metadata
+    assert "Name: agent-sandbox-client\n" in metadata
     for dep in ("click", "rich", "questionary"):
         assert f"Requires-Dist: {dep}" not in metadata
     assert "Provides-Extra: cli" not in metadata

@@ -1,10 +1,12 @@
 # Client SDK
 
-The Client SDK runs on **your machine**. It creates a sandbox, connects to one that already exists, and then runs commands, reads and writes files, and calls the code interpreter. The package is `agent-sandbox`. Import `agent_sandbox`.
+The Client SDK runs on **your machine**. It creates a sandbox, connects to one that already exists, and then runs commands, reads and writes files, and calls the code interpreter. The package is `agent-sandbox-client`. Import `agent_sandbox`.
 
 ```bash
-pip install agent-sandbox
+pip install agent-sandbox-client
 ```
+
+Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
 
 ```python
 from agent_sandbox import Sandbox

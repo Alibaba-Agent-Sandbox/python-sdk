@@ -1,6 +1,6 @@
-# agent-sandbox
+# agent-sandbox-client
 
-**Client SDK.** This package runs on your machine: create a sandbox, use it, and kill it. The HTTP service inside the image is [`agent-sandbox-server`](../server-sdk/README.md). Guide: [Client SDK](../docs/en/guide/client-sdk.md).
+**Client SDK.** The product is Agent Sandbox. The import path is `agent_sandbox`. This package runs on your machine: create a sandbox, use it, and kill it. The HTTP service inside the image is [`agent-sandbox-server`](../server-sdk/README.md). Guide: [Client SDK](../docs/en/guide/client-sdk.md).
 
 Template build and deploy are done by the CLI (`abx template build|deploy`). Method names are
 E2B-shaped to ease migration; this is not a drop-in replacement (see the "Migrate from E2B" guide).
@@ -8,7 +8,7 @@ E2B-shaped to ease migration; this is not a drop-in replacement (see the "Migrat
 This package is the `agent_sandbox` import namespace *except* `agent_sandbox.server`, which is
 the container-side runtime shipped separately as
 [`agent-sandbox-server`](../server-sdk/README.md) (a hard dependency pinned to the same version,
-so `pip install agent-sandbox` still provides `agent_sandbox.server`; the `[server]` extra is a
+so `pip install agent-sandbox-client` still provides `agent_sandbox.server`; the `[server]` extra is a
 no-op alias kept for compatibility).
 
 The command-line tool (`abx`) is a separate Node.js project that lives in the [`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) repository.
@@ -16,9 +16,11 @@ The command-line tool (`abx`) is a separate Node.js project that lives in the [`
 ## Install
 
 ```bash
-pip install agent-sandbox                 # core SDK (pulls in agent-sandbox-server of the same version)
-pip install "agent-sandbox[all]"          # everything (mcp, yaml, fast json, sessions, ...)
+pip install agent-sandbox-client                 # core SDK (pulls in agent-sandbox-server of the same version)
+pip install "agent-sandbox-client[all]"          # everything (mcp, yaml, fast json, sessions, ...)
 ```
+
+Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
 
 ## Quick start
 

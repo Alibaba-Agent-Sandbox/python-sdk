@@ -4,8 +4,8 @@
 
 <!-- badges -->
 [![CI](https://github.com/alibaba-agent-sandbox/python-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/alibaba-agent-sandbox/python-sdk/actions/workflows/ci.yml)
-[![PyPI version](https://img.shields.io/pypi/v/agent-sandbox)](https://pypi.org/project/agent-sandbox/)
-[![Python 3.10+](https://img.shields.io/pypi/pyversions/agent-sandbox)](https://pypi.org/project/agent-sandbox/)
+[![PyPI version](https://img.shields.io/pypi/v/agent-sandbox-client)](https://pypi.org/project/agent-sandbox-client/)
+[![Python 3.10+](https://img.shields.io/pypi/pyversions/agent-sandbox-client)](https://pypi.org/project/agent-sandbox-client/)
 [![License](https://img.shields.io/github/license/agent-sandbox/python-sdk)](LICENSE)
 
 > 为 AI Agent 打造的云沙箱 —— 秒级创建、执行、管理隔离环境。
@@ -19,7 +19,7 @@ Node.js 项目，位于 [`cli`](https://github.com/alibaba-agent-sandbox/agent-s
 
 | 目录 | PyPI 分发包 | 导入路径 | 用途 |
 |------|-------------|----------|------|
-| [`client-sdk/`](client-sdk/) | `agent-sandbox` | `agent_sandbox` | 异步客户端 SDK：`Sandbox`、文件、命令、代码解释器、命名命令、声明式 `@sandbox`、Agents API 客户端、MCP Server、E2B 迁移辅助 |
+| [`client-sdk/`](client-sdk/) | `agent-sandbox-client` | `agent_sandbox` | 异步客户端 SDK：`Sandbox`、文件、命令、代码解释器、命名命令、声明式 `@sandbox`、Agents API 客户端、MCP Server、E2B 迁移辅助 |
 | [`server-sdk/`](server-sdk/) | `agent-sandbox-server` | `agent_sandbox.server` | 容器侧运行时：运行在沙箱镜像*内部*的常驻 HTTP 服务（默认端口 9000） |
 
 两个分发包共享 `agent_sandbox` 命名空间（client 提供 `agent_sandbox/__init__.py`，server 只包含
@@ -60,10 +60,10 @@ Node.js 项目，位于 [`cli`](https://github.com/alibaba-agent-sandbox/agent-s
 
 ```bash
 # 仅核心客户端 SDK
-pip install agent-sandbox
+pip install agent-sandbox-client
 
 # 完整安装（MCP + 快速 JSON + 会话 + 声明式 + server）
-pip install "agent-sandbox[all]"
+pip install "agent-sandbox-client[all]"
 
 # 容器侧运行时（安装到你的沙箱镜像内）
 pip install agent-sandbox-server
@@ -73,7 +73,9 @@ pip install playwright                       # 仅在启用 browser 能力组时
 pip install -e ./server-sdk -e "./client-sdk[dev]"
 ```
 
-`agent-sandbox` 依赖同版本的 `agent-sandbox-server`，因此 `pip install agent-sandbox` 同样会提供 `agent_sandbox.server`（`@sandbox` 装饰器的 server 代理在本地需要它）。`[server]` extra 作为无害的别名保留。
+不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。安装本客户端请使用 `pip install agent-sandbox-client`。
+
+`agent-sandbox-client` 依赖同版本的 `agent-sandbox-server`，因此 `pip install agent-sandbox-client` 同样会提供 `agent_sandbox.server`（`@sandbox` 装饰器的 server 代理在本地需要它）。`[server]` extra 作为无害的别名保留。
 
 `abx` CLI 不再属于 Python 包（不再有 `[cli]` extra，也没有 `abx` 控制台脚本），由
 [`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) 仓库分发（见[相关：abx CLI](#相关abx-cli)）。

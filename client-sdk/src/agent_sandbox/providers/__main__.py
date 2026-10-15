@@ -147,7 +147,7 @@ def _cmd_test(args: argparse.Namespace) -> int:
         import pytest
     except ImportError:
         print(
-            "The contract tests need pytest: pip install pytest (or 'agent-sandbox[dev]').",
+            "The contract tests need pytest: pip install pytest (or 'agent-sandbox-client[dev]').",
             file=sys.stderr,
         )
         return 1

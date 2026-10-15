@@ -1,6 +1,6 @@
 # Authentication
 
-> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`).
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
 Agent Sandbox supports two authentication modes: **API Key** and **AK/SK (Alibaba Cloud AccessKey)**.
 

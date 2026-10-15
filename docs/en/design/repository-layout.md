@@ -288,7 +288,7 @@ cli/
 | Item | Decision | Reason |
 |------|----------|--------|
 | GitHub repos | `agent-sandbox/python-sdk`, `agent-sandbox/agent-sandbox` (existing docs, issue configs and CONTRIBUTING already use these) | org-scoped names; alternative `abx` for the CLI is also fine but would touch every cross-link |
-| PyPI | `agent-sandbox` (client, unchanged anchor), `agent-sandbox-server` (new) | `agent-sandbox-client` would rename the project users already depend on |
+| PyPI | `agent-sandbox-client` (client), `agent-sandbox-server` | `agent-sandbox` on PyPI is an unrelated project, so the client distribution was renamed on 2026-10-15. Import `agent_sandbox` is unchanged. |
 | npm | `@agent-sandbox/cli`, bin `abx`; later `@agent-sandbox/provider-api` | unscoped `abx` is taken |
 | Import names | `agent_sandbox`, `agent_sandbox.server` (unchanged) | compat with existing templates |
 | Directories | `client-sdk/`, `server-sdk/` | self-describing, match dist roles |

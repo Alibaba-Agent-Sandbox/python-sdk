@@ -1,10 +1,12 @@
 # Client SDK
 
-Client SDK 跑在**你的机器**上。它创建沙箱、连上已经存在的沙箱，然后在沙箱里执行命令、读写文件、调用代码解释器。包名是 `agent-sandbox`，导入 `agent_sandbox`。
+Client SDK 跑在**你的机器**上。它创建沙箱、连上已经存在的沙箱，然后在沙箱里执行命令、读写文件、调用代码解释器。包名是 `agent-sandbox-client`，导入 `agent_sandbox`。
 
 ```bash
-pip install agent-sandbox
+pip install agent-sandbox-client
 ```
+
+不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。
 
 ```python
 from agent_sandbox import Sandbox

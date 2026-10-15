@@ -1,6 +1,6 @@
 # Comparison with Other Sandbox Tools
 
-> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`).
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
 This document provides an objective comparison of Agent Sandbox (abx) with other popular sandbox and remote execution platforms: E2B, Modal, and Docker Sandbox.
 
@@ -22,7 +22,7 @@ This document provides an objective comparison of Agent Sandbox (abx) with other
 | Dimension | Agent Sandbox | E2B | Modal |
 |-----------|-------------|-----|-------|
 | **Language** | Python | Python, JS/TS, Kotlin, Go | Python |
-| **Install** | `pip install agent-sandbox` | `pip install e2b` | `pip install modal` |
+| **Install** | `pip install agent-sandbox-client` | `pip install e2b` | `pip install modal` |
 | **Sandbox creation** | `await Sandbox.create()`, or the Modal-style `@sandbox` decorator | `await Sandbox.create()` | `@app.function()` decorator |
 | **Sync support** | `Sandbox.create_sync()` | `Sandbox()` (sync class) | N/A (async-native) |
 | **Command execution** | `sandbox.commands.run()` | `sandbox.commands.run()` | Remote function call |

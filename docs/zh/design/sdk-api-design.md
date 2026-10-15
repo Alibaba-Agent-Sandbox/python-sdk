@@ -1,6 +1,6 @@
 # SDK API 设计
 
-> `agent-sandbox` 包是**运行时**客户端：创建沙箱、使用沙箱、销毁沙箱。它提供两种写法（命令式和声明式）。模板的构建与部署归 `abx` CLI，运行 Agent 归 Agents API。
+> `agent-sandbox-client` 包是**运行时**客户端：创建沙箱、使用沙箱、销毁沙箱。它提供两种写法（命令式和声明式）。模板的构建与部署归 `abx` CLI，运行 Agent 归 Agents API。
 
 ---
 

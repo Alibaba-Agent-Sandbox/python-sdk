@@ -4,8 +4,8 @@
 
 <!-- badges -->
 [![CI](https://github.com/alibaba-agent-sandbox/python-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/alibaba-agent-sandbox/python-sdk/actions/workflows/ci.yml)
-[![PyPI version](https://img.shields.io/pypi/v/agent-sandbox)](https://pypi.org/project/agent-sandbox/)
-[![Python 3.10+](https://img.shields.io/pypi/pyversions/agent-sandbox)](https://pypi.org/project/agent-sandbox/)
+[![PyPI version](https://img.shields.io/pypi/v/agent-sandbox-client)](https://pypi.org/project/agent-sandbox-client/)
+[![Python 3.10+](https://img.shields.io/pypi/pyversions/agent-sandbox-client)](https://pypi.org/project/agent-sandbox-client/)
 [![License](https://img.shields.io/github/license/agent-sandbox/python-sdk)](LICENSE)
 
 > Cloud sandboxes for AI agents — create, execute, and manage isolated environments in seconds.
@@ -21,7 +21,7 @@ distributions. The `abx` command-line tool is a separate Node.js project that li
 
 | Folder | PyPI distribution | Import path | Purpose |
 |--------|-------------------|-------------|---------|
-| [`client-sdk/`](client-sdk/) | `agent-sandbox` | `agent_sandbox` | Async client SDK: `Sandbox`, files, commands, code interpreter, named commands, declarative `@sandbox`, Agents API client, MCP server, E2B migration helper |
+| [`client-sdk/`](client-sdk/) | `agent-sandbox-client` | `agent_sandbox` | Async client SDK: `Sandbox`, files, commands, code interpreter, named commands, declarative `@sandbox`, Agents API client, MCP server, E2B migration helper |
 | [`server-sdk/`](server-sdk/) | `agent-sandbox-server` | `agent_sandbox.server` | Container-side runtime: the persistent HTTP service (default port 9000) that runs *inside* a sandbox image |
 
 Both distributions share the `agent_sandbox` namespace (the client owns `agent_sandbox/__init__.py`,
@@ -62,10 +62,10 @@ The installer fetches the catalog index at `https://registry.agent-sandbox.cn/pr
 
 ```bash
 # Core client SDK only
-pip install agent-sandbox
+pip install agent-sandbox-client
 
 # Everything (MCP + fast JSON + sessions + declarative + server)
-pip install "agent-sandbox[all]"
+pip install "agent-sandbox-client[all]"
 
 # Container-side runtime (install this inside your sandbox image)
 pip install agent-sandbox-server
@@ -75,7 +75,9 @@ pip install playwright                       # only if you enable the browser ca
 pip install -e ./server-sdk -e "./client-sdk[dev]"
 ```
 
-`agent-sandbox` depends on `agent-sandbox-server` of the same version, so `pip install agent-sandbox` also provides `agent_sandbox.server` (needed locally by the `@sandbox` decorator's server proxy). The `[server]` extra is kept as a harmless alias.
+Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project. This client is `agent-sandbox-client`.
+
+`agent-sandbox-client` depends on `agent-sandbox-server` of the same version, so `pip install agent-sandbox-client` also provides `agent_sandbox.server` (needed locally by the `@sandbox` decorator's server proxy). The `[server]` extra is kept as a harmless alias.
 
 The `abx` CLI is no longer part of the Python package (there is no `[cli]` extra and no `abx`
 console script); it is distributed from the [`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) repository

@@ -1,6 +1,6 @@
 # Build and Deploy
 
-The Python SDK (`agent-sandbox`) is the **runtime** client. It creates, uses and kills sandboxes. It does not build images or register templates. Building and deploying a template is the job of the `abx` CLI.
+The Python SDK (`agent-sandbox-client`) is the **runtime** client. It creates, uses and kills sandboxes. It does not build images or register templates. Building and deploying a template is the job of the `abx` CLI.
 
 | Step | Command | Notes |
 |------|---------|-------|

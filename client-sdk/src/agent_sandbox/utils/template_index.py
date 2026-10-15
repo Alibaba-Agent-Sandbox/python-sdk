@@ -267,7 +267,7 @@ def parse_index(
             f"Template index schema_version {schema_version} is newer than supported "
             f"schema_version {INDEX_SCHEMA_VERSION}.",
             suggestion=(
-                "Upgrade agent-sandbox (`pip install -U agent-sandbox`) to read this index."
+                "Upgrade agent-sandbox (`pip install -U agent-sandbox-client`) to read this index."
             ),
         )
 

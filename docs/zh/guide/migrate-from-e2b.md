@@ -153,7 +153,7 @@ sandbox = await Sandbox.create(
 
 ## 迁移步骤
 
-1. **替换依赖**：`pip install agent-sandbox`（卸载 `e2b`）
+1. **替换依赖**：`pip install agent-sandbox-client`（卸载 `e2b`）
 2. **替换导入**：
    - 最小改动：`from e2b import Sandbox` → `from agent_sandbox.compat import Sandbox`
    - 推荐：`from agent_sandbox.api.sandbox import Sandbox`

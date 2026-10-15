@@ -11,7 +11,7 @@ The Agents API case is not repeated here. For the request sequence, the local st
 The client reads `ABX_SANDBOX_API_KEY`. The current client does not treat `E2B_API_KEY` as the sandbox key.
 
 ```bash
-pip install "agent-sandbox[declarative]"
+pip install "agent-sandbox-client[declarative]"
 export ABX_SANDBOX_API_KEY="your-api-key"
 ```
 

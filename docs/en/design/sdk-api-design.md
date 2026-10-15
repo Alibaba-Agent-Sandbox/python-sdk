@@ -1,6 +1,6 @@
 # SDK API Design
 
-> The `agent-sandbox` package is the **runtime** client: create a sandbox, use it, kill it. It offers two ways to write that code (imperative and declarative). Building and deploying templates belongs to the `abx` CLI, and running an agent belongs to the Agents API.
+> The `agent-sandbox-client` package is the **runtime** client: create a sandbox, use it, kill it. It offers two ways to write that code (imperative and declarative). Building and deploying templates belongs to the `abx` CLI, and running an agent belongs to the Agents API.
 
 ---
 

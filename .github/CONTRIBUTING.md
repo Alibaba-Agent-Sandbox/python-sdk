@@ -9,7 +9,7 @@ distributions that share the `agent_sandbox` namespace and are versioned in lock
 
 | Folder | PyPI distribution | Import path | Purpose |
 |--------|-------------------|-------------|---------|
-| `client-sdk/` | `agent-sandbox` | `agent_sandbox` | Async client SDK (`Sandbox`, `ServerClient`, `@sandbox`, MCP server, E2B migration helper, ...) |
+| `client-sdk/` | `agent-sandbox-client` | `agent_sandbox` | Async client SDK (`Sandbox`, `ServerClient`, `@sandbox`, MCP server, E2B migration helper, ...) |
 | `server-sdk/` | `agent-sandbox-server` | `agent_sandbox.server` | Container-side runtime that runs inside sandbox images |
 
 The `abx` command-line tool is a separate Node.js/TypeScript project that lives in the

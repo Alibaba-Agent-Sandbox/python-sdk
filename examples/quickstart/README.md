@@ -7,7 +7,7 @@ Quickstart demos showing core **Agent Sandbox** SDK capabilities — sandbox lif
 ## Prerequisites
 
 - Python 3.10+
-- `pip install agent-sandbox` (or dev install from the python-sdk repo root: `pip install -e ./server-sdk -e "./client-sdk[dev]"`)
+- `pip install agent-sandbox-client` (or dev install from the python-sdk repo root: `pip install -e ./server-sdk -e "./client-sdk[dev]"`)
 - Environment variables:
 
 ```bash

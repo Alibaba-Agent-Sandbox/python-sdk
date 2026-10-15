@@ -16,14 +16,16 @@
 
 ```bash
 # 安装 SDK
-pip install agent-sandbox
+pip install agent-sandbox-client
 
 # 安装全部额外依赖（推荐）
-pip install "agent-sandbox[all]"
+pip install "agent-sandbox-client[all]"
 ```
 
+不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。
+
 `abx` CLI 不属于 Python 包（没有 `[cli]` extra），它是独立的 Node.js 项目，见[相关：abx CLI](#相关abx-cli)。容器侧运行时（`agent_sandbox.server`）是独立的
-`agent-sandbox-server` 包（`pip install agent-sandbox-server`）；`agent-sandbox` 依赖它，安装客户端时会一并安装。
+`agent-sandbox-server` 包（`pip install agent-sandbox-server`）；`agent-sandbox-client` 依赖它，安装客户端时会一并安装。
 
 ## 2. 配置 API Key
 

@@ -8,7 +8,7 @@ Public surfaces used for this map:
 
 | Product | CLI | SDK |
 |---|---|---|
-| Agent Sandbox | `abx` (`@agent-sandbox/cli`) | `agent-sandbox`, `from agent_sandbox.api.sandbox import Sandbox` |
+| Agent Sandbox | `abx` (`@agent-sandbox/cli`) | `agent-sandbox-client`, `from agent_sandbox.api.sandbox import Sandbox` |
 | E2B | `e2b` (`@e2b/cli`, docs for 2.16.1) | `e2b`, `from e2b import Sandbox` |
 | OpenSandbox | `osb` (`opensandbox-cli`, [CLI](https://open-sandbox.ai/cli/)) | `opensandbox`, `from opensandbox import Sandbox` ([Python SDK](https://open-sandbox.ai/sdks/python)) |
 
@@ -20,7 +20,7 @@ A cell with "—" means that side has no matching public command or method.
 
 | Job | abx | Agent Sandbox SDK | e2b | E2B SDK | osb | OpenSandbox SDK |
 |---|---|---|---|---|---|---|
-| Install | `npm install -g @agent-sandbox/cli` | `pip install agent-sandbox` | `npm install -g @e2b/cli` | `pip install e2b` | `pip install opensandbox-cli` | `pip install opensandbox` |
+| Install | `npm install -g @agent-sandbox/cli` | `pip install agent-sandbox-client` | `npm install -g @e2b/cli` | `pip install e2b` | `pip install opensandbox-cli` | `pip install opensandbox` |
 | Store a credential | `abx config set sandbox_api_key` | environment variable `ABX_SANDBOX_API_KEY` | `e2b auth login` | environment variable `E2B_API_KEY` | `osb config set connection.api_key` | `ConnectionConfig(api_key=…)` or `OPEN_SANDBOX_API_KEY` |
 | Show the effective config | `abx config list` | — | `e2b auth info` | — | `osb config show` | — |
 

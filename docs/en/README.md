@@ -2,7 +2,7 @@
 
 Agent Sandbox is a sandbox SDK with pluggable providers. The default provider is Alibaba Cloud Express (Function Compute). The same API also has a Modal-style `@sandbox` decorator, and an in-sandbox Agents API for Codex and Qwen Code. Those CLIs are installed only when you use them.
 
-> **Scope:** this repository documents the Python SDK (`agent-sandbox`) and the container-side runtime (`agent-sandbox-server`). The `abx` CLI is a separate Node.js project with its own documentation set; see [Related: the abx CLI](#related-the-abx-cli).
+> **Scope:** this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`). The `abx` CLI is a separate Node.js project with its own documentation set; see [Related: the abx CLI](#related-the-abx-cli).
 
 ## Sites
 
@@ -21,7 +21,7 @@ The installer fetches the catalog index at `https://registry.agent-sandbox.cn/pr
 |---|---|---|
 | Where it runs | Your machine | Inside the sandbox image |
 | What it does | Create a sandbox and use it | Build the HTTP service the sandbox keeps running |
-| Package | `agent-sandbox` | `agent-sandbox-server` |
+| Package | `agent-sandbox-client` | `agent-sandbox-server` |
 | Import | `agent_sandbox` | `agent_sandbox.server` |
 | Start | [Client SDK](guide/client-sdk.md) | [Server SDK](guide/server-sdk.md) |
 

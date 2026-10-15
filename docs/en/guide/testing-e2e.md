@@ -1,6 +1,6 @@
 # Testing & Definition of Done
 
-How the Python SDK (`agent-sandbox`) and the in-sandbox server (`agent-sandbox-server`) are verified end to end, and the rules that decide when a change counts as done.
+How the Python SDK (`agent-sandbox-client`) and the in-sandbox server (`agent-sandbox-server`) are verified end to end, and the rules that decide when a change counts as done.
 
 > 中文版: [../../zh/guide/testing-e2e.md](../../zh/guide/testing-e2e.md)
 

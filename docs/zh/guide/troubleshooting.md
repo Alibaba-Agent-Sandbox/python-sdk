@@ -1,6 +1,6 @@
 # 常见问题（FAQ）
 
-> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox`）与容器侧运行时（`agent-sandbox-server`）。
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
 ---
 
@@ -227,10 +227,10 @@ entries = await sandbox.files.list("/home/user")
 
 ```bash
 # 确保使用正确的包名
-pip install agent-sandbox
+pip install agent-sandbox-client
 
 # 如果遇到依赖冲突
-pip install agent-sandbox --force-reinstall
+pip install agent-sandbox-client --force-reinstall
 ```
 
 ### Python SDK 未找到
@@ -240,7 +240,7 @@ pip install agent-sandbox --force-reinstall
 ```bash
 python -m agent_sandbox --version
 # 或
-pip show agent-sandbox | grep Location
+pip show agent-sandbox-client | grep Location
 ```
 
 ---

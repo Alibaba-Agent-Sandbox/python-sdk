@@ -13,7 +13,7 @@
 
 ## 1. `abx template init` 脚手架（`src/cli/scaffold.ts`）
 
-当前的 Python/Node/minimal 脚手架以 `FROM python:3.11-slim` / `node:20-slim` 开头，安装 `agent-sandbox`（客户端发行包，现在依赖服务端发行包），
+当前的 Python/Node/minimal 脚手架以 `FROM python:3.11-slim` / `node:20-slim` 开头，安装 `agent-sandbox-client`（客户端发行包，现在依赖服务端发行包），
 并运行 `CMD ["python3", "commands.py"]`。**所有**脚手架的新默认值：
 
 1. `FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>`。`<region>` 是解析出的地域（`src/cli/region.ts`，默认 `cn-hangzhou`）；`<tag>` 默认 `v0.0.49`，
@@ -33,7 +33,7 @@
     && rm -f /tmp/agent_sandbox_server-*.whl
    ```
 
-   （对容器内运行时来说 `pip install agent-sandbox` 是错的；glob 要收窄，避免注入的 wheel 与其他 wheel 混淆。）
+   （对容器内运行时来说 `pip install agent-sandbox-client` 是错的；glob 要收窄，避免注入的 wheel 与其他 wheel 混淆。）
 3. `WORKDIR /home/user/app`、`COPY commands.py /home/user/app/commands.py`、`EXPOSE 9000 9001`、`ENV ABX_SERVER_BASE_DIR=/home/user`。**不要**写 `ENTRYPOINT`（网关是 PID 1），也不要依赖 `CMD`。
 4. 可选（`--policy <preset|file>`）：`COPY server-policy.json /etc/agent-sandbox/server-policy.json` 和
    `RUN agent-sandbox-server check-config --policy /etc/agent-sandbox/server-policy.json`（以 root 构建时**不要**加 `--strict`：lint L5 会使构建失败）。

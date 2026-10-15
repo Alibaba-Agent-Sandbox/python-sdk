@@ -14,10 +14,10 @@ Examples are split by which package they exercise.
 
 ```bash
 # Full install (recommended — includes the declarative decorator, MCP server, ...)
-pip install "agent-sandbox[all]"
+pip install "agent-sandbox-client[all]"
 
 # Or install selectively
-pip install "agent-sandbox[declarative]"   # @sandbox decorator only
+pip install "agent-sandbox-client[declarative]"   # @sandbox decorator only
 
 # From source (run from the python-sdk repository root)
 pip install -e ./server-sdk -e ./client-sdk

@@ -3,7 +3,7 @@
 演示使用 @sandbox 装饰器将普通函数声明式地在远程沙箱中执行。
 Shows how to use the @sandbox decorator for declarative remote execution.
 
-需要安装: pip install agent-sandbox[declarative]
+需要安装: pip install agent-sandbox-client[declarative]
 
 工作流程:
   1. 创建远程沙箱

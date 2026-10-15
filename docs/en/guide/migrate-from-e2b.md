@@ -154,7 +154,7 @@ sandbox = await Sandbox.create(
 
 ## Migration Steps
 
-1. **Replace dependency**: `pip install agent-sandbox` (uninstall `e2b`)
+1. **Replace dependency**: `pip install agent-sandbox-client` (uninstall `e2b`)
 2. **Replace imports**:
    - Minimal changes: `from e2b import Sandbox` → `from agent_sandbox.compat import Sandbox`
    - Recommended: `from agent_sandbox.api.sandbox import Sandbox`

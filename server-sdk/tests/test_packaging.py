@@ -3,7 +3,7 @@
 ``agent_sandbox`` is a shared namespace.  This distribution must ship only
 ``agent_sandbox/server/**`` and must NOT ship ``agent_sandbox/__init__.py``
 (otherwise it would collide with the client distribution's file and a plain
-``pip install agent-sandbox-server`` would fight ``pip install agent-sandbox``).
+``pip install agent-sandbox-server`` would fight ``pip install agent-sandbox-client``).
 
 The test builds with the project's real build backend (hatchling) in a temporary
 copy of the project, so it checks the actual ``pyproject.toml`` configuration.

@@ -1,6 +1,6 @@
 # Express quickstart
 
-Verified 2026-10-15 on Alibaba Cloud Express (`alicloud-express`) with `agent-sandbox` 0.3.0. The template is generation 2. Its start command runs `agent-sandbox-server`.
+Verified 2026-10-15 on Alibaba Cloud Express (`alicloud-express`) with `agent-sandbox-client` 0.3.0. The template is generation 2. Its start command runs `agent-sandbox-server`.
 
 ## Deploy
 
