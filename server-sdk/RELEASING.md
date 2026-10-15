@@ -62,25 +62,37 @@ A clean install of both wheels, then `import agent_sandbox` and `import agent_sa
 
 ## Pending publishers
 
-Create one pending publisher on PyPI for each project name **before** the first upload. The workflow file is `.github/workflows/publish.yml`. It runs on `release: published` and uses the GitHub environment `pypi` (`id-token: write`).
+Publishing uses PyPI trusted publishing (OIDC). No `PYPI_API_TOKEN` and no other PyPI token is required. The workflow does not read a password.
 
-For **both** `agent-sandbox-server` and `agent-sandbox-client`:
+`.github/workflows/publish.yml` requests `id-token: write` and runs in the GitHub environment `pypi`. Each upload step is `pypa/gh-action-pypi-publish@release/v1` with `skip-existing: true`. The server directory is uploaded first, then the client.
+
+Create one pending publisher on PyPI for each project name **before** the first upload. For **both** `agent-sandbox-server` and `agent-sandbox-client`:
 
 | Field | Value |
 | --- | --- |
 | PyPI project name | `agent-sandbox-server` or `agent-sandbox-client` |
 | Owner | `Alibaba-Agent-Sandbox` |
 | Repository name | `python-sdk` |
-| Workflow name | `publish.yml` |
+| Workflow filename | `publish.yml` |
 | Environment name | `pypi` |
 
-The GitHub environment `pypi` must exist on `Alibaba-Agent-Sandbox/python-sdk` because the job sets `environment: pypi`. Do not create a tag or a GitHub Release until both pending publishers are in place. Publishing a GitHub Release runs this workflow and uploads to PyPI.
+The GitHub environment `pypi` must exist on `Alibaba-Agent-Sandbox/python-sdk` (it does). Do not create a tag or a GitHub Release until both pending publishers are in place. Publishing a GitHub Release runs this workflow and uploads to PyPI.
 
-`publish.yml` also passes `TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}` with `TWINE_USERNAME=__token__`. A pending publisher uses GitHub's OIDC token instead of that API token. Until the workflow is switched to trusted publishing (`pypa/gh-action-pypi-publish`), the maintainer can upload the artifacts from the build above with `twine upload`, server first:
+## Dry run and re-run
+
+`workflow_dispatch` input `dry_run` (default false) builds both distributions and runs `twine check` only. The upload steps are skipped. Use it to check the workflow on GitHub without publishing:
 
 ```bash
-python -m twine upload dist/server-sdk/*
-python -m twine upload dist/client-sdk/*
+# Actions → Publish to PyPI → Run workflow, on main, with dry_run checked.
 ```
 
-The token is supplied by the maintainer. It is not stored in this repository.
+Or the API, after this workflow is on `main`:
+
+```http
+POST /repos/Alibaba-Agent-Sandbox/python-sdk/actions/workflows/publish.yml/dispatches
+{"ref":"main","inputs":{"dry_run":"true"}}
+```
+
+A real upload is a GitHub Release (`release: published`), or **Run workflow** with `dry_run` left unchecked. Unchecked `dry_run` publishes. Do not use it until both pending publishers exist.
+
+`skip-existing: true` makes a re-run safe after a partial upload. If the server package is already on PyPI and the client step failed, re-run the failed jobs on that same workflow run (or dispatch again with `dry_run` unchecked). PyPI keeps the existing files and the missing distribution is uploaded. Server is still first.
