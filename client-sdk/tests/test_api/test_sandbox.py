@@ -753,8 +753,75 @@ class TestSandboxRunNamedCommand:
         sandbox.__dict__["server"] = _server_client(
             lambda request: httpx.Response(404, json={"error": "not found", "type": "ValueError"})
         )
-        with pytest.raises(CommandNotFoundError):
+        with pytest.raises(CommandNotFoundError, match="not found"):
             await sandbox.run("nonexistent")
+
+    @pytest.mark.asyncio
+    async def test_unknown_command_includes_the_server_list(self, sandbox: Sandbox) -> None:
+        sandbox.__dict__["server"] = _server_client(
+            lambda request: httpx.Response(
+                404,
+                json={
+                    "error": "Unknown command 'nope'; available: hello",
+                    "type": "ValueError",
+                },
+            )
+        )
+        with pytest.raises(CommandNotFoundError, match="available: hello"):
+            await sandbox.run("nope")
+
+    @pytest.mark.asyncio
+    async def test_bad_arguments_are_a_command_argument_error(self, sandbox: Sandbox) -> None:
+        from agent_sandbox.models.errors import CommandArgumentError
+
+        sandbox.__dict__["server"] = _server_client(
+            lambda request: httpx.Response(
+                400,
+                json={
+                    "error": "Unexpected argument(s): ['nope']; declared: ['name']",
+                    "type": "ValueError",
+                },
+            )
+        )
+        with pytest.raises(CommandArgumentError, match="Unexpected argument") as caught:
+            await sandbox.run("hello", nope=1)
+        assert caught.value.status_code == 400
+        assert caught.value.error_type == "ValueError"
+
+    @pytest.mark.asyncio
+    async def test_command_exception_is_a_command_execution_error(self, sandbox: Sandbox) -> None:
+        from agent_sandbox.models.errors import CommandExecutionError, ServerAPIError
+
+        sandbox.__dict__["server"] = _server_client(
+            lambda request: httpx.Response(500, json={"error": "disk full", "type": "OSError"})
+        )
+        with pytest.raises(CommandExecutionError, match="OSError: disk full") as caught:
+            await sandbox.run("hello")
+        assert isinstance(caught.value, ServerAPIError)
+        assert caught.value.error_type == "OSError"
+
+    @pytest.mark.asyncio
+    async def test_gateway_502_stays_a_server_api_error(self, sandbox: Sandbox) -> None:
+        from agent_sandbox.models.errors import ServerAPIError
+
+        sandbox.__dict__["server"] = _server_client(
+            lambda request: httpx.Response(502, json={"error": "bad gateway"})
+        )
+        with pytest.raises(ServerAPIError, match="bad gateway") as caught:
+            await sandbox.run("hello")
+        assert type(caught.value) is ServerAPIError
+
+    @pytest.mark.asyncio
+    async def test_run_timeout_is_not_a_command_argument(self, sandbox: Sandbox) -> None:
+        seen: list[httpx.Request] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen.append(request)
+            return httpx.Response(200, json={"result": "ok"})
+
+        sandbox.__dict__["server"] = _server_client(handler)
+        assert await sandbox.run("hello", name="Bob", timeout=5) == "ok"
+        assert json.loads(seen[0].content) == {"name": "Bob"}
 
     @pytest.mark.asyncio
     async def test_command_failure_raises_server_api_error(self, sandbox: Sandbox) -> None:

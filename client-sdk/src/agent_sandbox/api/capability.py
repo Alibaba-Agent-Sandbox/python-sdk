@@ -161,8 +161,9 @@ async def resolve_capabilities(
     1. If *local_yaml_path* is given, parse it directly.
     2. Scan ``~/.abx/templates/`` for a matching template name.
     3. **TODO(Phase2):** ``GET /templates/{id}`` metadata fallback.
-    4. Fall back to :data:`DEFAULT_CAPABILITIES`
-       and emit a warning.
+    4. Fall back to :data:`DEFAULT_CAPABILITIES`. A cloud template id has no
+       local file, so that fallback is debug-only. A missing explicit
+       *local_yaml_path* still warns.
 
     Returns:
         A :class:`ResolvedCapabilities` instance.
@@ -208,12 +209,20 @@ async def resolve_capabilities(
 
     # 3. TODO(Phase2): online fallback — GET /templates/{id} metadata
 
-    # 4. Fallback
+    # 4. Fallback. A remote template id (the Express case) has no local YAML.
     if template is None:
-        logger.warning(
-            "Could not resolve capabilities for template %r; falling back to DEFAULT_CAPABILITIES",
-            template_id,
-        )
+        if local_yaml_path:
+            logger.warning(
+                "Could not resolve capabilities for template %r from %s; "
+                "falling back to DEFAULT_CAPABILITIES",
+                template_id,
+                local_yaml_path,
+            )
+        else:
+            logger.debug(
+                "No local template for %r; using DEFAULT_CAPABILITIES",
+                template_id,
+            )
         return ResolvedCapabilities()
 
     # Build result from the resolved template

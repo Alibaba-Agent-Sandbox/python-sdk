@@ -216,6 +216,14 @@ class TestResolveCapabilities:
         assert result.capabilities == set(DEFAULT_CAPABILITIES)
 
     @pytest.mark.asyncio
+    async def test_remote_template_id_does_not_warn(self, caplog: pytest.LogCaptureFixture) -> None:
+        """A cloud template id has no local YAML. That is not a warning."""
+        with caplog.at_level("WARNING", logger="agent_sandbox.api.capability"):
+            result = await resolve_capabilities("bwhjalty8fei0y5c63un")
+        assert result.capabilities == set(DEFAULT_CAPABILITIES)
+        assert "Could not resolve capabilities" not in caplog.text
+
+    @pytest.mark.asyncio
     async def test_resolve_none_capabilities_uses_defaults(
         self,
         tmp_path: Path,

@@ -241,7 +241,11 @@ class CommandNotFoundError(ExecutionError):
         server_status: str = "",
         **kwargs: object,
     ) -> None:
+        detail = kwargs.pop("detail", None)
         parts = [f"Command {name!r} not found."]
+        if isinstance(detail, str) and detail.strip():
+            parts.append(detail.strip().rstrip("."))
+            parts[-1] += "."
         if server_status:
             parts.append(f"Server: {server_status}.")
         _suggestion = kwargs.pop("suggestion", None) or (
@@ -525,6 +529,27 @@ class ServerAPIError(SandboxError):
         SandboxError.__init__(self, message, code=code, suggestion=suggestion, docs_url=docs_url)
 
 
+class CommandArgumentError(ServerAPIError):
+    """A named command rejected its arguments (HTTP 400).
+
+    The message is the server's validation error (missing, unexpected, or
+    mistyped arguments).
+    """
+
+    code = "E9000"
+    suggestion = "Compare the arguments with sandbox.list_commands()."
+
+
+class CommandExecutionError(ServerAPIError):
+    """A named command ran and raised (HTTP 500).
+
+    ``error_type`` is the exception class name from the sandbox.
+    """
+
+    code = "E9000"
+    suggestion = "The command function raised. error_type names the exception class."
+
+
 class ServerAuthError(ServerAPIError, AuthenticationError):
     """The server rejected the credentials (HTTP 401) or the request carried ambiguous ones."""
 
@@ -654,6 +679,8 @@ __all__ = [
     "ProviderTimeoutError",
     "ProviderMismatchError",
     "ServerAPIError",
+    "CommandArgumentError",
+    "CommandExecutionError",
     "ServerAuthError",
     "PolicyDeniedError",
     "FilePolicyDeniedError",

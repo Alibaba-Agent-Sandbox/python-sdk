@@ -159,6 +159,7 @@ async def test_engine_create_selects_stream_envelope_from_envd_version(
 
     from agent_sandbox.engine.server import SESSIONS
 
+    assert info.envd_version == "0.6.1"
     assert SESSIONS[info.sandbox_id].http._stream_envelope is True
 
 

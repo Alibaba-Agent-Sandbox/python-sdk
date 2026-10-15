@@ -174,6 +174,7 @@ def _state(message: Any) -> SandboxInfo:
         status=status,
         envd_url=message.envd_url or None,
         envd_access_token=message.envd_access_token or None,
+        envd_version=message.envd_version or None,
     )
 
 
