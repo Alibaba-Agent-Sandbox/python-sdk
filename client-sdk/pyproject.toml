@@ -45,7 +45,7 @@ mcp = [
     "uvicorn>=0.29",
 ]
 fast = [
-    "orjson>=3.9",
+    "orjson>=3.13.0",
 ]
 declarative = [
     "pyyaml>=6.0.3",
