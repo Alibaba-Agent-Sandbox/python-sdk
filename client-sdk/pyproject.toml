@@ -42,7 +42,7 @@ dependencies = [
 mcp = [
     "mcp>=1.0.0",
     "starlette>=1.7.0",
-    "uvicorn>=0.29",
+    "uvicorn>=0.54.0",
 ]
 fast = [
     "orjson>=3.13.0",
