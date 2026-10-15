@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any, NoReturn
 
 from agent_sandbox.api.capability import (
     ResolvedCapabilities,
-    resolve_capabilities,
+    resolve_capabilities_for,
 )
 from agent_sandbox.models.sandbox import SandboxConfig, SandboxInfo, SandboxStatus
 from agent_sandbox.models.template import DEFAULT_CAPABILITIES
@@ -35,7 +35,7 @@ from agent_sandbox.transport.auth import (
 )
 from agent_sandbox.transport.config import TransportConfig, load_config
 from agent_sandbox.transport.http import HttpClient
-from agent_sandbox.utils.async_bridge import make_sync
+from agent_sandbox.utils.async_bridge import make_classmethod_sync, make_sync
 from agent_sandbox.utils.config_keys import BUILTIN_PROVIDER_ID
 from agent_sandbox.utils.logging import get_logger
 
@@ -641,8 +641,14 @@ class Sandbox:
 
             logger.info("Sandbox created: %s", info.sandbox_id)
 
-            # Resolve capabilities for the template
-            resolved = await resolve_capabilities(template)
+            # The caller often passes a deploy alias. The cache directory is
+            # frequently the platform template id, which only exists on info
+            # after create returns.
+            resolved = await resolve_capabilities_for(
+                template,
+                info.template,
+                info.alias_name,
+            )
 
             from agent_sandbox.engine.protocols import (
                 EngineFilesystemProtocol,
@@ -754,8 +760,7 @@ class Sandbox:
 
             logger.info("Connected to sandbox: %s", sandbox_id)
 
-            # Resolve capabilities for the template
-            resolved = await resolve_capabilities(info.template)
+            resolved = await resolve_capabilities_for(info.template, info.alias_name)
 
             return cls(
                 info=info,
@@ -1269,10 +1274,10 @@ class Sandbox:
 
     # ---- Sync variants ----
 
-    create_sync = staticmethod(make_sync(create.__func__))  # type: ignore[attr-defined]
-    connect_sync = staticmethod(make_sync(connect.__func__))  # type: ignore[attr-defined]
-    list_sync = staticmethod(make_sync(list.__func__))  # type: ignore[attr-defined]
-    kill_by_id_sync = staticmethod(make_sync(kill_by_id.__func__))  # type: ignore[attr-defined]
+    create_sync = make_classmethod_sync(create.__func__)  # type: ignore[attr-defined]
+    connect_sync = make_classmethod_sync(connect.__func__)  # type: ignore[attr-defined]
+    list_sync = make_classmethod_sync(list.__func__)  # type: ignore[attr-defined]
+    kill_by_id_sync = make_classmethod_sync(kill_by_id.__func__)  # type: ignore[attr-defined]
     kill_sync = make_sync(kill)
     close_sync = make_sync(close)
     run_code_sync = make_sync(run_code)

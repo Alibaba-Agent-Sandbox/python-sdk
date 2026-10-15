@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from agent_sandbox.api.capability import ResolvedCapabilities, resolve_capabilities
+from agent_sandbox.api.capability import (
+    ResolvedCapabilities,
+    resolve_capabilities,
+    resolve_capabilities_for,
+)
 from agent_sandbox.api.code import CodeContextModule
 from agent_sandbox.api.commands import CommandsModule
 from agent_sandbox.api.files import FilesModule
@@ -21,4 +25,5 @@ __all__ = [
     "NetworkModule",
     "ResolvedCapabilities",
     "resolve_capabilities",
+    "resolve_capabilities_for",
 ]

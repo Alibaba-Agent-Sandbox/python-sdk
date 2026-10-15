@@ -1,6 +1,6 @@
 # agent-sandbox-server
 
-**Server SDK.** This package runs *inside* a sandbox image. It is the HTTP service the image starts (default port 9000). It does not create the sandbox. Creating and calling the sandbox is the [client SDK](../client-sdk/README.md) or the `abx` CLI. Guide: [Server SDK](../docs/en/guide/server-sdk.md).
+**Server SDK.** This package runs *inside* a sandbox image. It is the HTTP service the image starts (default port 9000). It does not create the sandbox. Creating and calling the sandbox is the [client SDK](https://github.com/alibaba-agent-sandbox/python-sdk/blob/main/client-sdk/README.md) or the `abx` CLI. Guide: [Server SDK](https://github.com/alibaba-agent-sandbox/python-sdk/blob/main/docs/en/guide/server-sdk.md).
 
 It exposes files, processes, system info, a PTY terminal, optional dev tools / browser automation, and your own registered commands.
 
@@ -36,7 +36,7 @@ name for the endpoints that declare it. `core` is always on, the groups through 
 `system` start on, and `dev_tools`, `browser` and `agents` start off. Turn one on with
 `default_table().enable_group(CapabilityGroup.DEV_TOOLS)` in `commands.py`, with a policy
 `groups: [dev_tools]`, or with `ABX_SERVER_ENABLED_GROUPS=dev_tools` in the environment. See the
-[server API design](../docs/en/design/server-api.md).
+[server API design](https://github.com/alibaba-agent-sandbox/python-sdk/blob/main/docs/en/design/server-api.md).
 
 ## Develop
 

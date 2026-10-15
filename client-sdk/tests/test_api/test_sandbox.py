@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -9,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
+from agent_sandbox.api.capability import ResolvedCapabilities
 from agent_sandbox.api.sandbox import Sandbox
 from agent_sandbox.api.server_client import ServerClient
 from agent_sandbox.models.errors import CommandNotFoundError, ServerAPIError
@@ -367,6 +369,121 @@ class TestSandboxSyncVariants:
     def test_get_terminal_sync_exists(self) -> None:
         assert hasattr(Sandbox, "get_terminal_sync")
         assert callable(Sandbox.get_terminal_sync)
+
+    def test_sync_factories_pass_subclass(self) -> None:
+        """create_sync/connect_sync must inject cls. A staticmethod drops it."""
+        seen: dict[str, Any] = {}
+
+        class TypedSandbox(Sandbox):
+            @classmethod
+            async def create(cls, template: str = "base", **kwargs: Any) -> str:
+                seen["create_cls"] = cls
+                seen["template"] = template
+                return "created"
+
+            @classmethod
+            async def connect(cls, sandbox_id: str, **kwargs: Any) -> str:
+                seen["connect_cls"] = cls
+                seen["sandbox_id"] = sandbox_id
+                return "connected"
+
+            @classmethod
+            async def list(cls, **kwargs: Any) -> str:
+                seen["list_cls"] = cls
+                return "listed"
+
+            @classmethod
+            async def kill_by_id(cls, sandbox_id: str, **kwargs: Any) -> str:
+                seen["kill_cls"] = cls
+                seen["killed"] = sandbox_id
+                return "killed"
+
+        assert TypedSandbox.create_sync(template="my-alias") == "created"
+        assert seen["create_cls"] is TypedSandbox
+        assert seen["template"] == "my-alias"
+
+        assert TypedSandbox.connect_sync("sbx-123") == "connected"
+        assert seen["connect_cls"] is TypedSandbox
+        assert seen["sandbox_id"] == "sbx-123"
+
+        assert TypedSandbox.list_sync() == "listed"
+        assert seen["list_cls"] is TypedSandbox
+
+        assert TypedSandbox.kill_by_id_sync("sbx-123") == "killed"
+        assert seen["kill_cls"] is TypedSandbox
+        assert seen["killed"] == "sbx-123"
+
+        signature = inspect.signature(Sandbox.connect_sync)
+        assert "cls" not in signature.parameters
+        assert "sandbox_id" in signature.parameters
+
+    @pytest.mark.asyncio
+    async def test_create_tries_alias_then_platform_id(self) -> None:
+        info = make_sandbox_info(template="plat-id")
+        info.alias_name = "cached-alias"
+        seen: dict[str, Any] = {}
+
+        class _FakeEngine:
+            async def create(self, template: str, **kwargs: Any) -> SandboxInfo:
+                seen["template"] = template
+                return info
+
+        def _select(*_args: Any, **_kwargs: Any) -> tuple[None, None]:
+            return None, None
+
+        config = MagicMock()
+        config.sandbox_domain = "example.com"
+        http = MagicMock()
+
+        def _infra(**_kwargs: Any) -> tuple[Any, Any, Any, Any]:
+            return config, MagicMock(), http, MagicMock()
+
+        async def _resolve(*ids: str | None, **_kwargs: Any) -> ResolvedCapabilities:
+            seen["ids"] = ids
+            return ResolvedCapabilities(capabilities={"shell", "ports"}, matched=True)
+
+        with (
+            patch("agent_sandbox.api.sandbox._select_provider", _select),
+            patch("agent_sandbox.api.sandbox._build_infra", _infra),
+            patch("agent_sandbox.engine.client.Engine", _FakeEngine),
+            patch("agent_sandbox.api.sandbox.resolve_capabilities_for", _resolve),
+        ):
+            sb = await Sandbox.create(template="unique-alias", api_key="k")
+
+        assert seen["template"] == "unique-alias"
+        assert seen["ids"] == ("unique-alias", "plat-id", "cached-alias")
+        assert sb.capabilities == frozenset({"shell", "ports"})
+        assert type(sb) is Sandbox
+
+    @pytest.mark.asyncio
+    async def test_connect_tries_template_then_alias(self) -> None:
+        info = make_sandbox_info(template="plat-id")
+        info.alias_name = "cached-alias"
+        seen: dict[str, Any] = {}
+
+        def _select(*_args: Any, **_kwargs: Any) -> tuple[None, None]:
+            return None, None
+
+        protocol = AsyncMock()
+        protocol.connect.return_value = info
+        http = MagicMock()
+
+        def _infra(**_kwargs: Any) -> tuple[Any, Any, Any, Any]:
+            return MagicMock(), MagicMock(), http, protocol
+
+        async def _resolve(*ids: str | None, **_kwargs: Any) -> ResolvedCapabilities:
+            seen["ids"] = ids
+            return ResolvedCapabilities(capabilities={"files"}, matched=True)
+
+        with (
+            patch("agent_sandbox.api.sandbox._select_provider", _select),
+            patch("agent_sandbox.api.sandbox._build_infra", _infra),
+            patch("agent_sandbox.api.sandbox.resolve_capabilities_for", _resolve),
+        ):
+            sb = await Sandbox.connect("sbx-123", api_key="k")
+
+        assert seen["ids"] == ("plat-id", "cached-alias")
+        assert sb.capabilities == frozenset({"files"})
 
 
 class TestSandboxResourceParams:

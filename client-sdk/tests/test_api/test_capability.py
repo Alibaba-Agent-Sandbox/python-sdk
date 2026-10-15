@@ -13,6 +13,7 @@ import agent_sandbox.api.capability as capability_mod
 from agent_sandbox.api.capability import (
     ResolvedCapabilities,
     resolve_capabilities,
+    resolve_capabilities_for,
 )
 from agent_sandbox.api.code import CodeContextModule
 from agent_sandbox.api.commands import CommandsModule
@@ -208,12 +209,14 @@ class TestResolveCapabilities:
             local_yaml_path=str(yaml_file),
         )
         assert result.capabilities == {"shell", "files", "terminal"}
+        assert result.matched is True
 
     @pytest.mark.asyncio
     async def test_resolve_fallback_to_defaults(self) -> None:
         """When template is not found, use DEFAULT_CAPABILITIES."""
         result = await resolve_capabilities("nonexistent-template-xyz")
         assert result.capabilities == set(DEFAULT_CAPABILITIES)
+        assert result.matched is False
 
     @pytest.mark.asyncio
     async def test_remote_template_id_does_not_warn(self, caplog: pytest.LogCaptureFixture) -> None:
@@ -369,6 +372,78 @@ class TestResolveCapabilities:
 
         result = await resolve_capabilities("dir-name-ref")
         assert result.capabilities == {"shell", "ports"}
+
+    @pytest.mark.asyncio
+    async def test_unique_alias_without_cache_does_not_warn(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """A just-deployed alias has no local YAML. That miss is not a warning."""
+        cache = tmp_path / "templates"
+        cache.mkdir()
+        monkeypatch.setattr(capability_mod, "TEMPLATE_CACHE_DIR", cache)
+
+        with caplog.at_level("DEBUG", logger="agent_sandbox.api.capability"):
+            result = await resolve_capabilities_for("claude-code-alias-9f3a")
+
+        assert result.matched is False
+        assert result.capabilities == set(DEFAULT_CAPABILITIES)
+        assert "Could not resolve capabilities" not in caplog.text
+        assert "WARNING" not in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_alias_miss_then_platform_id_cache(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Cache keyed by the platform id is used when the alias itself misses."""
+        cache = tmp_path / "templates"
+        (cache / "plat123").mkdir(parents=True)
+        (cache / "plat123" / "template.yaml").write_text(
+            textwrap.dedent("""\
+                name: something-else
+                capabilities:
+                  - shell
+                  - ports
+            """)
+        )
+        monkeypatch.setattr(capability_mod, "TEMPLATE_CACHE_DIR", cache)
+
+        with caplog.at_level("WARNING", logger="agent_sandbox.api.capability"):
+            result = await resolve_capabilities_for(
+                "unique-alias",
+                "plat123",
+                "unique-alias",
+                "",
+                None,
+            )
+
+        assert result.matched is True
+        assert result.capabilities == {"shell", "ports"}
+        assert "Could not resolve capabilities" not in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_explicit_missing_yaml_still_warns(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        cache = tmp_path / "templates"
+        cache.mkdir()
+        monkeypatch.setattr(capability_mod, "TEMPLATE_CACHE_DIR", cache)
+        missing = tmp_path / "no-such-template.yaml"
+        with caplog.at_level("WARNING", logger="agent_sandbox.api.capability"):
+            result = await resolve_capabilities_for(
+                "alias",
+                local_yaml_path=str(missing),
+            )
+        assert result.matched is False
+        assert "Could not resolve capabilities" in caplog.text
 
 
 # =====================================================================

@@ -30,6 +30,9 @@ class ResolvedCapabilities(BaseModel):
     """The resolved capability set for a sandbox."""
 
     capabilities: set[str] = Field(default_factory=lambda: set(DEFAULT_CAPABILITIES))
+    #: True when a local ``template.yaml`` matched. False when the defaults
+    #: were used because nothing on disk matched.
+    matched: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -161,13 +164,82 @@ async def resolve_capabilities(
     1. If *local_yaml_path* is given, parse it directly.
     2. Scan ``~/.abx/templates/`` for a matching template name.
     3. **TODO(Phase2):** ``GET /templates/{id}`` metadata fallback.
+       The platform template payload has no capabilities field, so this
+       cannot be filled from ``GET /templates/{id}`` today.
     4. Fall back to :data:`DEFAULT_CAPABILITIES`. A cloud template id has no
        local file, so that fallback is debug-only. A missing explicit
        *local_yaml_path* still warns.
 
     Returns:
-        A :class:`ResolvedCapabilities` instance.
+        A :class:`ResolvedCapabilities` instance. ``matched`` is True only
+        when a local template was found.
     """
+    return await _resolve_capabilities(
+        template_id,
+        local_yaml_path=local_yaml_path,
+        log_fallback=True,
+    )
+
+
+async def resolve_capabilities_for(
+    *template_ids: str | None,
+    local_yaml_path: str | None = None,
+) -> ResolvedCapabilities:
+    """Resolve capabilities, trying each id until one local template matches.
+
+    ``Sandbox.create(template=alias)`` often has no
+    ``~/.abx/templates/<alias>/template.yaml``. After the platform responds,
+    ``SandboxInfo.template`` is the template id and may be the cache directory
+    name. The first id that matches wins. Empty and duplicate ids are skipped.
+    A complete miss stays at debug level (or one warning when an explicit
+    *local_yaml_path* was given) and uses :data:`DEFAULT_CAPABILITIES`.
+    """
+    ordered: list[str] = []
+    for raw in template_ids:
+        if isinstance(raw, str) and raw and raw not in ordered:
+            ordered.append(raw)
+
+    if local_yaml_path:
+        resolved = await _resolve_capabilities(
+            ordered[0] if ordered else None,
+            local_yaml_path=local_yaml_path,
+            log_fallback=False,
+        )
+        if resolved.matched:
+            return resolved
+        rest = ordered[1:]
+    else:
+        rest = ordered
+
+    for template_id in rest:
+        resolved = await _resolve_capabilities(
+            template_id,
+            local_yaml_path=None,
+            log_fallback=False,
+        )
+        if resolved.matched:
+            return resolved
+
+    if local_yaml_path:
+        logger.warning(
+            "Could not resolve capabilities for template %r from %s; "
+            "falling back to DEFAULT_CAPABILITIES",
+            ordered[0] if ordered else None,
+            local_yaml_path,
+        )
+    else:
+        shown: str | list[str] | None = ordered[0] if len(ordered) == 1 else ordered or None
+        logger.debug("No local template for %s; using DEFAULT_CAPABILITIES", shown)
+    return ResolvedCapabilities()
+
+
+async def _resolve_capabilities(
+    template_id: str | None,
+    *,
+    local_yaml_path: str | None,
+    log_fallback: bool,
+) -> ResolvedCapabilities:
+    """Single-id resolution. *log_fallback* is False when the caller will try more ids."""
     template: SandboxTemplate | None = None
 
     # 1. Explicit local path
@@ -211,18 +283,19 @@ async def resolve_capabilities(
 
     # 4. Fallback. A remote template id (the Express case) has no local YAML.
     if template is None:
-        if local_yaml_path:
-            logger.warning(
-                "Could not resolve capabilities for template %r from %s; "
-                "falling back to DEFAULT_CAPABILITIES",
-                template_id,
-                local_yaml_path,
-            )
-        else:
-            logger.debug(
-                "No local template for %r; using DEFAULT_CAPABILITIES",
-                template_id,
-            )
+        if log_fallback:
+            if local_yaml_path:
+                logger.warning(
+                    "Could not resolve capabilities for template %r from %s; "
+                    "falling back to DEFAULT_CAPABILITIES",
+                    template_id,
+                    local_yaml_path,
+                )
+            else:
+                logger.debug(
+                    "No local template for %r; using DEFAULT_CAPABILITIES",
+                    template_id,
+                )
         return ResolvedCapabilities()
 
     # Build result from the resolved template
@@ -232,4 +305,4 @@ async def resolve_capabilities(
     else:
         caps = set(DEFAULT_CAPABILITIES)
 
-    return ResolvedCapabilities(capabilities=caps)
+    return ResolvedCapabilities(capabilities=caps, matched=True)
