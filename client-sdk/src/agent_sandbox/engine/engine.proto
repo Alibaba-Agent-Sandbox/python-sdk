@@ -53,6 +53,8 @@ message SandboxState {
   string status = 3;
   string envd_url = 4;
   string envd_access_token = 5;
+  // Platform envdVersion. Empty when the create response omitted it.
+  string envd_version = 6;
 }
 
 message SandboxRef {

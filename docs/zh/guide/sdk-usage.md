@@ -18,6 +18,43 @@ from agent_sandbox.api.sandbox import Sandbox
 
 ---
 
+## 模板作者快速路径
+
+2026-10-15 在阿里云 Express（`alicloud-express`）上验证。模板是 generation 2，启动命令运行 `agent-sandbox-server`。`Sandbox.create(template=..., provider="alicloud-express")` 使用 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL` 和 `ABX_SANDBOX_DOMAIN`。`template` 可以是模板 id 或名称。
+
+```python
+import asyncio
+
+from agent_sandbox import Sandbox
+
+TEMPLATE = "hello-x"  # generation-2 模板的名称或 id
+
+
+async def main() -> None:
+    async with await Sandbox.create(
+        template=TEMPLATE, provider="alicloud-express", timeout=300
+    ) as sb:
+        assert await sb.run("hello", name="Bob") == "Hello, Bob!"
+        echoed = await sb.commands.run("echo hi", on_stdout=lambda text: None)
+        assert echoed.stdout == "hi\n" and echoed.exit_code == 0
+        await sb.files.write("/home/user/note.txt", "abc")
+        assert await sb.files.read("/home/user/note.txt") == "abc"
+        url = sb.network.get_url(9000)
+        headers = sb.network.get_access_headers()
+        # 用 headers 对 {url}/health 发 GET。/health 返回 200。
+
+
+asyncio.run(main())
+```
+
+`sandbox.run` 是调用命名命令的那一次调用，返回函数的值。`timeout=`（秒）是 HTTP 时限，不会传给函数。Shell 输出通过 `commands.run` 的 `on_stdout` / `on_stderr` 流式输出。命名命令不会把自己的 print 流出来；函数返回时调用才结束。
+
+名字不存在抛 `CommandNotFoundError`，消息里带有服务端列出的命令。参数错误抛 `CommandArgumentError`。命令函数抛出的异常是 `CommandExecutionError`（`error_type` 是异常类名）。上下文管理器会调用 `kill()`。
+
+部署：`abx template deploy . -y --generation 2 --start-cmd 'agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py' --ready-cmd 'agent-sandbox-server healthcheck --port 9000'`。完整步骤见 [Express 快速开始](express-quickstart.md)。
+
+---
+
 ## 创建与销毁
 
 ### 异步创建
@@ -377,7 +414,7 @@ for cmd in commands:
 result = await sandbox.run("dev", port=8080)   # 注册函数的返回值
 ```
 
-名字不存在抛 `CommandNotFoundError`；参数或执行错误抛 `ServerAPIError`。沙箱镜像必须运行 `agent-sandbox-server`（见下文）。裸 shell 命令用 `sandbox.commands.run(cmd)`，它不经过注册表。
+名字不存在抛 `CommandNotFoundError`（消息包含服务端列出的可用命令）。参数错误抛 `CommandArgumentError`。命令函数抛出的异常是 `CommandExecutionError`（同时是 `ServerAPIError`）。调用可能超过 30 秒时传入 `timeout=`。沙箱镜像必须运行 `agent-sandbox-server`（见下文）。裸 shell 命令，包括流式 stdout，用 `sandbox.commands.run(cmd)`，它不经过注册表。
 
 ---
 

@@ -1188,13 +1188,16 @@ class Sandbox:
         /,
         *,
         server_port: int = 9000,
+        timeout: float | None = None,
         **kwargs: Any,
     ) -> Any:
         """Call a named command registered on the sandbox's SandboxServer.
 
-        ``sandbox.run("name", x=1)`` is ``POST /commands/name`` with *kwargs* as the JSON
-        body; it returns the command's result value.  This is the only way to call a named
-        command.  For a raw shell command use ``sandbox.commands.run("echo hi")``.
+        ``await sandbox.run("hello", name="Bob")`` is ``POST /commands/hello`` and returns
+        the command's value (a string, number, list, or object). This is the one call that
+        runs a template command. A raw shell command is ``sandbox.commands.run``, which can
+        stream with ``on_stdout``. Named commands return when the function returns; pass
+        ``timeout`` when that may take longer than the default 30s HTTP timeout.
 
         The server must be running in the sandbox (see :meth:`start_server`).  A server
         protected by its own token needs ``sandbox.server_at(port, token=...).commands.run(...)``.
@@ -1202,6 +1205,7 @@ class Sandbox:
         Args:
             name: Registered command name.
             server_port: SandboxServer port (default 9000).  Not forwarded to the command.
+            timeout: HTTP timeout in seconds. Not forwarded to the command.
             **kwargs: Command arguments, sent as the JSON body.
 
         Returns:
@@ -1209,15 +1213,16 @@ class Sandbox:
 
         Raises:
             CommandNotFoundError: The server has no command *name*.
-            ServerAPIError: Argument validation or execution failed on the server.
+            CommandArgumentError: The arguments failed validation.
+            CommandExecutionError: The command function raised.
             ProviderFeatureNotSupportedError: The provider has no HTTP data plane.
             ConnectionError_: The SandboxServer is not reachable.
         """
         self._require_data_plane("named commands")
         if server_port == 9000:
-            return await self.server.commands.run(name, **kwargs)
+            return await self.server.commands.run(name, timeout=timeout, **kwargs)
         async with self.server_at(server_port) as client:
-            return await client.commands.run(name, **kwargs)
+            return await client.commands.run(name, timeout=timeout, **kwargs)
 
     def _require_data_plane(self, feature: str) -> None:
         """Named commands need an HTTP envd. Other URL schemes are refused before any I/O."""

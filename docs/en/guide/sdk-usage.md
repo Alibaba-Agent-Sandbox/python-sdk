@@ -18,6 +18,43 @@ from agent_sandbox.api.sandbox import Sandbox
 
 ---
 
+## Template author quick path
+
+Verified 2026-10-15 on Alibaba Cloud Express (`alicloud-express`) with a generation-2 template whose start command runs `agent-sandbox-server`. `Sandbox.create(template=..., provider="alicloud-express")` uses `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL`, and `ABX_SANDBOX_DOMAIN`. The template argument is the template id or its name.
+
+```python
+import asyncio
+
+from agent_sandbox import Sandbox
+
+TEMPLATE = "hello-x"  # name or id of a generation-2 template
+
+
+async def main() -> None:
+    async with await Sandbox.create(
+        template=TEMPLATE, provider="alicloud-express", timeout=300
+    ) as sb:
+        assert await sb.run("hello", name="Bob") == "Hello, Bob!"
+        echoed = await sb.commands.run("echo hi", on_stdout=lambda text: None)
+        assert echoed.stdout == "hi\n" and echoed.exit_code == 0
+        await sb.files.write("/home/user/note.txt", "abc")
+        assert await sb.files.read("/home/user/note.txt") == "abc"
+        url = sb.network.get_url(9000)
+        headers = sb.network.get_access_headers()
+        # GET {url}/health with headers. /health answers 200.
+
+
+asyncio.run(main())
+```
+
+`sandbox.run` is the one call for a named command. It returns the function's value. `timeout=` (seconds) is the HTTP limit for a slow command and is not passed to the function. Shell output streams through `on_stdout` / `on_stderr` on `commands.run`. A named command does not stream its own prints; it returns when the function returns.
+
+An unknown name raises `CommandNotFoundError` and lists the commands the server reported. Bad arguments raise `CommandArgumentError`. A command that raises raises `CommandExecutionError` (`error_type` is the exception class). The context manager calls `kill()`.
+
+Deploy the template with `abx template deploy . -y --generation 2 --start-cmd 'agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py' --ready-cmd 'agent-sandbox-server healthcheck --port 9000'`. Full steps: [Express quickstart](express-quickstart.md).
+
+---
+
 ## Create and Destroy
 
 ### Async Creation
@@ -377,7 +414,7 @@ for cmd in commands:
 result = await sandbox.run("dev", port=8080)   # the registered function's return value
 ```
 
-An unknown name raises `CommandNotFoundError`; argument or execution errors raise `ServerAPIError`. The sandbox image must run `agent-sandbox-server` (see below). For a bare shell command use `sandbox.commands.run(cmd)`; it never goes through the registry.
+An unknown name raises `CommandNotFoundError` (the message includes the server's available-command list). Bad arguments raise `CommandArgumentError`. A command that raises raises `CommandExecutionError` (also a `ServerAPIError`). Pass `timeout=` when the call may take longer than 30 seconds. The sandbox image must run `agent-sandbox-server` (see below). For a bare shell command, including streamed stdout, use `sandbox.commands.run(cmd)`; it never goes through the registry.
 
 ---
 

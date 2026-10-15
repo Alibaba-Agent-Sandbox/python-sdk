@@ -92,6 +92,7 @@ def _state(info: Any, *, envd_url: str | None = None, token: str | None = None) 
         status=status,
         envd_url=envd_url if envd_url is not None else (info.envd_url or ""),
         envd_access_token=token if token is not None else (info.envd_access_token or ""),
+        envd_version=getattr(info, "envd_version", None) or "",
     )
 
 

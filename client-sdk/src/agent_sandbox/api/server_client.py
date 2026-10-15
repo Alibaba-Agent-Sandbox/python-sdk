@@ -34,6 +34,8 @@ import httpx
 
 from agent_sandbox.api.server_capabilities import ServerCapabilities
 from agent_sandbox.models.errors import (
+    CommandArgumentError,
+    CommandExecutionError,
     CommandNotFoundError,
     CommandTimeoutError,
     ConnectionError_,
@@ -974,6 +976,21 @@ class ServerBrowserApi(_Api):
     console_sync = make_sync(console)
 
 
+def _command_error(cls: type[ServerAPIError], exc: ServerAPIError) -> ServerAPIError:
+    """Re-raise a command failure as a narrower ServerAPIError subclass."""
+    message = exc.message
+    if exc.error_type and exc.error_type not in message:
+        message = f"{exc.error_type}: {message}"
+    return cls(
+        message,
+        status_code=exc.status_code,
+        error_type=exc.error_type,
+        error_code=exc.error_code,
+        endpoint=exc.endpoint,
+        rule=exc.rule,
+    )
+
+
 class ServerCommandsApi(_Api):
     """Commands registered on the server (``/commands``)."""
 
@@ -981,23 +998,48 @@ class ServerCommandsApi(_Api):
         data = await self._c._request("list_commands", "GET", "/commands")
         return [ServerCommand.model_validate(c) for c in data.get("commands", [])]
 
-    async def run(self, name: str, /, **kwargs: Any) -> Any:
+    async def run(
+        self,
+        name: str,
+        /,
+        *,
+        timeout: float | None = None,
+        **kwargs: Any,
+    ) -> Any:
         """Invoke command *name*; returns its result value.
 
+        Args:
+            name: Registered command name.
+            timeout: HTTP timeout in seconds. The default is the client timeout
+                (30s). Not sent to the command.
+            **kwargs: Command arguments.
+
         Raises:
-            CommandNotFoundError: The server has no such command.
-            ServerAPIError: Argument validation or execution failed (HTTP 4xx/5xx).
+            CommandNotFoundError: The server has no such command. The message
+                includes the server's list of available commands when it sent one.
+            CommandArgumentError: The arguments failed validation (HTTP 400).
+            CommandExecutionError: The command function raised (HTTP 500).
         """
         try:
             data = await self._c._request(
-                "run_command", "POST", f"/commands/{quote(name, safe='')}", json_body=kwargs
+                "run_command",
+                "POST",
+                f"/commands/{quote(name, safe='')}",
+                json_body=kwargs,
+                timeout=timeout,
             )
         except ServerAPIError as exc:
             if exc.status_code == 404 and exc.error_code != "endpoint_disabled":
                 raise CommandNotFoundError(
                     name,
+                    detail=exc.message,
                     server_status="reachable but command not found (HTTP 404)",
                 ) from exc
+            if exc.status_code == 400:
+                raise _command_error(CommandArgumentError, exc) from exc
+            # 500 is the command function. 502/503 are the gateway, not the function.
+            if exc.status_code == 500:
+                raise _command_error(CommandExecutionError, exc) from exc
             raise
         return data.get("result")
 
