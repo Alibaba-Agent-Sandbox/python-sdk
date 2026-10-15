@@ -126,6 +126,26 @@ def _wait_for_text(port: int, session_id: str, needle: str) -> dict[str, Any]:
     pytest.fail(f"timed out waiting for {needle!r}: items={last_items} turns={last_turns}")
 
 
+def _wait_for_completed_turn(port: int, session_id: str) -> dict[str, Any]:
+    """The message text can land before the turn row flips to completed."""
+    deadline = time.time() + 15
+    last: Any = None
+    while time.time() < deadline:
+        status, turns, _ = _request(
+            port, "GET", f"/v1/agents/sessions/{session_id}/turns?limit=100&order=asc"
+        )
+        assert status == 200
+        last = turns
+        data = turns.get("data") or []
+        if data and data[-1].get("status") == "completed":
+            return turns
+        for turn in data:
+            if turn.get("status") in ("failed", "cancelled"):
+                pytest.fail(f"turn {turn.get('status')}: {turn.get('error')}")
+        time.sleep(0.05)
+    pytest.fail(f"timed out waiting for a completed turn: {last}")
+
+
 @pytest.fixture(autouse=True)
 def _isolate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     monkeypatch.setenv("ABX_AGENTS_PERSIST", "0")
@@ -221,11 +241,7 @@ class TestRoutesAgents:
                 items = _wait_for_text(port, session_id, needle)
                 assert any(needle in text for text in _message_texts(items))
 
-                status, turns, _ = _request(
-                    port, "GET", f"/v1/agents/sessions/{session_id}/turns?limit=100&order=asc"
-                )
-                assert status == 200
-                assert turns["data"]
+                turns = _wait_for_completed_turn(port, session_id)
                 assert turns["data"][-1]["status"] == "completed"
                 turn_id = turns["data"][-1]["id"]
                 status, one, _ = _request(
