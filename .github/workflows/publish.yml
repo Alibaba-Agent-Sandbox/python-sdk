@@ -3,6 +3,13 @@ name: Publish to PyPI
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build and twine-check only. Do not upload to PyPI.
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   publish:
@@ -10,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
+      contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -56,14 +64,26 @@ jobs:
       - name: Verify distributions
         run: twine check dist/*/*
 
+      - name: Record upload decision
+        id: publish
+        run: |
+          upload=true
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+            upload=false
+          fi
+          echo "upload=$upload" >> "$GITHUB_OUTPUT"
+          echo "event=${{ github.event_name }} dry_run=${{ inputs.dry_run }} upload=$upload"
+
       - name: Upload agent-sandbox-server to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: twine upload dist/server-sdk/*
+        if: steps.publish.outputs.upload == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/server-sdk
+          skip-existing: true
 
       - name: Upload agent-sandbox-client to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: twine upload dist/client-sdk/*
+        if: steps.publish.outputs.upload == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/client-sdk
+          skip-existing: true
