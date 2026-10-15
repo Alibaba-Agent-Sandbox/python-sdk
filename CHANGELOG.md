@@ -8,7 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
-> Next release: **0.3.0**. Both distributions (`agent-sandbox-client`, `agent-sandbox-server`) and the MCP server version are already set to `0.3.0`.
+## [0.3.0] - 2026-10-15
+
+Both distributions are **0.3.0**. The client on PyPI is `agent-sandbox-client` (import `agent_sandbox`). `agent-sandbox` is an unrelated project, so do not `pip install agent-sandbox`. The server distribution is `agent-sandbox-server`. Directories, the repository, and the CLI are unchanged.
+
+This release makes the SDK work on Alibaba Cloud Express generation 2: streaming RPCs use the Connect envelope when envd is 0.6 or newer, and `Sandbox.info.envd_version` is kept. Port 9000 does not send the sandbox access token to an unconfigured `agent-sandbox-server`. Named commands return the command value; unknown names, bad arguments, and command exceptions are typed errors. `Sandbox.create_sync` and `connect_sync` keep the class, including a subclass. The template-author quick path is in the SDK usage guide.
 
 ### Changed
 
