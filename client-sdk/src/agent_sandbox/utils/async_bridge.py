@@ -83,3 +83,33 @@ def make_sync(
     # Mark as sync wrapper for introspection
     wrapper._is_sync_wrapper = True  # type: ignore[attr-defined]
     return wrapper
+
+
+def make_classmethod_sync(
+    async_method: Callable[..., Coroutine[Any, Any, T]],
+) -> Any:
+    """Synchronous wrapper for an async classmethod.
+
+    ``staticmethod(make_sync(fn))`` does not inject ``cls``. A call such as
+    ``Sandbox.connect_sync(sandbox_id)`` then binds the id to ``cls`` and
+    raises ``TypeError``. This wrapper is a real classmethod, so subclasses
+    keep their type, and it dispatches through ``getattr(cls, name)`` so an
+    override of the async method is used.
+
+    Example:
+        class MyClass:
+            @classmethod
+            async def create(cls) -> MyClass:
+                return cls()
+
+            create_sync = make_classmethod_sync(create.__func__)
+    """
+    name = async_method.__name__
+
+    @functools.wraps(async_method)
+    def wrapper(cls: type[Any], *args: Any, **kwargs: Any) -> T:
+        bound = getattr(cls, name)
+        return run_sync(bound(*args, **kwargs))  # type: ignore[no-any-return]
+
+    wrapper._is_sync_wrapper = True  # type: ignore[attr-defined]
+    return classmethod(wrapper)
