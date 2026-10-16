@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- Add the Chinese counterpart of the historical OpenSandbox provider research archive, preserving its versioned evidence and current-adapter boundary.
+
 ### Fixed
 
 - Source-checkout installs with uv now resolve `agent-sandbox-server` to the local workspace member instead of failing with a missing `tool.uv.sources` entry. Published dependency pins are unchanged.
