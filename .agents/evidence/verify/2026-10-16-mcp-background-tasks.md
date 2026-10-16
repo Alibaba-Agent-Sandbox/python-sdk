@@ -2,8 +2,8 @@
 
 - Date: 2026-10-16
 - Change: [Issue #44](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/44),
-  [proposed decision](../../notes/proposed/feature/2026-10-16-mcp-background-tasks.md)
-- Result: PARTIAL — scoped implementation/cloud pass; local full CI retains baseline failures and remote CI is pending
+  [decision](../../notes/implemented/feature/2026-10-16-mcp-background-tasks.md)
+- Result: PARTIAL — scoped implementation/cloud/remote CI pass; local full CI retains baseline environment failures
 - Tested baseline: lifecycle PR #33, `3fd592bc9f1245d2ab49c41a34ba6aea52a03407`.
 - Upstream dependency accepted: PR #33 actually merged at `dcfbf14504bf000d2d0545da56feaef4a4c9f5e7`; task branch synchronized with main. No task runtime code changed in that upstream synchronization.
 - Package: source checkout, both Python distributions 0.3.0; Python 3.11, Linux.
@@ -44,6 +44,7 @@ handle. Native envd process behavior was tested before introducing the superviso
 | Double-package lint/format/typecheck | PASS | Server 56 and client 85 typed source files; final retention guard rechecked under client project configuration |
 | Wheel/sdist build and distribution validation | PASS | Final package verification recorded separately below |
 | Repository health | PASS, 106 checks / 1 warning / 0 failures | Existing recommended release-runbook warning |
+| GitHub implementation matrix | PASS, all 9 checks | Head `3761d9d3b217d6a6f72a8c5058694d205f8de6c3`; Python client/server 3.10/3.11/3.12, package build, secrets and Markdown links |
 | Hygiene / diff whitespace | PASS | No credentials or workstation paths in scoped tracked content |
 
 The eight baseline failures are two WebSocket upgrade cases, three raw HTTP
@@ -143,3 +144,12 @@ site-packages with source PYTHONPATH removed.
 | `e2e/test_10_mcp_tasks.py` | `c8533c46e992e59603826435a4dbee96101b33cf0b9c961851bc0bc7b552b451` |
 
 Original product roadmap: [Issue #45](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/45) remains open.
+
+## Remote verification
+
+Implementation checks: [full matrix](https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/38852774367), [Markdown links](https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/38852774404). All nine completed successfully.
+
+[PR #46](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/46) carries the
+accepted task slice. The final record/ADR update changes no product module; source
+fingerprints remain the implementation-head fingerprints. Its latest-head remote
+checks are verified in the PR before merge, without relabeling local failures.

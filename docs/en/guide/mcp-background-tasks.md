@@ -21,7 +21,7 @@ may already have finished. A submission whose response is uncertain returns
 sandbox; do not blindly resubmit work that may already have started.
 
 **Starting a task explicitly retains that sandbox on MCP disconnect.** Other
-sandboxes keep their normal session cleanup. No task tool extends platform TTL;
+sandboxes keep their normal session cleanup. Task handlers do not request a TTL extension;
 the existing sandbox deadline can stop a task before its requested timeout.
 Subsequent ordinary execution/file tools keep their existing renewal policy.
 Retention applies to the entire sandbox, including any other work sharing it.
@@ -82,7 +82,8 @@ An omitted `sandbox_id` at start requires an existing session default. It never
 creates one implicitly. Encoded JSON/quoting expansion is capped at 96 KiB before
 any remote connection. Unexpected fields and malformed task IDs are rejected.
 Task query/cancel connections are closed after use and never become session
-shutdown ownership; they use the SDK's normal authorized provider connect path.
+shutdown ownership; they use the SDK's normal authorized provider connect path. Other providers may
+resume paused instances through that path; their lifecycle behavior still applies.
 
 Logs and atomic status files live in a private OS-user directory inside the
 sandbox. They survive MCP session/process replacement while that sandbox lives;

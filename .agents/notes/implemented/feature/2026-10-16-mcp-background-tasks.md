@@ -1,6 +1,6 @@
 # Decision: Sandbox-lifetime reconnectable Python MCP background tasks
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -23,7 +23,7 @@ package in the sandbox beyond Python 3, a shell and Linux process APIs.
 
 Explicit background submission retains only that sandbox until its existing
 platform TTL on MCP disconnect. Other synchronous resources keep normal cleanup.
-Read/cancel connections close without adopting resources or renewing TTL. Commands
+Read/cancel connections close without adopting resources or requesting TTL renewal. Commands
 sharing a retained sandbox share its retention and OS trust boundary. Results
 survive MCP process replacement while the sandbox lives, never sandbox destruction.
 
@@ -91,3 +91,10 @@ exit/logs from fresh managers, cancels another task and destroys the owned sandb
 - Stacked on the lifecycle slice, [PR #33](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/33).
 
 - Original roadmap remains open: [Issue #45](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/45).
+
+## Implementation
+
+The scoped task feature passed independent source/process review, actual Express
+full-suite and separate-process reconnect acceptance, and all nine GitHub checks
+on implementation head `3761d9d3b217d6a6f72a8c5058694d205f8de6c3`. Local baseline
+failures and broader product/provider exclusions remain recorded in the evidence.
