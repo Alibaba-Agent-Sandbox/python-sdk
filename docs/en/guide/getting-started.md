@@ -28,6 +28,19 @@ The `abx` CLI is not part of the Python package (there is no `[cli]` extra); it 
 (`agent_sandbox.server`) is the separate `agent-sandbox-server` package (`pip install agent-sandbox-server`); `agent-sandbox-client`
 depends on it, so installing the client provides it too.
 
+### Working from a source checkout
+
+From the repository root, with a virtual environment activated, install both
+local distributions and the development tools:
+
+```bash
+uv pip install -e ./server-sdk -e "./client-sdk[dev]"
+```
+
+The root uv workspace resolves the client's runtime dependency to `server-sdk/`.
+No `--no-sources` workaround is needed. Regular `pip install` accepts the same
+editable arguments; published packages retain the matching server version pin.
+
 ## 2. Configure the API Key
 
 There are three ways to configure credentials. When a call actually needs the key, this is the order (highest first). The full table is in [Configuration — Credential resolution](../reference/configuration.md#credential-resolution).

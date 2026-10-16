@@ -5,3 +5,6 @@
 
 [tool.uv.workspace]
 members = ["client-sdk", "server-sdk"]
+
+[tool.uv.sources]
+agent-sandbox-server = { workspace = true }

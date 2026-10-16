@@ -31,6 +31,8 @@ cd python-sdk
 
 # 2. Install both packages in development mode (includes all extras + test/lint tooling)
 pip install -e ./server-sdk -e "./client-sdk[dev]"   # or: make dev
+# With uv, in an activated virtual environment:
+uv pip install -e ./server-sdk -e "./client-sdk[dev]"
 
 # 3. Install pre-commit — its checks are invoked automatically by .githooks/pre-commit
 pip install pre-commit   # or: make hooks
@@ -38,6 +40,10 @@ pip install pre-commit   # or: make hooks
 # 4. Verify your setup
 make test
 ```
+
+The root uv workspace maps `agent-sandbox-server` to `server-sdk/`, so the
+client uses the matching local runtime during development. No `--no-sources`
+workaround is needed. Published client metadata keeps the lockstep version pin.
 
 > **Note on Git hooks:** This repository ships `.githooks/` and uses it as the
 > hook entry point via `core.hooksPath=.githooks` (a local Git config).
