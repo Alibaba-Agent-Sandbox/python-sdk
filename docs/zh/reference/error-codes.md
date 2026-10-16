@@ -224,6 +224,7 @@ classDiagram
 
     FileOperationError <|-- FileNotFoundError_
     FileOperationError <|-- PermissionDeniedError
+    FileOperationError <|-- FileSizeLimitError
 
     NetworkError <|-- ConnectionError_
     NetworkError <|-- GitHubRateLimitError
@@ -251,6 +252,7 @@ classDiagram
     class FileOperationError { E4000 }
     class FileNotFoundError_ { E4001 }
     class PermissionDeniedError { E4002 }
+    class FileSizeLimitError { E4003 }
     class NetworkError { E5000 }
     class ConnectionError_ { E5001 }
     class GitHubRateLimitError { E5000 }
@@ -296,6 +298,7 @@ from agent_sandbox.models.errors import (
     CodeExecutionError,
     CapabilityNotSupportedError,
     FileOperationError,
+    FileSizeLimitError,
     FileNotFoundError_,
     PermissionDeniedError,
     NetworkError,

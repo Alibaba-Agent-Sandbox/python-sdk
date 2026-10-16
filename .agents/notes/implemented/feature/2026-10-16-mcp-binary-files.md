@@ -1,6 +1,6 @@
 # Decision: Bounded binary files through Python MCP
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -75,3 +75,10 @@ recording environment failures and native-provider skips separately.
 ## Evidence
 
 - [Verification](../../../evidence/verify/2026-10-16-mcp-binary-files.md)
+
+## Implementation
+
+Implemented source 0832e3526661379e1c5fe839324ff30c339c98bd passed real
+Express acceptance, independent review and all nine GitHub checks. The final
+records-only head must pass its own required checks before normal PR merge.
+This note does not assert a remote merge before that state is confirmed.
