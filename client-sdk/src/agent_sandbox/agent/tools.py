@@ -18,7 +18,15 @@ from agent_sandbox.utils.logging import get_logger
 logger = get_logger("agent.tools")
 
 _LIFECYCLE_TOOLS = frozenset(
-    {"create_sandbox", "list_sandboxes", "get_sandbox", "set_sandbox_timeout"}
+    {
+        "create_sandbox",
+        "list_sandboxes",
+        "get_sandbox",
+        "set_sandbox_timeout",
+        "start_task",
+        "get_task",
+        "cancel_task",
+    }
 )
 
 
@@ -248,6 +256,63 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
 ]
 
 # Quick lookup by name
+
+
+_TASK_HANDLE = {
+    "sandbox_id": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "task_id": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+    "stdout_offset": {"type": "integer", "minimum": 0, "maximum": 1048576},
+    "stderr_offset": {"type": "integer", "minimum": 0, "maximum": 1048576},
+    "limit": {"type": "integer", "minimum": 1, "maximum": 65536, "default": 16384},
+}
+TOOL_SCHEMAS.extend(
+    [
+        {
+            "name": "start_task",
+            "description": (
+                "Start a Linux/python3 background shell task. Explicitly retain its sandbox "
+                "on MCP disconnect until the existing sandbox TTL. Save sandbox_id/task_id "
+                "to reconnect; kill_sandbox still destroys all work. "
+                "Logs are capped at 1 MiB per stream."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "required": ["command"],
+                "additionalProperties": False,
+                "properties": {
+                    "command": {"type": "string", "minLength": 1, "maxLength": 65536},
+                    "sandbox_id": _TASK_HANDLE["sandbox_id"],
+                    "cwd": {"type": "string", "minLength": 1, "maxLength": 4096},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 3600, "default": 300},
+                },
+            },
+        },
+        *[
+            {
+                "name": name,
+                "description": description,
+                "inputSchema": {
+                    "type": "object",
+                    "required": ["sandbox_id", "task_id"],
+                    "additionalProperties": False,
+                    "properties": _TASK_HANDLE,
+                },
+            }
+            for name, description in [
+                (
+                    "get_task",
+                    "Read saved task status and byte-offset log pages while its sandbox lives.",
+                ),
+                (
+                    "cancel_task",
+                    "Cancel the task-owned group; return confirmed status and bounded logs.",
+                ),
+            ]
+        ],
+    ]
+)
+
+
 TOOL_SCHEMA_MAP: dict[str, dict[str, Any]] = {t["name"]: t for t in TOOL_SCHEMAS}
 
 
@@ -503,12 +568,36 @@ async def handle_kill_sandbox(
     return {"success": True, "sandbox_id": killed}
 
 
+async def handle_start_task(params: dict[str, Any], manager: SandboxManager) -> dict[str, Any]:
+    """Start a reconnectable background task using existing sandbox commands."""
+    from agent_sandbox.agent.tasks import start_task
+
+    return await start_task(params, manager)
+
+
+async def handle_get_task(params: dict[str, Any], manager: SandboxManager) -> dict[str, Any]:
+    """Read bounded saved task output without session ownership changes."""
+    from agent_sandbox.agent.tasks import task_operation
+
+    return await task_operation(params, manager)
+
+
+async def handle_cancel_task(params: dict[str, Any], manager: SandboxManager) -> dict[str, Any]:
+    """Request owned task-group cancellation without accepting arbitrary PIDs."""
+    from agent_sandbox.agent.tasks import task_operation
+
+    return await task_operation(params, manager, cancel=True)
+
+
 # Handler dispatch table
 TOOL_HANDLERS: dict[str, Any] = {
     "create_sandbox": handle_create_sandbox,
     "list_sandboxes": handle_list_sandboxes,
     "get_sandbox": handle_get_sandbox,
     "set_sandbox_timeout": handle_set_sandbox_timeout,
+    "start_task": handle_start_task,
+    "get_task": handle_get_task,
+    "cancel_task": handle_cancel_task,
     "run_code": handle_run_code,
     "run_command": handle_run_command,
     "read_file": handle_read_file,

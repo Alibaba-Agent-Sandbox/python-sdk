@@ -5,7 +5,7 @@ Implements the MCP Streamable HTTP transport (2025-06-18 specification):
 - ``GET  /mcp``  — returns 405 until SSE server notifications exist
 - ``DELETE /mcp`` — Session termination & sandbox cleanup
 
-Reuses the 7 P0 tools defined in :mod:`agent_sandbox.agent.tools` via
+Reuses the 13 tools defined in :mod:`agent_sandbox.agent.tools` via
 :class:`~agent_sandbox.agent.mcp.SandboxMCPServer` and
 :class:`~agent_sandbox.agent.mcp.SandboxManager`.
 
