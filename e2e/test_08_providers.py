@@ -176,16 +176,20 @@ def test_e2b_refuses_without_its_own_key() -> None:
     """The Express key must not be forwarded when the E2B key is absent."""
     if live.e2b_ready() == "":
         pytest.skip("ABX_E2B_API_KEY is set; the live test covers this provider")
-    from agent_sandbox.models.errors import InvalidAPIKeyError
+    from agent_sandbox.models.errors import InvalidAPIKeyError, InvalidCredentialsError
 
-    with pytest.raises(InvalidAPIKeyError):
+    with pytest.raises((InvalidAPIKeyError, InvalidCredentialsError)):
         live.run(live._create_only("e2b"))
 
 
 def test_container_refuses_without_its_own_endpoint() -> None:
     if live.container_ready() == "":
         pytest.skip("container endpoint is set; the live test covers this provider")
-    from agent_sandbox.models.errors import InvalidAPIKeyError, ProviderConfigError
+    from agent_sandbox.models.errors import (
+        InvalidAPIKeyError,
+        InvalidCredentialsError,
+        ProviderConfigError,
+    )
 
-    with pytest.raises((InvalidAPIKeyError, ProviderConfigError)):
+    with pytest.raises((InvalidAPIKeyError, InvalidCredentialsError, ProviderConfigError)):
         live.run(live._create_only("alicloud-container"))

@@ -77,6 +77,19 @@ eventual-consistency window. No IDE or new-image deployment is inferred.
 
 ## Environment knobs
 
+The server fixture follows `Sandbox.server_at`: the template-authored server has
+no configured token, so it does not receive the unrelated envd `X-Access-Token`.
+The CLI provider scenario uses `ABX_BIN` (which may include arguments) or `abx` on
+`PATH`; it never assumes a sibling source checkout. Missing expected report rows
+fail the scenario, including when no CLI executable is available.
+
+Install the catalog providers required for credential-refusal checks in an isolated
+test HOME before running the complete suite. Installation must keep consent and
+doctor verification enabled; a missing plugin cannot prove its credential boundary.
+Host-side `InvalidCredentialsError` and provider-side `InvalidAPIKeyError` are both
+valid credential refusals. Cube live acceptance requires an explicitly configured
+`ABX_CUBESANDBOX_BASE_URL`; an unrelated local port listener is insufficient.
+
 | Variable | Default | Meaning |
 |---|---|---|
 | `E2E_SANDBOX_TTL` | 300 | sandbox lifetime in seconds |

@@ -229,7 +229,10 @@ class ServerHandle:
         self.sandbox = sandbox
         self.port = port
         self.base = sandbox.network.get_url(port)
-        self.headers = sandbox.network.get_access_headers()
+        # Match Sandbox.server_at: the envd access token is not a credential
+        # for the unconfigured template server. Express forwards that header
+        # to the process, which rejects it instead of serving /commands.
+        self.headers: dict[str, str] = {}
 
     def request(self, method: str, path: str, **kwargs: Any):  # type: ignore[no-untyped-def]
         import httpx

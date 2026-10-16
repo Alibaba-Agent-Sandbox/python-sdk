@@ -46,3 +46,10 @@ The corrected head's complete matrix remains to be checked after publication.
 Repository health still reports the existing missing archive translation, and
 no complete Skills roadmap, hosted MCP service or other-provider cloud support
 is implied. PR 33 stays draft until the remaining definition-of-done gates pass.
+
+## Verified remote correction
+
+Commit `ade77f60f63d8b10ec5b5b3dd21cb2923cd13469` passed all nine checks, including
+both distributions on Python 3.10/3.11/3.12, package build, hygiene and Markdown.
+[Full CI run](https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/38846616610).
+The newer E2E-harness follow-up has separate evidence and receives its own latest-head matrix.

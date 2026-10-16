@@ -16,11 +16,15 @@ import asyncio
 import contextlib
 import os
 import re
+import shlex
+import shutil
 import socket
 import subprocess
 import sys
 import time
 import urllib.request
+import uuid
+from urllib.parse import urlsplit
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -28,8 +32,10 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-# One socket per process so a leftover engine cannot swallow these calls.
-os.environ["ABX_ENGINE_SOCKET"] = f"/tmp/abx-provider-e2e-{os.getpid()}.sock"
+# Preserve an explicit isolated socket; otherwise avoid PID reuse between runs.
+os.environ.setdefault(
+    "ABX_ENGINE_SOCKET", f"/tmp/abx-provider-e2e-{os.getpid()}-{uuid.uuid4().hex[:12]}.sock"
+)
 
 _SECRET_RE = re.compile(
     r"(?i)(e2b_[A-Za-z0-9_\-]{6,}|sk-[A-Za-z0-9]{6,}|LTAI[A-Za-z0-9]{6,}|"
@@ -525,13 +531,22 @@ def cube_ready() -> str:
     missing = _installed("cubesandbox")
     if missing:
         return missing
-    if _tcp("127.0.0.1", 3000):
+    configured = (os.environ.get("ABX_CUBESANDBOX_BASE_URL") or "").strip()
+    if not configured:
+        return (
+            "ABX_CUBESANDBOX_BASE_URL is not set. Select an authorized CubeAPI "
+            "explicitly; another service listening on port 3000 is not CubeAPI readiness."
+        )
+    try:
+        parsed = urlsplit(configured)
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    except ValueError:
+        return "ABX_CUBESANDBOX_BASE_URL is not a valid HTTP(S) origin."
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return "ABX_CUBESANDBOX_BASE_URL is not a valid HTTP(S) origin."
+    if _tcp(parsed.hostname, port):
         return ""
-    return (
-        "CubeAPI is not listening on 127.0.0.1:3000. "
-        "The one-click installer stopped because / is overlay, not XFS, "
-        "and this container's init is tini rather than systemd."
-    )
+    return "The explicitly configured CubeAPI endpoint is not reachable."
 
 
 def e2b_ready() -> str:
@@ -585,7 +600,9 @@ def row(report: Report, feature: str) -> Row:
 
 
 def assert_report(report: Report, *, expect_pass: set[str], expect_refused: set[str]) -> None:
-    bad: list[str] = []
+    required = expect_pass | expect_refused
+    recorded = {item.feature for item in report.rows}
+    bad = [f"{feature} was not executed" for feature in sorted(required - recorded)]
     for row in report.rows:
         if row.feature in expect_pass and row.status != "pass":
             bad.append(f"{row.feature} {row.status} {row.detail}")
@@ -596,17 +613,25 @@ def assert_report(report: Report, *, expect_pass: set[str], expect_refused: set[
         raise AssertionError(f"{report.provider} sandbox={report.sandbox_id}\n{joined}")
 
 
+def cli_command() -> list[str]:
+    """Resolve the standalone CLI, without assuming a sibling source checkout."""
+    configured = (os.environ.get("ABX_BIN") or "").strip()
+    if configured:
+        return shlex.split(configured)
+    installed = shutil.which("abx")
+    return [installed] if installed else []
+
+
 def cli_express() -> Report:
-    """Express through the CLI. The CLI only loads this provider."""
+    """Exercise the built-in Express provider through the standalone CLI."""
     report = Report("alicloud-express-cli")
     root = Path(__file__).resolve().parents[1]
-    tsx = root.parent / "cli" / "node_modules" / ".bin" / "tsx"
-    entry = root.parent / "cli" / "src" / "bin" / "abx.ts"
-    if not tsx.is_file():
-        report.add("cli", "blocked", f"tsx missing at {tsx}")
+    launcher = cli_command()
+    if not launcher:
+        report.add("cli", "blocked", "CLI unavailable: set ABX_BIN or install abx on PATH")
         return report
     env = os.environ.copy()
-    env["ABX_ENGINE_SOCKET"] = f"/tmp/abx-cli-e2e-{os.getpid()}.sock"
+    env["ABX_ENGINE_SOCKET"] = f"/tmp/abx-cli-e2e-{os.getpid()}-{uuid.uuid4().hex[:12]}.sock"
     local = Path(f"/tmp/abx-cli-upload-{os.getpid()}.txt")
     downloaded = Path(f"/tmp/abx-cli-download-{os.getpid()}.txt")
     local.write_text("cli-upload", encoding="utf-8")
@@ -614,8 +639,8 @@ def cli_express() -> Report:
 
     def run(args: list[str], timeout: int = 240) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            [str(tsx), str(entry), *args],
-            cwd=str(root.parent / "cli"),
+            [*launcher, *args],
+            cwd=str(root),
             env=env,
             text=True,
             capture_output=True,

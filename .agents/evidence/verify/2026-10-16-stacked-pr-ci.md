@@ -43,3 +43,10 @@ No cloud resources were created. No existing developer work was staged.
 This change triggers existing validation; it does not establish clean public
 package installation, hosted MCP deployment, IDE acceptance or other-provider cloud support.
 Existing product and repository-health limitations remain blocking where applicable.
+
+## Verified remote correction
+
+Commit `ade77f60f63d8b10ec5b5b3dd21cb2923cd13469` passed all nine checks, including
+both distributions on Python 3.10/3.11/3.12, package build, hygiene and Markdown.
+[Full CI run](https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/38846616610).
+The newer E2E-harness follow-up has separate evidence and receives its own latest-head matrix.

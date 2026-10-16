@@ -60,6 +60,16 @@ cd e2e && python -m pytest -m "not e2e_slow" -ra               # 等同 `make e2
 
 ## 环境变量
 
+服务fixture遵循 `Sandbox.server_at`：模板服务未配置令牌，不向它发送无关的envd
+`X-Access-Token`。CLI provider场景使用 `ABX_BIN`（可包含参数）或PATH中的abx，
+不依赖相邻源码目录。缺失预期报告项会使场景失败，包括未找到CLI的情况。
+
+完整套件的凭据拒绝检查需要先在隔离测试HOME中安装对应catalog provider；安装须保留
+同意和doctor验证。缺少插件不能证明该插件的凭据隔离边界。
+宿主前置 `InvalidCredentialsError` 和provider内部 `InvalidAPIKeyError` 都是有效的凭据
+拒绝。Cube实云验收须明确配置 `ABX_CUBESANDBOX_BASE_URL`，不能用其他本地服务的
+端口监听推断CubeAPI已就绪。
+
 | 变量 | 默认值 | 含义 |
 |---|---|---|
 | `E2E_SANDBOX_TTL` | 300 | 沙箱存活秒数 |
