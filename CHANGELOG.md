@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added — provider management commands
 
+- `Sandbox.create(volume_mounts={"/mnt/data": "existing-volume-name"})` mounts existing Volumes with the built-in provider. Strict validation runs before provider/engine I/O; unsupported providers fail with E8004. The existing gRPC lifecycle forwards the hint and emits the official `volumeMounts: [{name, path}]` creation payload; empty maps preserve prior requests. Real storage acceptance is still pending.
 - `agent_sandbox.providers.commands.list_commands`, `get_command` and `run_command` call the shared Node engine for provider-specific resource operations. Writes and deletes require explicit confirmation; command POST requests are never replayed.
 - Plugin manifests validate bounded `provider-commands/1` descriptors and include commands in installation/update consent; existing manifests and receipts default to an empty command list.
 

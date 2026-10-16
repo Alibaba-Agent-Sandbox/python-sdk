@@ -6,6 +6,41 @@
 
 默认提供方不再声明 `storage.mount`、`ports.domain` 或 `network.vpc`：标准沙箱协议没有这些 token 对应的可调用操作。提供方资源管理通过已声明的命令完成；存储卷管理命令不代表支持运行中沙箱挂载。
 
+## 创建沙箱时挂载已有 Volume
+
+内置提供方的 `Sandbox.create()`（以及 `create_sync`）接受 `volume_mounts`：
+
+```python
+from agent_sandbox import Sandbox
+
+async with await Sandbox.create(
+    provider="alicloud-express",
+    template="my-template",
+    volume_mounts={"/mnt/data": "existing-volume-name"},
+) as sandbox:
+    print(await sandbox.files.list("/mnt/data"))
+```
+
+字典表示“沙箱内绝对路径 → 已有 Volume **名称**”，不是 Volume ID。Volume 和 API Key
+必须属于同一 Team，使用相同地域。OSS 应配置 Volume 的 RAM 角色；显式传入
+`metadata["fc.sandbox.auth.role"]` 时以该角色为准。存储权限、模板与运行时前提和各存储类型
+的限制见[官方挂载指南](https://help.aliyun.com/zh/agent-sandbox/mount-oss-volume-1)。
+
+路径必须是规范化的绝对 Unix 路径，不能为 `/`，不能包含尾部分隔符、空段、隐藏目录段、
+`.`/`..`、NUL 或前后空白。`/bin`、`/opt`、`/var`、`/dev` 及其子路径会被拒绝。
+名称必须是非空字符串，不能包含前后空白或 NUL。无效参数会在构造提供方和引擎 I/O 前失败；
+其他提供方的非空挂载参数会在加载插件实现前返回 E8004。省略参数或传空字典不改变原请求。
+
+这是创建参数，与资源管理命令独立，不增加可移植的 `storage.mount` 协议或运行时追加挂载 API。
+Python 内置生命周期仍通过本地 gRPC 引擎：新增的 `CreateRequest.volume_mounts` 传递字典，
+由现有 Python 协议序列化为 `POST /sandboxes` 的
+`"volumeMounts": [{"name": "existing-volume-name", "path": "/mnt/data"}]`。
+非空参数会先检查 `Health.supported_create_options` 是否包含 `volume_mounts`；旧的运行中引擎
+会在 `Create` 前返回 E8004 和升级、重启提示，不会自动替换引擎，避免旧 protobuf 实现静默
+忽略挂载参数。未请求挂载的调用保留原行为。
+提供方管理命令继续使用共享 Node HTTP 引擎。本地 gRPC/HTTP 回归覆盖参数链路；真实 OSS
+挂载、读写及清理尚需验证，不能据此声称云端验收通过。
+
 ## Python API
 
 ```python

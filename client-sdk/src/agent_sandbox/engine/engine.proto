@@ -25,6 +25,7 @@ message HealthStatus {
   string protocol = 1;
   int32 pid = 2;
   string version = 3;
+  repeated string supported_create_options = 4;
 }
 
 message CreateRequest {
@@ -45,6 +46,8 @@ message CreateRequest {
   // Empty or "alicloud-express" uses the platform API. Any other id is rejected.
   // Catalog providers, including opensandbox, are not engine adapters.
   string provider = 15;
+  // Existing Volume names indexed by absolute sandbox mount path.
+  map<string, string> volume_mounts = 16;
 }
 
 message SandboxState {

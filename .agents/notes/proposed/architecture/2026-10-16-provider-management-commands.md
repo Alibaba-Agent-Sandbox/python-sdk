@@ -30,6 +30,23 @@ no callable standard sandbox protocol exists for those tokens. Resource commands
 and do not imply live mounting or networking support. Other feature declarations stay scoped
 outside this decision.
 
+Final review found a documented creation-time mount contract that resource management alone
+did not cover. Add `Sandbox.create(volume_mounts: dict[str, str] | None = None)` for the built-in
+provider, mapping normalized absolute sandbox paths to existing Volume names. Validate before
+provider lookup/construction and reject non-built-in nonempty hints with E8004 before plugin
+loading. Preserve omitted/empty request behavior. This is an explicit creation option, not a
+portable mount feature or runtime attach protocol. The built-in Python lifecycle still uses
+the existing gRPC engine: add map field 16 to `CreateRequest`, regenerate its Python descriptor
+with the matching protobuf compiler, and serialize `volumeMounts: [{name, path}]` in the
+existing Python `SandboxConfig`/REST protocol. Do not reroute established sessions to Node.
+The official OSS guide supplies name/Team/role semantics and mount restrictions; storage-type
+limits remain backend-specific rather than applying an OSS-only limit to every Volume.
+Add `HealthStatus.supported_create_options` field 4 and advertise `volume_mounts`; a client
+with nonempty hints requires that capability before sending Create. An older live engine
+otherwise silently discards unknown protobuf fields and could create an unmounted sandbox.
+Missing support fails E8004 with an upgrade/restart hint without replacing the existing
+engine. No-mount calls do not require this additive capability handshake.
+
 ## API Design
 
 - `Manifest.commands: tuple[ProviderCommand, ...]`; descriptors contain `id`, `description`,
@@ -72,6 +89,14 @@ no replay after disconnect or HTTP 401. Existing manifest/installer/registry tes
 Run both package suites, lint/type checks, repository health/hygiene and real-component
 E2E; record unavailable prerequisites and pre-existing gate failures separately.
 
+Independent agents may review disjoint contracts and source in parallel, with one coordinator
+reconciling cross-language changes. Suites that share fixed loopback ports run sequentially.
+Each test invocation gets its own temporary root and unique Unix socket; PID-only names do
+not provide isolation across namespaced tool processes sharing a filesystem. Final review
+demonstrated that a reused default engine can miss a test's in-process HTTP patches; the same
+integration tests pass on a unique socket. Preserve failed runs, retry with proven isolation,
+and never kill or replace an unknown process to obtain a pass.
+
 ## Acceptance criteria
 
 1. Python structural descriptor rules match the shared host and changed descriptors require consent.
@@ -81,7 +106,11 @@ E2E; record unavailable prerequisites and pre-existing gate failures separately.
 5. Built-in feature reporting excludes the three standard operations without callable protocols.
 6. English/Chinese guides, public exports, changelog and honest verification evidence are provided.
 7. Required CI, review and real-component gates pass before merge; this record stays proposed meanwhile.
+8. Built-in create retains mount hints across the public API, real local gRPC transport and
+   HTTP wire serialization; strict validation and provider gating precede resource I/O.
+   A real Volume mount/read/write/cleanup run is still an outstanding acceptance gate.
 
 ## Evidence
 
 [Verification record](../../../evidence/verify/2026-10-16-provider-management-commands.md).
+[Final review and mount parity](../../../evidence/verify/2026-10-16-provider-management-final-review.md).

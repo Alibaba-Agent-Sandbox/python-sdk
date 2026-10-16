@@ -47,6 +47,7 @@ Third-party providers are not part of this suite's cloud run. They follow the sa
 | `test_06_server_sdk.py` | `agent-sandbox-server` inside a real sandbox (template `python-hello`): `/commands`, `/files/*`, `/process/*`, `/capabilities`, `/system/info`, `/env`, `/ports`, custom routes |
 | `test_07_declarative.py` | `@sandbox` declarative remote execution |
 | `test_08_providers.py` | Live calls for `opensandbox`, `alicloud-express` (SDK and CLI), `cubesandbox`, `e2b`, and `alicloud-container`. A provider with no backend of its own is skipped and does not receive the Express key. |
+| `test_09_volume_mounts.py` | Opt-in existing Volume acceptance: prove an exact kernel mount, exclusively create/read/remove one sentinel, then release the tagged sandbox. Ordinary directories cannot pass. |
 
 Markers: `e2e` (everything), `e2e_slow` (> ~60 s),
 `known_issue` (strict xfail documenting a recorded bug, see [KNOWN-ISSUES.md](KNOWN-ISSUES.md)).
@@ -73,6 +74,10 @@ Markers: `e2e` (everything), `e2e_slow` (> ~60 s),
 | `E2E_SANDBOX_TTL` | 300 | sandbox lifetime in seconds |
 | `E2E_SERVER_TEMPLATE` | `python-hello` | template with `agent-sandbox-server` preinstalled |
 | `E2E_RUN_ID` | generated | tag value (`e2e=<id>`) |
+| `ABX_E2E_VOLUME_MOUNT` | unset; skips | Set to `1` to permit the Volume acceptance test. |
+| `ABX_E2E_VOLUME_NAME` | unset; skips | Existing writable Volume name in the API key's Team/region, with its storage role configured. No Volume is provisioned or deleted. |
+| `ABX_E2E_VOLUME_MOUNT_PATH` | unset; skips | Dedicated canonical sandbox path under `/mnt/abx-e2e/`. This narrower path rule belongs to the test harness. |
+| `E2E_VOLUME_TEMPLATE` | unset; skips | Template meeting the storage/runtime requirements in the [official mount guide](https://help.aliyun.com/zh/agent-sandbox/mount-oss-volume-1). |
 
 ## Adding a test
 

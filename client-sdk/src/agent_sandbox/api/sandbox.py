@@ -22,7 +22,12 @@ from agent_sandbox.api.capability import (
     ResolvedCapabilities,
     resolve_capabilities_for,
 )
-from agent_sandbox.models.sandbox import SandboxConfig, SandboxInfo, SandboxStatus
+from agent_sandbox.models.sandbox import (
+    SandboxConfig,
+    SandboxInfo,
+    SandboxStatus,
+    validate_volume_mounts,
+)
 from agent_sandbox.models.template import DEFAULT_CAPABILITIES
 from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
 from agent_sandbox.protocol.filesystem import FilesystemProtocol
@@ -500,6 +505,7 @@ class Sandbox:
         request_timeout: float | None = None,
         metadata: dict[str, str] | None = None,
         envs: dict[str, str] | None = None,
+        volume_mounts: dict[str, str] | None = None,
         cpu: int | None = None,
         memory: int | None = None,
         disk: int | None = None,
@@ -533,6 +539,9 @@ class Sandbox:
                 value does not work around platform-side create stalls — it
                 only controls how long the client waits before timing out.
             metadata: Arbitrary metadata key-value pairs.
+            volume_mounts: Absolute sandbox paths mapped to existing Volume names,
+                for example ``{"/mnt/data": "my-volume"}``. Supported only by the
+                built-in provider; the Volume and API key must belong to the same Team.
             envs: Environment variables injected into the envd root process.
                 These are inherited by all subsequent ``commands.run()``,
                 ``run_code()``, and terminal sessions.  Per-call overrides
@@ -578,6 +587,17 @@ class Sandbox:
                 f"request_timeout must be a positive number of seconds, got {request_timeout!r}"
             )
 
+        mounts = validate_volume_mounts(volume_mounts)
+        if mounts:
+            from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+            from agent_sandbox.providers.base import Provider
+            from agent_sandbox.providers.registry import resolve_provider_id
+
+            provider_id = resolve_provider_id(
+                provider.id if isinstance(provider, Provider) else provider
+            )
+            if provider_id != BUILTIN_PROVIDER_ID:
+                raise ProviderFeatureNotSupportedError(provider_id, "volume_mounts")
         prov, _ = _select_provider(provider)
         if prov is not None:
             return await cls._create_via_provider(
@@ -619,6 +639,7 @@ class Sandbox:
         try:
             from agent_sandbox.engine.client import Engine
 
+            mount_options: dict[str, Any] = {"volume_mounts": mounts} if mounts else {}
             # The built-in provider's platform HTTP call runs inside the engine.
             info = await Engine().create(
                 template,
@@ -635,6 +656,7 @@ class Sandbox:
                 memory=memory,
                 disk=disk,
                 gpu=gpu,
+                **mount_options,
             )
 
             envd_token = EnvdTokenManager(info.envd_access_token, sandbox_id=info.sandbox_id)
@@ -1162,7 +1184,7 @@ class Sandbox:
             config=self._config,
             cols=cols,
             rows=rows,
-            shell=shell,
+            shell=shell,  # nosec B604 - terminal executable argument, not subprocess shell=True
         )
 
     # ---- Named commands (registered on the in-sandbox SandboxServer) ----

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 import stat
-import subprocess
+import subprocess  # nosec B404 - fixed local Python module launcher, no shell
 import sys
 import threading
 from pathlib import Path
@@ -21,7 +21,7 @@ from agent_sandbox.engine import engine_pb2 as pb2
 from agent_sandbox.engine import engine_pb2_grpc as pb2_grpc
 from agent_sandbox.engine.rpcutil import reraise
 from agent_sandbox.engine.server import ProviderEngine
-from agent_sandbox.models.sandbox import SandboxInfo, SandboxStatus
+from agent_sandbox.models.sandbox import SandboxInfo, SandboxStatus, validate_volume_mounts
 
 _pb2: Any = pb2
 _grpc_mod: Any = pb2_grpc
@@ -41,7 +41,8 @@ def socket_path() -> Path:
     if override:
         return Path(override)
     if os.environ.get("PYTEST_CURRENT_TEST"):
-        return Path(f"/tmp/abx-pytest-{os.getpid()}.sock")
+        # Test-only Unix socket; _harden applies owner-only permissions after binding.
+        return Path(f"/tmp/abx-pytest-{os.getpid()}.sock")  # nosec B108
     return Path.home() / ".abx" / "engine.sock"
 
 
@@ -136,7 +137,8 @@ def _spawn(path: Path) -> None:
     }
     env["ABX_ENGINE_SOCKET"] = str(path)
     env["ABX_ENGINE_PARENT"] = "1"
-    subprocess.Popen(  # noqa: S603
+    # Fixed local module argv and a constrained environment; no shell interpretation.
+    subprocess.Popen(  # noqa: S603  # nosec B603 - fixed Python module argv, no shell
         [sys.executable, "-m", "agent_sandbox.engine"],
         env=env,
         stdin=subprocess.DEVNULL,
@@ -199,8 +201,14 @@ class Engine:
         disk: int | None = None,
         gpu: str | None = None,
         provider: str | None = None,
+        volume_mounts: dict[str, str] | None = None,
     ) -> SandboxInfo:
         """Create a sandbox. The engine performs the platform HTTP call."""
+        mounts = validate_volume_mounts(volume_mounts)
+        if mounts and provider not in {None, "", "alicloud-express"}:
+            from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+
+            raise ProviderFeatureNotSupportedError(provider, "volume_mounts")
         request = _pb2.CreateRequest(
             template=template,
             timeout=timeout,
@@ -217,10 +225,23 @@ class Engine:
             disk=disk or 0,
             gpu=gpu or "",
             provider=provider or "",
+            **({"volume_mounts": mounts} if mounts else {}),
         )
         try:
             async with _channel() as channel:
-                state = await _grpc_mod.ProviderEngineStub(channel).Create(request)
+                stub = _grpc_mod.ProviderEngineStub(channel)
+                if mounts:
+                    health = await stub.Health(_pb2.Empty(), timeout=5.0)
+                    if "volume_mounts" not in getattr(health, "supported_create_options", ()):
+                        from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+
+                        raise ProviderFeatureNotSupportedError(
+                            "alicloud-express",
+                            "volume_mounts",
+                            message="The running Python engine does not support volume_mounts.",
+                            suggestion="Upgrade and restart the local Python provider engine.",
+                        )
+                state = await stub.Create(request)
         except grpc.aio.AioRpcError as exc:
             reraise(exc)
         return _state(state)

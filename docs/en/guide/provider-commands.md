@@ -7,6 +7,47 @@ adding top-level CLI commands or changing another provider's command set.
 
 The default provider does not advertise `storage.mount`, `ports.domain` or `network.vpc`: the standard sandbox protocol has no callable operation for those tokens. Provider resource management uses declared commands; a volume management command does not imply live sandbox mounting.
 
+## Mount an existing Volume when creating a sandbox
+
+The built-in provider accepts `volume_mounts` in `Sandbox.create()` (and `create_sync`):
+
+```python
+from agent_sandbox import Sandbox
+
+async with await Sandbox.create(
+    provider="alicloud-express",
+    template="my-template",
+    volume_mounts={"/mnt/data": "existing-volume-name"},
+) as sandbox:
+    print(await sandbox.files.list("/mnt/data"))
+```
+
+The dictionary maps absolute sandbox paths to existing **Volume names**, not IDs. The Volume
+and API key must use the same Team and region. For OSS, configure the Volume's RAM role;
+`metadata["fc.sandbox.auth.role"]` overrides that role when supplied. Check the
+[official mount guide](https://help.aliyun.com/zh/agent-sandbox/mount-oss-volume-1)
+for storage permissions, template/runtime prerequisites and storage-specific limits.
+
+Paths must be normalized absolute Unix paths other than `/`, with no trailing separator,
+empty or hidden component, `.`/`..`, NUL or surrounding whitespace. `/bin`, `/opt`, `/var`,
+`/dev` and their descendants are rejected. Names must be nonblank strings without surrounding
+whitespace or NUL. Invalid hints fail before provider construction or engine I/O. Nonempty
+hints for other providers fail with E8004 before loading their implementation. Omitted/empty
+dictionaries preserve existing request payloads.
+
+This creation hint is separate from management commands and does not add a portable
+`storage.mount` protocol or runtime attach API. Python's built-in lifecycle retains its local
+gRPC engine: additive `CreateRequest.volume_mounts` carries the dictionary, and the existing
+Python protocol serializes `POST /sandboxes` as
+`"volumeMounts": [{"name": "existing-volume-name", "path": "/mnt/data"}]`.
+For nonempty hints, the client first checks `Health.supported_create_options` contains
+`volume_mounts`. An older live engine fails with E8004 and an upgrade/restart suggestion,
+before `Create`; it is never replaced automatically. This prevents older protobuf handlers
+from silently ignoring a mount request. Calls without mounts retain the existing behavior.
+Provider management commands continue using the shared Node HTTP engine. Mount wiring is
+covered by local gRPC/HTTP regression tests; a real OSS mount/read/write/cleanup run remains
+required before claiming cloud acceptance.
+
 ## Python API
 
 ```python
