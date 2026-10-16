@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
-### Documentation
+### Added
 
 - Add the Chinese counterpart of the historical OpenSandbox provider research archive, preserving its versioned evidence and current-adapter boundary.
 

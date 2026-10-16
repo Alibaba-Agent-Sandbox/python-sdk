@@ -32,6 +32,14 @@ being mistaken for current in-engine delivery or a new backend run.
   The Chinese example now uses `REPLACE_ME`, explicitly explained in the page;
   the hook was rerun rather than bypassed.
 
+## Independent review
+
+The root reviewer compared all numbered headings and fenced blocks, the opening
+and closing sections, and the principal API tables against the English source.
+Review passed: the historical 2026-10-13 boundary, current-adapter links and
+operation semantics are preserved. Remote checks are evaluated on the latest
+published head before merging, separately from this local review.
+
 ## Cleanup and limitations
 
 No cloud resource was created and no Docker command was executed for this prose
