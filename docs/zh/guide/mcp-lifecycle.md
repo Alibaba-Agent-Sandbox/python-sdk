@@ -51,6 +51,7 @@ metadata、任意 lifecycle 对象或端点 URL。列表结果的 `sandboxes` �
 而不是 HTTP 请求超时。可选 `sandbox_id` 省略时使用已有默认沙箱，不会隐式创建。
 `Sandbox.set_timeout()` 成功后同步更新会话续期策略，后续执行/文件工具按该时长续期。
 平台更新失败时保留之前的策略。
+若更新尚未完成时会话已关闭，后续完成不会恢复续期所有权，也不会重建已清除的会话记录。
 外部 ID 通过 `Sandbox.set_timeout_by_id()` 直接修改平台超时，在 `finally` 中关闭临时
 控制面基础设施，不额外调用 connect/resume，不接管资源或在会话关闭时销毁它。
 

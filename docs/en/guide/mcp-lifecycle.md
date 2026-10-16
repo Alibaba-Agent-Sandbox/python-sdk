@@ -58,6 +58,8 @@ from now, not HTTP request timeout. Optional `sandbox_id` resolves to the existi
 it never implicitly creates a sandbox. Successful `Sandbox.set_timeout()` also updates the
 session renewal policy: subsequent execution/file tools renew using this duration. A failed
 platform update leaves the previous policy intact.
+If the session closes while an update is in flight, its completion does not restore
+renewal ownership or recreate a cleared session entry.
 For an explicit ID outside the session, only the platform timeout is changed: the
 `Sandbox.set_timeout_by_id()` call uses temporary control-plane infrastructure
 closed in `finally`, without an additional connect/resume operation or shutdown ownership.

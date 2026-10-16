@@ -62,6 +62,13 @@ secret enters lifecycle failures or logs; real E2E and required repository gates
 
 ## Implementation
 
+Enabling complete CI for the stacked PR exposed an optional-value narrowing error
+in the timeout-completion guard under mypy 2.4.0. The guard now explicitly checks
+the managed entry for `None` before comparing ownership and writing renewal state.
+The existing shutdown-race regression remains passing; the original guard fails
+a real type-check negative control. See the follow-up
+[CI typing verification](../../../evidence/verify/2026-10-16-mcp-ci-typing.md).
+
 Implemented and real Express handler scenarios pass. Remains proposed while
 complete repository gates and full MCP/Skills product scope are outstanding.
 

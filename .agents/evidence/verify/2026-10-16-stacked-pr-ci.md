@@ -26,7 +26,13 @@ results are recorded below after publication.
 - `git diff --check`: PASS.
 - `bash scripts/check-no-local-paths.sh`: PASS.
 - Repository health: FAIL; 105 PASS, one warning, one pre-existing missing archive translation failure. New records did not add failures.
-- Remote matrix execution pending publication; no remote pass claimed yet.
+- Remote run [38846255951](https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/38846255951)
+  started all six Python package/version jobs plus hygiene and the gated package build.
+  All three client jobs exposed the same previously unexecuted mypy `union-attr`
+  error in the MCP timeout ownership guard; this failed run is retained as evidence.
+- The typing correction and real Express rerun are recorded separately in
+  [MCP CI typing verification](2026-10-16-mcp-ci-typing.md). A triggered matrix is
+  not a successful one; the corrected head must pass before product acceptance.
 
 ## Cleanup
 

@@ -259,8 +259,9 @@ class SandboxManager:
         )
         await sandbox.set_timeout(timeout)
         async with self._state_lock:
-            if self._sandboxes.get(sandbox.id) is sandbox:
-                self._lifetimes[sandbox.id] = timeout
+            managed = self._sandboxes.get(sandbox.id)
+            if managed is not None and managed is sandbox:
+                self._lifetimes[managed.id] = timeout
         return str(sandbox.id)
 
     async def kill_sandbox(self, sandbox_id: str | None = None) -> str | None:

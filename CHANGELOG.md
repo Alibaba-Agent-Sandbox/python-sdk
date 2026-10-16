@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **MCP timeout typing.** Keep the explicit managed-instance guard valid under the CI type checker while preserving shutdown ownership and renewal cleanup.
+
 - **Stacked pull request validation.** The complete CI matrix now runs for pull requests targeting feature branches as well as `main`; push validation remains limited to `main`.
 
 - MCP external metadata/timeout operations dispatch directly through `Sandbox.get_info_by_id` / `set_timeout_by_id`, closing temporary infrastructure in `finally`; they never call provider connect/resume and cannot wake paused instances through that connect path. Late managed TTL completion after shutdown cannot restore renewal state.
