@@ -144,7 +144,7 @@ A provider declares the features it implements. Calling something it lacks raise
 | `storage.mount`, `network.vpc` | object-storage mounts; VPC attachment |
 | `sessions` | the sandbox survives the process and can be re-attached by id |
 
-`alicloud-express` implements all 18 features. `abx provider list` shows the declared features of every provider on one line (`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`; `python -m agent_sandbox.providers list` prints the same), and `abx provider info <id>` shows the full list.
+`alicloud-express` explicitly declares 15 adapter features; generic mount/VPC/custom-domain operations are not implemented by this adapter. Registration alone does not prove a callable API, CLI coverage or runtime/account availability. `abx provider list` shows the declared features of every provider on one line (`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`; `python -m agent_sandbox.providers list` prints the same), and `abx provider info <id>` shows the full list.
 
 The manifest flag is enforced at run time, for every provider kind:
 
@@ -165,7 +165,7 @@ Installing a provider does not enable every SDK method or every `abx` command. T
 |---|---|---|
 | `sandbox.lifecycle` | `Sandbox.create`, `connect`, `list`, `kill`, `info` | `create`, `list`, `info`, `kill`, `connect` |
 | `sandbox.timeout` | `set_timeout` | `sandbox timeout` |
-| `sandbox.pause` | `pause`, `resume` | `sandbox pause`, `sandbox resume` |
+| `sandbox.pause` | `pause`, `resume` | Express standard CLI only; generic provider CLI entry missing |
 | `exec.run` | `commands.run`, `sandbox.run` | `exec`, `run` |
 | `exec.stream` | `commands.stream` | `exec --stream` |
 | `process.manage` | `commands.list`, `kill`, `send_stdin` | `sandbox process ...` |

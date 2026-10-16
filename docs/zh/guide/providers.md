@@ -142,7 +142,7 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 | `storage.mount`、`network.vpc` | 对象存储挂载；VPC 接入 |
 | `sessions` | 沙箱在进程结束后仍存在，可按 id 重新连接 |
 
-`alicloud-express` 实现了全部 18 个特性。`abx provider list` 用一行显示每个提供方声明的特性（`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`；`python -m agent_sandbox.providers list` 输出相同），`abx provider info <id>` 显示完整清单。
+`alicloud-express` 明确声明自身的 15 项适配能力；当前适配器未实现通用挂载/VPC/自定义域名操作。注册本身不能证明 API 可调用、CLI 入口已接通或当前运行时/账号实际可用。`abx provider list` 用一行显示每个提供方声明的特性（`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`；`python -m agent_sandbox.providers list` 输出相同），`abx provider info <id>` 显示完整清单。
 
 清单里的特性标志在运行时对每一种提供方都会被强制执行：
 
@@ -163,7 +163,7 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 |---|---|---|
 | `sandbox.lifecycle` | `Sandbox.create`、`connect`、`list`、`kill`、`info` | `create`、`list`、`info`、`kill`、`connect` |
 | `sandbox.timeout` | `set_timeout` | `sandbox timeout` |
-| `sandbox.pause` | `pause`、`resume` | `sandbox pause`、`sandbox resume` |
+| `sandbox.pause` | `pause`、`resume` | 仅极速版标准 CLI；通用 Provider CLI 入口尚未接入 |
 | `exec.run` | `commands.run`、`sandbox.run` | `exec`、`run` |
 | `exec.stream` | `commands.stream` | `exec --stream` |
 | `process.manage` | `commands.list`、`kill`、`send_stdin` | `sandbox process ...` |
