@@ -5,7 +5,7 @@
 
 ## Project Overview
 
-**Agent Sandbox** (`agent-sandbox-client` on PyPI) is a Python SDK for the Alibaba Cloud FC Agent Sandbox service. It is the **runtime** client (create, use, kill sandboxes); templates are built and deployed with `abx template build|deploy`. Method names are E2B-shaped to ease migration; it is not a drop-in replacement (see `docs/en/guide/migrate-from-e2b.md`).
+**Agent Sandbox** (`agent-sandbox-client` on PyPI) is a Python SDK for the Alibaba Cloud FC Agent Sandbox service. The standard API includes runtime and Template clients for Alibaba-supported E2B endpoints. Project image/server workflows build and deploy with `abx template build|deploy`. Method names are E2B-shaped to ease migration; the standard API follows Alibaba-supported E2B behavior (see `docs/en/guide/migrate-from-e2b.md`).
 
 This repository (`python-sdk`) holds the **Python SDK only**, split into two PyPI distributions that share the `agent_sandbox` namespace and are **released in lockstep** (same version number):
 
@@ -33,9 +33,11 @@ python-sdk/
 │   │   ├── models/                # Data models: config, errors, sandbox, template, session, filesystem, process
 │   │   ├── transport/             # HTTP/WS transport, auth, codec, retry, streaming
 │   │   ├── protocol/              # Protocol abstractions: sandbox, filesystem, process, terminal, port, code_interpreter
+│   │   ├── _standard/              # Owned pinned E2B protocol source, sync/async clients and models (MIT)
+│   │   ├── code_interpreter/       # Standard Jupyter interpreter and context APIs
 │   │   ├── api/                   # High-level API: Sandbox, files, code, commands, network, capability, session_manager, server client
 │   │   ├── agent/                 # AI agent tooling: MCP server, tool definitions
-│   │   ├── compat/                # E2B migration helper (partial; re-exports Sandbox)
+│   │   ├── compat/                # Standard Sandbox and AsyncSandbox import aliases
 │   │   ├── declarative/           # @sandbox decorator, config, serializer
 │   │   ├── session/               # Session persistence: local (LocalSessionStore)
 │   │   └── utils/                 # Async bridge, secret store, logging, registry, retry
@@ -253,3 +255,9 @@ See [`.agents/notes/README.md`](.agents/notes/README.md) for the full template a
 9. **Layer dependency constraint.** Lower layers must never import upper layers (L0 must not import L1+, L1 must not import L2+, etc.). If you need a type from a higher layer, refactor it downward or use dependency injection.
 10. **Maintain `__all__` exports.** When adding or removing any public symbol in a module's `__init__.py`, update the `__all__` list to match.
 11. **Pydantic alias convention.** Model fields that map to camelCase API responses use `Field(alias="camelCaseName")`. Always use `model_config = ConfigDict(populate_by_name=True)` so both the alias and the Python snake_case name work.
+
+## Standard migration contract
+
+Read `docs/en/guide/migrate-from-e2b.md` before changing standard APIs. Preserve the pinned behavior, synchronous/asynchronous distinction, pagination, return models, errors and terminal semantics. Project extensions use explicit entry points. Generated/source-ported code has provenance and licenses; update its reproducible source process when changing it. Do not imply unsupported Alibaba capabilities work because a client symbol exists.
+
+ProviderSandbox preserves explicit resource ownership: unknown/empty namespaces fail before backend requests. Each adapter declares implemented features independently of the host registry; metadata is not proof of runtime/account availability. Standard E2B protocol clients do not switch backend protocol when ABX_PROVIDER changes. See docs/en/guide/providers.md.

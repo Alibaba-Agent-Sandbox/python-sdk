@@ -21,7 +21,7 @@ except SandboxError as e:
 | 错误码 | 异常类 | 含义 | 建议 | 触发场景 |
 |--------|--------|------|------|----------|
 | E1000 | `AuthenticationError` | 认证失败（基类） | — | 认证相关通用错误 |
-| E1001 | `InvalidAPIKeyError` | API Key 无效或缺失 | 检查 `ABX_SANDBOX_API_KEY` 环境变量，或传入 `sandbox_api_key` 参数 | 未配置任何 API Key 即调用需认证的 API |
+| E1001 | `InvalidAPIKeyError` | API Key 无效或缺失 | 检查 `E2B_API_KEY` 环境变量，或传入 `sandbox_api_key` 参数 | 未配置任何 API Key 即调用需认证的 API |
 | E1002 | `TokenExpiredError` | 认证令牌已过期 | SDK 应自动刷新 token；持续出现请检查系统时钟同步 | AK/SK 临时令牌过期且自动刷新失败 |
 | E1003 | `InvalidCredentialsError` | AK/SK 凭证无效 | 检查 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET` 环境变量 | AK/SK 为空或格式错误 |
 

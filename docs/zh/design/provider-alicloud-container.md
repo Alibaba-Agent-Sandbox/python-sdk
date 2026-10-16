@@ -23,7 +23,7 @@ sb = await Sandbox.create(
 | API Key，请求头 `X-API-Key` | `ABX_ALICLOUD_CONTAINER_API_KEY` |
 | `native` 或 `private` | `ABX_ALICLOUD_CONTAINER_PROTOCOL`，默认 `native` |
 
-`native` 的 API 是 `https://api.{domain}`，数据面是 `https://{port}-{id}.{domain}`。`private` 的 API 是 `https://{domain}/kruise/api`，数据面是 `https://{domain}/kruise/{id}/49983`。不读取极速版的 `ABX_SANDBOX_API_KEY`。
+`native` 的 API 是 `https://api.{domain}`，数据面是 `https://{port}-{id}.{domain}`。`private` 的 API 是 `https://{domain}/kruise/api`，数据面是 `https://{domain}/kruise/{id}/49983`。不读取极速版的 `E2B_API_KEY`。
 
 已接入：`sandbox.lifecycle`、`sandbox.timeout`、`sandbox.pause`、`exec.run`、`exec.stream`、`process.manage`、`files.rw`、`code.interpret`、`ports.url`。`pty` 不声明：sandbox-manager 没有 `/terminal`。
 

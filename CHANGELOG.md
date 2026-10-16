@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- Align Alibaba Express standard lifecycle, process, file and interpreter behavior with the pinned E2B contract; use canonical `E2B_*` connection settings.
+- Reserve create positional arguments for templates and natural language for `--prompt` in the CLI; document migration, source attribution and backend capability limits.
+
+
 ### Added
 
 - Python MCP bounded binary `upload_file`/`download_file` (1 MiB, strict Base64, SHA256) over both transports; SDK `files.read_bytes(max_bytes=...)` optionally limits streamed downloads and raises `FileSizeLimitError` (E4003), while its existing default remains unchanged.
@@ -18,6 +24,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Add the Chinese counterpart of the historical OpenSandbox provider research archive, preserving its versioned evidence and current-adapter boundary.
 
 ### Fixed
+
+- Bind explicit native Express selection to its own configuration even when another provider is the default; reject malformed/reserved qualified sandbox namespaces before backend requests.
+
+- Reject unknown/empty provider-qualified sandbox references before backend requests; declare Express adapter features explicitly instead of inheriting the whole host registry.
 
 - **Real-cloud E2E acceptance.** The server fixture keeps envd credentials separate from the unconfigured template server; provider reports reject missing checks and the CLI scenario resolves `ABX_BIN` or an installed `abx` instead of assuming a sibling checkout.
 

@@ -9,7 +9,7 @@ pip install agent-sandbox-client
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async with await Sandbox.create(template="python-base") as sandbox:
     result = await sandbox.commands.run("echo hello")

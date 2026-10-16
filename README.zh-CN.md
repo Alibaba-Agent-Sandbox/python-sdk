@@ -2,6 +2,8 @@
 
 [English](README.md) | **中文**
 
+[标准 E2B 迁移契约](docs/zh/guide/migrate-from-e2b.md)
+
 <!-- badges -->
 [![CI](https://github.com/alibaba-agent-sandbox/python-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/alibaba-agent-sandbox/python-sdk/actions/workflows/ci.yml)
 [![PyPI version](https://img.shields.io/pypi/v/agent-sandbox-client)](https://pypi.org/project/agent-sandbox-client/)
@@ -10,16 +12,15 @@
 
 > 为 AI Agent 打造的云沙箱 —— 秒级创建、执行、管理隔离环境。
 
-**Agent Sandbox** 是沙箱的 Python SDK。默认提供方是阿里云极速版（`alicloud-express`，函数计算）。OpenSandbox、容器版、CubeSandbox 和 E2B 都是 `awesome-providers` 里的目录 `node` 插件（`provider.mjs`）。用 `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes`（或 `python -m agent_sandbox.providers install registry:<id> --yes`）安装。装好之后，`abx --provider <id>` 和 `Sandbox.create(provider="<id>")` 都能用。Python SDK 通过本机引擎（`abx provider engine serve`；`abx` 在 `PATH` 里或由 `ABX_BIN` 指定）使用 `node` 提供方。CLI 加载极速版，以及已安装的 `node`、`exec` 和 `rest` 插件。它是**运行时**客户端：
-创建、使用、销毁沙箱。模板的构建和部署由 CLI 的 `abx template build|deploy` 完成。SDK 的方法名参考了 E2B，
-方便 E2B 代码迁移，但它不是 E2B 的直接替代品（见[从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md)）。
+**Agent Sandbox** 是沙箱的 Python SDK。默认提供方是阿里云极速版（`alicloud-express`，函数计算）。OpenSandbox、容器版、CubeSandbox 和 E2B 都是 `awesome-providers` 里的目录 `node` 插件（`provider.mjs`）。用 `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes`（或 `python -m agent_sandbox.providers install registry:<id> --yes`）安装。装好之后，`abx --provider <id>` 和 `ProviderSandbox.create(provider="<id>")` 都能用。Python SDK 通过本机引擎（`abx provider engine serve`；`abx` 在 `PATH` 里或由 `ABX_BIN` 指定）使用 `node` 提供方。CLI 加载极速版，以及已安装的 `node`、`exec` 和 `rest` 插件。标准接口包含同步／异步运行时和 Template 客户端；项目 Provider／Server 模板流程通过 CLI 的 `abx template build|deploy` 完成。SDK 的方法名参考了 E2B，
+方便 E2B 代码迁移，标准接口遵循阿里云支持版本的行为契约（见[从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md)）。
 
 本仓库（`python-sdk`）包含 **Python SDK**，以两个版本同步发布的 PyPI 分发包提供。命令行工具 `abx` 是独立的
 Node.js 项目，位于 [`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) 仓库（见[相关：abx CLI](#相关abx-cli)）。
 
 | 目录 | PyPI 分发包 | 导入路径 | 用途 |
 |------|-------------|----------|------|
-| [`client-sdk/`](client-sdk/) | `agent-sandbox-client` | `agent_sandbox` | 异步客户端 SDK：`Sandbox`、文件、命令、代码解释器、命名命令、声明式 `@sandbox`、Agents API 客户端、MCP Server、E2B 迁移辅助 |
+| [`client-sdk/`](client-sdk/) | `agent-sandbox-client` | `agent_sandbox` | 同步/异步客户端 SDK：`Sandbox`、`AsyncSandbox`、`ProviderSandbox`、文件、命令、代码解释器、命名命令、声明式 `@sandbox`、Agents API 客户端、MCP Server、E2B 迁移辅助 |
 | [`server-sdk/`](server-sdk/) | `agent-sandbox-server` | `agent_sandbox.server` | 容器侧运行时：运行在沙箱镜像*内部*的常驻 HTTP 服务（默认端口 9000） |
 
 两个分发包共享 `agent_sandbox` 命名空间（client 提供 `agent_sandbox/__init__.py`，server 只包含
@@ -42,12 +43,12 @@ Node.js 项目，位于 [`cli`](https://github.com/alibaba-agent-sandbox/agent-s
 
 ## Client SDK
 
-- **异步优先** —— `Sandbox.create()`，Shell 执行、代码解释、文件读写、端口转发、WebSocket 流。
+- **同步与异步标准客户端** —— `Sandbox.create()` 与 `AsyncSandbox.create()`，Shell 执行、代码解释、文件读写、端口转发与 WebSocket 流；Provider／Server 扩展使用异步 `ProviderSandbox`。
 - **三种执行原语** —— `sandbox.commands.run()`（裸 Shell）、`sandbox.run_code()`（代码解释器）、`sandbox.run("name", **kwargs)`（调用 Server SDK 注册的命令）。
 - **MCP Server** —— 将沙箱操作暴露为 MCP 工具，供 LLM Agent 调用。
 - **声明式装饰器** —— `@sandbox` 将普通函数变为远程沙箱执行，自动序列化。
 - **会话持久化** —— 跨运行保存和恢复沙箱状态。
-- **E2B 风格方法名** —— `agent_sandbox.compat` 覆盖一部分 E2B 表面，见[从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md)。
+- **E2B 风格方法名** —— `agent_sandbox.compat` 导出标准 Sandbox 与 AsyncSandbox，见[从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md)。
 
 ## Server SDK
 
@@ -82,11 +83,27 @@ pip install -e ./server-sdk -e "./client-sdk[dev]"
 
 ## 快速开始
 
-第一次创建之前先设置 `ABX_SANDBOX_API_KEY`。SDK 不读取 `E2B_API_KEY`。下面的例子用 `python-base`，因为这张镜像注册了 `hello`。不传 template 的 `Sandbox.create()` 使用 `base`。
+配置 `E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN`，按[迁移指南](docs/zh/guide/migrate-from-e2b.md)替换 E2B 导入。
+
+```python
+from agent_sandbox.code_interpreter import Sandbox
+
+sandbox = Sandbox.create(template="code-interpreter-v1")
+try:
+    print(sandbox.commands.run("printf hello").stdout)
+    print(sandbox.run_code("1 + 1").text)
+finally:
+    sandbox.kill()
+```
+
+## Provider 与 Server 扩展
+
+
+第一次创建之前先设置 `E2B_API_KEY`。SDK 读取这三个标准连接变量。下面的例子用 `python-base`，因为这张镜像注册了 `hello`。不传 template 的 `Sandbox.create()` 使用 `base`。
 
 ```python
 import asyncio
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async def main():
     async with await Sandbox.create(template="python-base") as sandbox:

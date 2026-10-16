@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 from agent_sandbox.agent.mcp import SandboxManager
 from agent_sandbox.models.sandbox import SandboxInfo, SandboxStatus
 

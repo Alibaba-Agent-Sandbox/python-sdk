@@ -5,7 +5,7 @@
 > Product requirement: *all template builds should be based on the Alibaba Cloud Agent Sandbox
 > (FC Agent Sandbox) base image.*
 >
-> **Update.** The Python client no longer builds images: `Image`, `DockerBuilder`, `Sandbox.deploy` and `agent_sandbox.api.base_image` were removed. The base-image contract in section 3, the lint and the Dockerfile scaffold are owned by the `abx` CLI (`abx template init|build|deploy`). Sections 4, 5, 7 and 8 describe what remains in this repository.
+> **Update.** The Python client no longer builds images: `Image`, `DockerBuilder`, `Sandbox.deploy` and `agent_sandbox.api.base_image` were removed. The base-image contract in section 3, the lint and the Dockerfile scaffold are owned by the `abx` CLI (`abx template scaffold|build|deploy`). Sections 4, 5, 7 and 8 describe what remains in this repository.
 
 ## 1. What the base image is (evidence)
 
@@ -91,7 +91,7 @@ Documented in `server-api.md` and enforced by the CLI's template lint:
 
 ## 5. CLI-side changes (recorded in `cli-followups.md`)
 
-Node scaffold `abx template init` (FROM official base, scaffold per section 3); deploy path
+Node scaffold `abx template scaffold` (FROM official base, scaffold per section 3); deploy path
 (wheel injection, `envd_inject` auto-choice, `start_cmd`/`ready_cmd`);
 `template.yaml` `server:` compile; AI template-guide prompt (must start FROM the official base,
 never override ENTRYPOINT, use `agent-sandbox-server serve`).

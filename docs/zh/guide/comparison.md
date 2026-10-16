@@ -32,7 +32,7 @@
 | **网络访问** | `sandbox.network.get_host()` | `sandbox.get_host()` | 内置 URL 路由 |
 | **终端 (PTY)** | `sandbox.get_terminal()` | `sandbox.terminal.start()` | `modal shell` |
 | **E2B 迁移辅助** | `from agent_sandbox.compat import Sandbox`（部分对应） | 原生 | N/A |
-| **认证方式** | 随提供方变化。默认提供方用 `ABX_SANDBOX_API_KEY`，阿里云极速版另用官方 AK/SK | API Key | Token |
+| **认证方式** | 随提供方变化。默认提供方用 `E2B_API_KEY`，阿里云极速版另用官方 AK/SK | API Key | Token |
 
 ### 代码示例
 
@@ -148,7 +148,7 @@ result = analyze(my_data)
 
 ### E2B 风格的 API
 
-Agent Sandbox 使用 E2B 风格的方法名，E2B 代码通常只需少量改动即可迁移。它不是 E2B 的直接替代品：配置、认证和部分行为都不同。
+Agent Sandbox 使用 E2B 风格的方法名，E2B 代码通常只需少量改动即可迁移。标准接口遵循阿里云支持版本的行为契约；导入及后端限制见迁移指南。
 
 ```python
 # 迁移的起点：改导入，然后按指南逐项处理

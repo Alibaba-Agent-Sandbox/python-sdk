@@ -53,7 +53,7 @@ sandbox = await Sandbox.create(
 **CLI：**
 
 ```bash
-abx create --template base --env DATABASE_URL=postgres://... --env APP_ENV=staging
+abx create base --env DATABASE_URL=postgres://... --env APP_ENV=staging
 ```
 
 **`@sandbox` 装饰器：**
@@ -266,7 +266,7 @@ result = await sandbox.run("my_handler")
 
 ## 客户端配置变量不是沙箱变量
 
-在**你的机器上**配置 SDK 和 CLI 的变量（`ABX_SANDBOX_API_KEY`、`ABX_PROVIDER`、`ALIBABA_CLOUD_REGION_ID` 等）由客户端读取，永远不会被复制进沙箱。要让某个值在沙箱内可见，请用 `envs=` / `--env` 显式传入。每项客户端设置只有一个变量。名字和优先级见[配置参考](../reference/configuration.md#环境变量)。
+在**你的机器上**配置 SDK 和 CLI 的变量（`E2B_API_KEY`、`ABX_PROVIDER`、`ALIBABA_CLOUD_REGION_ID` 等）由客户端读取，永远不会被复制进沙箱。要让某个值在沙箱内可见，请用 `envs=` / `--env` 显式传入。每项客户端设置只有一个变量。名字和优先级见[配置参考](../reference/configuration.md#环境变量)。
 
 由此有两点：
 

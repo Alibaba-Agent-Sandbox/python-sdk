@@ -1,7 +1,7 @@
 """Authentication providers for Platform API and Sandbox envd API.
 
 Two authentication modes:
-1. API Key: ABX_SANDBOX_API_KEY -> Authorization: Bearer {api_key} header (Platform API, 已实测验证)
+1. API Key: E2B_API_KEY -> Authorization: Bearer {api_key} header (Platform API, 已实测验证)
 2. AK/SK: Exchange for temporary API key (TTL=3600s, auto-refresh 5min before expiry)
 
 After sandbox creation, envd API uses envdAccessToken from create response,
@@ -54,7 +54,7 @@ class AuthProvider(Protocol):
 class ApiKeyAuth:
     """API Key authentication for Platform API.
 
-    Uses ABX_SANDBOX_API_KEY environment variable or explicit api_key parameter.
+    Uses E2B_API_KEY environment variable or explicit api_key parameter.
     Sends X-API-KEY header on Platform API requests.
     """
 
@@ -321,7 +321,7 @@ async def _exchange_aksk_for_api_key(
             suggestion=(
                 "Check network connectivity to fcsandbox."
                 f"{region}.aliyuncs.com. "
-                "Or use ABX_SANDBOX_API_KEY directly."
+                "Or use E2B_API_KEY directly."
             ),
         ) from exc
     except httpx.TimeoutException as exc:
@@ -336,8 +336,7 @@ async def _exchange_aksk_for_api_key(
         raise TokenExchangeError(
             f"Token exchange failed (HTTP {resp.status_code}): {body_text}",
             suggestion=(
-                "Verify AK/SK credentials have FCSandbox API access. "
-                "Or use ABX_SANDBOX_API_KEY directly."
+                "Verify AK/SK credentials have FCSandbox API access. Or use E2B_API_KEY directly."
             ),
         )
 
@@ -364,7 +363,7 @@ async def _exchange_aksk_for_api_key(
             f"Token exchange response did not contain an API key: {list(data.keys())}",
             suggestion=(
                 "The FCSandbox token exchange API response format may have changed. "
-                "Use ABX_SANDBOX_API_KEY directly as a workaround."
+                "Use E2B_API_KEY directly as a workaround."
             ),
         )
 
@@ -381,7 +380,7 @@ def create_auth_provider(
 ) -> AuthProvider:
     """Create the appropriate auth provider based on available credentials.
 
-    Priority: api_key > ABX_SANDBOX_API_KEY (fallback) > AK/SK
+    Priority: api_key > E2B_API_KEY (fallback) > AK/SK
 
     When the AK/SK path is selected, a token exchange function is
     automatically injected into the :class:`AkSkAuth` instance so that
@@ -406,9 +405,9 @@ def create_auth_provider(
 
     import os
 
-    sandbox_key = os.environ.get("ABX_SANDBOX_API_KEY")
+    sandbox_key = os.environ.get("E2B_API_KEY")
     if sandbox_key:
-        logger.debug("Using API Key authentication (via ABX_SANDBOX_API_KEY)")
+        logger.debug("Using API Key authentication (via E2B_API_KEY)")
         return ApiKeyAuth(sandbox_key)
 
     if access_key_id and access_key_secret:
@@ -427,6 +426,6 @@ def create_auth_provider(
     raise InvalidAPIKeyError(
         "No authentication credentials provided",
         suggestion=(
-            "Set ABX_SANDBOX_API_KEY or both ALICLOUD_ACCESS_KEY_ID and ALICLOUD_ACCESS_KEY_SECRET."
+            "Set E2B_API_KEY or both ALICLOUD_ACCESS_KEY_ID and ALICLOUD_ACCESS_KEY_SECRET."
         ),
     )

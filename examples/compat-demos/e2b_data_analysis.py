@@ -14,7 +14,7 @@ Style: E2B (imperative)
 import asyncio
 import os
 
-from agent_sandbox import Sandbox, SandboxError
+from agent_sandbox import ProviderSandbox as Sandbox, SandboxError
 
 # ── 内嵌销售数据 / Embedded sales CSV data ────────────────────────────────
 SALES_CSV = """\
@@ -118,7 +118,7 @@ print("✓ 摘要已保存 / Summary saved to /app/summary.json")
 async def main() -> None:
     """E2B 风格: 命令式沙箱操作演示 / E2B style: imperative sandbox demo."""
     # 从环境变量获取 API Key / Get API key from environment
-    api_key = os.environ.get("ABX_SANDBOX_API_KEY", "")
+    api_key = os.environ.get("E2B_API_KEY", "")
 
     print("=" * 55)
     print("  E2B 风格数据分析 Demo / E2B-Style Data Analysis")

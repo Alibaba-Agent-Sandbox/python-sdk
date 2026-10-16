@@ -14,7 +14,7 @@ MCP (Model Context Protocol) is an open protocol that allows AI models to intera
 
 ```bash
 pip install agent-sandbox-client            # the SDK's own MCP STDIO server: python -m agent_sandbox.agent.mcp
-export ABX_SANDBOX_API_KEY=your-api-key
+export E2B_API_KEY=your-api-key
 ```
 
 The Node.js `abx` CLI ships a second implementation of the same server (`abx mcp ...`, installed with `npm install -g @agent-sandbox/cli`); see [Related: the abx CLI](#related-the-abx-cli).
@@ -29,13 +29,13 @@ Point the IDE's MCP configuration at the Python server. For example, in Cursor's
     "agent-sandbox": {
       "command": "python",
       "args": ["-m", "agent_sandbox.agent.mcp"],
-      "env": { "ABX_SANDBOX_API_KEY": "your-api-key" }
+      "env": { "E2B_API_KEY": "your-api-key" }
     }
   }
 }
 ```
 
-`python -m agent_sandbox.agent.mcp` reads `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL`, `ABX_SANDBOX_DOMAIN`, and the default template from `ABX_DEFAULT_TEMPLATE` (default `base`). Restart the IDE after editing its configuration. The server speaks the same tools over STDIO, so the [Available Tools](#available-tools) below apply unchanged.
+`python -m agent_sandbox.agent.mcp` reads `E2B_API_KEY`, `E2B_API_URL`, `E2B_DOMAIN`, and the default template from `ABX_DEFAULT_TEMPLATE` (default `base`). Restart the IDE after editing its configuration. The server speaks the same tools over STDIO, so the [Available Tools](#available-tools) below apply unchanged.
 
 The `abx mcp install --target cursor|claude|vscode` and `abx mcp status` commands write and inspect these files for you; see [Related: the abx CLI](#related-the-abx-cli).
 
@@ -100,7 +100,7 @@ For team sharing or remote access, run the MCP Server as a Streamable HTTP servi
 pip install "agent-sandbox-client[mcp]"
 
 export ABX_MCP_AUTH_TOKEN=replace_me   # Bearer token (omit to disable auth)
-export ABX_SANDBOX_API_KEY=your-api-key
+export E2B_API_KEY=your-api-key
 
 uvicorn agent_sandbox.agent.mcp_http:asgi_app --host 0.0.0.0 --port 9000
 ```
@@ -125,7 +125,7 @@ The entry points use different credentials:
 
 | Entry | Client authentication | How to configure |
 |-------|----------------------|------------------|
-| `python -m agent_sandbox.agent.mcp` (STDIO) | No Bearer token. The IDE starts a local process; it does not listen on the network | Sandbox calls use `ABX_SANDBOX_API_KEY` |
+| `python -m agent_sandbox.agent.mcp` (STDIO) | No Bearer token. The IDE starts a local process; it does not listen on the network | Sandbox calls use `E2B_API_KEY` |
 | `uvicorn agent_sandbox.agent.mcp_http:asgi_app` / `create_mcp_app()` | Bearer token. Loopback may omit it (the process warns) | `ABX_MCP_AUTH_TOKEN` or `auth_token=` |
 | Remote function on Alibaba Cloud FC | Bearer token is required. The artifact `app.py` refuses to start when the token is empty, so a remote process cannot boot with authentication disabled | The token goes into the function environment as `ABX_MCP_AUTH_TOKEN`. The FC HTTP trigger uses `anonymous` so an MCP client does not need an Alibaba Cloud signature; the application Bearer token is the check. `GET /health` returns status and protocol only, with no token check and no secrets |
 
@@ -167,7 +167,7 @@ The artifact directory contains:
 | File | Content |
 |------|---------|
 | `requirements.txt` | `agent-sandbox-client[mcp]`, `uvicorn>=0.29` |
-| `app.py` | ASGI entry point reading FC env vars (`ABX_MCP_AUTH_TOKEN`, `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL`, `ABX_SANDBOX_DOMAIN`, `ABX_DEFAULT_TEMPLATE`) |
+| `app.py` | ASGI entry point reading FC env vars (`ABX_MCP_AUTH_TOKEN`, `E2B_API_KEY`, `E2B_API_URL`, `E2B_DOMAIN`, `ABX_DEFAULT_TEMPLATE`) |
 | `config.yaml` | YAML manifest with function name, region, runtime `python3.10`, handler `app.app`, memory/timeout, env vars, HTTP trigger (POST/GET/DELETE), session affinity |
 
 The deployment steps are: package → create function → create HTTP trigger → enable `Mcp-Session-Id` affinity if supported.
@@ -247,8 +247,8 @@ curl -s -X DELETE http://localhost:9000/mcp \
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | IDE shows the server as failed / no tools | `python` on the IDE's `PATH` is not the interpreter that has `agent-sandbox` installed | Use an absolute interpreter path in the IDE config's `command` |
-| Tools list works but every call errors | API key missing or invalid | Set `ABX_SANDBOX_API_KEY` in the server's `env` block |
-| `create_sandbox` fails after IDE restart | Backend API URL/region mismatch | Set `ABX_SANDBOX_BASE_URL` in the server's `env` block |
+| Tools list works but every call errors | API key missing or invalid | Set `E2B_API_KEY` in the server's `env` block |
+| `create_sandbox` fails after IDE restart | Backend API URL/region mismatch | Set `E2B_API_URL` in the server's `env` block |
 | HTTP 401 on every request | Empty `ABX_MCP_AUTH_TOKEN` (fails closed) | Set a non-empty token. A local loopback server can omit the variable to disable auth. The FC artifact will not start without a token |
 | HTTP 404 Unknown session | `Mcp-Session-Id` expired (idle TTL 3600 s) or instance restarted | Re-send `initialize` to create a new session |
 | HTTP 503 session limit | More than 100 concurrent sessions in the process | Close idle sessions (`DELETE /mcp`) or raise `max_sessions` via `create_mcp_app()` |

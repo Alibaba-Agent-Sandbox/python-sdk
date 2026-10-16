@@ -45,7 +45,10 @@ class TestRegistry:
         assert p.display_name == "Alibaba Cloud Express Edition"
         assert p.display_name_zh == "阿里云极速版"
         assert p.kind == "builtin"
-        assert p.supports("files.rw") and p.supports("storage.mount")
+        assert p.supports("files.rw")
+        assert not p.supports("storage.mount")
+        assert not p.supports("network.vpc")
+        assert not p.supports("ports.domain")
 
     def test_register_and_conflicts(self, iso):  # noqa: F811
         register_provider(_Py())
@@ -93,8 +96,10 @@ class TestRegistry:
         installer.install(str(LOCAL_PROCESS), yes=True)
         assert parse_sandbox_ref("local-process:abc") == ("local-process", "abc")
         assert parse_sandbox_ref("abc") == (None, "abc")
-        assert parse_sandbox_ref("unknown-prov:abc") == (None, "unknown-prov:abc")
-        assert parse_sandbox_ref("local-process:") == (None, "local-process:")
+        with pytest.raises(E.ProviderNotFoundError):
+            parse_sandbox_ref("unknown-prov:abc")
+        with pytest.raises(E.ProviderConfigError):
+            parse_sandbox_ref("local-process:")
         assert qualify("alicloud-express", "sb1", ambient="alicloud-express") == "sb1"
         assert qualify("alicloud-express", "sb1", ambient="local-process") == "alicloud-express:sb1"
         assert qualify("local-process", "sb1", ambient="alicloud-express") == "local-process:sb1"
@@ -115,6 +120,24 @@ class TestRegistry:
         registry.reset_registry()
         assert get_provider("ep-prov").id == "ep-prov"
         assert "ep-prov" in {r["id"] for r in list_providers()}
+
+    @pytest.mark.parametrize(
+        "ref",
+        [
+            "default:id",
+            "none:id",
+            "alicloud-compute:id",
+            "OpenSandbox:id",
+            "bad_name:id",
+            ":id",
+            "x:id",
+            "alicloud-express:",
+        ],
+    )
+    def test_invalid_qualified_refs_fail_closed(self, iso, ref):  # noqa: F811
+        with pytest.raises(E.ProviderConfigError) as exc:
+            parse_sandbox_ref(ref)
+        assert exc.value.code == "E8002"
 
 
 class TestProviderSelection:
@@ -148,8 +171,8 @@ class TestCredentialIsolation:
         return iso
 
     def test_generic_keys_only_reach_builtin_and_consented_inheritors(self, installed, monkeypatch):
-        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "generic-key-1234")
-        monkeypatch.setenv("ABX_SANDBOX_BASE_URL", "https://generic.example")
+        monkeypatch.setenv("E2B_API_KEY", "generic-key-1234")
+        monkeypatch.setenv("E2B_API_URL", "https://generic.example")
         assert load_config(provider="alicloud-express").sandbox_api_key == "generic-key-1234"
         assert load_config(provider="local-process").sandbox_api_key is None
         assert load_config(provider="local-process").sandbox_base_url != "https://generic.example"
@@ -160,7 +183,7 @@ class TestCredentialIsolation:
         )
 
     def test_inherit_without_consent_is_dropped(self, installed, monkeypatch):
-        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "generic-key-1234")
+        monkeypatch.setenv("E2B_API_KEY", "generic-key-1234")
         import json as _json
 
         path = installer.store.provider_dir("e2b-compatible") / ".abx-install.json"
@@ -171,7 +194,7 @@ class TestCredentialIsolation:
         assert registry.get_provider("e2b-compatible").inherit == frozenset()
 
     def test_scoped_env_beats_generic_for_inheritor(self, installed, monkeypatch):
-        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "generic")
+        monkeypatch.setenv("E2B_API_KEY", "generic")
         monkeypatch.setenv("ABX_E2B_COMPATIBLE_SANDBOX_API_KEY", "scoped")
         assert load_config(provider="e2b-compatible").sandbox_api_key == "scoped"
         assert load_config(provider="alicloud-express").sandbox_api_key == "generic"
@@ -218,7 +241,7 @@ class TestRestProvider:
 
     async def test_build_infra_uses_inherited_key(self, iso, monkeypatch):  # noqa: F811
         installer.install(str(E2B_COMPATIBLE), yes=True)
-        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "abcd1234")
+        monkeypatch.setenv("E2B_API_KEY", "abcd1234")
         prov = registry.get_provider("e2b-compatible")
         assert isinstance(prov, RestProvider)
         infra = await prov.build_infra(load_config(provider="e2b-compatible"))

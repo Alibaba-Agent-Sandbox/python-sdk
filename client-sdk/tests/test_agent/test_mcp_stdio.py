@@ -43,8 +43,8 @@ class _SlowHandler(BaseHTTPRequestHandler):
 
 def _start_mcp(api_url: str) -> subprocess.Popen[str]:
     env = os.environ.copy()
-    env["ABX_SANDBOX_API_KEY"] = "stdio-e2e-placeholder"
-    env["ABX_SANDBOX_BASE_URL"] = api_url
+    env["E2B_API_KEY"] = "stdio-e2e-placeholder"
+    env["E2B_API_URL"] = api_url
     env["ABX_DEFAULT_TEMPLATE"] = "python-hello"
     proc = subprocess.Popen(
         [sys.executable, "-m", "agent_sandbox.agent.mcp"],
@@ -191,7 +191,7 @@ class TestStdioProcess:
             "m.main()\n"
         )
         env = os.environ.copy()
-        env["ABX_SANDBOX_API_KEY"] = "stdio-e2e-placeholder"
+        env["E2B_API_KEY"] = "stdio-e2e-placeholder"
         proc = subprocess.Popen(
             [sys.executable, "-c", probe],
             stdin=subprocess.PIPE,

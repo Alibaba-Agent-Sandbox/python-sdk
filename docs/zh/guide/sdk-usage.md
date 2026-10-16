@@ -1,5 +1,6 @@
 # SDK 使用指南
 
+本页介绍异步 **ProviderSandbox** 的 Provider/服务端扩展。仅修改导入迁移 E2B 时，使用根目录 `Sandbox` / `AsyncSandbox` 或 `agent_sandbox.code_interpreter`，见[从 E2B 迁移](migrate-from-e2b.md)。这些入口的同步/异步调用及结果模型遵循固定标准契约。
 本文详述 Agent Sandbox Python SDK 的完整使用方法。
 
 ---
@@ -15,19 +16,19 @@ pip install agent-sandbox-client
 ## 导入
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 ```
 
 ---
 
 ## 模板作者快速路径
 
-2026-10-15 在阿里云 Express（`alicloud-express`）上验证。模板是 generation 2，启动命令运行 `agent-sandbox-server`。`Sandbox.create(template=..., provider="alicloud-express")` 使用 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL` 和 `ABX_SANDBOX_DOMAIN`。`template` 可以是模板 id 或名称。
+2026-10-15 在阿里云 Express（`alicloud-express`）上验证。模板是 generation 2，启动命令运行 `agent-sandbox-server`。`Sandbox.create(template=..., provider="alicloud-express")` 使用 `E2B_API_KEY`、`E2B_API_URL` 和 `E2B_DOMAIN`。`template` 可以是模板 id 或名称。
 
 ```python
 import asyncio
 
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 TEMPLATE = "hello-x"  # generation-2 模板的名称或 id
 
@@ -503,7 +504,7 @@ except ServerAPIError as exc:                   # 基类：status_code、error_t
 
 ```python
 import asyncio
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async def agent_workflow(task_code: str) -> str:
     """Agent → 创建沙箱 → 执行代码 → 读取结果 → 销毁沙箱"""

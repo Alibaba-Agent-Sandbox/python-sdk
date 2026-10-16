@@ -40,7 +40,7 @@
 
 ```text
 [E1001] API key cannot be empty
-  Suggestion: Check your ABX_SANDBOX_API_KEY environment variable or pass sandbox_api_key.
+  Suggestion: Check your E2B_API_KEY environment variable or pass sandbox_api_key.
 ```
 
 **Solution**:
@@ -52,7 +52,7 @@ abx config get sandbox_api_key
 abx config set sandbox_api_key your-api-key
 
 # Or set the environment variable
-export ABX_SANDBOX_API_KEY="your-api-key"
+export E2B_API_KEY="your-api-key"
 ```
 
 ### E1003 — Invalid AK/SK Credentials
@@ -95,7 +95,7 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
    ```
 3. Test with the default template:
    ```bash
-   abx create --template base
+   abx create base
    ```
 
 ### E2009 — SandboxNotFoundError
@@ -197,7 +197,7 @@ abx exec sbx-xxxx "long-command" --timeout 300
 
 ## Build and Deploy Issues
 
-Build, push and deploy errors (the `E7xxx` codes, a missing LLM key for `abx create` / `abx template init`) are raised by the `abx` CLI, not by this SDK. See the CLI troubleshooting guide and [Build and deploy](build-and-deploy.md).
+Build, push and deploy errors (the `E7xxx` codes, a missing LLM key for `abx create` / `abx template scaffold`) are raised by the `abx` CLI, not by this SDK. See the CLI troubleshooting guide and [Build and deploy](build-and-deploy.md).
 
 ---
 
@@ -255,4 +255,4 @@ pip show agent-sandbox-client | grep Location
 
 ## Related: the abx CLI
 
-CLI-specific problems (`abx` not found, `abx deploy` with no Dockerfile, long deploy steps, invalid shortcut targets, `abx template init --adopt` confirmations) are covered in the CLI repository: [Troubleshooting (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/troubleshooting.md).
+CLI-specific problems (`abx` not found, `abx deploy` with no Dockerfile, long deploy steps, invalid shortcut targets, `abx template scaffold --adopt` confirmations) are covered in the CLI repository: [Troubleshooting (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/troubleshooting.md).

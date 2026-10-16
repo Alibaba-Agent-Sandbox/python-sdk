@@ -40,7 +40,7 @@
 
 ```text
 [E1001] API key cannot be empty
-  Suggestion: Check your ABX_SANDBOX_API_KEY environment variable or pass sandbox_api_key.
+  Suggestion: Check your E2B_API_KEY environment variable or pass sandbox_api_key.
 ```
 
 **解决**：
@@ -52,7 +52,7 @@ abx config get sandbox_api_key
 abx config set sandbox_api_key your-api-key
 
 # 或设置环境变量
-export ABX_SANDBOX_API_KEY="your-api-key"
+export E2B_API_KEY="your-api-key"
 ```
 
 ### E1003 — AK/SK 凭证无效
@@ -95,7 +95,7 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
    ```
 3. 使用默认模板测试：
    ```bash
-   abx create --template base
+   abx create base
    ```
 
 ### E2009 — SandboxNotFoundError
@@ -197,7 +197,7 @@ abx exec sbx-xxxx "long-command" --timeout 300
 
 ## 构建与部署相关
 
-构建、推送、部署的错误（`E7xxx` 错误码，以及 `abx create` / `abx template init` 缺少 LLM Key）由 `abx` CLI 抛出，不属于这个 SDK。见 CLI 的排障指南和[构建与部署](build-and-deploy.md)。
+构建、推送、部署的错误（`E7xxx` 错误码，以及 `abx create` / `abx template scaffold` 缺少 LLM Key）由 `abx` CLI 抛出，不属于这个 SDK。见 CLI 的排障指南和[构建与部署](build-and-deploy.md)。
 
 ---
 
@@ -255,4 +255,4 @@ pip show agent-sandbox-client | grep Location
 
 ## 相关：abx CLI
 
-CLI 特有的问题（找不到 `abx`、`abx deploy` 没有 Dockerfile、部署步骤长时间无输出、无效的快捷方式目标、`abx template init --adopt` 确认提示）见 CLI 仓库：[故障排查（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/troubleshooting.md)。
+CLI 特有的问题（找不到 `abx`、`abx deploy` 没有 Dockerfile、部署步骤长时间无输出、无效的快捷方式目标、`abx template scaffold --adopt` 确认提示）见 CLI 仓库：[故障排查（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/troubleshooting.md)。

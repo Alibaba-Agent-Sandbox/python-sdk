@@ -5,7 +5,7 @@ Verified 2026-10-15 on Alibaba Cloud Express (`alicloud-express`) with `agent-sa
 ## Deploy
 
 ```bash
-abx template init --template python --name hello-x
+abx template scaffold --template python --name hello-x
 cd hello-x
 abx template deploy . -y --generation 2 \
   --start-cmd 'agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py' \
@@ -28,7 +28,7 @@ Use your region and the current runtime base tag in place of those two values.
 ```python
 import asyncio
 
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 TEMPLATE = "<template-id>"
 

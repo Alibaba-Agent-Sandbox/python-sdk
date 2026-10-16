@@ -8,11 +8,11 @@ The Agents API case is not repeated here. For the request sequence, the local st
 
 ## Setup
 
-The client reads `ABX_SANDBOX_API_KEY`. The current client does not treat `E2B_API_KEY` as the sandbox key.
+The client reads `E2B_API_KEY`. The current client does not treat `E2B_API_KEY` as the sandbox key.
 
 ```bash
 pip install "agent-sandbox-client[declarative]"
-export ABX_SANDBOX_API_KEY="your-api-key"
+export E2B_API_KEY="your-api-key"
 ```
 
 When `ABX_PROVIDER` is unset, `Sandbox.create` uses `alicloud-express`. The scripts below pass `timeout` to `Sandbox.create` (sandbox TTL, in seconds, from 60 to 900) and destroy the sandbox when the `async with` block or the `@sandbox` decorator finishes.

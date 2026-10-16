@@ -1,6 +1,6 @@
 ---
 name: agent-sandbox-provider
-description: Write an Agent Sandbox provider plugin so Sandbox.create(provider=...) can talk to a new sandbox backend. Use when the task is abx-provider.toml, a rest, exec, or node provider, feature ids, or E8004. Do not use this to call an existing sandbox; that is agent-sandbox-sdk.
+description: Write an Agent Sandbox provider plugin so ProviderSandbox.create(provider=...) can talk to a new sandbox backend. Use when the task is abx-provider.toml, a rest, exec, or node provider, feature ids, or E8004. Do not use this to call an existing sandbox; that is agent-sandbox-sdk.
 ---
 
 # Write an Agent Sandbox provider
@@ -25,7 +25,7 @@ works from the Python SDK. Catalog providers (`opensandbox`, `e2b`,
 `provider.mjs`): install with
 `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` (or
 `python -m agent_sandbox.providers install registry:<id> --yes`), then
-`abx --provider <id>` or `Sandbox.create(provider="<id>")`. The Python SDK
+`abx --provider <id>` or `ProviderSandbox.create(provider="<id>")`. The Python SDK
 reaches `node` plugins through the local engine (`abx provider engine serve`,
 started on demand; `abx` must be on `PATH` or in `ABX_BIN`) using
 `EngineProvider`. Python `exec` and `rest` manifests still run in the Python
@@ -43,7 +43,7 @@ https://registry.agent-sandbox.com. The installer index is
 | `exec` | the manifest plus a process that speaks EPP/1 on stdin/stdout | The API is not E2B-shaped. Any language. No code runs at install time |
 | `node` | `provider.mjs` with `export default create(kit)` | The backend is E2B-shaped but needs a tweak (proxy dial, optional token, other paths). Loaded in the host process; one implementation serves the CLI and every SDK |
 
-Do not start from the Express engine. Do not copy `ABX_SANDBOX_API_KEY` into the new provider. That key is Express only.
+Do not start from the Express engine. Do not copy `E2B_API_KEY` into the new provider. That key is Express only.
 
 ## Credentials
 
@@ -157,7 +157,7 @@ python -m agent_sandbox.providers test my-cloud
 
 ```python
 import asyncio
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async def main() -> None:
     async with await Sandbox.create(
@@ -216,7 +216,7 @@ features, so undeclared methods raise `E8004` before I/O. See
 ## Before you say it works
 
 1. A fake TCP server, or the contract kit, must show the request path, the
-   auth header, and that `ABX_SANDBOX_API_KEY` is not sent.
+   auth header, and that `E2B_API_KEY` is not sent.
 2. Every id in `supported` is one the backend documents. Everything else is
    `E8004` or an extension with `implemented=False`.
 3. Create, one command, one file round-trip, and kill are the minimum live

@@ -17,9 +17,9 @@
 | Id | 怎么用 |
 |---|---|
 | `opensandbox` | [OpenSandbox 提供方](../design/provider-opensandbox-mapping.md)。HTTP 由加载 `provider.mjs` 的 Node 宿主进程发出。`ABX_OPENSANDBOX_BASE_URL` 默认 `http://127.0.0.1:8080`。 |
-| `alicloud-container` | [容器版](../design/provider-alicloud-container.md)。需要 `ABX_ALICLOUD_CONTAINER_DOMAIN`。不读取 `ABX_SANDBOX_API_KEY`。 |
+| `alicloud-container` | [容器版](../design/provider-alicloud-container.md)。需要 `ABX_ALICLOUD_CONTAINER_DOMAIN`。不读取 `E2B_API_KEY`。 |
 | `cubesandbox` | [CubeSandbox 提供方](../design/provider-cubesandbox.md)。默认地址 `http://127.0.0.1:3000`。 |
-| `e2b` | [E2B 提供方](../design/provider-e2b.md)。密钥是 `ABX_E2B_API_KEY`。不读取 `ABX_SANDBOX_API_KEY`，也不读取 `E2B_API_KEY`。 |
+| `e2b` | [E2B 提供方](../design/provider-e2b.md)。密钥是 `ABX_E2B_API_KEY`。不读取 `E2B_API_KEY`，也不读取旧的 `ABX_SANDBOX_API_KEY`。 |
 
 还没有后端的三个提供方，逻辑上能不能用，写在 [可用性审查](../design/provider-readiness.md)。让代理写一个新的提供方插件，用技能 `agent-sandbox-provider`（`agent-sandbox-provider/SKILL.md`）。
 
@@ -142,7 +142,7 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 | `storage.mount`、`network.vpc` | 对象存储挂载；VPC 接入 |
 | `sessions` | 沙箱在进程结束后仍存在，可按 id 重新连接 |
 
-`alicloud-express` 实现了全部 18 个特性。`abx provider list` 用一行显示每个提供方声明的特性（`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`；`python -m agent_sandbox.providers list` 输出相同），`abx provider info <id>` 显示完整清单。
+`alicloud-express` 明确声明自身的 15 项适配能力；当前适配器未实现通用挂载/VPC/自定义域名操作。注册本身不能证明 API 可调用、CLI 入口已接通或当前运行时/账号实际可用。`abx provider list` 用一行显示每个提供方声明的特性（`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`；`python -m agent_sandbox.providers list` 输出相同），`abx provider info <id>` 显示完整清单。
 
 清单里的特性标志在运行时对每一种提供方都会被强制执行：
 
@@ -163,7 +163,7 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 |---|---|---|
 | `sandbox.lifecycle` | `Sandbox.create`、`connect`、`list`、`kill`、`info` | `create`、`list`、`info`、`kill`、`connect` |
 | `sandbox.timeout` | `set_timeout` | `sandbox timeout` |
-| `sandbox.pause` | `pause`、`resume` | `sandbox pause`、`sandbox resume` |
+| `sandbox.pause` | `pause`、`resume` | 仅极速版标准 CLI；通用 Provider CLI 入口尚未接入 |
 | `exec.run` | `commands.run`、`sandbox.run` | `exec`、`run` |
 | `exec.stream` | `commands.stream` | `exec --stream` |
 | `process.manage` | `commands.list`、`kill`、`send_stdin` | `sandbox process ...` |
@@ -291,7 +291,7 @@ OpenSandbox 是 [awesome-providers/opensandbox](https://github.com/alibaba-agent
 
 每个提供方有自己作用域的键：环境变量或 `.env` 里是 `ABX_<PROVIDER>_<KEY>`，`config.toml` 里是 `[providers.<id>]`，SDK 里是 `provider_options={...}`。提供方只会在 `initialize` 请求里收到其清单声明的键。密钥绝不会放进插件的 argv 或环境变量。
 
-通用键 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`（`ABX_SANDBOX_API_KEY` 和 `ABX_SANDBOX_BASE_URL`）属于内置提供方。只有当插件清单在 `[core] inherit` 里列出它们，**并且**你在安装或更新时同意了，插件才能拿到。同意界面会列出这些键的名字。你的 LLM、GitHub 和 MCP 键永远不会交给提供方。
+通用键 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`（`E2B_API_KEY` 和 `E2B_API_URL`）属于内置提供方。只有当插件清单在 `[core] inherit` 里列出它们，**并且**你在安装或更新时同意了，插件才能拿到。同意界面会列出这些键的名字。你的 LLM、GitHub 和 MCP 键永远不会交给提供方。
 
 ### 宿主如何处理插件进程
 
@@ -382,3 +382,9 @@ register_provider(MyProvider())
 - [配置参考](../reference/configuration.md) —— 名称、别名、优先级
 - [认证详解](authentication.md)
 - [设计：提供方与凭证](../design/providers-and-credentials.md)
+
+## 标准客户端与 Provider 归属
+
+根入口 Sandbox/AsyncSandbox 和 code_interpreter 是固定的 E2B 协议 API；ABX_PROVIDER 不会把它们变成 OpenSandbox 客户端。安装型 Provider 使用 ProviderSandbox。它保留带前缀资源的归属：未知前缀在请求前返回 E8001，空沙箱 ID 返回 E8002，显式 Provider 冲突返回 E8030。不支持的能力应返回 E8004，不能回退极速版。
+
+内置适配器明确声明已实现能力，增加全局能力不会自动让极速版支持它。当前适配器没有实现 storage.mount、network.vpc、ports.domain 通用沙箱操作；这是客户端边界，不代表阿里云缺少存储或 VPC 能力。即使方法已实现，账号、运行时和模板限制仍然存在。Provider 特有的类型化管理命令是尚未合并的独立工作：https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/38 和 https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/pull/35；注册还需要真实 handler 和后端验证。

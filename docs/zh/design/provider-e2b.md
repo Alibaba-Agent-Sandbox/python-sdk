@@ -6,7 +6,7 @@ E2B 是目录提供方，源码在 `awesome-providers/e2b`，id 是 `e2b`。用 
 
 单元测试不访问 `https://api.e2b.dev`。它在 `127.0.0.1` 上用本地 TCP 服务回答 `POST /sandboxes`。
 
-真实访问 E2B 需要设置 `ABX_E2B_API_KEY`。没有这个变量时，测试确认 `Sandbox.create(provider="e2b")` 在发出请求前抛出 `InvalidAPIKeyError`。极速版的 `ABX_SANDBOX_API_KEY` 不会被送到 `api.e2b.dev`。这台环境没有单独的 E2B 密钥，所以真实创建没有执行。
+真实访问 E2B 需要设置 `ABX_E2B_API_KEY`。没有这个变量时，测试确认 `Sandbox.create(provider="e2b")` 在发出请求前抛出 `InvalidAPIKeyError`。极速版的 `E2B_API_KEY` 不会被送到 `api.e2b.dev`。这台环境没有单独的 E2B 密钥，所以真实创建没有执行。
 
 英文页：[provider-e2b.md](../../en/design/provider-e2b.md)。
 
@@ -20,14 +20,14 @@ E2B 是目录提供方，源码在 `awesome-providers/e2b`，id 是 `e2b`。用 
 
 这三个名字也可以放在 `provider_options` 里。`Sandbox.create(api_url=...)` 不会改这个源站。解析器读的是 `provider_options["base_url"]`。
 
-设置了密钥时，客户端发送请求头 `X-API-Key`。没有 `ABX_E2B_API_KEY` 时抛出 `InvalidAPIKeyError`，错误信息里写明 `ABX_E2B_API_KEY`。这个提供方不读 `ABX_SANDBOX_API_KEY`（阿里云极速版的密钥），也不读 `E2B_API_KEY`（本产品拒绝的旧名字）。
+设置了密钥时，客户端发送请求头 `X-API-Key`。没有 `ABX_E2B_API_KEY` 时抛出 `InvalidAPIKeyError`，错误信息里写明 `ABX_E2B_API_KEY`。这个提供方不读 `E2B_API_KEY`（阿里云极速版的密钥），也不读 `E2B_API_KEY`（本产品拒绝的旧名字）。
 
 `domain` 是 `https://{port}-{sandboxID}.{domain}` 的后缀。envd 端口是 49983。创建响应里没有 `region` 时保持未知（空字符串），不会落成 `cn-hangzhou`。
 
 当前 E2B SDK 用 `https://api.e2b.app`，域名是 `e2b.app`。数据面主机名是 `https://{port}-{sandboxID}.e2b.app`。`https://api.e2b.dev` 是旧源站；账号还在那边时同时设置 `ABX_E2B_BASE_URL` 和 `ABX_E2B_DOMAIN`。
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 sb = await Sandbox.create(
     provider="e2b",

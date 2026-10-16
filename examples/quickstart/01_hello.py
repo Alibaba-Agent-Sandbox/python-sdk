@@ -7,12 +7,12 @@ Shows how to create a sandbox, run commands, capture output, and manage lifecycl
 import asyncio
 import os
 
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 
 async def main() -> None:
     # 从环境变量读取 API Key（不要硬编码）
-    api_key = os.environ.get("ABX_SANDBOX_API_KEY", "")
+    api_key = os.environ.get("E2B_API_KEY", "")
 
     # ── 1. 使用 async with 自动管理沙箱生命周期 ──────────────────────
     async with await Sandbox.create(
