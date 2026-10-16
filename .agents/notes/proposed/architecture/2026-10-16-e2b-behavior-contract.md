@@ -14,6 +14,8 @@ The reference is e2b 2.31.0 and e2b-code-interpreter 2.8.1. A source port is cho
 
 Backend capabilities follow [Alibaba's compatibility statement](https://help.aliyun.com/zh/agent-sandbox/e2b-compatibility-explanation). Implement supported and conditional APIs; preserve backend restrictions and errors. Snapshots require MicroVM/allowlist; pause depends on runtime/allowlist; network updates are supported. Volume, Team, access-token/API-key management and MCP gateway are outside the supported migration path. No client surface implies that an unavailable backend capability works. Third-party hardcoded imports remain the integrator's responsibility.
 
+ProviderSandbox keeps explicit resource ownership: unknown provider namespaces and empty IDs fail before backend requests. The built-in adapter explicitly lists implemented features and does not inherit all host feature IDs. Generic storage/VPC operations are not advertised until their adapters exist; Alibaba resource administration and provider command registration are distinct work. ABX_PROVIDER does not reinterpret standard E2B protocol clients as OpenSandbox clients.
+
 ## API Design
 
 Standard API shapes, errors, pagination and handles follow the fixed reference. Project extensions have explicit entry points. Connection settings are canonical E2B_* names; Python timeouts use seconds. CLI options after the sandbox ID in exec are forwarded to the command. No compatibility switch or Node SDK export is introduced. Public migration details are in `docs/en/guide/migrate-from-e2b.md` and its Chinese counterpart.

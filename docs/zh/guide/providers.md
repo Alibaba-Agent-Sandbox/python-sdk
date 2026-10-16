@@ -382,3 +382,9 @@ register_provider(MyProvider())
 - [配置参考](../reference/configuration.md) —— 名称、别名、优先级
 - [认证详解](authentication.md)
 - [设计：提供方与凭证](../design/providers-and-credentials.md)
+
+## 标准客户端与 Provider 归属
+
+根入口 Sandbox/AsyncSandbox 和 code_interpreter 是固定的 E2B 协议 API；ABX_PROVIDER 不会把它们变成 OpenSandbox 客户端。安装型 Provider 使用 ProviderSandbox。它保留带前缀资源的归属：未知前缀在请求前返回 E8001，空沙箱 ID 返回 E8002，显式 Provider 冲突返回 E8030。不支持的能力应返回 E8004，不能回退极速版。
+
+内置适配器明确声明已实现能力，增加全局能力不会自动让极速版支持它。当前适配器没有实现 storage.mount、network.vpc、ports.domain 通用沙箱操作；这是客户端边界，不代表阿里云缺少存储或 VPC 能力。即使方法已实现，账号、运行时和模板限制仍然存在。Provider 特有的类型化管理命令是尚未合并的独立工作：https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/38 和 https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/pull/35；注册还需要真实 handler 和后端验证。

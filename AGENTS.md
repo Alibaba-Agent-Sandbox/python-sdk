@@ -259,3 +259,5 @@ See [`.agents/notes/README.md`](.agents/notes/README.md) for the full template a
 ## Standard migration contract
 
 Read `docs/en/guide/migrate-from-e2b.md` before changing standard APIs. Preserve the pinned behavior, synchronous/asynchronous distinction, pagination, return models, errors and terminal semantics. Project extensions use explicit entry points. Generated/source-ported code has provenance and licenses; update its reproducible source process when changing it. Do not imply unsupported Alibaba capabilities work because a client symbol exists.
+
+ProviderSandbox preserves explicit resource ownership: unknown/empty namespaces fail before backend requests. Each adapter declares implemented features independently of the host registry; metadata is not proof of runtime/account availability. Standard E2B protocol clients do not switch backend protocol when ABX_PROVIDER changes. See docs/en/guide/providers.md.

@@ -45,7 +45,10 @@ class TestRegistry:
         assert p.display_name == "Alibaba Cloud Express Edition"
         assert p.display_name_zh == "阿里云极速版"
         assert p.kind == "builtin"
-        assert p.supports("files.rw") and p.supports("storage.mount")
+        assert p.supports("files.rw")
+        assert not p.supports("storage.mount")
+        assert not p.supports("network.vpc")
+        assert not p.supports("ports.domain")
 
     def test_register_and_conflicts(self, iso):  # noqa: F811
         register_provider(_Py())
@@ -93,8 +96,10 @@ class TestRegistry:
         installer.install(str(LOCAL_PROCESS), yes=True)
         assert parse_sandbox_ref("local-process:abc") == ("local-process", "abc")
         assert parse_sandbox_ref("abc") == (None, "abc")
-        assert parse_sandbox_ref("unknown-prov:abc") == (None, "unknown-prov:abc")
-        assert parse_sandbox_ref("local-process:") == (None, "local-process:")
+        with pytest.raises(E.ProviderNotFoundError):
+            parse_sandbox_ref("unknown-prov:abc")
+        with pytest.raises(E.ProviderConfigError):
+            parse_sandbox_ref("local-process:")
         assert qualify("alicloud-express", "sb1", ambient="alicloud-express") == "sb1"
         assert qualify("alicloud-express", "sb1", ambient="local-process") == "alicloud-express:sb1"
         assert qualify("local-process", "sb1", ambient="alicloud-express") == "local-process:sb1"

@@ -384,3 +384,9 @@ A package can also publish an entry point in the group `agent_sandbox.providers`
 - [Configuration reference](../reference/configuration.md) — names, aliases, precedence
 - [Authentication](authentication.md)
 - [Design: providers and credentials](../design/providers-and-credentials.md)
+
+## Standard clients and provider ownership
+
+Root Sandbox/AsyncSandbox and code_interpreter are the pinned E2B protocol API. ABX_PROVIDER does not turn those clients into OpenSandbox clients. Use ProviderSandbox for installed-provider routing. ProviderSandbox preserves qualified resource ownership, rejects unknown provider namespaces with E8001 and empty sandbox IDs with E8002 before requests, and rejects explicit-provider conflicts with E8030. Unsupported provider capabilities must return E8004 without an Express fallback.
+
+The built-in adapter declares its implemented features explicitly; adding a host capability does not enable it on Express automatically. storage.mount, network.vpc and ports.domain are not implemented generic sandbox operations in this adapter. This is a client boundary, not a claim that Alibaba lacks cloud storage or VPC. Account/runtime/template restrictions remain real even when a method is implemented. Provider-specific typed management commands are separate pending work in https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/38 and https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/pull/35; registration requires an actual handler and backend verification.
