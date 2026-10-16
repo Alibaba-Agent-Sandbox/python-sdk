@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed — provider management capability reporting
+
+- The built-in provider no longer advertises `ports.domain`, `storage.mount` or `network.vpc` as callable standard sandbox features. Provider resource management uses the separate command contract.
+
+### Added — provider management commands
+
+- `agent_sandbox.providers.commands.list_commands`, `get_command` and `run_command` call the shared Node engine for provider-specific resource operations. Writes and deletes require explicit confirmation; command POST requests are never replayed.
+- Plugin manifests validate bounded `provider-commands/1` descriptors and include commands in installation/update consent; existing manifests and receipts default to an empty command list.
+
 ## [0.3.0] - 2026-10-15
 
 Both distributions are **0.3.0**. The client on PyPI is `agent-sandbox-client` (import `agent_sandbox`). `agent-sandbox` is an unrelated project, so do not `pip install agent-sandbox`. The server distribution is `agent-sandbox-server`. Directories, the repository, and the CLI are unchanged.

@@ -6,6 +6,7 @@ Third-party providers are installed from a directory or git URL (``abx provider 
 ``ABX_PROVIDER`` or ``[core] provider`` in ``~/.abx/config.toml``.
 """
 
+from agent_sandbox.providers import commands
 from agent_sandbox.providers.base import (
     FEATURES,
     ConfigField,
@@ -13,6 +14,7 @@ from agent_sandbox.providers.base import (
     ProviderFeature,
     ProviderInfra,
 )
+from agent_sandbox.providers.manifest import ProviderCommand
 from agent_sandbox.providers.registry import (
     ambient_provider_id,
     get_provider,
@@ -32,6 +34,8 @@ __all__ = [
     "Provider",
     "ProviderFeature",
     "ProviderInfra",
+    "ProviderCommand",
+    "commands",
     "ambient_provider_id",
     "get_provider",
     "list_providers",
