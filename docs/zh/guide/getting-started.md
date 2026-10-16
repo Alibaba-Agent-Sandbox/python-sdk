@@ -27,6 +27,18 @@ pip install "agent-sandbox-client[all]"
 `abx` CLI 不属于 Python 包（没有 `[cli]` extra），它是独立的 Node.js 项目，见[相关：abx CLI](#相关abx-cli)。容器侧运行时（`agent_sandbox.server`）是独立的
 `agent-sandbox-server` 包（`pip install agent-sandbox-server`）；`agent-sandbox-client` 依赖它，安装客户端时会一并安装。
 
+### 从源码检出目录开发
+
+在仓库根目录激活虚拟环境后，安装两个本地分发包及开发工具：
+
+```bash
+uv pip install -e ./server-sdk -e "./client-sdk[dev]"
+```
+
+根目录的 uv workspace 会将客户端的运行时依赖解析为 `server-sdk/`，无需
+`--no-sources` 临时绕过。普通 `pip install` 也接受相同的 editable 参数；
+发布包仍保留服务端同版本的精确依赖。
+
 ## 2. 配置 API Key
 
 有三种方式配置认证凭证。真正生效时按下面的优先级（从高到低）。完整的凭证表见 [配置参考 — 凭证解析](../reference/configuration.md#凭证解析)。

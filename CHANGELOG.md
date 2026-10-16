@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Source-checkout installs with uv now resolve `agent-sandbox-server` to the local workspace member instead of failing with a missing `tool.uv.sources` entry. Published dependency pins are unchanged.
+
 ## [0.3.0] - 2026-10-15
 
 Both distributions are **0.3.0**. The client on PyPI is `agent-sandbox-client` (import `agent_sandbox`). `agent-sandbox` is an unrelated project, so do not `pip install agent-sandbox`. The server distribution is `agent-sandbox-server`. Directories, the repository, and the CLI are unchanged.
