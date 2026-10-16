@@ -36,7 +36,7 @@ finally:
 | 解释器、上下文、执行次数、stdout/stderr/result 回调、多语言 | 使用 `agent_sandbox.code_interpreter` 和支持解释器的模板；阿里云图表需生成文件取回 |
 | 模板、从镜像构建 | 标准 Python Template API，以及项目 CLI build/deploy 扩展；仍受后端构建能力和权限限制 |
 | 运行时网络更新 | 已实现 `update_network` 与允许/拒绝规则；阿里云 `egress_proxy` 不生效；公网入站鉴权与 Host 改写仅创建时可设 |
-| 暂停/恢复 | 一代需白名单，二代默认支持 |
+| 暂停/恢复 | 一代需白名单；二代具备运行时能力，仍受实际函数/账号设置限制。当前 python-hello 因未启用 pauseSession 拒绝暂停 |
 | 快照 | 已实现创建、延迟分页、删除、恢复；需 MicroVM 与白名单。保留期、全名、占用和恢复覆盖限制遵循[阿里云快照规则](https://help.aliyun.com/zh/agent-sandbox/snapshot-invited-test)。建议 `request_timeout=300` 并保存返回的 ID/名称 |
 | 文件 metadata | 取决于二代运行时/envd 版本；旧 envd 返回与参考 SDK 相同的版本错误 |
 | Metrics/Logs | 阿里云文档存在矛盾示例，不承诺所有账号可用；保留服务端错误，可使用控制台可观测能力 |
