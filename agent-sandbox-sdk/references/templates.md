@@ -9,8 +9,7 @@ reads `name`, `resources.cpu`, `resources.memory`, and `generation`. Omitted
 resources become 2 CPU and 2048 MB. It does not install `python_packages` or
 `system_packages`, and it does not apply a `server:` block.
 
-`generation` defaults to 1. On generation 1 a `--start-cmd` you pass is not the
-process that runs. The FC profile's platform start command is
+The Express server profile selects generation 2 when it supplies the platform start command for commands.py; do not assume every template uses generation 1. Set generation explicitly when the workflow depends on it. On generation 1 a `--start-cmd` you pass is not the process that runs. The FC profile's platform start command is
 `agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py`.
 That imports `commands.py`. If `start()` runs at import time, the import hangs
 or serves during the import. Keep `start()` under `if __name__ == "__main__"`.
