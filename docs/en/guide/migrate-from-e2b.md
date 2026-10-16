@@ -36,7 +36,7 @@ finally:
 | Interpreter, contexts, execution counts, stdout/stderr/result callbacks, multiple languages | Use `agent_sandbox.code_interpreter`; requires an interpreter-enabled template; charts must be saved to files on Alibaba |
 | Templates, image-based builds | Standard Python Template API plus project CLI build/deploy extensions; actual backend permissions and build capabilities apply |
 | Runtime network updates | Implemented (`update_network`), including allow/deny rules; `egress_proxy` has no effect on Alibaba; public traffic and host masking are creation-only settings |
-| Pause/resume | Gen1 requires allowlist; Gen2 supports it by default |
+| Pause/resume | Gen1 requires allowlist; Gen2 provides the capability, subject to actual function/account settings. The tested python-hello function rejected pause because pauseSession was not enabled |
 | Snapshots | Implemented creation, lazy listing, deletion and restoration; MicroVM and allowlist required. Retention, qualified names, occupied snapshots and restore overrides follow [Alibaba's snapshot rules](https://help.aliyun.com/zh/agent-sandbox/snapshot-invited-test). Use `request_timeout=300`; preserve returned IDs/names |
 | File metadata | Gen2/envd version dependent; older envd produces the same version error as the reference |
 | Metrics/Logs | Alibaba docs have conflicting examples; no blanket availability promise. Service errors are preserved; console observability remains available |
