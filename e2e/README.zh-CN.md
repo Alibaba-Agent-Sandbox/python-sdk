@@ -6,6 +6,17 @@
 
 > English version: [README.md](README.md)。本套件固定的产品缺陷见 [KNOWN-ISSUES.zh-CN.md](KNOWN-ISSUES.zh-CN.md)。
 
+## 标准 E2B 迁移验证
+
+在仓库根目录执行 `python -m pytest e2e/test_standard_contract.py -ra`，验证标准
+Sandbox/AsyncSandbox 和 code_interpreter 入口。它使用真实云端覆盖生命周期、文件、
+后台进程 stdin、解释器上下文及回调、惰性分页和网络禁止/恢复。其他原生测试继续
+覆盖 ProviderSandbox；不能把 mock 结果当作云端证据。
+
+快照恢复额外需要 `E2E_SNAPSHOT_TEMPLATE`，指定已开通快照白名单账号下的 MicroVM
+模板；未配置时明确跳过。测试会删除快照并登记恢复的沙箱以便清理。暂停/恢复也需要
+受支持的运行时/账号条件，保留方法本身并不代表已经验证。服务限制见中英文迁移指南。
+
 ## Provider 分级
 
 第三方 provider 不在本套件的云端运行里。它们和 CLI 使用同一套六级：从插件单测（T0）到本机 OpenSandbox（T4），再到阿里云平台（T5）。表格见 [cli/e2e/providers/PLAN.zh-CN.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/e2e/providers/PLAN.zh-CN.md)。T4 的辅助脚本在 [opensandbox/README.md](opensandbox/README.md)。
