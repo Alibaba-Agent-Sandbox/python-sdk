@@ -47,7 +47,7 @@ Third-party providers are not part of this suite's cloud run. They follow the sa
 | `test_06_server_sdk.py` | `agent-sandbox-server` inside a real sandbox (template `python-hello`): `/commands`, `/files/*`, `/process/*`, `/capabilities`, `/system/info`, `/env`, `/ports`, custom routes |
 | `test_07_declarative.py` | `@sandbox` declarative remote execution |
 | `test_08_providers.py` | Live calls for `opensandbox`, `alicloud-express` (SDK and CLI), `cubesandbox`, `e2b`, and `alicloud-container`. A provider with no backend of its own is skipped and does not receive the Express key. |
-| `test_09_volume_mounts.py` | Opt-in existing Volume acceptance: prove an exact kernel mount, exclusively create/read/remove one sentinel, then release the tagged sandbox. Ordinary directories cannot pass. |
+| `test_09_volume_mounts.py` | Opt-in existing Volume acceptance: prove an exact kernel mount, exclusively create/read/remove a sentinel, and verify persistence after destroying and recreating a sandbox. All tagged sandboxes are released. Ordinary directories cannot pass. |
 | `test_09_mcp_lifecycle.py` | Python MCP metadata/TTL/list, command/files and external-instance ownership |
 
 Markers: `e2e` (everything), `e2e_slow` (> ~60 s),

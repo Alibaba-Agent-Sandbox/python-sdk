@@ -28,6 +28,8 @@ async with await Sandbox.create(
 Volume 目前要求提交阿里云工单申请邀测，准备存储前应确认目标账号、地域和 Team
 已开通，参见[官方 OSS Volume 指南](https://help.aliyun.com/zh/agent-sandbox/user-guide/create-oss-volume)。
 成功返回空列表不能证明已有创建或挂载权限。
+自定义 MicroVM 源镜像须预装 ossfs2 2.0.10 或以上版本；运行验收前，应选择满足
+官方挂载指南中运行时前提的模板。
 
 路径必须是规范化的绝对 Unix 路径，不能为 `/`，不能包含尾部分隔符、空段、隐藏目录段、
 `.`/`..`、NUL 或前后空白。`/bin`、`/opt`、`/var`、`/dev` 及其子路径会被拒绝。
@@ -41,8 +43,9 @@ Python 内置生命周期仍通过本地 gRPC 引擎：新增的 `CreateRequest.
 非空参数会先检查 `Health.supported_create_options` 是否包含 `volume_mounts`；旧的运行中引擎
 会在 `Create` 前返回 E8004 和升级、重启提示，不会自动替换引擎，避免旧 protobuf 实现静默
 忽略挂载参数。未请求挂载的调用保留原行为。
-提供方管理命令继续使用共享 Node HTTP 引擎。本地 gRPC/HTTP 回归覆盖参数链路；真实 OSS
-挂载、读写及清理尚需验证，不能据此声称云端验收通过。
+提供方管理命令继续使用共享 Node HTTP 引擎。本地 gRPC/HTTP 回归覆盖参数链路，且已在
+杭州地域的 base 模板完成真实 OSS 挂载、读写和清理验收。显式启用的 Volume E2E 套件还会检查
+销毁并重建沙箱后数据是否保留。
 
 ## Python API
 

@@ -18,6 +18,8 @@ Evidence of the command-line interface lives in the
 
 ## `verify/` — test and E2E runs
 
+- [`verify/2026-10-16-provider-volume-live.md`](verify/2026-10-16-provider-volume-live.md)
+
 - [`verify/2026-10-16-provider-management-recheck.md`](verify/2026-10-16-provider-management-recheck.md)
 - [`verify/2026-10-16-provider-management-final-review.md`](verify/2026-10-16-provider-management-final-review.md)
 - [`verify/2026-10-16-provider-command-integration-final.md`](verify/2026-10-16-provider-command-integration-final.md)

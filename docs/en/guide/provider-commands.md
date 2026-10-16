@@ -31,6 +31,8 @@ Volume currently requires invitation access through an Alibaba Cloud support tic
 confirm access for the target account, region and Team before preparing storage, as
 described in the [official OSS Volume guide](https://help.aliyun.com/zh/agent-sandbox/user-guide/create-oss-volume).
 An empty successful Volume list does not prove create or mount access.
+Custom MicroVM source images must include ossfs2 2.0.10 or newer. Select a template
+that meets the official mount guide's runtime prerequisites before running acceptance.
 
 Paths must be normalized absolute Unix paths other than `/`, with no trailing separator,
 empty or hidden component, `.`/`..`, NUL or surrounding whitespace. `/bin`, `/opt`, `/var`,
@@ -49,8 +51,9 @@ For nonempty hints, the client first checks `Health.supported_create_options` co
 before `Create`; it is never replaced automatically. This prevents older protobuf handlers
 from silently ignoring a mount request. Calls without mounts retain the existing behavior.
 Provider management commands continue using the shared Node HTTP engine. Mount wiring is
-covered by local gRPC/HTTP regression tests; a real OSS mount/read/write/cleanup run remains
-required before claiming cloud acceptance.
+covered by local gRPC/HTTP regression tests and real OSS mount/read/write/cleanup acceptance
+on the base template in cn-hangzhou. The opt-in Volume E2E suite also checks that data survives
+sandbox destruction and recreation.
 
 ## Python API
 

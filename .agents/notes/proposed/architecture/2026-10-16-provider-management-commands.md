@@ -81,6 +81,10 @@ No new runtime dependency or package version change is introduced.
 
 ## Test Strategy
 
+Storage acceptance also destroys the writing sandbox, verifies its absence, creates a
+different sandbox mounting the same Volume, and requires the exclusive file contents to
+survive before deleting the file and both test sandboxes.
+
 Manifest tests cover bounds, forbidden schema/JSON fields, duplicate IDs, descriptions,
 legacy manifests, and rest-provider rejection. A real filesystem installation verifies
 command additions require renewed consent. Adapter tests verify route/body/connection
@@ -108,7 +112,8 @@ and never kill or replace an unknown process to obtain a pass.
 7. Required CI, review and real-component gates pass before merge; this record stays proposed meanwhile.
 8. Built-in create retains mount hints across the public API, real local gRPC transport and
    HTTP wire serialization; strict validation and provider gating precede resource I/O.
-   A real Volume mount/read/write/cleanup run is still an outstanding acceptance gate.
+   Real Volume mount/read/write/cleanup is verified using authorized temporary OSS storage;
+   complete required aggregates and shared-host landing remain outstanding.
 
 ## Evidence
 
@@ -116,3 +121,5 @@ and never kill or replace an unknown process to obtain a pass.
 [Final review and mount parity](../../../evidence/verify/2026-10-16-provider-management-final-review.md).
 [Final isolated suite and main synchronization](../../../evidence/verify/2026-10-16-provider-command-integration-final.md).
 [Independent recheck and accepted-main integration](../../../evidence/verify/2026-10-16-provider-management-recheck.md).
+
+[Authorized real storage and cleanup acceptance](../../../evidence/verify/2026-10-16-provider-volume-live.md).
