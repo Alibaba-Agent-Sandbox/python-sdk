@@ -41,11 +41,14 @@ Node.js `abx` CLI 提供同一服务器的另一套实现（`abx mcp ...`，用 
 
 ## 可用工具
 
-MCP Server 提供 7 个工具：
+Python MCP server 提供 10 个工具。Node.js CLI 使用独立 MCP 实现；Python 的工具可用范围与资源归属规则见[生命周期工具](mcp-lifecycle.md)：
 
 | 工具名 | 说明 | 参数 |
 |--------|------|------|
-| `create_sandbox` | 创建新沙箱，并把它设为默认沙箱 | `template`（可选，省略时用 server 配置的模板）、`timeout`（可选，默认 300）、`envs`（可选） |
+| `create_sandbox` | 创建新沙箱，并把它设为默认沙箱 | `template`（可选，省略时用 server 配置的模板）、`timeout`（可选，默认 300）、`envs`、`region`、`cpu`、`memory`、`provider`（可选） |
+| `list_sandboxes` | 列出平台安全元数据，不接管资源 | `status`、`limit`（1–100）、`offset`、`provider`、`region`（可选） |
+| `get_sandbox` | 刷新元数据，不创建或续期 | `sandbox_id`（可选；省略用已有默认沙箱） |
+| `set_sandbox_timeout` | 设置平台存活时间和会话续期策略 | `timeout`（必填，1–86400 秒）、`sandbox_id`（可选） |
 | `run_code` | 在沙箱中执行代码 | `code`（必填）、`sandbox_id`（可选）、`language`（可选，默认 python）、`timeout`（可选，默认 30） |
 | `run_command` | 通过 `sh -c` 执行命令（支持管道、`&&`、`$VAR`、`cd`） | `command`（必填）、`sandbox_id`（可选）、`cwd`（可选，省略时用镜像工作目录）、`timeout`（可选，默认 60，非零退出码视为工具错误） |
 | `read_file` | 读取沙箱中的文件 | `path`（必填）、`sandbox_id`（可选）、`encoding`（可选，默认 utf-8） |
@@ -55,7 +58,7 @@ MCP Server 提供 7 个工具：
 
 > **命名说明**：MCP 工具 `run_command` 通过 `sh -c` 执行命令（SDK 中 `sandbox.commands.run(..., shell=True)`），它不是命名命令调度；要调用注册在沙箱 server 上的命令，请使用 `Sandbox.run(name, **kwargs)`。
 >
-> **默认沙箱**：`create_sandbox` 的结果会成为默认沙箱，所以随后省略 `sandbox_id` 的 `write_file` / `run_code` / `kill_sandbox` 都作用在刚创建的那只沙箱上。还没有默认沙箱时，第一次省略 `sandbox_id` 的工具调用会懒创建一只。省略 `template` 时使用 server 配置的模板（Python server 默认为 `base`，CLI 的 `abx mcp start` 默认为 `code-interpreter-v1`）。每次使用沙箱前会按创建时的 `timeout` 延长存活时间。IDE 关闭 server（STDIO）或 `DELETE /mcp` / 空闲超时（HTTP）时会销毁会话里的全部沙箱。
+> **默认沙箱**：`create_sandbox` 的结果会成为默认沙箱，所以随后省略 `sandbox_id` 的 `write_file` / `run_code` / `kill_sandbox` 都作用在刚创建的那只沙箱上。还没有默认沙箱时，第一次省略 `sandbox_id` 的执行或文件工具调用会懒创建一只。元数据和续期工具不会创建沙箱。省略 `template` 时使用 server 配置的模板（Python server 默认为 `base`，CLI 的 `abx mcp start` 默认为 `code-interpreter-v1`）。执行与文件操作会按会话策略续期，初值为创建时的 `timeout`，可由 `set_sandbox_timeout` 更新。元数据查询不续期。IDE 关闭 server（STDIO）或 `DELETE /mcp` / 空闲超时（HTTP）时会销毁会话创建或由执行、文件工具接管的沙箱；只查询或续期的外部实例不接管。
 
 ---
 

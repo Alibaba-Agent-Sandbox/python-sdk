@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- Python MCP lifecycle tools `list_sandboxes`, `get_sandbox`, and `set_sandbox_timeout`; creation accepts provider, region, CPU and memory options. Metadata uses a fixed allowlist, external inspection/renewal does not adopt resources, and lifecycle failures omit credential-bearing exception details.
+
 ### Fixed
 
 - `agent-sandbox-server serve --commands FILE` registers the module before execution, fixing startup failures for dataclasses with postponed annotations. File imports reuse canonical paths, keep different files isolated, and remove incomplete module/import-path state after a failed load.

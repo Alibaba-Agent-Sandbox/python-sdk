@@ -47,14 +47,23 @@ Third-party providers are not part of this suite's cloud run. They follow the sa
 | `test_06_server_sdk.py` | `agent-sandbox-server` inside a real sandbox (template `python-hello`): `/commands`, `/files/*`, `/process/*`, `/capabilities`, `/system/info`, `/env`, `/ports`, custom routes |
 | `test_07_declarative.py` | `@sandbox` declarative remote execution |
 | `test_08_providers.py` | Live calls for `opensandbox`, `alicloud-express` (SDK and CLI), `cubesandbox`, `e2b`, and `alicloud-container`. A provider with no backend of its own is skipped and does not receive the Express key. |
+| `test_09_mcp_lifecycle.py` | Python MCP metadata/TTL/list, command/files and external-instance ownership |
 
 Markers: `e2e` (everything), `e2e_slow` (> ~60 s),
 `known_issue` (strict xfail documenting a recorded bug, see [KNOWN-ISSUES.md](KNOWN-ISSUES.md)).
 
+
+Python MCP lifecycle coverage is in `test_09_mcp_lifecycle.py`: real creation,
+allowlisted metadata, list visibility, TTL, command/file use, and external-query
+ownership at shutdown. Only listing retries, using the existing 40-second
+eventual-consistency window. No IDE or new-image deployment is inferred.
+
 ## Guarantees
 
 - **Tagging and cleanup.** Every sandbox is created through fixtures that add the
-  metadata `e2e=<run id>` and register it for deletion. The session
+  metadata `e2e=<run id>` and register it for deletion. The MCP creation
+  tool does not expose metadata; its E2E records the returned owned ID directly
+  in the tracker and shuts down its owning manager in `finally`. The session
   finalizer deletes everything tracked and then sweeps by tag, even when tests fail or the run is
   interrupted. `scripts/e2e-cleanup.py` is the janitor for runs that were hard-killed (default is a
   dry run; `--yes` deletes; `--run-id`, `--all-tagged`, `--older-than N`).

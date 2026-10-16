@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 from agent_sandbox.agent.tools import (
     TOOL_SCHEMA_MAP,
     TOOL_SCHEMAS,
+    _ToolInputError,
     dispatch_tool,
 )
 from agent_sandbox.utils.logging import get_logger
@@ -124,6 +125,10 @@ class SandboxManager:
         template: str | None = None,
         timeout: int = 300,
         envs: dict[str, str] | None = None,
+        region: str | None = None,
+        cpu: int | None = None,
+        memory: int | None = None,
+        provider: str | None = None,
     ) -> Any:
         """Create a sandbox and make it the session default."""
         from agent_sandbox.api.sandbox import Sandbox
@@ -133,6 +138,14 @@ class SandboxManager:
             timeout=timeout,
             envs=envs or {},
         )
+        for name, value in {
+            "region": region,
+            "cpu": cpu,
+            "memory": memory,
+            "provider": provider,
+        }.items():
+            if value is not None:
+                kwargs[name] = value
         sandbox = await Sandbox.create(**kwargs)
         async with self._state_lock:
             self._sandboxes[sandbox.id] = sandbox
@@ -141,13 +154,20 @@ class SandboxManager:
         logger.info("Created sandbox: %s", sandbox.id)
         return sandbox
 
-    async def get_sandbox(self, sandbox_id: str | None = None) -> Any:
+    async def get_sandbox(
+        self,
+        sandbox_id: str | None = None,
+        *,
+        refresh_lifetime: bool = True,
+        create_default: bool = True,
+    ) -> Any:
         """Get a sandbox by ID, or create/return the default sandbox."""
         if sandbox_id:
             async with self._state_lock:
                 cached = self._sandboxes.get(sandbox_id)
             if cached is not None:
-                await self._refresh_lifetime(cached)
+                if refresh_lifetime:
+                    await self._refresh_lifetime(cached)
                 return cached
             from agent_sandbox.api.sandbox import Sandbox
 
@@ -155,19 +175,98 @@ class SandboxManager:
             async with self._state_lock:
                 self._sandboxes[sb.id] = sb
                 self._lifetimes.setdefault(sb.id, 300)
-            await self._refresh_lifetime(sb)
+            if refresh_lifetime:
+                await self._refresh_lifetime(sb)
             return sb
 
         # One lazy create even when two tool calls arrive together.
         async with self._default_lock:
             if self._default_sandbox is None:
+                if not create_default:
+                    raise _ToolInputError(
+                        "No default sandbox. Call create_sandbox or specify sandbox_id."
+                    )
                 created = await self.create_sandbox()
                 if self._default_sandbox is None:
                     self._default_sandbox = created
                 logger.info("Auto-created default sandbox: %s", self._default_sandbox.id)
             sandbox = self._default_sandbox
-        await self._refresh_lifetime(sandbox)
+        if refresh_lifetime:
+            await self._refresh_lifetime(sandbox)
         return sandbox
+
+    async def list_sandboxes(
+        self,
+        *,
+        status: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        provider: str | None = None,
+        region: str | None = None,
+    ) -> Any:
+        """List platform sandboxes without adopting them into this session."""
+        from agent_sandbox.api.sandbox import Sandbox
+        from agent_sandbox.models.sandbox import SandboxStatus
+
+        # list has no domain kwarg; it only talks to the control plane.
+        kwargs: dict[str, Any] = {"limit": limit, "offset": offset}
+        for name, value in {
+            "api_key": self._api_key,
+            "api_url": self._api_url,
+            "provider": provider,
+            "region": region,
+        }.items():
+            if value is not None:
+                kwargs[name] = value
+        if status is not None:
+            kwargs["status"] = SandboxStatus(status)
+        return await Sandbox.list(**kwargs)
+
+    async def inspect_sandbox(self, sandbox_id: str | None = None) -> Any:
+        """Refresh metadata without creating a sandbox or extending its TTL."""
+        if sandbox_id:
+            async with self._state_lock:
+                cached = self._sandboxes.get(sandbox_id)
+            if cached is None:
+                from agent_sandbox.api.sandbox import Sandbox
+
+                # Inspection must not adopt another session's sandbox: shutdown
+                # destroys managed instances. Close only this temporary client.
+                temporary = await Sandbox.connect(**self._connect_kwargs(sandbox_id=sandbox_id))
+                try:
+                    return await temporary.refresh_info()
+                finally:
+                    await temporary.close()
+        sandbox = await self.get_sandbox(
+            sandbox_id,
+            refresh_lifetime=False,
+            create_default=False,
+        )
+        return await sandbox.refresh_info()
+
+    async def set_sandbox_timeout(self, timeout: int, sandbox_id: str | None = None) -> str:
+        """Set the platform TTL and use it for subsequent session refreshes."""
+        if sandbox_id:
+            async with self._state_lock:
+                cached = self._sandboxes.get(sandbox_id)
+            if cached is None:
+                from agent_sandbox.api.sandbox import Sandbox
+
+                temporary = await Sandbox.connect(**self._connect_kwargs(sandbox_id=sandbox_id))
+                try:
+                    await temporary.set_timeout(timeout)
+                    return str(temporary.id)
+                finally:
+                    await temporary.close()
+        sandbox = await self.get_sandbox(
+            sandbox_id,
+            refresh_lifetime=False,
+            create_default=False,
+        )
+        await sandbox.set_timeout(timeout)
+        async with self._state_lock:
+            self._lifetimes[sandbox.id] = timeout
+        return str(sandbox.id)
 
     async def kill_sandbox(self, sandbox_id: str | None = None) -> str | None:
         """Kill a sandbox by ID, or the default sandbox.
