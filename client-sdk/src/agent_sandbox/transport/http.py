@@ -16,6 +16,8 @@ import httpx
 from agent_sandbox.models.errors import (
     ConnectionError_,
     EnvdRpcError,
+    FileOperationError,
+    FileSizeLimitError,
     InvalidAPIKeyError,
     InvalidCredentialsError,
 )
@@ -579,12 +581,17 @@ class HttpClient:
         headers: dict[str, str] | None = None,
         content: bytes | None = None,
         files: dict[str, Any] | None = None,
+        max_response_bytes: int | None = None,
     ) -> httpx.Response:
         """Send a plain HTTP request (not Connect RPC) to the envd API.
 
         Used for file upload/download which use standard HTTP
         rather than Connect protocol (已实测验证).
         """
+        if max_response_bytes is not None and (
+            type(max_response_bytes) is not int or max_response_bytes < 0
+        ):
+            raise ValueError("max_response_bytes must be a nonnegative integer")
         client = self._create_envd_client(envd_url)
         auth_headers = envd_token.get_headers()
 
@@ -594,6 +601,51 @@ class HttpClient:
 
         logger.debug("envd HTTP %s %s%s", method, envd_url, path)
         try:
+            if max_response_bytes is not None:
+                # Count actual file bytes without allowing a compressed raw
+                # chunk to inflate before the limit check. Old reads are unchanged.
+                all_headers = {
+                    key: value
+                    for key, value in all_headers.items()
+                    if key.lower() != "accept-encoding"
+                }
+                all_headers["Accept-Encoding"] = "identity"
+                async with client.stream(
+                    method=method,
+                    url=path,
+                    params=params,
+                    headers=all_headers,
+                    content=content,
+                    files=files,
+                ) as streamed:
+                    # Error details are intentionally not read: a hostile error
+                    # body can also be infinite. Preserve the status for mapping.
+                    if streamed.is_error:
+                        failed = httpx.Response(streamed.status_code, request=streamed.request)
+                        failed.raise_for_status()
+                    if (
+                        streamed.headers.get("content-encoding", "identity").strip().lower()
+                        != "identity"
+                    ):
+                        raise FileOperationError(
+                            "Bounded file downloads require identity content encoding."
+                        )
+                    data = bytearray()
+                    async for chunk in streamed.aiter_raw(chunk_size=65536):
+                        if len(data) + len(chunk) > max_response_bytes:
+                            raise FileSizeLimitError(max_response_bytes)
+                        data.extend(chunk)
+                    return httpx.Response(
+                        streamed.status_code,
+                        headers={
+                            key: value
+                            for key, value in streamed.headers.items()
+                            if key.lower()
+                            not in {"content-encoding", "content-length", "transfer-encoding"}
+                        },
+                        content=bytes(data),
+                        request=streamed.request,
+                    )
             response = await client.request(
                 method=method,
                 url=path,

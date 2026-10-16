@@ -49,3 +49,4 @@ Move the file and edit `Status:` in the same commit. Required sections and the t
 The active [proposed contract](notes/proposed/architecture/2026-10-16-e2b-behavior-contract.md) defines the pinned Alibaba migration surface and project extension boundary. Verification evidence is point-in-time; read the latest E2B run before reporting completion.
 
 The [provider-boundary verification](evidence/verify/2026-10-16-provider-boundary-review.md) distinguishes standard E2B clients, provider adapters and pending typed management registration.
+- [Bounded MCP binary files](notes/implemented/feature/2026-10-16-mcp-binary-files.md) · [verification](evidence/verify/2026-10-16-mcp-binary-files.md)

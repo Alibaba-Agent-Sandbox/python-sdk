@@ -41,7 +41,7 @@ The `abx mcp install --target cursor|claude|vscode` and `abx mcp status` command
 
 ## Available Tools
 
-The Python MCP server provides 13 tools. The Node.js CLI has its own MCP implementation; see [lifecycle tools](mcp-lifecycle.md) for Python-specific availability and ownership rules:
+The Python MCP server provides 15 tools. The Node.js CLI has its own MCP implementation; see [lifecycle tools](mcp-lifecycle.md) for Python-specific availability and ownership rules:
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
@@ -53,6 +53,7 @@ The Python MCP server provides 13 tools. The Node.js CLI has its own MCP impleme
 | `get_task` / `cancel_task` | Read saved logs/status or cancel the owned task group | `sandbox_id`, `task_id`; optional byte offsets and `limit` |
 | `run_code` | Execute code in the sandbox | `code` (required), `sandbox_id` (optional), `language` (optional, default python), `timeout` (optional, default 30) |
 | `run_command` | Run a command via `sh -c` (pipes, `&&`, `$VAR`, `cd`) | `command` (required), `sandbox_id` (optional), `cwd` (optional; omitted uses the image workdir), `timeout` (optional, default 60; a non-zero exit is a tool error) |
+| `upload_file` / `download_file` | [Bounded binary files](mcp-binary-files.md) | `path`, optional `sandbox_id`; upload `content_base64` |
 | `read_file` | Read a file from the sandbox | `path` (required), `sandbox_id` (optional), `encoding` (optional, default utf-8) |
 | `write_file` | Write a file to the sandbox | `path`, `content` (required), `sandbox_id` (optional) |
 | `list_files` | List directory contents in the sandbox | `path` (optional, default `/`), `sandbox_id` (optional) |

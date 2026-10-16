@@ -391,7 +391,16 @@ class EngineFilesystemProtocol:
     async def get_info(self, envd_url: str, envd_token: EnvdTokenManager, *, path: str) -> FileInfo:
         return await self.stat(envd_url, envd_token, path=path)
 
-    async def read(self, envd_url: str, envd_token: EnvdTokenManager, *, path: str) -> bytes:
+    async def read(
+        self,
+        envd_url: str,
+        envd_token: EnvdTokenManager,
+        *,
+        path: str,
+        max_bytes: int | None = None,
+    ) -> bytes:
+        if max_bytes is not None:
+            raise ProviderFeatureNotSupportedError(self._pid, "bounded file reads")
         return await self.download_file(envd_url, envd_token, path=path)
 
     async def read_text(

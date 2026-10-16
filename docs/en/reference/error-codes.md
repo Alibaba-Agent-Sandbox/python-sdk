@@ -92,6 +92,7 @@ except CapabilityNotSupportedError as e:
 | E4000 | `FileOperationError` | File operation failed (base class) | — | General filesystem errors |
 | E4001 | `FileNotFoundError_` | File or directory not found | Use `files.list()` to check available files, or `files.exists()` to verify the path | Reading/deleting a non-existent path |
 | E4002 | `PermissionDeniedError` | Permission denied | Check file permissions in the sandbox | Operating on a file without permission |
+| E4003 | `FileSizeLimitError` (`limit`) | Streamed file download exceeded caller byte limit | Use a smaller file or explicitly change `max_bytes` | `files.read_bytes(..., max_bytes=...)` overflow; response closed |
 
 > **Note**: The `FileNotFoundError_` class name has a trailing underscore to avoid shadowing Python's built-in `FileNotFoundError`.
 
@@ -223,6 +224,7 @@ classDiagram
 
     FileOperationError <|-- FileNotFoundError_
     FileOperationError <|-- PermissionDeniedError
+    FileOperationError <|-- FileSizeLimitError
 
     NetworkError <|-- ConnectionError_
     NetworkError <|-- GitHubRateLimitError
@@ -250,6 +252,7 @@ classDiagram
     class FileOperationError { E4000 }
     class FileNotFoundError_ { E4001 }
     class PermissionDeniedError { E4002 }
+    class FileSizeLimitError { E4003 }
     class NetworkError { E5000 }
     class ConnectionError_ { E5001 }
     class GitHubRateLimitError { E5000 }
@@ -295,6 +298,7 @@ from agent_sandbox.models.errors import (
     CodeExecutionError,
     CapabilityNotSupportedError,
     FileOperationError,
+    FileSizeLimitError,
     FileNotFoundError_,
     PermissionDeniedError,
     NetworkError,

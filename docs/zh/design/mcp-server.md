@@ -6,7 +6,7 @@
 
 **已实现面**（与 `client-sdk/src/agent_sandbox/agent/` 保持同步）：
 
-- 13 个工具（`agent/tools.py`）
+- 15 个工具（`agent/tools.py`）
 - STDIO 传输（`agent/mcp.py`）— `python -m agent_sandbox.agent.mcp`
 - Streamable HTTP 传输（`agent/mcp_http.py`）— Starlette ASGI 应用
 - `abx mcp install / start / status / deploy` 命令由 Node.js CLI 提供（见[相关：abx CLI](#相关abx-cli)）
@@ -16,7 +16,8 @@
 ## 1. Tools 定义
 
 完整注册表还包括[生命周期工具](../guide/mcp-lifecycle.md)和
-[可重连后台任务](../guide/mcp-background-tasks.md)。显式后台任务保留其沙箱到
+[可重连后台任务](../guide/mcp-background-tasks.md) 与
+[有限额二进制文件](../guide/mcp-binary-files.md)。显式后台任务保留其沙箱到
 平台 TTL；普通会话清理规则保持不变。
 
 
@@ -316,7 +317,7 @@ graph LR
 graph TD
     subgraph MCP["MCP Server"]
         TL["传输层\nSTDIO (mcp.py) / Streamable HTTP (mcp_http.py)"]
-        TR["工具注册表\n13 个工具 (agent/tools.py)"]
+        TR["工具注册表\n15 个工具 (agent/tools.py)"]
         SM["SandboxManager / SessionStore"]
         RR["JSON-RPC 路由\ninitialize / tools/list / tools/call / ping"]
         SC["沙箱客户端\nagent_sandbox SDK"]
