@@ -21,6 +21,27 @@ if __name__ == "__main__":
 
 This code does not create a cloud sandbox and does not read a sandbox API key. Creating the sandbox and calling these routes is the [Client SDK](client-sdk.md) or the `abx` CLI.
 
+## Load commands with the CLI
+
+Keep server startup separate from command registration by using the `serve` subcommand:
+
+```bash
+agent-sandbox-server serve --commands ./commands.py --port 9000
+```
+
+The file is imported before the HTTP server starts, so its `if __name__ == "__main__"`
+block does not run. Files using `from __future__ import annotations` and `@dataclass`
+work like normal imports: their module is available in `sys.modules` while decorators
+execute. Repeat `--commands` to load several files or importable module names.
+
+Within a process, a file is loaded once per canonical path, including relative,
+absolute and symbolic-link aliases. Separate files named `commands.py` remain separate
+modules. Restart the server to reload changed files. The file's directory remains on
+the import path for sibling imports. If loading raises, the incomplete module entry
+and that load's import-path changes are removed, and the exception stops startup.
+Other side effects, such as commands already registered before the exception, are
+not rolled back; fix the file and restart the server.
+
 ## Start here
 
 | Guide | What it covers |

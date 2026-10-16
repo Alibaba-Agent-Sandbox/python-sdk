@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- `agent-sandbox-server serve --commands FILE` registers the module before execution, fixing startup failures for dataclasses with postponed annotations. File imports reuse canonical paths, keep different files isolated, and remove incomplete module/import-path state after a failed load.
 - Source-checkout installs with uv now resolve `agent-sandbox-server` to the local workspace member instead of failing with a missing `tool.uv.sources` entry. Published dependency pins are unchanged.
 
 ## [0.3.0] - 2026-10-15
