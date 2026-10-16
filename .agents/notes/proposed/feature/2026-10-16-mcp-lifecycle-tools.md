@@ -15,8 +15,9 @@ Provider failures can also embed credentials in exception URLs and validation in
 Reuse existing SDK lifecycle methods and shared MCP schemas/handlers. Add list,
 metadata inspection and lifetime tools; extend creation with provider, region,
 CPU and memory. Metadata uses a fixed allowlist. External inspection/renewal uses
-a temporary client closed in finally, without adopting the instance or changing
-the default. Validate arguments before SDK calls. Lifecycle error logs and results
+direct `Sandbox.get_info_by_id` / `set_timeout_by_id` control-plane dispatch with
+temporary infrastructure closed in finally, without calling provider connect/resume,
+adopting the instance or changing the default. Validate arguments before SDK calls. Lifecycle error logs and results
 use static categories, safe SDK codes and static recovery guidance.
 
 ## API Design
@@ -63,3 +64,9 @@ secret enters lifecycle failures or logs; real E2E and required repository gates
 
 Implemented and real Express handler scenarios pass. Remains proposed while
 complete repository gates and full MCP/Skills product scope are outstanding.
+
+Cross-review found that provider connect can resume paused E2B/Cube instances.
+The direct by-ID APIs replace that side-effecting route; provider protocol spy
+regressions verify no connect/create/kill on success or failure. This does not
+establish E2B/Cube cloud acceptance. Follow-up evidence:
+[no-resume verification](../../../evidence/verify/2026-10-16-mcp-lifecycle-no-resume.md).

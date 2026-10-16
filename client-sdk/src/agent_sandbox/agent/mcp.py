@@ -230,13 +230,9 @@ class SandboxManager:
             if cached is None:
                 from agent_sandbox.api.sandbox import Sandbox
 
-                # Inspection must not adopt another session's sandbox: shutdown
-                # destroys managed instances. Close only this temporary client.
-                temporary = await Sandbox.connect(**self._connect_kwargs(sandbox_id=sandbox_id))
-                try:
-                    return await temporary.refresh_info()
-                finally:
-                    await temporary.close()
+                kwargs = self._connect_kwargs(sandbox_id=sandbox_id)
+                kwargs.pop("domain", None)
+                return await Sandbox.get_info_by_id(**kwargs)
         sandbox = await self.get_sandbox(
             sandbox_id,
             refresh_lifetime=False,
@@ -252,12 +248,10 @@ class SandboxManager:
             if cached is None:
                 from agent_sandbox.api.sandbox import Sandbox
 
-                temporary = await Sandbox.connect(**self._connect_kwargs(sandbox_id=sandbox_id))
-                try:
-                    await temporary.set_timeout(timeout)
-                    return str(temporary.id)
-                finally:
-                    await temporary.close()
+                kwargs = self._connect_kwargs(sandbox_id=sandbox_id)
+                kwargs.pop("domain", None)
+                await Sandbox.set_timeout_by_id(timeout=timeout, **kwargs)
+                return sandbox_id
         sandbox = await self.get_sandbox(
             sandbox_id,
             refresh_lifetime=False,
@@ -265,7 +259,8 @@ class SandboxManager:
         )
         await sandbox.set_timeout(timeout)
         async with self._state_lock:
-            self._lifetimes[sandbox.id] = timeout
+            if self._sandboxes.get(sandbox.id) is sandbox:
+                self._lifetimes[sandbox.id] = timeout
         return str(sandbox.id)
 
     async def kill_sandbox(self, sandbox_id: str | None = None) -> str | None:

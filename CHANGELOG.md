@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- MCP external metadata/timeout operations dispatch directly through `Sandbox.get_info_by_id` / `set_timeout_by_id`, closing temporary infrastructure in `finally`; they never call provider connect/resume and cannot wake paused instances through that connect path. Late managed TTL completion after shutdown cannot restore renewal state.
+
 - `agent-sandbox-server serve --commands FILE` registers the module before execution, fixing startup failures for dataclasses with postponed annotations. File imports reuse canonical paths, keep different files isolated, and remove incomplete module/import-path state after a failed load.
 - Source-checkout installs with uv now resolve `agent-sandbox-server` to the local workspace member instead of failing with a missing `tool.uv.sources` entry. Published dependency pins are unchanged.
 

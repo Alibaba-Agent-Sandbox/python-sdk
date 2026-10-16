@@ -16,11 +16,12 @@ SDK API，仍受 provider 能力和平台权限限制。本文仅覆盖生命周
 {"name":"list_sandboxes","arguments":{"status":"running","limit":10,"offset":0}}
 ```
 
-`get_sandbox` 通过 `Sandbox.refresh_info()` 获取平台最新元数据。指定 `sandbox_id` 查询
+`get_sandbox` 对已管理实例调用 `Sandbox.refresh_info()`，对外部 ID 调用
+`Sandbox.get_info_by_id()` 获取平台最新元数据。指定 `sandbox_id` 查询
 对应沙箱；省略则查询会话已有默认沙箱。没有默认沙箱时返回工具错误，查询不会创建沙箱
 或延长生命周期。显式 ID 不改变默认沙箱。切换 provider 时可用 SDK 的
-`provider:sandbox_id` 限定格式。查询会话未管理的 ID 时使用临时客户端，查询后仅关闭
-该客户端连接，不会将沙箱加入会话关闭销毁清理。
+`provider:sandbox_id` 限定格式。外部 ID 使用临时控制面基础设施，并在 `finally` 中关闭；
+直接调用 provider 元数据方法，不调用 connect/resume，也不会加入会话关闭销毁集合。
 
 ```json
 {"name":"get_sandbox","arguments":{}}
@@ -50,8 +51,8 @@ metadata、任意 lifecycle 对象或端点 URL。列表结果的 `sandboxes` �
 而不是 HTTP 请求超时。可选 `sandbox_id` 省略时使用已有默认沙箱，不会隐式创建。
 `Sandbox.set_timeout()` 成功后同步更新会话续期策略，后续执行/文件工具按该时长续期。
 平台更新失败时保留之前的策略。
-显式指定会话未管理的 ID 时只修改平台超时，随后关闭临时客户端，不会接管该沙箱或在
-会话关闭时将其销毁。
+外部 ID 通过 `Sandbox.set_timeout_by_id()` 直接修改平台超时，在 `finally` 中关闭临时
+控制面基础设施，不额外调用 connect/resume，不接管资源或在会话关闭时销毁它。
 
 ```json
 {"name":"set_sandbox_timeout","arguments":{"timeout":600}}
@@ -67,8 +68,11 @@ metadata、任意 lifecycle 对象或端点 URL。列表结果的 `sandboxes` �
 
 ## 实现与验证
 
-列表、查询、续期分别委托给 `Sandbox.list`、`refresh_info`、`set_timeout`，没有新增或
-虚构平台端点。Python STDIO 与 Streamable HTTP 共用 schema 和 handler。Node.js CLI
+列表委托给 `Sandbox.list`；已管理实例的查询/续期使用 `refresh_info` / `set_timeout`，
+外部 ID 使用 `Sandbox.get_info_by_id` / `Sandbox.set_timeout_by_id`，没有新增或虚构平台端点。
+同步接口为 `get_info_by_id_sync` / `set_timeout_by_id_sync`。新类方法与 `Sandbox.kill_by_id`
+接受相同凭据、region 和 provider 覆盖参数，并支持 `provider:id` 限定 ID。
+为兼容生命周期调用接受 `sandbox_domain`，但明确不使用：这些方法仅按控制面 API URL 路由，不创建 envd 客户端。Python STDIO 与 Streamable HTTP 共用 schema 和 handler。Node.js CLI
 有独立 MCP 实现，是否支持这些工具需要单独核对。
 
 单元测试位于 `client-sdk/tests/test_agent/test_mcp_lifecycle.py`，覆盖输入边界、SDK 委托、

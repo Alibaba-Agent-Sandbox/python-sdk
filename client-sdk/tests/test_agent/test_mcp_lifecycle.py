@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
@@ -124,39 +125,41 @@ async def test_metadata_allowlist_omits_nested_and_url_secrets(tool):
     }
 
 
-async def test_explicit_get_connects_without_replacing_default():
+async def test_explicit_get_uses_direct_metadata_without_replacing_default():
     manager = SandboxManager(api_key="placeholder-api-key", api_url="https://api.example.invalid")
     default = _sandbox("default")
-    target = _sandbox("other")
     manager._default_sandbox = default
-    with patch(
-        "agent_sandbox.api.sandbox.Sandbox.connect", new_callable=AsyncMock, return_value=target
-    ) as connect:
+    with (
+        patch(
+            "agent_sandbox.api.sandbox.Sandbox.get_info_by_id",
+            new_callable=AsyncMock,
+            return_value=_info("other"),
+        ) as get,
+        patch("agent_sandbox.api.sandbox.Sandbox.connect", new_callable=AsyncMock) as connect,
+    ):
         result = await dispatch_tool("get_sandbox", {"sandbox_id": "other"}, manager)
-    connect.assert_awaited_once_with(
-        sandbox_id="other",
-        api_key="placeholder-api-key",
-        api_url="https://api.example.invalid",
+    get.assert_awaited_once_with(
+        sandbox_id="other", api_key="placeholder-api-key", api_url="https://api.example.invalid"
     )
+    connect.assert_not_awaited()
     assert result["sandbox_id"] == "other"
     assert manager._default_sandbox is default
     assert manager._sandboxes == {}
-    target.set_timeout.assert_not_awaited()
-    target.refresh_info.assert_awaited_once_with()
-    target.close.assert_awaited_once_with()
-    target.kill.assert_not_awaited()
 
 
-async def test_explicit_get_closes_temporary_client_even_when_refresh_fails():
+async def test_explicit_get_failure_does_not_adopt_or_connect():
     manager = SandboxManager()
-    target = _sandbox("other")
-    target.refresh_info.side_effect = RuntimeError("platform unavailable")
-    with patch(
-        "agent_sandbox.api.sandbox.Sandbox.connect", new_callable=AsyncMock, return_value=target
+    with (
+        patch(
+            "agent_sandbox.api.sandbox.Sandbox.get_info_by_id",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("platform unavailable"),
+        ),
+        patch("agent_sandbox.api.sandbox.Sandbox.connect", new_callable=AsyncMock) as connect,
     ):
         result = await dispatch_tool("get_sandbox", {"sandbox_id": "other"}, manager)
     assert result["error"] == "Sandbox lifecycle operation failed."
-    target.close.assert_awaited_once_with()
+    connect.assert_not_awaited()
     assert manager._sandboxes == {}
 
 
@@ -197,30 +200,29 @@ async def test_failed_timeout_update_preserves_previous_renewal_policy():
 
 
 @pytest.mark.parametrize("fail", [False, True])
-async def test_external_timeout_update_closes_client_without_adopting_sandbox(fail):
+async def test_external_timeout_uses_direct_api_without_connect_or_adoption(fail):
     manager = SandboxManager()
-    target = _sandbox("external")
-    if fail:
-        target.set_timeout.side_effect = RuntimeError("platform unavailable")
-    with patch(
-        "agent_sandbox.api.sandbox.Sandbox.connect", new_callable=AsyncMock, return_value=target
+    with (
+        patch(
+            "agent_sandbox.api.sandbox.Sandbox.set_timeout_by_id", new_callable=AsyncMock
+        ) as update,
+        patch("agent_sandbox.api.sandbox.Sandbox.connect", new_callable=AsyncMock) as connect,
     ):
+        if fail:
+            update.side_effect = RuntimeError("platform unavailable")
         result = await dispatch_tool(
-            "set_sandbox_timeout",
-            {"sandbox_id": "external", "timeout": 600},
-            manager,
+            "set_sandbox_timeout", {"sandbox_id": "external", "timeout": 600}, manager
         )
     if fail:
         assert result["error"] == "Sandbox lifecycle operation failed."
     else:
         assert result == {"success": True, "sandbox_id": "external", "timeout": 600}
-    target.set_timeout.assert_awaited_once_with(600)
-    target.close.assert_awaited_once_with()
+    update.assert_awaited_once_with(sandbox_id="external", timeout=600)
+    connect.assert_not_awaited()
     assert manager._sandboxes == {}
     assert manager._lifetimes == {}
     assert manager._default_sandbox is None
     await manager.shutdown()
-    target.kill.assert_not_awaited()
 
 
 async def test_create_passes_only_real_sdk_resource_options():
@@ -386,3 +388,27 @@ async def test_lifecycle_input_validation_does_not_echo_private_argument_names(c
     assert "SYNTHETIC_TEST_PRIVATE_TOKEN" not in json.dumps(result)
     assert "SYNTHETIC_TEST_PRIVATE_TOKEN" not in caplog.text
     assert manager.mock_calls == []
+
+
+async def test_late_managed_timeout_after_shutdown_does_not_restore_renewal_state():
+    manager = SandboxManager()
+    sandbox = _sandbox("managed")
+    manager._sandboxes[sandbox.id] = sandbox
+    manager._default_sandbox = sandbox
+    manager._lifetimes[sandbox.id] = 300
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def pending_timeout(_seconds):
+        started.set()
+        await release.wait()
+
+    sandbox.set_timeout.side_effect = pending_timeout
+    operation = asyncio.create_task(manager.set_sandbox_timeout(700))
+    await started.wait()
+    await manager.shutdown()
+    release.set()
+    await operation
+    assert manager._sandboxes == {}
+    assert manager._lifetimes == {}
+    assert manager._default_sandbox is None

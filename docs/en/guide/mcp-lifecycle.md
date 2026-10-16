@@ -18,13 +18,15 @@ to request another page; the result does not promise a total count or next-page 
 {"name":"list_sandboxes","arguments":{"status":"running","limit":10,"offset":0}}
 ```
 
-`get_sandbox` calls `Sandbox.refresh_info()` for current platform metadata. Supply
+`get_sandbox` calls `Sandbox.refresh_info()` for managed instances and
+`Sandbox.get_info_by_id()` for external IDs to fetch current platform metadata. Supply
 `sandbox_id` to inspect a particular sandbox, or omit it to inspect the existing session
 default. With no default it returns a tool error; inspection never creates a sandbox or
 extends its lifetime. Explicit IDs leave the default unchanged. Use the SDK's qualified
 `provider:sandbox_id` syntax when selecting another provider. Inspecting an ID outside
-the session uses a temporary client which is closed after the query; it does not adopt
-that sandbox into session shutdown cleanup.
+the session uses temporary control-plane infrastructure closed in `finally`. It
+dispatches directly to the provider metadata method, never to connect/resume, and
+does not adopt that sandbox into session shutdown cleanup.
 
 ```json
 {"name":"get_sandbox","arguments":{}}
@@ -57,7 +59,8 @@ it never implicitly creates a sandbox. Successful `Sandbox.set_timeout()` also u
 session renewal policy: subsequent execution/file tools renew using this duration. A failed
 platform update leaves the previous policy intact.
 For an explicit ID outside the session, only the platform timeout is changed: the
-temporary client is closed without adopting or destroying that sandbox at shutdown.
+`Sandbox.set_timeout_by_id()` call uses temporary control-plane infrastructure
+closed in `finally`, without an additional connect/resume operation or shutdown ownership.
 
 ```json
 {"name":"set_sandbox_timeout","arguments":{"timeout":600}}
@@ -76,8 +79,14 @@ field without echoing its value.
 
 ## Implementation and verification
 
-Listing, inspection, and renewal delegate to `Sandbox.list`, `refresh_info`, and
-`set_timeout`, with no new platform endpoints. Schemas and handlers are shared by the
+Listing delegates to `Sandbox.list`. Managed inspection/renewal use `refresh_info`
+and `set_timeout`; external IDs use direct `Sandbox.get_info_by_id` and
+`Sandbox.set_timeout_by_id` methods, with no new platform endpoints. Their
+`get_info_by_id_sync` / `set_timeout_by_id_sync` variants are available as well.
+The new static methods accept the same credential, region and provider overrides
+as `Sandbox.kill_by_id`; qualified `provider:id` references select the provider.
+`sandbox_domain` is accepted for lifecycle-call compatibility and intentionally
+unused: these methods only use the control-plane API URL, without an envd client. Schemas and handlers are shared by the
 Python STDIO and Streamable HTTP servers. The Node.js CLI has its own MCP implementation;
 availability there must be checked separately.
 
