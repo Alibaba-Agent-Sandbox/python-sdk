@@ -10,9 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Python MCP lifecycle tools `list_sandboxes`, `get_sandbox`, and `set_sandbox_timeout`; creation accepts provider, region, CPU and memory options. Metadata uses a fixed allowlist, external inspection/renewal does not adopt resources, and lifecycle failures omit credential-bearing exception details.
 - Add the Chinese counterpart of the historical OpenSandbox provider research archive, preserving its versioned evidence and current-adapter boundary.
 
 ### Fixed
+
+- **Real-cloud E2E acceptance.** The server fixture keeps envd credentials separate from the unconfigured template server; provider reports reject missing checks and the CLI scenario resolves `ABX_BIN` or an installed `abx` instead of assuming a sibling checkout.
+
+- **MCP timeout typing.** Keep the explicit managed-instance guard valid under the CI type checker while preserving shutdown ownership and renewal cleanup.
+
+- **Stacked pull request validation.** The complete CI matrix now runs for pull requests targeting feature branches as well as `main`; push validation remains limited to `main`.
+
+- MCP external metadata/timeout operations dispatch directly through `Sandbox.get_info_by_id` / `set_timeout_by_id`, closing temporary infrastructure in `finally`; they never call provider connect/resume and cannot wake paused instances through that connect path. Late managed TTL completion after shutdown cannot restore renewal state.
 
 - `agent-sandbox-server serve --commands FILE` registers the module before execution, fixing startup failures for dataclasses with postponed annotations. File imports reuse canonical paths, keep different files isolated, and remove incomplete module/import-path state after a failed load.
 - Source-checkout installs with uv now resolve `agent-sandbox-server` to the local workspace member instead of failing with a missing `tool.uv.sources` entry. Published dependency pins are unchanged.

@@ -42,13 +42,15 @@ cd e2e && python -m pytest -m "not e2e_slow" -ra               # 等同 `make e2
 | `test_06_server_sdk.py` | 真实沙箱(模板 `python-hello`)内的 `agent-sandbox-server`:`/commands`、`/files/*`、`/process/*`、`/capabilities`、`/system/info`、`/env`、`/ports`、自定义路由 |
 | `test_07_declarative.py` | `@sandbox` 声明式远程执行 |
 | `test_08_providers.py` | 真实后端调用：内置 `alicloud-express`（SDK 和 CLI），以及已安装的目录提供方 `opensandbox`、`cubesandbox`、`e2b`、`alicloud-container`。没有自己的后端时跳过，并且不会把极速版密钥发给它。 |
+| `test_09_mcp_lifecycle.py` | Python MCP 元数据/续期/列表、命令文件与外部实例归属 |
 
 标记:`e2e`(全部)、`e2e_slow`(> 约 60 秒)、`known_issue`(记录已知缺陷的严格 xfail,见
 [KNOWN-ISSUES.zh-CN.md](KNOWN-ISSUES.zh-CN.md))。
 
 ## 保证
 
-- **打标与清理。** 所有沙箱都通过 fixture 创建,并带 metadata `e2e=<run id>` 且登记待删除。会话
+- **打标与清理。** 所有沙箱都通过 fixture 创建,并带 metadata `e2e=<run id>` 且登记待删除。MCP 创建工具未开放 metadata，相关 E2E 直接登记返回的自有 ID，
+  并在 `finally` 退出所属 manager。会话
   收尾时先删除所有已登记资源,再按标签扫描清理,即使测试失败或运行被中断也如此。`scripts/e2e-cleanup.py` 用于被强杀的
   运行(默认干运行;`--yes` 才删除;支持 `--run-id`、`--all-tagged`、`--older-than N`),
   绝不触碰无标签的沙箱。
@@ -57,6 +59,16 @@ cd e2e && python -m pytest -m "not e2e_slow" -ra               # 等同 `make e2
   沙箱列表、server 启动)用 `eventually` 轮询。
 
 ## 环境变量
+
+服务fixture遵循 `Sandbox.server_at`：模板服务未配置令牌，不向它发送无关的envd
+`X-Access-Token`。CLI provider场景使用 `ABX_BIN`（可包含参数）或PATH中的abx，
+不依赖相邻源码目录。缺失预期报告项会使场景失败，包括未找到CLI的情况。
+
+完整套件的凭据拒绝检查需要先在隔离测试HOME中安装对应catalog provider；安装须保留
+同意和doctor验证。缺少插件不能证明该插件的凭据隔离边界。
+宿主前置 `InvalidCredentialsError` 和provider内部 `InvalidAPIKeyError` 都是有效的凭据
+拒绝。Cube实云验收须明确配置 `ABX_CUBESANDBOX_BASE_URL`，不能用其他本地服务的
+端口监听推断CubeAPI已就绪。
 
 | 变量 | 默认值 | 含义 |
 |---|---|---|
@@ -70,3 +82,9 @@ cd e2e && python -m pytest -m "not e2e_slow" -ra               # 等同 `make e2
 2. 断言**预期**行为。若因产品缺陷失败,标记 `@pytest.mark.known_issue` + `@pytest.mark.xfail(strict=True, reason="KI-0NN: ...")`,
    并在 [KNOWN-ISSUES.md](KNOWN-ISSUES.md)(中英文)中新增条目。
 3. 在 `.agents/evidence/verify/<date>-<topic>.md` 记录运行结果(完成定义)。
+
+### Python MCP 生命周期验证
+
+`test_09_mcp_lifecycle.py` 验证真实 Python MCP 创建、白名单元数据、列表可见性、
+续期、命令与文件，以及外部查询会话退出时不误删资源。仅列表按既有最终一致
+40 秒窗口重试，不据此推断 IDE 或新镜像部署通过。
