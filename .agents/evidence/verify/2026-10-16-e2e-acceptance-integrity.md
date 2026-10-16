@@ -78,3 +78,11 @@ explicit Cube origin and host/provider authentication refusal types were accepte
 The requested CLI docstring correction and random socket suffixes were applied,
 preserving an explicit per-run socket; the real CLI was rerun afterward.
 Exact-head remote CI is checked before merge.
+
+## Documentation integration
+
+The branch now includes the merged archive/workspace documentation through
+`42f3ff2`. The only merge conflict was the Unreleased Added list; both the MCP
+and Chinese archive entries were preserved. Final health: 106 PASS, one optional
+release-guide warning, zero FAIL. Hygiene, changed harness lint and whitespace
+checks pass. The import-order correction changes no acceptance behavior.
