@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- Add the Chinese counterpart of the historical OpenSandbox provider research archive, preserving its versioned evidence and current-adapter boundary.
+
 ### Fixed
 
 - `agent-sandbox-server serve --commands FILE` registers the module before execution, fixing startup failures for dataclasses with postponed annotations. File imports reuse canonical paths, keep different files isolated, and remove incomplete module/import-path state after a failed load.
