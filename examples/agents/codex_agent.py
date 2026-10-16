@@ -4,18 +4,18 @@
 Shows how to create a Codex sandbox, configure API keys, and run AI coding tasks.
 
 前置条件:
-  - 设置环境变量 ABX_SANDBOX_API_KEY（沙箱平台 Key）
+  - 设置环境变量 E2B_API_KEY（沙箱平台 Key）
   - 设置环境变量 OPENAI_API_KEY（OpenAI Key，传入沙箱）
 """
 
 import asyncio
 import os
 
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 
 async def main() -> None:
-    api_key = os.environ.get("ABX_SANDBOX_API_KEY", "")
+    api_key = os.environ.get("E2B_API_KEY", "")
     openai_key = os.environ.get("OPENAI_API_KEY", "")
 
     if not openai_key:

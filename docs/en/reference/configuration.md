@@ -33,9 +33,9 @@ Each key has one name. Product settings use `ABX_<KEY>`. A vendor that already p
 
 | What you need | Key | Environment variable |
 |---|---|---|
-| Sandbox API key | `sandbox_api_key` | `ABX_SANDBOX_API_KEY` |
-| Sandbox API base URL | `sandbox_base_url` | `ABX_SANDBOX_BASE_URL` |
-| Data-plane domain | `sandbox_domain` | `ABX_SANDBOX_DOMAIN` |
+| Sandbox API key | `sandbox_api_key` | `E2B_API_KEY` |
+| Sandbox API base URL | `sandbox_base_url` | `E2B_API_URL` |
+| Data-plane domain | `sandbox_domain` | `E2B_DOMAIN` |
 | Region | `region` | `ALIBABA_CLOUD_REGION_ID` |
 | Alibaba Cloud AK / SK | `access_key_id` / `access_key_secret` | `ALICLOUD_ACCESS_KEY_ID` / `ALICLOUD_ACCESS_KEY_SECRET` |
 | GitHub token | `github_token` | `GITHUB_TOKEN` |
@@ -48,7 +48,7 @@ The same chain is what these calls read:
 - `abx template install` / `abx template search` (GitHub token)
 - `abx mcp install` (the sandbox API key copied into the editor config)
 
-`abx mcp install` writes `ABX_SANDBOX_API_KEY` into the Cursor and Claude config. `ABX_SANDBOX_BASE_URL` and `ALIBABA_CLOUD_REGION_ID` are copied into the same file only when the process environment sets them. `abx mcp start` loads `~/.abx` again, so a region saved with `abx config set region` still applies when the editor starts the server.
+`abx mcp install` writes `E2B_API_KEY` into the Cursor and Claude config. `E2B_API_URL` and `ALIBABA_CLOUD_REGION_ID` are copied into the same file only when the process environment sets them. `abx mcp start` loads `~/.abx` again, so a region saved with `abx config set region` still applies when the editor starts the server.
 
 `abx config list` marks a process variable as `(env)` and either file as `(user)`. The value in the table is the one the command will use.
 
@@ -69,9 +69,9 @@ Each row is the only environment variable for that key. `abx config set` writes 
 | Environment variable | Config key | Description |
 |---|---|---|
 | `ABX_PROVIDER` | `provider` | Default provider id (default `alicloud-express`) |
-| `ABX_SANDBOX_API_KEY` | `sandbox_api_key` | Sandbox API key |
-| `ABX_SANDBOX_BASE_URL` | `sandbox_base_url` | Platform API URL |
-| `ABX_SANDBOX_DOMAIN` | `sandbox_domain` | Data-plane domain |
+| `E2B_API_KEY` | `sandbox_api_key` | Sandbox API key |
+| `E2B_API_URL` | `sandbox_base_url` | Platform API URL |
+| `E2B_DOMAIN` | `sandbox_domain` | Data-plane domain |
 | `ALIBABA_CLOUD_REGION_ID` | `region` | Region of the built-in provider |
 | `ABX_HTTP_TIMEOUT` | `http_timeout` | HTTP timeout in seconds |
 | `ABX_HTTP2` | `http2` | HTTP/2 on or off |
@@ -101,7 +101,7 @@ The SDK field for the sandbox key is `sandbox_api_key`. The SDK field for the ba
 
 ### One name per key
 
-A key is read from its one environment variable and stored under that same name. `abx config set sandbox_api_key` writes `ABX_SANDBOX_API_KEY` to `~/.abx/.env`. `abx config set sandbox_base_url` writes `sandbox_base_url` in `[transport]`. `abx config set github_token` writes `GITHUB_TOKEN`. `abx config set region` writes `region` for the built-in provider; the environment variable for that key is `ALIBABA_CLOUD_REGION_ID`.
+A key is read from its one environment variable and stored under that same name. `abx config set sandbox_api_key` writes `E2B_API_KEY` to `~/.abx/.env`. `abx config set sandbox_base_url` writes `sandbox_base_url` in `[transport]`. `abx config set github_token` writes `GITHUB_TOKEN`. `abx config set region` writes `region` for the built-in provider; the environment variable for that key is `ALIBABA_CLOUD_REGION_ID`.
 
 ### Server-Side Environment Variables
 
@@ -144,7 +144,7 @@ region = "cn-hangzhou"
 endpoint = "https://sandbox.my-cloud.example"   # key declared by that plugin
 
 [shortcuts]
-init = "template init"          # command path, not "abx template init"
+init = "template init"          # command path, not "abx template scaffold"
 ps   = "sandbox process list"
 ```
 
@@ -193,7 +193,7 @@ Values read from `.env` files or `config.toml` count as defaults, so a base URL 
 ```python
 from agent_sandbox.transport.config import explain_config
 
-explain_config()   # {"sandbox_api_key": {"value": "****3dc1", "source": "environ", "name": "ABX_SANDBOX_API_KEY", "secret": True}, ...}
+explain_config()   # {"sandbox_api_key": {"value": "****3dc1", "source": "environ", "name": "E2B_API_KEY", "secret": True}, ...}
 ```
 
 `explain_config()` tells you which layer (`override`, `environ`, `dotenv`, `toml`, `derived`, `default`) and which variable decided each key; secrets are masked. The `name` is the one environment variable for that key.
@@ -232,12 +232,12 @@ The SDK reads both `.env` files. Each is its own layer, so they merge per key:
 `.env` file format. Use the one variable for each key:
 
 ```bash
-ABX_SANDBOX_API_KEY=your-api-key
+E2B_API_KEY=your-api-key
 ALIBABA_CLOUD_REGION_ID=cn-beijing
 ABX_PROVIDER=alicloud-express
 ```
 
-The `abx config set sandbox_api_key <KEY>` command saves the API Key to `~/.abx/.env` as `ABX_SANDBOX_API_KEY` (file permissions 600). `github_token` is stored as `GITHUB_TOKEN`. Access keys are stored as `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`.
+The `abx config set sandbox_api_key <KEY>` command saves the API Key to `~/.abx/.env` as `E2B_API_KEY` (file permissions 600). `github_token` is stored as `GITHUB_TOKEN`. Access keys are stored as `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`.
 
 ---
 

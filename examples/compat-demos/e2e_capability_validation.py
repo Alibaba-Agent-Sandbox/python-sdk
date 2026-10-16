@@ -12,7 +12,7 @@
   Part D — 从 Part A 安装的自定义模板创建沙箱（很可能因 legacy 构建未完成而失败，
            如实记录现实边界，不伪装成功）。
 
-真实后端需要 ABX_SANDBOX_API_KEY（由 load_config 从项目根 .env 自动加载）。
+真实后端需要 E2B_API_KEY（由 load_config 从项目根 .env 自动加载）。
 本脚本 **不打印任何密钥明文**，仅打印 "present: True/False"。
 每个沙箱都在 finally 中 kill，避免泄漏计费资源。
 
@@ -488,7 +488,7 @@ def part_b(api_key_present: bool) -> None:
             "E2B-09 stream",
             "E2B-03b code@ci-v1",
         ):
-            record("B", case, "BLOCKED", "no ABX_SANDBOX_API_KEY in env/.env → cannot reach real FC")
+            record("B", case, "BLOCKED", "no E2B_API_KEY in env/.env → cannot reach real FC")
         return
     try:
         asyncio.run(_part_b_core())
@@ -504,7 +504,7 @@ def part_c(api_key_present: bool) -> None:
     hr("Part C — Modal 风格声明式（真实 FC, template=\"code-interpreter-v1\"）")
     if not api_key_present:
         for case in ("MOD-01 add", "MOD-02 numpy", "MOD-04 cross-check"):
-            record("C", case, "BLOCKED", "no ABX_SANDBOX_API_KEY in env/.env → cannot reach real FC")
+            record("C", case, "BLOCKED", "no E2B_API_KEY in env/.env → cannot reach real FC")
         return
 
     from agent_sandbox.declarative import sandbox
@@ -580,7 +580,7 @@ def part_c(api_key_present: bool) -> None:
 def part_d(api_key_present: bool, template_id: str | None) -> None:
     hr("Part D — 从已安装自定义模板创建沙箱（如实记录现实边界）")
     if not api_key_present:
-        record("D", "D-01 custom template", "BLOCKED", "no ABX_SANDBOX_API_KEY → cannot reach real FC")
+        record("D", "D-01 custom template", "BLOCKED", "no E2B_API_KEY → cannot reach real FC")
         return
     if not template_id:
         record(
@@ -650,7 +650,7 @@ def main() -> int:
 
         cfg = load_config()
         api_key_present = bool(cfg.api_key)
-        print(f"  ABX_SANDBOX_API_KEY present: {api_key_present}")
+        print(f"  E2B_API_KEY present: {api_key_present}")
         print(f"  api_url: {cfg.api_url}")
         print(f"  domain:  {cfg.domain}")
     except Exception as exc:  # noqa: BLE001

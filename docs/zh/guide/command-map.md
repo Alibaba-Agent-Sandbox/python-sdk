@@ -21,7 +21,7 @@ E2B 形状的少量方法也可以从 `agent_sandbox.compat` 导入。差异和�
 | 做什么 | abx | Agent Sandbox SDK | e2b | E2B SDK | osb | OpenSandbox SDK |
 |---|---|---|---|---|---|---|
 | 安装 | `npm install -g @agent-sandbox/cli` | `pip install agent-sandbox-client` | `npm install -g @e2b/cli` | `pip install e2b` | `pip install opensandbox-cli` | `pip install opensandbox` |
-| 写入凭证 | `abx config set sandbox_api_key` | 环境变量 `ABX_SANDBOX_API_KEY` | `e2b auth login` | 环境变量 `E2B_API_KEY` | `osb config set connection.api_key` | `ConnectionConfig(api_key=…)` 或 `OPEN_SANDBOX_API_KEY` |
+| 写入凭证 | `abx config set sandbox_api_key` | 环境变量 `E2B_API_KEY` | `e2b auth login` | 环境变量 `E2B_API_KEY` | `osb config set connection.api_key` | `ConnectionConfig(api_key=…)` 或 `OPEN_SANDBOX_API_KEY` |
 | 查看生效配置 | `abx config list` | — | `e2b auth info` | — | `osb config show` | — |
 
 阿里云 AccessKey 保持官方名字 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。OpenSandbox 的连接地址是 `osb config set connection.domain`，对应环境变量 `OPEN_SANDBOX_DOMAIN`。
@@ -86,7 +86,7 @@ E2B 的文件操作在 SDK 里。命令行用 `e2b sandbox exec` 间接碰文件
 
 | 做什么 | abx | Agent Sandbox SDK | e2b | E2B SDK | osb | OpenSandbox SDK |
 |---|---|---|---|---|---|---|
-| 生成本地工程 | `abx template init` | — | `e2b template init` | `Template()` 构建器 | — | — |
+| 生成本地工程 | `abx template scaffold` | — | `e2b template init` | `Template()` 构建器 | — | — |
 | 构建并发布 | `abx template deploy`，分步是 `build` 和 `push` | —（由 CLI 构建和部署） | `e2b template create <名称>`（`template build` 已弃用） | `Template.build` | `osb template create --image … --publish …` | SDK 的模板管理 |
 | 列出 | `abx template list` | — | `e2b template list` | 模板 API | `osb template list` | 同上 |
 | 查看 | `abx template info` | — | — | — | `osb template get <id>` | 同上 |

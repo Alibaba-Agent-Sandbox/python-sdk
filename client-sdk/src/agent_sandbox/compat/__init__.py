@@ -1,7 +1,5 @@
-"""Migration helper for code written against the E2B Python SDK."""
+"""Standard sandbox exports."""
 
-from __future__ import annotations
+from agent_sandbox.compat.sandbox import AsyncSandbox, E2BSandbox, Sandbox
 
-from agent_sandbox.compat.sandbox import E2BSandbox, Sandbox
-
-__all__ = ["Sandbox", "E2BSandbox"]
+__all__ = ["Sandbox", "AsyncSandbox", "E2BSandbox"]

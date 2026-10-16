@@ -23,7 +23,7 @@ sb = await Sandbox.create(
 | API key, header `X-API-Key` | `ABX_ALICLOUD_CONTAINER_API_KEY` |
 | `native` or `private` | `ABX_ALICLOUD_CONTAINER_PROTOCOL`, default `native` |
 
-Native API is `https://api.{domain}` and the data plane is `https://{port}-{id}.{domain}`. Private API is `https://{domain}/kruise/api` and the data plane is `https://{domain}/kruise/{id}/49983`. `ABX_SANDBOX_API_KEY` is not read.
+Native API is `https://api.{domain}` and the data plane is `https://{port}-{id}.{domain}`. Private API is `https://{domain}/kruise/api` and the data plane is `https://{domain}/kruise/{id}/49983`. `E2B_API_KEY` is not read.
 
 Declared: `sandbox.lifecycle`, `sandbox.timeout`, `sandbox.pause`, `exec.run`, `exec.stream`, `process.manage`, `files.rw`, `code.interpret`, `ports.url`. `pty` is not declared: sandbox-manager has no `/terminal`.
 

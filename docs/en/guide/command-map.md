@@ -21,7 +21,7 @@ A cell with "—" means that side has no matching public command or method.
 | Job | abx | Agent Sandbox SDK | e2b | E2B SDK | osb | OpenSandbox SDK |
 |---|---|---|---|---|---|---|
 | Install | `npm install -g @agent-sandbox/cli` | `pip install agent-sandbox-client` | `npm install -g @e2b/cli` | `pip install e2b` | `pip install opensandbox-cli` | `pip install opensandbox` |
-| Store a credential | `abx config set sandbox_api_key` | environment variable `ABX_SANDBOX_API_KEY` | `e2b auth login` | environment variable `E2B_API_KEY` | `osb config set connection.api_key` | `ConnectionConfig(api_key=…)` or `OPEN_SANDBOX_API_KEY` |
+| Store a credential | `abx config set sandbox_api_key` | environment variable `E2B_API_KEY` | `e2b auth login` | environment variable `E2B_API_KEY` | `osb config set connection.api_key` | `ConnectionConfig(api_key=…)` or `OPEN_SANDBOX_API_KEY` |
 | Show the effective config | `abx config list` | — | `e2b auth info` | — | `osb config show` | — |
 
 Alibaba Cloud access keys keep the official names `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. The OpenSandbox address is `osb config set connection.domain`, and the environment variable is `OPEN_SANDBOX_DOMAIN`.
@@ -86,7 +86,7 @@ E2B file operations live on the SDK. The CLI reaches files through `e2b sandbox 
 
 | Job | abx | Agent Sandbox SDK | e2b | E2B SDK | osb | OpenSandbox SDK |
 |---|---|---|---|---|---|---|
-| Scaffold a local project | `abx template init` | — | `e2b template init` | the `Template()` builder | — | — |
+| Scaffold a local project | `abx template scaffold` | — | `e2b template init` | the `Template()` builder | — | — |
 | Build and publish | `abx template deploy`; the steps are `build` and `push` | — (the CLI builds and deploys) | `e2b template create <name>` (`template build` is deprecated) | `Template.build` | `osb template create --image … --publish …` | the SDK template API |
 | List | `abx template list` | — | `e2b template list` | the template API | `osb template list` | the same API |
 | Inspect | `abx template info` | — | — | — | `osb template get <id>` | the same API |

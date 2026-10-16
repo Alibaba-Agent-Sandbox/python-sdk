@@ -143,3 +143,5 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 ## 相关：abx CLI
 
 `abx` CLI（npm 包 `@agent-sandbox/cli`）的文档位于 [`cli` 仓库](https://github.com/alibaba-agent-sandbox/agent-sandbox)：[文档中心](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/README.md)、[快速开始](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/getting-started.md)、[CLI 参考](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/cli-reference.md)、[CLI 架构](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/architecture.md)、[CLI 命令体系](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/cli-design.md)、[模板目录](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/templates-catalog.md)、[部署与构建](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/deploy-and-build.md)、[Agent Skill 安装与分发](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/agent-skill-installation.md)。
+
+[E2B 迁移契约](guide/migrate-from-e2b.md)定义同步 Sandbox、异步 AsyncSandbox 和解释器接口；Provider/Server 扩展使用 ProviderSandbox。

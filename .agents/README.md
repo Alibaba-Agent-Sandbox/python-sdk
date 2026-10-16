@@ -43,3 +43,7 @@ Move the file and edit `Status:` in the same commit. Required sections and the t
   A newer run is a new file, not an edit. Never paste credentials, tokens or machine-local paths.
 
 `scripts/check-repo-health.sh` enforces ADR naming, the `Status:`/directory match, and that no slug dangles.
+
+## Standard E2B behavior work
+
+The active [proposed contract](notes/proposed/architecture/2026-10-16-e2b-behavior-contract.md) defines the pinned Alibaba migration surface and project extension boundary. Verification evidence is point-in-time; read the latest E2B run before reporting completion.

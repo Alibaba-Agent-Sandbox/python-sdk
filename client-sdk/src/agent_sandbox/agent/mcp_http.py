@@ -17,7 +17,7 @@ with the version reported by ``GET /health``. The STDIO transport keeps its own
 
 Authentication:
 - Client → MCP: ``Authorization: Bearer <token>`` (validated here)
-- MCP → Sandbox: ``ABX_SANDBOX_API_KEY`` environment variable (forwarded by SandboxManager)
+- MCP → Sandbox: ``E2B_API_KEY`` environment variable (forwarded by SandboxManager)
 
 Session affinity requires platform routing based on the
 ``Mcp-Session-Id`` response header.
@@ -328,7 +328,7 @@ def create_mcp_app(
     Args:
         auth_token: Bearer token for client authentication.
             If *None*, authentication is disabled.
-        api_key: ``ABX_SANDBOX_API_KEY`` for MCP → Sandbox backend auth.
+        api_key: ``E2B_API_KEY`` for MCP → Sandbox backend auth.
         api_url: Override for the sandbox API URL.
         domain: Override for the sandbox domain.
         template: Default sandbox template.
@@ -515,18 +515,18 @@ def _create_default_app() -> Starlette:
 
     Environment variables:
     - ``ABX_MCP_AUTH_TOKEN`` — Bearer token for client auth (optional)
-    - ``ABX_SANDBOX_API_KEY`` — Sandbox backend API key
-    - ``ABX_SANDBOX_BASE_URL`` — API URL override
-    - ``ABX_SANDBOX_DOMAIN`` — Domain override
+    - ``E2B_API_KEY`` — Sandbox backend API key
+    - ``E2B_API_URL`` — API URL override
+    - ``E2B_DOMAIN`` — Domain override
     - ``ABX_DEFAULT_TEMPLATE`` — Default template
     """
     raw_origins = os.environ.get("ABX_MCP_ALLOWED_ORIGINS", "")
     allowed_origins = frozenset(part.strip() for part in raw_origins.split(",") if part.strip())
     return create_mcp_app(
         auth_token=os.environ.get("ABX_MCP_AUTH_TOKEN"),
-        api_key=os.environ.get("ABX_SANDBOX_API_KEY") or None,
-        api_url=os.environ.get("ABX_SANDBOX_BASE_URL") or None,
-        domain=os.environ.get("ABX_SANDBOX_DOMAIN") or None,
+        api_key=os.environ.get("E2B_API_KEY") or None,
+        api_url=os.environ.get("E2B_API_URL") or None,
+        domain=os.environ.get("E2B_DOMAIN") or None,
         template=os.environ.get("ABX_DEFAULT_TEMPLATE") or "base",
         allowed_origins=allowed_origins,
     )

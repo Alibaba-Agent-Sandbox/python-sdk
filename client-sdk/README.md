@@ -3,7 +3,7 @@
 **Client SDK.** The product is Agent Sandbox. The import path is `agent_sandbox`. This package runs on your machine: create a sandbox, use it, and kill it. The HTTP service inside the image is [`agent-sandbox-server`](../server-sdk/README.md). Guide: [Client SDK](../docs/en/guide/client-sdk.md).
 
 Template build and deploy are done by the CLI (`abx template build|deploy`). Method names are
-E2B-shaped to ease migration; this is not a drop-in replacement (see the "Migrate from E2B" guide).
+E2B-shaped to ease migration; the standard API follows Alibaba-supported E2B behavior (see the "Migrate from E2B" guide).
 
 This package is the `agent_sandbox` import namespace *except* `agent_sandbox.server`, which is
 the container-side runtime shipped separately as
@@ -26,7 +26,7 @@ Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated projec
 
 ```python
 import asyncio
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 
 async def main():
@@ -59,7 +59,7 @@ asyncio.run(main())
 | `agent_sandbox.agent` | L5 — tool schemas, MCP stdio/HTTP servers |
 
 Run the MCP stdio server directly with `python -m agent_sandbox.agent.mcp`
-(reads `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL`, `ABX_SANDBOX_DOMAIN`, `ABX_DEFAULT_TEMPLATE`).
+(reads `E2B_API_KEY`, `E2B_API_URL`, `E2B_DOMAIN`, `ABX_DEFAULT_TEMPLATE`).
 
 ## Develop
 

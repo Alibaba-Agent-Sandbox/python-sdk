@@ -6,7 +6,7 @@ This is the **Server SDK**: `commands.py` starts with the image and serves HTTP 
 
 This document explains how to create custom Agent Sandbox templates, including directory structure, field reference, capability declarations, registered commands, and publishing.
 
-A template is a directory of plain files, written by hand or generated. The `abx template init` command generates one three ways (built-in scaffold, a one-sentence description, or adopting a project that already has source code); that workflow is documented in the CLI repository: [Authoring Templates (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authoring-templates.md).
+A template is a directory of plain files, written by hand or generated. The `abx template scaffold` command generates one three ways (built-in scaffold, a one-sentence description, or adopting a project that already has source code); that workflow is documented in the CLI repository: [Authoring Templates (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authoring-templates.md).
 
 ---
 
@@ -151,7 +151,7 @@ The CLI owns the image contract. It resolves the provider with `--provider` / `A
 
 The Python SDK is the runtime client and does not build or deploy templates. Build, push and register a template with the CLI: `abx template build` and `abx template deploy` (or `abx deploy`). See [Build & Deploy](build-and-deploy.md).
 
-To publish a template to GitHub, install one locally or from a registry, adopt an existing project (`abx template init --adopt`), or build and register one from the command line (`abx deploy`, `abx template deploy|create`), use the `abx` CLI; see [Related: the abx CLI](#related-the-abx-cli).
+To publish a template to GitHub, install one locally or from a registry, adopt an existing project (`abx template scaffold --adopt`), or build and register one from the command line (`abx deploy`, `abx template deploy|create`), use the `abx` CLI; see [Related: the abx CLI](#related-the-abx-cli).
 
 ## Next Steps
 
@@ -163,4 +163,4 @@ To publish a template to GitHub, install one locally or from a registry, adopt a
 
 ## Related: the abx CLI
 
-The command-line workflow for templates is documented in the CLI repository: [Authoring Templates (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authoring-templates.md) (`abx template init`, `--adopt`, publishing, `template install`), [Deploy & Build](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/deploy-and-build.md) (`abx deploy`, `abx template deploy|create`) and [Using Templates](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/using-templates.md).
+The command-line workflow for templates is documented in the CLI repository: [Authoring Templates (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authoring-templates.md) (`abx template scaffold`, `--adopt`, publishing, `template install`), [Deploy & Build](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/deploy-and-build.md) (`abx deploy`, `abx template deploy|create`) and [Using Templates](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/using-templates.md).

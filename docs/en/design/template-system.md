@@ -348,7 +348,7 @@ Push the template to GitHub for others to reference via `owner/repo[//subdir][@r
 
 ```bash
 # 1. Initialize the template project (generates template.yaml, Dockerfile scaffolding)
-abx template init my-template
+abx template scaffold my-template
 
 # 2. Local development and testing
 abx create ./my-template

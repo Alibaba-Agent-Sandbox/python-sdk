@@ -4,7 +4,7 @@
 > [fine-grained-capabilities-review.md](../archive/fine-grained-capabilities-review.md)。
 > 产品要求：*所有模板构建都应基于阿里云 Agent Sandbox（FC Agent Sandbox）基础镜像。*
 >
-> **更新。** Python 客户端不再构建镜像：`Image`、`DockerBuilder`、`Sandbox.deploy` 和 `agent_sandbox.api.base_image` 都已删除。第 3 节的基础镜像契约、lint 和 Dockerfile 脚手架归 `abx` CLI（`abx template init|build|deploy`）。第 4、5、7、8 节描述这个仓库里留下的部分。
+> **更新。** Python 客户端不再构建镜像：`Image`、`DockerBuilder`、`Sandbox.deploy` 和 `agent_sandbox.api.base_image` 都已删除。第 3 节的基础镜像契约、lint 和 Dockerfile 脚手架归 `abx` CLI（`abx template scaffold|build|deploy`）。第 4、5、7、8 节描述这个仓库里留下的部分。
 > 英文版为准：[../../en/design/base-image-and-server-sdk.md](../../en/design/base-image-and-server-sdk.md)。
 
 ## 1. 基础镜像是什么（证据）
@@ -77,7 +77,7 @@
 
 ## 5. CLI 侧变更（记录在 `cli-followups.md`）
 
-Node 脚手架 `abx template init`（FROM 官方基础镜像，按第 3 节生成脚手架）；部署路径（wheel 注入、`envd_inject` 自动选择、`start_cmd`/`ready_cmd`）；
+Node 脚手架 `abx template scaffold`（FROM 官方基础镜像，按第 3 节生成脚手架）；部署路径（wheel 注入、`envd_inject` 自动选择、`start_cmd`/`ready_cmd`）；
 `template.yaml` 的 `server:` 编译；AI 模板指南提示词（必须 FROM 官方基础镜像，不得覆盖 ENTRYPOINT，使用 `agent-sandbox-server serve`）。
 
 ## 6. 未决问题（无法从仓库/文档确定）

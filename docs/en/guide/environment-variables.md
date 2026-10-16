@@ -266,7 +266,7 @@ result = await sandbox.run("my_handler")
 
 ## Client Configuration Variables Are Not Sandbox Variables
 
-The variables that configure the SDK and CLI on **your** machine (`ABX_SANDBOX_API_KEY`, `ABX_PROVIDER`, `ALIBABA_CLOUD_REGION_ID`, ...) are read by the client and are never copied into a sandbox. To make a value visible inside a sandbox, pass it explicitly with `envs=` / `--env`. Each client setting has one variable. Names and precedence are in the [Configuration Reference](../reference/configuration.md#environment-variables).
+The variables that configure the SDK and CLI on **your** machine (`E2B_API_KEY`, `ABX_PROVIDER`, `ALIBABA_CLOUD_REGION_ID`, ...) are read by the client and are never copied into a sandbox. To make a value visible inside a sandbox, pass it explicitly with `envs=` / `--env`. Each client setting has one variable. Names and precedence are in the [Configuration Reference](../reference/configuration.md#environment-variables).
 
 Two consequences:
 

@@ -22,12 +22,12 @@ from agent_sandbox.api.sandbox import Sandbox
 
 ## 模板作者快速路径
 
-2026-10-15 在阿里云 Express（`alicloud-express`）上验证。模板是 generation 2，启动命令运行 `agent-sandbox-server`。`Sandbox.create(template=..., provider="alicloud-express")` 使用 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL` 和 `ABX_SANDBOX_DOMAIN`。`template` 可以是模板 id 或名称。
+2026-10-15 在阿里云 Express（`alicloud-express`）上验证。模板是 generation 2，启动命令运行 `agent-sandbox-server`。`Sandbox.create(template=..., provider="alicloud-express")` 使用 `E2B_API_KEY`、`E2B_API_URL` 和 `E2B_DOMAIN`。`template` 可以是模板 id 或名称。
 
 ```python
 import asyncio
 
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 TEMPLATE = "hello-x"  # generation-2 模板的名称或 id
 

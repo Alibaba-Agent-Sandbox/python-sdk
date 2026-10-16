@@ -4,7 +4,7 @@
 
 Agent Sandbox 支持两种认证模式：**API Key** 和 **AK/SK（阿里云 AccessKey）**。
 
-凭证属于某个[提供方](providers.md)。内置提供方是**阿里云极速版（Alibaba Cloud Express Edition）**，id 为 `alicloud-express`，也是默认提供方。沙箱密钥是 `ABX_SANDBOX_API_KEY`。阿里云 AccessKey 使用官方名字 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。地域是 `ALIBABA_CLOUD_REGION_ID`。每个键只有一个名字。
+凭证属于某个[提供方](providers.md)。内置提供方是**阿里云极速版（Alibaba Cloud Express Edition）**，id 为 `alicloud-express`，也是默认提供方。沙箱密钥是 `E2B_API_KEY`。阿里云 AccessKey 使用官方名字 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。地域是 `ALIBABA_CLOUD_REGION_ID`。每个键只有一个名字。
 
 > **历史说明**：`abx auth` CLI 命令组（`login`/`logout`/`status`/`switch`）已在首个正式版 `0.1.0` 之前移除。凭证通过下方介绍的环境变量与 `abx config set sandbox_api_key` 配置；用 `abx config list` 查看生效状态。
 
@@ -29,21 +29,21 @@ API Key 是最常用的认证方式，通过 `Authorization: Bearer {api_key}` �
 #### 1. 环境变量（优先于 `~/.abx`）
 
 ```bash
-export ABX_SANDBOX_API_KEY="your-api-key"
+export E2B_API_KEY="your-api-key"
 ```
 
-设置 `ABX_SANDBOX_API_KEY`。这是沙箱 API Key 唯一的环境变量。
+设置 `E2B_API_KEY`。这是沙箱 API Key 唯一的环境变量。
 
 #### 2. 持久化文件（`~/.abx/.env`）
 
-SDK 同样会读取 `~/.abx/.env`，该文件由 `abx` CLI 写入（`abx config set sandbox_api_key ...`，文件权限 600；见 [CLI 认证配置指南](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authentication.md)）。密钥存储为 `ABX_SANDBOX_API_KEY`。AccessKey 存储为 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。
+SDK 同样会读取 `~/.abx/.env`，该文件由 `abx` CLI 写入（`abx config set sandbox_api_key ...`，文件权限 600；见 [CLI 认证配置指南](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authentication.md)）。密钥存储为 `E2B_API_KEY`。AccessKey 存储为 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。
 
 #### 3. .env 文件
 
 在项目根目录创建 `.env` 文件：
 
 ```dotenv
-ABX_SANDBOX_API_KEY=your-api-key
+E2B_API_KEY=your-api-key
 ```
 
 SDK 把两个 `.env` 当作各自独立的层读取。`./.env` 写了该键时优先；没写的键仍然来自 `~/.abx/.env`。
@@ -53,7 +53,7 @@ SDK 把两个 `.env` 当作各自独立的层读取。`./.env` 写了该键时�
 
 #### 4. config.toml 文件
 
-沙箱 API Key 放在 `~/.abx/.env`（权限 600）。`abx config set sandbox_api_key` 把 `ABX_SANDBOX_API_KEY` 写在那里。非密钥的连接设置放在 `~/.abx/config.toml`：
+沙箱 API Key 放在 `~/.abx/.env`（权限 600）。`abx config set sandbox_api_key` 把 `E2B_API_KEY` 写在那里。非密钥的连接设置放在 `~/.abx/config.toml`：
 
 ```toml
 [transport]
@@ -132,13 +132,13 @@ GitHub token 和区域走同一条链。空白或只含空格的值会被跳过�
 
 ### 凭证与提供方
 
-通用沙箱密钥（`sandbox_api_key`，环境变量 `ABX_SANDBOX_API_KEY`）和阿里云 AK/SK 属于内置提供方。切换到[提供方插件](providers.md)后，除非插件的清单申请了它们且你在安装时同意，否则插件**不会**收到。插件有自己作用域的凭证键，例如提供方 `my-cloud` 的 `ABX_MY_CLOUD_API_KEY`。这样可以避免把一个云的密钥发给另一个云。
+通用沙箱密钥（`sandbox_api_key`，环境变量 `E2B_API_KEY`）和阿里云 AK/SK 属于内置提供方。切换到[提供方插件](providers.md)后，除非插件的清单申请了它们且你在安装时同意，否则插件**不会**收到。插件有自己作用域的凭证键，例如提供方 `my-cloud` 的 `ABX_MY_CLOUD_API_KEY`。这样可以避免把一个云的密钥发给另一个云。
 
 插件的每个选项都遵循同一条规则：规范名是 `ABX_<PROVIDER_ID>_<FIELD>`（连字符变下划线），清单可以用 `env = [...]` 把厂商自己的变量加为别名。密钥字段（`secret = true`）只存在于环境变量或 `.env` 文件（权限 0600），命令行上会被拒绝；其他字段也可以放在 `config.toml` 的 `[providers.<id>]` 下。2026-10-13 用 OpenSandbox 验证：只要 `ABX_OPENSANDBOX_API_KEY` 和 `ABX_OPENSANDBOX_BASE_URL`，CLI 和 SDK 都能驱动真实服务器；`OPEN_SANDBOX_API_KEY` 与 `OPEN_SANDBOX_DOMAIN` 是它声明的原生别名，两者同时设置时规范名优先。声明了 `[core] inherit = ["sandbox_api_key"]` 的插件，只有在你于安装时同意之后才会收到通用密钥；`abx provider info <id>` 会在「Inherits」下显示这份清单。
 
 在同一层级内，API Key 优先于 AK/SK：
 - 若同时提供了 `sandbox_api_key` 和 `access_key_id`，使用 API Key
-- 若同时设置了 `ABX_SANDBOX_API_KEY` 和 `ALICLOUD_ACCESS_KEY_ID`，使用 `ABX_SANDBOX_API_KEY`
+- 若同时设置了 `E2B_API_KEY` 和 `ALICLOUD_ACCESS_KEY_ID`，使用 `E2B_API_KEY`
 
 ---
 
@@ -152,7 +152,7 @@ GitHub token 和区域走同一条链。空白或只含空格的值会被跳过�
 
 ```bash
 # 通过环境变量设置 API Key（推荐）
-export ABX_SANDBOX_API_KEY="your-api-key"
+export E2B_API_KEY="your-api-key"
 ```
 
 对应的 CLI 用法（`abx config set`、`abx create --env`）见 [CLI 认证配置指南](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authentication.md)。
@@ -182,7 +182,7 @@ envd 认证需要以下 HTTP 头（已由 SDK 自动设置）：
 
 ```text
 [E1001] API key cannot be empty
-  Suggestion: Check your ABX_SANDBOX_API_KEY environment variable or pass sandbox_api_key.
+  Suggestion: Check your E2B_API_KEY environment variable or pass sandbox_api_key.
 ```
 
 **解决**：确保通过上述任一方式配置了有效的 API Key。

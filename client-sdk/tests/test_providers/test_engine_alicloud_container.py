@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 from agent_sandbox.models.errors import (
     EnvdRpcError,
     FileNotFoundError_,
@@ -144,7 +144,7 @@ async def test_config_and_advertised_features(
     assert "pty" not in declared and "files.watch" not in declared
     assert sorted(registry.get_provider("alicloud-container").features) == sorted(ADVERTISED)
 
-    monkeypatch.setenv("ABX_SANDBOX_API_KEY", "express-secret")
+    monkeypatch.setenv("E2B_API_KEY", "express-secret")
     with pytest.raises(InvalidCredentialsError, match="ABX_ALICLOUD_CONTAINER_API_KEY"):
         await Sandbox.create(
             provider="alicloud-container",
@@ -243,7 +243,7 @@ async def test_private_data_plane_through_the_engine(
     engine_env: Path, mock_backend: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _install()
-    monkeypatch.setenv("ABX_SANDBOX_API_KEY", "express-secret")
+    monkeypatch.setenv("E2B_API_KEY", "express-secret")
     options = _private(mock_backend)
     async with await Sandbox.create(
         provider="alicloud-container", provider_options=options, template="code-interpreter"

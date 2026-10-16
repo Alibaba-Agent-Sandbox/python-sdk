@@ -30,7 +30,7 @@ npm install -g @agent-sandbox/cli
 
 ```bash
 # 方式一：环境变量
-export ABX_SANDBOX_API_KEY="your-api-key"
+export E2B_API_KEY="your-api-key"
 
 # 方式二：CLI 配置（持久化到 ~/.abx/config.toml；需安装 abx CLI）
 abx config set sandbox_api_key your-api-key
@@ -119,7 +119,7 @@ python examples/compat-demos/e2b_data_analysis.py
 ### 执行方法
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async with await Sandbox.create(template="base", api_key="...") as sandbox:
 

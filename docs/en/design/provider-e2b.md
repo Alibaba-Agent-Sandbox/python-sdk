@@ -18,14 +18,14 @@ Chinese page: [provider-e2b.md](../../zh/design/provider-e2b.md).
 
 Pass the same three names in `provider_options`. `Sandbox.create(api_url=...)` does not select this origin. The resolver reads `provider_options["base_url"]`.
 
-When the key is set, the client sends header `X-API-Key`. A missing `ABX_E2B_API_KEY` raises `InvalidAPIKeyError` and the message names `ABX_E2B_API_KEY`. This provider does not read `ABX_SANDBOX_API_KEY` (the Alibaba Cloud Express key) or `E2B_API_KEY` (a legacy name this product refuses).
+When the key is set, the client sends header `X-API-Key`. A missing `ABX_E2B_API_KEY` raises `InvalidAPIKeyError` and the message names `ABX_E2B_API_KEY`. This provider does not read `E2B_API_KEY` (the Alibaba Cloud Express key) or retired `ABX_SANDBOX_API_KEY`.
 
 `domain` is the suffix in `https://{port}-{sandboxID}.{domain}`. The envd port is 49983. A create response that omits `region` stays unknown (empty), not `cn-hangzhou`.
 
 The current E2B SDK uses `https://api.e2b.app` and domain `e2b.app`. The data-plane host is `https://{port}-{sandboxID}.e2b.app`. `https://api.e2b.dev` is the older origin; set `ABX_E2B_BASE_URL` and `ABX_E2B_DOMAIN` when an account still uses it.
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 sb = await Sandbox.create(
     provider="e2b",

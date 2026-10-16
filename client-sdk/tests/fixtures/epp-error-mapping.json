@@ -33,7 +33,7 @@
         "sdk_code": "E1001",
         "exit_code": 3,
         "message": "bad",
-        "suggestion": "Check your ABX_SANDBOX_API_KEY environment variable or pass sandbox_api_key."
+        "suggestion": "Check your E2B_API_KEY environment variable or pass sandbox_api_key."
       }
     },
     {

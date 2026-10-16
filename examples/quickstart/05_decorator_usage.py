@@ -18,7 +18,7 @@ import os
 
 # 确保 API Key 在装饰器生效前可用
 # @sandbox 装饰器会使用 api_key 参数或环境变量
-API_KEY = os.environ.get("ABX_SANDBOX_API_KEY", "")
+API_KEY = os.environ.get("E2B_API_KEY", "")
 
 # ── 从正确的路径导入装饰器 ────────────────────────────────────────────
 from agent_sandbox.declarative import sandbox

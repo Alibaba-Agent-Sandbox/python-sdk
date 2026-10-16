@@ -21,7 +21,7 @@ except SandboxError as e:
 | Error Code | Exception Class | Meaning | Suggestion | Trigger Scenario |
 |------------|----------------|---------|------------|------------------|
 | E1000 | `AuthenticationError` | Authentication failed (base class) | — | General authentication errors |
-| E1001 | `InvalidAPIKeyError` | Invalid or missing API Key | Check the `ABX_SANDBOX_API_KEY` environment variable or pass the `sandbox_api_key` parameter | Called an authenticated API without configuring any API Key |
+| E1001 | `InvalidAPIKeyError` | Invalid or missing API Key | Check the `E2B_API_KEY` environment variable or pass the `sandbox_api_key` parameter | Called an authenticated API without configuring any API Key |
 | E1002 | `TokenExpiredError` | Authentication token expired | SDK should auto-refresh tokens; if persistent, check system clock synchronization | AK/SK temporary token expired and auto-refresh failed |
 | E1003 | `InvalidCredentialsError` | Invalid AK/SK credentials | Check `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET` environment variables | AK/SK is empty or malformed |
 

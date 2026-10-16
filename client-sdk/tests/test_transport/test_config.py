@@ -131,7 +131,7 @@ class TestLoadConfig:
 
     def test_env_var_api_key(self, monkeypatch):
         reset_config()
-        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "test-key-from-env")
+        monkeypatch.setenv("E2B_API_KEY", "test-key-from-env")
         cfg = load_config()
         assert cfg.sandbox_api_key == "test-key-from-env"
 
@@ -143,7 +143,7 @@ class TestLoadConfig:
 
     def test_env_var_base_url(self, monkeypatch):
         reset_config()
-        monkeypatch.setenv("ABX_SANDBOX_BASE_URL", "https://custom.api.com")
+        monkeypatch.setenv("E2B_API_URL", "https://custom.api.com")
         cfg = load_config()
         assert cfg.sandbox_base_url == "https://custom.api.com"
 
@@ -169,25 +169,25 @@ class TestLoadConfig:
 
     def test_none_override_does_not_clobber(self, monkeypatch):
         reset_config()
-        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "env-key")
+        monkeypatch.setenv("E2B_API_KEY", "env-key")
         cfg = load_config(sandbox_api_key=None)
         assert cfg.sandbox_api_key == "env-key"
 
-    def test_retired_e2b_api_key_env_var_is_ignored(self, monkeypatch):
+    def test_retired_project_api_key_env_var_is_ignored(self, monkeypatch):
         reset_config()
-        monkeypatch.setenv("E2B_API_KEY", "e2b-test-key")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "retired-test-key")
         cfg = load_config()
         assert cfg.sandbox_api_key is None
 
-    def test_retired_e2b_api_url_env_var_is_ignored(self, monkeypatch):
+    def test_retired_project_api_url_env_var_is_ignored(self, monkeypatch):
         reset_config()
-        monkeypatch.setenv("E2B_API_URL", "https://e2b-custom.api.com")
+        monkeypatch.setenv("ABX_SANDBOX_BASE_URL", "https://retired.api.com")
         cfg = load_config()
         assert cfg.sandbox_base_url == "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
 
-    def test_retired_e2b_domain_env_var_is_ignored(self, monkeypatch):
+    def test_retired_project_domain_env_var_is_ignored(self, monkeypatch):
         reset_config()
-        monkeypatch.setenv("E2B_DOMAIN", "custom.e2b.domain")
+        monkeypatch.setenv("ABX_SANDBOX_DOMAIN", "retired.domain")
         cfg = load_config()
         assert cfg.sandbox_domain == "cn-hangzhou.e2b.fc.aliyuncs.com"
 
@@ -195,7 +195,7 @@ class TestLoadConfig:
         reset_config()
         monkeypatch.setenv("SANDBOX_API_KEY", "sandbox-key")
         monkeypatch.setenv("E2B_API_KEY", "e2b-key")
-        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "canon")
+        monkeypatch.setenv("E2B_API_KEY", "canon")
         cfg = load_config()
         assert cfg.sandbox_api_key == "canon"
 
@@ -203,7 +203,7 @@ class TestLoadConfig:
         reset_config()
         monkeypatch.setenv("SANDBOX_API_BASE_URL", "https://sandbox.api.com")
         monkeypatch.setenv("E2B_API_URL", "https://e2b.api.com")
-        monkeypatch.setenv("ABX_SANDBOX_BASE_URL", "https://canon.example")
+        monkeypatch.setenv("E2B_API_URL", "https://canon.example")
         cfg = load_config()
         assert cfg.sandbox_base_url == "https://canon.example"
 
@@ -261,7 +261,7 @@ class TestDotenvIsolation:
         project = tmp_path / "project.env"
         system = tmp_path / "system.env"
         project.write_text("ALIBABA_CLOUD_REGION_ID=from-project\n", encoding="utf-8")
-        system.write_text("ABX_SANDBOX_API_KEY=from-system\n", encoding="utf-8")
+        system.write_text("E2B_API_KEY=from-system\n", encoding="utf-8")
         monkeypatch.setattr(config_module, "_ENV_FILE_CANDIDATES", [project, system])
         reset_config()
 
@@ -272,8 +272,8 @@ class TestDotenvIsolation:
     def test_project_dotenv_key_beats_system_file(self, monkeypatch, tmp_path):
         project = tmp_path / "project.env"
         system = tmp_path / "system.env"
-        project.write_text("ABX_SANDBOX_API_KEY=from-project\n", encoding="utf-8")
-        system.write_text("ABX_SANDBOX_API_KEY=from-system\n", encoding="utf-8")
+        project.write_text("E2B_API_KEY=from-project\n", encoding="utf-8")
+        system.write_text("E2B_API_KEY=from-system\n", encoding="utf-8")
         monkeypatch.setattr(config_module, "_ENV_FILE_CANDIDATES", [project, system])
         reset_config()
 
@@ -294,12 +294,12 @@ class TestDotenvIsolation:
     def test_blank_process_env_and_override_fall_through(self, monkeypatch, tmp_path):
         """Whitespace does not hide a key stored in .env or config.toml."""
         dotenv = tmp_path / "system.env"
-        dotenv.write_text("ABX_SANDBOX_API_KEY=from-dotenv\n", encoding="utf-8")
+        dotenv.write_text("E2B_API_KEY=from-dotenv\n", encoding="utf-8")
         toml = tmp_path / "config.toml"
         toml.write_text('[transport]\nregion = "cn-beijing"\n', encoding="utf-8")
         monkeypatch.setattr(config_module, "_ENV_FILE_CANDIDATES", [dotenv])
         monkeypatch.setattr(config_module, "_CONFIG_FILE", toml)
-        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "   ")
+        monkeypatch.setenv("E2B_API_KEY", "   ")
         monkeypatch.setenv("ALIBABA_CLOUD_REGION_ID", "  ")
         reset_config()
 

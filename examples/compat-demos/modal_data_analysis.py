@@ -19,7 +19,7 @@ Style: Modal (declarative)
 import os
 
 # 确保 API Key 可用 / Ensure API key is available
-API_KEY = os.environ.get("ABX_SANDBOX_API_KEY", "")
+API_KEY = os.environ.get("E2B_API_KEY", "")
 
 from agent_sandbox.declarative import sandbox
 

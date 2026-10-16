@@ -133,7 +133,7 @@ class TestRestFeatureGate:
         plugin.mkdir()
         (plugin / "abx-provider.toml").write_text(REST_MANIFEST)
         installer.install(str(plugin), yes=True)
-        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "k")
+        monkeypatch.setenv("E2B_API_KEY", "k")
         infra = await registry.get_provider("rest-lite").build_infra(
             load_config(provider="rest-lite")
         )

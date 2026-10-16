@@ -30,7 +30,7 @@ async with await Sandbox.create(template="code-interpreter") as sb:
 
 ```python
 # Future API — 待底层支持
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 sb = await Sandbox.create(
     template="python-base",
@@ -54,7 +54,7 @@ result = await sb.commands.run("pip list")  # flask, sqlalchemy 仍在
 
 ```python
 # Future API — 待底层支持
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 sb = await Sandbox.create(
     template="python-data-science",
@@ -121,7 +121,7 @@ stateDiagram-v2
 ### 临时沙箱 — 典型工作流
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 # 场景：AI Agent 执行一次性代码
 async def execute_code(code: str) -> str:
@@ -144,7 +144,7 @@ async def process_batch(items: list[str]) -> list[str]:
 > **以下 API 待底层能力支持后实现。**
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 # 创建或连接持久开发环境
 try:
@@ -176,7 +176,7 @@ async for event in sb.files.watch("/app/src"):
 > **以下 API 待底层能力支持后实现。**
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 # 创建支持休眠的沙箱
 sb = await Sandbox.create(

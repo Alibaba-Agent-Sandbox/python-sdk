@@ -34,7 +34,7 @@ graph TD
 |--------|----------------|
 | `transport.http` | HTTPS client based on httpx, connection pool management, timeout/retry policies |
 | `transport.ws` | Long-lived connections based on websockets, heartbeat keep-alive, auto-reconnect |
-| `auth.api_key` | **API Key authentication (primary path)**: passed via `X-API-KEY` header, environment variable `ABX_SANDBOX_API_KEY` |
+| `auth.api_key` | **API Key authentication (primary path)**: passed via `X-API-KEY` header, environment variable `E2B_API_KEY` |
 | `auth.ak_sk` | **AK/SK authentication (extension)**: exchanges Alibaba Cloud AK/SK for temporary API Key, or for control plane OpenAPI calls |
 | `auth.config` | Multi-environment config loading (code params → env vars → .env → config.toml → defaults) |
 
@@ -42,10 +42,10 @@ graph TD
 
 | Auth Method | Scenario | Transport | Environment Variables |
 |-------------|----------|-----------|----------------------|
-| **API Key (primary)** | Cloud sandbox data plane operations | `X-API-KEY` header | `ABX_SANDBOX_API_KEY` |
+| **API Key (primary)** | Cloud sandbox data plane operations | `X-API-KEY` header | `E2B_API_KEY` |
 | **AK/SK (extension)** | Exchange temporary API Key, control plane OpenAPI | Alibaba Cloud V4 Signature | `ALICLOUD_ACCESS_KEY_ID` / `ALICLOUD_ACCESS_KEY_SECRET` |
 
-> **Note**: The sandbox API key has one environment variable, `ABX_SANDBOX_API_KEY`. The AccessKey pair uses `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. See [authentication.md](../guide/authentication.md) and [configuration.md](../reference/configuration.md).
+> **Note**: The sandbox API key has one environment variable, `E2B_API_KEY`. The AccessKey pair uses `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. See [authentication.md](../guide/authentication.md) and [configuration.md](../reference/configuration.md).
 
 **Target Users**: Infrastructure developers, advanced users who need custom authentication logic.
 
@@ -244,7 +244,7 @@ The CLI (`abx`) formerly lived in `src/agent_sandbox/cli/` (Click commands under
 
 1. **E2B-shaped, not E2B-compatible**: L3 uses E2B-shaped method names and ships a small migration helper (`agent_sandbox.compat`); L2 implements the protocol independently without depending on the E2B SDK
 2. **Progressive Complexity**: Users start at L3 and explore downward or use advanced features upward as needed
-3. **Zero-Config Defaults**: Works out of the box with sensible defaults; just set the `ABX_SANDBOX_API_KEY` environment variable to get started
+3. **Zero-Config Defaults**: Works out of the box with sensible defaults; just set the `E2B_API_KEY` environment variable to get started
 4. **Alibaba Cloud Native**: Built for the Alibaba Cloud FC sandbox service
 5. **AI First**: Built-in AI CLI tools in sandboxes and MCP Server are first-class citizens; SDK has zero LLM dependencies
 6. **Type Safety**: Comprehensive use of Python Type Hints + Pydantic validation

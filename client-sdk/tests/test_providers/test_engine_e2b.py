@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 from agent_sandbox.models.errors import (
     InvalidAPIKeyError,
     InvalidCredentialsError,
@@ -191,7 +191,7 @@ async def test_e2b_ignores_the_express_key(
     engine_env: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _install()
-    monkeypatch.setenv("ABX_SANDBOX_API_KEY", "express-key")
+    monkeypatch.setenv("E2B_API_KEY", "express-key")
     with pytest.raises(InvalidCredentialsError, match="ABX_E2B_API_KEY") as raised:
         await Sandbox.create(provider="e2b", provider_options={"base_url": "http://127.0.0.1:9"})
     assert "express-key" not in str(raised.value)

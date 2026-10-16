@@ -17,9 +17,9 @@
 | Id | 怎么用 |
 |---|---|
 | `opensandbox` | [OpenSandbox 提供方](../design/provider-opensandbox-mapping.md)。HTTP 由加载 `provider.mjs` 的 Node 宿主进程发出。`ABX_OPENSANDBOX_BASE_URL` 默认 `http://127.0.0.1:8080`。 |
-| `alicloud-container` | [容器版](../design/provider-alicloud-container.md)。需要 `ABX_ALICLOUD_CONTAINER_DOMAIN`。不读取 `ABX_SANDBOX_API_KEY`。 |
+| `alicloud-container` | [容器版](../design/provider-alicloud-container.md)。需要 `ABX_ALICLOUD_CONTAINER_DOMAIN`。不读取 `E2B_API_KEY`。 |
 | `cubesandbox` | [CubeSandbox 提供方](../design/provider-cubesandbox.md)。默认地址 `http://127.0.0.1:3000`。 |
-| `e2b` | [E2B 提供方](../design/provider-e2b.md)。密钥是 `ABX_E2B_API_KEY`。不读取 `ABX_SANDBOX_API_KEY`，也不读取 `E2B_API_KEY`。 |
+| `e2b` | [E2B 提供方](../design/provider-e2b.md)。密钥是 `ABX_E2B_API_KEY`。不读取 `E2B_API_KEY`，也不读取旧的 `ABX_SANDBOX_API_KEY`。 |
 
 还没有后端的三个提供方，逻辑上能不能用，写在 [可用性审查](../design/provider-readiness.md)。让代理写一个新的提供方插件，用技能 `agent-sandbox-provider`（`agent-sandbox-provider/SKILL.md`）。
 
@@ -291,7 +291,7 @@ OpenSandbox 是 [awesome-providers/opensandbox](https://github.com/alibaba-agent
 
 每个提供方有自己作用域的键：环境变量或 `.env` 里是 `ABX_<PROVIDER>_<KEY>`，`config.toml` 里是 `[providers.<id>]`，SDK 里是 `provider_options={...}`。提供方只会在 `initialize` 请求里收到其清单声明的键。密钥绝不会放进插件的 argv 或环境变量。
 
-通用键 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`（`ABX_SANDBOX_API_KEY` 和 `ABX_SANDBOX_BASE_URL`）属于内置提供方。只有当插件清单在 `[core] inherit` 里列出它们，**并且**你在安装或更新时同意了，插件才能拿到。同意界面会列出这些键的名字。你的 LLM、GitHub 和 MCP 键永远不会交给提供方。
+通用键 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`（`E2B_API_KEY` 和 `E2B_API_URL`）属于内置提供方。只有当插件清单在 `[core] inherit` 里列出它们，**并且**你在安装或更新时同意了，插件才能拿到。同意界面会列出这些键的名字。你的 LLM、GitHub 和 MCP 键永远不会交给提供方。
 
 ### 宿主如何处理插件进程
 

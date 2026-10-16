@@ -12,7 +12,7 @@
 | CubeSandbox | 可以完成创建、命令、文件、暂停和目录监听。`run_code` 打到 Jupyter `:49999/execute` | API 在 `:3000`，`ABX_CUBESANDBOX_DOMAIN=cube.app`，模板 id 用集群里真实存在的那个，不要假设有 `base` |
 | 容器版 | 原生协议可以。私有协议的数据面 URL 只在创建、连接、查询时补全 | `ABX_ALICLOUD_CONTAINER_DOMAIN` 和 `ABX_ALICLOUD_CONTAINER_API_KEY`。模板按集群镜像，文档示例是 `code-interpreter` |
 
-三个都不会读取 `ABX_SANDBOX_API_KEY`。没有自己的密钥时，E2B 和容器版在发请求之前拒绝。
+三个都不会读取 `E2B_API_KEY`。没有自己的密钥时，E2B 和容器版在发请求之前拒绝。
 
 ## 已经对齐的差异
 

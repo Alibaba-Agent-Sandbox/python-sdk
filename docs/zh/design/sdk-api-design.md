@@ -1,3 +1,5 @@
+> 标准公开 API 现在使用同步 Sandbox 与异步 AsyncSandbox。下文 Provider/Server 扩展设计对应 ProviderSandbox，见[迁移指南](../guide/migrate-from-e2b.md)。
+
 # SDK API 设计
 
 > `agent-sandbox-client` 包是**运行时**客户端：创建沙箱、使用沙箱、销毁沙箱。它提供两种写法（命令式和声明式）。模板的构建与部署归 `abx` CLI，运行 Agent 归 Agents API。
@@ -32,7 +34,7 @@
 ## 范式一：命令式
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 sb = await Sandbox.create(template="code-interpreter")
 
@@ -140,7 +142,7 @@ value = await sb.run("hello", name="Alice")
 ```
 
 ```bash
-export ABX_SANDBOX_API_KEY=your-api-key        # 主凭证
+export E2B_API_KEY=your-api-key        # 主凭证
 export ALICLOUD_ACCESS_KEY_ID=your-ak          # 可选的 AK/SK
 export ALICLOUD_ACCESS_KEY_SECRET=your-sk
 ```
@@ -173,7 +175,7 @@ export ALICLOUD_ACCESS_KEY_SECRET=your-sk
 所有异常都派生自 `SandboxError`，携带 `code`、`message`、`suggestion` 和 `docs_url`。
 
 ```python
-from agent_sandbox import Sandbox, SandboxError
+from agent_sandbox import ProviderSandbox as Sandbox, SandboxError
 from agent_sandbox.models.errors import TemplateNotFoundError, TimeoutError
 
 try:
@@ -197,7 +199,7 @@ except SandboxError as e:
 | 不提供 | 替代方案 |
 |--------|----------|
 | 模板构建、推送、部署（`Image`、`DockerBuilder`、`Sandbox.deploy`） | `abx template build` 与 `abx template deploy` |
-| 自然语言创建沙箱、`Sandbox.plan()` | CLI 的 `abx create "DESCRIPTION"` 与 `abx template init "DESCRIPTION"` |
+| 自然语言创建沙箱、`Sandbox.plan()` | CLI 的 `abx create --prompt "DESCRIPTION"` 与 `abx template scaffold "DESCRIPTION"` |
 | `sb.agent.*` 辅助方法、`Agent(...)` | [Agents API](../guide/agents-api.md) |
 | `Sandbox.custom()`、`run_command()`、`template.yaml` 中的 `custom_commands` | `sandbox.run(name, **kwargs)` 调用 server 注册的命令 |
 | `SandboxPool` | 不计划提供；按任务创建沙箱 |

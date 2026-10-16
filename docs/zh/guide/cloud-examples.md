@@ -8,11 +8,11 @@ Agents API 的完整案例不在本页。那一组请求、本地替身 CLI，�
 
 ## 准备
 
-客户端读取 `ABX_SANDBOX_API_KEY`。旧名字 `E2B_API_KEY` 不会被当前客户端当成沙箱密钥。
+客户端读取 `E2B_API_KEY`。旧名字 `E2B_API_KEY` 不会被当前客户端当成沙箱密钥。
 
 ```bash
 pip install "agent-sandbox-client[declarative]"
-export ABX_SANDBOX_API_KEY="your-api-key"
+export E2B_API_KEY="your-api-key"
 ```
 
 未设置 `ABX_PROVIDER` 时，`Sandbox.create` 使用 `alicloud-express`。下面的脚本自己把 `timeout` 传给 `Sandbox.create`（这是沙箱 TTL，单位秒，从 60 到 900），并在 `async with` 或 `@sandbox` 结束时销毁沙箱。

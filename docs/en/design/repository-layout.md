@@ -23,7 +23,7 @@
 
 1. **Keep two PyPI distributions in one repo, keep the shared `agent_sandbox` namespace** (client owns
    `agent_sandbox/__init__.py` with `extend_path`, server ships only `agent_sandbox/server/`). It is the only
-   option that keeps both `from agent_sandbox import Sandbox` and `from agent_sandbox.server import ...` working
+   option that keeps both `from agent_sandbox import ProviderSandbox as Sandbox` and `from agent_sandbox.server import ...` working
    with zero shims. Rejected: `agent_sandbox_server` + compat shim (permanent shim, double module identity or
    finder hacks), single dist with extras (image bloat).
 2. **Make `agent-sandbox` hard-depend on `agent-sandbox-server==<same version>`** (today it is only the optional
@@ -110,7 +110,7 @@ empty implicit namespace (import "succeeds", attributes are missing). Remedy ver
    `pip install agent-sandbox` stays valid for old templates because of amendment 1.
 5. Two hand-synced copies exist (`client-sdk/.../utils/coerce.py` and `server-sdk/.../server/_coerce.py`):
    add a CI test that fails if their bodies drift.
-6. Why not "A without the `__init__`" (pure PEP 420)? `from agent_sandbox import Sandbox` is public API, so the
+6. Why not "A without the `__init__`" (pure PEP 420)? `from agent_sandbox import ProviderSandbox as Sandbox` is public API, so the
    client must own an `__init__.py`; the hybrid (regular package + `extend_path`) is forced, and tested above.
 7. Re-evaluate B only if a second family of server-side libraries appears (e.g. `agent_sandbox.server.*` plugins
    published by third parties), where a real distinct top-level name pays off. Not now.
@@ -155,7 +155,7 @@ links with an absolute URL; byte-identical copies are forbidden (checked by the 
 |----------------|-------|------------|
 | `reference/template-yaml-spec`, `reference/error-codes` (E1xxx-E6xxx taxonomy), `reference/server-http-api`, `design/server-api`, `design/template-system` (schema half) | **python-sdk** | CLI links (CLI keeps only CLI-specific codes such as `E2007` and the exit-code map) |
 | `guide/getting-started`, `guide/authentication`, `guide/environment-variables`, `guide/troubleshooting`, `reference/configuration`, `guide/mcp-integration` | **each repo owns its own, trimmed version** (SDK: Python API, `api_key=`, `Sandbox`; CLI: `abx config`, flags, exit codes). The shared credential precedence table is authored once in python-sdk `reference/configuration` and linked from the CLI page | no duplicated sections |
-| `guide/authoring-templates` | **cli** (workflow: `abx template init/deploy`) with a link to python-sdk `guide/server-sdk` for the `commands.py` API | link |
+| `guide/authoring-templates` | **cli** (workflow: `abx template scaffold/deploy`) with a link to python-sdk `guide/server-sdk` for the `commands.py` API | link |
 | `design/mcp-server` | **python-sdk** (`agent_sandbox.agent.mcp`) | CLI documents `abx mcp install` and links |
 | `DESIGN.md`, `README.md` indexes | each repo, listing only its own pages plus a "Related documentation" section | link |
 

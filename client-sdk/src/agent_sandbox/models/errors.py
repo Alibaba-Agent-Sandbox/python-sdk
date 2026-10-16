@@ -71,7 +71,7 @@ class InvalidAPIKeyError(AuthenticationError):
     """API Key is invalid or missing."""
 
     code = "E1001"
-    suggestion = "Check your ABX_SANDBOX_API_KEY environment variable or pass sandbox_api_key."
+    suggestion = "Check your E2B_API_KEY environment variable or pass sandbox_api_key."
 
 
 class TokenExpiredError(AuthenticationError):
@@ -98,7 +98,7 @@ class TokenExchangeError(AuthenticationError):
     code = "E1004"
     suggestion = (
         "Token exchange from AK/SK to Platform API key failed. "
-        "Use ABX_SANDBOX_API_KEY directly, or check AK/SK credentials and network connectivity."
+        "Use E2B_API_KEY directly, or check AK/SK credentials and network connectivity."
     )
 
 

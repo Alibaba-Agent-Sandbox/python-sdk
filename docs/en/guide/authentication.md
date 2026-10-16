@@ -4,7 +4,7 @@
 
 Agent Sandbox supports two authentication modes: **API Key** and **AK/SK (Alibaba Cloud AccessKey)**.
 
-Credentials belong to a [provider](providers.md). The built-in provider is **Alibaba Cloud Express Edition (阿里云极速版)**, id `alicloud-express`, and it is the default. The sandbox key is `ABX_SANDBOX_API_KEY`. Alibaba Cloud access keys use the official names `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. The region is `ALIBABA_CLOUD_REGION_ID`. Each key has one name.
+Credentials belong to a [provider](providers.md). The built-in provider is **Alibaba Cloud Express Edition (阿里云极速版)**, id `alicloud-express`, and it is the default. The sandbox key is `E2B_API_KEY`. Alibaba Cloud access keys use the official names `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. The region is `ALIBABA_CLOUD_REGION_ID`. Each key has one name.
 
 > **Historical note**: the `abx auth` CLI command group (`login`/`logout`/`status`/`switch`) was removed before the first stable release (`0.1.0`). Credentials are configured with the environment variables and `abx config set sandbox_api_key` shown below; check the effective state with `abx config list`.
 
@@ -29,21 +29,21 @@ API Key is the most common authentication method, sent to the platform API via t
 #### 1. Environment variable (wins over `~/.abx`)
 
 ```bash
-export ABX_SANDBOX_API_KEY="your-api-key"
+export E2B_API_KEY="your-api-key"
 ```
 
-Set `ABX_SANDBOX_API_KEY`. That is the only environment variable for the sandbox API key.
+Set `E2B_API_KEY`. That is the only environment variable for the sandbox API key.
 
 #### 2. Persisted file (`~/.abx/.env`)
 
-The SDK also reads `~/.abx/.env`, which the `abx` CLI writes (`abx config set sandbox_api_key ...`, file mode 600; see the [CLI Authentication guide](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authentication.md)). The key is stored as `ABX_SANDBOX_API_KEY`. Access keys are stored as `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`.
+The SDK also reads `~/.abx/.env`, which the `abx` CLI writes (`abx config set sandbox_api_key ...`, file mode 600; see the [CLI Authentication guide](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authentication.md)). The key is stored as `E2B_API_KEY`. Access keys are stored as `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`.
 
 #### 3. .env file
 
 Create a `.env` file in the project root directory:
 
 ```dotenv
-ABX_SANDBOX_API_KEY=your-api-key
+E2B_API_KEY=your-api-key
 ```
 
 The SDK reads both `.env` files as separate layers. `./.env` wins for a key it sets. A key it omits still comes from `~/.abx/.env`.
@@ -53,7 +53,7 @@ The SDK reads both `.env` files as separate layers. `./.env` wins for a key it s
 
 #### 4. config.toml file
 
-Prefer `~/.abx/.env` (mode 600) for the sandbox API key. `abx config set sandbox_api_key` writes `ABX_SANDBOX_API_KEY` there. Non-secret connection settings belong in `~/.abx/config.toml`:
+Prefer `~/.abx/.env` (mode 600) for the sandbox API key. `abx config set sandbox_api_key` writes `E2B_API_KEY` there. Non-secret connection settings belong in `~/.abx/config.toml`:
 
 ```toml
 [transport]
@@ -132,13 +132,13 @@ The GitHub token and the region use this same chain. A blank or whitespace-only 
 
 ### Credentials and providers
 
-The generic sandbox key (`sandbox_api_key`, environment variable `ABX_SANDBOX_API_KEY`) and the Alibaba Cloud AK/SK belong to the built-in provider. If you switch to a [provider plugin](providers.md), the plugin does **not** receive them unless its manifest asks for them and you consented at install time. A plugin has its own scoped credential keys, for example `ABX_MY_CLOUD_API_KEY` for a provider `my-cloud`. This prevents a key for one cloud from being sent to another.
+The generic sandbox key (`sandbox_api_key`, environment variable `E2B_API_KEY`) and the Alibaba Cloud AK/SK belong to the built-in provider. If you switch to a [provider plugin](providers.md), the plugin does **not** receive them unless its manifest asks for them and you consented at install time. A plugin has its own scoped credential keys, for example `ABX_MY_CLOUD_API_KEY` for a provider `my-cloud`. This prevents a key for one cloud from being sent to another.
 
 Every plugin option follows one rule: the canonical name is `ABX_<PROVIDER_ID>_<FIELD>` (dashes become underscores), and a manifest may add the vendor's own variable as an alias with `env = [...]`. Secret fields (`secret = true`) live only in the environment or `.env` files (mode 0600) and are refused on the command line; other fields can also live under `[providers.<id>]` in `config.toml`. Verified with OpenSandbox on 2026-10-13: `ABX_OPENSANDBOX_API_KEY` and `ABX_OPENSANDBOX_BASE_URL` were enough to drive a real server from both the CLI and the SDK; `OPEN_SANDBOX_API_KEY` and `OPEN_SANDBOX_DOMAIN` are its declared native aliases, and the canonical name wins when both are set. A plugin that declares `[core] inherit = ["sandbox_api_key"]` receives the generic key only after you consent at install time, and `abx provider info <id>` shows that list under "Inherits".
 
 Within the same level, API Key takes precedence over AK/SK:
 - If both `sandbox_api_key` and `access_key_id` are provided, API Key is used
-- If both `ABX_SANDBOX_API_KEY` and `ALICLOUD_ACCESS_KEY_ID` are set, `ABX_SANDBOX_API_KEY` is used
+- If both `E2B_API_KEY` and `ALICLOUD_ACCESS_KEY_ID` are set, `E2B_API_KEY` is used
 
 ---
 
@@ -152,7 +152,7 @@ Manage secrets via environment variables or the `.env` files, or pass `envs={"MY
 
 ```bash
 # Set API Key via environment variable (recommended)
-export ABX_SANDBOX_API_KEY="your-api-key"
+export E2B_API_KEY="your-api-key"
 ```
 
 The CLI equivalents (`abx config set`, `abx create --env`) are in the [CLI Authentication guide](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authentication.md).
@@ -182,7 +182,7 @@ envd authentication requires the following HTTP headers (set automatically by th
 
 ```text
 [E1001] API key cannot be empty
-  Suggestion: Check your ABX_SANDBOX_API_KEY environment variable or pass sandbox_api_key.
+  Suggestion: Check your E2B_API_KEY environment variable or pass sandbox_api_key.
 ```
 
 **Solution**: Ensure a valid API Key is configured via any of the methods above.

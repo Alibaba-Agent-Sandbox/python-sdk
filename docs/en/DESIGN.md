@@ -8,7 +8,7 @@
 
 ## Project Overview
 
-**Agent Sandbox** (`agent-sandbox-client` on PyPI) is a Python SDK for the Alibaba Cloud FC Agent Sandbox service. It is the runtime client: create, use and kill sandboxes. Templates are built and deployed with `abx template build|deploy`. Method names are E2B-shaped to ease migration; it is not a drop-in replacement (see [Migrate from E2B](guide/migrate-from-e2b.md)).
+**Agent Sandbox** (`agent-sandbox-client` on PyPI) is a Python SDK for the Alibaba Cloud FC Agent Sandbox service. It is the runtime client: create, use and kill sandboxes. Templates are built and deployed with `abx template build|deploy`. Method names are E2B-shaped to ease migration; the standard public API follows the pinned Alibaba E2B contract (see [Migrate from E2B](guide/migrate-from-e2b.md)).
 
 This repository holds the Python SDK as two lock-step PyPI distributions — `agent-sandbox-client` (`client-sdk/`, import `agent_sandbox`) and `agent-sandbox-server` (`server-sdk/`, import `agent_sandbox.server`, the container-side runtime). The `abx` CLI is a Node.js/TypeScript project in the `cli` repository, which holds the CLI's own design and guide documents (see [Related: the abx CLI](#related-the-abx-cli)).
 
@@ -22,11 +22,11 @@ This repository holds the Python SDK as two lock-step PyPI distributions — `ag
 
 ```bash
 pip install agent-sandbox-client
-export ABX_SANDBOX_API_KEY=your-api-key
+export E2B_API_KEY=your-api-key
 ```
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async with await Sandbox.create(template="base") as sb:
     result = await sb.run_code("print('Hello, Agent Sandbox!')")

@@ -17,9 +17,9 @@ The four non-default ids live in `awesome-providers`. Install with `abx provider
 | Id | How to use it |
 |---|---|
 | `opensandbox` | [OpenSandbox provider](../design/provider-opensandbox-mapping.md). HTTP is made from the Node host process that loads `provider.mjs`. `ABX_OPENSANDBOX_BASE_URL` defaults to `http://127.0.0.1:8080`. |
-| `alicloud-container` | [Container edition](../design/provider-alicloud-container.md). Needs `ABX_ALICLOUD_CONTAINER_DOMAIN`. Does not read `ABX_SANDBOX_API_KEY`. |
+| `alicloud-container` | [Container edition](../design/provider-alicloud-container.md). Needs `ABX_ALICLOUD_CONTAINER_DOMAIN`. Does not read `E2B_API_KEY`. |
 | `cubesandbox` | [CubeSandbox provider](../design/provider-cubesandbox.md). Default origin `http://127.0.0.1:3000`. |
-| `e2b` | [E2B provider](../design/provider-e2b.md). Key is `ABX_E2B_API_KEY`. Does not read `ABX_SANDBOX_API_KEY` or `E2B_API_KEY`. |
+| `e2b` | [E2B provider](../design/provider-e2b.md). Key is `ABX_E2B_API_KEY`. Does not read `E2B_API_KEY` or `E2B_API_KEY`. |
 
 The logical readiness of the three providers that have no backend here is [provider readiness](../design/provider-readiness.md). A coding agent that is adding a provider loads the `agent-sandbox-provider` skill (`agent-sandbox-provider/SKILL.md`).
 
@@ -293,7 +293,7 @@ The wire methods, their parameter names and types, and which are required are li
 
 Each provider has its own scoped keys: `ABX_<PROVIDER>_<KEY>` in the environment or `.env`, `[providers.<id>]` in `config.toml`, `provider_options={...}` in the SDK. The provider receives only the keys its manifest declares, in the `initialize` request. Secrets are never put in the plugin's argv or environment.
 
-The generic keys `sandbox_api_key`, `sandbox_base_url` and `sandbox_domain` (`ABX_SANDBOX_API_KEY` and `ABX_SANDBOX_BASE_URL`) belong to the built-in provider. A plugin gets them only if its manifest lists them in `[core] inherit` **and** you consented at install or update time. The consent screen names the keys. Your LLM, GitHub and MCP keys are never delivered to a provider.
+The generic keys `sandbox_api_key`, `sandbox_base_url` and `sandbox_domain` (`E2B_API_KEY` and `E2B_API_URL`) belong to the built-in provider. A plugin gets them only if its manifest lists them in `[core] inherit` **and** you consented at install or update time. The consent screen names the keys. Your LLM, GitHub and MCP keys are never delivered to a provider.
 
 ### What the host does to the plugin process
 
