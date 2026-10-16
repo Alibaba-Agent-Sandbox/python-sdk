@@ -305,6 +305,17 @@ class FileOperationError(SandboxError):
     code = "E4000"
 
 
+class FileSizeLimitError(FileOperationError):
+    """A streamed file response exceeded the caller's byte limit."""
+
+    code = "E4003"
+    suggestion = "Use a smaller file or explicitly increase max_bytes."
+
+    def __init__(self, limit: int) -> None:
+        self.limit = limit
+        super().__init__("File download exceeded the configured byte limit.")
+
+
 class FileNotFoundError_(FileOperationError):  # noqa: N801, N818
     """File or directory not found in sandbox."""
 

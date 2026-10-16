@@ -342,11 +342,15 @@ class FilesystemProtocol:
         *,
         path: str,
         username: str = "user",
+        max_bytes: int | None = None,
     ) -> bytes:
         """Download a file via HTTP GET.
 
         GET envd_url/files?path={path}&username=user → 200（已实测验证）
         """
+        limits: dict[str, Any] = {}
+        if max_bytes is not None:
+            limits["max_response_bytes"] = max_bytes
         try:
             response = await self._http.envd_http_request(
                 envd_url,
@@ -354,6 +358,7 @@ class FilesystemProtocol:
                 "/files",
                 envd_token=envd_token,
                 params={"path": path, "username": username},
+                **limits,
             )
         except httpx.TimeoutException as exc:
             _raise_transfer_timeout(exc, "Download", path, -1)
@@ -393,9 +398,12 @@ class FilesystemProtocol:
         envd_token: EnvdTokenManager,
         *,
         path: str,
+        max_bytes: int | None = None,
     ) -> bytes:
         """Read file content via HTTP download API."""
-        return await self.download_file(envd_url, envd_token, path=path)
+        if max_bytes is None:
+            return await self.download_file(envd_url, envd_token, path=path)
+        return await self.download_file(envd_url, envd_token, path=path, max_bytes=max_bytes)
 
     async def read_text(
         self,

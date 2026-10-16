@@ -41,7 +41,7 @@ Node.js `abx` CLI 提供同一服务器的另一套实现（`abx mcp ...`，用 
 
 ## 可用工具
 
-Python MCP server 提供 13 个工具。Node.js CLI 使用独立 MCP 实现；Python 的工具可用范围与资源归属规则见[生命周期工具](mcp-lifecycle.md)：
+Python MCP server 提供 15 个工具。Node.js CLI 使用独立 MCP 实现；Python 的工具可用范围与资源归属规则见[生命周期工具](mcp-lifecycle.md)：
 
 | 工具名 | 说明 | 参数 |
 |--------|------|------|
@@ -53,6 +53,7 @@ Python MCP server 提供 13 个工具。Node.js CLI 使用独立 MCP 实现；Py
 | `get_task` / `cancel_task` | 读取已保存日志和状态，或取消自有任务组 | `sandbox_id`、`task_id`，可选字节偏移和 `limit` |
 | `run_code` | 在沙箱中执行代码 | `code`（必填）、`sandbox_id`（可选）、`language`（可选，默认 python）、`timeout`（可选，默认 30） |
 | `run_command` | 通过 `sh -c` 执行命令（支持管道、`&&`、`$VAR`、`cd`） | `command`（必填）、`sandbox_id`（可选）、`cwd`（可选，省略时用镜像工作目录）、`timeout`（可选，默认 60，非零退出码视为工具错误） |
+| `upload_file` / `download_file` | [有限额二进制文件](mcp-binary-files.md) | `path`、可选 `sandbox_id`；上传使用 `content_base64` |
 | `read_file` | 读取沙箱中的文件 | `path`（必填）、`sandbox_id`（可选）、`encoding`（可选，默认 utf-8） |
 | `write_file` | 写入文件到沙箱 | `path`、`content`（必填）、`sandbox_id`（可选） |
 | `list_files` | 列出沙箱中的目录内容 | `path`（可选，默认 `/`）、`sandbox_id`（可选） |

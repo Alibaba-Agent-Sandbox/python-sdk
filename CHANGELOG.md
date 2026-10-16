@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Python MCP bounded binary `upload_file`/`download_file` (1 MiB, strict Base64, SHA256) over both transports; SDK `files.read_bytes(max_bytes=...)` optionally limits streamed downloads and raises `FileSizeLimitError` (E4003), while its existing default remains unchanged.
+
 - Python MCP `start_task`, `get_task`, and `cancel_task` provide sandbox-lifetime background handles, bounded saved log pages, explicit disconnect retention and owned process-group cancellation. Normal synchronous cleanup remains unchanged; Python-only, Linux/python3 runtime.
 
 - Python MCP lifecycle tools `list_sandboxes`, `get_sandbox`, and `set_sandbox_timeout`; creation accepts provider, region, CPU and memory options. Metadata uses a fixed allowlist, external inspection/renewal does not adopt resources, and lifecycle failures omit credential-bearing exception details.
