@@ -1,8 +1,8 @@
 # MCP sandbox lifecycle tools
 
-The Python MCP server exposes ten tools: the seven execution and file tools described in
+The Python MCP server exposes thirteen tools: the seven execution and file tools described in
 [MCP Integration](mcp-integration.md), plus `list_sandboxes`, `get_sandbox`, and
-`set_sandbox_timeout`. They reuse existing SDK APIs; provider support and platform
+`set_sandbox_timeout`, and the three [background task tools](mcp-background-tasks.md). They reuse existing SDK APIs; provider support and platform
 permissions still apply. This page covers lifecycle management, not Team administration
 or the complete MCP/Skills product roadmap.
 

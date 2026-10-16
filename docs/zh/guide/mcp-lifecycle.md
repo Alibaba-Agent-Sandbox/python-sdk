@@ -1,7 +1,7 @@
 # MCP 沙箱生命周期工具
 
-Python MCP server 现在提供十个工具：除 [MCP 集成](mcp-integration.md) 中原有七个执行和
-文件工具外，新增 `list_sandboxes`、`get_sandbox`、`set_sandbox_timeout`。它们复用现有
+Python MCP server 现在提供十三个工具：除 [MCP 集成](mcp-integration.md) 中原有七个执行和
+文件工具外，新增 `list_sandboxes`、`get_sandbox`、`set_sandbox_timeout`，以及三个[后台任务工具](mcp-background-tasks.md)。它们复用现有
 SDK API，仍受 provider 能力和平台权限限制。本文仅覆盖生命周期管理，不代表 Team 管理
 或完整 MCP/Skills 产品规划已经实现。
 

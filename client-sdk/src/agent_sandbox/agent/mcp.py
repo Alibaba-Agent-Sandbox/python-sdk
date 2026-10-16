@@ -82,6 +82,7 @@ class SandboxManager:
         self._default_sandbox: Any = None  # Sandbox instance
         self._sandboxes: dict[str, Any] = {}  # sandbox_id -> Sandbox
         self._lifetimes: dict[str, int] = {}  # sandbox_id -> timeout seconds
+        self._retained_task_sandboxes: set[str] = set()
         self._state_lock = asyncio.Lock()
         self._default_lock = asyncio.Lock()
 
@@ -275,6 +276,7 @@ class SandboxManager:
             async with self._state_lock:
                 sb = self._sandboxes.pop(sandbox_id, None)
                 self._lifetimes.pop(sandbox_id, None)
+                self._retained_task_sandboxes.discard(sandbox_id)
                 if self._default_sandbox is not None and self._default_sandbox.id == sandbox_id:
                     self._default_sandbox = None
             if sb is not None:
@@ -297,6 +299,7 @@ class SandboxManager:
             if sb is not None:
                 self._sandboxes.pop(sb.id, None)
                 self._lifetimes.pop(sb.id, None)
+                self._retained_task_sandboxes.discard(sb.id)
         if sb is None:
             return None
         sid = sb.id
@@ -304,15 +307,35 @@ class SandboxManager:
         logger.info("Killed default sandbox: %s", sid)
         return str(sid)
 
+    async def retain_task_sandbox(self, sandbox: Any) -> bool:
+        """Explicit background tasks retain their sandbox until its platform TTL.
+
+        Keep the default usable during this session, but close rather than kill
+        this one sandbox at disconnect. Other synchronous sandboxes are unchanged.
+        """
+        if sandbox is None:
+            return False
+        sandbox_id = str(sandbox.id)
+        async with self._state_lock:
+            if self._sandboxes.get(sandbox_id) is not sandbox:
+                return False
+            self._retained_task_sandboxes.add(sandbox_id)
+            return True
+
     async def shutdown(self) -> None:
-        """Kill all sandboxes."""
+        """Clean session sandboxes, preserving only explicitly retained tasks."""
         async with self._state_lock:
             items = list(self._sandboxes.items())
+            retained = self._retained_task_sandboxes.copy()
+            self._retained_task_sandboxes.clear()
             self._sandboxes.clear()
             self._lifetimes.clear()
             self._default_sandbox = None
         for sid, sb in items:
             try:
+                if sid in retained:
+                    await sb.close()
+                    continue
                 await sb.kill()
                 logger.info("Shutdown: killed sandbox %s", sid)
             except Exception:

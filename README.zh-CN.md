@@ -178,6 +178,7 @@ graph TB
 | 编写模板 | [编写模板](docs/zh/guide/authoring-templates.md) |
 | 构建与部署（CLI） | [构建与部署](docs/zh/guide/build-and-deploy.md) |
 | 声明式用法 | [声明式用法](docs/zh/guide/declarative-usage.md) |
+| MCP 后台任务 | [可重连任务](docs/zh/guide/mcp-background-tasks.md) |
 | MCP 集成 | [MCP 集成](docs/zh/guide/mcp-integration.md) |
 | 会话持久化 | [会话持久化](docs/zh/guide/session-persistence.md) |
 | 从 E2B 迁移 | [从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md) |
