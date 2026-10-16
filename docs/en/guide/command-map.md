@@ -30,7 +30,7 @@ Alibaba Cloud access keys keep the official names `ALICLOUD_ACCESS_KEY_ID` and `
 
 | Job | abx | Agent Sandbox SDK | e2b | E2B SDK | osb | OpenSandbox SDK |
 |---|---|---|---|---|---|---|
-| Create | `abx create --template <name>` | `Sandbox.create(template=…)` | `e2b sandbox create [template]` | `Sandbox.create(template)` | `osb sandbox create --image <image>` | `Sandbox.create("<image>")` |
+| Create | `abx create <name>` | `Sandbox.create(template=…)` | `e2b sandbox create [template]` | `Sandbox.create(template)` | `osb sandbox create --image <image>` | `Sandbox.create("<image>")` |
 | Attach to an existing sandbox | `abx connect <id>` | `Sandbox.connect(id)` | `e2b sandbox connect <id>` | `Sandbox.connect(id)` | — | `Sandbox.connect(sandbox_id)` |
 | List | `abx list` | `Sandbox.list()` | `e2b sandbox list` | `Sandbox.list()` | `osb sandbox list` | a manager lists sandboxes |
 | Inspect one | `abx info <id>` | `sandbox.refresh_info()` | `e2b sandbox info <id>` | read the object after create or connect | `osb sandbox get <id>` | read the object after connect |

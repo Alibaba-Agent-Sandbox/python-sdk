@@ -53,7 +53,7 @@ sandbox = await Sandbox.create(
 **CLI：**
 
 ```bash
-abx create --template base --env DATABASE_URL=postgres://... --env APP_ENV=staging
+abx create base --env DATABASE_URL=postgres://... --env APP_ENV=staging
 ```
 
 **`@sandbox` 装饰器：**

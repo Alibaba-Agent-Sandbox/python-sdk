@@ -30,7 +30,7 @@ E2B 形状的少量方法也可以从 `agent_sandbox.compat` 导入。差异和�
 
 | 做什么 | abx | Agent Sandbox SDK | e2b | E2B SDK | osb | OpenSandbox SDK |
 |---|---|---|---|---|---|---|
-| 创建 | `abx create --template <名称>` | `Sandbox.create(template=…)` | `e2b sandbox create [template]` | `Sandbox.create(template)` | `osb sandbox create --image <镜像>` | `Sandbox.create("<镜像>")` |
+| 创建 | `abx create <名称>` | `Sandbox.create(template=…)` | `e2b sandbox create [template]` | `Sandbox.create(template)` | `osb sandbox create --image <镜像>` | `Sandbox.create("<镜像>")` |
 | 接上已有沙箱 | `abx connect <id>` | `Sandbox.connect(id)` | `e2b sandbox connect <id>` | `Sandbox.connect(id)` | — | `Sandbox.connect(sandbox_id)` |
 | 列出 | `abx list` | `Sandbox.list()` | `e2b sandbox list` | `Sandbox.list()` | `osb sandbox list` | 管理器列出沙箱 |
 | 查看一个 | `abx info <id>` | `sandbox.refresh_info()` | `e2b sandbox info <id>` | 创建或连接后读对象 | `osb sandbox get <id>` | 连接后读对象 |

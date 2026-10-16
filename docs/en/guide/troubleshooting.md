@@ -95,7 +95,7 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
    ```
 3. Test with the default template:
    ```bash
-   abx create --template base
+   abx create base
    ```
 
 ### E2009 — SandboxNotFoundError

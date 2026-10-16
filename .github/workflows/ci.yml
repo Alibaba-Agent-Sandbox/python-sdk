@@ -130,3 +130,20 @@ jobs:
         with:
           name: dist
           path: dist/
+
+  standard-contract:
+    name: Pinned E2B public contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install project without upstream runtime packages
+        run: pip install -e ./server-sdk -e './client-sdk[dev]'
+      - name: Install the reference in a separate environment
+        run: |
+          python -m venv "$RUNNER_TEMP/e2b-reference"
+          "$RUNNER_TEMP/e2b-reference/bin/python" -m pip install 'e2b==2.31.0' 'e2b-code-interpreter==2.8.1'
+      - name: Compare public callable signatures and sync/async shapes
+        run: python scripts/check_standard_contract.py --reference-python "$RUNNER_TEMP/e2b-reference/bin/python"

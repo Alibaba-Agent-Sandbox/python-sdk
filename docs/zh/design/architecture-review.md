@@ -73,7 +73,7 @@
 
 ### 1.4 `abx config init` 把三种不相干的配置塞进同一次引导
 
-引导覆盖「凭证、区域、ACR 命名空间、LLM」。只想 `abx create --template base` 的人只需要第一项。ACR 是构建推送镜像用的，LLM 只服务 `abx create --prompt "描述"` 的 AI 建模板。结果是第一次运行要回答一串与当前目的无关的问题。
+引导覆盖「凭证、区域、ACR 命名空间、LLM」。只想 `abx create base` 的人只需要第一项。ACR 是构建推送镜像用的，LLM 只服务 `abx create --prompt "描述"` 的 AI 建模板。结果是第一次运行要回答一串与当前目的无关的问题。
 
 建议：`config init` 默认只问凭证和区域；`--with-build`、`--with-llm` 才追加其余两段，或者在第一次用到时再问。
 
