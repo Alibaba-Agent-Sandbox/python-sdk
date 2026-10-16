@@ -1,4 +1,4 @@
-> The standard public API is now synchronous Sandbox / asynchronous AsyncSandbox. The provider/server extension design below uses ProviderSandbox. See [migration](../guide/migrate-from-e2b.md).
+> The standard public API is now synchronous Sandbox / asynchronous AsyncSandbox. The provider/server extension design below uses ProviderSandbox, including its native `_sync` wrappers; it does not define the standard client API. Standard clients do not switch protocol when `ABX_PROVIDER` changes. See [migration](../guide/migrate-from-e2b.md).
 
 # SDK API Design
 
@@ -27,7 +27,7 @@
 - **One way to run an agent.** The Agents API (`/v1/agents/**`) on the SandboxServer. The SDK has no `sb.agent.*` helpers.
 - **Typed, explicit surface.** No `__getattr__` dispatch; every method has a signature that mypy checks (`py.typed`).
 - **Async first, sync twin.** Every coroutine has a `_sync` twin that manages an event loop for you.
-- **Honest E2B-shaped names.** Method names follow the E2B SDK to ease porting, and `agent_sandbox.compat` is a small, partial migration helper. The wire protocol, configuration and error model are Agent Sandbox's own. See [E2B compatibility](../explanation/e2b-compatibility.md).
+- **Explicit standard and extension contracts.** This page describes the native ProviderSandbox protocol, configuration and error model. `agent_sandbox.compat` re-exports standard `Sandbox` / `AsyncSandbox`; those clients and `code_interpreter` follow the pinned Alibaba-supported E2B contract. See [Migrate from E2B](../guide/migrate-from-e2b.md).
 
 ---
 

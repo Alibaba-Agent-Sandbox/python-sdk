@@ -1,6 +1,6 @@
 # Agent Sandbox — 设计文档索引
 
-> **版本**：v2.0 | **最后更新**：2026-09-24
+> **版本**：v2.0 | **最后更新**：2026-10-16
 >
 > 本文档是 Agent Sandbox 所有设计文档的入口和索引。详细设计位于 [`design/`](design/) 目录下的各专题文档中。
 
@@ -14,9 +14,9 @@
 
 ### 核心设计原则
 
-1. **方法名参考 E2B，但不兼容 E2B** — E2B 风格的方法名加一个小的迁移辅助 (`from agent_sandbox.compat import Sandbox`) 方便现有 E2B 用户迁移；线上协议和配置是平台自己的
+1. **固定标准行为与显式 Provider 扩展** — 根目录 `Sandbox` 是同步客户端，`AsyncSandbox` 是异步客户端；标准与解释器客户端通过本项目维护的 MIT 源码移植遵循阿里云支持的 E2B 基线。`agent_sandbox.compat` 重新导出标准客户端。Provider／Server／声明式扩展使用 `ProviderSandbox`；`ABX_PROVIDER` 不切换标准客户端协议。
 2. **AI-First** — MCP Server 是一等公民，编码 Agent 通过 Agents API 托管
-3. **零配置默认** — 开箱即用；从安装到第一个沙箱运行不超过 3 行代码
+3. **明确连接配置** — 沿用既有阿里云 API Key、API URL 和沙箱域名；依赖后端条件的能力仍需实际启用。
 
 ### 快速上手
 
@@ -37,17 +37,19 @@ async with await Sandbox.create(template="base") as sb:
 
 ## 架构概览
 
-SDK 采用严格分层架构 — 低层绝不导入高层：
+原生 Provider 扩展采用下述分层；标准客户端使用独立的源码移植协议实现：
 
 ```mermaid
 graph TB
     subgraph Upper["上层"]
         Agent["Agent/MCP — MCP 服务器、工具定义"]
         Decl["Declarative — @sandbox 装饰器"]
-        Compat["Compat — E2B 迁移辅助"]
+        Compat["compat — 标准客户端别名"]
+        STD["Sandbox / AsyncSandbox / code_interpreter"]
     end
     subgraph Core["核心层"]
-        L3["API — Sandbox、文件、代码、命令、网络、server 客户端"]
+        L3["ProviderSandbox — 文件、代码、命令、网络、server 客户端"]
+        PORT["_standard / interpreter — 维护的 MIT 源码移植"]
         L2["Protocol — 沙箱生命周期、文件系统、进程、终端、端口"]
         L1["Transport — HTTP、WebSocket、认证、编解码、流式传输"]
         L0["Models + Utils — Pydantic 模型、错误、配置、异步桥接"]
@@ -55,7 +57,7 @@ graph TB
 
     Agent --> L3
     Decl --> L3
-    Compat --> L3
+    Compat --> STD --> PORT
     L3 --> L2 --> L1 --> L0
 ```
 
@@ -71,7 +73,7 @@ graph TB
 
 | 专题 | 文档 | 摘要 |
 |------|------|------|
-| **系统架构** | [architecture.md](design/architecture.md) | 五层架构、层间依赖、双 API 层（Platform API vs Sandbox envd API） |
+| **系统架构** | [architecture.md](design/architecture.md) | 标准客户端源码移植、原生 Provider 扩展分层及各自协议路径 |
 | **SDK API 设计** | [sdk-api-design.md](design/sdk-api-design.md) | Sandbox 类、文件操作、代码执行、命令、网络、会话管理 |
 | **沙箱类型体系** | [sandbox-types.md](design/sandbox-types.md) | 临时沙箱（已实现）、持久沙箱（远期）、沙箱生命周期 |
 | **提供方与凭证** | [providers-and-credentials.md](design/providers-and-credentials.md) | 每个配置键一个环境变量、优先级、提供方插件（`abx provider ...`）、安装与信任模型、EPP/1 协议、E8xxx 错误；评审记录见 [providers-and-credentials-review.md](archive/providers-and-credentials-review.md) |

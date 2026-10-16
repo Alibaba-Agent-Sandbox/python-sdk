@@ -1,6 +1,6 @@
 # Agent Sandbox — Design Document Index
 
-> **Version**: v2.0 | **Last Updated**: 2026-09-24
+> **Version**: v2.0 | **Last Updated**: 2026-10-16
 >
 > This document serves as the entry point and index for all Agent Sandbox design documentation. Detailed designs live in the specialized topic documents under [`design/`](design/).
 
@@ -14,9 +14,9 @@ This repository holds the Python SDK as two lock-step PyPI distributions — `ag
 
 ### Core Principles
 
-1. **E2B-shaped, not E2B-compatible** — E2B-style method names and a small migration helper (`from agent_sandbox.compat import Sandbox`) ease migration for existing E2B users; the wire protocol and configuration are the platform's own
+1. **Pinned standard behavior and explicit provider extensions** — Root `Sandbox` is synchronous; `AsyncSandbox` is asynchronous. Standard and interpreter clients follow the Alibaba-supported E2B baseline through an owned MIT source port. `agent_sandbox.compat` re-exports the standard clients. Provider/server/declarative extensions use `ProviderSandbox`; `ABX_PROVIDER` does not switch the standard clients' protocol.
 2. **AI-First** — MCP Server as a first-class citizen, coding agents hosted through the Agents API
-3. **Zero Configuration Defaults** — Works out of the box; from install to first sandbox in ≤ 3 lines of code
+3. **Explicit connection settings** — Reuse the existing Alibaba API key, API URL and sandbox domain; backend-dependent capabilities remain conditional.
 
 ### Quick Start
 
@@ -37,17 +37,19 @@ async with await Sandbox.create(template="base") as sb:
 
 ## Architecture Overview
 
-The SDK follows a strict layered architecture — lower layers never import upper layers:
+The native provider extensions follow the layers below. Standard clients use their separate source-ported protocol implementation:
 
 ```mermaid
 graph TB
     subgraph Upper["Upper Layers"]
         Agent["Agent/MCP — MCP server, tool defs"]
         Decl["Declarative — @sandbox decorator"]
-        Compat["Compat — E2B migration helper"]
+        Compat["compat — standard client aliases"]
+        STD["Sandbox / AsyncSandbox / code_interpreter"]
     end
     subgraph Core["Core Layers"]
-        L3["API — Sandbox, files, code, commands, network, server client"]
+        L3["ProviderSandbox — files, code, commands, network, server client"]
+        PORT["_standard / interpreter — maintained MIT source port"]
         L2["Protocol — Sandbox lifecycle, filesystem, process, terminal, port"]
         L1["Transport — HTTP, WebSocket, auth, codec, streaming"]
         L0["Models + Utils — Pydantic models, errors, config, async bridge"]
@@ -55,7 +57,7 @@ graph TB
 
     Agent --> L3
     Decl --> L3
-    Compat --> L3
+    Compat --> STD --> PORT
     L3 --> L2 --> L1 --> L0
 ```
 
@@ -71,7 +73,7 @@ Each topic below has its own dedicated design document with complete specificati
 
 | Topic | Document | Summary |
 |-------|----------|---------|
-| **System Architecture** | [architecture.md](design/architecture.md) | Five-layer architecture, inter-layer dependencies, dual API layers (Platform API vs Sandbox envd API) |
+| **System Architecture** | [architecture.md](design/architecture.md) | Standard client source port, native provider extension layers, and their separate protocol paths |
 | **SDK API Design** | [sdk-api-design.md](design/sdk-api-design.md) | Sandbox class, file operations, code execution, commands, network, session management |
 | **Sandbox Type System** | [sandbox-types.md](design/sandbox-types.md) | Ephemeral sandboxes (implemented), persistent sandboxes (future), sandbox lifecycle |
 | **Providers and Credentials** | [providers-and-credentials.md](design/providers-and-credentials.md) | One environment variable per configuration key, precedence, provider plugins (`abx provider ...`), install/trust model, EPP/1 protocol, E8xxx errors; review log in [providers-and-credentials-review.md](archive/providers-and-credentials-review.md) |

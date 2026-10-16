@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Bind explicit native Express selection to its own configuration even when another provider is the default; reject malformed/reserved qualified sandbox namespaces before backend requests.
+
 - Reject unknown/empty provider-qualified sandbox references before backend requests; declare Express adapter features explicitly instead of inheriting the whole host registry.
 
 - **Real-cloud E2E acceptance.** The server fixture keeps envd credentials separate from the unconfigured template server; provider reports reject missing checks and the CLI scenario resolves `ABX_BIN` or an installed `abx` instead of assuming a sibling checkout.

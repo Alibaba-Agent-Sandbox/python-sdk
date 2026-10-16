@@ -143,6 +143,38 @@ async def test_explicit_provider_beats_ambient_default(local_process, monkeypatc
     assert prov is None  # built-in path
 
 
+@pytest.mark.parametrize("ambient_provider", ["local-process", "not-installed"])
+async def test_explicit_builtin_uses_its_own_config(local_process, monkeypatch, ambient_provider):
+    """An explicit Express request must not resolve the ambient provider's schema or credentials."""
+    from agent_sandbox.api import sandbox as sandbox_mod
+    from agent_sandbox.models.sandbox import SandboxInfo
+
+    monkeypatch.setenv("ABX_PROVIDER", ambient_provider)
+    monkeypatch.setenv("E2B_API_KEY", "placeholder")
+    monkeypatch.setenv("E2B_API_URL", "https://express.example.invalid")
+
+    class FakeProto:
+        def __init__(self, http):
+            self.http = http
+
+        async def create(self, cfg, *, request_timeout=None):
+            return SandboxInfo(
+                sandbox_id="express-1",
+                template=cfg.template,
+                envd_url="https://envd.example.invalid",
+            )
+
+    monkeypatch.setattr(sandbox_mod, "SandboxProtocol", FakeProto)
+    sb = await Sandbox.create(provider="alicloud-express")
+    try:
+        assert sb.provider == "alicloud-express"
+        assert sb._config.provider == "alicloud-express"
+        assert sb._config.sandbox_api_key == "placeholder"
+        assert sb._config.sandbox_base_url == "https://express.example.invalid"
+    finally:
+        await sb.close()
+
+
 async def test_tampered_plugin_refuses_to_start(local_process):
     (store.provider_dir("local-process") / "provider.py").write_text("print('evil')\n")
     with pytest.raises(E.ProviderIntegrityError):

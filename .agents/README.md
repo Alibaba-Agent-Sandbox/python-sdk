@@ -49,4 +49,8 @@ Move the file and edit `Status:` in the same commit. Required sections and the t
 The active [proposed contract](notes/proposed/architecture/2026-10-16-e2b-behavior-contract.md) defines the pinned Alibaba migration surface and project extension boundary. Verification evidence is point-in-time; read the latest E2B run before reporting completion.
 
 The [provider-boundary verification](evidence/verify/2026-10-16-provider-boundary-review.md) distinguishes standard E2B clients, provider adapters and pending typed management registration.
+
+The multi-agent review proposes [provider context and availability](notes/proposed/architecture/2026-10-16-provider-context-and-availability.md). Standard protocol clients remain separate from the provider API; CLI operation unification is owned by its companion repository.
+
+See the [multi-agent SDK verification](evidence/verify/2026-10-16-multi-agent-provider-review.md) for explicit-provider regressions, source-port maintenance gaps and remaining acceptance gates.
 - [Bounded MCP binary files](notes/implemented/feature/2026-10-16-mcp-binary-files.md) · [verification](evidence/verify/2026-10-16-mcp-binary-files.md)

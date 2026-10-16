@@ -89,7 +89,7 @@ def _build_infra(
     if provider_options:
         config_overrides["provider_options"] = dict(provider_options)
 
-    config = load_config(**config_overrides)
+    config = load_config(provider=BUILTIN_PROVIDER_ID, **config_overrides)
     auth = create_auth_provider(
         api_key=config.sandbox_api_key,
         access_key_id=config.access_key_id,

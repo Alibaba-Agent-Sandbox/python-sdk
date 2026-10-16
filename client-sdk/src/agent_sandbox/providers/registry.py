@@ -232,12 +232,13 @@ def parse_sandbox_ref(ref: str) -> tuple[str | None, str]:
     """Split ``provider:sandbox_id``; explicit namespaces must resolve before backend work."""
     if ":" in ref:
         prefix, _, rest = ref.partition(":")
-        valid = prefix == BUILTIN_PROVIDER_ID or validate_provider_id(prefix) is None
-        if valid:
-            if not rest:
-                raise ProviderConfigError(f"Sandbox reference '{ref}' is missing its sandbox id.")
-            get_provider(prefix)
-            return prefix, rest
+        if not rest:
+            raise ProviderConfigError(f"Sandbox reference '{ref}' is missing its sandbox id.")
+        problem = None if prefix == BUILTIN_PROVIDER_ID else validate_provider_id(prefix)
+        if problem is not None:
+            raise ProviderConfigError(f"Invalid provider namespace '{prefix}': {problem}.")
+        get_provider(prefix)
+        return prefix, rest
     return None, ref
 
 

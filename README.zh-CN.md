@@ -43,7 +43,7 @@ Node.js 项目，位于 [`cli`](https://github.com/alibaba-agent-sandbox/agent-s
 
 ## Client SDK
 
-- **异步优先** —— `Sandbox.create()`，Shell 执行、代码解释、文件读写、端口转发、WebSocket 流。
+- **同步与异步标准客户端** —— `Sandbox.create()` 与 `AsyncSandbox.create()`，Shell 执行、代码解释、文件读写、端口转发与 WebSocket 流；Provider／Server 扩展使用异步 `ProviderSandbox`。
 - **三种执行原语** —— `sandbox.commands.run()`（裸 Shell）、`sandbox.run_code()`（代码解释器）、`sandbox.run("name", **kwargs)`（调用 Server SDK 注册的命令）。
 - **MCP Server** —— 将沙箱操作暴露为 MCP 工具，供 LLM Agent 调用。
 - **声明式装饰器** —— `@sandbox` 将普通函数变为远程沙箱执行，自动序列化。

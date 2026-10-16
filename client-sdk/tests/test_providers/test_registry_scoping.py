@@ -121,6 +121,24 @@ class TestRegistry:
         assert get_provider("ep-prov").id == "ep-prov"
         assert "ep-prov" in {r["id"] for r in list_providers()}
 
+    @pytest.mark.parametrize(
+        "ref",
+        [
+            "default:id",
+            "none:id",
+            "alicloud-compute:id",
+            "OpenSandbox:id",
+            "bad_name:id",
+            ":id",
+            "x:id",
+            "alicloud-express:",
+        ],
+    )
+    def test_invalid_qualified_refs_fail_closed(self, iso, ref):  # noqa: F811
+        with pytest.raises(E.ProviderConfigError) as exc:
+            parse_sandbox_ref(ref)
+        assert exc.value.code == "E8002"
+
 
 class TestProviderSelection:
     @pytest.mark.parametrize("where", ["override", "env", "dotenv", "toml"])

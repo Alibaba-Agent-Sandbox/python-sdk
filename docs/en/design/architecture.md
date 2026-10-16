@@ -1,6 +1,8 @@
-# System Architecture Design — Five-Layer Architecture
+# System Architecture Design — Standard Clients and Provider Extensions
 
-> Agent Sandbox SDK adopts a five-layer architecture, abstracting from low-level transport to high-level AI integration layer by layer. Each layer has a single responsibility with clear boundaries, and users can plug in at any layer. The SDK has zero LLM dependencies and does not depend on the E2B SDK — it talks to the envd data plane and the platform control plane directly. It is the runtime client: template build and deploy are done by `abx template build|deploy`.
+> The Python SDK has two public client surfaces. Root `Sandbox` / `AsyncSandbox` and `code_interpreter` use a maintained, pinned MIT source port for Alibaba-supported E2B behavior. `ProviderSandbox` exposes the asynchronous provider/server/declarative extensions, whose native layers are described below. Neither path installs the upstream E2B distributions at runtime. See [Migrate from E2B](../guide/migrate-from-e2b.md).
+
+`ABX_PROVIDER` selects adapters for `ProviderSandbox`; it does not change the protocol of standard clients. Standard clients use their explicit connection settings and `E2B_API_KEY` / `E2B_API_URL` / `E2B_DOMAIN`. The native and source-ported implementations remain separate; this page does not claim they share one protocol implementation.
 
 ---
 
@@ -10,15 +12,22 @@
 graph TD
     L5["L5 Agent Integration Layer<br/>MCP Server / agent tool schemas"]
     L4["L4 Declarative API Layer<br/>Declarative API — @sandbox decorator / sandbox.yaml"]
-    L3["L3 High-Level API Layer<br/>High-Level API — Sandbox / Files / Code / named commands"]
+    STD["Standard clients — Sandbox / AsyncSandbox / code_interpreter"]
+    PORT["Owned source port — _standard / interpreter protocol"]
+    L3["L3 Provider Extensions<br/>ProviderSandbox / Files / Code / named commands"]
     L2["L2 Core Protocol Layer<br/>Core Protocol — envd REST + WebSocket"]
     L1["L1 Transport & Auth Layer<br/>Transport & Auth — HTTP connection pool / API Key / AK-SK Token Exchange"]
     GW["Alibaba Cloud API Gateway"]
     FC["Alibaba Cloud Function Compute (FC) Sandbox Runtime"]
 
-    L5 --> L4
+    STD --> PORT
+    PORT --> GW
+    PORT --> FC
+    L5 --> L3
     L4 --> L3
-    L3 --> L2
+    PRV["Provider adapters / local CLI engine"]
+    L3 --> PRV
+    PRV -->|built-in adapter| L2
     L2 --> L1
     L1 --> GW
     L1 --> FC
@@ -26,7 +35,7 @@ graph TD
 
 ---
 
-## 2. Layer Responsibilities
+## 2. Native Provider Extension Layers
 
 ### L1 — Transport & Auth Layer
 
@@ -51,7 +60,7 @@ graph TD
 
 ### L2 — Core Protocol Layer
 
-**Self-implemented protocol clients** — no dependency on the E2B SDK, implemented directly with httpx + websockets. Two categories of APIs:
+**Native protocol clients** in `protocol/` use httpx + websockets for the built-in provider path. These are separate from the standard clients' maintained source port in `_standard/` and `code_interpreter/`. Other providers use their adapters. The native protocol modules cover two categories:
 
 - **Platform API (REST)**: Sandbox lifecycle management (create, list, destroy), interacts with Alibaba Cloud platform via HTTP REST API
 - **Sandbox envd API (Connect Protocol)**: In-sandbox operations (processes, files, terminals), communicates with sandbox envd via HTTP + WebSocket
@@ -70,12 +79,12 @@ graph TD
 
 | Module | Responsibility |
 |--------|----------------|
-| `api.sandbox` | Sandbox class — unified entry point for create, manage, execute, destroy; `run(name, **kwargs)` calls a server-registered command |
+| `api.sandbox` | Native class exported at the package root as `ProviderSandbox`; create/manage through the selected provider; `run(name, **kwargs)` calls a server-registered command |
 | `api.server_client` | `ServerClient` — typed client for every in-sandbox SandboxServer route |
 | `api.files` | High-level file operations — upload/download/watch |
 | `api.code` | Code execution engine — multi-language support, Rich Output |
 
-**Target Users**: Most developers, the core layer, with E2B-shaped method names.
+**Target users**: Users of provider/server extensions. For the pinned synchronous/asynchronous E2B contract, use the standard client surface instead.
 
 ### L4 — Declarative API Layer
 
@@ -135,9 +144,12 @@ The Server module (the separate `agent-sandbox-server` distribution, import `age
 
 ```mermaid
 graph TD
-    L5[L5 Agent Integration] --> L3[L3 High-Level API]
+    STD[Standard clients] --> PORT[Owned source port]
+    L5[L5 Agent Integration] --> L3[L3 Provider extensions]
     L4[L4 Declarative API] --> L3
-    L3 --> L2[L2 Core Protocol]
+    PRV["Provider adapters / local CLI engine"]
+    L3 --> PRV
+    PRV -->|built-in adapter| L2[L2 Core Protocol]
     L2 --> L1[L1 Transport & Auth]
 ```
 
@@ -146,7 +158,7 @@ graph TD
 1. **Strict downward dependencies**: Each layer can only depend on layers below it; reverse or cross-layer dependencies are prohibited
 2. **L4 depends on L3**: Declarative API is implemented through the L3 High-Level API, not directly on L2
 3. **L5 depends on L3**: Agent integration is implemented through the L3 High-Level API
-4. **L1 is the foundation**: All upper layers ultimately depend on L1 for network communication and authentication
+4. **Native transport scope**: The native built-in adapter uses L1; installed providers and standard source-ported clients have their own protocol/transport paths. Provider feature declarations do not establish that an operation is exposed by the CLI or enabled for an account/runtime.
 
 ---
 
@@ -154,7 +166,10 @@ graph TD
 
 ```
 client-sdk/src/agent_sandbox/
-├── __init__.py                    # Top-level exports: Sandbox, sandbox
+├── __init__.py                    # Root: Sandbox, AsyncSandbox, ProviderSandbox, sandbox
+├── _standard/                     # Pinned standard client, generated schemas, Connect runtime
+├── code_interpreter/              # Standard sync/async interpreter clients
+├── providers/                     # Provider adapters, selection and local engine bridge
 ├── _version.py                    # Version number
 │
 ├── transport/                     # L1 — Transport & Auth Layer
@@ -174,7 +189,7 @@ client-sdk/src/agent_sandbox/
 │
 ├── api/                           # L3 — High-Level API
 │   ├── __init__.py
-│   ├── sandbox.py                 #   Sandbox core class
+│   ├── sandbox.py                 #   ProviderSandbox native implementation
 │   ├── server_client.py           #   ServerClient — typed client for the in-sandbox server
 │   ├── files.py                   #   High-level file operations
 │   └── code.py                    #   Code execution engine
@@ -242,9 +257,9 @@ The CLI (`abx`) formerly lived in `src/agent_sandbox/cli/` (Click commands under
 
 ## 6. Design Principles
 
-1. **E2B-shaped, not E2B-compatible**: L3 uses E2B-shaped method names and ships a small migration helper (`agent_sandbox.compat`); L2 implements the protocol independently without depending on the E2B SDK
+1. **Pinned standard behavior, explicit extensions**: Standard `Sandbox` / `AsyncSandbox` and interpreter clients follow the Alibaba-supported E2B baseline. `agent_sandbox.compat` re-exports the standard clients. Provider/server/declarative extensions use `ProviderSandbox`; conditional backend capabilities still require the appropriate account/runtime/template.
 2. **Progressive Complexity**: Users start at L3 and explore downward or use advanced features upward as needed
-3. **Zero-Config Defaults**: Works out of the box with sensible defaults; just set the `E2B_API_KEY` environment variable to get started
+3. **Explicit connection configuration**: Reuse the existing Alibaba `E2B_API_KEY`, `E2B_API_URL` and `E2B_DOMAIN` settings; explicit client arguments take precedence.
 4. **Alibaba Cloud Native**: Built for the Alibaba Cloud FC sandbox service
 5. **AI First**: Built-in AI CLI tools in sandboxes and MCP Server are first-class citizens; SDK has zero LLM dependencies
-6. **Type Safety**: Comprehensive use of Python Type Hints + Pydantic validation
+6. **Type safety**: Native maintained modules use Python type checks and Pydantic validation. The pinned/generated source port has narrow lint/type exclusions and separate contract tests; those tests do not establish universal cloud feature availability.
