@@ -123,3 +123,5 @@ and never kill or replace an unknown process to obtain a pass.
 [Independent recheck and accepted-main integration](../../../evidence/verify/2026-10-16-provider-management-recheck.md).
 
 [Authorized real storage and cleanup acceptance](../../../evidence/verify/2026-10-16-provider-volume-live.md).
+
+[Accepted binary-file integration recheck](../../../evidence/verify/2026-10-16-provider-volume-main-integration.md).

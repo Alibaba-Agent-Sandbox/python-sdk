@@ -118,13 +118,27 @@ class EngineProcessProtocol:
 class EngineFilesystemProtocol:
     """``FilesystemProtocol`` shape. File bytes are raw gRPC payloads."""
 
-    def __init__(self, sandbox_id: str | None = None) -> None:
+    def __init__(self, sandbox_id: str | None = None, *, bounded_reader: Any = None) -> None:
         self._sandbox_id = sandbox_id
+        self._bounded_reader = bounded_reader
 
     def _id(self, envd_url: str) -> str:
         return sandbox_id_from(envd_url, self._sandbox_id)
 
-    async def read(self, envd_url: str, envd_token: Any, *, path: str) -> bytes:
+    async def read(
+        self, envd_url: str, envd_token: Any, *, path: str, max_bytes: int | None = None
+    ) -> bytes:
+        if max_bytes is not None:
+            if self._bounded_reader is None:
+                from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+
+                raise ProviderFeatureNotSupportedError("alicloud-express", "bounded file reads")
+            # Explicit bounded reads reuse native connect's existing envd HTTP
+            # data plane. Default reads preserve the legacy engine behavior.
+            result: bytes = await self._bounded_reader.read(
+                envd_url, envd_token, path=path, max_bytes=max_bytes
+            )
+            return result
         del envd_token
         return await Engine().file_read(self._id(envd_url), path)
 

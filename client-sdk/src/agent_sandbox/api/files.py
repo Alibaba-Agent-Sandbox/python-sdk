@@ -61,11 +61,13 @@ class FilesModule:
             encoding=encoding,
         )
 
-    async def read_bytes(self, path: str) -> bytes:
+    async def read_bytes(self, path: str, *, max_bytes: int | None = None) -> bytes:
         """Read a file as raw bytes.
 
         Args:
             path: Absolute path in the sandbox.
+            max_bytes: Optional nonnegative streamed response limit. None preserves
+                the existing unlimited read. Overflow raises FileSizeLimitError.
 
         Returns:
             File contents as bytes.
@@ -74,6 +76,7 @@ class FilesModule:
             self._envd_url,
             self._envd_token,
             path=path,
+            **({"max_bytes": max_bytes} if max_bytes is not None else {}),
         )
 
     async def write(self, path: str, content: str | bytes) -> None:
