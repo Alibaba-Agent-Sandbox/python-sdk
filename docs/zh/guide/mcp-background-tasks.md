@@ -34,7 +34,8 @@ Python STDIO 与 HTTP 共用这些处理函数；Node.js CLI 的 MCP 是另一�
 `stderr_truncated`。状态为 `running`、`succeeded`、`failed`、`cancelled`、
 `timed_out` 或 `unknown`。`failed` 表示非零退出或 supervisor 失败，supervisor
 丢失时为 `unknown`，不会编造成功。进度体现为日志和状态，不提供百分比。
-时间为 Unix 秒数。
+时间为 Unix 秒数。`get_task` / `cancel_task` 中的非零退出码属于任务数据，
+成功读取或确认取消不会仅因该退出码被标成 MCP 工具错误。
 
 后续读取传入上次返回的偏移；同一偏移可重复读取。`limit` 为每路日志字节数，
 默认 16384，上限 65536。分页可能切断 UTF-8 字符，片段解码时使用替代字符。

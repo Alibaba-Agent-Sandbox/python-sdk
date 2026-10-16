@@ -551,7 +551,14 @@ class SandboxMCPServer:
         result = await dispatch_tool(tool_name, arguments, self._manager)
 
         exit_code = result.get("exit_code")
-        is_error = "error" in result or (isinstance(exit_code, int) and exit_code != 0)
+        # Task inspection/cancellation reports the saved command's exit code;
+        # a failed/cancelled command is data, not a failed read/cancel request.
+        nonzero_execution = (
+            tool_name not in {"get_task", "cancel_task"}
+            and isinstance(exit_code, int)
+            and exit_code != 0
+        )
+        is_error = "error" in result or nonzero_execution
         return {
             "content": [
                 {

@@ -4,7 +4,8 @@
 - Change: [Issue #44](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/44),
   [proposed decision](../../notes/proposed/feature/2026-10-16-mcp-background-tasks.md)
 - Result: PARTIAL — scoped implementation/cloud pass; local full CI retains baseline failures and remote CI is pending
-- Baseline: lifecycle PR #33, `3fd592bc9f1245d2ab49c41a34ba6aea52a03407`.
+- Tested baseline: lifecycle PR #33, `3fd592bc9f1245d2ab49c41a34ba6aea52a03407`.
+- Upstream dependency accepted: PR #33 actually merged at `dcfbf14504bf000d2d0545da56feaef4a4c9f5e7`; task branch synchronized with main. No task runtime code changed in that upstream synchronization.
 - Package: source checkout, both Python distributions 0.3.0; Python 3.11, Linux.
 - Credentials supplied only through authorized process configuration; values not recorded.
 
@@ -120,6 +121,11 @@ The normal secret hook initially rejected a synthetic API-key fixture whose lite
 did not identify itself as test data. It was renamed to an explicit test placeholder;
 no real key or hook bypass was used. The affected privacy regression was rerun.
 
+The final shared MCP transport treats a saved task exit code as observation data
+for get/cancel, preserving ordinary run_command nonzero-error behavior. The real
+local HTTP scenario verifies nonzero completion inspection and confirmed
+cancellation are successful tool operations; task state/exit remain explicit.
+
 ## Source fingerprints
 
 The final source-built client wheel matches each of the five changed agent modules
@@ -128,12 +134,12 @@ site-packages with source PYTHONPATH removed.
 
 | File | SHA256 |
 |---|---|
-| `client-sdk/src/agent_sandbox/agent/mcp.py` | `819924cd3af8efd8e99c8ae48d01ed797e03249bdf9038b6c26bec5b70956937` |
+| `client-sdk/src/agent_sandbox/agent/mcp.py` | `f024ca37066db0002a0b618357418fa49a2b5854181cf7f06c82acead2fb155f` |
 | `client-sdk/src/agent_sandbox/agent/mcp_http.py` | `dc8bf62a0ab12eee0a1df947209d8e0a1873fb68d1f1c3abace6bc8994bf9278` |
 | `client-sdk/src/agent_sandbox/agent/tools.py` | `1572c7c6057974571ece14e98e8532bd5133d7764f7ab2608b8361d444624238` |
 | `client-sdk/src/agent_sandbox/agent/tasks.py` | `d5cfc4d5720d305b892215955ad59ddde3ad0da2c233502cda2c7361290f5c5c` |
 | `client-sdk/src/agent_sandbox/agent/task_runtime.py` | `2b30490e45ef35c861900e3a92b714b870984ee302dda2dca2851e3a846f93b2` |
-| `client-sdk/tests/test_agent/test_mcp_tasks.py` | `12b03d0ae8cf442b0f11558f2d69890ebe3f970800866933f9f40e6541f27641` |
+| `client-sdk/tests/test_agent/test_mcp_tasks.py` | `5e340611747705bad3a9502cb41f8a45b41133685c00442eea129a2dc77930b4` |
 | `e2e/test_10_mcp_tasks.py` | `c8533c46e992e59603826435a4dbee96101b33cf0b9c961851bc0bc7b552b451` |
 
 Original product roadmap: [Issue #45](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/45) remains open.

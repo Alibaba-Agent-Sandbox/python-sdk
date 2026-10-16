@@ -320,7 +320,10 @@ async def test_stdio_dispatch_and_http_delete_reconnect(local_sandbox):
             "jsonrpc": "2.0",
             "id": 1,
             "method": "tools/call",
-            "params": {"name": "start_task", "arguments": {"command": "sleep .2; echo TRANSPORT"}},
+            "params": {
+                "name": "start_task",
+                "arguments": {"command": "sleep .2; echo TRANSPORT; exit 7"},
+            },
         }
     )
     handle = json.loads(response["result"]["content"][0]["text"])
@@ -362,7 +365,39 @@ async def test_stdio_dispatch_and_http_delete_reconnect(local_sandbox):
         )
         assert response.status_code == 200
         payload = json.loads(response.json()["result"]["content"][0]["text"])
-        assert payload["state"] == "succeeded" and payload["stdout"] == "TRANSPORT\n"
+        assert payload["state"] == "failed" and payload["stdout"] == "TRANSPORT\n"
+        assert response.json()["result"]["isError"] is False
+        started = await client.post(
+            "/mcp",
+            json={
+                "jsonrpc": "2.0",
+                "id": 4,
+                "method": "tools/call",
+                "params": {
+                    "name": "start_task",
+                    "arguments": {
+                        "sandbox_id": local_sandbox.id,
+                        "command": "sleep 30",
+                    },
+                },
+            },
+            headers=headers,
+        )
+        pending = json.loads(started.json()["result"]["content"][0]["text"])
+        pending = {k: pending[k] for k in ("sandbox_id", "task_id")}
+        cancelled = await client.post(
+            "/mcp",
+            json={
+                "jsonrpc": "2.0",
+                "id": 5,
+                "method": "tools/call",
+                "params": {"name": "cancel_task", "arguments": pending},
+            },
+            headers=headers,
+        )
+        payload = json.loads(cancelled.json()["result"]["content"][0]["text"])
+        assert payload["state"] == "cancelled" and payload["exit_code"] != 0
+        assert cancelled.json()["result"]["isError"] is False
         deleted = await client.delete("/mcp", headers=headers)
         assert deleted.status_code == 200
         local_sandbox.kill.assert_not_awaited()

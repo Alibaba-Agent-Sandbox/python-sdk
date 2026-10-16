@@ -40,6 +40,8 @@ The result includes `state`, `exit_code`, `started_at`, `finished_at`, `stdout`,
 `failed`, `cancelled`, `timed_out`, or `unknown`. `failed` means a nonzero exit or
 supervisor failure; a missing supervisor is `unknown`, never fabricated success.
 Progress reflects output/status, not a percentage. Times are Unix seconds.
+For `get_task`/`cancel_task`, a saved nonzero exit code is task data; a successful
+read or confirmed cancellation is not marked as an MCP tool error merely for that code.
 
 Pass each returned offset into the next read. `limit` is bytes per stream,
 default 16384, maximum 65536. Offset boundaries can split UTF-8 code points;
