@@ -1,5 +1,6 @@
 # SDK 使用指南
 
+本页介绍异步 **ProviderSandbox** 的 Provider/服务端扩展。仅修改导入迁移 E2B 时，使用根目录 `Sandbox` / `AsyncSandbox` 或 `agent_sandbox.code_interpreter`，见[从 E2B 迁移](migrate-from-e2b.md)。这些入口的同步/异步调用及结果模型遵循固定标准契约。
 本文详述 Agent Sandbox Python SDK 的完整使用方法。
 
 ---
@@ -15,7 +16,7 @@ pip install agent-sandbox-client
 ## 导入
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 ```
 
 ---
@@ -503,7 +504,7 @@ except ServerAPIError as exc:                   # 基类：status_code、error_t
 
 ```python
 import asyncio
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async def agent_workflow(task_code: str) -> str:
     """Agent → 创建沙箱 → 执行代码 → 读取结果 → 销毁沙箱"""

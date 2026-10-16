@@ -3,7 +3,7 @@
 **Client SDK.** The product is Agent Sandbox. The import path is `agent_sandbox`. This package runs on your machine: create a sandbox, use it, and kill it. The HTTP service inside the image is [`agent-sandbox-server`](../server-sdk/README.md). Guide: [Client SDK](../docs/en/guide/client-sdk.md).
 
 Template build and deploy are done by the CLI (`abx template build|deploy`). Method names are
-E2B-shaped to ease migration; the standard API follows Alibaba-supported E2B behavior (see the "Migrate from E2B" guide).
+The standard root Sandbox/AsyncSandbox and code_interpreter APIs follow Alibaba-supported E2B behavior: [migration guide](../docs/en/guide/migrate-from-e2b.md) ([中文](../docs/zh/guide/migrate-from-e2b.md)). Provider/server/declarative extensions use the explicit ProviderSandbox entry.
 
 This package is the `agent_sandbox` import namespace *except* `agent_sandbox.server`, which is
 the container-side runtime shipped separately as

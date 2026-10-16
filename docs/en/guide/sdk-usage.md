@@ -1,6 +1,6 @@
 # SDK Usage Guide
 
-This document covers the complete usage of the Agent Sandbox Python SDK.
+This page documents the asynchronous **ProviderSandbox** provider/server extensions. For import-only E2B migration use root `Sandbox` / `AsyncSandbox` or `agent_sandbox.code_interpreter`, following [Migrate from E2B](migrate-from-e2b.md). Their synchronous/asynchronous calls and result models follow the pinned standard contract.
 
 ---
 
@@ -15,7 +15,7 @@ Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated projec
 ## Import
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 ```
 
 ---
@@ -504,7 +504,7 @@ This is the canonical pattern for AI Agent scenarios — create a sandbox, run t
 
 ```python
 import asyncio
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async def agent_workflow(task_code: str) -> str:
     """Agent → create sandbox → exec code → read result → kill sandbox"""
