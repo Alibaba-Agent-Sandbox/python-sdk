@@ -92,6 +92,7 @@ except CapabilityNotSupportedError as e:
 | E4000 | `FileOperationError` | 文件操作失败（基类） | — | 文件系统相关通用错误 |
 | E4001 | `FileNotFoundError_` | 文件或目录未找到 | 使用 `files.list()` 检查可用文件，或 `files.exists()` 验证路径 | 读取/删除不存在的路径 |
 | E4002 | `PermissionDeniedError` | 权限被拒绝 | 检查沙箱中的文件权限 | 操作无权限的文件 |
+| E4003 | `FileSizeLimitError`（`limit`） | 流式下载超过调用者字节限额 | 使用更小文件或明确调整 `max_bytes` | `files.read_bytes(..., max_bytes=...)` 超限并关闭响应 |
 
 > **注意**：`FileNotFoundError_` 类名带下划线后缀，以避免遮蔽 Python 内置 `FileNotFoundError`。
 

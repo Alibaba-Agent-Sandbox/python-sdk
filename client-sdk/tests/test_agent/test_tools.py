@@ -28,9 +28,9 @@ from agent_sandbox.agent.tools import (
 class TestToolSchemas:
     """Test tool schema definitions."""
 
-    def test_all_13_tools_defined(self):
+    def test_all_15_tools_defined(self):
         """All execution, file, and lifecycle tools should be defined."""
-        assert len(TOOL_SCHEMAS) == 13
+        assert len(TOOL_SCHEMAS) == 15
 
     def test_tool_names(self):
         """Tool names match expected set."""
@@ -46,6 +46,8 @@ class TestToolSchemas:
             "run_code",
             "run_command",
             "read_file",
+            "upload_file",
+            "download_file",
             "write_file",
             "list_files",
             "kill_sandbox",

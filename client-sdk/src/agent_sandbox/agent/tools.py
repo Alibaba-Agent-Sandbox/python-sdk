@@ -313,6 +313,54 @@ TOOL_SCHEMAS.extend(
 )
 
 
+# Base64 keeps binary data JSON-compatible without reading the MCP host's files.
+TOOL_SCHEMAS.extend(
+    [
+        {
+            "name": name,
+            "description": description,
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4096,
+                        "description": "Absolute sandbox file path; never a host path.",
+                    },
+                    "sandbox_id": {"type": "string", "minLength": 1, "maxLength": 1024},
+                    **(
+                        {
+                            "content_base64": {
+                                "type": "string",
+                                "maxLength": 1398104,
+                                "description": "Strict standard Base64; at most 1 MiB decoded.",
+                            }
+                        }
+                        if name == "upload_file"
+                        else {}
+                    ),
+                },
+                "required": ["path", "content_base64"] if name == "upload_file" else ["path"],
+                "additionalProperties": False,
+            },
+        }
+        for name, description in [
+            (
+                "upload_file",
+                "Write up to 1 MiB of binary bytes from Base64 to a sandbox. "
+                "Overwrites the remote file; no host-local file access.",
+            ),
+            (
+                "download_file",
+                "Read a sandbox file as Base64, bounded to 1 MiB streamed bytes. "
+                "Returns byte count and SHA256; oversized files fail without partial success.",
+            ),
+        ]
+    ]
+)
+
+
 TOOL_SCHEMA_MAP: dict[str, dict[str, Any]] = {t["name"]: t for t in TOOL_SCHEMAS}
 
 
@@ -589,6 +637,20 @@ async def handle_cancel_task(params: dict[str, Any], manager: SandboxManager) ->
     return await task_operation(params, manager, cancel=True)
 
 
+async def handle_upload_file(params: dict[str, Any], manager: SandboxManager) -> dict[str, Any]:
+    """Handle bounded binary upload with no MCP-host file access."""
+    from agent_sandbox.agent.binary_files import upload_file
+
+    return await upload_file(params, manager)
+
+
+async def handle_download_file(params: dict[str, Any], manager: SandboxManager) -> dict[str, Any]:
+    """Handle bounded binary download using the SDK data plane."""
+    from agent_sandbox.agent.binary_files import download_file
+
+    return await download_file(params, manager)
+
+
 # Handler dispatch table
 TOOL_HANDLERS: dict[str, Any] = {
     "create_sandbox": handle_create_sandbox,
@@ -601,6 +663,8 @@ TOOL_HANDLERS: dict[str, Any] = {
     "run_code": handle_run_code,
     "run_command": handle_run_command,
     "read_file": handle_read_file,
+    "upload_file": handle_upload_file,
+    "download_file": handle_download_file,
     "write_file": handle_write_file,
     "list_files": handle_list_files,
     "kill_sandbox": handle_kill_sandbox,
@@ -631,6 +695,12 @@ async def dispatch_tool(
     try:
         return await handler(params, manager)  # type: ignore[no-any-return]
     except Exception as exc:
+        if name in {"upload_file", "download_file"}:
+            from agent_sandbox.agent.binary_files import format_error
+
+            payload = format_error(exc)
+            logger.error("Tool %s failed: %s", name, payload["error_category"])
+            return payload
         if name in _LIFECYCLE_TOOLS:
             payload = _format_lifecycle_error(exc)
             # Exception strings and tracebacks can include request URLs, model

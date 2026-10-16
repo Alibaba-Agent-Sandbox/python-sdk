@@ -43,3 +43,5 @@ Move the file and edit `Status:` in the same commit. Required sections and the t
   A newer run is a new file, not an edit. Never paste credentials, tokens or machine-local paths.
 
 `scripts/check-repo-health.sh` enforces ADR naming, the `Status:`/directory match, and that no slug dangles.
+
+- [Bounded MCP binary files](notes/proposed/feature/2026-10-16-mcp-binary-files.md) · [verification](evidence/verify/2026-10-16-mcp-binary-files.md)

@@ -92,6 +92,7 @@ except CapabilityNotSupportedError as e:
 | E4000 | `FileOperationError` | File operation failed (base class) | — | General filesystem errors |
 | E4001 | `FileNotFoundError_` | File or directory not found | Use `files.list()` to check available files, or `files.exists()` to verify the path | Reading/deleting a non-existent path |
 | E4002 | `PermissionDeniedError` | Permission denied | Check file permissions in the sandbox | Operating on a file without permission |
+| E4003 | `FileSizeLimitError` (`limit`) | Streamed file download exceeded caller byte limit | Use a smaller file or explicitly change `max_bytes` | `files.read_bytes(..., max_bytes=...)` overflow; response closed |
 
 > **Note**: The `FileNotFoundError_` class name has a trailing underscore to avoid shadowing Python's built-in `FileNotFoundError`.
 
