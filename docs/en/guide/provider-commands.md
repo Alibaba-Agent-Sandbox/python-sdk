@@ -27,6 +27,10 @@ and API key must use the same Team and region. For OSS, configure the Volume's R
 `metadata["fc.sandbox.auth.role"]` overrides that role when supplied. Check the
 [official mount guide](https://help.aliyun.com/zh/agent-sandbox/mount-oss-volume-1)
 for storage permissions, template/runtime prerequisites and storage-specific limits.
+Volume currently requires invitation access through an Alibaba Cloud support ticket;
+confirm access for the target account, region and Team before preparing storage, as
+described in the [official OSS Volume guide](https://help.aliyun.com/zh/agent-sandbox/user-guide/create-oss-volume).
+An empty successful Volume list does not prove create or mount access.
 
 Paths must be normalized absolute Unix paths other than `/`, with no trailing separator,
 empty or hidden component, `.`/`..`, NUL or surrounding whitespace. `/bin`, `/opt`, `/var`,

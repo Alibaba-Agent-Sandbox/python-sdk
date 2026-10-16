@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Clarify the current Volume invitation-access prerequisite in both language guides; an empty list does not prove create or mount access.
+
 - The built-in provider no longer advertises `ports.domain`, `storage.mount` or `network.vpc` as callable standard sandbox features. Provider resource management uses the separate command contract.
 
 ### Fixed

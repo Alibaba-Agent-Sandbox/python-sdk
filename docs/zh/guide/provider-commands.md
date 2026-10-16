@@ -25,6 +25,9 @@ async with await Sandbox.create(
 必须属于同一 Team，使用相同地域。OSS 应配置 Volume 的 RAM 角色；显式传入
 `metadata["fc.sandbox.auth.role"]` 时以该角色为准。存储权限、模板与运行时前提和各存储类型
 的限制见[官方挂载指南](https://help.aliyun.com/zh/agent-sandbox/mount-oss-volume-1)。
+Volume 目前要求提交阿里云工单申请邀测，准备存储前应确认目标账号、地域和 Team
+已开通，参见[官方 OSS Volume 指南](https://help.aliyun.com/zh/agent-sandbox/user-guide/create-oss-volume)。
+成功返回空列表不能证明已有创建或挂载权限。
 
 路径必须是规范化的绝对 Unix 路径，不能为 `/`，不能包含尾部分隔符、空段、隐藏目录段、
 `.`/`..`、NUL 或前后空白。`/bin`、`/opt`、`/var`、`/dev` 及其子路径会被拒绝。

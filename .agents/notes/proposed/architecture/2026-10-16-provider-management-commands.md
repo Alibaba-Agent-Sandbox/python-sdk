@@ -115,3 +115,4 @@ and never kill or replace an unknown process to obtain a pass.
 [Verification record](../../../evidence/verify/2026-10-16-provider-management-commands.md).
 [Final review and mount parity](../../../evidence/verify/2026-10-16-provider-management-final-review.md).
 [Final isolated suite and main synchronization](../../../evidence/verify/2026-10-16-provider-command-integration-final.md).
+[Independent recheck and accepted-main integration](../../../evidence/verify/2026-10-16-provider-management-recheck.md).
