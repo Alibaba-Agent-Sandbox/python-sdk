@@ -412,7 +412,7 @@ class TestMcpHttpApp:
         )
         assert resp2.status_code == 200
         tools = resp2.json()["result"]["tools"]
-        assert len(tools) == 7
+        assert len(tools) == 13
         names = {t["name"] for t in tools}
         assert "create_sandbox" in names
         assert "run_code" in names

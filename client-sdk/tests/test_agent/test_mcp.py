@@ -199,7 +199,7 @@ class TestSandboxMCPServer:
         )
         assert resp is not None
         tools = resp["result"]["tools"]
-        assert len(tools) == 7
+        assert len(tools) == 13
         names = {t["name"] for t in tools}
         assert "run_code" in names
         assert "create_sandbox" in names

@@ -1,4 +1,4 @@
-"""MCP Tools 定义 — 7 个 P0 核心工具。
+"""MCP tools for sandbox execution, files, and lifecycle management.
 
 每个 Tool 包含：
 - TOOL_SCHEMA: MCP Tool schema（name, description, inputSchema）
@@ -11,10 +11,28 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from agent_sandbox.agent.mcp import SandboxManager
+    from agent_sandbox.models.sandbox import SandboxInfo
 
 from agent_sandbox.utils.logging import get_logger
 
 logger = get_logger("agent.tools")
+
+_LIFECYCLE_TOOLS = frozenset(
+    {
+        "create_sandbox",
+        "list_sandboxes",
+        "get_sandbox",
+        "set_sandbox_timeout",
+        "start_task",
+        "get_task",
+        "cancel_task",
+    }
+)
+
+
+class _ToolInputError(ValueError):
+    """An internally generated message containing no caller or provider values."""
+
 
 # ---------------------------------------------------------------------------
 # Tool schemas (MCP format)
@@ -34,12 +52,25 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "properties": {
                 "template": {
                     "type": "string",
+                    "minLength": 1,
+                    "pattern": "\\S",
                     "description": "沙箱模板名称，省略时使用 server 配置的模板",
                 },
                 "timeout": {
                     "type": "integer",
                     "description": "沙箱超时时间（秒），默认 300",
                     "default": 300,
+                    "minimum": 1,
+                    "maximum": 86400,
+                },
+                "region": {"type": "string", "minLength": 1, "pattern": "\\S"},
+                "cpu": {"type": "integer", "minimum": 1},
+                "memory": {"type": "integer", "minimum": 1, "description": "内存大小（MB）"},
+                "provider": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "\\S",
+                    "description": "已配置的 provider ID，省略时使用 SDK 默认值",
                 },
                 "envs": {
                     "type": "object",
@@ -47,6 +78,64 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
                     "additionalProperties": {"type": "string"},
                 },
             },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "list_sandboxes",
+        "description": (
+            "列出当前授权账户及 provider 可见的沙箱，不会创建沙箱或改变会话默认沙箱。"
+            "返回安全元数据，不包含环境变量、凭据或用户 metadata。"
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "creating",
+                        "running",
+                        "paused",
+                        "pausing",
+                        "stopping",
+                        "stopped",
+                        "error",
+                    ],
+                },
+                "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 100},
+                "offset": {"type": "integer", "minimum": 0, "default": 0},
+                "provider": {"type": "string", "minLength": 1, "pattern": "\\S"},
+                "region": {"type": "string", "minLength": 1, "pattern": "\\S"},
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "get_sandbox",
+        "description": (
+            "从平台刷新沙箱安全元数据，不延长生命周期。省略 sandbox_id 时查询现有默认沙箱；"
+            "无默认沙箱则返回错误，不会创建沙箱。"
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {"sandbox_id": {"type": "string", "minLength": 1, "pattern": "\\S"}},
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "set_sandbox_timeout",
+        "description": (
+            "设置沙箱从现在起的生命周期（秒），并更新后续工具调用自动续期使用的时长。"
+            "省略 sandbox_id 时使用现有默认沙箱；无默认沙箱则返回错误。"
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "sandbox_id": {"type": "string", "minLength": 1, "pattern": "\\S"},
+                "timeout": {"type": "integer", "minimum": 1, "maximum": 86400},
+            },
+            "required": ["timeout"],
+            "additionalProperties": False,
         },
     },
     {
@@ -167,6 +256,63 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
 ]
 
 # Quick lookup by name
+
+
+_TASK_HANDLE = {
+    "sandbox_id": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "task_id": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+    "stdout_offset": {"type": "integer", "minimum": 0, "maximum": 1048576},
+    "stderr_offset": {"type": "integer", "minimum": 0, "maximum": 1048576},
+    "limit": {"type": "integer", "minimum": 1, "maximum": 65536, "default": 16384},
+}
+TOOL_SCHEMAS.extend(
+    [
+        {
+            "name": "start_task",
+            "description": (
+                "Start a Linux/python3 background shell task. Explicitly retain its sandbox "
+                "on MCP disconnect until the existing sandbox TTL. Save sandbox_id/task_id "
+                "to reconnect; kill_sandbox still destroys all work. "
+                "Logs are capped at 1 MiB per stream."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "required": ["command"],
+                "additionalProperties": False,
+                "properties": {
+                    "command": {"type": "string", "minLength": 1, "maxLength": 65536},
+                    "sandbox_id": _TASK_HANDLE["sandbox_id"],
+                    "cwd": {"type": "string", "minLength": 1, "maxLength": 4096},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 3600, "default": 300},
+                },
+            },
+        },
+        *[
+            {
+                "name": name,
+                "description": description,
+                "inputSchema": {
+                    "type": "object",
+                    "required": ["sandbox_id", "task_id"],
+                    "additionalProperties": False,
+                    "properties": _TASK_HANDLE,
+                },
+            }
+            for name, description in [
+                (
+                    "get_task",
+                    "Read saved task status and byte-offset log pages while its sandbox lives.",
+                ),
+                (
+                    "cancel_task",
+                    "Cancel the task-owned group; return confirmed status and bounded logs.",
+                ),
+            ]
+        ],
+    ]
+)
+
+
 TOOL_SCHEMA_MAP: dict[str, dict[str, Any]] = {t["name"]: t for t in TOOL_SCHEMAS}
 
 
@@ -180,21 +326,135 @@ async def handle_create_sandbox(
     manager: SandboxManager,
 ) -> dict[str, Any]:
     """Handle create_sandbox tool call."""
-    raw_template = params.get("template")
-    template = raw_template if isinstance(raw_template, str) and raw_template else None
-    timeout = params.get("timeout", 300)
-    envs = params.get("envs") or {}
+    _check_properties("create_sandbox", params)
+    template = _optional_string(params, "template")
+    timeout = _integer(params, "timeout", default=300, minimum=1, maximum=86400)
+    envs = params.get("envs", {})
+    if not isinstance(envs, dict) or any(
+        not isinstance(k, str) or not isinstance(v, str) for k, v in envs.items()
+    ):
+        raise _ToolInputError("envs must be an object of string values")
+    options: dict[str, Any] = {}
+    for name in ("region", "provider"):
+        if name in params:
+            options[name] = _optional_string(params, name)
+    for name in ("cpu", "memory"):
+        if name in params:
+            options[name] = _integer(params, name, minimum=1)
 
     sandbox = await manager.create_sandbox(
         template=template,
         timeout=timeout,
         envs=envs,
+        **options,
     )
     return {
         "sandbox_id": sandbox.id,
         "status": sandbox.status.value,
         "url": sandbox.url,
     }
+
+
+def _check_properties(name: str, params: dict[str, Any]) -> None:
+    """Reject unsupported arguments rather than silently implying support."""
+    properties = TOOL_SCHEMA_MAP[name]["inputSchema"]["properties"]
+    if params.keys() - properties.keys():
+        raise _ToolInputError(f"Unsupported argument for {name}; see its inputSchema")
+
+
+def _integer(
+    params: dict[str, Any],
+    name: str,
+    *,
+    default: int | None = None,
+    minimum: int = 0,
+    maximum: int | None = None,
+) -> int:
+    """Validate actual integers, including direct calls without schema validation."""
+    value = params.get(name, default)
+    if type(value) is not int or value < minimum or (maximum is not None and value > maximum):
+        bound = f"{minimum}..{maximum}" if maximum is not None else f">= {minimum}"
+        raise _ToolInputError(f"{name} must be an integer in {bound}")
+    return value
+
+
+def _optional_string(params: dict[str, Any], name: str) -> str | None:
+    """Accept an omitted string; reject empty or mistyped explicit values."""
+    if name not in params:
+        return None
+    value = params[name]
+    if not isinstance(value, str) or not value.strip():
+        raise _ToolInputError(f"{name} must be a non-empty string")
+    return value
+
+
+def _safe_sandbox_info(info: SandboxInfo) -> dict[str, Any]:
+    """Serialize a fixed allowlist; never serialize an entire SDK model."""
+    return {
+        "sandbox_id": info.sandbox_id,
+        "template": info.template,
+        "status": info.status.value,
+        "region": info.region,
+        "started_at": info.started_at.isoformat() if info.started_at else None,
+        "end_at": info.end_at.isoformat() if info.end_at else None,
+        "cpu_count": info.cpu_count,
+        "memory_mb": info.memory_mb,
+        "disk_size_mb": info.disk_size_mb,
+    }
+
+
+async def handle_list_sandboxes(
+    params: dict[str, Any],
+    manager: SandboxManager,
+) -> dict[str, Any]:
+    """List platform sandboxes with bounded pagination and safe metadata."""
+    _check_properties("list_sandboxes", params)
+    limit = _integer(params, "limit", default=100, minimum=1, maximum=100)
+    offset = _integer(params, "offset", default=0, minimum=0)
+    status = _optional_string(params, "status")
+    if status is not None:
+        from agent_sandbox.models.sandbox import SandboxStatus
+
+        try:
+            SandboxStatus(status)
+        except ValueError:
+            raise _ToolInputError("status must be a supported sandbox state") from None
+    infos = await manager.list_sandboxes(
+        status=status,
+        limit=limit,
+        offset=offset,
+        provider=_optional_string(params, "provider"),
+        region=_optional_string(params, "region"),
+    )
+    return {
+        "sandboxes": [_safe_sandbox_info(info) for info in infos],
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+async def handle_get_sandbox(
+    params: dict[str, Any],
+    manager: SandboxManager,
+) -> dict[str, Any]:
+    """Refresh an existing sandbox without implicit creation or renewal."""
+    _check_properties("get_sandbox", params)
+    info = await manager.inspect_sandbox(_optional_string(params, "sandbox_id"))
+    return _safe_sandbox_info(info)
+
+
+async def handle_set_sandbox_timeout(
+    params: dict[str, Any],
+    manager: SandboxManager,
+) -> dict[str, Any]:
+    """Update a sandbox's TTL and the session renewal policy."""
+    _check_properties("set_sandbox_timeout", params)
+    timeout = _integer(params, "timeout", minimum=1, maximum=86400)
+    sandbox_id = await manager.set_sandbox_timeout(
+        timeout,
+        _optional_string(params, "sandbox_id"),
+    )
+    return {"success": True, "sandbox_id": sandbox_id, "timeout": timeout}
 
 
 async def handle_run_code(
@@ -308,9 +568,36 @@ async def handle_kill_sandbox(
     return {"success": True, "sandbox_id": killed}
 
 
+async def handle_start_task(params: dict[str, Any], manager: SandboxManager) -> dict[str, Any]:
+    """Start a reconnectable background task using existing sandbox commands."""
+    from agent_sandbox.agent.tasks import start_task
+
+    return await start_task(params, manager)
+
+
+async def handle_get_task(params: dict[str, Any], manager: SandboxManager) -> dict[str, Any]:
+    """Read bounded saved task output without session ownership changes."""
+    from agent_sandbox.agent.tasks import task_operation
+
+    return await task_operation(params, manager)
+
+
+async def handle_cancel_task(params: dict[str, Any], manager: SandboxManager) -> dict[str, Any]:
+    """Request owned task-group cancellation without accepting arbitrary PIDs."""
+    from agent_sandbox.agent.tasks import task_operation
+
+    return await task_operation(params, manager, cancel=True)
+
+
 # Handler dispatch table
 TOOL_HANDLERS: dict[str, Any] = {
     "create_sandbox": handle_create_sandbox,
+    "list_sandboxes": handle_list_sandboxes,
+    "get_sandbox": handle_get_sandbox,
+    "set_sandbox_timeout": handle_set_sandbox_timeout,
+    "start_task": handle_start_task,
+    "get_task": handle_get_task,
+    "cancel_task": handle_cancel_task,
     "run_code": handle_run_code,
     "run_command": handle_run_command,
     "read_file": handle_read_file,
@@ -344,8 +631,69 @@ async def dispatch_tool(
     try:
         return await handler(params, manager)  # type: ignore[no-any-return]
     except Exception as exc:
+        if name in _LIFECYCLE_TOOLS:
+            payload = _format_lifecycle_error(exc)
+            # Exception strings and tracebacks can include request URLs, model
+            # validation inputs, provider credentials, or caller-supplied envs.
+            logger.error("Tool %s failed: %s", name, payload["error"])
+            return payload
         logger.error("Tool %s failed: %s", name, exc, exc_info=True)
         return _format_tool_error(exc)
+
+
+def _format_lifecycle_error(exc: BaseException) -> dict[str, Any]:
+    """Describe failure categories without echoing untrusted exception contents."""
+    import httpx
+    from pydantic import ValidationError
+
+    from agent_sandbox.models.errors import (
+        AuthenticationError,
+        ProviderFeatureNotSupportedError,
+        ProviderResourceNotFoundError,
+        QuotaExceededError,
+        SandboxError,
+        SandboxNotFoundError,
+        TemplateNotFoundError,
+    )
+
+    if type(exc) is _ToolInputError:
+        return {"error": str(exc)}
+    if isinstance(exc, ValidationError):
+        return {"error": "The platform returned invalid sandbox metadata."}
+    if isinstance(exc, httpx.HTTPStatusError):
+        return {"error": f"Sandbox lifecycle request failed (HTTP {exc.response.status_code})."}
+    if isinstance(exc, (httpx.TimeoutException, TimeoutError)):
+        return {"error": "Sandbox lifecycle request timed out."}
+    if isinstance(exc, httpx.RequestError):
+        return {"error": "Sandbox lifecycle request could not reach the platform."}
+    if isinstance(exc, SandboxError):
+        message = "Sandbox lifecycle operation failed."
+        suggestion = "Check the sandbox, provider configuration, and platform permissions."
+        if isinstance(exc, AuthenticationError):
+            message = "Sandbox authentication failed."
+            suggestion = "Check the authorized provider credential configuration."
+        elif isinstance(exc, (SandboxNotFoundError, ProviderResourceNotFoundError)):
+            message = "Sandbox was not found."
+            suggestion = "List sandboxes and use an existing sandbox ID."
+        elif isinstance(exc, ProviderFeatureNotSupportedError):
+            message = "The provider does not support this lifecycle operation."
+            suggestion = "Choose a provider that supports this operation."
+        elif isinstance(exc, QuotaExceededError):
+            message = "Sandbox quota exceeded."
+            suggestion = "Remove unused sandboxes or request additional quota."
+        elif isinstance(exc, TemplateNotFoundError):
+            message = "Sandbox template was not found."
+            suggestion = "Choose an available template."
+        code = exc.code
+        if (
+            isinstance(code, str)
+            and len(code) == 5
+            and code[0] == "E"
+            and all(char in "0123456789" for char in code[1:])
+        ):
+            message = f"[{code}] {message}"
+        return {"error": message, "suggestion": suggestion}
+    return {"error": "Sandbox lifecycle operation failed."}
 
 
 def _format_tool_error(exc: BaseException) -> dict[str, Any]:

@@ -6,7 +6,7 @@
 
 **Implemented surface** (kept in sync with `client-sdk/src/agent_sandbox/agent/`):
 
-- 7 P0 tools (`agent/tools.py`)
+- 13 tools (`agent/tools.py`)
 - STDIO transport (`agent/mcp.py`) — `python -m agent_sandbox.agent.mcp`
 - Streamable HTTP transport (`agent/mcp_http.py`) — Starlette ASGI app
 - The `abx mcp install / start / status / deploy` commands are provided by the Node.js CLI (see [Related: the abx CLI](#related-the-abx-cli))
@@ -15,7 +15,12 @@
 
 ## 1. Tools Definition
 
-All 7 tools are defined in `TOOL_SCHEMAS` (`agent/tools.py`). Omitting `sandbox_id` targets the default sandbox (see Section 2).
+The complete registry also includes [lifecycle tools](../guide/mcp-lifecycle.md) and
+[reconnectable tasks](../guide/mcp-background-tasks.md). Explicit background work
+retains only its sandbox until platform TTL; ordinary cleanup remains unchanged.
+
+
+The original seven execution/file tools are defined in `TOOL_SCHEMAS` (`agent/tools.py`). Omitting `sandbox_id` targets the default sandbox (see Section 2).
 
 ### create_sandbox
 
@@ -311,7 +316,7 @@ graph LR
 graph TD
     subgraph MCP["MCP Server"]
         TL["Transport Layer\nSTDIO (mcp.py) / Streamable HTTP (mcp_http.py)"]
-        TR["Tool Registry\n7 P0 tools (agent/tools.py)"]
+        TR["Tool Registry\n13 tools (agent/tools.py)"]
         SM["SandboxManager / SessionStore"]
         RR["JSON-RPC Router\ninitialize / tools/list / tools/call / ping"]
         SC["Sandbox Client\nagent_sandbox SDK"]

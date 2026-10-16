@@ -135,3 +135,35 @@ def test_sdist_include_list_is_the_documented_one() -> None:
     )
     for repo_doc in ("llms.txt", "CHANGELOG.md", "SKILL.md"):
         assert repo_doc not in include
+
+
+def test_uv_can_resolve_both_workspace_editables_offline() -> None:
+    """Exercise uv's workspace metadata parser without installing or contacting PyPI."""
+    uv = shutil.which("uv")
+    if uv is None:
+        pytest.skip("uv is not installed")
+    workspace = PROJECT_ROOT.parent
+    if not (workspace / "server-sdk" / "pyproject.toml").is_file():
+        pytest.skip("requires the repository workspace, not a standalone client sdist")
+    result = subprocess.run(
+        [
+            uv,
+            "pip",
+            "install",
+            "--dry-run",
+            "--no-deps",
+            "--offline",
+            "--no-build-isolation",
+            "--python",
+            sys.executable,
+            "-e",
+            "./server-sdk",
+            "-e",
+            "./client-sdk[dev]",
+        ],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, f"uv workspace resolution failed:\n{result.stderr}"

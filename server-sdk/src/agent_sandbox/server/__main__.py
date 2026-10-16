@@ -14,6 +14,7 @@ Stdlib only; ``healthcheck`` imports nothing heavy.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib
 import importlib.util
 import json
@@ -72,15 +73,27 @@ def _build_parser() -> argparse.ArgumentParser:
 def _load_commands(spec: str) -> None:
     """Import a file or module so its registrations run."""
     if spec.endswith(".py") or os.path.sep in spec or os.path.isfile(spec):
-        path = os.path.abspath(spec)
-        module_spec = importlib.util.spec_from_file_location(
-            f"_abx_user_commands_{abs(hash(path))}", path
-        )
+        path = os.path.realpath(spec)
+        module_name = f"_abx_user_commands_{hashlib.sha256(os.fsencode(path)).hexdigest()}"
+        if module_name in sys.modules:
+            return
+        module_spec = importlib.util.spec_from_file_location(module_name, path)
         if module_spec is None or module_spec.loader is None:
             raise SystemExit(f"cannot load commands file {spec!r}")
         module = importlib.util.module_from_spec(module_spec)
-        sys.path.insert(0, os.path.dirname(path))
-        module_spec.loader.exec_module(module)
+        previous_path = sys.path[:]
+        directory = os.path.dirname(path)
+        if directory not in sys.path:
+            sys.path.insert(0, directory)
+        # Decorators (including dataclasses with postponed annotations) resolve
+        # their defining module during execution, as with a normal import.
+        sys.modules[module_name] = module
+        try:
+            module_spec.loader.exec_module(module)
+        except BaseException:
+            sys.modules.pop(module_name, None)
+            sys.path[:] = previous_path
+            raise
     else:
         importlib.import_module(spec)
 

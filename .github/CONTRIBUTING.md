@@ -31,6 +31,8 @@ cd python-sdk
 
 # 2. Install both packages in development mode (includes all extras + test/lint tooling)
 pip install -e ./server-sdk -e "./client-sdk[dev]"   # or: make dev
+# With uv, in an activated virtual environment:
+uv pip install -e ./server-sdk -e "./client-sdk[dev]"
 
 # 3. Install pre-commit — its checks are invoked automatically by .githooks/pre-commit
 pip install pre-commit   # or: make hooks
@@ -38,6 +40,10 @@ pip install pre-commit   # or: make hooks
 # 4. Verify your setup
 make test
 ```
+
+The root uv workspace maps `agent-sandbox-server` to `server-sdk/`, so the
+client uses the matching local runtime during development. No `--no-sources`
+workaround is needed. Published client metadata keeps the lockstep version pin.
 
 > **Note on Git hooks:** This repository ships `.githooks/` and uses it as the
 > hook entry point via `core.hooksPath=.githooks` (a local Git config).
@@ -222,3 +228,16 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 ## License
 
 By contributing, you agree that your contributions will be licensed under the [Apache-2.0 License](../LICENSE).
+
+## Stacked pull requests / 堆叠式拉取请求
+
+The complete CI workflow runs on pull requests targeting any branch, including a
+feature branch. Wait for the runtime, typecheck, test and build jobs on the latest
+head; a Markdown-only result does not establish product validation. Push events
+remain limited to `main`. Real-component evidence and all other definition-of-done
+requirements still apply.
+
+完整 CI 会验证目标为任意分支的拉取请求，包括以功能分支为基底的堆叠 PR。
+须确认最新提交的运行、类型、测试和构建任务实际完成；仅 Markdown 检查通过
+不能证明产品验证完成。直接推送仍仅在 `main` 触发；真实组件证据和其余完成
+标准继续适用。

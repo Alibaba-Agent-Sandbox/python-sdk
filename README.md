@@ -187,6 +187,7 @@ Lower layers never import upper layers. Full design: [`docs/en/design/architectu
 | Authoring Templates | [Authoring Templates](docs/en/guide/authoring-templates.md) |
 | Build & Deploy (CLI) | [Build & Deploy](docs/en/guide/build-and-deploy.md) |
 | Declarative Usage | [Declarative Usage](docs/en/guide/declarative-usage.md) |
+| Background MCP tasks | [Reconnectable tasks](docs/en/guide/mcp-background-tasks.md) |
 | MCP Integration | [MCP Integration](docs/en/guide/mcp-integration.md) |
 | Session Persistence | [Session Persistence](docs/en/guide/session-persistence.md) |
 | Migrate from E2B | [Migrate from E2B](docs/en/guide/migrate-from-e2b.md) |

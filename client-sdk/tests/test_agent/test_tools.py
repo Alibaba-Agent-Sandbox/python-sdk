@@ -28,15 +28,21 @@ from agent_sandbox.agent.tools import (
 class TestToolSchemas:
     """Test tool schema definitions."""
 
-    def test_all_7_tools_defined(self):
-        """All 7 P0 core tools should be defined."""
-        assert len(TOOL_SCHEMAS) == 7
+    def test_all_13_tools_defined(self):
+        """All execution, file, and lifecycle tools should be defined."""
+        assert len(TOOL_SCHEMAS) == 13
 
     def test_tool_names(self):
         """Tool names match expected set."""
         names = {t["name"] for t in TOOL_SCHEMAS}
         expected = {
             "create_sandbox",
+            "list_sandboxes",
+            "get_sandbox",
+            "set_sandbox_timeout",
+            "start_task",
+            "get_task",
+            "cancel_task",
             "run_code",
             "run_command",
             "read_file",

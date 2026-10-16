@@ -20,6 +20,8 @@ Evidence of the command-line interface lives in the
 
 - [`verify/2026-10-16-provider-management-final-review.md`](verify/2026-10-16-provider-management-final-review.md)
 - [`verify/2026-10-16-provider-command-integration-final.md`](verify/2026-10-16-provider-command-integration-final.md)
+- [`verify/2026-10-16-mcp-background-tasks.md`](verify/2026-10-16-mcp-background-tasks.md)
+
 - [`verify/2026-09-04-full-suite.md`](verify/2026-09-04-full-suite.md)
 - [`verify/2026-09-04-wave3-full-suite.md`](verify/2026-09-04-wave3-full-suite.md)
 - [`verify/2026-09-05-server-framework-full-suite.md`](verify/2026-09-05-server-framework-full-suite.md)

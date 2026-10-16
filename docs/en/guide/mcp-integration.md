@@ -41,11 +41,16 @@ The `abx mcp install --target cursor|claude|vscode` and `abx mcp status` command
 
 ## Available Tools
 
-The MCP Server provides 7 tools:
+The Python MCP server provides 13 tools. The Node.js CLI has its own MCP implementation; see [lifecycle tools](mcp-lifecycle.md) for Python-specific availability and ownership rules:
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `create_sandbox` | Create a sandbox and make it the default | `template` (optional; omitted means the server template), `timeout` (optional, default 300), `envs` (optional) |
+| `create_sandbox` | Create a sandbox and make it the default | `template` (optional; omitted means the server template), `timeout` (optional, default 300), `envs`, `region`, `cpu`, `memory`, `provider` (optional) |
+| `list_sandboxes` | List safe platform metadata without adopting resources | `status`, `limit` (1–100), `offset`, `provider`, `region` (optional) |
+| `get_sandbox` | Refresh metadata without creating or renewing a sandbox | `sandbox_id` (optional; existing default otherwise) |
+| `set_sandbox_timeout` | Set platform lifetime and session renewal policy | `timeout` (required, 1–86400 seconds), `sandbox_id` (optional) |
+| `start_task` | Start background work; retain its sandbox until existing TTL | `command`, optional existing `sandbox_id`, `cwd`, `timeout` (1–3600) |
+| `get_task` / `cancel_task` | Read saved logs/status or cancel the owned task group | `sandbox_id`, `task_id`; optional byte offsets and `limit` |
 | `run_code` | Execute code in the sandbox | `code` (required), `sandbox_id` (optional), `language` (optional, default python), `timeout` (optional, default 30) |
 | `run_command` | Run a command via `sh -c` (pipes, `&&`, `$VAR`, `cd`) | `command` (required), `sandbox_id` (optional), `cwd` (optional; omitted uses the image workdir), `timeout` (optional, default 60; a non-zero exit is a tool error) |
 | `read_file` | Read a file from the sandbox | `path` (required), `sandbox_id` (optional), `encoding` (optional, default utf-8) |
@@ -55,7 +60,12 @@ The MCP Server provides 7 tools:
 
 > **Naming clarification**: The MCP tool `run_command` runs the command via `sh -c` (`sandbox.commands.run(..., shell=True)` in the SDK). It is not named-command dispatch; to call a command registered on the sandbox's server, use `Sandbox.run(name, **kwargs)`.
 >
-> **Default sandbox**: `create_sandbox` makes that sandbox the default, so a later `write_file` / `run_code` / `kill_sandbox` that omits `sandbox_id` uses the sandbox just created. If there is no default yet, the first tool call that omits `sandbox_id` lazily creates one. An omitted `template` uses the server template (`base` for the Python server, `code-interpreter-v1` for the CLI's `abx mcp start`). Each use extends the sandbox lifetime by the timeout it was created with. Every sandbox in the session is destroyed when the IDE closes the server (STDIO) or on `DELETE /mcp` / idle timeout (HTTP).
+> **Default sandbox**: `create_sandbox` makes that sandbox the default, so a later `write_file` / `run_code` / `kill_sandbox` that omits `sandbox_id` uses the sandbox just created. If there is no default yet, the first execution or file tool call that omits `sandbox_id` lazily creates one. Metadata and timeout tools never create a sandbox. An omitted `template` uses the server template (`base` for the Python server, `code-interpreter-v1` for the CLI's `abx mcp start`). Execution and file operations renew the lifetime using the session policy, initially the creation timeout and updated by `set_sandbox_timeout`. Metadata queries never renew it. Sandboxes created or adopted by execution/file tools in the session are destroyed when the IDE closes the server (STDIO) or on `DELETE /mcp` / idle timeout (HTTP).
+
+Explicit `start_task` is the exception to session destruction: it retains that
+sandbox until platform TTL, while other sandboxes keep normal cleanup. Save the
+handle and explicitly `kill_sandbox` when done. See [background tasks](mcp-background-tasks.md)
+for pagination, cancellation and durability limits.
 
 ---
 

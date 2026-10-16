@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 from agent_sandbox.agent.tools import (
     TOOL_SCHEMA_MAP,
     TOOL_SCHEMAS,
+    _ToolInputError,
     dispatch_tool,
 )
 from agent_sandbox.utils.logging import get_logger
@@ -81,6 +82,7 @@ class SandboxManager:
         self._default_sandbox: Any = None  # Sandbox instance
         self._sandboxes: dict[str, Any] = {}  # sandbox_id -> Sandbox
         self._lifetimes: dict[str, int] = {}  # sandbox_id -> timeout seconds
+        self._retained_task_sandboxes: set[str] = set()
         self._state_lock = asyncio.Lock()
         self._default_lock = asyncio.Lock()
 
@@ -124,6 +126,10 @@ class SandboxManager:
         template: str | None = None,
         timeout: int = 300,
         envs: dict[str, str] | None = None,
+        region: str | None = None,
+        cpu: int | None = None,
+        memory: int | None = None,
+        provider: str | None = None,
     ) -> Any:
         """Create a sandbox and make it the session default."""
         from agent_sandbox.api.sandbox import Sandbox
@@ -133,6 +139,14 @@ class SandboxManager:
             timeout=timeout,
             envs=envs or {},
         )
+        for name, value in {
+            "region": region,
+            "cpu": cpu,
+            "memory": memory,
+            "provider": provider,
+        }.items():
+            if value is not None:
+                kwargs[name] = value
         sandbox = await Sandbox.create(**kwargs)
         async with self._state_lock:
             self._sandboxes[sandbox.id] = sandbox
@@ -141,13 +155,20 @@ class SandboxManager:
         logger.info("Created sandbox: %s", sandbox.id)
         return sandbox
 
-    async def get_sandbox(self, sandbox_id: str | None = None) -> Any:
+    async def get_sandbox(
+        self,
+        sandbox_id: str | None = None,
+        *,
+        refresh_lifetime: bool = True,
+        create_default: bool = True,
+    ) -> Any:
         """Get a sandbox by ID, or create/return the default sandbox."""
         if sandbox_id:
             async with self._state_lock:
                 cached = self._sandboxes.get(sandbox_id)
             if cached is not None:
-                await self._refresh_lifetime(cached)
+                if refresh_lifetime:
+                    await self._refresh_lifetime(cached)
                 return cached
             from agent_sandbox.api.sandbox import Sandbox
 
@@ -155,19 +176,94 @@ class SandboxManager:
             async with self._state_lock:
                 self._sandboxes[sb.id] = sb
                 self._lifetimes.setdefault(sb.id, 300)
-            await self._refresh_lifetime(sb)
+            if refresh_lifetime:
+                await self._refresh_lifetime(sb)
             return sb
 
         # One lazy create even when two tool calls arrive together.
         async with self._default_lock:
             if self._default_sandbox is None:
+                if not create_default:
+                    raise _ToolInputError(
+                        "No default sandbox. Call create_sandbox or specify sandbox_id."
+                    )
                 created = await self.create_sandbox()
                 if self._default_sandbox is None:
                     self._default_sandbox = created
                 logger.info("Auto-created default sandbox: %s", self._default_sandbox.id)
             sandbox = self._default_sandbox
-        await self._refresh_lifetime(sandbox)
+        if refresh_lifetime:
+            await self._refresh_lifetime(sandbox)
         return sandbox
+
+    async def list_sandboxes(
+        self,
+        *,
+        status: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        provider: str | None = None,
+        region: str | None = None,
+    ) -> Any:
+        """List platform sandboxes without adopting them into this session."""
+        from agent_sandbox.api.sandbox import Sandbox
+        from agent_sandbox.models.sandbox import SandboxStatus
+
+        # list has no domain kwarg; it only talks to the control plane.
+        kwargs: dict[str, Any] = {"limit": limit, "offset": offset}
+        for name, value in {
+            "api_key": self._api_key,
+            "api_url": self._api_url,
+            "provider": provider,
+            "region": region,
+        }.items():
+            if value is not None:
+                kwargs[name] = value
+        if status is not None:
+            kwargs["status"] = SandboxStatus(status)
+        return await Sandbox.list(**kwargs)
+
+    async def inspect_sandbox(self, sandbox_id: str | None = None) -> Any:
+        """Refresh metadata without creating a sandbox or extending its TTL."""
+        if sandbox_id:
+            async with self._state_lock:
+                cached = self._sandboxes.get(sandbox_id)
+            if cached is None:
+                from agent_sandbox.api.sandbox import Sandbox
+
+                kwargs = self._connect_kwargs(sandbox_id=sandbox_id)
+                kwargs.pop("domain", None)
+                return await Sandbox.get_info_by_id(**kwargs)
+        sandbox = await self.get_sandbox(
+            sandbox_id,
+            refresh_lifetime=False,
+            create_default=False,
+        )
+        return await sandbox.refresh_info()
+
+    async def set_sandbox_timeout(self, timeout: int, sandbox_id: str | None = None) -> str:
+        """Set the platform TTL and use it for subsequent session refreshes."""
+        if sandbox_id:
+            async with self._state_lock:
+                cached = self._sandboxes.get(sandbox_id)
+            if cached is None:
+                from agent_sandbox.api.sandbox import Sandbox
+
+                kwargs = self._connect_kwargs(sandbox_id=sandbox_id)
+                kwargs.pop("domain", None)
+                await Sandbox.set_timeout_by_id(timeout=timeout, **kwargs)
+                return sandbox_id
+        sandbox = await self.get_sandbox(
+            sandbox_id,
+            refresh_lifetime=False,
+            create_default=False,
+        )
+        await sandbox.set_timeout(timeout)
+        async with self._state_lock:
+            managed = self._sandboxes.get(sandbox.id)
+            if managed is not None and managed is sandbox:
+                self._lifetimes[managed.id] = timeout
+        return str(sandbox.id)
 
     async def kill_sandbox(self, sandbox_id: str | None = None) -> str | None:
         """Kill a sandbox by ID, or the default sandbox.
@@ -180,6 +276,7 @@ class SandboxManager:
             async with self._state_lock:
                 sb = self._sandboxes.pop(sandbox_id, None)
                 self._lifetimes.pop(sandbox_id, None)
+                self._retained_task_sandboxes.discard(sandbox_id)
                 if self._default_sandbox is not None and self._default_sandbox.id == sandbox_id:
                     self._default_sandbox = None
             if sb is not None:
@@ -202,6 +299,7 @@ class SandboxManager:
             if sb is not None:
                 self._sandboxes.pop(sb.id, None)
                 self._lifetimes.pop(sb.id, None)
+                self._retained_task_sandboxes.discard(sb.id)
         if sb is None:
             return None
         sid = sb.id
@@ -209,15 +307,35 @@ class SandboxManager:
         logger.info("Killed default sandbox: %s", sid)
         return str(sid)
 
+    async def retain_task_sandbox(self, sandbox: Any) -> bool:
+        """Explicit background tasks retain their sandbox until its platform TTL.
+
+        Keep the default usable during this session, but close rather than kill
+        this one sandbox at disconnect. Other synchronous sandboxes are unchanged.
+        """
+        if sandbox is None:
+            return False
+        sandbox_id = str(sandbox.id)
+        async with self._state_lock:
+            if self._sandboxes.get(sandbox_id) is not sandbox:
+                return False
+            self._retained_task_sandboxes.add(sandbox_id)
+            return True
+
     async def shutdown(self) -> None:
-        """Kill all sandboxes."""
+        """Clean session sandboxes, preserving only explicitly retained tasks."""
         async with self._state_lock:
             items = list(self._sandboxes.items())
+            retained = self._retained_task_sandboxes.copy()
+            self._retained_task_sandboxes.clear()
             self._sandboxes.clear()
             self._lifetimes.clear()
             self._default_sandbox = None
         for sid, sb in items:
             try:
+                if sid in retained:
+                    await sb.close()
+                    continue
                 await sb.kill()
                 logger.info("Shutdown: killed sandbox %s", sid)
             except Exception:
@@ -433,7 +551,14 @@ class SandboxMCPServer:
         result = await dispatch_tool(tool_name, arguments, self._manager)
 
         exit_code = result.get("exit_code")
-        is_error = "error" in result or (isinstance(exit_code, int) and exit_code != 0)
+        # Task inspection/cancellation reports the saved command's exit code;
+        # a failed/cancelled command is data, not a failed read/cancel request.
+        nonzero_execution = (
+            tool_name not in {"get_task", "cancel_task"}
+            and isinstance(exit_code, int)
+            and exit_code != 0
+        )
+        is_error = "error" in result or nonzero_execution
         return {
             "content": [
                 {

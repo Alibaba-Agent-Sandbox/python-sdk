@@ -16,7 +16,7 @@ from __future__ import annotations
 import functools
 import json
 import shlex
-from typing import TYPE_CHECKING, Any, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn, cast
 
 from agent_sandbox.api.capability import (
     ResolvedCapabilities,
@@ -872,6 +872,146 @@ class Sandbox:
             await http_client.close()
 
     @classmethod
+    async def get_info_by_id(
+        cls,
+        sandbox_id: str,
+        *,
+        api_key: str | None = None,
+        api_url: str | None = None,
+        access_key_id: str | None = None,
+        access_key_secret: str | None = None,
+        sandbox_api_key: str | None = None,
+        sandbox_base_url: str | None = None,
+        sandbox_domain: str | None = None,
+        region: str | None = None,
+        provider: str | Provider | None = None,
+        provider_options: dict[str, Any] | None = None,
+    ) -> SandboxInfo:
+        """Fetch metadata without connecting, resuming, renewing or adopting the sandbox.
+
+        Credential/provider overrides follow ``kill_by_id``. This method only
+        queries the control plane and does not create an envd/data-plane client.
+
+        Args:
+            sandbox_id: Existing sandbox ID, optionally qualified with ``provider:``.
+            sandbox_domain: Accepted for compatibility with lifecycle methods;
+                unused because control-plane routing depends on the API URL.
+
+        Returns:
+            Current provider-reported sandbox metadata.
+        """
+        result = await cls._control_plane_by_id(
+            sandbox_id,
+            api_key=api_key,
+            api_url=api_url,
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+            sandbox_api_key=sandbox_api_key,
+            sandbox_base_url=sandbox_base_url,
+            region=region,
+            provider=provider,
+            provider_options=provider_options,
+            operation="get_info",
+        )
+        return cast("SandboxInfo", result)
+
+    @classmethod
+    async def set_timeout_by_id(
+        cls,
+        sandbox_id: str,
+        timeout: int,
+        *,
+        api_key: str | None = None,
+        api_url: str | None = None,
+        access_key_id: str | None = None,
+        access_key_secret: str | None = None,
+        sandbox_api_key: str | None = None,
+        sandbox_base_url: str | None = None,
+        sandbox_domain: str | None = None,
+        region: str | None = None,
+        provider: str | Provider | None = None,
+        provider_options: dict[str, Any] | None = None,
+    ) -> None:
+        """Set timeout directly without a connect operation that could resume the sandbox.
+
+        Credential/provider overrides follow ``kill_by_id``.
+
+        Args:
+            sandbox_id: Existing sandbox ID, optionally qualified with ``provider:``.
+            timeout: Remaining sandbox lifetime from now, in seconds.
+            sandbox_domain: Accepted for compatibility with lifecycle methods;
+                unused because control-plane routing depends on the API URL.
+        """
+        await cls._control_plane_by_id(
+            sandbox_id,
+            api_key=api_key,
+            api_url=api_url,
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+            sandbox_api_key=sandbox_api_key,
+            sandbox_base_url=sandbox_base_url,
+            region=region,
+            provider=provider,
+            provider_options=provider_options,
+            operation="set_timeout",
+            timeout=timeout,
+        )
+
+    @classmethod
+    async def _control_plane_by_id(
+        cls,
+        sandbox_id: str,
+        *,
+        operation: str,
+        timeout: int | None = None,
+        api_key: str | None = None,
+        api_url: str | None = None,
+        access_key_id: str | None = None,
+        access_key_secret: str | None = None,
+        sandbox_api_key: str | None = None,
+        sandbox_base_url: str | None = None,
+        region: str | None = None,
+        provider: str | Provider | None = None,
+        provider_options: dict[str, Any] | None = None,
+    ) -> Any:
+        prov, bare = _select_provider(provider, sandbox_id)
+        target = bare or sandbox_id
+        closer: _InfraCloser | HttpClient
+        if prov is not None:
+            infra = await _provider_infra(
+                prov,
+                _endpoint_overrides(
+                    api_key=api_key,
+                    sandbox_api_key=sandbox_api_key,
+                    api_url=api_url,
+                    sandbox_base_url=sandbox_base_url,
+                    access_key_id=access_key_id,
+                    access_key_secret=access_key_secret,
+                    region=region,
+                ),
+                provider_options,
+            )
+            protocol = infra.sandbox_protocol
+            closer = _InfraCloser(infra)
+        else:
+            _, _, http, protocol = _build_infra(
+                api_key=_same("sandbox_api_key", sandbox_api_key, "api_key", api_key),
+                api_url=_same("sandbox_base_url", sandbox_base_url, "api_url", api_url),
+                access_key_id=access_key_id,
+                access_key_secret=access_key_secret,
+                region=region,
+                provider_options=provider_options,
+            )
+            closer = http
+        try:
+            if operation == "get_info":
+                return await protocol.get_info(target)
+            assert timeout is not None
+            return await protocol.set_timeout(target, timeout)
+        finally:
+            await closer.close()
+
+    @classmethod
     async def kill_by_id(
         cls,
         sandbox_id: str,
@@ -1303,6 +1443,8 @@ class Sandbox:
     kill_sync = make_sync(kill)
     close_sync = make_sync(close)
     run_code_sync = make_sync(run_code)
+    get_info_by_id_sync = make_classmethod_sync(get_info_by_id.__func__)  # type: ignore[attr-defined]
+    set_timeout_by_id_sync = make_classmethod_sync(set_timeout_by_id.__func__)  # type: ignore[attr-defined]
     set_timeout_sync = make_sync(set_timeout)
     is_running_sync = make_sync(is_running)
     pause_sync = make_sync(pause)
