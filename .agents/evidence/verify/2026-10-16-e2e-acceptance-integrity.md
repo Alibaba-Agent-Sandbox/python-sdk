@@ -86,3 +86,16 @@ The branch now includes the merged archive/workspace documentation through
 and Chinese archive entries were preserved. Final health: 106 PASS, one optional
 release-guide warning, zero FAIL. Hygiene, changed harness lint and whitespace
 checks pass. The import-order correction changes no acceptance behavior.
+
+## Dependency delivery and final integration
+
+The exact harness head `3fd592bc9f1245d2ab49c41a34ba6aea52a03407` passed all
+nine normal GitHub checks, including both full package suites on Python
+3.10/3.11/3.12 and package build. Dependency PR 29 then merged at
+2026-10-16 04:23:38 UTC (merge `0f8a31d`); PR 32 merged at 04:38:26 UTC
+(merge `8d22eae`) after its final evidence head independently passed all nine
+checks. Both merges were confirmed from actual remote state, and their scoped
+Issues closed. This PR is retargeted to main and synchronized with that accepted
+history. This last integration changes only verification records and the loader
+note; MCP product and harness source remain the tested versions. The final head
+still receives and must pass its own complete matrix before normal merge.
