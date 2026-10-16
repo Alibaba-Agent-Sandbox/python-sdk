@@ -15,7 +15,7 @@ import json
 import os
 import shlex
 import shutil
-import subprocess
+import subprocess  # nosec B404 - audited argv-only subprocess boundary; no shell
 import time
 import weakref
 from dataclasses import dataclass
@@ -136,7 +136,8 @@ async def _spawn() -> EngineRecord:
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / "engine.log").open("ab") as log:
         try:
-            subprocess.Popen(  # noqa: S603 - the launcher is the user's own abx
+            # ABX_BIN/PATH selects the user's trusted local engine, never a remote command.
+            subprocess.Popen(  # noqa: S603  # nosec B603 - argv only; shell defaults to False
                 argv,
                 stdin=subprocess.DEVNULL,
                 stdout=log,
@@ -218,15 +219,16 @@ class EngineClient:
         params: dict[str, Any] | None = None,
         timeout: float | None = None,
         connection: dict[str, Any] | None = None,
+        retry: bool = True,
     ) -> httpx.Response:
-        """Send one request; an engine that went away is found or started again once."""
+        """Send one request; disable retries for mutations that must never be replayed."""
         extra: dict[str, str] = {}
         if connection is not None:
             extra["X-Abx-Connection"] = encode_connection(connection)
         if content is not None:
             extra["Content-Type"] = "application/octet-stream"
         last: Exception | None = None
-        for attempt in range(2):
+        for attempt in range(2 if retry else 1):
             record = await self._record_now(fresh=attempt > 0)
             try:
                 res = await self._http.request(
@@ -241,7 +243,7 @@ class EngineClient:
             except _GONE as exc:
                 last = exc
                 continue
-            if res.status_code == 401 and attempt == 0:
+            if retry and res.status_code == 401 and attempt == 0:
                 continue
             return res
         raise ProviderProtocolError(f"The provider engine is not reachable: {last}")

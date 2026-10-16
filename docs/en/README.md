@@ -43,6 +43,7 @@ The installer fetches the catalog index at `https://registry.agent-sandbox.cn/pr
 | [Session persistence](guide/session-persistence.md) | Local session storage |
 | [Migrate from E2B](guide/migrate-from-e2b.md) | Move from the E2B SDK |
 | [Providers](guide/providers.md) | Choose, install, and write a provider |
+| [Provider management commands](guide/provider-commands.md) | Discover and invoke provider resource operations through the shared engine |
 | [Environment variables](guide/environment-variables.md) | Injection and reads inside the sandbox |
 | [Troubleshooting](guide/troubleshooting.md) | Common failures |
 | [Comparison](guide/comparison.md) | Next to E2B, Modal, and Docker Sandbox |

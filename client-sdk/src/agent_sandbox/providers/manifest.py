@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
+import json
 import posixpath
 import re
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from agent_sandbox.models.errors import ProviderManifestError, ProviderVersionError
 from agent_sandbox.providers.base import FEATURES, ConfigField
@@ -28,6 +30,48 @@ _FIELD_TYPE_TO_KEY_TYPE = {"string": "str"}
 FILESYSTEM_SCOPES = ("data_dir", "cwd", "home", "any")
 _FORBIDDEN_ENV_PREFIXES = ("ABX_", "E2B_", "ALICLOUD_")
 _FORBIDDEN_LAUNCHERS = (".bat", ".cmd", ".ps1")
+COMMAND_PROTOCOL = "provider-commands/1"
+COMMAND_ID_RE = re.compile(r"^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$")
+COMMAND_MAX_BYTES = 64 * 1024
+COMMAND_MAX_DEPTH = 16
+_FORBIDDEN_SCHEMA_KEYS = {
+    "$ref",
+    "$dynamicRef",
+    "$recursiveRef",
+    "$id",
+    "$async",
+    "pattern",
+    "patternProperties",
+    "format",
+}
+_FORBIDDEN_JSON_KEYS = {"__proto__", "prototype", "constructor"}
+
+
+@dataclass(frozen=True)
+class ProviderCommand:
+    """A provider management operation, independent of sandbox runtime commands."""
+
+    id: str
+    description: str
+    description_zh: str
+    input_schema: dict[str, Any]
+    output_schema: dict[str, Any]
+    effect: Literal["read", "write", "delete"]
+    idempotent: bool
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the wire descriptor without exposing mutable manifest schemas."""
+        return copy.deepcopy(
+            {
+                "id": self.id,
+                "description": self.description,
+                "description_zh": self.description_zh,
+                "input_schema": self.input_schema,
+                "output_schema": self.output_schema,
+                "effect": self.effect,
+                "idempotent": self.idempotent,
+            }
+        )
 
 
 @dataclass(frozen=True)
@@ -56,6 +100,7 @@ class Manifest:
     homepage: str = ""
     sha256: str = ""
     raw: dict[str, Any] = field(default_factory=dict, compare=False, repr=False)
+    commands: tuple[ProviderCommand, ...] = ()
 
     def to_summary(self) -> dict[str, Any]:
         """Fields shown in the consent screen and compared on update."""
@@ -69,6 +114,7 @@ class Manifest:
             "features": sorted(self.features),
             "inherit": sorted(self.inherit),
             "fields": sorted(f.key for f in self.fields),
+            "commands": [c.to_dict() for c in sorted(self.commands, key=lambda c: c.id)],
         }
 
 
@@ -192,6 +238,145 @@ def _str_list(tbl: dict[str, Any], key: str, where: str) -> list[str]:
     if not isinstance(val, list) or not all(isinstance(v, str) for v in val):
         raise _err(f"{where}.{key} must be an array of strings")
     return list(val)
+
+
+def _bounded_json(value: Any, *, depth: int = 0) -> None:
+    if depth > COMMAND_MAX_DEPTH:
+        raise _err("commands entry exceeds depth 16")
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if not isinstance(key, str) or key in _FORBIDDEN_JSON_KEYS:
+                raise _err("commands entries contain an invalid or forbidden JSON key")
+            _bounded_json(child, depth=depth + 1)
+    elif isinstance(value, list):
+        for child in value:
+            _bounded_json(child, depth=depth + 1)
+    elif value is not None and not isinstance(value, str | int | float | bool):
+        raise _err("commands entries must contain JSON values")
+
+
+def _schema(value: Any, *, name: str, input_schema: bool = False) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise _err(f"{name} must be a schema object")
+    if input_schema and (
+        value.get("type") != "object" or value.get("additionalProperties") is not False
+    ):
+        raise _err(f"{name} must declare type object and additionalProperties = false")
+
+    def visit(node: Any) -> None:
+        if not isinstance(node, dict):
+            return
+        if _FORBIDDEN_SCHEMA_KEYS.intersection(node):
+            raise _err(
+                f"{name} may not use references, ids, asynchronous schemas, patterns or formats"
+            )
+        if "$schema" in node and node["$schema"] != "http://json-schema.org/draft-07/schema#":
+            raise _err(f"{name} must use JSON Schema draft 7")
+        for key in ("properties", "definitions", "$defs"):
+            children = node.get(key)
+            if isinstance(children, dict):
+                for child in children.values():
+                    visit(child)
+        for key in (
+            "items",
+            "additionalItems",
+            "additionalProperties",
+            "propertyNames",
+            "contains",
+            "not",
+            "if",
+            "then",
+            "else",
+        ):
+            child = node.get(key)
+            if isinstance(child, list):
+                for item in child:
+                    visit(item)
+            else:
+                visit(child)
+        for key in ("allOf", "anyOf", "oneOf"):
+            children = node.get(key)
+            if isinstance(children, list):
+                for child in children:
+                    visit(child)
+        dependencies = node.get("dependencies")
+        if isinstance(dependencies, dict):
+            for child in dependencies.values():
+                visit(child)
+
+    visit(value)
+    return value
+
+
+def _parse_commands(doc: dict[str, Any], kind: str) -> tuple[ProviderCommand, ...]:
+    if "commands" not in doc:
+        return ()
+    commands = _table(doc, "commands")
+    if commands.get("protocol") != COMMAND_PROTOCOL:
+        raise _err(f"commands.protocol must be '{COMMAND_PROTOCOL}'")
+    entries = commands.get("entries")
+    if not isinstance(entries, list) or len(entries) > 128:
+        raise _err("commands.entries must be an array of at most 128 entries")
+    if entries and kind not in ("node", "exec"):
+        raise _err("only node and exec providers may declare commands")
+    result: list[ProviderCommand] = []
+    seen: set[str] = set()
+    keys = {
+        "id",
+        "description",
+        "description_zh",
+        "input_schema",
+        "output_schema",
+        "effect",
+        "idempotent",
+    }
+    for entry in entries:
+        if not isinstance(entry, dict) or set(entry) - keys:
+            raise _err("commands entry must be a descriptor with known fields")
+        _bounded_json(entry)
+        try:
+            size = len(
+                json.dumps(
+                    entry, ensure_ascii=False, allow_nan=False, separators=(",", ":")
+                ).encode("utf-8")
+            )
+        except (ValueError, TypeError) as exc:
+            raise _err("commands entry must contain finite JSON values") from exc
+        if size > COMMAND_MAX_BYTES:
+            raise _err("commands entry exceeds 64 KiB")
+        cid = entry.get("id")
+        if not isinstance(cid, str) or len(cid) > 80 or not COMMAND_ID_RE.fullmatch(cid):
+            raise _err(
+                "commands entry id must be a lowercase operation id of at most 80 characters"
+            )
+        if cid in seen:
+            raise _err(f"duplicate commands entry '{cid}'")
+        seen.add(cid)
+        if entry.get("effect") not in ("read", "write", "delete"):
+            raise _err(f"commands.{cid}.effect must be read, write or delete")
+        if not isinstance(entry.get("idempotent"), bool):
+            raise _err(f"commands.{cid}.idempotent must be a boolean")
+        for description in ("description", "description_zh"):
+            if not _str(entry, description, f"commands.{cid}", required=True).strip():
+                raise _err(f"commands.{cid}.{description} must not be blank")
+        result.append(
+            ProviderCommand(
+                id=cid,
+                description=_str(entry, "description", f"commands.{cid}", required=True),
+                description_zh=_str(entry, "description_zh", f"commands.{cid}", required=True),
+                input_schema=_schema(
+                    entry.get("input_schema"),
+                    name=f"commands.{cid}.input_schema",
+                    input_schema=True,
+                ),
+                output_schema=_schema(
+                    entry.get("output_schema"), name=f"commands.{cid}.output_schema"
+                ),
+                effect=entry["effect"],
+                idempotent=entry["idempotent"],
+            )
+        )
+    return tuple(result)
 
 
 def parse_manifest(data: bytes | str) -> Manifest:
@@ -404,6 +589,7 @@ def parse_manifest(data: bytes | str) -> Manifest:
         auth_any_of=tuple(any_of),
         fields=tuple(fields),
         endpoint=endpoint,
+        commands=_parse_commands(doc, kind),
         sha256=hashlib.sha256(raw_bytes).hexdigest(),
         raw=doc,
     )

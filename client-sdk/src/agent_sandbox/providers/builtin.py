@@ -41,7 +41,8 @@ class AlicloudExpressProvider(Provider):
     display_name = BUILTIN_PROVIDER_NAME
     display_name_zh = BUILTIN_PROVIDER_NAME_ZH
     kind = "builtin"
-    features = frozenset(FEATURES)
+    # Management commands are separate from the fixed sandbox protocol features.
+    features = frozenset(set(FEATURES) - {"ports.domain", "storage.mount", "network.vpc"})
     inherit = frozenset(GENERIC_ENDPOINT_KEYS)
 
     def __init__(self) -> None:

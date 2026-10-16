@@ -24,6 +24,7 @@ async def create(
     request_timeout: float | None = None,
     metadata: dict[str, str] | None = None,
     envs: dict[str, str] | None = None,
+    volume_mounts: dict[str, str] | None = None,
     cpu: int | None = None,
     memory: int | None = None,
     disk: int | None = None,
@@ -46,6 +47,7 @@ async def create(
 | `request_timeout` | `float` | `None` | 仅针对本次创建请求的 HTTP 超时（秒）。为 `None` 时使用 `SANDBOX_HTTP_TIMEOUT` / `http_timeout`。与 E2B SDK 对齐。调大它无法绕过平台侧创建挂起。 |
 | `metadata` | `dict` | `None` | 任意元数据键值对 |
 | `envs` | `dict` | `None` | 注入的环境变量 |
+| `volume_mounts` | `dict[str, str]` | `None` | 仅内置提供方：规范化的沙箱绝对路径 → 已有 Volume 名称。省略或空字典不挂载，其他提供方的非空参数返回 E8004。见[挂载要求与请求 schema](../guide/provider-commands.md#创建沙箱时挂载已有-volume)。 |
 | `cpu` | `int` | `None` | CPU 核数 |
 | `memory` | `int` | `None` | 内存 MB |
 | `disk` | `int` | `None` | 磁盘 MB |

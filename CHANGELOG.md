@@ -10,12 +10,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- `Sandbox.create(volume_mounts={"/mnt/data": "existing-volume-name"})` mounts existing Volumes with the built-in provider. Strict validation runs before provider/engine I/O; unsupported providers fail with E8004. The existing gRPC lifecycle forwards the hint and emits the official `volumeMounts: [{name, path}]` creation payload; empty maps preserve prior requests. Real OSS storage mount/read/write/cleanup is verified for the tested base template in cn-hangzhou.
+- `agent_sandbox.providers.commands.list_commands`, `get_command` and `run_command` call the shared Node engine for provider-specific resource operations. Writes and deletes require explicit confirmation; command POST requests are never replayed.
+- Plugin manifests validate bounded `provider-commands/1` descriptors and include commands in installation/update consent; existing manifests and receipts default to an empty command list.
 - Python MCP bounded binary `upload_file`/`download_file` (1 MiB, strict Base64, SHA256) over both transports; SDK `files.read_bytes(max_bytes=...)` optionally limits streamed downloads and raises `FileSizeLimitError` (E4003), while its existing default remains unchanged.
 
 - Python MCP `start_task`, `get_task`, and `cancel_task` provide sandbox-lifetime background handles, bounded saved log pages, explicit disconnect retention and owned process-group cancellation. Normal synchronous cleanup remains unchanged; Python-only, Linux/python3 runtime.
 
 - Python MCP lifecycle tools `list_sandboxes`, `get_sandbox`, and `set_sandbox_timeout`; creation accepts provider, region, CPU and memory options. Metadata uses a fixed allowlist, external inspection/renewal does not adopt resources, and lifecycle failures omit credential-bearing exception details.
 - Add the Chinese counterpart of the historical OpenSandbox provider research archive, preserving its versioned evidence and current-adapter boundary.
+
+### Changed
+
+- Document mount-capable template selection, the custom MicroVM ossfs2 minimum version, and verified real OSS Volume acceptance with complete temporary-resource cleanup. Extend opt-in E2E coverage to destroy/recreate the sandbox and read the persisted file.
+
+- Clarify the current Volume invitation-access prerequisite in both language guides; an empty list does not prove create or mount access.
+
+- The built-in provider no longer advertises `ports.domain`, `storage.mount` or `network.vpc` as callable standard sandbox features. Provider resource management uses the separate command contract.
 
 ### Fixed
 

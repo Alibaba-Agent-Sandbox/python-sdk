@@ -30,8 +30,9 @@ async def _read_http(reader: asyncio.StreamReader) -> tuple[bytes, bytes]:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("mounts", [None, {}, {"/mnt/data": "existing-volume"}])
 async def test_builtin_create_goes_through_the_engine(
-    tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Any, monkeypatch: pytest.MonkeyPatch, mounts: dict[str, str] | None
 ) -> None:
     monkeypatch.setenv("ABX_ENGINE_SOCKET", str(tmp_path / "engine.sock"))
     seen: dict[str, Any] = {}
@@ -41,6 +42,7 @@ async def test_builtin_create_goes_through_the_engine(
         assert head.startswith(b"POST /sandboxes")
         payload = json.loads(body)
         seen["template"] = payload["templateID"]
+        seen["payload"] = payload
         raw = json.dumps(
             {"sandboxID": "sbx-engine", "templateID": payload["templateID"], "state": "running"}
         ).encode()
@@ -59,12 +61,19 @@ async def test_builtin_create_goes_through_the_engine(
             "python-base",
             api_key="test-key",
             api_url=f"http://127.0.0.1:{port}",
+            volume_mounts=mounts,
         )
     finally:
+        if "template" in seen:
+            await Engine().op("release", sandbox_id="sbx-engine")
         server.close()
         await server.wait_closed()
     assert seen["template"] == "python-base"
     assert info.sandbox_id == "sbx-engine"
+    if mounts:
+        assert seen["payload"]["volumeMounts"] == [{"name": "existing-volume", "path": "/mnt/data"}]
+    else:
+        assert "volumeMounts" not in seen["payload"]
 
 
 @pytest.mark.asyncio
@@ -76,7 +85,7 @@ async def test_engine_rejects_catalog_provider(
         await Engine().create(
             "base",
             provider="opensandbox",
-            api_key="not-sent",
+            api_key="test-not-sent",
             api_url="http://127.0.0.1:9",
         )
 

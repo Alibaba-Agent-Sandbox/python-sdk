@@ -48,6 +48,11 @@ async def main():
 asyncio.run(main())
 ```
 
+Provider management operations use `agent_sandbox.providers.commands`; see the
+[English guide](../docs/en/guide/provider-commands.md) and
+[中文指南](../docs/zh/guide/provider-commands.md). Writes require explicit confirmation,
+and command POST requests are never automatically replayed.
+
 ## Layout
 
 | Package | Layer |

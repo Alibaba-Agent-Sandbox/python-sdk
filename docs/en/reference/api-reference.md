@@ -24,6 +24,7 @@ async def create(
     request_timeout: float | None = None,
     metadata: dict[str, str] | None = None,
     envs: dict[str, str] | None = None,
+    volume_mounts: dict[str, str] | None = None,
     cpu: int | None = None,
     memory: int | None = None,
     disk: int | None = None,
@@ -46,6 +47,7 @@ Create a new sandbox.
 | `request_timeout` | `float` | `None` | Per-request HTTP timeout (seconds) for the create call only. When `None`, uses `SANDBOX_HTTP_TIMEOUT` / `http_timeout`. Aligns with the E2B SDK. Raising it does not work around platform-side create stalls. |
 | `metadata` | `dict` | `None` | Arbitrary metadata key-value pairs |
 | `envs` | `dict` | `None` | Injected environment variables |
+| `volume_mounts` | `dict[str, str]` | `None` | Built-in provider only: normalized absolute sandbox path → existing Volume name. Omitted/empty means no mounts. Other providers reject nonempty hints with E8004. See [mount requirements and wire schema](../guide/provider-commands.md#mount-an-existing-volume-when-creating-a-sandbox). |
 | `cpu` | `int` | `None` | Number of CPU cores |
 | `memory` | `int` | `None` | Memory in MB |
 | `disk` | `int` | `None` | Disk in MB |

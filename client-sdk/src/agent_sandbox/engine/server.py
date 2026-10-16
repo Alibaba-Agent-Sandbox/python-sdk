@@ -103,11 +103,18 @@ class ProviderEngine(_grpc.ProviderEngineServicer):
         del request, context
         from agent_sandbox._version import __version__
 
-        return _pb2.HealthStatus(protocol=PROTOCOL, pid=os.getpid(), version=__version__)
+        return _pb2.HealthStatus(
+            protocol=PROTOCOL,
+            pid=os.getpid(),
+            version=__version__,
+            supported_create_options=["volume_mounts"],
+        )
 
     async def Create(self, request: Any, context: Any) -> Any:  # noqa: N802
         try:
             provider = (getattr(request, "provider", "") or "").strip()
+            if getattr(request, "volume_mounts", {}) and provider not in {"", "alicloud-express"}:
+                raise ProviderFeatureNotSupportedError(provider, "volume_mounts")
             if provider not in {"", "alicloud-express"}:
                 from agent_sandbox.models.errors import ProviderNotFoundError
 
@@ -314,6 +321,17 @@ async def _alicloud_create(request: Any) -> tuple[Any, Session]:
     from agent_sandbox.transport.auth import EnvdTokenManager
     from agent_sandbox.transport.http import stream_envelope_for_envd
 
+    sandbox_config = SandboxConfig(
+        template=request.template or "base",
+        timeout=request.timeout or 300,
+        metadata=dict(request.metadata),
+        env_vars=dict(request.envs),
+        cpu=request.cpu or None,
+        memory=request.memory or None,
+        disk=request.disk or None,
+        gpu=request.gpu or None,
+        volume_mounts=dict(getattr(request, "volume_mounts", {})),
+    )
     _config, _auth, http_client, protocol = _build_infra(
         api_key=_opt(request.api_key),
         api_url=_opt(request.api_url),
@@ -323,16 +341,7 @@ async def _alicloud_create(request: Any) -> tuple[Any, Session]:
     )
     try:
         info = await protocol.create(
-            SandboxConfig(
-                template=request.template or "base",
-                timeout=request.timeout or 300,
-                metadata=dict(request.metadata),
-                env_vars=dict(request.envs),
-                cpu=request.cpu or None,
-                memory=request.memory or None,
-                disk=request.disk or None,
-                gpu=request.gpu or None,
-            ),
+            sandbox_config,
             request_timeout=request.request_timeout or None,
         )
     except Exception:
