@@ -63,5 +63,9 @@ also runs the real `serve --commands` subprocess and its real HTTP test client.
 
 ## Implementation
 
-The local fix and focused validation are implemented. This decision remains
-proposed because required cloud E2E and the complete repository gates remain open.
+The fix, focused tests and an independent real-cloud source-wheel startup and
+command invocation are verified in the follow-up evidence. The record remains
+proposed until the exact synchronized head passes its complete remote CI and
+normal review/merge gates. Historical partial evidence is preserved unchanged.
+
+- [Cloud delivery verification](../../../evidence/verify/2026-10-16-server-loader-cloud-delivery.md)
