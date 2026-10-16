@@ -54,3 +54,25 @@ four unavailable native-backend skips, two slow deselections and one documented
 KI-009 expected failure. That successor run is not described as an exact-source
 run of this loader branch. Docker image rebuilding, other native providers and
 public package publication are outside this loader verification.
+
+## Final synchronized gates
+
+Head `126e4451c5edc79e5ca1b9c9e3c00e2eada5127f` passed all nine GitHub
+checks: both packages on Python 3.10/3.11/3.12, package build/distribution checks,
+Markdown links and path/secret hygiene. The source-wheel scenario and loader
+source remain unchanged after synchronization with the accepted workspace fix.
+
+A fresh local Python 3.11.15 environment installed both editable packages with
+87 dependencies. `make ci` passed both-package Ruff, formatting and mypy (client
+83 and server 56 files), then stopped at the local server suite: **853 passed,
+seven failed in 309.03 seconds**. Six failures are the established restricted
+host raw-HTTP framing/upgrade/auth tests (including explicit platform HTTP 501
+network-audit denial); the seventh package-list test expects the `pip` executable
+in a uv-created environment that has no pip distribution. These are not passing
+local tests and were not retried through alternate network paths. The exact-head
+normal GitHub matrix passed those same complete server suites on all three
+interpreters, establishing the supported environment behavior independently.
+The failed local `make ci` stops before client tests/build; those gates passed in
+the exact-head GitHub client/build jobs. A final evidence-only update reruns its
+own complete matrix before merge; no product code or tests are changed to hide
+these host differences.
