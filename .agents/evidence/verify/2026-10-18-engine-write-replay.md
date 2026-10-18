@@ -2,7 +2,7 @@
 
 - Date: 2026-10-18
 - Change: https://github.com/alibaba-agent-sandbox/python-sdk/issues/53
-- Result: PARTIAL; required real-cloud/hosted gates pending
+- Result: PASS for the scoped fix; local environment failures and unconfigured providers remain disclosed
 - Package: editable client/server 0.3.0 from main 145341d plus the scoped change
 - Environment: Linux, Python 3.12.15; local dependencies installed from package metadata (no repository lockfile exists). Credentials never recorded.
 
@@ -44,15 +44,17 @@ The Unix socket avoids this environment's intercepted loopback TCP path.
 | Confirmed 401 before provider dispatch | PASS; bounded recovery retained |
 | Read stream failure after first yielded event | PASS; never replayed |
 | Real Unix HTTP server commits POST then drops response | PASS, ordinary and SSE calls |
-| Full cloud suite and janitor | In progress; no acceptance claim |
-| Hosted Python 3.10/3.11/3.12 CI | Pending PR publication |
+| Full cloud suite and janitor | Fresh complete repeat: 115 PASS / 4 SKIP / 1 XFAIL / 2 DESELECTED; janitor zero candidates |
+| Hosted Python 3.10/3.11/3.12 CI | Runtime head bd548d5: all nine checks PASS, including both full package suites and distribution build |
 
 ## Cleanup
 
 Local clients and servers close through fixtures. No cloud resources are created
-by regressions. Live suite cleanup is tracked separately and must complete.
+by regressions. Live suite janitor exited 0: zero tagged candidates, zero sandboxes listed. No cloud leak observed.
 
 ## Problems found
+
+Full live run initially lacked installed e2b/container plugins, so two credential-refusal checks failed with provider-not-installed. In a new isolated HOME, real installer consent, integrity and doctor handshakes passed for both local catalog plugins. Repeating only the two failed refusal checks then produced 2 PASS / 6 DESELECTED. The targeted repeat first produced 2 PASS / 6 DESELECTED. A subsequent fresh complete suite with those installed plugins exited 0: 115 PASS / 4 SKIP / 1 XFAIL / 2 DESELECTED in 338.06s. The earlier failed full run remains recorded and is not rewritten as a pass. No native E2B/container credential was used.
 
 Unchanged server HTTP framing tests encounter the environment's intercepted
 loopback behavior. First-run missing pip was corrected as an environment issue;
@@ -62,4 +64,4 @@ its earlier failure is preserved above. No gate was weakened.
 
 A native catalog provider cloud lost-response scenario is not configured here.
 Mock cases establish logic; local socket cases establish real HTTP behavior,
-not a native provider pass. Keep draft until all mandatory gates are satisfied.
+not a native provider pass. Native E2B/container and OpenSandbox/Cube live calls remain unconfigured/skipped; they are not provider acceptance. The actual local engine installer/handshake/refusal and Unix HTTP lost-response components pass. Hosted full package suites and the fresh configured cloud suite pass; review the final record-only head CI before merge.
