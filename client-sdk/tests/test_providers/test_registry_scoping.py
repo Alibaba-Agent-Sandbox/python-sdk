@@ -49,6 +49,8 @@ class TestRegistry:
         assert not p.supports("storage.mount")
         assert not p.supports("ports.domain")
         assert not p.supports("network.vpc")
+        assert not p.supports("templates.deploy")
+        assert not p.supports("sandbox.pause")
 
     def test_register_and_conflicts(self, iso):  # noqa: F811
         register_provider(_Py())

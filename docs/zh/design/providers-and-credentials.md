@@ -333,13 +333,14 @@ sandbox_domain   = "{region}.e2b.fc.aliyuncs.com"
 | `code.interpret` | 有状态的代码上下文 | `run_code`、`code.*` | `sandbox code` |
 | `templates.read` | 列出 / 查看模板 | `Template*` 读取 | `template list/info` |
 | `templates.build` | 构建 / 部署 / 删除模板（镜像构建 + 注册） | —（仅 CLI） | `template build/deploy/delete`、`deploy`、`install` |
+| `templates.deploy` | 显式通过提供方模板工厂部署现有镜像 | 仅 manifest 元数据，不新增 Python 方法 | 工厂分发由 CLI 负责 |
 | `ports.url` | 端口的公网 URL | `network.get_url` | `sandbox system ports`、`url` |
 | `ports.domain` | 沙箱 / 模板的自定义域名 | —（没有单沙箱 API） | — |
 | `storage.mount` | 挂载对象存储（OSS） | —（没有单沙箱 API） | — |
 | `network.vpc` | 接入 VPC | —（仅模板 `vpcConfig`） | `--vpc-id` 系列 |
 | `sessions` | 沙箱标识在进程结束后仍存在（可按 id 重新连接） | `Sandbox.connect` + `LocalSessionStore` | `session ...` |
 
-`alicloud-express` 实现全部特性。沙箱的能力仍是**模板的能力**（不变）；当提供方缺少某个能力标记背后的特性（`shell ← exec.run`、`files ← files.rw`、`code ← code.interpret`、`terminal ← pty`、`ports ← ports.url`）时，调用在调用时抛出 `E8004`。实现不会预先对两个集合求交集：模板是与提供方无关的数据，在调用处以精确的错误失败更简单，也不会与提供方的实际行为不一致。
+`templates.deploy` 独立于 `templates.build`，不会为已有 manifest 自动启用部署。内置 `alicloud-express` 保留原有特性集合，排除此新标记。沙箱的能力仍是**模板的能力**（不变）；当提供方缺少某个能力标记背后的特性（`shell ← exec.run`、`files ← files.rw`、`code ← code.interpret`、`terminal ← pty`、`ports ← ports.url`）时，调用在调用时抛出 `E8004`。实现不会预先对两个集合求交集：模板是与提供方无关的数据，在调用处以精确的错误失败更简单，也不会与提供方的实际行为不一致。
 
 ### 7.3 取舍分析：插件如何加载？
 

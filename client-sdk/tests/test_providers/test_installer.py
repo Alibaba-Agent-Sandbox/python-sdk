@@ -83,6 +83,20 @@ def _snapshot_data(provider_id: str = "demo-prov") -> dict[str, tuple[bytes, int
 
 
 class TestLocalInstall:
+    @pytest.mark.parametrize("features", [("templates.build",), ("templates.deploy",)])
+    def test_template_feature_install_and_consent(self, iso, tmp_path, features):  # noqa: F811
+        src = write_plugin(tmp_path / "src")
+        manifest = src / "abx-provider.toml"
+        manifest.write_text(
+            manifest.read_text().replace(
+                'supported = ["sandbox.lifecycle"]',
+                "supported = [" + ", ".join(f'"{feature}"' for feature in features) + "]",
+            )
+        )
+        receipt = _install(src)
+        assert receipt["consented"]["features"] == list(features)
+        assert registry.get_provider("demo-prov").features == frozenset(features)
+
     def test_installs_and_records_receipt(self, iso, tmp_path):  # noqa: F811
         src = write_plugin(tmp_path / "src")
         receipt = _install(src)

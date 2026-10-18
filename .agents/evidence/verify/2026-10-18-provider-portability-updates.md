@@ -21,3 +21,7 @@ The new documentation distinguishes keeping existing Express resources from E2B 
 ## Additional validation and limits
 
 The independent complete client run used a unique test-owned Unix socket: `cd client-sdk && ABX_ENGINE_SOCKET=<owned isolated socket> python -m pytest tests -q --tb=short`: **2141 PASS / 24 SKIP**, 155.40 seconds, exit 0. Skips remain skips; no native-cloud or newly enabled engine path is inferred. The server failure remains blocking despite the client pass. Native cloud acceptance in the existing provider-volume-live record remains historical; this follow-up creates no cloud resource and changes no existing Team, key, template or sandbox. Optional provider host/schema work is separate and cannot be declared released from this branch. The shared Node host still lands before its consumer.
+
+## Accepted-main integration
+
+Accepted main `145341d` is retained by normal merge. Conflicting record indexes retain both entries. Builtin feature declarations use explicit implemented support instead of inheriting new registry names; management commands remain present, and unsupported domain/storage/VPC/deployment features are not granted. CLI retains main's conservative pause declaration. Current integrated validation results are recorded separately from the earlier full aggregate above.

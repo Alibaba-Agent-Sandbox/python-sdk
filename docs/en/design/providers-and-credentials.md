@@ -331,13 +331,14 @@ A provider declares which **features** it implements. The SDK/CLI check the feat
 | `code.interpret` | stateful code contexts | `run_code`, `code.*` | `sandbox code` |
 | `templates.read` | list/get templates | `Template*` read | `template list/info` |
 | `templates.build` | build/deploy/delete templates (image build + register) | — (CLI only) | `template build/deploy/delete`, `deploy`, `install` |
+| `templates.deploy` | opt-in deployment from an existing image via a provider template factory | manifest metadata only; no new Python method | provider factory dispatch owned by CLI |
 | `ports.url` | public URL for a port | `network.get_url` | `sandbox system ports`, `url` |
 | `ports.domain` | custom domains for a sandbox/template | — (no per-sandbox API) | — |
 | `storage.mount` | mount object storage (OSS) | — (no per-sandbox API) | — |
 | `network.vpc` | attach a VPC | — (template `vpcConfig` only) | `--vpc-id` family |
 | `sessions` | sandbox identity survives the process (re-attach by id) | `Sandbox.connect` + `LocalSessionStore` | `session ...` |
 
-`alicloud-express` implements all of them. A sandbox's capabilities stay the **template's capabilities** (unchanged); where the provider lacks the feature behind a capability token (`shell ← exec.run`, `files ← files.rw`, `code ← code.interpret`, `terminal ← pty`, `ports ← ports.url`) the call raises `E8004` at call time. The implementation does not intersect the two sets up front: the template is provider-independent data, and failing at the call with a precise error is simpler and cannot disagree with the provider's behaviour.
+`templates.deploy` is independent of `templates.build` and does not grant deployment to existing manifests. The built-in `alicloud-express` keeps its legacy feature set and excludes this new flag. A sandbox's capabilities stay the **template's capabilities** (unchanged); where the provider lacks the feature behind a capability token (`shell ← exec.run`, `files ← files.rw`, `code ← code.interpret`, `terminal ← pty`, `ports ← ports.url`) the call raises `E8004` at call time. The implementation does not intersect the two sets up front: the template is provider-independent data, and failing at the call with a precise error is simpler and cannot disagree with the provider's behaviour.
 
 ### 7.3 Tradeoff analysis: how do plugins load?
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from agent_sandbox.providers.base import FEATURES, ConfigField, Provider, ProviderInfra
+from agent_sandbox.providers.base import ConfigField, Provider, ProviderInfra
 from agent_sandbox.utils.config_keys import (
     ALICLOUD_EXPRESS_KEYS,
     BUILTIN_PROVIDER_ID,
@@ -41,8 +41,25 @@ class AlicloudExpressProvider(Provider):
     display_name = BUILTIN_PROVIDER_NAME
     display_name_zh = BUILTIN_PROVIDER_NAME_ZH
     kind = "builtin"
-    # Management commands are separate from the fixed sandbox protocol features.
-    features = frozenset(set(FEATURES) - {"ports.domain", "storage.mount", "network.vpc"})
+    # Explicit implementations; new registry features never grant builtin support.
+    features = frozenset(
+        {
+            "sandbox.lifecycle",
+            "sandbox.timeout",
+            "exec.run",
+            "exec.stream",
+            "process.manage",
+            "pty",
+            "files.rw",
+            "files.watch",
+            "files.transfer",
+            "code.interpret",
+            "templates.read",
+            "templates.build",
+            "ports.url",
+            "sessions",
+        }
+    )
     inherit = frozenset(GENERIC_ENDPOINT_KEYS)
 
     def __init__(self) -> None:

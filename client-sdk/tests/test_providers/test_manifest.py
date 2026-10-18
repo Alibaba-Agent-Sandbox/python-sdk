@@ -45,6 +45,31 @@ def test_bytes_and_str_inputs_agree():
 
 
 @pytest.mark.parametrize(
+    "features",
+    [
+        ("templates.build",),
+        ("templates.deploy",),
+        ("templates.read", "templates.build", "templates.deploy"),
+    ],
+)
+def test_template_features_are_independent_manifest_declarations(features):
+    text = mutate(
+        'supported = ["sandbox.lifecycle", "exec.run"]',
+        "supported = [" + ", ".join(f'"{feature}"' for feature in features) + "]",
+    )
+    manifest = parse_manifest(text)
+    assert manifest.features == features
+    assert manifest.to_summary()["features"] == sorted(features)
+
+
+def test_builtin_keeps_legacy_template_build_without_image_deploy():
+    from agent_sandbox.providers.builtin import AlicloudExpressProvider
+
+    assert "templates.build" in AlicloudExpressProvider.features
+    assert "templates.deploy" not in AlicloudExpressProvider.features
+
+
+@pytest.mark.parametrize(
     ("text", "needle"),
     [
         ("not toml [", "Invalid abx-provider.toml"),
