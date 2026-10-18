@@ -1,5 +1,5 @@
 # Decision: Do not replay uncertain provider engine mutations
-Status: proposed
+Status: implemented
 
 ## Problem
 
