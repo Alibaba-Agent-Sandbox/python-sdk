@@ -1,10 +1,24 @@
-# 系统架构设计 — 标准客户端与 Provider 扩展
+# 系统架构设计 — 五层分层架构
 
-> Python SDK 有两套公开客户端入口。根目录的 `Sandbox`／`AsyncSandbox` 与 `code_interpreter` 使用由本项目维护、固定版本的 MIT 源码移植，实现阿里云支持的 E2B 行为；`ProviderSandbox` 提供异步 Provider／Server／声明式扩展，下文介绍其原生分层。两条路径运行时均不安装上游 E2B 分发包。见[从 E2B 迁移](../guide/migrate-from-e2b.md)。
-
-`ABX_PROVIDER` 为 `ProviderSandbox` 选择适配器，不会切换标准客户端的协议。标准客户端使用显式连接参数与 `E2B_API_KEY`／`E2B_API_URL`／`E2B_DOMAIN`。原生实现和源码移植仍然分开维护，本文不表示它们已经统一为一套协议实现。
+> Agent Sandbox SDK 采用五层分层架构，从底层传输到上层 AI 集成逐层抽象，每层职责单一、边界清晰，用户可在任意层级接入使用。SDK 零 LLM 依赖，不依赖 E2B SDK，直接对接 envd 数据面和平台控制面。它是运行时客户端：模板的构建和部署由 `abx template build|deploy` 完成。
 
 ---
+
+
+## 公开入口
+
+| 入口 | 契约 |
+| --- | --- |
+| `agent_sandbox.Sandbox` / `AsyncSandbox` | 固定 E2B2.31.0 标准协议的同步/异步入口 |
+| `agent_sandbox.code_interpreter` | 固定解释器2.8.1 的模型和客户端 |
+| `agent_sandbox.ProviderSandbox` | 下文描述的异步 Provider、项目服务器、声明式和 MCP 扩展 |
+
+标准实现归属 `_standard/`，保留原始源码哈希、明确补丁及 MIT 署名。其 Connect
+消息仍使用 protobuf；`grpcio` 与旧 Python 引擎保持删除。Provider 扩展只消费
+结构化契约，由各自适配器负责协议、会话、端口和文件地址；运行时不依赖已安装的
+E2B 包。接口形状相同不等于后端能力已验收，暂停、快照等条件能力仍需相应环境。
+后续分层说明描述 Provider 扩展。
+
 
 ## 1. 架构总览图
 
@@ -12,22 +26,15 @@
 graph TD
     L5["L5 Agent Integration Layer<br/>AI 集成层 - MCP Server / Agent 工具定义"]
     L4["L4 Declarative API Layer<br/>声明式 API 层 - @sandbox 装饰器 / sandbox.yaml"]
-    STD["标准客户端 — Sandbox / AsyncSandbox / code_interpreter"]
-    PORT["维护的源码移植 — _standard / 解释器协议"]
-    L3["L3 Provider 扩展<br/>ProviderSandbox / Files / Code / 命名命令"]
+    L3["L3 High-Level API Layer<br/>高层便捷 API - Sandbox / Files / Code / 命名命令"]
     L2["L2 Core Protocol Layer<br/>核心协议层 - envd REST + WebSocket"]
     L1["L1 Transport & Auth Layer<br/>传输与认证层 - HTTP 连接池 / API Key / AK-SK 兑换 Token"]
     GW["阿里云 API 网关"]
     FC["阿里云函数计算 FC 沙箱运行时"]
 
-    STD --> PORT
-    PORT --> GW
-    PORT --> FC
-    L5 --> L3
+    L5 --> L4
     L4 --> L3
-    PRV["Provider adapters / local CLI engine"]
-    L3 --> PRV
-    PRV -->|内置适配器| L2
+    L3 --> L2
     L2 --> L1
     L1 --> GW
     L1 --> FC
@@ -35,7 +42,7 @@ graph TD
 
 ---
 
-## 2. 原生 Provider 扩展的各层职责
+## 2. 各层职责详述
 
 ### L1 — Transport & Auth Layer（传输与认证层）
 
@@ -43,24 +50,24 @@ graph TD
 |------|------|
 | `transport.http` | 基于 httpx 封装 HTTPS 请求，连接池管理，超时/重试策略 |
 | `transport.ws` | 基于 websockets 的长连接，心跳保活，自动重连 |
-| `auth.api_key` | **API Key 认证（主路径）**：通过 `X-API-KEY` 请求头传递，环境变量 `E2B_API_KEY` |
-| `auth.ak_sk` | **AK/SK 认证（扩展）**：通过阿里云 AK/SK 兑换临时 API Key，或用于控制面 OpenAPI 调用 |
+| `auth.api_key` | **API Key 认证（主路径）**：通过 `X-API-KEY` 请求头传递，环境变量 `ABX_SANDBOX_API_KEY` |
+| `auth.AkSkAuth` | 应用显式配置的自定义交换适配器；默认运行时需要 API Key |
 | `auth.config` | 多环境配置加载（代码参数 → 环境变量 → .env → config.toml → 默认值） |
 
 **双认证模式**：
 
 | 认证方式 | 场景 | 传递方式 | 环境变量 |
 |----------|------|----------|----------|
-| **API Key（主路径）** | 云沙箱数据面操作 | `X-API-KEY` 请求头 | `E2B_API_KEY` |
-| **AK/SK（扩展）** | 兑换临时 API Key、控制面 OpenAPI | 阿里云 V4 签名 | `ALICLOUD_ACCESS_KEY_ID` / `ALICLOUD_ACCESS_KEY_SECRET` |
+| **API Key（主路径）** | 云沙箱数据面操作 | `X-API-KEY` 请求头 | `ABX_SANDBOX_API_KEY` |
+| **AK/SK 控制面** | CLI 官方模板/镜像/ACR 操作 | 官方 SDK | `ALICLOUD_ACCESS_KEY_ID` / `ALICLOUD_ACCESS_KEY_SECRET` |
 
-> **注意**：沙箱 API Key 只有一个环境变量 `E2B_API_KEY`。AccessKey 对使用 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。见 [authentication.md](../guide/authentication.md) 与 [configuration.md](../reference/configuration.md)。
+> **注意**：沙箱 API Key 只有一个环境变量 `ABX_SANDBOX_API_KEY`。AccessKey 对使用 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。见 [authentication.md](../guide/authentication.md) 与 [configuration.md](../reference/configuration.md)。
 
 **面向用户**：基础设施开发者、需要自定义认证逻辑的高级用户。
 
 ### L2 — Core Protocol Layer（核心协议层）
 
-`protocol/` 中的**原生协议客户端**基于 httpx + websockets，供内置 Provider 路径使用；标准客户端另有 `_standard/` 和 `code_interpreter/` 中维护的源码移植。其他 Provider 使用各自适配器。原生协议模块分为两类 API：
+**自行实现协议客户端**，不依赖 E2B SDK，直接基于 httpx + websockets 实现。区分两类 API：
 
 - **Platform API（REST）**：沙箱生命周期管理（创建、列表、销毁），通过 HTTP REST API 与阿里云平台交互
 - **Sandbox envd API（Connect 协议）**：沙箱内部操作（进程、文件、终端），通过 HTTP + WebSocket 与沙箱 envd 通信
@@ -79,12 +86,12 @@ graph TD
 
 | 模块 | 职责 |
 |------|------|
-| `api.sandbox` | 根包导出为 `ProviderSandbox` 的原生类；经所选 Provider 创建／管理沙箱；`run(name, **kwargs)` 调用服务端注册命令 |
+| `api.sandbox` | Sandbox 类 — 创建、管理、执行、销毁的统一入口；`run(name, **kwargs)` 调用服务端注册命令 |
 | `api.server_client` | `ServerClient` — 沙箱内 SandboxServer 全部路由的类型化客户端 |
 | `api.files` | 高层文件操作 — 上传/下载/监听 |
 | `api.code` | 代码执行引擎 — 多语言支持，Rich Output |
 
-**面向用户**：Provider／Server 扩展用户。固定版本的同步／异步 E2B 行为契约使用标准客户端入口。
+**面向用户**：绝大多数开发者，核心层，方法名参考 E2B。
 
 ### L4 — Declarative API Layer（声明式 API 层）
 
@@ -144,12 +151,9 @@ Server 模块（独立的 `agent-sandbox-server` 分发包，导入路径 `agent
 
 ```mermaid
 graph TD
-    STD[标准客户端] --> PORT[维护的源码移植]
-    L5[L5 Agent Integration] --> L3[L3 Provider 扩展]
+    L5[L5 Agent Integration] --> L3[L3 High-Level API]
     L4[L4 Declarative API] --> L3
-    PRV["Provider adapters / local CLI engine"]
-    L3 --> PRV
-    PRV -->|内置适配器| L2[L2 Core Protocol]
+    L3 --> L2[L2 Core Protocol]
     L2 --> L1[L1 Transport & Auth]
 ```
 
@@ -158,7 +162,7 @@ graph TD
 1. **严格向下依赖**：每层只能依赖其下方的层，禁止反向依赖或跨层依赖
 2. **L4 依赖 L3**：声明式 API 通过 L3 高层 API 实现，不直接依赖 L2
 3. **L5 依赖 L3**：Agent 集成通过 L3 高层 API 实现
-4. **原生传输层范围**：内置的原生适配器使用 L1；已安装 Provider 与标准源码移植客户端有各自的协议／传输路径。Provider 声明能力，不代表 CLI 已接入该操作，也不代表账号／运行时已启用。
+4. **L1 为基础层**：所有上层最终依赖 L1 完成网络通信和认证
 
 ---
 
@@ -166,17 +170,14 @@ graph TD
 
 ```
 client-sdk/src/agent_sandbox/
-├── __init__.py                    # 根导出：Sandbox、AsyncSandbox、ProviderSandbox、sandbox
-├── _standard/                     # 固定版本标准客户端、生成模型、Connect 运行时
-├── code_interpreter/              # 标准同步／异步解释器客户端
-├── providers/                     # Provider 适配器、选择与本机引擎桥接
+├── __init__.py                    # 顶层导出：Sandbox, sandbox
 ├── _version.py                    # 版本号
 │
 ├── transport/                     # L1 — 传输与认证层
 │   ├── __init__.py
 │   ├── http.py                    #   httpx HTTPS 客户端，连接池
 │   ├── ws.py                      #   websockets 长连接，心跳保活
-│   ├── auth.py                    #   API Key 认证 + AK/SK 兑换
+│   ├── auth.py                    #   API Key/envd 认证；显式自定义 token 适配
 │   └── config.py                  #   配置加载（代码参数→环境变量→.env→config.toml→默认值）
 │
 ├── protocol/                      # L2 — 核心协议层
@@ -189,7 +190,7 @@ client-sdk/src/agent_sandbox/
 │
 ├── api/                           # L3 — 高层便捷 API
 │   ├── __init__.py
-│   ├── sandbox.py                 #   ProviderSandbox 原生实现
+│   ├── sandbox.py                 #   Sandbox 核心类
 │   ├── server_client.py           #   ServerClient — 沙箱内 server 的类型化客户端
 │   ├── files.py                   #   高层文件操作
 │   └── code.py                    #   代码执行引擎
@@ -257,9 +258,15 @@ CLI（`abx`）原先位于 `src/agent_sandbox/cli/`（`commands/` 下的 Click �
 
 ## 6. 设计原则
 
-1. **固定标准行为，显式扩展入口**：标准 `Sandbox`／`AsyncSandbox` 与解释器客户端遵循阿里云支持的 E2B 基线；`agent_sandbox.compat` 重新导出标准客户端。Provider／Server／声明式扩展使用 `ProviderSandbox`，有条件的后端能力仍需要对应账号、运行时和模板支持。
+1. **方法名参考 E2B，但不兼容 E2B**：L3 沿用 E2B 风格的方法名，并提供一个小的迁移辅助（`agent_sandbox.compat`）；L2 层自行实现协议，不依赖 E2B SDK
 2. **渐进式复杂度**：用户从 L3 开始，按需向下探索或向上使用高级功能
-3. **明确连接配置**：沿用既有阿里云 `E2B_API_KEY`、`E2B_API_URL` 和 `E2B_DOMAIN` 配置；显式客户端参数优先。
+3. **零配置默认**：开箱即用的默认值，设置 `ABX_SANDBOX_API_KEY` 环境变量即可启动
 4. **阿里云原生**：为阿里云 FC 沙箱服务而做
 5. **AI First**：沙箱内置 AI CLI 工具、MCP Server 是一等公民，SDK 零 LLM 依赖
-6. **类型安全**：原生维护模块使用 Python 类型检查与 Pydantic 验证。固定版本／生成源码有局部 lint/type 排除和独立契约测试；通过这些测试不代表所有云端能力都可用。
+6. **类型安全**：全面使用 Python Type Hints + Pydantic 验证
+
+- [Provider implementation boundaries](provider-isolation.md)
+
+提供方配置发现由包入口延迟装配。传输配置只消费 `_provider_schema.py` 中的低层 `ProviderSchema` 值与注入的解析器，不导入提供方 registry。内置配置不触发提供方发现；注册、entry-point 和已安装提供方仍遵循原有选择、派生、默认值及继承规则。原 `transport.config.ProviderSchema` 导入保留为同一类的别名。
+
+内置平台/envd HTTP 每次执行一次传输尝试。旧重试字段作为兼容数据保留，边界见[配置说明](../reference/configuration.md#旧重试配置的兼容边界)，引擎恢复另行处理。

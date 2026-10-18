@@ -22,7 +22,7 @@
 
 ```bash
 pip install agent-sandbox-client
-export E2B_API_KEY=your-api-key
+export ABX_SANDBOX_API_KEY=your-api-key
 ```
 
 ```python
@@ -34,6 +34,8 @@ async with await Sandbox.create(template="base") as sb:
 ```
 
 ---
+
+当前内置运行通道：[直接 HTTP 与迁移](design/builtin-data-plane.md)。
 
 ## 架构概览
 

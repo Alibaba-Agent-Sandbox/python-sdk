@@ -18,7 +18,7 @@ CubeSandbox 是目录提供方，源码在 `awesome-providers/cubesandbox`，id 
 
 默认源站用 3000 端口，因为 Cube Python SDK 的 README 把 `CUBE_API_URL` 写成 `http://127.0.0.1:3000`。用 `provider_options={"base_url": "..."}` 覆盖。这个值是 CubeAPI 的源站，不带路径前缀。请求打到 `/sandboxes`，不是 `/cubeapi/v1/sandboxes`。
 
-设置了 `api_key` 时，客户端发送 `X-API-Key`。没设置时不发送认证头。本地 CubeAPI 允许这样。这个提供方不读 `E2B_API_KEY`。那个变量是阿里云极速版的密钥。
+设置了 `api_key` 时，客户端发送 `X-API-Key`。没设置时不发送认证头。本地 CubeAPI 允许这样。这个提供方不读 `ABX_SANDBOX_API_KEY`。那个变量是阿里云极速版的密钥。
 
 `domain` 是端口主机名 `{port}-{sandboxID}.{domain}` 的后缀。
 

@@ -11,7 +11,7 @@
 
 ## 安装
 
-> 以下 `abx` 命令由独立 `cli` 仓库中的 `abx` CLI 提供（`npm install -g @agent-sandbox/cli`）。
+> 以下 `abx` 命令由独立 `cli` 仓库中的 `abx` CLI 提供（[CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)）。
 
 ```bash
 abx install ./examples/templates/python-hello --registry-type local
@@ -57,5 +57,5 @@ abx download <sandbox-id> /app/remote.txt ./local_file.txt
 
 - 基础镜像: Ubuntu 22.04
 - Python 3 + pip
-- 容器内运行时: `pip install agent-sandbox-server`（提供 `agent_sandbox.server`）
+- 容器内运行时: [配套源码安装指南](../../../docs/zh/guide/install-python.md)（提供 `agent_sandbox.server`）
 - 工作目录: /app

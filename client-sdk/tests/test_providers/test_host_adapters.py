@@ -376,7 +376,8 @@ async def test_network_resolves_through_ports_url(echo):
         assert url == f"https://echo.example/{sb.id}/8080"
         assert headers == {"X-Echo": "1"}
         assert await sb.network.resolve_url(3000) == f"https://echo.example/{sb.id}/3000"
-        assert sb.network.get_url(8080).startswith("http")  # local computation is unchanged
+        with pytest.raises(E.ProviderFeatureNotSupportedError):
+            sb.network.get_url(8080)  # async-only providers have no native URL fallback
     finally:
         await sb.kill()
 

@@ -103,12 +103,7 @@ class ConfigKey:
         if self.env_override:
             return self.env_override
         if self.scope == "core":
-            standard = {
-                "sandbox_api_key": "E2B_API_KEY",
-                "sandbox_base_url": "E2B_API_URL",
-                "sandbox_domain": "E2B_DOMAIN",
-            }
-            return standard.get(self.key, f"ABX_{self.key.upper()}")
+            return f"ABX_{self.key.upper()}"
         return provider_env_name(self.scope, self.key)
 
     def alias_names(self, surface: str, *kinds: str) -> tuple[str, ...]:
@@ -170,8 +165,8 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         group=_G_AUTH,
         description="Agent Sandbox API key of the active provider",
         description_zh="当前 provider 的 Agent Sandbox API Key",
-        storage_phase1=Storage("env", "E2B_API_KEY"),
-        storage_phase2=Storage("env", "E2B_API_KEY"),
+        storage_phase1=Storage("env", "ABX_SANDBOX_API_KEY"),
+        storage_phase2=Storage("env", "ABX_SANDBOX_API_KEY"),
     ),
     ConfigKey(
         "sandbox_base_url",

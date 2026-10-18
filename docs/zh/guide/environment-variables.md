@@ -1,6 +1,10 @@
 # 沙箱环境变量指南
 
-> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
+本指南描述异步 `ProviderSandbox` 扩展；根级 `Sandbox` 和 `AsyncSandbox` 遵循固定版本的标准迁移契约，详见[从 E2B 迁移](migrate-from-e2b.md)。
+
+当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（[CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
 本指南说明环境变量在 Agent Sandbox 中的工作方式，涵盖两种独立的进程作用域、注入方法、直接执行（direct-exec）语义以及推荐实践。
 
@@ -53,7 +57,7 @@ sandbox = await Sandbox.create(
 **CLI：**
 
 ```bash
-abx create base --env DATABASE_URL=postgres://... --env APP_ENV=staging
+abx create --template base --env DATABASE_URL=postgres://... --env APP_ENV=staging
 ```
 
 **`@sandbox` 装饰器：**
@@ -266,7 +270,7 @@ result = await sandbox.run("my_handler")
 
 ## 客户端配置变量不是沙箱变量
 
-在**你的机器上**配置 SDK 和 CLI 的变量（`E2B_API_KEY`、`ABX_PROVIDER`、`ALIBABA_CLOUD_REGION_ID` 等）由客户端读取，永远不会被复制进沙箱。要让某个值在沙箱内可见，请用 `envs=` / `--env` 显式传入。每项客户端设置只有一个变量。名字和优先级见[配置参考](../reference/configuration.md#环境变量)。
+在**你的机器上**配置 SDK 和 CLI 的变量（`ABX_SANDBOX_API_KEY`、`ABX_PROVIDER`、`ALIBABA_CLOUD_REGION_ID` 等）由客户端读取，永远不会被复制进沙箱。要让某个值在沙箱内可见，请用 `envs=` / `--env` 显式传入。每项客户端设置只有一个变量。名字和优先级见[配置参考](../reference/configuration.md#环境变量)。
 
 由此有两点：
 

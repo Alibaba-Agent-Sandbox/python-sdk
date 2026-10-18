@@ -94,7 +94,7 @@ class TestAuthenticationErrors:
         assert isinstance(err, AuthenticationError)
         assert isinstance(err, SandboxError)
         assert err.code == "E1001"
-        assert "E2B_API_KEY" in err.suggestion
+        assert "ABX_SANDBOX_API_KEY" in err.suggestion
 
     def test_token_expired(self):
         err = TokenExpiredError("expired")
@@ -106,7 +106,7 @@ class TestAuthenticationErrors:
         err = InvalidCredentialsError("bad creds")
         assert isinstance(err, AuthenticationError)
         assert err.code == "E1003"
-        assert "ALICLOUD" in err.suggestion
+        assert "selected provider" in err.suggestion
 
 
 # ---- Creation Errors ----

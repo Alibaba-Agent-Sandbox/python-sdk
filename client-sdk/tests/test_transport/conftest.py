@@ -27,13 +27,13 @@ if TYPE_CHECKING:
 # Every env var recognised by ``_ENV_VAR_MAP`` that could carry real
 # credentials or config from the developer's shell into a test run.
 _LEAKY_ENV_VARS = (
-    "E2B_API_KEY",
-    "E2B_API_URL",
-    "E2B_DOMAIN",
+    "ABX_SANDBOX_API_KEY",
+    "ABX_SANDBOX_BASE_URL",
+    "ABX_SANDBOX_DOMAIN",
     "ALIBABA_CLOUD_REGION_ID",
-    "E2B_API_KEY",
-    "E2B_API_URL",
-    "E2B_DOMAIN",
+    "ABX_SANDBOX_API_KEY",
+    "ABX_SANDBOX_BASE_URL",
+    "ABX_SANDBOX_DOMAIN",
     "SANDBOX_API_KEY",
     "SANDBOX_API_BASE_URL",
     "SANDBOX_REGION",

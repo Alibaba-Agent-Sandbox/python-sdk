@@ -1,5 +1,7 @@
 # 错误码参考
 
+本指南描述异步 `ProviderSandbox` 扩展；根级 `Sandbox` 和 `AsyncSandbox` 遵循固定版本的标准迁移契约，详见[从 E2B 迁移](../guide/migrate-from-e2b.md)。
+
 > **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
 所有 SDK 错误都继承自 `SandboxError`，携带 `code`（错误码）、`message`（消息）、`suggestion`（建议）、`docs_url`（文档 URL）属性。
@@ -21,8 +23,8 @@ except SandboxError as e:
 | 错误码 | 异常类 | 含义 | 建议 | 触发场景 |
 |--------|--------|------|------|----------|
 | E1000 | `AuthenticationError` | 认证失败（基类） | — | 认证相关通用错误 |
-| E1001 | `InvalidAPIKeyError` | API Key 无效或缺失 | 检查 `E2B_API_KEY` 环境变量，或传入 `sandbox_api_key` 参数 | 未配置任何 API Key 即调用需认证的 API |
-| E1002 | `TokenExpiredError` | 认证令牌已过期 | SDK 应自动刷新 token；持续出现请检查系统时钟同步 | AK/SK 临时令牌过期且自动刷新失败 |
+| E1001 | `InvalidAPIKeyError` | API Key 无效或缺失 | 检查 `ABX_SANDBOX_API_KEY` 环境变量，或传入 `sandbox_api_key` 参数 | 未配置任何 API Key 即调用需认证的 API |
+| E1002 | `TokenExpiredError` | 认证令牌已过期 | 重新连接获取 envd token，或检查自定义交换 | envd token 缺失/失效，或显式配置的自定义交换失败 |
 | E1003 | `InvalidCredentialsError` | AK/SK 凭证无效 | 检查 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET` 环境变量 | AK/SK 为空或格式错误 |
 
 ### 排查步骤

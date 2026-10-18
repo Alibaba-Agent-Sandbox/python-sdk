@@ -77,13 +77,13 @@ class TestRegistry:
         assert secret.env == "ALICLOUD_ACCESS_KEY_SECRET"
         assert ck.get_key("region", "alicloud-express").env == "ALIBABA_CLOUD_REGION_ID"
         assert ck.get_key("github_token").env == "GITHUB_TOKEN"
-        assert ck.get_key("sandbox_api_key").env == "E2B_API_KEY"
+        assert ck.get_key("sandbox_api_key").env == "ABX_SANDBOX_API_KEY"
 
     def test_retired_names_are_not_resolved(self):
         retired = (
-            "ABX_SANDBOX_API_KEY",
+            "E2B_API_KEY",
             "SANDBOX_API_KEY",
-            "ABX_SANDBOX_BASE_URL",
+            "E2B_API_URL",
             "SANDBOX_REGION",
             "AccessKey",
             "AccessSecret",
@@ -100,7 +100,7 @@ class TestRegistry:
         key = ck.get_key("sandbox_api_key")
         assert ck.env_names(key, scoped_for="my-prov") == (
             "ABX_MY_PROV_SANDBOX_API_KEY",
-            "E2B_API_KEY",
+            "ABX_SANDBOX_API_KEY",
         )
 
     def test_schema_export_is_stable_and_complete(self):
@@ -169,8 +169,8 @@ class TestResolvePrecedence:
     def test_layer_order(self):
         src = _src(
             overrides={"sandbox_api_key": "o"},
-            environ={"E2B_API_KEY": "e"},
-            dotenv=[{"E2B_API_KEY": "d1"}, {"E2B_API_KEY": "d2"}],
+            environ={"ABX_SANDBOX_API_KEY": "e"},
+            dotenv=[{"ABX_SANDBOX_API_KEY": "d1"}, {"ABX_SANDBOX_API_KEY": "d2"}],
             toml={"transport": {"sandbox_api_key": "t"}},
         )
         r = resolve_key(self.KEY, src)
@@ -181,7 +181,7 @@ class TestResolvePrecedence:
         src.environ = {}
         r = resolve_key(self.KEY, src)
         assert (r.value, r.layer, r.layer_index) == ("d1", "dotenv", 0)
-        src.dotenv = [{}, {"E2B_API_KEY": "d2"}]
+        src.dotenv = [{}, {"ABX_SANDBOX_API_KEY": "d2"}]
         r = resolve_key(self.KEY, src)
         assert (r.value, r.layer_index) == ("d2", 1)
         src.dotenv = []
@@ -190,20 +190,22 @@ class TestResolvePrecedence:
 
     def test_retired_name_does_not_beat_the_canonical_name(self):
         src = _src(
-            environ={"SANDBOX_API_KEY": "legacy-env", "ABX_SANDBOX_API_KEY": "retired-env"},
-            dotenv=[{"E2B_API_KEY": "canon-dotenv"}],
+            environ={"SANDBOX_API_KEY": "legacy-env", "E2B_API_KEY": "compat-env"},
+            dotenv=[{"ABX_SANDBOX_API_KEY": "canon-dotenv"}],
         )
         assert resolve_key(self.KEY, src).value == "canon-dotenv"
 
     def test_blank_values_fall_through(self):
         src = _src(
-            environ={"E2B_API_KEY": "  "},
-            dotenv=[{"E2B_API_KEY": "from-dotenv"}],
+            environ={"ABX_SANDBOX_API_KEY": "  "},
+            dotenv=[{"ABX_SANDBOX_API_KEY": "from-dotenv"}],
         )
         assert resolve_key(self.KEY, src).value == "from-dotenv"
 
     def test_scoped_name_beats_canonical(self):
-        src = _src(environ={"ABX_MY_PROV_SANDBOX_API_KEY": "scoped", "E2B_API_KEY": "plain"})
+        src = _src(
+            environ={"ABX_MY_PROV_SANDBOX_API_KEY": "scoped", "ABX_SANDBOX_API_KEY": "plain"}
+        )
         assert resolve_key(self.KEY, src, scoped_for="my-prov").value == "scoped"
         assert resolve_key(self.KEY, src).value == "plain"
 

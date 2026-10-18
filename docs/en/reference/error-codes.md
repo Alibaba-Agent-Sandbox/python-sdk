@@ -1,5 +1,7 @@
 # Error Codes Reference
 
+This guide describes asynchronous `ProviderSandbox` provider extensions. Root `Sandbox` and `AsyncSandbox` follow the pinned standard migration contract; see [Migrate from E2B](../guide/migrate-from-e2b.md).
+
 > **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
 All SDK errors inherit from `SandboxError` and carry `code` (error code), `message`, `suggestion`, and `docs_url` attributes.
@@ -21,8 +23,8 @@ except SandboxError as e:
 | Error Code | Exception Class | Meaning | Suggestion | Trigger Scenario |
 |------------|----------------|---------|------------|------------------|
 | E1000 | `AuthenticationError` | Authentication failed (base class) | — | General authentication errors |
-| E1001 | `InvalidAPIKeyError` | Invalid or missing API Key | Check the `E2B_API_KEY` environment variable or pass the `sandbox_api_key` parameter | Called an authenticated API without configuring any API Key |
-| E1002 | `TokenExpiredError` | Authentication token expired | SDK should auto-refresh tokens; if persistent, check system clock synchronization | AK/SK temporary token expired and auto-refresh failed |
+| E1001 | `InvalidAPIKeyError` | Invalid or missing API Key | Check the `ABX_SANDBOX_API_KEY` environment variable or pass the `sandbox_api_key` parameter | Called an authenticated API without configuring any API Key |
+| E1002 | `TokenExpiredError` | Authentication token expired | Reconnect for an envd token or check the custom exchange | envd token unavailable/expired, or an explicitly configured custom exchange failed |
 | E1003 | `InvalidCredentialsError` | Invalid AK/SK credentials | Check `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET` environment variables | AK/SK is empty or malformed |
 
 ### Troubleshooting Steps

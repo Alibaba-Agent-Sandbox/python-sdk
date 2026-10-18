@@ -1,15 +1,46 @@
 """Sandbox-related data models.
 
 字段命名与 camelCase alias 已根据真实 API 实测验证。
+Volume mount creation hints follow the published API contract; real storage acceptance is separate.
 """
 
 from __future__ import annotations
 
 import enum
-from datetime import datetime  # noqa: TC003  # Pydantic needs at runtime
+from datetime import datetime  # noqa: TCH003  # Pydantic needs at runtime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from agent_sandbox.models.errors import ProviderConfigError
+
+
+def validate_volume_mounts(value: Any) -> dict[str, str]:
+    """Validate mount-path to existing Volume-name hints without coercing values."""
+    if value is None:
+        return {}
+    if type(value) is not dict:  # noqa: E721 - reject custom dictionary subclasses
+        raise ProviderConfigError(
+            "volume_mounts must be a dictionary of mount paths to Volume names."
+        )
+    for path, name in value.items():
+        if (
+            not isinstance(path, str)
+            or path in {"__proto__", "prototype", "constructor"}
+            or not path.startswith("/")
+            or path == "/"
+            or path != path.strip()
+            or "\x00" in path
+            or any(not part or part.startswith(".") for part in path.split("/")[1:])
+            or path.split("/")[1] in {"bin", "opt", "var", "dev"}
+        ):
+            raise ProviderConfigError(
+                "volume_mounts paths must be normalized absolute Unix paths outside "
+                "/, /bin, /opt, /var and /dev, without hidden path segments."
+            )
+        if not isinstance(name, str) or not name.strip() or name != name.strip() or "\x00" in name:
+            raise ProviderConfigError("volume_mounts requires nonblank, unpadded Volume names.")
+    return dict(value)
 
 
 class SandboxStatus(str, enum.Enum):
@@ -38,6 +69,16 @@ class SandboxConfig(BaseModel):
     env_vars: dict[str, str] = Field(
         default_factory=dict, alias="envVars", description="环境变量键值对（已实测验证）"
     )
+    volume_mounts: dict[str, str] = Field(
+        default_factory=dict,
+        exclude=True,
+        description="Absolute sandbox mount paths mapped to existing Volume names",
+    )
+
+    @field_validator("volume_mounts", mode="before")
+    @classmethod
+    def _mounts(cls, value: Any) -> dict[str, str]:
+        return validate_volume_mounts(value)
 
     # Resource configuration (optional — only sent when explicitly set)
     cpu: int | None = Field(default=None, description="CPU 核数")
@@ -58,7 +99,8 @@ class SandboxConfig(BaseModel):
     model_config = {"populate_by_name": True}
 
     def to_create_payload(self) -> dict[str, Any]:
-        """Build the camelCase request payload for sandbox creation（已实测验证）."""
+        """Build the create payload; mount serialization follows the published API contract."""
+        mounts = validate_volume_mounts(self.volume_mounts)
         payload: dict[str, Any] = {
             "templateID": self.template,
             "timeout": self.timeout,
@@ -74,6 +116,10 @@ class SandboxConfig(BaseModel):
             payload["diskSizeMB"] = self.disk
         if self.gpu is not None:
             payload["gpu"] = self.gpu
+        if mounts:
+            payload["volumeMounts"] = [
+                {"name": name, "path": path} for path, name in mounts.items()
+            ]
         return payload
 
 

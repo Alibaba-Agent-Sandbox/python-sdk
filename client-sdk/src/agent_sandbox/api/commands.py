@@ -19,8 +19,8 @@ from agent_sandbox.utils.logging import get_logger
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
 
-    from agent_sandbox.protocol.process import ProcessProtocol
-    from agent_sandbox.transport.auth import EnvdTokenManager
+    from agent_sandbox.protocol.contracts import ProcessProtocol
+    from agent_sandbox.transport.auth_contract import DataPlaneAuth as EnvdTokenManager
     from agent_sandbox.transport.streaming import StreamReader
 
 logger = get_logger("api.commands")

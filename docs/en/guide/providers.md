@@ -1,5 +1,7 @@
 # Providers
 
+This guide describes asynchronous `ProviderSandbox` provider extensions. Root `Sandbox` and `AsyncSandbox` follow the pinned standard migration contract; see [Migrate from E2B](migrate-from-e2b.md).
+
 > **Note:** The `abx provider ...` commands on this page are provided by the Node.js CLI in the `cli` repository. Python-only users get the same operations from `python -m agent_sandbox.providers ...`. Both use the same install directory, the same receipts and the same tree digest.
 
 A **provider** is a sandbox backend. The SDK and the CLI ship only `alicloud-express`. The others install with `python -m agent_sandbox.providers install registry:<id> --yes` from `https://registry.agent-sandbox.cn/providers/index.json`. A background check writes newer versions to `~/.abx/providers/updates.json`. `ABX_PROVIDER_UPDATE_CHECK=0` turns the check off. `ABX_PROVIDER_REGISTRY` changes the index URL. The official site is <https://www.agent-sandbox.com>. The registry website is <https://registry.agent-sandbox.com>.
@@ -17,15 +19,30 @@ The four non-default ids live in `awesome-providers`. Install with `abx provider
 | Id | How to use it |
 |---|---|
 | `opensandbox` | [OpenSandbox provider](../design/provider-opensandbox-mapping.md). HTTP is made from the Node host process that loads `provider.mjs`. `ABX_OPENSANDBOX_BASE_URL` defaults to `http://127.0.0.1:8080`. |
-| `alicloud-container` | [Container edition](../design/provider-alicloud-container.md). Needs `ABX_ALICLOUD_CONTAINER_DOMAIN`. Does not read `E2B_API_KEY`. |
+| `alicloud-container` | [Container edition](../design/provider-alicloud-container.md). Needs `ABX_ALICLOUD_CONTAINER_DOMAIN`. Does not read `ABX_SANDBOX_API_KEY`. |
 | `cubesandbox` | [CubeSandbox provider](../design/provider-cubesandbox.md). Default origin `http://127.0.0.1:3000`. |
-| `e2b` | [E2B provider](../design/provider-e2b.md). Key is `ABX_E2B_API_KEY`. Does not read `E2B_API_KEY` or `E2B_API_KEY`. |
+| `e2b` | [E2B provider](../design/provider-e2b.md). Key is `ABX_ABX_SANDBOX_API_KEY`. Does not read `ABX_SANDBOX_API_KEY` or `ABX_SANDBOX_API_KEY`. |
 
 The logical readiness of the three providers that have no backend here is [provider readiness](../design/provider-readiness.md). A coding agent that is adding a provider loads the `agent-sandbox-provider` skill (`agent-sandbox-provider/SKILL.md`).
 
 If you never touch providers, nothing changes: every command, every output and every environment variable behaves as before. The id `alicloud-express` is stable. Only the display name may change.
 
 ---
+
+## Engine recovery and uncertain results
+
+For Node provider plugins, the Python SDK rediscovers the local engine once after a
+transport failure only for `GET` and `HEAD`. A read stream can recover only before
+it yields its first event. Creation, execution, uploads and other mutations are
+never automatically replayed after a connection failure, even if no response or
+SSE event arrived. The engine may already have performed the operation.
+
+Such a failure raises `ProviderProtocolError` (E8020) with an unknown-outcome
+message. Inspect the selected provider's sandbox list or command state before
+retrying; a blind retry can create duplicate resources or repeat a command.
+A confirmed engine HTTP 401 rejection can still refresh discovery once because
+authentication rejects the request before dispatch. No idempotency or automatic
+rollback guarantee is implied.
 
 ## Choosing a provider
 
@@ -139,12 +156,13 @@ A provider declares the features it implements. Calling something it lacks raise
 | `pty` | interactive terminal |
 | `files.rw`, `files.watch`, `files.transfer` | read, write, list, move, remove; watching; signed upload and download URLs |
 | `code.interpret` | stateful code contexts |
-| `templates.read`, `templates.build` | list and inspect templates; build, deploy and delete them |
+| `templates.read`, `templates.build` | list and inspect templates; legacy image build, deploy and delete |
+| `templates.deploy` | opt-in deployment from an existing image through a provider template factory |
 | `ports.url`, `ports.domain` | public URL for a port; custom domains |
 | `storage.mount`, `network.vpc` | object-storage mounts; VPC attachment |
 | `sessions` | the sandbox survives the process and can be re-attached by id |
 
-`alicloud-express` explicitly declares 15 adapter features; generic mount/VPC/custom-domain operations are not implemented by this adapter. Registration alone does not prove a callable API, CLI coverage or runtime/account availability. `abx provider list` shows the declared features of every provider on one line (`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`; `python -m agent_sandbox.providers list` prints the same), and `abx provider info <id>` shows the full list.
+`templates.deploy` is an independent manifest declaration; `templates.build` does not imply it. The built-in `alicloud-express` retains its existing 18 declarations and does not declare `templates.deploy`. This SDK accepts the metadata but adds no Python template deployment method; the CLI owns factory dispatch. `abx provider list` shows the declared features of every provider on one line (`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`; `python -m agent_sandbox.providers list` prints the same), and `abx provider info <id>` shows the full list.
 
 The manifest flag is enforced at run time, for every provider kind:
 
@@ -165,7 +183,7 @@ Installing a provider does not enable every SDK method or every `abx` command. T
 |---|---|---|
 | `sandbox.lifecycle` | `Sandbox.create`, `connect`, `list`, `kill`, `info` | `create`, `list`, `info`, `kill`, `connect` |
 | `sandbox.timeout` | `set_timeout` | `sandbox timeout` |
-| `sandbox.pause` | `pause`, `resume` | Express standard CLI only; generic provider CLI entry missing |
+| `sandbox.pause` | `pause`, `resume` | `sandbox pause`, `sandbox resume` |
 | `exec.run` | `commands.run`, `sandbox.run` | `exec`, `run` |
 | `exec.stream` | `commands.stream` | `exec --stream` |
 | `process.manage` | `commands.list`, `kill`, `send_stdin` | `sandbox process ...` |
@@ -202,7 +220,7 @@ The capability table is [OpenSandbox provider](../design/provider-opensandbox-ma
 
 ### Extra capabilities
 
-The 18 feature ids above are the shared tool surface. A provider that has operations outside that list registers them on `Provider.extensions`. They do not appear in `features`, so `provider list` does not print them, and another provider does not gain them.
+The feature ids above are the shared tool surface. A provider that has operations outside that list registers them on `Provider.extensions`. They do not appear in `features`, so `provider list` does not print them, and another provider does not gain them.
 
 `describe()["extensions"]` always shows the provider's full registration. `extensions_for(sandbox_id=...)` shows only the entries that match that sandbox: `code` only on a `code-interpreter` image, `networkpolicy` only when egress was requested, `command.logs` only when a command id is known. An entry with `implemented=False` is visible under those rules and still raises `E8004` from `require_extension`. An earlier Python OpenSandbox provider registered `code`, `session`, `command.logs`, `snapshot`, `networkpolicy`, `metadata.patch`, `diagnostics` and `metrics` this way. The current catalog provider is `kind = "node"` (`EngineProvider`); its `extensions` tuple is empty.
 
@@ -293,7 +311,7 @@ The wire methods, their parameter names and types, and which are required are li
 
 Each provider has its own scoped keys: `ABX_<PROVIDER>_<KEY>` in the environment or `.env`, `[providers.<id>]` in `config.toml`, `provider_options={...}` in the SDK. The provider receives only the keys its manifest declares, in the `initialize` request. Secrets are never put in the plugin's argv or environment.
 
-The generic keys `sandbox_api_key`, `sandbox_base_url` and `sandbox_domain` (`E2B_API_KEY` and `E2B_API_URL`) belong to the built-in provider. A plugin gets them only if its manifest lists them in `[core] inherit` **and** you consented at install or update time. The consent screen names the keys. Your LLM, GitHub and MCP keys are never delivered to a provider.
+The generic keys `sandbox_api_key`, `sandbox_base_url` and `sandbox_domain` (`ABX_SANDBOX_API_KEY` and `ABX_SANDBOX_BASE_URL`) belong to the built-in provider. A plugin gets them only if its manifest lists them in `[core] inherit` **and** you consented at install or update time. The consent screen names the keys. Your LLM, GitHub and MCP keys are never delivered to a provider.
 
 ### What the host does to the plugin process
 
@@ -384,9 +402,3 @@ A package can also publish an entry point in the group `agent_sandbox.providers`
 - [Configuration reference](../reference/configuration.md) — names, aliases, precedence
 - [Authentication](authentication.md)
 - [Design: providers and credentials](../design/providers-and-credentials.md)
-
-## Standard clients and provider ownership
-
-Root Sandbox/AsyncSandbox and code_interpreter are the pinned E2B protocol API. ABX_PROVIDER does not turn those clients into OpenSandbox clients. Use ProviderSandbox for installed-provider routing. ProviderSandbox preserves qualified resource ownership, rejects unknown provider namespaces with E8001 and empty sandbox IDs with E8002 before requests, and rejects explicit-provider conflicts with E8030. Unsupported provider capabilities must return E8004 without an Express fallback.
-
-The built-in adapter declares its implemented features explicitly; adding a host capability does not enable it on Express automatically. storage.mount, network.vpc and ports.domain are not implemented generic sandbox operations in this adapter. This is a client boundary, not a claim that Alibaba lacks cloud storage or VPC. Account/runtime/template restrictions remain real even when a method is implemented. Provider-specific typed management commands are separate pending work in https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/38 and https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/pull/35; registration requires an actual handler and backend verification.

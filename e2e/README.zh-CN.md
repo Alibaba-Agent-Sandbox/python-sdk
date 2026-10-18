@@ -53,6 +53,7 @@ cd e2e && python -m pytest -m "not e2e_slow" -ra               # 等同 `make e2
 | `test_06_server_sdk.py` | 真实沙箱(模板 `python-hello`)内的 `agent-sandbox-server`:`/commands`、`/files/*`、`/process/*`、`/capabilities`、`/system/info`、`/env`、`/ports`、自定义路由 |
 | `test_07_declarative.py` | `@sandbox` 声明式远程执行 |
 | `test_08_providers.py` | 真实后端调用：内置 `alicloud-express`（SDK 和 CLI），以及已安装的目录提供方 `opensandbox`、`cubesandbox`、`e2b`、`alicloud-container`。没有自己的后端时跳过，并且不会把极速版密钥发给它。 |
+| `test_09_volume_mounts.py` | 显式启用的已有 Volume 验收：确认内核精确挂载点，独占创建、读取并删除一个测试文件，再释放带标签的沙箱。普通目录不能通过。 |
 | `test_09_mcp_lifecycle.py` | Python MCP 元数据/续期/列表、命令文件与外部实例归属 |
 
 标记:`e2e`(全部)、`e2e_slow`(> 约 60 秒)、`known_issue`(记录已知缺陷的严格 xfail,见
@@ -86,6 +87,10 @@ cd e2e && python -m pytest -m "not e2e_slow" -ra               # 等同 `make e2
 | `E2E_SANDBOX_TTL` | 300 | 沙箱存活秒数 |
 | `E2E_SERVER_TEMPLATE` | `python-hello` | 预装 `agent-sandbox-server` 的模板 |
 | `E2E_RUN_ID` | 自动生成 | 标签值(`e2e=<id>`) |
+| `ABX_E2E_VOLUME_MOUNT` | 未设置则跳过 | 设置为 `1` 才允许运行 Volume 验收。 |
+| `ABX_E2E_VOLUME_NAME` | 未设置则跳过 | API Key 同 Team、同地域、已配置存储角色的可写 Volume 名称；不创建或删除 Volume。 |
+| `ABX_E2E_VOLUME_MOUNT_PATH` | 未设置则跳过 | `/mnt/abx-e2e/` 下专用的规范沙箱路径；这是测试工具的收窄要求。 |
+| `E2E_VOLUME_TEMPLATE` | 未设置则跳过 | 满足[官方挂载指南](https://help.aliyun.com/zh/agent-sandbox/mount-oss-volume-1)存储及运行时前提的模板。 |
 
 ## 新增测试
 

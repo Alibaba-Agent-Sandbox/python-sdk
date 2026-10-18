@@ -73,8 +73,15 @@ async def test_builtin_direct_lifecycle_closes_http_without_connect(operation, f
     if fail:
         target.side_effect = RuntimeError("operation failed")
     with (
-        patch("agent_sandbox.api.sandbox._select_provider", return_value=(None, "existing")),
-        patch("agent_sandbox.api.sandbox._build_infra", return_value=(None, None, http, protocol)),
+        patch(
+            "agent_sandbox.api.sandbox._select_provider",
+            return_value=(SimpleNamespace(id="alicloud-express"), "existing"),
+        ),
+        patch(
+            "agent_sandbox.api.sandbox._provider_infra",
+            new_callable=AsyncMock,
+            return_value=SimpleNamespace(sandbox_protocol=protocol, close=http.close),
+        ),
     ):
 
         async def run():
@@ -105,8 +112,15 @@ def test_sync_classmethod_aliases_dispatch_and_close(operation, fail):
         target.side_effect = RuntimeError("operation failed")
     http = AsyncMock()
     with (
-        patch("agent_sandbox.api.sandbox._select_provider", return_value=(None, "existing")),
-        patch("agent_sandbox.api.sandbox._build_infra", return_value=(None, None, http, protocol)),
+        patch(
+            "agent_sandbox.api.sandbox._select_provider",
+            return_value=(SimpleNamespace(id="alicloud-express"), "existing"),
+        ),
+        patch(
+            "agent_sandbox.api.sandbox._provider_infra",
+            new_callable=AsyncMock,
+            return_value=SimpleNamespace(sandbox_protocol=protocol, close=http.close),
+        ),
     ):
 
         def run():

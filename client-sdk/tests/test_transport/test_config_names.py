@@ -52,9 +52,9 @@ class TestCanonicalModel:
 @pytest.mark.parametrize(
     ("env", "field", "value"),
     [
-        ("E2B_API_KEY", "sandbox_api_key", "v"),
-        ("E2B_API_URL", "sandbox_base_url", "https://v.example"),
-        ("E2B_DOMAIN", "sandbox_domain", "v.example"),
+        ("ABX_SANDBOX_API_KEY", "sandbox_api_key", "v"),
+        ("ABX_SANDBOX_BASE_URL", "sandbox_base_url", "https://v.example"),
+        ("ABX_SANDBOX_DOMAIN", "sandbox_domain", "v.example"),
         ("ALIBABA_CLOUD_REGION_ID", "region", "cn-beijing"),
         ("ALICLOUD_ACCESS_KEY_ID", "access_key_id", "id"),
         ("ALICLOUD_ACCESS_KEY_SECRET", "access_key_secret", "sec"),
@@ -82,32 +82,32 @@ class TestEveryNameInEveryLayer:
 class TestPrecedence:
     def test_retired_process_names_are_ignored(self, iso, monkeypatch):  # noqa: F811
         monkeypatch.setenv("SANDBOX_API_KEY", "legacy")
-        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "retired")
+        monkeypatch.setenv("E2B_API_KEY", "compat")
         cfgmod.reset_config()
         assert load_config().sandbox_api_key is None
-        monkeypatch.setenv("E2B_API_KEY", "canon")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "canon")
         cfgmod.reset_config()
         assert load_config().sandbox_api_key == "canon"
 
     def test_process_env_beats_dotenv(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("E2B_API_KEY", "from-env")
-        iso.write_env("E2B_API_KEY=canon-dotenv\n")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "from-env")
+        iso.write_env("ABX_SANDBOX_API_KEY=canon-dotenv\n")
         assert load_config().sandbox_api_key == "from-env"
 
     def test_override_beats_env_beats_dotenv_beats_toml(self, iso, monkeypatch):  # noqa: F811
         iso.write_toml('[transport]\nsandbox_api_key = "toml"\n')
         assert load_config().sandbox_api_key == "toml"
-        iso.write_env("E2B_API_KEY=dotenv\n")
+        iso.write_env("ABX_SANDBOX_API_KEY=dotenv\n")
         assert load_config().sandbox_api_key == "dotenv"
-        monkeypatch.setenv("E2B_API_KEY", "env")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "env")
         cfgmod.reset_config()
         assert load_config().sandbox_api_key == "env"
         assert load_config(api_key="kw").sandbox_api_key == "env"
         assert load_config(sandbox_api_key="kw2").sandbox_api_key == "kw2"
 
     def test_blank_override_and_env_are_ignored(self, iso, monkeypatch):  # noqa: F811
-        iso.write_env("E2B_API_KEY=dotenv\n")
-        monkeypatch.setenv("E2B_API_KEY", "   ")
+        iso.write_env("ABX_SANDBOX_API_KEY=dotenv\n")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "   ")
         assert load_config(sandbox_api_key="  ").sandbox_api_key == "dotenv"
 
     def test_toml_ignores_retired_names(self, iso):  # noqa: F811
@@ -131,9 +131,9 @@ class TestPrecedence:
         assert load_config().region == "cn-shanghai"
 
     def test_cache_is_used_without_overrides_and_reset_clears(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("E2B_API_KEY", "one")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "one")
         assert load_config() is load_config()
-        monkeypatch.setenv("E2B_API_KEY", "two")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "two")
         assert load_config().sandbox_api_key == "one"
         cfgmod.reset_config()
         assert load_config().sandbox_api_key == "two"
@@ -146,13 +146,15 @@ class TestRegionDerivation:
         assert c.sandbox_domain == "cn-beijing.e2b.fc.aliyuncs.com"
 
     def test_explicit_process_env_url_wins_and_domain_stays_default(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("E2B_API_URL", "https://custom.example")
+        monkeypatch.setenv("ABX_SANDBOX_BASE_URL", "https://custom.example")
         c = load_config(region="cn-beijing")
         assert c.sandbox_base_url == "https://custom.example"
         assert c.sandbox_domain == "cn-hangzhou.e2b.fc.aliyuncs.com"
 
     def test_dotenv_url_is_kept_as_default_semantics(self, iso):  # noqa: F811
-        iso.write_env("E2B_API_URL=https://dotenv.example\nALIBABA_CLOUD_REGION_ID=cn-beijing\n")
+        iso.write_env(
+            "ABX_SANDBOX_BASE_URL=https://dotenv.example\nALIBABA_CLOUD_REGION_ID=cn-beijing\n"
+        )
         c = load_config()
         assert c.sandbox_base_url == "https://dotenv.example"
 
@@ -189,31 +191,31 @@ class TestProviderSelectionAndOptions:
 class TestExplain:
     def test_sources_and_masking(self, iso, monkeypatch):  # noqa: F811
         iso.write_toml('[transport]\nsandbox_base_url = "https://t.example"\n')
-        monkeypatch.setenv("E2B_API_KEY", "abcdefghijkl")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "abcdefghijkl")
         info = explain_config()
         assert info["sandbox_api_key"]["source"] == "environ"
-        assert info["sandbox_api_key"]["name"] == "E2B_API_KEY"
+        assert info["sandbox_api_key"]["name"] == "ABX_SANDBOX_API_KEY"
         assert info["sandbox_api_key"]["value"] == "****ijkl"
         assert "abcdefgh" not in str(info)
         assert info["sandbox_base_url"]["source"] == "toml"
         assert info["http_timeout"]["source"] == "default"
 
     def test_short_secrets_fully_masked(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("E2B_API_KEY", "short")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "short")
         assert explain_config()["sandbox_api_key"]["value"] == "****"
 
 
 class TestAudit:
     def test_retired_names_are_not_reported(self, iso, monkeypatch):  # noqa: F811
         monkeypatch.setenv("SANDBOX_API_KEY", "secret-value")
-        monkeypatch.setenv("E2B_API_KEY", "x")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "x")
         iso.write_env("SANDBOX_REGION=cn-beijing\n")
         iso.write_toml('[transport]\napi_url = "https://t"\n')
         assert audit_config() == []
         assert "secret-value" not in str(audit_config())
 
     def test_empty_when_clean(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("E2B_API_KEY", "x")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "x")
         assert audit_config() == []
 
 
@@ -244,7 +246,7 @@ class TestMigration:
             '[transport]\napi_url = "https://t.example"\nregion = "cn-beijing"\nhttp_timeout = 9\n'
         )
         iso.write_env(
-            "# keep me\nABX_SANDBOX_API_KEY=abc\nSANDBOX_REGION=cn-shanghai\nSANDBOX_API_KEY=old\nOPENAI_API_KEY=k\n"
+            "# keep me\nE2B_API_KEY=abc\nSANDBOX_REGION=cn-shanghai\nSANDBOX_API_KEY=old\nOPENAI_API_KEY=k\n"
         )
 
     def test_plan_is_deterministic(self, iso):  # noqa: F811

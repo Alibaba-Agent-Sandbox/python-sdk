@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from agent_sandbox.providers.manifest import Manifest
-    from agent_sandbox.transport.auth import EnvdTokenManager
+    from agent_sandbox.providers.shared.e2b.auth import EnvdTokenManager
     from agent_sandbox.transport.config import TransportConfig
 
 _ENVD_SCHEMES = ("http://", "https://")
@@ -640,6 +640,13 @@ class ExecProvider(Provider):
         self.auth_any_of = manifest.auth_any_of
         self.inherit = consented_inherit(manifest.inherit, receipt)
 
+    async def prepare_session(
+        self, infra: ProviderInfra, info: Any, *, operation: str, template: str
+    ) -> dict[str, Any]:
+        from agent_sandbox.providers.shared.e2b.session import prepare_session
+
+        return await prepare_session(self, info)
+
     async def build_infra(self, config: TransportConfig) -> ProviderInfra:
         self.validate_config(config)
         if self.receipt is not None:
@@ -690,8 +697,8 @@ class ExecProvider(Provider):
         http_client = None
         auth = None
         if supported & {"exec.run", "exec.stream", "files.rw", "process.manage"}:
-            from agent_sandbox.protocol.filesystem import FilesystemProtocol
-            from agent_sandbox.protocol.process import ProcessProtocol
+            from agent_sandbox.providers.shared.e2b.filesystem import FilesystemProtocol
+            from agent_sandbox.providers.shared.e2b.process import ProcessProtocol
             from agent_sandbox.transport.http import HttpClient
 
             auth = _NoPlatformAuth()

@@ -1,9 +1,13 @@
 # Client SDK
 
+当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+
 Client SDK 跑在**你的机器**上。它创建沙箱、连上已经存在的沙箱，然后在沙箱里执行命令、读写文件、调用代码解释器。包名是 `agent-sandbox-client`，导入 `agent_sandbox`。
 
 ```bash
-pip install agent-sandbox-client
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 ```
 
 不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。

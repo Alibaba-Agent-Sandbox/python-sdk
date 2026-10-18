@@ -22,7 +22,7 @@ from agent_sandbox import ProviderSandbox as Sandbox
 
 ## Template author quick path
 
-Verified 2026-10-15 on Alibaba Cloud Express (`alicloud-express`) with a generation-2 template whose start command runs `agent-sandbox-server`. `Sandbox.create(template=..., provider="alicloud-express")` uses `E2B_API_KEY`, `E2B_API_URL`, and `E2B_DOMAIN`. The template argument is the template id or its name.
+Verified 2026-10-15 on Alibaba Cloud Express (`alicloud-express`) with a generation-2 template whose start command runs `agent-sandbox-server`. `Sandbox.create(template=..., provider="alicloud-express")` uses `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL`, and `ABX_SANDBOX_DOMAIN`. The template argument is the template id or its name.
 
 ```python
 import asyncio

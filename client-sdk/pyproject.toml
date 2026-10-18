@@ -39,7 +39,6 @@ dependencies = [
     "websockets>=16.1.1",
     "pydantic>=2.14.0",
     "python-dotenv>=1.0",
-    "grpcio>=1.66",
     "protobuf>=5",
     "tomli>=2.0; python_version < '3.11'",
     # Lock-step release: the container-side runtime (``agent_sandbox.server``) used to ship inside
@@ -128,26 +127,16 @@ python_version = "3.10"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
-exclude = ["src/agent_sandbox/engine/engine_pb2(_grpc)?\\.py$", "src/agent_sandbox/_standard/", "src/agent_sandbox/code_interpreter/"]
+exclude = ["src/agent_sandbox/_standard/", "src/agent_sandbox/code_interpreter/"]
 
 # ``tomli`` is only present as a fallback on older interpreters (the stdlib ``tomllib`` is
 # unavailable before Python 3.11).
 [[tool.mypy.overrides]]
 module = [
     "tomli",
-    "grpc",
-    "grpc.*",
-    "agent_sandbox.engine.engine_pb2",
-    "agent_sandbox.engine.engine_pb2_grpc",
 ]
 ignore_missing_imports = true
 follow_imports = "skip"
-
-# The gRPC engine is the older data-plane bridge for Python provider subclasses; catalog providers
-# run through the Node engine instead (see providers/engine_provider.py).
-[[tool.mypy.overrides]]
-module = ["agent_sandbox.engine.*"]
-ignore_errors = true
 
 # The pinned protocol port retains upstream generated schemas and typing style.
 [[tool.mypy.overrides]]

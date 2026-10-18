@@ -12,8 +12,8 @@ from agent_sandbox.models.errors import (
     ProviderNotFoundError,
 )
 from agent_sandbox.providers import store
+from agent_sandbox.providers.alicloud_express.provider import AlicloudExpressProvider
 from agent_sandbox.providers.base import Provider, ordered_features
-from agent_sandbox.providers.builtin import AlicloudExpressProvider
 from agent_sandbox.utils.config_keys import (
     BUILTIN_PROVIDER_ID,
     OFFICIAL_CATALOG_IDS,

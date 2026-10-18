@@ -142,7 +142,7 @@ value = await sb.run("hello", name="Alice")
 ```
 
 ```bash
-export E2B_API_KEY=your-api-key        # 主凭证
+export ABX_SANDBOX_API_KEY=your-api-key        # 主凭证
 export ALICLOUD_ACCESS_KEY_ID=your-ak          # 可选的 AK/SK
 export ALICLOUD_ACCESS_KEY_SECRET=your-sk
 ```

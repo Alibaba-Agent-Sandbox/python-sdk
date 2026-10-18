@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-> **Status: superseded for catalog providers.** The "Local provider engine" entry below, the one that describes gRPC on `~/.abx/engine.sock`, is the earlier Python slice. The current design is the Node engine: HTTP, SSE and WebSocket, protocol `abx-engine/1`. See [cli/docs/en/reference/engine-api.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md). That entry is kept as history.
+> **Status: retired Python gRPC slice.** The "Local provider engine" entry below, the one that describes gRPC on `~/.abx/engine.sock`, is the earlier Python slice. The current design is the Node engine: HTTP, SSE and WebSocket, protocol `abx-engine/1`. See [cli/docs/en/reference/engine-api.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md). That entry is kept as history.
 
 ## [Unreleased]
 
@@ -13,9 +13,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Align Alibaba Express standard lifecycle, process, file and interpreter behavior with the pinned E2B contract; use canonical `E2B_*` connection settings.
 - Reserve create positional arguments for templates and natural language for `--prompt` in the CLI; document migration, source attribution and backend capability limits.
 
+### Fixed
+
+- Reconcile provider isolation with accepted native transport, explicit-key authentication and retired-module cleanup; preserve canonical compatibility aliases and pure configuration metadata.
+
+### Documentation
+
+- Retire the unsupported builtin automatic-retry claim. Existing retry configuration names/defaults and EPP compatibility values remain accepted; they do not enable builtin HTTP retries or backoff.
+
+### Removed
+
+- Retired the experimental Python gRPC engine and grpcio/protobuf hard dependencies after migrating builtin create, process, files and terminal operations to existing native HTTP protocols. Full platform metadata and envd-version framing are retained; Node provider engine contracts remain. See the bilingual builtin data-plane migration guide.
+
+- Removed the unconfirmed automatic AK/SK-to-sandbox-key RPC exchange and its private signing/parser helpers. Sandbox requests now fail locally without an API Key; official template/ACR AK/SK operations remain. Explicit custom exchange adapters remain and reject empty/structured token returns. This changes AK/SK-only runtime authentication; see the bilingual migration guide.
 
 ### Added
 
+- `Sandbox.create(volume_mounts={"/mnt/data": "existing-volume-name"})` mounts existing Volumes with the built-in provider. Strict validation runs before provider/engine I/O; unsupported providers fail with E8004. The existing gRPC lifecycle forwards the hint and emits the official `volumeMounts: [{name, path}]` creation payload; empty maps preserve prior requests. Real OSS storage mount/read/write/cleanup is verified for the tested base template in cn-hangzhou.
+- `agent_sandbox.providers.commands.list_commands`, `get_command` and `run_command` call the shared Node engine for provider-specific resource operations. Writes and deletes require explicit confirmation; command POST requests are never replayed.
+- Plugin manifests validate bounded `provider-commands/1` descriptors and include commands in installation/update consent; existing manifests and receipts default to an empty command list.
+- Provider manifests accept the independent `templates.deploy` feature for CLI image deployment metadata. Legacy `templates.build` declarations remain valid; the built-in Express provider does not acquire the new feature. No Python deployment API is added.
 - Python MCP bounded binary `upload_file`/`download_file` (1 MiB, strict Base64, SHA256) over both transports; SDK `files.read_bytes(max_bytes=...)` optionally limits streamed downloads and raises `FileSizeLimitError` (E4003), while its existing default remains unchanged.
 
 - Python MCP `start_task`, `get_task`, and `cancel_task` provide sandbox-lifetime background handles, bounded saved log pages, explicit disconnect retention and owned process-group cancellation. Normal synchronous cleanup remains unchanged; Python-only, Linux/python3 runtime.
@@ -23,11 +40,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Python MCP lifecycle tools `list_sandboxes`, `get_sandbox`, and `set_sandbox_timeout`; creation accepts provider, region, CPU and memory options. Metadata uses a fixed allowlist, external inspection/renewal does not adopt resources, and lifecycle failures omit credential-bearing exception details.
 - Add the Chinese counterpart of the historical OpenSandbox provider research archive, preserving its versioned evidence and current-adapter boundary.
 
+### Changed
+
+- Route bundled and external backends through the same Provider factory and session hooks. Move Express
+  authentication, native engine/session assembly and reusable E2B adapters into provider modules; preserve public imports and module identity.
+- Keep Express endpoint/region defaults out of external-provider configuration. Clean up newly created
+  resources when session binding fails without deleting borrowed sandboxes.
+
+- Document mount-capable template selection, the custom MicroVM ossfs2 minimum version, and verified real OSS Volume acceptance with complete temporary-resource cleanup. Extend opt-in E2E coverage to destroy/recreate the sandbox and read the persisted file.
+
+- Clarify the current Volume invitation-access prerequisite in both language guides; an empty list does not prove create or mount access.
+
+- The built-in provider no longer advertises `ports.domain`, `storage.mount` or `network.vpc` as callable standard sandbox features. Provider resource management uses the separate command contract.
+
 ### Fixed
 
 - Bind explicit native Express selection to its own configuration even when another provider is the default; reject malformed/reserved qualified sandbox namespaces before backend requests.
 
 - Reject unknown/empty provider-qualified sandbox references before backend requests; declare Express adapter features explicitly instead of inheriting the whole host registry.
+- Keep port addresses, gateway headers and file-transfer URLs in selected provider adapters; reject missing hooks instead of guessing native routes. Resolve Python compatibility imports lazily.
+
+
+- Integrate provider isolation with native HTTP creation, API-key-only runtime authentication and lazy schema composition. Preserve no-replay management requests and provider-owned authentication diagnostics; make local HTTP fixtures address and await their actual listener.
+
+- Keep an explicitly selected Express provider through native engine creation when the ambient default names another backend.
+
+- Built-in Express provider update reports its SDK-bundled lifecycle and coordinated client/server/Node upgrade guidance instead of a missing-plugin error; document existing-account adoption and explicit API/configuration changes.
+
+- Use executable paired-source installation recipes before PyPI publication across current SDK/package guides and examples; replace the retired root version CLI with distribution metadata inspection.
+
+- Keep HTTP and PTY component-test port candidates distinct, preserving explicit PTY settings and preventing intermittent WebSocket CI bind collisions.
+
+- Verified native builtin Droid background installation, keyless SDK/HTTP runtime and owned cleanup; source-runtime evidence is distinct from template/image/model acceptance.
+
+- Python Node-provider engine recovery no longer repeats mutations after a lost connection, including SSE before its first event. Unknown outcomes raise `ProviderProtocolError`; safe reads and explicit authentication rejection retain bounded recovery.
 
 - **Real-cloud E2E acceptance.** The server fixture keeps envd credentials separate from the unconfigured template server; provider reports reject missing checks and the CLI scenario resolves `ABX_BIN` or an installed `abx` instead of assuming a sibling checkout.
 
@@ -47,6 +93,8 @@ Both distributions are **0.3.0**. The client on PyPI is `agent-sandbox-client` (
 This release makes the SDK work on Alibaba Cloud Express generation 2: streaming RPCs use the Connect envelope when envd is 0.6 or newer, and `Sandbox.info.envd_version` is kept. Port 9000 does not send the sandbox access token to an unconfigured `agent-sandbox-server`. Named commands return the command value; unknown names, bad arguments, and command exceptions are typed errors. `Sandbox.create_sync` and `connect_sync` keep the class, including a subclass. The template-author quick path is in the SDK usage guide.
 
 ### Changed
+
+- Resolve provider configuration through a lazy composition-root adapter rather than an upward transport-to-registry import; preserve schema imports, provider resolution and lazy package initialization.
 
 - **The client PyPI distribution is `agent-sandbox-client`.** `agent-sandbox` on PyPI is an unrelated project (Agent Infra Team). Import `agent_sandbox`, the repository, the CLI, and `agent-sandbox-server` are unchanged. Do not run `pip install agent-sandbox`.
 - **Catalog providers run on the Node.js host.** `opensandbox`, `e2b`, `cubesandbox` and `alicloud-container` are all `node` plugins (OpenSandbox runs its EPP/1 methods in the host process, and `node provider.mjs` still serves EPP/1 on stdio); the `python` plugin kind is gone (a `Provider` subclass in code still works). The SDK reaches `node` plugins through the local engine (`abx provider engine serve`, started on demand; `abx` must be on `PATH` or in `ABX_BIN`). `EngineProvider` and `EngineClient` are new in `agent_sandbox.providers`; `e2b_shape` is removed. An `exec` plugin (third-party, any language) can now host a terminal (`pty.open/write/resize/close`, `pty.output`, `pty.exit`).

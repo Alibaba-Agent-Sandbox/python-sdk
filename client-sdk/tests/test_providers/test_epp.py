@@ -354,7 +354,7 @@ async def test_reference_plugin_env_is_scrubbed_and_config_arrives_via_initializ
     from agent_sandbox.providers import registry
     from agent_sandbox.transport.config import load_config
 
-    monkeypatch.setenv("E2B_API_KEY", "parent-secret-1")
+    monkeypatch.setenv("ABX_SANDBOX_API_KEY", "parent-secret-1")
     monkeypatch.setenv("E2B_API_KEY", "parent-secret-2")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "parent-secret-3")
     provider = registry.get_provider("local-process")

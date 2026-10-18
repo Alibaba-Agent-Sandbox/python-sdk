@@ -115,7 +115,14 @@ def _cmd_update(args: argparse.Namespace) -> int:
                 verify=None if args.no_verify else doctor_mod.verify_handshake,
             )
         )
-    _out(args, results, "\n".join(f"{r['id']}: {r['status']}" for r in results))
+    _out(
+        args,
+        results,
+        "\n".join(
+            f"{r['id']}: {r['status']}" + (f" — {r['message']}" if r.get("message") else "")
+            for r in results
+        ),
+    )
     return 0
 
 

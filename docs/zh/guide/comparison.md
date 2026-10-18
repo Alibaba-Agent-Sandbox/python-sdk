@@ -1,6 +1,8 @@
 # 与其他沙箱工具的对比
 
-> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
+当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（[CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
 本文档客观对比 Agent Sandbox (abx) 与其他主流沙箱及远程执行平台：E2B、Modal、Docker Sandbox。
 
@@ -22,7 +24,7 @@
 | 维度 | Agent Sandbox | E2B | Modal |
 |------|-------------|-----|-------|
 | **语言** | Python | Python, JS/TS, Kotlin, Go | Python |
-| **安装** | `pip install agent-sandbox-client` | `pip install e2b` | `pip install modal` |
+| **安装** | [配套源码安装指南](install-python.md) | `pip install e2b` | `pip install modal` |
 | **沙箱创建** | `await Sandbox.create()`，或 Modal 风格的 `@sandbox` | `await Sandbox.create()` | `@app.function()` 装饰器 |
 | **同步支持** | `Sandbox.create_sync()` | `Sandbox()`（同步类） | N/A（原生异步） |
 | **命令执行** | `sandbox.commands.run()` | `sandbox.commands.run()` | 远程函数调用 |
@@ -117,7 +119,7 @@ result = analyze(my_data)
 
 | 维度 | abx | e2b CLI | modal CLI |
 |------|-----|---------|-----------|
-| **安装** | `npm install -g @agent-sandbox/cli` | `npm i -g @e2b/cli` | `pip install modal` |
+| **安装** | [CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md) | `npm i -g @e2b/cli` | `pip install modal` |
 | **运行时** | Node.js (TypeScript) | Node.js | Python (Typer) |
 | **创建沙箱** | `abx create` | `e2b sandbox create` | N/A（代码驱动） |
 | **列出沙箱** | `abx sandbox list` | `e2b sandbox list` | `modal container list` |

@@ -6,8 +6,6 @@
 
 <!-- badges -->
 [![CI](https://github.com/alibaba-agent-sandbox/python-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/alibaba-agent-sandbox/python-sdk/actions/workflows/ci.yml)
-[![PyPI version](https://img.shields.io/pypi/v/agent-sandbox-client)](https://pypi.org/project/agent-sandbox-client/)
-[![Python 3.10+](https://img.shields.io/pypi/pyversions/agent-sandbox-client)](https://pypi.org/project/agent-sandbox-client/)
 [![License](https://img.shields.io/github/license/agent-sandbox/python-sdk)](LICENSE)
 
 > 为 AI Agent 打造的云沙箱 —— 秒级创建、执行、管理隔离环境。
@@ -15,7 +13,7 @@
 **Agent Sandbox** 是沙箱的 Python SDK。默认提供方是阿里云极速版（`alicloud-express`，函数计算）。OpenSandbox、容器版、CubeSandbox 和 E2B 都是 `awesome-providers` 里的目录 `node` 插件（`provider.mjs`）。用 `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes`（或 `python -m agent_sandbox.providers install registry:<id> --yes`）安装。装好之后，`abx --provider <id>` 和 `ProviderSandbox.create(provider="<id>")` 都能用。Python SDK 通过本机引擎（`abx provider engine serve`；`abx` 在 `PATH` 里或由 `ABX_BIN` 指定）使用 `node` 提供方。CLI 加载极速版，以及已安装的 `node`、`exec` 和 `rest` 插件。标准接口包含同步／异步运行时和 Template 客户端；项目 Provider／Server 模板流程通过 CLI 的 `abx template build|deploy` 完成。SDK 的方法名参考了 E2B，
 方便 E2B 代码迁移，标准接口遵循阿里云支持版本的行为契约（见[从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md)）。
 
-本仓库（`python-sdk`）包含 **Python SDK**，以两个版本同步发布的 PyPI 分发包提供。命令行工具 `abx` 是独立的
+本仓库（`python-sdk`）包含 **Python SDK**，以两个版本同步的分发包提供。命令行工具 `abx` 是独立的
 Node.js 项目，位于 [`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) 仓库（见[相关：abx CLI](#相关abx-cli)）。
 
 | 目录 | PyPI 分发包 | 导入路径 | 用途 |
@@ -41,6 +39,8 @@ Node.js 项目，位于 [`cli`](https://github.com/alibaba-agent-sandbox/agent-s
 
 ---
 
+提供方管理操作通过 `agent_sandbox.providers.commands` 调用，参阅[提供方命令指南](docs/zh/guide/provider-commands.md)。
+
 ## Client SDK
 
 - **同步与异步标准客户端** —— `Sandbox.create()` 与 `AsyncSandbox.create()`，Shell 执行、代码解释、文件读写、端口转发与 WebSocket 流；Provider／Server 扩展使用异步 `ProviderSandbox`。
@@ -59,31 +59,37 @@ Node.js 项目，位于 [`cli`](https://github.com/alibaba-agent-sandbox/agent-s
 
 ## 安装
 
+当前0.3.0尚未上 PyPI，使用[配套源码安装指南](docs/zh/guide/install-python.md)，两个源码 URL 必须固定同一提交。
+
 ```bash
 # 仅核心客户端 SDK
-pip install agent-sandbox-client
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 
 # 完整安装（MCP + 快速 JSON + 会话 + 声明式 + server）
-pip install "agent-sandbox-client[all]"
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 
 # 容器侧运行时（安装到你的沙箱镜像内）
-pip install agent-sandbox-server
+python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk"
 pip install playwright                       # 仅在启用 browser 能力组时需要
 
 # 开发环境（在仓库根目录执行；含两个包的测试与 lint 工具）
 pip install -e ./server-sdk -e "./client-sdk[dev]"
 ```
 
-不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。安装本客户端请使用 `pip install agent-sandbox-client`。
+不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。安装本客户端请使用 [配套源码安装指南](docs/zh/guide/install-python.md)。
 
-`agent-sandbox-client` 依赖同版本的 `agent-sandbox-server`，因此 `pip install agent-sandbox-client` 同样会提供 `agent_sandbox.server`（`@sandbox` 装饰器的 server 代理在本地需要它）。`[server]` extra 作为无害的别名保留。
+`agent-sandbox-client` 依赖同版本的 `agent-sandbox-server`，因此 [配套源码安装指南](docs/zh/guide/install-python.md) 同样会提供 `agent_sandbox.server`（`@sandbox` 装饰器的 server 代理在本地需要它）。`[server]` extra 作为无害的别名保留。
 
 `abx` CLI 不再属于 Python 包（不再有 `[cli]` extra，也没有 `abx` 控制台脚本），由
 [`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) 仓库分发（见[相关：abx CLI](#相关abx-cli)）。
 
 ## 快速开始
 
-配置 `E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN`，按[迁移指南](docs/zh/guide/migrate-from-e2b.md)替换 E2B 导入。
+配置 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL`、`ABX_SANDBOX_DOMAIN`，按[迁移指南](docs/zh/guide/migrate-from-e2b.md)替换 E2B 导入。
 
 ```python
 from agent_sandbox.code_interpreter import Sandbox
@@ -99,7 +105,7 @@ finally:
 ## Provider 与 Server 扩展
 
 
-第一次创建之前先设置 `E2B_API_KEY`。SDK 读取这三个标准连接变量。下面的例子用 `python-base`，因为这张镜像注册了 `hello`。不传 template 的 `Sandbox.create()` 使用 `base`。
+第一次创建之前先设置 `ABX_SANDBOX_API_KEY`。SDK 读取这三个标准连接变量。下面的例子用 `python-base`，因为这张镜像注册了 `hello`。不传 template 的 `Sandbox.create()` 使用 `base`。
 
 ```python
 import asyncio
@@ -168,7 +174,7 @@ graph TB
     L4["L4 Declarative — @sandbox 装饰器"]
     L3["L3 API — Sandbox、Files、Code、Commands"]
     L2["L2 Protocol — envd REST + WebSocket"]
-    L1["L1 Transport — HTTP/2、API Key、AK/SK"]
+    L1["L1 Transport — HTTP/2、API Key、envd token"]
     GW["阿里云函数计算 FC"]
 
     L5 --> L4 --> L3 --> L2 --> L1 --> GW
@@ -236,7 +242,7 @@ graph TB
 与本 SDK 共享沙箱、模板与凭证。其安装方式、命令参考、教程、MCP Server 命令以及 Agent Skill（`SKILL.md`）
 均在该仓库中维护：
 
-- [CLI README](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/README.zh-CN.md) —— 安装（`npm install -g @agent-sandbox/cli`）
+- [CLI README](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/README.zh-CN.md) —— 安装（[CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)）
 - [CLI 教程](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/cli-tutorial.md) · [CLI 参考](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/cli-reference.md)
 - [Agent Skill 安装与分发](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/agent-skill-installation.md)
 
@@ -247,3 +253,5 @@ graph TB
 ## 许可证
 
 [Apache-2.0](LICENSE) —— 版权信息见 [`NOTICE`](NOTICE)。
+
+[内置运行通道与 Python 引擎迁移](docs/zh/design/builtin-data-plane.md).

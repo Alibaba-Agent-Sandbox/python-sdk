@@ -14,16 +14,20 @@ Examples are split by which package they exercise.
 
 ```bash
 # Full install (recommended — includes the declarative decorator, MCP server, ...)
-pip install "agent-sandbox-client[all]"
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 
 # Or install selectively
-pip install "agent-sandbox-client[declarative]"   # @sandbox decorator only
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[declarative] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 
 # From source (run from the python-sdk repository root)
 pip install -e ./server-sdk -e ./client-sdk
 
 # The abx CLI is a separate Node.js project (the `cli` repository)
-npm install -g @agent-sandbox/cli
+curl -fsSL https://raw.githubusercontent.com/Alibaba-Agent-Sandbox/agent-sandbox/main/install.sh | sh
 ```
 
 ### 2. Configure Credentials

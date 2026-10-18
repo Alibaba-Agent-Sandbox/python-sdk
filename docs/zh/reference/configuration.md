@@ -1,5 +1,7 @@
 # 配置参考
 
+本指南描述异步 `ProviderSandbox` 扩展；根级 `Sandbox` 和 `AsyncSandbox` 遵循固定版本的标准迁移契约，详见[从 E2B 迁移](../guide/migrate-from-e2b.md)。
+
 > **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
 本文档列出 Agent Sandbox 的所有配置项、环境变量、默认值和优先级规则。
@@ -29,13 +31,13 @@
 
 每项凭证在真正使用时都按上面的分层顺序解析。`abx config list` 会标出来源：`(env)`、`(user)`、`(default)` 或 `(not set)`。
 
-每个键只有一个名字。产品自己的设置用 `ABX_<KEY>`。厂商已经公布的变量就用那个变量：阿里云 AccessKey 是 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`，地域是 `ALIBABA_CLOUD_REGION_ID`，GitHub token 是 `GITHUB_TOKEN`。模板构建（`ACR_*`、`team_id`）和模板生成（`ABX_LLM_*`）的设置属于 `abx` CLI，见其[配置参考](https://github.com/alibaba-agent-sandbox/cli/blob/main/docs/zh/reference/configuration.md)；Python SDK 不读取它们。
+每个键只有一个名字。产品自己的设置用 `ABX_<KEY>`。厂商已经公布的变量就用那个变量：阿里云 AccessKey 是 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`，地域是 `ALIBABA_CLOUD_REGION_ID`，GitHub token 是 `GITHUB_TOKEN`。模板构建（`ACR_*`、`team_id`）和模板生成（`ABX_LLM_*`）的设置属于 `abx` CLI，见其[配置参考](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/configuration.md)；Python SDK 不读取它们。
 
 | 要用的值 | 键 | 环境变量 |
 |---|---|---|
-| 沙箱 API Key | `sandbox_api_key` | `E2B_API_KEY` |
-| 沙箱 API 地址 | `sandbox_base_url` | `E2B_API_URL` |
-| 数据平面域名 | `sandbox_domain` | `E2B_DOMAIN` |
+| 沙箱 API Key | `sandbox_api_key` | `ABX_SANDBOX_API_KEY` |
+| 沙箱 API 地址 | `sandbox_base_url` | `ABX_SANDBOX_BASE_URL` |
+| 数据平面域名 | `sandbox_domain` | `ABX_SANDBOX_DOMAIN` |
 | 地域 | `region` | `ALIBABA_CLOUD_REGION_ID` |
 | 阿里云 AK / SK | `access_key_id` / `access_key_secret` | `ALICLOUD_ACCESS_KEY_ID` / `ALICLOUD_ACCESS_KEY_SECRET` |
 | GitHub token | `github_token` | `GITHUB_TOKEN` |
@@ -48,7 +50,7 @@
 - `abx template install` / `abx template search`（GitHub token）
 - `abx mcp install`（写入编辑器配置的沙箱 API Key）
 
-`abx mcp install` 把 `E2B_API_KEY` 写入 Cursor 和 Claude 的配置。`E2B_API_URL` 和 `ALIBABA_CLOUD_REGION_ID` 只有在进程环境变量里设置了才会写进同一份文件。`abx mcp start` 会再次读取 `~/.abx`，所以用 `abx config set region` 保存的区域在编辑器启动 server 时仍然生效。
+`abx mcp install` 把 `ABX_SANDBOX_API_KEY` 写入 Cursor 和 Claude 的配置。`ABX_SANDBOX_BASE_URL` 和 `ALIBABA_CLOUD_REGION_ID` 只有在进程环境变量里设置了才会写进同一份文件。`abx mcp start` 会再次读取 `~/.abx`，所以用 `abx config set region` 保存的区域在编辑器启动 server 时仍然生效。
 
 `abx config list` 把进程环境变量标成 `(env)`，把 `./.env` 和 `~/.abx` 标成 `(user)`。表里命中的那一列就是命令真正会用的值。
 
@@ -60,6 +62,8 @@
 
 ---
 
+沙箱调用需要 `ABX_SANDBOX_API_KEY`；AK/SK 用于独立官方控制面，不能替代沙箱密钥。见[鉴权迁移](../guide/authentication.md)。
+
 ## 环境变量
 
 每一行都是该键唯一的环境变量。`abx config set` 写入同一个名字。
@@ -69,14 +73,14 @@
 | 环境变量 | 配置键 | 说明 |
 |---|---|---|
 | `ABX_PROVIDER` | `provider` | 默认提供方 id（默认 `alicloud-express`） |
-| `E2B_API_KEY` | `sandbox_api_key` | 沙箱 API Key |
-| `E2B_API_URL` | `sandbox_base_url` | 平台 API URL |
-| `E2B_DOMAIN` | `sandbox_domain` | 数据平面域名 |
+| `ABX_SANDBOX_API_KEY` | `sandbox_api_key` | 沙箱 API Key |
+| `ABX_SANDBOX_BASE_URL` | `sandbox_base_url` | 平台 API URL |
+| `ABX_SANDBOX_DOMAIN` | `sandbox_domain` | 数据平面域名 |
 | `ALIBABA_CLOUD_REGION_ID` | `region` | 内置提供方的区域 |
 | `ABX_HTTP_TIMEOUT` | `http_timeout` | HTTP 超时秒数 |
 | `ABX_HTTP2` | `http2` | 是否启用 HTTP/2 |
-| `ABX_MAX_RETRIES` | `max_retries` | 最大重试次数 |
-| `ABX_MAX_CONNECTIONS`、`ABX_MAX_KEEPALIVE_CONNECTIONS`、`ABX_KEEPALIVE_EXPIRY`、`ABX_WS_PING_INTERVAL`、`ABX_RETRY_BASE_DELAY` | 同名小写 | 连接池、保活、WebSocket 和退避调优 |
+| `ABX_MAX_RETRIES` | `max_retries` | 兼容保留值；内置 HTTP 不进行自动重试 |
+| `ABX_MAX_CONNECTIONS`、`ABX_MAX_KEEPALIVE_CONNECTIONS`、`ABX_KEEPALIVE_EXPIRY`、`ABX_WS_PING_INTERVAL` | 同名小写 | 连接池、保活和 WebSocket 调优 |
 | `ABX_LOG_LEVEL` | `log_level` | SDK 日志级别（默认 `WARNING`） |
 | `ABX_DEFAULT_TEMPLATE` | `default_template` | 默认模板（MCP server） |
 
@@ -101,7 +105,7 @@
 
 ### 每个键一个名字
 
-读取某个键时只看它那一个环境变量，保存时也用同一个名字。`abx config set sandbox_api_key` 把 `E2B_API_KEY` 写入 `~/.abx/.env`。`abx config set sandbox_base_url` 把 `sandbox_base_url` 写入 `[transport]`。`abx config set github_token` 写入 `GITHUB_TOKEN`。`abx config set region` 为内置提供方写入 `region`；该键的环境变量是 `ALIBABA_CLOUD_REGION_ID`。
+读取某个键时只看它那一个环境变量，保存时也用同一个名字。`abx config set sandbox_api_key` 把 `ABX_SANDBOX_API_KEY` 写入 `~/.abx/.env`。`abx config set sandbox_base_url` 把 `sandbox_base_url` 写入 `[transport]`。`abx config set github_token` 写入 `GITHUB_TOKEN`。`abx config set region` 为内置提供方写入 `region`；该键的环境变量是 `ALIBABA_CLOUD_REGION_ID`。
 
 ### Server 端环境变量
 
@@ -135,7 +139,7 @@ provider = "alicloud-express"   # 默认提供方（abx provider default NAME）
 sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
 sandbox_domain = "cn-hangzhou.e2b.fc.aliyuncs.com"
 http_timeout = 30.0
-max_retries = 3
+# 旧重试配置不会启用内置 HTTP 自动重试。
 
 [providers.alicloud-express]
 region = "cn-hangzhou"
@@ -144,7 +148,7 @@ region = "cn-hangzhou"
 endpoint = "https://sandbox.my-cloud.example"   # 该插件声明的键
 
 [shortcuts]
-init = "template init"          # 命令路径，不要写成 "abx template scaffold"
+init = "template init"          # 命令路径，不要写成 "abx template init"
 ps   = "sandbox process list"
 ```
 
@@ -172,8 +176,8 @@ ps   = "sandbox process list"
 | `keepalive_expiry` | `float` | `30.0` | 保活连接过期时间（秒） |
 | `http2` | `bool` | `True` | 是否启用 HTTP/2 |
 | `ws_ping_interval` | `float` | `30.0` | WebSocket ping 间隔（秒） |
-| `max_retries` | `int` | `3` | 最大重试次数 |
-| `retry_base_delay` | `float` | `1.0` | 重试基础延迟（秒） |
+| `max_retries` | `int` | `3` | 兼容保留值；内置 HTTP 不进行自动重试 |
+| `retry_base_delay` | `float` | `1.0` | 兼容保留值；内置 HTTP 不使用该值 |
 
 构造函数和 `load_config(...)` 使用这些字段名。
 
@@ -193,7 +197,7 @@ sandbox_domain   = "{region}.e2b.fc.aliyuncs.com"
 ```python
 from agent_sandbox.transport.config import explain_config
 
-explain_config()   # {"sandbox_api_key": {"value": "****3dc1", "source": "environ", "name": "E2B_API_KEY", "secret": True}, ...}
+explain_config()   # {"sandbox_api_key": {"value": "****3dc1", "source": "environ", "name": "ABX_SANDBOX_API_KEY", "secret": True}, ...}
 ```
 
 `explain_config()` 告诉你每个键由哪一层（`override`、`environ`、`dotenv`、`toml`、`derived`、`default`）的哪个变量决定，密钥已脱敏。`name` 就是该键唯一的环境变量。
@@ -232,12 +236,12 @@ SDK 会读取这两个 `.env`，每个文件各自是一层，所以按键合并
 `.env` 文件格式。每个键使用它那一个变量：
 
 ```bash
-E2B_API_KEY=your-api-key
+ABX_SANDBOX_API_KEY=your-api-key
 ALIBABA_CLOUD_REGION_ID=cn-beijing
 ABX_PROVIDER=alicloud-express
 ```
 
-`abx config set sandbox_api_key <KEY>` 命令将 API Key 以 `E2B_API_KEY` 保存到 `~/.abx/.env`（文件权限 600）。`github_token` 存为 `GITHUB_TOKEN`。AccessKey 存为 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。
+`abx config set sandbox_api_key <KEY>` 命令将 API Key 以 `ABX_SANDBOX_API_KEY` 保存到 `~/.abx/.env`（文件权限 600）。`github_token` 存为 `GITHUB_TOKEN`。AccessKey 存为 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。
 
 ---
 
@@ -257,3 +261,14 @@ ABX_PROVIDER=alicloud-express
 ## 相关：abx CLI
 
 从命令行读写这些配置属于 CLI 功能：`abx config list|get|set|init`、`abx config get|set` 接受的键，以及显示变量 `ABX_ACTIVITY_LINES`。它们记录在 CLI 仓库：[CLI 配置参考](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/configuration.md)；面向 provider 的键见其 [Provider 与凭证 CLI 规格](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/design/providers-and-credentials-cli.md)。
+
+### 旧重试配置的兼容边界
+
+`max_retries`（默认3）与 `retry_base_delay`（默认1.0）及其既有环境变量/TOML
+名称继续作为配置和扩展契约的兼容值保留。内置平台/envd HTTP 传输不读取这两个值，
+每次只执行一次传输尝试；设置它们不会启用自动重试或退避。EPP 连接仍转发
+`max_retries`，插件如何解释由插件决定，不代表内置传输提供重试保证。
+
+提供方引擎重新发现/读取恢复、显式自定义认证刷新是独立机制，不受这些字段控制。
+应用需要重试时应对安全读取使用有界策略；写操作结果未知时先核对远端状态，再决定
+是否重新执行。保留旧配置名称不会引入自动重试功能。

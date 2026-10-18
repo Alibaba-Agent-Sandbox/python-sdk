@@ -22,7 +22,7 @@ This repository holds the Python SDK as two lock-step PyPI distributions — `ag
 
 ```bash
 pip install agent-sandbox-client
-export E2B_API_KEY=your-api-key
+export ABX_SANDBOX_API_KEY=your-api-key
 ```
 
 ```python
@@ -34,6 +34,8 @@ async with await Sandbox.create(template="base") as sb:
 ```
 
 ---
+
+Current builtin runtime: [direct HTTP and migration](design/builtin-data-plane.md).
 
 ## Architecture Overview
 

@@ -1,5 +1,7 @@
 # 快速入门
 
+当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+
 这是 **Client SDK**：在你的机器上安装、创建并使用沙箱。要写进镜像、在沙箱里启动的服务见 [Server SDK](server-sdk.md)。
 
 本教程覆盖从安装到销毁的完整生命周期。
@@ -16,16 +18,20 @@
 
 ```bash
 # 安装 SDK
-pip install agent-sandbox-client
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 
 # 安装全部额外依赖（推荐）
-pip install "agent-sandbox-client[all]"
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 ```
 
 不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。
 
 `abx` CLI 不属于 Python 包（没有 `[cli]` extra），它是独立的 Node.js 项目，见[相关：abx CLI](#相关abx-cli)。容器侧运行时（`agent_sandbox.server`）是独立的
-`agent-sandbox-server` 包（`pip install agent-sandbox-server`）；`agent-sandbox-client` 依赖它，安装客户端时会一并安装。
+`agent-sandbox-server` 包（[配套源码安装指南](install-python.md)）；`agent-sandbox-client` 依赖它，安装客户端时会一并安装。
 
 ### 从源码检出目录开发
 

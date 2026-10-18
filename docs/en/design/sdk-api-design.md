@@ -142,7 +142,7 @@ Code parameters > Environment variables > .env file > ~/.abx/config.toml > Defau
 ```
 
 ```bash
-export E2B_API_KEY=your-api-key        # primary credential
+export ABX_SANDBOX_API_KEY=your-api-key        # primary credential
 export ALICLOUD_ACCESS_KEY_ID=your-ak          # optional AK/SK pair
 export ALICLOUD_ACCESS_KEY_SECRET=your-sk
 ```

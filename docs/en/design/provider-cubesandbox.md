@@ -16,7 +16,7 @@ The control-plane paths were read from [openapi.yml](https://github.com/TencentC
 
 The default origin uses port 3000 because the Cube Python SDK README sets `CUBE_API_URL` to `http://127.0.0.1:3000`. Pass `provider_options={"base_url": "..."}` to override it. The value is the CubeAPI origin with no path prefix. Requests go to `/sandboxes`, not `/cubeapi/v1/sandboxes`.
 
-When `api_key` is set, the client sends `X-API-Key`. When it is unset, the client sends no auth header. Local CubeAPI accepts that. This provider does not read `E2B_API_KEY`. That variable is the Alibaba Cloud Express key.
+When `api_key` is set, the client sends `X-API-Key`. When it is unset, the client sends no auth header. Local CubeAPI accepts that. This provider does not read `ABX_SANDBOX_API_KEY`. That variable is the Alibaba Cloud Express key.
 
 `domain` is the suffix in port hosts `{port}-{sandboxID}.{domain}`.
 

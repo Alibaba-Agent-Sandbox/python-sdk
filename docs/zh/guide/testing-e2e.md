@@ -8,7 +8,7 @@ Python SDK(`agent-sandbox-client`)与沙箱内服务(`agent-sandbox-server`)如�
 
 | 层 | 工具 | 真实组件? | 凭据 | 典型耗时 |
 |---|---|---|---|---|
-| 单元测试 | `make test`(`client-sdk/tests`、`server-sdk/tests` 下的 pytest) | 否(mock) | 无 | 几秒 |
+| 单元/组件测试 | `make test`（两个包的 pytest） | 逻辑 mock 与真实本地 HTTP/PTY 夹具 | 无 | 几秒至几分钟 |
 | 真实云 E2E | `make e2e` | **是**:真实平台、envd、沙箱内服务 | `.env` 或环境变量 | 约 8 分钟 |
 | 含慢速用例的 E2E | `make e2e-all` | **是** | 相同 | 更久 |
 
@@ -41,3 +41,15 @@ make e2e-cleanup         # 清理遗留资源的 dry-run janitor;ARGS=--yes 才�
 ## 云上示例练习
 
 测试套件之外，按脚本在默认提供方上走一遍的说明见 [云上端到端练习](cloud-examples.md)。Agents API 的完整案例不在那一页，见 [Agents API](agents-api.md)。
+
+## 本地 HTTP 与 PTY 夹具端口
+
+客户端组件夹具启动监听前会选择不同的 HTTP 与 PTY 端口候选。刚释放的临时端口可能被再次分配，候选重选有次数上限，并保留显式指定的 PTY 端口。这种本地分配重选不重放请求，也不替代真实云验收。确定性复用回归启动真实服务、检查两个监听器，再由正常夹具清理将它们停止。
+
+
+## 本地原始 HTTP 测试
+
+原始请求使用实际监听地址。测试夹具在原有期限内等待 HTTP 服务初始化，并读取完整的
+分帧响应。中间层可能在请求到达服务前拒绝故意构造的畸形 HTTP／WebSocket 流量；
+这类失败必须保留，并由托管 CI 执行原有断言。不得用跳过、扩大超时或改变代理策略
+代替协议覆盖。

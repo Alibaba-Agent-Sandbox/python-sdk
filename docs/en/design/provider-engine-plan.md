@@ -1,6 +1,6 @@
 # Provider engine: plan and adversarial verification
 
-> **Status: superseded for catalog providers.** The current design is the Node engine: HTTP, SSE and WebSocket on `127.0.0.1`, protocol `abx-engine/1`. See [cli/docs/en/reference/engine-api.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md) and [Node provider architecture](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/node-provider-architecture.md). The gRPC-on-a-Unix-socket proposal below is kept as history.
+> **Status: retired historical Python gRPC design.** The builtin provider now uses [direct HTTP](builtin-data-plane.md). Catalog Node plugins use the separate [Node engine](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md). The examples below are historical and are no longer supported commands.
 
 Status: plan, produced by a three-way review on 2026-10-14. The experimental slice is [provider-engine.md](provider-engine.md). Chinese: [provider-engine-plan.md](../../zh/design/provider-engine-plan.md).
 

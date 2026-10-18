@@ -54,3 +54,31 @@ The multi-agent review proposes [provider context and availability](notes/propos
 
 See the [multi-agent SDK verification](evidence/verify/2026-10-16-multi-agent-provider-review.md) for explicit-provider regressions, source-port maintenance gaps and remaining acceptance gates.
 - [Bounded MCP binary files](notes/implemented/feature/2026-10-16-mcp-binary-files.md) · [verification](evidence/verify/2026-10-16-mcp-binary-files.md)
+
+- [Provider portability and updates](notes/proposed/architecture/2026-10-18-provider-portability-updates.md) · [verification](evidence/verify/2026-10-18-provider-portability-updates.md)
+- [Independent template deployment metadata](notes/implemented/feature/2026-10-18-template-deploy-feature.md) · [verification](evidence/verify/2026-10-18-template-deploy-feature.md)
+
+- [Provider isolation verification](evidence/verify/2026-10-18-provider-complete-isolation.md)
+
+- [Explicit native engine routing verification](evidence/verify/2026-10-18-provider-explicit-engine-routing.md)
+
+Auth migration: [explicit sandbox API keys](notes/implemented/architecture/2026-10-18-data-plane-auth-contract.md).
+
+Accepted engine recovery: [avoid uncertain mutation replay](notes/implemented/architecture/2026-10-18-engine-write-replay.md).
+
+
+Configuration composition: [schema resolver](notes/implemented/architecture/2026-10-18-config-schema-composition.md).
+
+- [Legacy retry compatibility](notes/implemented/architecture/2026-10-18-retry-compatibility.md).
+Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-native-builtin-data-plane.md).
+
+- [Distinct local listener ports](notes/implemented/process/2026-10-18-distinct-local-server-ports.md).
+
+- [Current paired source installation](notes/proposed/process/2026-10-18-current-source-installation.md).
+
+- [Provider/main integration](notes/proposed/architecture/2026-10-18-provider-main-integration.md) · [verification](evidence/verify/2026-10-18-provider-main-integration.md)
+- [Current-host provider integration](evidence/verify/2026-10-18-provider-current-host-checkpoint.md)
+
+- [Provider port and file URL boundary checkpoint](evidence/verify/2026-10-18-provider-port-url-boundaries.md)
+
+- [Standard/provider convergence](notes/proposed/feature/2026-10-18-standard-provider-convergence.md) · [verification](evidence/verify/2026-10-18-standard-provider-convergence.md)

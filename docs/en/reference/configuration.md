@@ -1,5 +1,7 @@
 # Configuration Reference
 
+This guide describes asynchronous `ProviderSandbox` provider extensions. Root `Sandbox` and `AsyncSandbox` follow the pinned standard migration contract; see [Migrate from E2B](../guide/migrate-from-e2b.md).
+
 > **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
 This document lists all Agent Sandbox configuration options, environment variables, default values, and priority rules.
@@ -29,13 +31,13 @@ A blank or whitespace-only value does not count. It does not hide the next layer
 
 Every credential uses the layers above at the moment it is needed. `abx config list` shows the winner and labels it `(env)`, `(user)`, `(default)`, or `(not set)`.
 
-Each key has one name. Product settings use `ABX_<KEY>`. A vendor that already publishes a variable keeps that variable: Alibaba Cloud access keys are `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`, the region is `ALIBABA_CLOUD_REGION_ID`, and the GitHub token is `GITHUB_TOKEN`. Template build (`ACR_*`, `team_id`) and template generation (`ABX_LLM_*`) settings belong to the `abx` CLI and are listed in its [configuration reference](https://github.com/alibaba-agent-sandbox/cli/blob/main/docs/en/reference/configuration.md); the Python SDK does not read them.
+Each key has one name. Product settings use `ABX_<KEY>`. A vendor that already publishes a variable keeps that variable: Alibaba Cloud access keys are `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`, the region is `ALIBABA_CLOUD_REGION_ID`, and the GitHub token is `GITHUB_TOKEN`. Template build (`ACR_*`, `team_id`) and template generation (`ABX_LLM_*`) settings belong to the `abx` CLI and are listed in its [configuration reference](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/configuration.md); the Python SDK does not read them.
 
 | What you need | Key | Environment variable |
 |---|---|---|
-| Sandbox API key | `sandbox_api_key` | `E2B_API_KEY` |
-| Sandbox API base URL | `sandbox_base_url` | `E2B_API_URL` |
-| Data-plane domain | `sandbox_domain` | `E2B_DOMAIN` |
+| Sandbox API key | `sandbox_api_key` | `ABX_SANDBOX_API_KEY` |
+| Sandbox API base URL | `sandbox_base_url` | `ABX_SANDBOX_BASE_URL` |
+| Data-plane domain | `sandbox_domain` | `ABX_SANDBOX_DOMAIN` |
 | Region | `region` | `ALIBABA_CLOUD_REGION_ID` |
 | Alibaba Cloud AK / SK | `access_key_id` / `access_key_secret` | `ALICLOUD_ACCESS_KEY_ID` / `ALICLOUD_ACCESS_KEY_SECRET` |
 | GitHub token | `github_token` | `GITHUB_TOKEN` |
@@ -48,7 +50,7 @@ The same chain is what these calls read:
 - `abx template install` / `abx template search` (GitHub token)
 - `abx mcp install` (the sandbox API key copied into the editor config)
 
-`abx mcp install` writes `E2B_API_KEY` into the Cursor and Claude config. `E2B_API_URL` and `ALIBABA_CLOUD_REGION_ID` are copied into the same file only when the process environment sets them. `abx mcp start` loads `~/.abx` again, so a region saved with `abx config set region` still applies when the editor starts the server.
+`abx mcp install` writes `ABX_SANDBOX_API_KEY` into the Cursor and Claude config. `ABX_SANDBOX_BASE_URL` and `ALIBABA_CLOUD_REGION_ID` are copied into the same file only when the process environment sets them. `abx mcp start` loads `~/.abx` again, so a region saved with `abx config set region` still applies when the editor starts the server.
 
 `abx config list` marks a process variable as `(env)` and either file as `(user)`. The value in the table is the one the command will use.
 
@@ -60,6 +62,8 @@ Resolving for provider `P` never reads `ABX_<Q>_*` or `[providers.Q]` for anothe
 
 ---
 
+Sandbox calls require `ABX_SANDBOX_API_KEY`; AK/SK settings configure separate official control-plane operations and cannot substitute for it. See [authentication migration](../guide/authentication.md).
+
 ## Environment Variables
 
 Each row is the only environment variable for that key. `abx config set` writes that same name.
@@ -69,14 +73,14 @@ Each row is the only environment variable for that key. `abx config set` writes 
 | Environment variable | Config key | Description |
 |---|---|---|
 | `ABX_PROVIDER` | `provider` | Default provider id (default `alicloud-express`) |
-| `E2B_API_KEY` | `sandbox_api_key` | Sandbox API key |
-| `E2B_API_URL` | `sandbox_base_url` | Platform API URL |
-| `E2B_DOMAIN` | `sandbox_domain` | Data-plane domain |
+| `ABX_SANDBOX_API_KEY` | `sandbox_api_key` | Sandbox API key |
+| `ABX_SANDBOX_BASE_URL` | `sandbox_base_url` | Platform API URL |
+| `ABX_SANDBOX_DOMAIN` | `sandbox_domain` | Data-plane domain |
 | `ALIBABA_CLOUD_REGION_ID` | `region` | Region of the built-in provider |
 | `ABX_HTTP_TIMEOUT` | `http_timeout` | HTTP timeout in seconds |
 | `ABX_HTTP2` | `http2` | HTTP/2 on or off |
-| `ABX_MAX_RETRIES` | `max_retries` | Maximum retry count |
-| `ABX_MAX_CONNECTIONS`, `ABX_MAX_KEEPALIVE_CONNECTIONS`, `ABX_KEEPALIVE_EXPIRY`, `ABX_WS_PING_INTERVAL`, `ABX_RETRY_BASE_DELAY` | same names, lower case | Pool, keep-alive, WebSocket and back-off tuning |
+| `ABX_MAX_RETRIES` | `max_retries` | Legacy compatibility value; builtin HTTP does not retry |
+| `ABX_MAX_CONNECTIONS`, `ABX_MAX_KEEPALIVE_CONNECTIONS`, `ABX_KEEPALIVE_EXPIRY`, `ABX_WS_PING_INTERVAL` | same names, lower case | Pool, keep-alive and WebSocket tuning |
 | `ABX_LOG_LEVEL` | `log_level` | SDK log level (default `WARNING`) |
 | `ABX_DEFAULT_TEMPLATE` | `default_template` | Default template (MCP server) |
 
@@ -101,7 +105,7 @@ The SDK field for the sandbox key is `sandbox_api_key`. The SDK field for the ba
 
 ### One name per key
 
-A key is read from its one environment variable and stored under that same name. `abx config set sandbox_api_key` writes `E2B_API_KEY` to `~/.abx/.env`. `abx config set sandbox_base_url` writes `sandbox_base_url` in `[transport]`. `abx config set github_token` writes `GITHUB_TOKEN`. `abx config set region` writes `region` for the built-in provider; the environment variable for that key is `ALIBABA_CLOUD_REGION_ID`.
+A key is read from its one environment variable and stored under that same name. `abx config set sandbox_api_key` writes `ABX_SANDBOX_API_KEY` to `~/.abx/.env`. `abx config set sandbox_base_url` writes `sandbox_base_url` in `[transport]`. `abx config set github_token` writes `GITHUB_TOKEN`. `abx config set region` writes `region` for the built-in provider; the environment variable for that key is `ALIBABA_CLOUD_REGION_ID`.
 
 ### Server-Side Environment Variables
 
@@ -135,7 +139,7 @@ provider = "alicloud-express"   # default provider (abx provider default NAME)
 sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
 sandbox_domain = "cn-hangzhou.e2b.fc.aliyuncs.com"
 http_timeout = 30.0
-max_retries = 3
+# Legacy retry values do not enable builtin HTTP retries.
 
 [providers.alicloud-express]
 region = "cn-hangzhou"
@@ -144,7 +148,7 @@ region = "cn-hangzhou"
 endpoint = "https://sandbox.my-cloud.example"   # key declared by that plugin
 
 [shortcuts]
-init = "template init"          # command path, not "abx template scaffold"
+init = "template init"          # command path, not "abx template init"
 ps   = "sandbox process list"
 ```
 
@@ -172,8 +176,8 @@ Lookup order for a key inside `config.toml`: `[providers.<id>].<key>`, then `[tr
 | `keepalive_expiry` | `float` | `30.0` | Keep-alive connection expiry (seconds) |
 | `http2` | `bool` | `True` | Whether to enable HTTP/2 |
 | `ws_ping_interval` | `float` | `30.0` | WebSocket ping interval (seconds) |
-| `max_retries` | `int` | `3` | Maximum retry count |
-| `retry_base_delay` | `float` | `1.0` | Retry base delay (seconds) |
+| `max_retries` | `int` | `3` | Legacy compatibility value; builtin HTTP does not retry |
+| `retry_base_delay` | `float` | `1.0` | Legacy compatibility value; builtin HTTP ignores it |
 
 The constructor and `load_config(...)` take these field names.
 
@@ -193,7 +197,7 @@ Values read from `.env` files or `config.toml` count as defaults, so a base URL 
 ```python
 from agent_sandbox.transport.config import explain_config
 
-explain_config()   # {"sandbox_api_key": {"value": "****3dc1", "source": "environ", "name": "E2B_API_KEY", "secret": True}, ...}
+explain_config()   # {"sandbox_api_key": {"value": "****3dc1", "source": "environ", "name": "ABX_SANDBOX_API_KEY", "secret": True}, ...}
 ```
 
 `explain_config()` tells you which layer (`override`, `environ`, `dotenv`, `toml`, `derived`, `default`) and which variable decided each key; secrets are masked. The `name` is the one environment variable for that key.
@@ -232,12 +236,12 @@ The SDK reads both `.env` files. Each is its own layer, so they merge per key:
 `.env` file format. Use the one variable for each key:
 
 ```bash
-E2B_API_KEY=your-api-key
+ABX_SANDBOX_API_KEY=your-api-key
 ALIBABA_CLOUD_REGION_ID=cn-beijing
 ABX_PROVIDER=alicloud-express
 ```
 
-The `abx config set sandbox_api_key <KEY>` command saves the API Key to `~/.abx/.env` as `E2B_API_KEY` (file permissions 600). `github_token` is stored as `GITHUB_TOKEN`. Access keys are stored as `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`.
+The `abx config set sandbox_api_key <KEY>` command saves the API Key to `~/.abx/.env` as `ABX_SANDBOX_API_KEY` (file permissions 600). `github_token` is stored as `GITHUB_TOKEN`. Access keys are stored as `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`.
 
 ---
 
@@ -257,3 +261,18 @@ The `abx config set sandbox_api_key <KEY>` command saves the API Key to `~/.abx/
 ## Related: the abx CLI
 
 Reading and writing this configuration from the command line is a CLI feature: `abx config list|get|set|init`, the keys accepted by `abx config get|set`, and the `ABX_ACTIVITY_LINES` display variable. They are documented in the CLI repository: [CLI Configuration](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/configuration.md); provider-aware keys are in its [Providers and credentials CLI spec](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/design/providers-and-credentials-cli.md).
+
+### Legacy retry compatibility
+
+`max_retries` (default3) and `retry_base_delay` (default1.0), including their
+existing environment/TOML names, remain accepted for configuration and extension
+compatibility. The builtin platform/envd HTTP transport does not use either
+value and performs one transport attempt. Setting them does not enable automatic
+retry or backoff. EPP connections still forward `max_retries`; a plugin's policy
+belongs to that plugin and is not a builtin transport guarantee.
+
+Provider-engine rediscovery/read recovery and explicit custom authentication
+refresh are separate mechanisms, not controlled by these settings. Applications
+that need retries must use a bounded policy for safe reads; reconcile an unknown
+write outcome before issuing the mutation again. No automatic retry feature is
+introduced by retaining the legacy configuration names.

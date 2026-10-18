@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from agent_sandbox.providers.manifest import Manifest
-    from agent_sandbox.transport.auth import EnvdTokenManager
+    from agent_sandbox.providers.shared.e2b.auth import EnvdTokenManager
     from agent_sandbox.transport.config import TransportConfig
 
 _SCHEME = "engine://"
@@ -514,6 +514,13 @@ class EngineProvider(Provider):
         if "sandbox_domain" in self.inherit and config.sandbox_domain:
             connection["domain"] = config.sandbox_domain
         return connection
+
+    async def prepare_session(
+        self, infra: ProviderInfra, info: Any, *, operation: str, template: str
+    ) -> dict[str, Any]:
+        from agent_sandbox.providers.shared.e2b.session import prepare_session
+
+        return await prepare_session(self, info)
 
     async def build_infra(self, config: TransportConfig) -> ProviderInfra:
         self.validate_config(config)

@@ -1,5 +1,7 @@
 # 提供方（Providers）
 
+本指南描述异步 `ProviderSandbox` 扩展；根级 `Sandbox` 和 `AsyncSandbox` 遵循固定版本的标准迁移契约，详见[从 E2B 迁移](migrate-from-e2b.md)。
+
 > **说明：** 本页的 `abx provider ...` 命令由 `cli` 仓库中的 Node.js CLI 提供。只用 Python 的用户可以用 `python -m agent_sandbox.providers ...` 完成同样的操作。两者使用相同的安装目录、相同的回执和相同的目录树摘要。
 
 **提供方**就是一个沙箱后端。SDK 和 CLI 只内置 `alicloud-express`。其余提供方用 `python -m agent_sandbox.providers install registry:<id> --yes` 安装，索引是 `https://registry.agent-sandbox.cn/providers/index.json`。启动时会在后台对照这份索引检查更新，结果写到 `~/.abx/providers/updates.json`。`ABX_PROVIDER_UPDATE_CHECK=0` 关掉检查。`ABX_PROVIDER_REGISTRY` 可以改索引地址。官网是 <https://www.agent-sandbox.com>。提供方注册站是 <https://registry.agent-sandbox.com>。
@@ -17,15 +19,27 @@
 | Id | 怎么用 |
 |---|---|
 | `opensandbox` | [OpenSandbox 提供方](../design/provider-opensandbox-mapping.md)。HTTP 由加载 `provider.mjs` 的 Node 宿主进程发出。`ABX_OPENSANDBOX_BASE_URL` 默认 `http://127.0.0.1:8080`。 |
-| `alicloud-container` | [容器版](../design/provider-alicloud-container.md)。需要 `ABX_ALICLOUD_CONTAINER_DOMAIN`。不读取 `E2B_API_KEY`。 |
+| `alicloud-container` | [容器版](../design/provider-alicloud-container.md)。需要 `ABX_ALICLOUD_CONTAINER_DOMAIN`。不读取 `ABX_SANDBOX_API_KEY`。 |
 | `cubesandbox` | [CubeSandbox 提供方](../design/provider-cubesandbox.md)。默认地址 `http://127.0.0.1:3000`。 |
-| `e2b` | [E2B 提供方](../design/provider-e2b.md)。密钥是 `ABX_E2B_API_KEY`。不读取 `E2B_API_KEY`，也不读取旧的 `ABX_SANDBOX_API_KEY`。 |
+| `e2b` | [E2B 提供方](../design/provider-e2b.md)。密钥是 `ABX_ABX_SANDBOX_API_KEY`。不读取 `ABX_SANDBOX_API_KEY`，也不读取 `ABX_SANDBOX_API_KEY`。 |
 
 还没有后端的三个提供方，逻辑上能不能用，写在 [可用性审查](../design/provider-readiness.md)。让代理写一个新的提供方插件，用技能 `agent-sandbox-provider`（`agent-sandbox-provider/SKILL.md`）。
 
 如果你从不接触提供方，一切照旧：每个命令、每种输出和每个环境变量的行为都和以前一样。id `alicloud-express` 是稳定的，只有显示名称可能改变。
 
 ---
+
+## 引擎恢复与结果未知
+
+对于 Node 提供方插件，Python SDK 只会在 `GET`、`HEAD` 发生传输故障时重新
+发现本机引擎并重试一次。读取流也只能在产出第一个事件之前恢复。创建、执行、
+上传等变更操作在连接故障后不会自动重放，即使还没有收到响应或 SSE 事件；
+引擎可能已经完成了操作。
+
+这类故障会抛出 `ProviderProtocolError`（E8020），说明操作结果未知。请先检查
+所选提供方的沙箱列表或命令状态，再决定是否重试；直接重试可能重复创建资源
+或重复执行命令。明确收到引擎 HTTP 401 拒绝时，仍可以重新发现引擎一次，
+因为鉴权在操作分发之前拒绝了请求。这不代表幂等或自动回滚保证。
 
 ## 选择提供方
 
@@ -137,12 +151,13 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 | `pty` | 交互式终端 |
 | `files.rw`、`files.watch`、`files.transfer` | 读、写、列出、移动、删除；监听；带签名的上传和下载 URL |
 | `code.interpret` | 有状态的代码上下文 |
-| `templates.read`、`templates.build` | 列出和查看模板；构建、部署和删除模板 |
+| `templates.read`、`templates.build` | 列出和查看模板；原有镜像构建、部署和删除 |
+| `templates.deploy` | 显式声明通过提供方模板工厂部署现有镜像 |
 | `ports.url`、`ports.domain` | 端口的公网 URL；自定义域名 |
 | `storage.mount`、`network.vpc` | 对象存储挂载；VPC 接入 |
 | `sessions` | 沙箱在进程结束后仍存在，可按 id 重新连接 |
 
-`alicloud-express` 明确声明自身的 15 项适配能力；当前适配器未实现通用挂载/VPC/自定义域名操作。注册本身不能证明 API 可调用、CLI 入口已接通或当前运行时/账号实际可用。`abx provider list` 用一行显示每个提供方声明的特性（`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`；`python -m agent_sandbox.providers list` 输出相同），`abx provider info <id>` 显示完整清单。
+`templates.deploy` 是独立的 manifest 声明，`templates.build` 不会隐含启用它。内置 `alicloud-express` 保留原有 18 个声明，不声明 `templates.deploy`。本 SDK 接受该元数据，不新增 Python 模板部署方法；工厂分发由 CLI 负责。`abx provider list` 用一行显示每个提供方声明的特性（`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`；`python -m agent_sandbox.providers list` 输出相同），`abx provider info <id>` 显示完整清单。
 
 清单里的特性标志在运行时对每一种提供方都会被强制执行：
 
@@ -163,7 +178,7 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 |---|---|---|
 | `sandbox.lifecycle` | `Sandbox.create`、`connect`、`list`、`kill`、`info` | `create`、`list`、`info`、`kill`、`connect` |
 | `sandbox.timeout` | `set_timeout` | `sandbox timeout` |
-| `sandbox.pause` | `pause`、`resume` | 仅极速版标准 CLI；通用 Provider CLI 入口尚未接入 |
+| `sandbox.pause` | `pause`、`resume` | `sandbox pause`、`sandbox resume` |
 | `exec.run` | `commands.run`、`sandbox.run` | `exec`、`run` |
 | `exec.stream` | `commands.stream` | `exec --stream` |
 | `process.manage` | `commands.list`、`kill`、`send_stdin` | `sandbox process ...` |
@@ -200,7 +215,7 @@ await sb.kill()
 
 ### 扩展能力
 
-上面 18 个 feature id 是工具的公共面。提供方在这之外的操作登记到 `Provider.extensions`。它们不进 `features`，所以 `provider list` 的一行摘要里没有，别的提供方也不会带上。
+上面的 feature id 是工具的公共面。提供方在这之外的操作登记到 `Provider.extensions`。它们不进 `features`，所以 `provider list` 的一行摘要里没有，别的提供方也不会带上。
 
 `describe()["extensions"]` 始终给出该提供方的全部登记。`extensions_for(sandbox_id=...)` 只给出这个沙箱满足条件的项：`code` 只在镜像名包含 `code-interpreter` 时出现，`networkpolicy` 只在创建时要了 egress 时出现，`command.logs` 只在已经有命令 id 时出现。`implemented=False` 的项在这些条件下可见，`require_extension` 仍然返回 `E8004`。早先的 Python 版 OpenSandbox 提供方这样登记了 `code`、`session`、`command.logs`、`snapshot`、`networkpolicy`、`metadata.patch`、`diagnostics`、`metrics`。现行目录提供方是 `kind = "node"`（`EngineProvider`），它的 `extensions` 是空的。
 
@@ -291,7 +306,7 @@ OpenSandbox 是 [awesome-providers/opensandbox](https://github.com/alibaba-agent
 
 每个提供方有自己作用域的键：环境变量或 `.env` 里是 `ABX_<PROVIDER>_<KEY>`，`config.toml` 里是 `[providers.<id>]`，SDK 里是 `provider_options={...}`。提供方只会在 `initialize` 请求里收到其清单声明的键。密钥绝不会放进插件的 argv 或环境变量。
 
-通用键 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`（`E2B_API_KEY` 和 `E2B_API_URL`）属于内置提供方。只有当插件清单在 `[core] inherit` 里列出它们，**并且**你在安装或更新时同意了，插件才能拿到。同意界面会列出这些键的名字。你的 LLM、GitHub 和 MCP 键永远不会交给提供方。
+通用键 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`（`ABX_SANDBOX_API_KEY` 和 `ABX_SANDBOX_BASE_URL`）属于内置提供方。只有当插件清单在 `[core] inherit` 里列出它们，**并且**你在安装或更新时同意了，插件才能拿到。同意界面会列出这些键的名字。你的 LLM、GitHub 和 MCP 键永远不会交给提供方。
 
 ### 宿主如何处理插件进程
 
@@ -382,9 +397,3 @@ register_provider(MyProvider())
 - [配置参考](../reference/configuration.md) —— 名称、别名、优先级
 - [认证详解](authentication.md)
 - [设计：提供方与凭证](../design/providers-and-credentials.md)
-
-## 标准客户端与 Provider 归属
-
-根入口 Sandbox/AsyncSandbox 和 code_interpreter 是固定的 E2B 协议 API；ABX_PROVIDER 不会把它们变成 OpenSandbox 客户端。安装型 Provider 使用 ProviderSandbox。它保留带前缀资源的归属：未知前缀在请求前返回 E8001，空沙箱 ID 返回 E8002，显式 Provider 冲突返回 E8030。不支持的能力应返回 E8004，不能回退极速版。
-
-内置适配器明确声明已实现能力，增加全局能力不会自动让极速版支持它。当前适配器没有实现 storage.mount、network.vpc、ports.domain 通用沙箱操作；这是客户端边界，不代表阿里云缺少存储或 VPC 能力。即使方法已实现，账号、运行时和模板限制仍然存在。Provider 特有的类型化管理命令是尚未合并的独立工作：https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/38 和 https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/pull/35；注册还需要真实 handler 和后端验证。

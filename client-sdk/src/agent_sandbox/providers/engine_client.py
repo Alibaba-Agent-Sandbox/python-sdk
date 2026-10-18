@@ -109,6 +109,7 @@ async def _healthy(record: EngineRecord) -> bool:
 
 
 _GONE = (httpx.ConnectError, httpx.RemoteProtocolError, httpx.ReadError, httpx.WriteError)
+_REPLAY_SAFE = frozenset({"GET", "HEAD"})
 _start_locks: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Lock] = (
     weakref.WeakKeyDictionary()
 )
@@ -218,15 +219,16 @@ class EngineClient:
         params: dict[str, Any] | None = None,
         timeout: float | None = None,
         connection: dict[str, Any] | None = None,
+        retry: bool = True,
     ) -> httpx.Response:
-        """Send one request; an engine that went away is found or started again once."""
+        """Recover safe reads once; never replay a mutation after transport failure."""
         extra: dict[str, str] = {}
         if connection is not None:
             extra["X-Abx-Connection"] = encode_connection(connection)
         if content is not None:
             extra["Content-Type"] = "application/octet-stream"
         last: Exception | None = None
-        for attempt in range(2):
+        for attempt in range(2 if retry else 1):
             record = await self._record_now(fresh=attempt > 0)
             try:
                 res = await self._http.request(
@@ -239,9 +241,11 @@ class EngineClient:
                     timeout=timeout,
                 )
             except _GONE as exc:
+                if method.upper() not in _REPLAY_SAFE:
+                    raise _unknown_outcome() from exc
                 last = exc
                 continue
-            if res.status_code == 401 and attempt == 0:
+            if res.status_code == 401 and attempt == 0 and retry:
                 continue
             return res
         raise ProviderProtocolError(f"The provider engine is not reachable: {last}")
@@ -256,7 +260,7 @@ class EngineClient:
     async def stream(
         self, method: str, path: str, *, json_body: Any = None, params: dict[str, Any] | None = None
     ) -> AsyncIterator[dict[str, Any]]:
-        """Server-sent events as dicts. An ``error`` event raises the SDK exception."""
+        """SSE dicts; only safe reads can recover before their first event."""
         record = await self._record_now()
         started = False
         for attempt in range(2):
@@ -289,6 +293,8 @@ class EngineClient:
                             event = "message"
                     return
             except _GONE as exc:
+                if method.upper() not in _REPLAY_SAFE:
+                    raise _unknown_outcome() from exc
                 if attempt == 1 or started:
                     raise ProviderProtocolError(
                         f"The provider engine is not reachable: {exc}"
@@ -307,6 +313,16 @@ class EngineClient:
             return await websockets.connect(url, **kwargs)
         except TypeError:  # websockets < 14 names the argument extra_headers
             return await websockets.connect(url, extra_headers=headers)
+
+
+def _unknown_outcome() -> ProviderProtocolError:
+    return ProviderProtocolError(
+        "The provider engine connection failed; the operation outcome is unknown.",
+        suggestion=(
+            "The request was not automatically repeated. Inspect the provider's sandbox list "
+            "or command state before retrying to avoid duplicate resources or execution."
+        ),
+    )
 
 
 def _json_or_none(res: httpx.Response) -> Any:

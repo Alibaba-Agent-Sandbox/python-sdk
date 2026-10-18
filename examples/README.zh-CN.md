@@ -14,16 +14,20 @@
 
 ```bash
 # 完整安装（推荐，包含声明式装饰器、MCP 服务等）
-pip install "agent-sandbox-client[all]"
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 
 # 或按需安装
-pip install "agent-sandbox-client[declarative]"   # 仅 @sandbox 装饰器
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[declarative] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 
 # 从源码安装（在 python-sdk 仓库根目录执行）
 pip install -e ./server-sdk -e ./client-sdk
 
 # abx CLI 是独立的 Node.js 项目（`cli` 仓库）
-npm install -g @agent-sandbox/cli
+curl -fsSL https://raw.githubusercontent.com/Alibaba-Agent-Sandbox/agent-sandbox/main/install.sh | sh
 ```
 
 ### 2. 配置凭证

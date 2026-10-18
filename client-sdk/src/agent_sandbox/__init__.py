@@ -470,3 +470,43 @@ __all__ = list(dict.fromkeys([*__all__, *_STANDARD_EXPORTS]))
 def __dir__() -> list[str]:
     """Expose lazy public symbols to normal module introspection."""
     return sorted(set(globals()) | set(__all__))
+
+
+def _resolve_provider_schema(provider_id: str) -> Any:
+    """Composition adapter; discovery stays lazy and outside transport."""
+    from agent_sandbox._provider_schema import ProviderSchema
+    from agent_sandbox.providers.bundled_config import bundled_config
+
+    metadata = bundled_config(provider_id)
+    if metadata is not None:
+        return ProviderSchema(
+            metadata["id"],
+            metadata["keys"],
+            metadata["inherit"],
+            dict(metadata["derive"]),
+            dict(metadata["endpoint_defaults"]),
+            legacy_fields=metadata["legacy_fields"],
+            omit_default_options=metadata["omit_default_options"],
+            legacy_url_builder=metadata["legacy_url_builder"],
+            legacy_port_factory=metadata["legacy_port_factory"],
+            legacy_pty_url_builder=metadata["legacy_pty_url_builder"],
+        )
+    from agent_sandbox.providers.registry import get_provider
+
+    provider = get_provider(provider_id)
+    return ProviderSchema(
+        provider.id,
+        provider.config_keys(),
+        frozenset(provider.inherit),
+        dict(provider.derive),
+        dict(getattr(provider, "endpoint_defaults", {}) or {}),
+        legacy_fields=frozenset(getattr(provider, "legacy_fields", ())),
+        omit_default_options=bool(getattr(provider, "omit_default_options", False)),
+        legacy_url_builder=getattr(provider, "legacy_session_url", None),
+    )
+
+
+from agent_sandbox._provider_schema import _set_resolver  # noqa: E402
+
+_set_resolver(_resolve_provider_schema)
+del _set_resolver

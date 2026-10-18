@@ -1,6 +1,10 @@
 # Environment Variables in Sandboxes
 
-> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
+This guide describes asynchronous `ProviderSandbox` provider extensions. Root `Sandbox` and `AsyncSandbox` follow the pinned standard migration contract; see [Migrate from E2B](migrate-from-e2b.md).
+
+For current SDK installation, use the [paired source installation guide](install-python.md).
+
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository ([CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
 This guide explains how environment variables work inside Agent Sandbox, covering the two distinct process scopes, injection methods, the direct-exec execution model, and recommended patterns.
 
@@ -53,7 +57,7 @@ sandbox = await Sandbox.create(
 **CLI:**
 
 ```bash
-abx create base --env DATABASE_URL=postgres://... --env APP_ENV=staging
+abx create --template base --env DATABASE_URL=postgres://... --env APP_ENV=staging
 ```
 
 **`@sandbox` decorator:**
@@ -266,7 +270,7 @@ result = await sandbox.run("my_handler")
 
 ## Client Configuration Variables Are Not Sandbox Variables
 
-The variables that configure the SDK and CLI on **your** machine (`E2B_API_KEY`, `ABX_PROVIDER`, `ALIBABA_CLOUD_REGION_ID`, ...) are read by the client and are never copied into a sandbox. To make a value visible inside a sandbox, pass it explicitly with `envs=` / `--env`. Each client setting has one variable. Names and precedence are in the [Configuration Reference](../reference/configuration.md#environment-variables).
+The variables that configure the SDK and CLI on **your** machine (`ABX_SANDBOX_API_KEY`, `ABX_PROVIDER`, `ALIBABA_CLOUD_REGION_ID`, ...) are read by the client and are never copied into a sandbox. To make a value visible inside a sandbox, pass it explicitly with `envs=` / `--env`. Each client setting has one variable. Names and precedence are in the [Configuration Reference](../reference/configuration.md#environment-variables).
 
 Two consequences:
 

@@ -74,35 +74,32 @@ def _resolution_inputs() -> list[dict[str, Any]]:
         }
 
     add("defaults only", S())
-    for name in ("E2B_API_KEY", "ABX_SANDBOX_API_KEY", "SANDBOX_API_KEY"):
+    for name in ("ABX_SANDBOX_API_KEY", "E2B_API_KEY", "SANDBOX_API_KEY"):
         add(f"{name} in process env", S(environ={name: "v-" + name}))
         add(f"{name} in dotenv", S(dotenv=[{name: "v-" + name}]))
     add(
-        "canonical beats retired names (env)",
-        S(environ={"SANDBOX_API_KEY": "l", "ABX_SANDBOX_API_KEY": "c", "E2B_API_KEY": "n"}),
+        "canonical beats compat beats legacy (env)",
+        S(environ={"SANDBOX_API_KEY": "l", "E2B_API_KEY": "c", "ABX_SANDBOX_API_KEY": "n"}),
     )
+    add("compat beats legacy (env)", S(environ={"SANDBOX_API_KEY": "l", "E2B_API_KEY": "c"}))
     add(
-        "retired names are ignored (env)",
-        S(environ={"SANDBOX_API_KEY": "l", "ABX_SANDBOX_API_KEY": "c"}),
-    )
-    add(
-        "retired env does not beat canonical dotenv",
+        "layer beats name: legacy env over canonical dotenv",
         S(
             environ={"SANDBOX_API_KEY": "legacy-env"},
-            dotenv=[{"E2B_API_KEY": "canon-dotenv"}],
+            dotenv=[{"ABX_SANDBOX_API_KEY": "canon-dotenv"}],
         ),
     )
-    add("override beats env", S(overrides={k: "ov"}, environ={"E2B_API_KEY": "env"}))
+    add("override beats env", S(overrides={k: "ov"}, environ={"ABX_SANDBOX_API_KEY": "env"}))
     add(
         "legacy kwarg api_key override",
-        S(overrides={"api_key": "legacy-kw"}, environ={"E2B_API_KEY": "env"}),
+        S(overrides={"api_key": "legacy-kw"}, environ={"ABX_SANDBOX_API_KEY": "env"}),
     )
     add("blank override falls through", S(overrides={k: "   "}, environ={"E2B_API_KEY": "env"}))
     add(
         "blank env falls through to dotenv",
         S(
-            environ={"E2B_API_KEY": " "},
-            dotenv=[{"E2B_API_KEY": "dot"}],
+            environ={"ABX_SANDBOX_API_KEY": " ", "E2B_API_KEY": ""},
+            dotenv=[{"SANDBOX_API_KEY": "dot"}],
         ),
     )
     add(
@@ -266,7 +263,7 @@ def _resolution_inputs() -> list[dict[str, Any]]:
     add("inheritor: endpoint defaults when nothing set", S(), "e2b-like", e2b_like)
     add(
         "inheritor: explicit url beats endpoint default",
-        S(dotenv=[{"E2B_API_URL": "https://dot.example"}]),
+        S(dotenv=[{"ABX_SANDBOX_BASE_URL": "https://dot.example"}]),
         "e2b-like",
         e2b_like,
     )
@@ -488,7 +485,7 @@ def migration_vectors() -> dict[str, Any]:
             "# keep me\nE2B_API_KEY=abc\nSANDBOX_REGION=cn-shanghai\nOPENAI_API_KEY=k\n",
         ),
         ("env: shadowed legacy dropped", {}, "E2B_API_KEY=abc\nSANDBOX_API_KEY=old\n"),
-        ("env: canonical present wins", {}, "E2B_API_KEY=new\nE2B_API_KEY=old\n"),
+        ("env: canonical present wins", {}, "ABX_SANDBOX_API_KEY=new\nE2B_API_KEY=old\n"),
         (
             "env: acr and ak legacy names",
             {},
