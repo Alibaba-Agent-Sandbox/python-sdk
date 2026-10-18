@@ -248,3 +248,5 @@ The CLI (`abx`) formerly lived in `src/agent_sandbox/cli/` (Click commands under
 4. **Alibaba Cloud Native**: Built for the Alibaba Cloud FC sandbox service
 5. **AI First**: Built-in AI CLI tools in sandboxes and MCP Server are first-class citizens; SDK has zero LLM dependencies
 6. **Type Safety**: Comprehensive use of Python Type Hints + Pydantic validation
+
+Builtin platform/envd HTTP uses one transport attempt. Legacy retry fields are compatibility data, with the exact boundary in [configuration](../reference/configuration.md#legacy-retry-compatibility); engine recovery remains separate.

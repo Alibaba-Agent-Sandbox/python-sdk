@@ -53,3 +53,5 @@ Auth migration: [explicit sandbox API keys](notes/proposed/architecture/2026-10-
 Engine recovery proposal: [avoid uncertain mutation replay](notes/proposed/architecture/2026-10-18-engine-write-replay.md).
 
 Builtin transport: [direct HTTP proposal](notes/proposed/architecture/2026-10-18-native-builtin-data-plane.md).
+
+- [Legacy retry compatibility](notes/proposed/architecture/2026-10-18-retry-compatibility.md).
