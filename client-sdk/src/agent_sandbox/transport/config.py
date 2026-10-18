@@ -131,7 +131,10 @@ class TransportConfig(BaseModel):
 
         格式: https://{ENVD_PORT}-{sandbox_id}.{sandbox_domain}
         """
-        return f"https://{ENVD_PORT}-{sandbox_id}.{self.sandbox_domain}"
+        builder = resolve_provider_schema(BUILTIN_PROVIDER_ID).legacy_url_builder
+        if builder is None:
+            raise RuntimeError("The distribution does not provide the legacy URL convention.")
+        return builder(sandbox_id, self.sandbox_domain)
 
 
 # ---------------------------------------------------------------------------
