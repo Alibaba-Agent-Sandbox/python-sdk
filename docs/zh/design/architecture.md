@@ -248,3 +248,5 @@ CLI（`abx`）原先位于 `src/agent_sandbox/cli/`（`commands/` 下的 Click �
 4. **阿里云原生**：为阿里云 FC 沙箱服务而做
 5. **AI First**：沙箱内置 AI CLI 工具、MCP Server 是一等公民，SDK 零 LLM 依赖
 6. **类型安全**：全面使用 Python Type Hints + Pydantic 验证
+
+内置平台/envd HTTP 每次执行一次传输尝试。旧重试字段作为兼容数据保留，边界见[配置说明](../reference/configuration.md#旧重试配置的兼容边界)，引擎恢复另行处理。
