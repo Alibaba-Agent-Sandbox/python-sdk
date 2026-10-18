@@ -35,7 +35,7 @@ graph TD
 | `transport.http` | HTTPS client based on httpx, connection pool management, timeout/retry policies |
 | `transport.ws` | Long-lived connections based on websockets, heartbeat keep-alive, auto-reconnect |
 | `auth.api_key` | **API Key authentication (primary path)**: passed via `X-API-KEY` header, environment variable `ABX_SANDBOX_API_KEY` |
-| `auth.ak_sk` | **AK/SK authentication (extension)**: exchanges Alibaba Cloud AK/SK for temporary API Key, or for control plane OpenAPI calls |
+| `auth.AkSkAuth` | Explicit application-owned custom exchange adapter; default runtime authentication requires an API key |
 | `auth.config` | Multi-environment config loading (code params → env vars → .env → config.toml → defaults) |
 
 **Dual Authentication Modes**:
@@ -43,7 +43,7 @@ graph TD
 | Auth Method | Scenario | Transport | Environment Variables |
 |-------------|----------|-----------|----------------------|
 | **API Key (primary)** | Cloud sandbox data plane operations | `X-API-KEY` header | `ABX_SANDBOX_API_KEY` |
-| **AK/SK (extension)** | Exchange temporary API Key, control plane OpenAPI | Alibaba Cloud V4 Signature | `ALICLOUD_ACCESS_KEY_ID` / `ALICLOUD_ACCESS_KEY_SECRET` |
+| **AK/SK control plane** | Official template/image/ACR operations via the CLI | Official SDK | `ALICLOUD_ACCESS_KEY_ID` / `ALICLOUD_ACCESS_KEY_SECRET` |
 
 > **Note**: The sandbox API key has one environment variable, `ABX_SANDBOX_API_KEY`. The AccessKey pair uses `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. See [authentication.md](../guide/authentication.md) and [configuration.md](../reference/configuration.md).
 
@@ -161,7 +161,7 @@ client-sdk/src/agent_sandbox/
 │   ├── __init__.py
 │   ├── http.py                    #   httpx HTTPS client, connection pool
 │   ├── ws.py                      #   websockets long-lived connection, heartbeat keep-alive
-│   ├── auth.py                    #   API Key auth + AK/SK exchange
+│   ├── auth.py                    #   API Key/envd auth; explicit custom token adapter
 │   └── config.py                  #   Config loading (code params → env vars → .env → config.toml → defaults)
 │
 ├── protocol/                      # L2 — Core Protocol Layer

@@ -158,7 +158,7 @@ graph TB
     L4["L4 Declarative — @sandbox decorator"]
     L3["L3 API — Sandbox, Files, Code, Commands"]
     L2["L2 Protocol — envd REST + WebSocket"]
-    L1["L1 Transport — HTTP/2, API Key, AK/SK"]
+    L1["L1 Transport — HTTP/2, API Key, envd token"]
     GW["Alibaba Cloud FC"]
 
     L5 --> L4 --> L3 --> L2 --> L1 --> GW

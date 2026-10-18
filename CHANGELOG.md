@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Removed
+
+- Removed the unconfirmed automatic AK/SK-to-sandbox-key RPC exchange and its private signing/parser helpers. Sandbox requests now fail locally without an API Key; official template/ACR AK/SK operations remain. Explicit custom exchange adapters remain and reject empty/structured token returns. This changes AK/SK-only runtime authentication; see the bilingual migration guide.
+
 ### Added
 
 - Provider manifests accept the independent `templates.deploy` feature for CLI image deployment metadata. Legacy `templates.build` declarations remain valid; the built-in Express provider does not acquire the new feature. No Python deployment API is added.

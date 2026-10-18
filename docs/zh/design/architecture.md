@@ -35,7 +35,7 @@ graph TD
 | `transport.http` | 基于 httpx 封装 HTTPS 请求，连接池管理，超时/重试策略 |
 | `transport.ws` | 基于 websockets 的长连接，心跳保活，自动重连 |
 | `auth.api_key` | **API Key 认证（主路径）**：通过 `X-API-KEY` 请求头传递，环境变量 `ABX_SANDBOX_API_KEY` |
-| `auth.ak_sk` | **AK/SK 认证（扩展）**：通过阿里云 AK/SK 兑换临时 API Key，或用于控制面 OpenAPI 调用 |
+| `auth.AkSkAuth` | 应用显式配置的自定义交换适配器；默认运行时需要 API Key |
 | `auth.config` | 多环境配置加载（代码参数 → 环境变量 → .env → config.toml → 默认值） |
 
 **双认证模式**：
@@ -43,7 +43,7 @@ graph TD
 | 认证方式 | 场景 | 传递方式 | 环境变量 |
 |----------|------|----------|----------|
 | **API Key（主路径）** | 云沙箱数据面操作 | `X-API-KEY` 请求头 | `ABX_SANDBOX_API_KEY` |
-| **AK/SK（扩展）** | 兑换临时 API Key、控制面 OpenAPI | 阿里云 V4 签名 | `ALICLOUD_ACCESS_KEY_ID` / `ALICLOUD_ACCESS_KEY_SECRET` |
+| **AK/SK 控制面** | CLI 官方模板/镜像/ACR 操作 | 官方 SDK | `ALICLOUD_ACCESS_KEY_ID` / `ALICLOUD_ACCESS_KEY_SECRET` |
 
 > **注意**：沙箱 API Key 只有一个环境变量 `ABX_SANDBOX_API_KEY`。AccessKey 对使用 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。见 [authentication.md](../guide/authentication.md) 与 [configuration.md](../reference/configuration.md)。
 
@@ -161,7 +161,7 @@ client-sdk/src/agent_sandbox/
 │   ├── __init__.py
 │   ├── http.py                    #   httpx HTTPS 客户端，连接池
 │   ├── ws.py                      #   websockets 长连接，心跳保活
-│   ├── auth.py                    #   API Key 认证 + AK/SK 兑换
+│   ├── auth.py                    #   API Key/envd 认证；显式自定义 token 适配
 │   └── config.py                  #   配置加载（代码参数→环境变量→.env→config.toml→默认值）
 │
 ├── protocol/                      # L2 — 核心协议层

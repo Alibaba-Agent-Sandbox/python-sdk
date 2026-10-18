@@ -29,7 +29,7 @@ A blank or whitespace-only value does not count. It does not hide the next layer
 
 Every credential uses the layers above at the moment it is needed. `abx config list` shows the winner and labels it `(env)`, `(user)`, `(default)`, or `(not set)`.
 
-Each key has one name. Product settings use `ABX_<KEY>`. A vendor that already publishes a variable keeps that variable: Alibaba Cloud access keys are `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`, the region is `ALIBABA_CLOUD_REGION_ID`, and the GitHub token is `GITHUB_TOKEN`. Template build (`ACR_*`, `team_id`) and template generation (`ABX_LLM_*`) settings belong to the `abx` CLI and are listed in its [configuration reference](https://github.com/alibaba-agent-sandbox/cli/blob/main/docs/en/reference/configuration.md); the Python SDK does not read them.
+Each key has one name. Product settings use `ABX_<KEY>`. A vendor that already publishes a variable keeps that variable: Alibaba Cloud access keys are `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`, the region is `ALIBABA_CLOUD_REGION_ID`, and the GitHub token is `GITHUB_TOKEN`. Template build (`ACR_*`, `team_id`) and template generation (`ABX_LLM_*`) settings belong to the `abx` CLI and are listed in its [configuration reference](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/configuration.md); the Python SDK does not read them.
 
 | What you need | Key | Environment variable |
 |---|---|---|
@@ -59,6 +59,8 @@ The generic keys `sandbox_api_key`, `sandbox_base_url` and `sandbox_domain` belo
 Resolving for provider `P` never reads `ABX_<Q>_*` or `[providers.Q]` for another provider `Q`.
 
 ---
+
+Sandbox calls require `ABX_SANDBOX_API_KEY`; AK/SK settings configure separate official control-plane operations and cannot substitute for it. See [authentication migration](../guide/authentication.md).
 
 ## Environment Variables
 
