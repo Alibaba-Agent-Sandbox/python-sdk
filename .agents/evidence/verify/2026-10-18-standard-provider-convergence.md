@@ -23,3 +23,10 @@ Separate fresh reference pins e2b2.31.0/interpreter2.8.1.
 Native E2B, enabled pause/snapshot success and whole-artifact provenance acceptance
 remain distinct prerequisites from passing ordinary CI. No package release or
 new hosted model/cloud test workflow is introduced.
+
+After ordinarily merging accepted main5a99f0fa: full client2193 PASS/24 SKIP;
+server853 PASS/2 local raw-network FAIL/1 SKIP (proxy changed expected HTTP
+framing/WebSocket rejection to502). No assertions or transport checks were removed.
+Maintained lint/format PASS; mypy56 server/105 client files PASS; pinned public
+contract354 PASS. Both sdist/wheel builds PASS. Paired artifact and record checks
+are recorded below; exact-head hosted matrix is separate from these local results.

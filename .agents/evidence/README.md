@@ -33,4 +33,10 @@ Evidence of the command-line interface lives in the
 - [`verify/2026-09-08-real-e2e-verification.md`](verify/2026-09-08-real-e2e-verification.md)
 - [`verify/2026-10-12-e2e-foundation.md`](verify/2026-10-12-e2e-foundation.md)
 
-- [Provider portability and updates](../notes/proposed/architecture/2026-10-18-provider-portability-updates.md) · [verification](verify/2026-10-18-provider-portability-updates.md)
+- [Provider portability and updates](../notes/implemented/architecture/2026-10-18-provider-portability-updates.md) · [verification](verify/2026-10-18-provider-portability-updates.md)
+
+- [Current provider isolation and Express acceptance](verify/2026-10-18-provider-isolation-acceptance.md)
+
+- [Final provider convergence acceptance](verify/2026-10-18-provider-convergence-acceptance.md)
+
+- [Provider-owned metadata follow-up](verify/2026-10-18-provider-owned-metadata-followup.md)
