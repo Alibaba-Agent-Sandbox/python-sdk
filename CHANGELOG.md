@@ -34,6 +34,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Verified native builtin Droid background installation, keyless SDK/HTTP runtime and owned cleanup; source-runtime evidence is distinct from template/image/model acceptance.
+
 - Python Node-provider engine recovery no longer repeats mutations after a lost connection, including SSE before its first event. Unknown outcomes raise `ProviderProtocolError`; safe reads and explicit authentication rejection retain bounded recovery.
 
 - **Real-cloud E2E acceptance.** The server fixture keeps envd credentials separate from the unconfigured template server; provider reports reject missing checks and the CLI scenario resolves `ABX_BIN` or an installed `abx` instead of assuming a sibling checkout.

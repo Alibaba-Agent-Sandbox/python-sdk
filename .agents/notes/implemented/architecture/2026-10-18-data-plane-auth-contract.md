@@ -1,5 +1,5 @@
 # Decision: Require explicit sandbox API-key authentication
-Status: proposed
+Status: implemented
 
 ## Problem
 

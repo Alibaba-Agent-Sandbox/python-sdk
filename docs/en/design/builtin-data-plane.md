@@ -40,3 +40,5 @@ process adapter are separate active contracts; neither is removed. See the
 [Node engine API](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md).
 The [old Python engine](provider-engine.md) and [plan](provider-engine-plan.md)
 are historical records, not setup instructions.
+
+The native controller also passed a real Droid0.241.1 background install and independent SDK/HTTP verification, with owned cleanup confirmed. See the [exact source-runtime evidence](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/aaef5b63ee11b6b76b93b7ebbc8ad2530b21f576/.agents/evidence/verify/2026-10-18-droid-native-runtime.md). This is separate from Dockerfile/template deployment and model certification.
