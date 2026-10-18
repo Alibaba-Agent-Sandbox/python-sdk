@@ -60,3 +60,13 @@ PASS/24 SKIP/10 integration deselected in120.01s; earlier2193 count included tho
 ten tests. No skipped test is promoted to pass. Prior real Express and hosted
 server-matrix receipts remain unchanged; no new cloud resources created.
 Latest-head CI follows push. Conditional enabled pause/snapshot remains blocked.
+
+## Native example follow-up
+
+A second maintained-guide scan found six newly accepted native Volume/data-plane/
+existing-account pages still importing synchronous root Sandbox. Corrected both
+languages to explicit ProviderSandbox. The older native adoption page now links
+the separate standard migration route. SDK/provider skills and provider reference
+now state canonical native ABX credentials, standard-only E2B mapping and separate
+AK/SK control-plane authorization. No runtime/code changes or cloud resources.
+Hygiene/health/import smoke and latest-head hosted CI are checked separately.

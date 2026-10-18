@@ -12,7 +12,7 @@ The default provider does not advertise `storage.mount`, `ports.domain` or `netw
 The built-in provider accepts `volume_mounts` in `Sandbox.create()` (and `create_sync`):
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async with await Sandbox.create(
     provider="alicloud-express",

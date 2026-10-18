@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Reserve create positional arguments for templates and natural language for `--prompt` in the CLI; document migration, source attribution and backend capability limits.
 
 ### Fixed
+- Use explicit native ProviderSandbox in Volume/data-plane adoption examples and distinguish native runtime credentials from control-plane AK/SK in agent guides.
 
 - Reject undeclared native Express PTY before session/context or wire access.
 

@@ -82,11 +82,11 @@ asyncio.run(main())
 - Files on `sb.files`: `write`, `read`, `read_bytes`, `list`, `exists`, `remove`, `make_dir`, `upload`, `download`. On Express, `sb.files.upload_url` and `sb.files.download_url` return an envd URL that still needs header `X-Access-Token`. A provider that does not declare `files.transfer` raises `E8004`. `sb.upload_url` and `sb.download_url` always refuse. Do not invent a signature-only URL.
 - The context manager kills the sandbox. Otherwise call `await sb.kill()`.
 - ProviderSandbox defaults to alicloud-express. Use its configured provider transport; do not hardcode a local engine socket or spawn a separate provider implementation.
-- The only built-in provider is `alicloud-express`. `opensandbox`, `alicloud-container`, `cubesandbox`, and `e2b` are not part of this package. Install them from the catalog with `python -m agent_sandbox.providers install registry:<id> --yes`, then pass that id to `Sandbox.create`. Their notes are in `awesome-providers/<id>/docs/README.md`. Only Express reads `E2B_API_KEY`.
+- The only built-in provider is `alicloud-express`. `opensandbox`, `alicloud-container`, `cubesandbox`, and `e2b` are not part of this package. Install them from the catalog with `python -m agent_sandbox.providers install registry:<id> --yes`, then pass that id to `Sandbox.create`. Their notes are in `awesome-providers/<id>/docs/README.md`. Native ProviderSandbox reads canonical `ABX_SANDBOX_API_KEY`; only the standard entry maps `E2B_*` settings.
 
 | id | What it is | Required environment |
 |---|---|---|
-| `alicloud-express` | Alibaba Cloud Express. The default. Built into the SDK. | `E2B_API_KEY`, or AK/SK |
+| `alicloud-express` | Alibaba Cloud Express. The default. Built into the SDK. | `ABX_SANDBOX_API_KEY`; AK/SK separately authorizes control-plane operations |
 
 URLs, headers, and calls that raise `E8004` for Express are in `references/providers.md`. The `abx` CLI loads `alicloud-express` plus installed `node`, `exec` and `rest` plugins. The four catalog providers are `node`. After `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes`, `abx --provider <id>` works. A manifest with `kind = "python"` cannot be installed. An in-code `Provider` subclass still works from the SDK only.
 
@@ -237,5 +237,5 @@ Do not upload from a laptop. Do not put a PyPI token in the repo or in chat.
 1. Client code imports `agent_sandbox`. `commands.py` imports `agent_sandbox.server` only.
 2. Named commands are `@command` and `start()` under `if __name__ == "__main__"`.
 3. The default provider's Dockerfile is the FC base image, with no `CMD`.
-4. Do not read or write `E2B_*`.
+4. Keep native provider configuration on `ABX_*`; standard entry configuration may read `E2B_*`. Never substitute Express credentials for another backend.
 5. Do not leak credentials. Do not leave sandboxes running.

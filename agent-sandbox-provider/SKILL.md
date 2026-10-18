@@ -43,7 +43,7 @@ https://registry.agent-sandbox.com. The installer index is
 | `exec` | the manifest plus a process that speaks EPP/1 on stdin/stdout | The API is not E2B-shaped. Any language. No code runs at install time |
 | `node` | `provider.mjs` with `export default create(kit)` | The backend is E2B-shaped but needs a tweak (proxy dial, optional token, other paths). Loaded in the host process; one implementation serves the CLI and every SDK |
 
-Do not start from the Express engine. Do not copy `E2B_API_KEY` into the new provider. That key is Express only.
+Do not start from the Express engine. Do not copy the Express `ABX_SANDBOX_API_KEY` or its standard-entry `E2B_API_KEY` setting into the new provider. Credentials belong to their selected backend.
 
 ## Credentials
 
