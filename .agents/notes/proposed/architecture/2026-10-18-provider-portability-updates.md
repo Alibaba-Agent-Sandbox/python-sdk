@@ -46,3 +46,7 @@ The full-isolation follow-up removes the earlier guard-only limitation. Authenti
 cloud mappings and session defaults are provider-owned. CLI templates and UI metadata
 remain owned by the CLI repository. Historical evidence remains unchanged; acceptance is tracked in the new
 [isolation verification](../../../evidence/verify/2026-10-18-provider-complete-isolation.md).
+
+The Express wrapper explicitly forwards its selected provider into engine creation;
+[follow-up verification](../../../evidence/verify/2026-10-18-provider-explicit-engine-routing.md)
+records the failing negative control, 2152-pass client suite and real conflict-case cleanup.

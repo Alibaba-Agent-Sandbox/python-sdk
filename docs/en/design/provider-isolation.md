@@ -41,3 +41,5 @@ CLI template factories and AI/CLI discovery live in the CLI owner; no new Python
 image deployment API is introduced. See the [CLI boundary contract](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/design/provider-isolation.md).
 Bundled provider updates still follow matching SDK releases. Adapter isolation does
 not promise zero-change migration or capabilities absent from a backend.
+
+The Express wrapper forwards the selected provider to its internal engine, so an explicit native selection wins over an unrelated ambient default.

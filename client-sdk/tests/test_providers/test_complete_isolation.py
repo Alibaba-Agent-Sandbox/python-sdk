@@ -108,3 +108,19 @@ def test_core_imports_no_concrete_backend_implementation() -> None:
                 ):
                     violations.append(f"{relative}: {module}")
     assert violations == []
+
+
+@pytest.mark.asyncio
+async def test_native_engine_keeps_explicit_provider_over_ambient(iso, monkeypatch):  # noqa: F811
+    from unittest.mock import patch
+
+    from agent_sandbox.engine.client import Engine
+    from agent_sandbox.models.sandbox import SandboxConfig
+    from agent_sandbox.providers.alicloud_express.lifecycle import EngineLifecycle
+
+    monkeypatch.setenv("ABX_PROVIDER", "another-provider")
+    lifecycle = EngineLifecycle(None, TransportConfig(provider="alicloud-express"))
+    info = SandboxInfo(sandbox_id="owned", template="base")
+    with patch.object(Engine, "create", new_callable=AsyncMock, return_value=info) as create:
+        assert await lifecycle.create(SandboxConfig()) is info
+    assert create.await_args.kwargs.get("provider") == "alicloud-express"

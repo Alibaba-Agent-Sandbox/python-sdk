@@ -35,3 +35,5 @@ CLI 模板工厂及 CLI/AI 发现归属 CLI 仓库，本次不新增 Python 镜�
 [CLI 边界契约](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/zh/design/provider-isolation.md)。
 内置 Provider 继续随匹配的 SDK 版本更新。适配器隔离不代表 SDK 零改动迁移，也不会
 产生后端本身没有的能力。
+
+极速版适配器向内部引擎显式传递所选 Provider，因此环境默认项不会覆盖调用方明确选择的后端。

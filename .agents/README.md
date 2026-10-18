@@ -50,3 +50,5 @@ Move the file and edit `Status:` in the same commit. Required sections and the t
 - [Independent template deployment metadata](notes/implemented/feature/2026-10-18-template-deploy-feature.md) · [verification](evidence/verify/2026-10-18-template-deploy-feature.md)
 
 - [Provider isolation verification](evidence/verify/2026-10-18-provider-complete-isolation.md)
+
+- [Explicit native engine routing verification](evidence/verify/2026-10-18-provider-explicit-engine-routing.md)

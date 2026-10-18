@@ -8,14 +8,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
-### Provider isolation
-
-- Route bundled and external backends through the same Provider contract. Move Express authentication,
-  cloud SDK/template deployment and native session binding into provider modules; preserve public import facades.
-- Resolve provider-owned CLI/AI/config metadata per selection, reject undeclared native defaults/options,
-  and clean up newly created resources when session binding fails without deleting borrowed sandboxes.
-
-
 ### Added
 
 - `Sandbox.create(volume_mounts={"/mnt/data": "existing-volume-name"})` mounts existing Volumes with the built-in provider. Strict validation runs before provider/engine I/O; unsupported providers fail with E8004. The existing gRPC lifecycle forwards the hint and emits the official `volumeMounts: [{name, path}]` creation payload; empty maps preserve prior requests. Real OSS storage mount/read/write/cleanup is verified for the tested base template in cn-hangzhou.
@@ -31,6 +23,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Route bundled and external backends through the same Provider factory and session hooks. Move Express
+  authentication, native engine/session assembly and reusable E2B adapters into provider modules; preserve public imports and module identity.
+- Keep Express endpoint/region defaults out of external-provider configuration. Clean up newly created
+  resources when session binding fails without deleting borrowed sandboxes.
+
 - Document mount-capable template selection, the custom MicroVM ossfs2 minimum version, and verified real OSS Volume acceptance with complete temporary-resource cleanup. Extend opt-in E2E coverage to destroy/recreate the sandbox and read the persisted file.
 
 - Clarify the current Volume invitation-access prerequisite in both language guides; an empty list does not prove create or mount access.
@@ -38,6 +35,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - The built-in provider no longer advertises `ports.domain`, `storage.mount` or `network.vpc` as callable standard sandbox features. Provider resource management uses the separate command contract.
 
 ### Fixed
+
+- Keep an explicitly selected Express provider through native engine creation when the ambient default names another backend.
 
 - Built-in Express provider update reports its SDK-bundled lifecycle and coordinated client/server/Node upgrade guidance instead of a missing-plugin error; document existing-account adoption and explicit API/configuration changes.
 

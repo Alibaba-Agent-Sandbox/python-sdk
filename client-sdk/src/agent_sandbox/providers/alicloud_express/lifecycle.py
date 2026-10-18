@@ -21,6 +21,7 @@ class EngineLifecycle:
 
         return await Engine().create(
             config.template,
+            provider=self.config.provider,
             timeout=config.timeout,
             metadata=config.metadata,
             envs=config.env_vars,
