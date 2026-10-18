@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Reconcile provider isolation with accepted native transport, explicit-key authentication and retired-module cleanup; preserve canonical compatibility aliases and pure configuration metadata.
+
 ### Documentation
 
 - Retire the unsupported builtin automatic-retry claim. Existing retry configuration names/defaults and EPP compatibility values remain accepted; they do not enable builtin HTTP retries or backoff.
@@ -20,11 +24,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- `Sandbox.create(volume_mounts={"/mnt/data": "existing-volume-name"})` mounts existing Volumes with the built-in provider. Strict validation runs before provider/engine I/O; unsupported providers fail with E8004. The existing gRPC lifecycle forwards the hint and emits the official `volumeMounts: [{name, path}]` creation payload; empty maps preserve prior requests. Real OSS storage mount/read/write/cleanup is verified for the tested base template in cn-hangzhou.
+- `agent_sandbox.providers.commands.list_commands`, `get_command` and `run_command` call the shared Node engine for provider-specific resource operations. Writes and deletes require explicit confirmation; command POST requests are never replayed.
+- Plugin manifests validate bounded `provider-commands/1` descriptors and include commands in installation/update consent; existing manifests and receipts default to an empty command list.
 - Provider manifests accept the independent `templates.deploy` feature for CLI image deployment metadata. Legacy `templates.build` declarations remain valid; the built-in Express provider does not acquire the new feature. No Python deployment API is added.
-
-
-### Added
-
 - Python MCP bounded binary `upload_file`/`download_file` (1 MiB, strict Base64, SHA256) over both transports; SDK `files.read_bytes(max_bytes=...)` optionally limits streamed downloads and raises `FileSizeLimitError` (E4003), while its existing default remains unchanged.
 
 - Python MCP `start_task`, `get_task`, and `cancel_task` provide sandbox-lifetime background handles, bounded saved log pages, explicit disconnect retention and owned process-group cancellation. Normal synchronous cleanup remains unchanged; Python-only, Linux/python3 runtime.
@@ -32,7 +35,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Python MCP lifecycle tools `list_sandboxes`, `get_sandbox`, and `set_sandbox_timeout`; creation accepts provider, region, CPU and memory options. Metadata uses a fixed allowlist, external inspection/renewal does not adopt resources, and lifecycle failures omit credential-bearing exception details.
 - Add the Chinese counterpart of the historical OpenSandbox provider research archive, preserving its versioned evidence and current-adapter boundary.
 
+### Changed
+
+- Route bundled and external backends through the same Provider factory and session hooks. Move Express
+  authentication, native engine/session assembly and reusable E2B adapters into provider modules; preserve public imports and module identity.
+- Keep Express endpoint/region defaults out of external-provider configuration. Clean up newly created
+  resources when session binding fails without deleting borrowed sandboxes.
+
+- Document mount-capable template selection, the custom MicroVM ossfs2 minimum version, and verified real OSS Volume acceptance with complete temporary-resource cleanup. Extend opt-in E2E coverage to destroy/recreate the sandbox and read the persisted file.
+
+- Clarify the current Volume invitation-access prerequisite in both language guides; an empty list does not prove create or mount access.
+
+- The built-in provider no longer advertises `ports.domain`, `storage.mount` or `network.vpc` as callable standard sandbox features. Provider resource management uses the separate command contract.
+
 ### Fixed
+
+- Keep port addresses, gateway headers and file-transfer URLs in selected provider adapters; reject missing hooks instead of guessing native routes. Resolve Python compatibility imports lazily.
+
+
+- Integrate provider isolation with native HTTP creation, API-key-only runtime authentication and lazy schema composition. Preserve no-replay management requests and provider-owned authentication diagnostics; make local HTTP fixtures address and await their actual listener.
+
+- Keep an explicitly selected Express provider through native engine creation when the ambient default names another backend.
+
+- Built-in Express provider update reports its SDK-bundled lifecycle and coordinated client/server/Node upgrade guidance instead of a missing-plugin error; document existing-account adoption and explicit API/configuration changes.
 
 - Use executable paired-source installation recipes before PyPI publication across current SDK/package guides and examples; replace the retired root version CLI with distribution metadata inspection.
 

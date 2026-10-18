@@ -20,23 +20,17 @@ from typing import TYPE_CHECKING, Any, NoReturn, cast
 
 from agent_sandbox.api.capability import (
     ResolvedCapabilities,
-    resolve_capabilities_for,
 )
-from agent_sandbox.models.sandbox import SandboxConfig, SandboxInfo, SandboxStatus
+from agent_sandbox.models.sandbox import (
+    SandboxConfig,
+    SandboxInfo,
+    SandboxStatus,
+    validate_volume_mounts,
+)
 from agent_sandbox.models.template import DEFAULT_CAPABILITIES
-from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
-from agent_sandbox.protocol.filesystem import FilesystemProtocol
-from agent_sandbox.protocol.process import ProcessProtocol
-from agent_sandbox.protocol.sandbox import SandboxProtocol
-from agent_sandbox.transport.auth import (
-    AuthProvider,
-    EnvdTokenManager,
-    create_auth_provider,
-)
+from agent_sandbox.providers.registry import get_provider
 from agent_sandbox.transport.config import TransportConfig, load_config
-from agent_sandbox.transport.http import HttpClient
 from agent_sandbox.utils.async_bridge import make_classmethod_sync, make_sync
-from agent_sandbox.utils.config_keys import BUILTIN_PROVIDER_ID
 from agent_sandbox.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -52,8 +46,17 @@ if TYPE_CHECKING:
         CodeResult,
     )
     from agent_sandbox.models.server import ServerCommand
-    from agent_sandbox.protocol.terminal import TerminalSession as TerminalSession
+    from agent_sandbox.protocol.contracts import (
+        CodeInterpreterProtocol,
+        FilesystemProtocol,
+        ProcessProtocol,
+        SandboxProtocol,
+    )
+    from agent_sandbox.protocol.contracts import TerminalSession as TerminalSession
     from agent_sandbox.providers.base import Provider
+    from agent_sandbox.transport.auth_contract import AuthProvider
+    from agent_sandbox.transport.auth_contract import DataPlaneAuth as EnvdTokenManager
+    from agent_sandbox.transport.http import HttpClient
     from agent_sandbox.transport.streaming import StreamReader as StreamReader
 
 logger = get_logger("api.sandbox")
@@ -73,31 +76,19 @@ def _build_infra(
     Shared helper for class methods that need standalone infra. This is the built-in
     (``alicloud-express``) path; other providers go through :func:`_provider_infra`.
     """
-    config_overrides: dict[str, Any] = {}
-    # Callers pass the already-resolved value (legacy ``api_key`` / ``api_url`` included).
-    # ``load_config`` only honours the canonical override names.
-    if api_key is not None:
-        config_overrides["sandbox_api_key"] = api_key
-    if api_url is not None:
-        config_overrides["sandbox_base_url"] = api_url
-    if access_key_id is not None:
-        config_overrides["access_key_id"] = access_key_id
-    if access_key_secret is not None:
-        config_overrides["access_key_secret"] = access_key_secret
-    if region is not None:
-        config_overrides["region"] = region
-    if provider_options:
-        config_overrides["provider_options"] = dict(provider_options)
+    from agent_sandbox.providers.registry import get_provider
 
-    config = load_config(**config_overrides)
-    auth = create_auth_provider(
-        api_key=config.sandbox_api_key,
-        access_key_id=config.access_key_id,
-        access_key_secret=config.access_key_secret,
+    return cast(
+        "tuple[TransportConfig, AuthProvider, HttpClient, SandboxProtocol]",
+        get_provider().build_legacy_infra(
+            api_key=api_key,
+            api_url=api_url,
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+            region=region,
+            provider_options=provider_options,
+        ),
     )
-    http_client = HttpClient(config, auth)
-    sandbox_protocol = SandboxProtocol(http_client)
-    return config, auth, http_client, sandbox_protocol
 
 
 def _same(canonical_name: str, canonical: Any, legacy_name: str, legacy: Any) -> Any:
@@ -110,8 +101,8 @@ def _same(canonical_name: str, canonical: Any, legacy_name: str, legacy: Any) ->
     return canonical if canonical is not None else legacy
 
 
-def _select_provider(provider: Any, sandbox_id: str | None = None) -> tuple[Any | None, str | None]:
-    """Resolve the effective provider; ``(None, id)`` means the built-in default path.
+def _select_provider(provider: Any, sandbox_id: str | None = None) -> tuple[Any, str | None]:
+    """Resolve a real Provider instance, including for the bundled default.
 
     Also splits a qualified ``provider:sandbox_id`` reference. A qualified prefix that
     contradicts an explicit *provider* raises :class:`ProviderMismatchError` (E8030).
@@ -136,8 +127,6 @@ def _select_provider(provider: Any, sandbox_id: str | None = None) -> tuple[Any 
             suggestion="Drop the 'provider:' prefix or the provider argument.",
         )
     pid = registry.resolve_provider_id(explicit or ref_provider)
-    if pid == BUILTIN_PROVIDER_ID:
-        return None, bare
     return registry.get_provider(pid), bare
 
 
@@ -147,24 +136,15 @@ class _InfraCloser:
     def __init__(self, infra: Any) -> None:
         self._infra = infra
 
+    def __getattr__(self, name: str) -> Any:
+        """Preserve access to the provider HTTP transport for compatibility callers."""
+        return getattr(self._infra.http_client, name)
+
     async def close(self) -> None:
         if self._infra.close is not None:
             await self._infra.close()
         elif self._infra.http_client is not None:
             await self._infra.http_client.close()
-
-
-def _envd_token(prov: Any, info: Any) -> Any:
-    """A provider may accept a missing envd token and a non-default basic user."""
-    from agent_sandbox.transport.auth import EnvdTokenManager
-
-    kwargs: dict[str, Any] = {}
-    if getattr(prov, "envd_allow_missing", False):
-        kwargs = {
-            "allow_missing": True,
-            "basic_user": getattr(prov, "envd_basic_user", "root") or "root",
-        }
-    return EnvdTokenManager(info.envd_access_token, sandbox_id=info.sandbox_id, **kwargs)
 
 
 async def _provider_infra(
@@ -234,30 +214,57 @@ class Sandbox:
         process_protocol: ProcessProtocol | None = None,
         filesystem_protocol: FilesystemProtocol | None = None,
         code_interpreter_protocol: CodeInterpreterProtocol | None = None,
-        domain: str = "e2b.dev",
+        domain: str | None = None,
         secure: bool = True,
         resolved_capabilities: ResolvedCapabilities | None = None,
         declared_capabilities: frozenset[str] | None = None,
-        provider_id: str = BUILTIN_PROVIDER_ID,
+        provider_id: str | None = None,
     ) -> None:
         self._info = info
         self._config = config
-        self._provider_id = provider_id
+        self._provider_id = provider_id or config.provider
 
-        # Derive envd URL when the platform response omits it (Bug 1 fix)
+        from agent_sandbox.providers.registry import get_provider
+
+        # The backend owns URL derivation and protocol construction.
         if not self._info.envd_url and self._info.sandbox_id:
-            self._info.envd_url = self._config.build_envd_url(self._info.sandbox_id)
+            self._info.envd_url = get_provider(self._provider_id).resolve_session_url(
+                self._info, self._config
+            )
         self._http_client = http_client
         self._killed = False
         self._auth = auth
         self._envd_token = envd_token
-        self._domain = domain
+        self._domain = domain if domain is not None else config.sandbox_domain
         self._secure = secure
-        self._sandbox_protocol = sandbox_protocol or SandboxProtocol(http_client)
-        self._process_protocol = process_protocol or ProcessProtocol(http_client)
-        self._filesystem_protocol = filesystem_protocol or FilesystemProtocol(http_client)
-        self._code_interpreter_protocol = code_interpreter_protocol or CodeInterpreterProtocol(
-            http_client
+        defaults = (
+            get_provider(self._provider_id).session_protocols(http_client)
+            if any(
+                p is None
+                for p in (
+                    sandbox_protocol,
+                    process_protocol,
+                    filesystem_protocol,
+                    code_interpreter_protocol,
+                )
+            )
+            else {}
+        )
+        self._sandbox_protocol = (
+            sandbox_protocol if sandbox_protocol is not None else defaults["sandbox_protocol"]
+        )
+        self._process_protocol = (
+            process_protocol if process_protocol is not None else defaults["process_protocol"]
+        )
+        self._filesystem_protocol = (
+            filesystem_protocol
+            if filesystem_protocol is not None
+            else defaults["filesystem_protocol"]
+        )
+        self._code_interpreter_protocol = (
+            code_interpreter_protocol
+            if code_interpreter_protocol is not None
+            else defaults["code_interpreter_protocol"]
         )
 
         # Capability model
@@ -351,6 +358,8 @@ class Sandbox:
     def network(self) -> NetworkModule:
         """Network sub-module for port URL calculation."""
         from agent_sandbox.api.network import NetworkModule
+        from agent_sandbox.protocol.port_contract import PortContext
+        from agent_sandbox.providers.registry import get_provider
 
         return NetworkModule(
             sandbox_id=self.id,
@@ -359,6 +368,15 @@ class Sandbox:
             access_token=self._envd_token.token if self._envd_token else None,
             capabilities=self._capabilities,
             port_resolver=self._port_resolver(),
+            port_access=get_provider(self._provider_id).create_port_access(
+                PortContext(
+                    self.id,
+                    self._domain,
+                    self._secure,
+                    self._envd_token.token if self._envd_token else None,
+                ),
+                self._sandbox_protocol,
+            ),
         )
 
     @functools.cached_property
@@ -413,12 +431,7 @@ class Sandbox:
         return ServerClient(
             self.network.get_url(port),
             token=token,
-            # Express publishes port 9000 without requiring the sandbox access
-            # token. Forwarding X-Access-Token makes an unconfigured
-            # agent-sandbox-server return 401 (it treats any presented
-            # credential as a login). Callers that need the gateway header
-            # use network.get_access_headers() themselves.
-            headers=None,
+            headers=self.network.get_server_headers() or None,
             pty_url=self.network.get_url(pty_port),
             timeout=timeout,
         )
@@ -498,6 +511,7 @@ class Sandbox:
         request_timeout: float | None = None,
         metadata: dict[str, str] | None = None,
         envs: dict[str, str] | None = None,
+        volume_mounts: dict[str, str] | None = None,
         cpu: int | None = None,
         memory: int | None = None,
         disk: int | None = None,
@@ -531,6 +545,9 @@ class Sandbox:
                 value does not work around platform-side create stalls — it
                 only controls how long the client waits before timing out.
             metadata: Arbitrary metadata key-value pairs.
+            volume_mounts: Absolute sandbox paths mapped to existing Volume names,
+                for example ``{"/mnt/data": "my-volume"}``. Supported only by the
+                built-in provider; the Volume and API key must belong to the same Team.
             envs: Environment variables injected into the envd root process.
                 These are inherited by all subsequent ``commands.run()``,
                 ``run_code()``, and terminal sessions.  Per-call overrides
@@ -576,96 +593,37 @@ class Sandbox:
                 f"request_timeout must be a positive number of seconds, got {request_timeout!r}"
             )
 
+        mounts = validate_volume_mounts(volume_mounts)
         prov, _ = _select_provider(provider)
-        if prov is not None:
-            return await cls._create_via_provider(
-                prov,
-                template=template,
-                timeout=timeout,
-                request_timeout=request_timeout,
-                metadata=metadata,
-                envs=envs,
-                cpu=cpu,
-                memory=memory,
-                disk=disk,
-                gpu=gpu,
-                secure=secure,
-                domain=_same("sandbox_domain", sandbox_domain, "domain", domain),
-                overrides=_endpoint_overrides(
-                    api_key=api_key,
-                    sandbox_api_key=sandbox_api_key,
-                    api_url=api_url,
-                    sandbox_base_url=sandbox_base_url,
-                    access_key_id=access_key_id,
-                    access_key_secret=access_key_secret,
-                    region=region,
-                ),
-                options=provider_options,
-            )
-        domain = _same("sandbox_domain", sandbox_domain, "domain", domain)
+        if mounts and "volume_mounts" not in prov.create_options:
+            from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
 
-        config, auth, http_client, sandbox_protocol = _build_infra(
-            api_key=_same("sandbox_api_key", sandbox_api_key, "api_key", api_key),
-            api_url=_same("sandbox_base_url", sandbox_base_url, "api_url", api_url),
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-            region=region,
-            provider_options=provider_options,
+            raise ProviderFeatureNotSupportedError(prov.id, "volume_mounts")
+        return await cls._create_via_provider(
+            prov,
+            template=template,
+            timeout=timeout,
+            request_timeout=request_timeout,
+            metadata=metadata,
+            envs=envs,
+            cpu=cpu,
+            memory=memory,
+            disk=disk,
+            gpu=gpu,
+            volume_mounts=mounts,
+            secure=secure,
+            domain=_same("sandbox_domain", sandbox_domain, "domain", domain),
+            overrides=_endpoint_overrides(
+                api_key=api_key,
+                sandbox_api_key=sandbox_api_key,
+                api_url=api_url,
+                sandbox_base_url=sandbox_base_url,
+                access_key_id=access_key_id,
+                access_key_secret=access_key_secret,
+                region=region,
+            ),
+            options=provider_options,
         )
-
-        info = None
-        try:
-            info = await sandbox_protocol.create(
-                SandboxConfig(
-                    templateID=template,
-                    timeout=timeout,
-                    metadata=metadata or {},
-                    envVars=envs or {},
-                    cpu=cpu,
-                    memory=memory,
-                    disk=disk,
-                    gpu=gpu,
-                ),
-                request_timeout=request_timeout,
-            )
-            from agent_sandbox.transport.http import stream_envelope_for_envd
-
-            http_client._stream_envelope = stream_envelope_for_envd(info.envd_version)
-
-            envd_token = EnvdTokenManager(info.envd_access_token, sandbox_id=info.sandbox_id)
-
-            logger.info("Sandbox created: %s", info.sandbox_id)
-
-            # The caller often passes a deploy alias. The cache directory is
-            # frequently the platform template id, which only exists on info
-            # after create returns.
-            resolved = await resolve_capabilities_for(
-                template,
-                info.template,
-                info.alias_name,
-            )
-
-            return cls(
-                info=info,
-                config=config,
-                http_client=http_client,
-                auth=auth,
-                envd_token=envd_token,
-                sandbox_protocol=sandbox_protocol,
-                process_protocol=ProcessProtocol(http_client),
-                filesystem_protocol=FilesystemProtocol(http_client),
-                domain=domain or config.sandbox_domain,
-                secure=True if secure is None else secure,
-                resolved_capabilities=resolved,
-            )
-        except Exception:
-            if info is not None:
-                try:
-                    await sandbox_protocol.kill(info.sandbox_id)
-                except Exception:
-                    logger.debug("failed to kill orphaned sandbox %s", info.sandbox_id)
-            await http_client.close()
-            raise
 
     @classmethod
     async def connect(
@@ -707,57 +665,21 @@ class Sandbox:
         """
         prov, bare_id = _select_provider(provider, sandbox_id)
         domain = _same("sandbox_domain", sandbox_domain, "domain", domain)
-        if prov is not None:
-            return await cls._connect_via_provider(
-                prov,
-                bare_id or sandbox_id,
-                domain=domain,
-                overrides=_endpoint_overrides(
-                    api_key=api_key,
-                    sandbox_api_key=sandbox_api_key,
-                    api_url=api_url,
-                    sandbox_base_url=sandbox_base_url,
-                    access_key_id=access_key_id,
-                    access_key_secret=access_key_secret,
-                    region=region,
-                ),
-                options=provider_options,
-            )
-        sandbox_id = bare_id or sandbox_id
-
-        config, auth, http_client, sandbox_protocol = _build_infra(
-            api_key=_same("sandbox_api_key", sandbox_api_key, "api_key", api_key),
-            api_url=_same("sandbox_base_url", sandbox_base_url, "api_url", api_url),
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-            region=region,
-            provider_options=provider_options,
+        return await cls._connect_via_provider(
+            prov,
+            bare_id or sandbox_id,
+            domain=domain,
+            overrides=_endpoint_overrides(
+                api_key=api_key,
+                sandbox_api_key=sandbox_api_key,
+                api_url=api_url,
+                sandbox_base_url=sandbox_base_url,
+                access_key_id=access_key_id,
+                access_key_secret=access_key_secret,
+                region=region,
+            ),
+            options=provider_options,
         )
-
-        try:
-            info = await sandbox_protocol.connect(sandbox_id)
-            envd_token = EnvdTokenManager(info.envd_access_token, sandbox_id=info.sandbox_id)
-            from agent_sandbox.transport.http import stream_envelope_for_envd
-
-            http_client._stream_envelope = stream_envelope_for_envd(info.envd_version)
-
-            logger.info("Connected to sandbox: %s", sandbox_id)
-
-            resolved = await resolve_capabilities_for(info.template, info.alias_name)
-
-            return cls(
-                info=info,
-                config=config,
-                http_client=http_client,
-                auth=auth,
-                envd_token=envd_token,
-                sandbox_protocol=sandbox_protocol,
-                domain=domain or config.sandbox_domain,
-                resolved_capabilities=resolved,
-            )
-        except Exception:
-            await http_client.close()
-            raise
 
     @classmethod
     async def list(
@@ -800,37 +722,23 @@ class Sandbox:
             List of SandboxInfo objects.
         """
         prov, _ = _select_provider(provider)
-        if prov is not None:
-            infra = await _provider_infra(
-                prov,
-                _endpoint_overrides(
-                    api_key=api_key,
-                    sandbox_api_key=sandbox_api_key,
-                    api_url=api_url,
-                    sandbox_base_url=sandbox_base_url,
-                    access_key_id=access_key_id,
-                    access_key_secret=access_key_secret,
-                    region=region,
-                ),
-                provider_options,
-            )
-            try:
-                return await infra.sandbox_protocol.list(status=status, limit=limit, offset=offset)  # type: ignore[no-any-return]
-            finally:
-                await _InfraCloser(infra).close()
-
-        config, auth, http_client, sandbox_protocol = _build_infra(
-            api_key=_same("sandbox_api_key", sandbox_api_key, "api_key", api_key),
-            api_url=_same("sandbox_base_url", sandbox_base_url, "api_url", api_url),
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-            region=region,
-            provider_options=provider_options,
+        infra = await _provider_infra(
+            prov,
+            _endpoint_overrides(
+                api_key=api_key,
+                sandbox_api_key=sandbox_api_key,
+                api_url=api_url,
+                sandbox_base_url=sandbox_base_url,
+                access_key_id=access_key_id,
+                access_key_secret=access_key_secret,
+                region=region,
+            ),
+            provider_options,
         )
         try:
-            return await sandbox_protocol.list(status=status, limit=limit, offset=offset)
+            return await infra.sandbox_protocol.list(status=status, limit=limit, offset=offset)  # type: ignore[no-any-return]
         finally:
-            await http_client.close()
+            await _InfraCloser(infra).close()
 
     @classmethod
     async def get_info_by_id(
@@ -938,32 +846,21 @@ class Sandbox:
         prov, bare = _select_provider(provider, sandbox_id)
         target = bare or sandbox_id
         closer: _InfraCloser | HttpClient
-        if prov is not None:
-            infra = await _provider_infra(
-                prov,
-                _endpoint_overrides(
-                    api_key=api_key,
-                    sandbox_api_key=sandbox_api_key,
-                    api_url=api_url,
-                    sandbox_base_url=sandbox_base_url,
-                    access_key_id=access_key_id,
-                    access_key_secret=access_key_secret,
-                    region=region,
-                ),
-                provider_options,
-            )
-            protocol = infra.sandbox_protocol
-            closer = _InfraCloser(infra)
-        else:
-            _, _, http, protocol = _build_infra(
-                api_key=_same("sandbox_api_key", sandbox_api_key, "api_key", api_key),
-                api_url=_same("sandbox_base_url", sandbox_base_url, "api_url", api_url),
+        infra = await _provider_infra(
+            prov,
+            _endpoint_overrides(
+                api_key=api_key,
+                sandbox_api_key=sandbox_api_key,
+                api_url=api_url,
+                sandbox_base_url=sandbox_base_url,
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
                 region=region,
-                provider_options=provider_options,
-            )
-            closer = http
+            ),
+            provider_options,
+        )
+        protocol = infra.sandbox_protocol
+        closer = _InfraCloser(infra)
         try:
             if operation == "get_info":
                 return await protocol.get_info(target)
@@ -1007,40 +904,25 @@ class Sandbox:
         """
         prov, bare_id = _select_provider(provider, sandbox_id)
         sandbox_id = bare_id or sandbox_id
-        if prov is not None:
-            infra = await _provider_infra(
-                prov,
-                _endpoint_overrides(
-                    api_key=api_key,
-                    sandbox_api_key=sandbox_api_key,
-                    api_url=api_url,
-                    sandbox_base_url=sandbox_base_url,
-                    access_key_id=access_key_id,
-                    access_key_secret=access_key_secret,
-                    region=region,
-                ),
-                provider_options,
-            )
-            try:
-                await infra.sandbox_protocol.kill(sandbox_id)
-                logger.info("Sandbox killed (by ID): %s", sandbox_id)
-            finally:
-                await _InfraCloser(infra).close()
-            return
-
-        config, auth, http_client, sandbox_protocol = _build_infra(
-            api_key=_same("sandbox_api_key", sandbox_api_key, "api_key", api_key),
-            api_url=_same("sandbox_base_url", sandbox_base_url, "api_url", api_url),
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-            region=region,
-            provider_options=provider_options,
+        infra = await _provider_infra(
+            prov,
+            _endpoint_overrides(
+                api_key=api_key,
+                sandbox_api_key=sandbox_api_key,
+                api_url=api_url,
+                sandbox_base_url=sandbox_base_url,
+                access_key_id=access_key_id,
+                access_key_secret=access_key_secret,
+                region=region,
+            ),
+            provider_options,
         )
         try:
-            await sandbox_protocol.kill(sandbox_id)
+            await infra.sandbox_protocol.kill(sandbox_id)
             logger.info("Sandbox killed (by ID): %s", sandbox_id)
         finally:
-            await http_client.close()
+            await _InfraCloser(infra).close()
+        return
 
     @classmethod
     async def _create_via_provider(
@@ -1056,6 +938,7 @@ class Sandbox:
         memory: int | None,
         disk: int | None,
         gpu: str | None,
+        volume_mounts: dict[str, str],
         secure: bool | None,
         domain: str | None,
         overrides: dict[str, Any],
@@ -1063,6 +946,7 @@ class Sandbox:
     ) -> Sandbox:
         infra = await _provider_infra(prov, overrides, options)
         closer = _InfraCloser(infra)
+        created: SandboxInfo | None = None
         try:
             sandbox_config = SandboxConfig(  # type: ignore[call-arg]
                 template=template,
@@ -1073,13 +957,15 @@ class Sandbox:
                 memory=memory,
                 disk=disk,
                 gpu=gpu,
+                volume_mounts=volume_mounts,
                 secure=secure,
                 provider_options=dict(options or {}),
             )
             info = await infra.sandbox_protocol.create(
                 sandbox_config, request_timeout=request_timeout
             )
-            envd_token = _envd_token(prov, info)
+            created = info
+            binding = await prov.prepare_session(infra, info, operation="create", template=template)
             logger.info("Sandbox created: %s (provider %s)", info.sandbox_id, prov.id)
             resolved = ResolvedCapabilities(
                 capabilities=set(DEFAULT_CAPABILITIES) | set(prov.capabilities())
@@ -1089,18 +975,31 @@ class Sandbox:
                 config=infra.config,
                 http_client=closer,  # type: ignore[arg-type]
                 auth=infra.auth,
-                envd_token=envd_token,
+                envd_token=binding.pop("envd_token"),
                 sandbox_protocol=infra.sandbox_protocol,
-                process_protocol=infra.process_protocol,
-                filesystem_protocol=infra.filesystem_protocol,
-                code_interpreter_protocol=infra.code_interpreter_protocol,
+                process_protocol=binding.pop("process_protocol", infra.process_protocol),
+                filesystem_protocol=binding.pop("filesystem_protocol", infra.filesystem_protocol),
+                code_interpreter_protocol=binding.pop(
+                    "code_interpreter_protocol", infra.code_interpreter_protocol
+                ),
                 domain=domain or infra.config.sandbox_domain,
                 secure=True if secure is None else secure,
-                resolved_capabilities=resolved,
-                declared_capabilities=frozenset(prov.capabilities()),
+                resolved_capabilities=binding.pop("resolved_capabilities", resolved),
+                declared_capabilities=binding.pop(
+                    "declared_capabilities", frozenset(prov.capabilities())
+                ),
                 provider_id=prov.id,
+                **binding,
             )
         except Exception:
+            if created is not None:
+                try:
+                    await infra.sandbox_protocol.kill(created.sandbox_id)
+                except Exception:
+                    logger.warning(
+                        "Created sandbox cleanup failed after session binding failed; "
+                        "inspect provider resources."
+                    )
             await closer.close()
             raise
 
@@ -1118,7 +1017,9 @@ class Sandbox:
         closer = _InfraCloser(infra)
         try:
             info = await infra.sandbox_protocol.connect(sandbox_id)
-            envd_token = _envd_token(prov, info)
+            binding = await prov.prepare_session(
+                infra, info, operation="connect", template=info.template
+            )
             logger.info("Connected to sandbox: %s (provider %s)", sandbox_id, prov.id)
             resolved = ResolvedCapabilities(
                 capabilities=set(DEFAULT_CAPABILITIES) | set(prov.capabilities())
@@ -1128,15 +1029,20 @@ class Sandbox:
                 config=infra.config,
                 http_client=closer,  # type: ignore[arg-type]
                 auth=infra.auth,
-                envd_token=envd_token,
+                envd_token=binding.pop("envd_token"),
                 sandbox_protocol=infra.sandbox_protocol,
-                process_protocol=infra.process_protocol,
-                filesystem_protocol=infra.filesystem_protocol,
-                code_interpreter_protocol=infra.code_interpreter_protocol,
+                process_protocol=binding.pop("process_protocol", infra.process_protocol),
+                filesystem_protocol=binding.pop("filesystem_protocol", infra.filesystem_protocol),
+                code_interpreter_protocol=binding.pop(
+                    "code_interpreter_protocol", infra.code_interpreter_protocol
+                ),
                 domain=domain or infra.config.sandbox_domain,
-                resolved_capabilities=resolved,
-                declared_capabilities=frozenset(prov.capabilities()),
+                resolved_capabilities=binding.pop("resolved_capabilities", resolved),
+                declared_capabilities=binding.pop(
+                    "declared_capabilities", frozenset(prov.capabilities())
+                ),
                 provider_id=prov.id,
+                **binding,
             )
         except Exception:
             await closer.close()
@@ -1195,7 +1101,9 @@ class Sandbox:
         self._info = await self._sandbox_protocol.get_info(self.id)
         # Re-derive envd URL if the platform still omits it
         if not self._info.envd_url and self._info.sandbox_id:
-            self._info.envd_url = self._config.build_envd_url(self._info.sandbox_id)
+            self._info.envd_url = get_provider(self._provider_id).resolve_session_url(
+                self._info, self._config
+            )
         return self._info
 
     # ---- Convenience methods ----
@@ -1253,18 +1161,13 @@ class Sandbox:
             rows: Terminal rows (default 24).
             shell: Shell binary (default ``/bin/bash``).
         """
-        opener = getattr(self._process_protocol, "open_terminal", None)
-        if opener is not None:
-            return await opener(self.id, cols=cols, rows=rows)  # type: ignore[no-any-return]
-        from agent_sandbox.protocol.terminal import TerminalSession
+        from agent_sandbox.providers.registry import get_provider
 
-        return await TerminalSession.create(
-            envd_url=self.url,
-            envd_token=self._envd_token,
-            config=self._config,
-            cols=cols,
-            rows=rows,
-            shell=shell,
+        return cast(
+            "TerminalSession",
+            await get_provider(self._provider_id).open_terminal(
+                self, cols=cols, rows=rows, shell=shell
+            ),
         )
 
     # ---- Named commands (registered on the in-sandbox SandboxServer) ----

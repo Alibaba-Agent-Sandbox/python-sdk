@@ -8,7 +8,7 @@ import os
 import re
 import secrets
 import shutil
-import subprocess
+import subprocess  # nosec B404 - audited argv-only subprocess boundary; no shell
 import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -42,7 +42,7 @@ _SCP_URL = re.compile(r"^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+:(?!//).+$")
 _GIT_TIMEOUT = 120
 
 #: Manifest aspects whose change forces a new consent on update.
-RISK_ASPECTS = ("runtime", "security", "features", "inherit", "fields")
+RISK_ASPECTS = ("runtime", "security", "features", "inherit", "fields", "commands")
 
 
 @dataclass
@@ -71,6 +71,7 @@ class InstallPlan:
             else [m.kind, m.endpoint.get("base_url", "")],
             "kind": m.kind,
             "features": sorted(m.features),
+            "commands": m.to_summary()["commands"],
             "security": m.security,
             "fields": [{"key": f.key, "secret": f.secret} for f in m.fields],
             "inherit": sorted(m.inherit),
@@ -214,7 +215,8 @@ def _git(args: list[str], *, cwd: Path, env: dict[str, str], stdin: bytes | None
         *args,
     ]
     try:
-        proc = subprocess.run(  # noqa: S603
+        # Fixed git argv and constrained environment; no shell interpretation.
+        proc = subprocess.run(  # noqa: S603  # nosec B603 - argv only; shell defaults to False
             cmd,
             cwd=cwd,
             env=env,
@@ -365,6 +367,8 @@ def _diff_aspects(old: dict[str, Any], new: Manifest) -> list[str]:
         changed.append("inherit")
     if consented.get("fields") != summary["fields"]:
         changed.append("fields")
+    if consented.get("commands", []) != summary["commands"]:
+        changed.append("commands")
     return changed
 
 
@@ -680,8 +684,28 @@ def update(
 
     Returns ``{"id", "status", "installed", "available", "changes"}`` where ``status`` is one of
     ``up-to-date``, ``pinned`` (pinned and no new ``ref`` given), ``available`` (``check=True``) or
-    ``updated``. ``local``/``link`` installs raise :class:`ProviderInstallError`.
+    ``updated``. The built-in provider returns ``bundled`` and host upgrade guidance,
+    without a latest-release check or software installation. ``local``/``link``
+    installs raise :class:`ProviderInstallError`.
     """
+    if provider_id == BUILTIN_PROVIDER_ID:
+        if ref:
+            raise ProviderInstallError(
+                "The bundled provider cannot use ref. Select a matching client/server SDK release."
+            )
+        return {
+            "id": provider_id,
+            "status": "bundled",
+            "installed": __version__,
+            "available": None,
+            "changes": [],
+            "message": (
+                "This provider ships with the Python SDK. Upgrade client and server packages "
+                "together using their original installation method; upgrade abx separately for "
+                "Node management commands. Restart only engines you own. This operation does "
+                "not check host releases or change installed software."
+            ),
+        }
     receipt = store.read_receipt(provider_id)
     if receipt is None:
         raise ProviderNotFoundError(f"Provider '{provider_id}' is not installed.")

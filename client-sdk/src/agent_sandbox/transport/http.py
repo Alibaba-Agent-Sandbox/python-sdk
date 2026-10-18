@@ -21,7 +21,6 @@ from agent_sandbox.models.errors import (
     InvalidAPIKeyError,
     InvalidCredentialsError,
 )
-from agent_sandbox.transport.auth import AkSkAuth
 from agent_sandbox.transport.codec import (
     CONNECT_CONTENT_TYPE,
     ConnectCodec,
@@ -33,7 +32,8 @@ from agent_sandbox.utils.logging import get_logger
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-    from agent_sandbox.transport.auth import AuthProvider, EnvdTokenManager
+    from agent_sandbox.transport.auth_contract import AuthProvider
+    from agent_sandbox.transport.auth_contract import DataPlaneAuth as EnvdTokenManager
     from agent_sandbox.transport.config import TransportConfig
 
 logger = get_logger("transport.http")
@@ -353,10 +353,11 @@ class HttpClient:
 
     def _authentication_error(self, path: str) -> InvalidAPIKeyError | InvalidCredentialsError:
         """The SDK error for a Platform API 401 (the exception text never includes the URL)."""
-        if isinstance(self._auth, AkSkAuth):
-            return InvalidCredentialsError(
-                f"The Platform API rejected the AK/SK credentials (HTTP 401) for {path}."
-            )
+        handler = getattr(self._auth, "authentication_error", None)
+        if callable(handler):
+            error = handler(path)
+            if isinstance(error, (InvalidAPIKeyError, InvalidCredentialsError)):
+                return error
         return InvalidAPIKeyError(
             f"The Platform API rejected the API key (HTTP 401) for {path}: "
             "it is invalid, revoked or for another region."

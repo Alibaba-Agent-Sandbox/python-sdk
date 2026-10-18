@@ -39,6 +39,8 @@ The installer fetches the catalog index at `https://registry.agent-sandbox.cn/pr
 
 ---
 
+Provider management operations are available through `agent_sandbox.providers.commands`; see the [provider command guide](docs/en/guide/provider-commands.md).
+
 ## Client SDK
 
 - **Async-first** — `Sandbox.create()`, shell execution, code interpretation, file I/O, port forwarding, and WebSocket streaming.

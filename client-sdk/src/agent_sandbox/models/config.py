@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from agent_sandbox.providers.bundled_config import DEFAULT_CONFIG
+
 
 class GlobalConfig(BaseModel):
     """SDK-wide configuration settings.
@@ -18,9 +20,9 @@ class GlobalConfig(BaseModel):
     access_key_secret: str | None = None
 
     # Connection
-    api_url: str = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
-    domain: str = "cn-hangzhou.e2b.fc.aliyuncs.com"
-    region: str = "cn-hangzhou"
+    api_url: str = DEFAULT_CONFIG["endpoint_defaults"]["sandbox_base_url"]
+    domain: str = DEFAULT_CONFIG["endpoint_defaults"]["sandbox_domain"]
+    region: str = str(next(key.default for key in DEFAULT_CONFIG["keys"] if key.key == "region"))
     timeout: int = Field(default=300, ge=1)
     max_retries: int = Field(default=3, ge=0, le=10)
     secure: bool = True
@@ -28,12 +30,12 @@ class GlobalConfig(BaseModel):
     @staticmethod
     def api_url_for_region(region: str) -> str:
         """Generate the Platform API URL for a given region."""
-        return f"https://api.{region}.e2b.fc.aliyuncs.com"
+        return str(DEFAULT_CONFIG["derive"]["sandbox_base_url"]).replace("{region}", region)
 
     @staticmethod
     def domain_for_region(region: str) -> str:
         """Generate the data-plane domain for a given region."""
-        return f"{region}.e2b.fc.aliyuncs.com"
+        return str(DEFAULT_CONFIG["derive"]["sandbox_domain"]).replace("{region}", region)
 
     # Logging
     log_level: str = "WARNING"

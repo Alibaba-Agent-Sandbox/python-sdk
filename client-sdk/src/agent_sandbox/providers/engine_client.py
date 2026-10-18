@@ -219,6 +219,7 @@ class EngineClient:
         params: dict[str, Any] | None = None,
         timeout: float | None = None,
         connection: dict[str, Any] | None = None,
+        retry: bool = True,
     ) -> httpx.Response:
         """Recover safe reads once; never replay a mutation after transport failure."""
         extra: dict[str, str] = {}
@@ -227,7 +228,7 @@ class EngineClient:
         if content is not None:
             extra["Content-Type"] = "application/octet-stream"
         last: Exception | None = None
-        for attempt in range(2):
+        for attempt in range(2 if retry else 1):
             record = await self._record_now(fresh=attempt > 0)
             try:
                 res = await self._http.request(
@@ -244,7 +245,7 @@ class EngineClient:
                     raise _unknown_outcome() from exc
                 last = exc
                 continue
-            if res.status_code == 401 and attempt == 0:
+            if res.status_code == 401 and attempt == 0 and retry:
                 continue
             return res
         raise ProviderProtocolError(f"The provider engine is not reachable: {last}")

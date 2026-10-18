@@ -45,7 +45,12 @@ class TestRegistry:
         assert p.display_name == "Alibaba Cloud Express Edition"
         assert p.display_name_zh == "阿里云极速版"
         assert p.kind == "builtin"
-        assert p.supports("files.rw") and p.supports("storage.mount")
+        assert p.supports("files.rw")
+        assert not p.supports("storage.mount")
+        assert not p.supports("ports.domain")
+        assert not p.supports("network.vpc")
+        assert not p.supports("templates.deploy")
+        assert not p.supports("sandbox.pause")
 
     def test_register_and_conflicts(self, iso):  # noqa: F811
         register_provider(_Py())

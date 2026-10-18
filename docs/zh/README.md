@@ -44,6 +44,7 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 | [会话持久化](guide/session-persistence.md) | 本地会话存储 |
 | [E2B 迁移](guide/migrate-from-e2b.md) | 从 E2B 迁移 |
 | [提供方](guide/providers.md) | 选择、安装、编写提供方 |
+| [提供方管理命令](guide/provider-commands.md) | 通过共享引擎发现和调用提供方资源操作 |
 | [环境变量](guide/environment-variables.md) | 注入与沙箱内读取 |
 | [故障排查](guide/troubleshooting.md) | 常见问题 |
 | [对比](guide/comparison.md) | 与 E2B、Modal、Docker Sandbox |
@@ -144,3 +145,5 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 ## 相关：abx CLI
 
 `abx` CLI（npm 包 `@agent-sandbox/cli`）的文档位于 [`cli` 仓库](https://github.com/alibaba-agent-sandbox/agent-sandbox)：[文档中心](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/README.md)、[快速开始](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/getting-started.md)、[CLI 参考](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/cli-reference.md)、[CLI 架构](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/architecture.md)、[CLI 命令体系](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/cli-design.md)、[模板目录](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/templates-catalog.md)、[部署与构建](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/deploy-and-build.md)、[Agent Skill 安装与分发](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/agent-skill-installation.md)。
+
+- [接入已有极速版账号](guide/migrate-from-alicloud-express.md)：资源复用、API/配置差异及内置 provider 更新。

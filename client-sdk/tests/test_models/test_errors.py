@@ -106,7 +106,7 @@ class TestAuthenticationErrors:
         err = InvalidCredentialsError("bad creds")
         assert isinstance(err, AuthenticationError)
         assert err.code == "E1003"
-        assert "ALICLOUD" in err.suggestion
+        assert "selected provider" in err.suggestion
 
 
 # ---- Creation Errors ----

@@ -140,7 +140,7 @@ async def test_explicit_provider_beats_ambient_default(local_process, monkeypatc
     from agent_sandbox.api import sandbox as sandbox_mod
 
     prov, _ = sandbox_mod._select_provider("alicloud-express")
-    assert prov is None  # built-in path
+    assert prov.id == "alicloud-express"  # same provider contract as plugins
 
 
 async def test_tampered_plugin_refuses_to_start(local_process):
@@ -194,26 +194,35 @@ async def test_python_provider_object(iso):
     assert registry.get_provider("fake-py") is fake
 
 
-async def test_builtin_default_path_is_untouched(iso, monkeypatch):
-    """No provider named anywhere: the original build path (auth + http + SandboxProtocol) is used."""
-    import agent_sandbox.api.sandbox as mod
+async def test_builtin_default_uses_registered_provider_factory(iso, monkeypatch):
+    """The default follows the same provider factory as an explicitly selected plugin."""
+    from unittest.mock import AsyncMock
 
-    built = {}
+    from agent_sandbox.models.sandbox import SandboxInfo
+    from agent_sandbox.providers.base import ProviderInfra
+    from agent_sandbox.providers.registry import get_provider
+    from agent_sandbox.transport.auth_contract import SessionAuth
 
-    class FakeProto:
-        def __init__(self, http):
-            built["http"] = http
+    provider = get_provider("alicloud-express")
+    protocol = type("Lifecycle", (), {})()
+    protocol.create = AsyncMock(return_value=SandboxInfo(sandbox_id="sb-1", envd_url="https://x"))
+    close = AsyncMock()
 
-        async def create(self, cfg, *, request_timeout=None):
-            from agent_sandbox.models.sandbox import SandboxInfo
+    async def factory(config):
+        return ProviderInfra(config, None, None, protocol, close=close)
 
-            return SandboxInfo(sandbox_id="sb-1", template=cfg.template, envd_url="https://x")
-
-    monkeypatch.setattr(mod, "SandboxProtocol", FakeProto)
+    monkeypatch.setattr(provider, "build_infra", factory)
+    # Session setup has its own backend tests; this verifies generic default routing.
+    monkeypatch.setattr(
+        provider,
+        "prepare_session",
+        AsyncMock(return_value={"envd_token": SessionAuth(None, "sb-1")}),
+    )
     sb = await Sandbox.create(api_key="k", api_url="https://api.example")
-    assert sb.provider == "alicloud-express"
-    assert built["http"] is not None
-    await built["http"].close()
+    assert sb.provider == provider.id
+    protocol.create.assert_awaited_once()
+    await sb.close()
+    close.assert_awaited_once()
 
 
 async def test_contract_kit_passes_for_reference_plugin(local_process):

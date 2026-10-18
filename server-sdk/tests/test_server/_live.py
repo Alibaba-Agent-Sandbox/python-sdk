@@ -10,6 +10,7 @@ import time
 from typing import Any
 
 from agent_sandbox.server.app import SandboxServer
+from agent_sandbox.server.endpoints import CapabilityGroup
 from agent_sandbox.server.policy import ServerPolicy
 from agent_sandbox.server.registry import CommandRegistry
 from agent_sandbox.server.router import default_table
@@ -57,11 +58,28 @@ class Live:
         self.thread.start()
         deadline = time.time() + 5
         while time.time() < deadline:
+            # A successful TCP connect alone can precede app initialization.
+            # Wait for this instance to install its policy and start its PTY
+            # thread before exposing it to assertions or teardown.
+            httpd = self.server._httpd
+            pty = self.server._pty_thread
+            if (
+                httpd is None
+                or not hasattr(httpd, "policy_engine")
+                or (
+                    self.server.policy_engine.group_enabled(CapabilityGroup.TERMINAL)
+                    and (pty is None or pty.ident is None)
+                )
+            ):
+                time.sleep(0.02)
+                continue
             try:
                 with socket.create_connection(("127.0.0.1", self.port), timeout=0.2):
                     break
             except OSError:
                 time.sleep(0.02)
+        else:
+            raise RuntimeError("Test server did not become ready within five seconds")
 
     def close(self) -> None:
         if self._closed:

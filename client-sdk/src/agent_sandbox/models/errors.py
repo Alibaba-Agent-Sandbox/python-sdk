@@ -87,9 +87,7 @@ class InvalidCredentialsError(AuthenticationError):
     """AK/SK credentials are invalid."""
 
     code = "E1003"
-    suggestion = (
-        "Check ALICLOUD_ACCESS_KEY_ID and ALICLOUD_ACCESS_KEY_SECRET environment variables."
-    )
+    suggestion = "Check the selected provider authentication configuration (abx provider info)."
 
 
 class TokenExchangeError(AuthenticationError):

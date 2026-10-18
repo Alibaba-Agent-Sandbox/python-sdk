@@ -25,12 +25,17 @@ import os
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from agent_sandbox._provider_schema import ProviderSchema as ProviderSchema
 from agent_sandbox._provider_schema import resolve_provider_schema
+from agent_sandbox.utils.bundled_config import (
+    BUNDLED_CONFIGS,
+    BUNDLED_KEYS,
+    DEFAULT_CONFIG,
+    bundled_config,
+)
 from agent_sandbox.utils.config_keys import (
-    ALICLOUD_EXPRESS_KEYS,
     BUILTIN_PROVIDER_ID,
     CORE_KEYS,
     GENERIC_ENDPOINT_KEYS,
@@ -60,13 +65,11 @@ _PROJECT_ENV_FILE = Path(".env")
 # Module-level cache
 _cached_config: TransportConfig | None = None
 
-DEFAULT_BASE_URL = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
-DEFAULT_DOMAIN = "cn-hangzhou.e2b.fc.aliyuncs.com"
-
-_BUILTIN_DERIVE: dict[str, str] = {
-    "sandbox_base_url": "https://api.{region}.e2b.fc.aliyuncs.com",
-    "sandbox_domain": "{region}.e2b.fc.aliyuncs.com",
-}
+DEFAULT_BASE_URL = DEFAULT_CONFIG["endpoint_defaults"]["sandbox_base_url"]
+DEFAULT_DOMAIN = DEFAULT_CONFIG["endpoint_defaults"]["sandbox_domain"]
+_DEFAULT_REGION = str(
+    next((key.default for key in DEFAULT_CONFIG["keys"] if key.key == "region"), "")
+)
 
 
 class TransportConfig(BaseModel):
@@ -80,17 +83,15 @@ class TransportConfig(BaseModel):
     # API endpoints
     sandbox_base_url: str = Field(default=DEFAULT_BASE_URL, description="Platform API URL")
     sandbox_domain: str = Field(default=DEFAULT_DOMAIN, description="Data-plane domain")
-    region: str = "cn-hangzhou"
+    region: str = _DEFAULT_REGION
 
     # Authentication
     sandbox_api_key: str | None = Field(
         default=None, description="Sandbox API key (ABX_SANDBOX_API_KEY)", repr=False
     )
-    access_key_id: str | None = Field(
-        default=None, description="Alibaba Cloud AccessKey ID (ALICLOUD_ACCESS_KEY_ID)"
-    )
+    access_key_id: str | None = Field(default=None, description="Provider AccessKey ID")
     access_key_secret: str | None = Field(
-        default=None, description="Alibaba Cloud SK (ALICLOUD_ACCESS_KEY_SECRET)", repr=False
+        default=None, description="Provider AccessKey Secret", repr=False
     )
 
     # Provider-scoped values of non-built-in providers (and extra built-in keys such as ``acr_*``)
@@ -113,6 +114,17 @@ class TransportConfig(BaseModel):
     retry_base_delay: float = Field(default=1.0, ge=0.1)
 
     model_config = {"extra": "ignore"}
+
+    @model_validator(mode="before")
+    @classmethod
+    def selected_provider_defaults(cls, value: Any) -> Any:
+        """An explicit external provider never inherits the distribution's cloud endpoints."""
+        if not isinstance(value, dict):
+            return value
+        metadata = bundled_config(str(value.get("provider", BUILTIN_PROVIDER_ID)))
+        if metadata is None:
+            return {"sandbox_base_url": "", "sandbox_domain": "", "region": "", **value}
+        return value
 
     def build_envd_url(self, sandbox_id: str) -> str:
         """构建 envd 数据平面 URL（已实测验证）。
@@ -199,19 +211,28 @@ def project_dotenv_value(names: tuple[str, ...]) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-def _builtin_schema() -> ProviderSchema:
+def _metadata_schema(metadata: dict[str, Any]) -> ProviderSchema:
     return ProviderSchema(
-        BUILTIN_PROVIDER_ID,
-        ALICLOUD_EXPRESS_KEYS,
-        frozenset(GENERIC_ENDPOINT_KEYS),
-        _BUILTIN_DERIVE,
+        metadata["id"],
+        metadata["keys"],
+        metadata["inherit"],
+        metadata["derive"],
+        metadata["endpoint_defaults"],
+        legacy_fields=frozenset(metadata.get("legacy_fields", ())),
+        omit_default_options=bool(metadata.get("omit_default_options", False)),
     )
 
 
+def _builtin_schema() -> ProviderSchema:
+    """Compatibility view of the distribution default metadata."""
+    return _metadata_schema(DEFAULT_CONFIG)
+
+
 def provider_schema(provider_id: str) -> ProviderSchema:
-    """Schema of *provider_id* (built-in or registered/installed)."""
-    if provider_id == BUILTIN_PROVIDER_ID:
-        return _builtin_schema()
+    """Configuration is supplied by bundled metadata or the selected provider."""
+    metadata = bundled_config(provider_id)
+    if metadata is not None:
+        return _metadata_schema(metadata)
     return resolve_provider_schema(provider_id)
 
 
@@ -251,7 +272,7 @@ def resolve_all(
             key,
             sources,
             scoped_for=scoped,
-            use_default=schema.builtin or key.key not in GENERIC_ENDPOINT_KEYS,
+            use_default=key.key not in GENERIC_ENDPOINT_KEYS,
         )
         if res is None and key.key in schema.endpoint_defaults:
             res = Resolved(key.key, schema.endpoint_defaults[key.key], "default", "")
@@ -275,7 +296,7 @@ def _apply_derive(sources: Sources, schema: ProviderSchema, out: dict[str, Resol
     """
     base_key = get_key("sandbox_base_url")
     assert base_key is not None
-    if "sandbox_base_url" in schema.inherit or schema.builtin:
+    if "sandbox_base_url" in schema.inherit:
         explicit = resolve_key(
             base_key,
             Sources(overrides=sources.overrides, environ=sources.environ),
@@ -345,19 +366,23 @@ def load_config(**overrides: Any) -> TransportConfig:
         )
 
     field_names = set(TransportConfig.model_fields) - {"provider", "provider_options"}
-    field_scoped = {"region", "access_key_id", "access_key_secret"} if schema.builtin else set()
+    field_scoped = schema.legacy_fields
     values: dict[str, Any] = {"provider": schema.provider_id}
     opts: dict[str, Any] = {}
     for key_name, res in resolved.items():
         if key_name in scoped:
             if key_name in field_scoped:
                 values[key_name] = res.value
-            elif not schema.builtin or res.layer != "default":
+            elif not schema.omit_default_options or res.layer != "default":
                 opts[key_name] = res.value
         elif key_name in field_names:
             values[key_name] = res.value
     values["provider_options"] = {**opts, **{k: v for k, v in options.items() if k in scoped}}
 
+    # A provider with no endpoint metadata never inherits the distribution default.
+    values.setdefault("sandbox_base_url", schema.endpoint_defaults.get("sandbox_base_url", ""))
+    values.setdefault("sandbox_domain", schema.endpoint_defaults.get("sandbox_domain", ""))
+    values.setdefault("region", "")
     config = TransportConfig(**values)
 
     if not overrides:
@@ -427,7 +452,7 @@ def http_timeout_configured() -> bool:
 
 def _legacy_env_index() -> dict[str, tuple[ConfigKey, str]]:
     idx: dict[str, tuple[ConfigKey, str]] = {}
-    for key in (*CORE_KEYS, *ALICLOUD_EXPRESS_KEYS):
+    for key in (*CORE_KEYS, *BUNDLED_KEYS):
         for a in key.aliases:
             if a.surface == "env" and a.kind == "legacy":
                 idx[a.name] = (key, a.kind)
@@ -436,7 +461,7 @@ def _legacy_env_index() -> dict[str, tuple[ConfigKey, str]]:
 
 def _toml_legacy_index() -> dict[str, ConfigKey]:
     idx: dict[str, ConfigKey] = {}
-    for key in (*CORE_KEYS, *ALICLOUD_EXPRESS_KEYS):
+    for key in (*CORE_KEYS, *BUNDLED_KEYS):
         for a in key.aliases:
             if a.surface in ("config", "kwarg") and a.kind == "legacy":
                 idx.setdefault(a.name, key)
@@ -526,20 +551,21 @@ def plan_migration_data(toml: dict[str, Any], env: dict[str, str]) -> list[dict[
                     }
                 )
         providers = toml.get("providers")
-        prov_table = providers.get(BUILTIN_PROVIDER_ID) if isinstance(providers, dict) else None
-        for key in ALICLOUD_EXPRESS_KEYS:
-            p2 = key.storage_phase2
-            if key.key in transport and p2 is not None and p2.file == "toml":
-                exists = isinstance(prov_table, dict) and key.key in prov_table
-                plan.append(
-                    {
-                        "file": "toml",
-                        "action": "drop" if exists else "rename",
-                        "from": f"transport.{key.key}",
-                        "to": f"providers.{BUILTIN_PROVIDER_ID}.{key.key}",
-                    }
-                )
-    for key in (*CORE_KEYS, *ALICLOUD_EXPRESS_KEYS):
+        for metadata in BUNDLED_CONFIGS:
+            prov_table = providers.get(metadata["id"]) if isinstance(providers, dict) else None
+            for key in metadata["keys"]:
+                p2 = key.storage_phase2
+                if key.key in transport and p2 is not None and p2.file == "toml":
+                    exists = isinstance(prov_table, dict) and key.key in prov_table
+                    plan.append(
+                        {
+                            "file": "toml",
+                            "action": "drop" if exists else "rename",
+                            "from": f"transport.{key.key}",
+                            "to": f"providers.{metadata['id']}.{key.key}",
+                        }
+                    )
+    for key in (*CORE_KEYS, *BUNDLED_KEYS):
         p2 = key.storage_phase2
         target_env = p2.name if p2 and p2.file == "env" else key.env
         # Native names (OPENAI_*, DASHSCOPE_*) are user-owned: only the names that

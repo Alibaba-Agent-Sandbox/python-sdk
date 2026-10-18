@@ -171,3 +171,5 @@ sandbox = await Sandbox.create(
 - [认证详解](authentication.md) — 了解完整的认证方式
 - [SDK 使用指南](sdk-usage.md) — SDK 完整使用方法
 - [E2B 兼容性说明](../explanation/e2b-compatibility.md) — 设计背景与原因
+
+如果现有 E2B 客户端已经连接阿里云极速版，参阅[已有极速版账号迁移指南](migrate-from-alicloud-express.md)。云端资源可保留，客户端及配置兼容性仍需核对。

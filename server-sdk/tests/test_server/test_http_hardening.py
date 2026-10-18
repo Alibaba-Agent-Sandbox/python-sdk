@@ -14,7 +14,6 @@ if TYPE_CHECKING:
 def raw_exchange(port: int, request: bytes) -> tuple[int, bytes]:
     with socket.create_connection(("127.0.0.1", port), timeout=10) as sock:
         sock.sendall(request)
-        sock.shutdown(socket.SHUT_WR)
         chunks: list[bytes] = []
         while True:
             data = sock.recv(65536)
@@ -28,7 +27,7 @@ def raw_exchange(port: int, request: bytes) -> tuple[int, bytes]:
 
 
 def post_raw(port: int, path: str, headers: list[str], body: bytes = b"{}") -> tuple[int, bytes]:
-    head = "\r\n".join([f"POST {path} HTTP/1.1", "Host: x", *headers, "", ""])
+    head = "\r\n".join([f"POST {path} HTTP/1.1", f"Host: 127.0.0.1:{port}", *headers, "", ""])
     return raw_exchange(port, head.encode() + body)
 
 

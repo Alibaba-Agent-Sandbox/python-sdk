@@ -38,6 +38,8 @@ Node.js 项目，位于 [`cli`](https://github.com/alibaba-agent-sandbox/agent-s
 
 ---
 
+提供方管理操作通过 `agent_sandbox.providers.commands` 调用，参阅[提供方命令指南](docs/zh/guide/provider-commands.md)。
+
 ## Client SDK
 
 - **异步优先** —— `Sandbox.create()`，Shell 执行、代码解释、文件读写、端口转发、WebSocket 流。

@@ -30,9 +30,8 @@ from agent_sandbox.utils.logging import get_logger
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
-    from agent_sandbox.protocol.process import ProcessProtocol
-    from agent_sandbox.transport.auth import EnvdTokenManager
+    from agent_sandbox.protocol.contracts import CodeInterpreterProtocol, ProcessProtocol
+    from agent_sandbox.transport.auth_contract import DataPlaneAuth as EnvdTokenManager
 
 logger = get_logger("api.code")
 

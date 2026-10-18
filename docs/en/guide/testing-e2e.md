@@ -45,3 +45,12 @@ Outside the test suite, the walkthrough that runs the example scripts on the def
 ## Local HTTP and PTY fixture ports
 
 The client component fixture selects distinct HTTP and PTY port candidates before starting either listener. A released ephemeral candidate may be returned again; selection retries are bounded and preserve an explicit PTY port. These local allocation retries do not replay a request or replace real-cloud acceptance. The deterministic reuse regression starts the actual server and verifies both listeners, then normal fixture cleanup shuts them down.
+
+
+## Local raw HTTP fixtures
+
+Raw requests identify the actual listener authority. Fixtures wait for their HTTP server
+to initialize within the existing deadline and read the complete framed response. An
+intermediary can reject intentionally malformed HTTP/WebSocket traffic before it reaches
+the handler; keep those failures visible and run the unchanged assertions in hosted CI.
+Do not substitute skips, longer timeouts or proxy policy changes for protocol coverage.
