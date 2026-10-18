@@ -41,7 +41,8 @@ class AlicloudExpressProvider(Provider):
     display_name = BUILTIN_PROVIDER_NAME
     display_name_zh = BUILTIN_PROVIDER_NAME_ZH
     kind = "builtin"
-    features = frozenset(FEATURES)
+    # Registering an image-only deployment feature does not implement its factory.
+    features = frozenset(FEATURES) - {"templates.deploy"}
     inherit = frozenset(GENERIC_ENDPOINT_KEYS)
 
     def __init__(self) -> None:

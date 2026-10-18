@@ -44,6 +44,7 @@ FEATURES: tuple[str, ...] = (
     "code.interpret",
     "templates.read",
     "templates.build",
+    "templates.deploy",
     "ports.url",
     "ports.domain",
     "storage.mount",
@@ -65,6 +66,7 @@ ProviderFeature = Literal[
     "code.interpret",
     "templates.read",
     "templates.build",
+    "templates.deploy",
     "ports.url",
     "ports.domain",
     "storage.mount",
@@ -101,7 +103,7 @@ def consented_inherit(declared: Iterable[str], receipt: Mapping[str, Any] | None
 
 
 class Extension(NamedTuple):
-    """A capability outside the fixed 18 feature ids.
+    """A capability outside the feature registry.
 
     ``when`` decides whether a live sandbox shows it. The provider catalog
     (``describe``) always lists every extension the provider registered.
