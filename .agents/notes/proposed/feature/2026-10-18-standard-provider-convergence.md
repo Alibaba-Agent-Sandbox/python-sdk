@@ -35,5 +35,7 @@ Express standard lifecycle/files/process/interpreter/network scenarios and clean
 Latest-head matrix passes and required real component/artifact checks are recorded.
 Conditional pause/snapshot success needs an enabled fixture and remains outstanding.
 
+Accepted native preflight integration: https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/68.
+
 ## Evidence
 [Verification](../../../evidence/verify/2026-10-18-standard-provider-convergence.md).

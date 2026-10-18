@@ -48,3 +48,15 @@ Contributor guidance now states both actual public entry shapes, canonical nativ
 configuration and tested source-install requirements. Removed stale package-release
 wording and the obsolete blanket not-drop-in characterization; account capability
 restrictions remain explicit. This is a documentation/instruction correction only.
+
+## Accepted preflight integration
+
+Ordinary merge of accepted SDK68 main81cca585 retains the same native terminal
+preflight already present in this standard candidate and imports its independently
+accepted note/evidence and bilingual guide updates. No implementation file changes
+relative to b779c46d. Maintained lint/format/typecheck PASS for both packages
+(server56 and client105 source files). Fresh full client non-integration run2183
+PASS/24 SKIP/10 integration deselected in120.01s; earlier2193 count included those
+ten tests. No skipped test is promoted to pass. Prior real Express and hosted
+server-matrix receipts remain unchanged; no new cloud resources created.
+Latest-head CI follows push. Conditional enabled pause/snapshot remains blocked.

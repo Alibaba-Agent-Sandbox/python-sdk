@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Reject undeclared native Express PTY before session/context or wire access.
+
 - Reconcile provider isolation with accepted native transport, explicit-key authentication and retired-module cleanup; preserve canonical compatibility aliases and pure configuration metadata.
 
 ### Documentation
