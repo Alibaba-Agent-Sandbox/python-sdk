@@ -400,3 +400,8 @@ A package can also publish an entry point in the group `agent_sandbox.providers`
 - [Configuration reference](../reference/configuration.md) — names, aliases, precedence
 - [Authentication](authentication.md)
 - [Design: providers and credentials](../design/providers-and-credentials.md)
+
+Native terminal access enforces the provider's `pty` declaration before reading
+session context or starting its wire adapter. An unsupported terminal returns the
+typed provider feature error; declaring a client method does not enable an account
+or function capability.

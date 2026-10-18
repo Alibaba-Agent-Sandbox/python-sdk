@@ -395,3 +395,6 @@ register_provider(MyProvider())
 - [配置参考](../reference/configuration.md) —— 名称、别名、优先级
 - [认证详解](authentication.md)
 - [设计：提供方与凭证](../design/providers-and-credentials.md)
+
+原生终端在读取会话上下文或启动协议适配器前检查 Provider 的 `pty` 声明。
+不支持时返回明确的能力错误；客户端存在方法并不代表账号或函数已开通该能力。
