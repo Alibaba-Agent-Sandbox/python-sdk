@@ -27,6 +27,21 @@ If you never touch providers, nothing changes: every command, every output and e
 
 ---
 
+## Engine recovery and uncertain results
+
+For Node provider plugins, the Python SDK rediscovers the local engine once after a
+transport failure only for `GET` and `HEAD`. A read stream can recover only before
+it yields its first event. Creation, execution, uploads and other mutations are
+never automatically replayed after a connection failure, even if no response or
+SSE event arrived. The engine may already have performed the operation.
+
+Such a failure raises `ProviderProtocolError` (E8020) with an unknown-outcome
+message. Inspect the selected provider's sandbox list or command state before
+retrying; a blind retry can create duplicate resources or repeat a command.
+A confirmed engine HTTP 401 rejection can still refresh discovery once because
+authentication rejects the request before dispatch. No idempotency or automatic
+rollback guarantee is implied.
+
 ## Choosing a provider
 
 Highest priority first:

@@ -76,7 +76,8 @@ class TestAuthentication:
     def test_ambiguous_x_access_token_rejected(self, live_server: Any) -> None:
         live: Live = live_server(policy=tokens_policy())
         raw = (
-            f"GET /capabilities HTTP/1.1\r\nHost: x\r\nX-Access-Token: {READER}\r\n"
+            f"GET /capabilities HTTP/1.1\r\nHost: 127.0.0.1:{live.port}\r\n"
+            f"X-Access-Token: {READER}\r\n"
             f"X-Access-Token: {ADMIN}\r\nConnection: close\r\n\r\n"
         ).encode()
         import socket

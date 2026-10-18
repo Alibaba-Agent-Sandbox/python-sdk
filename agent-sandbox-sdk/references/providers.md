@@ -16,4 +16,4 @@ Express is the only provider that reads `ABX_SANDBOX_API_KEY`. None of the catal
 
 Default. Credentials are `ABX_SANDBOX_API_KEY`, or `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. Region is `ALIBABA_CLOUD_REGION_ID` (the CLI also stores it with `abx config set region`). Template images for this provider use the FC Dockerfile in `SKILL.md`.
 
-Create goes through the local engine (`~/.abx/engine.sock`, or `ABX_ENGINE_SOCKET`). The engine holds the Express HTTP connection for that create. Commands and files on an existing Express sandbox use the envd URL from the create response.
+Create uses the SDK platform HTTP protocol directly. Commands, files and terminals use the returned envd URL with version-aware framing. No Python gRPC daemon or held local session is required. Node plugins retain the separate CLI Node engine.

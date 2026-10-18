@@ -52,3 +52,18 @@ Move the file and edit `Status:` in the same commit. Required sections and the t
 - [Provider isolation verification](evidence/verify/2026-10-18-provider-complete-isolation.md)
 
 - [Explicit native engine routing verification](evidence/verify/2026-10-18-provider-explicit-engine-routing.md)
+Auth migration: [explicit sandbox API keys](notes/implemented/architecture/2026-10-18-data-plane-auth-contract.md).
+
+Accepted engine recovery: [avoid uncertain mutation replay](notes/implemented/architecture/2026-10-18-engine-write-replay.md).
+
+
+Configuration composition: [schema resolver](notes/implemented/architecture/2026-10-18-config-schema-composition.md).
+
+- [Legacy retry compatibility](notes/implemented/architecture/2026-10-18-retry-compatibility.md).
+Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-native-builtin-data-plane.md).
+
+- [Distinct local listener ports](notes/implemented/process/2026-10-18-distinct-local-server-ports.md).
+
+- [Current paired source installation](notes/proposed/process/2026-10-18-current-source-installation.md).
+
+- [Current-host provider integration](evidence/verify/2026-10-18-provider-current-host-checkpoint.md)

@@ -35,6 +35,8 @@ async with await Sandbox.create(template="base") as sb:
 
 ---
 
+Current builtin runtime: [direct HTTP and migration](design/builtin-data-plane.md).
+
 ## Architecture Overview
 
 The SDK follows a strict layered architecture — lower layers never import upper layers:

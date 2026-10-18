@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import time
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
-import httpx
 import pytest
 
 from agent_sandbox.models.errors import (
@@ -22,7 +21,6 @@ from agent_sandbox.transport.auth import (
     AkSkAuth,
     ApiKeyAuth,
     EnvdTokenManager,
-    _exchange_aksk_for_api_key,
     build_envd_headers,
     create_auth_provider,
 )
@@ -192,23 +190,14 @@ class TestCreateAuthProvider:
         auth = create_auth_provider(api_key="my-key", access_key_id="ak", access_key_secret="sk")
         assert isinstance(auth, ApiKeyAuth)
 
-    def test_ak_sk_fallback(self):
-        auth = create_auth_provider(access_key_id="ak", access_key_secret="sk")
-        assert isinstance(auth, AkSkAuth)
-
-    def test_ak_sk_has_exchange_func_injected(self):
-        """When AK/SK is used, exchange function should be auto-injected."""
-        auth = create_auth_provider(access_key_id="ak", access_key_secret="sk")
-        assert isinstance(auth, AkSkAuth)
-        assert auth._exchange_func is not None
-
-    def test_ak_sk_with_custom_region(self):
-        """Exchange function should bind the provided region."""
-        auth = create_auth_provider(
-            access_key_id="ak", access_key_secret="sk", region="cn-shanghai"
-        )
-        assert isinstance(auth, AkSkAuth)
-        assert auth._exchange_func is not None
+    @pytest.mark.parametrize("region", ["cn-hangzhou", "cn-shanghai"])
+    def test_ak_sk_requires_explicit_api_key_without_network(self, region):
+        with (
+            patch("httpx.AsyncClient") as network,
+            pytest.raises(InvalidAPIKeyError, match="sandbox API Key"),
+        ):
+            create_auth_provider(access_key_id="ak", access_key_secret="sk", region=region)
+        network.assert_not_called()
 
     def test_no_credentials_raises(self):
         with pytest.raises(InvalidAPIKeyError, match="No authentication credentials"):
@@ -253,139 +242,6 @@ class TestBuildEnvdHeaders:
         assert headers[ENVD_SANDBOX_PORT_HEADER] == "49983"
         assert headers["Authorization"].startswith("Basic ")
         assert len(headers) == 4
-
-
-class TestExchangeAkskForApiKey:
-    """Tests for the _exchange_aksk_for_api_key function."""
-
-    async def test_successful_exchange(self):
-        """Test successful token exchange returns API key."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"ApiKey": "ek-test-key-123"}
-        mock_response.text = '{"ApiKey": "ek-test-key-123"}'
-
-        mock_client = AsyncMock()
-        mock_client.get.return_value = mock_response
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-
-        with patch("httpx.AsyncClient", return_value=mock_client):
-            result = await _exchange_aksk_for_api_key("ak-id", "sk-secret")
-            assert result == "ek-test-key-123"
-
-    async def test_exchange_with_nested_data_field(self):
-        """Test exchange parsing Data.ApiKey response format."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "Data": {"ApiKey": "ek-nested-key"},
-            "RequestId": "req-123",
-        }
-
-        mock_client = AsyncMock()
-        mock_client.get.return_value = mock_response
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-
-        with patch("httpx.AsyncClient", return_value=mock_client):
-            result = await _exchange_aksk_for_api_key("ak-id", "sk-secret")
-            assert result == "ek-nested-key"
-
-    async def test_exchange_http_error_raises(self):
-        """Test that HTTP errors raise TokenExchangeError."""
-        mock_response = MagicMock()
-        mock_response.status_code = 403
-        mock_response.text = "Forbidden: invalid credentials"
-
-        mock_client = AsyncMock()
-        mock_client.get.return_value = mock_response
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-
-        with (
-            patch("httpx.AsyncClient", return_value=mock_client),
-            pytest.raises(TokenExchangeError, match="HTTP 403"),
-        ):
-            await _exchange_aksk_for_api_key("ak-id", "sk-secret")
-
-    async def test_exchange_connect_error_raises(self):
-        """Test that connection errors raise TokenExchangeError."""
-        mock_client = AsyncMock()
-        mock_client.get.side_effect = httpx.ConnectError("Connection refused")
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-
-        with (
-            patch("httpx.AsyncClient", return_value=mock_client),
-            pytest.raises(TokenExchangeError, match="Failed to connect"),
-        ):
-            await _exchange_aksk_for_api_key("ak-id", "sk-secret")
-
-    async def test_exchange_timeout_raises(self):
-        """Test that timeout raises TokenExchangeError."""
-        mock_client = AsyncMock()
-        mock_client.get.side_effect = httpx.ReadTimeout("Read timed out")
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-
-        with (
-            patch("httpx.AsyncClient", return_value=mock_client),
-            pytest.raises(TokenExchangeError, match="timed out"),
-        ):
-            await _exchange_aksk_for_api_key("ak-id", "sk-secret")
-
-    async def test_exchange_missing_api_key_in_response(self):
-        """Test that missing API key in response raises TokenExchangeError."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"RequestId": "req-123", "Status": "ok"}
-
-        mock_client = AsyncMock()
-        mock_client.get.return_value = mock_response
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-
-        with (
-            patch("httpx.AsyncClient", return_value=mock_client),
-            pytest.raises(TokenExchangeError, match="did not contain an API key"),
-        ):
-            await _exchange_aksk_for_api_key("ak-id", "sk-secret")
-
-    async def test_exchange_invalid_json_raises(self):
-        """Test that invalid JSON response raises TokenExchangeError."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.side_effect = ValueError("Invalid JSON")
-        mock_response.text = "not json at all"
-
-        mock_client = AsyncMock()
-        mock_client.get.return_value = mock_response
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-
-        with (
-            patch("httpx.AsyncClient", return_value=mock_client),
-            pytest.raises(TokenExchangeError, match="Invalid JSON"),
-        ):
-            await _exchange_aksk_for_api_key("ak-id", "sk-secret")
-
-    async def test_exchange_uses_correct_region(self):
-        """Test that the exchange function uses the specified region."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"ApiKey": "ek-key"}
-
-        mock_client = AsyncMock()
-        mock_client.get.return_value = mock_response
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-
-        with patch("httpx.AsyncClient", return_value=mock_client):
-            await _exchange_aksk_for_api_key("ak-id", "sk-secret", region="cn-shanghai")
-            # Verify the endpoint includes the region
-            call_args = mock_client.get.call_args
-            assert "cn-shanghai" in call_args[0][0]
 
 
 class TestAkSkAuthIntegration:
@@ -458,16 +314,16 @@ class TestAkSkAuthIntegration:
         with pytest.raises(TokenExchangeError, match="500"):
             await auth.get_headers()
 
-    async def test_create_auth_provider_injects_working_exchange(self):
-        """Test that create_auth_provider creates AkSkAuth with working exchange."""
-        auth = create_auth_provider(access_key_id="test-ak", access_key_secret="test-sk")
-        assert isinstance(auth, AkSkAuth)
+    @pytest.mark.parametrize("token", [None, "", "   ", {"apiKeyValue": "placeholder"}, 42])
+    async def test_custom_exchange_rejects_non_token_returns(self, token):
+        auth = AkSkAuth("ak-id", "sk-secret")
+        auth.set_exchange_func(AsyncMock(return_value=token))
+        with pytest.raises(TokenExchangeError, match="non-empty token string"):
+            await auth.get_headers()
+        assert auth._cached_token is None
+        assert auth._token_expires_at == 0
 
-        # The exchange func should be callable (it will fail at HTTP level
-        # in tests, but it should be set)
-        assert auth._exchange_func is not None
-
-        # Verify the injected function is async and callable
-        import asyncio
-
-        assert asyncio.iscoroutinefunction(auth._exchange_func)
+    async def test_custom_token_is_normalized_before_caching(self):
+        auth = AkSkAuth("ak-id", "sk-secret")
+        auth.set_exchange_func(AsyncMock(return_value="  custom-token  "))
+        assert await auth.get_headers() == {PLATFORM_AUTH_HEADER: "Bearer custom-token"}

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import http.client
 import json
 import os
 import socket
@@ -109,12 +110,15 @@ class TestResponsesWebSocket:
         live = live_server()
         with socket.create_connection(("127.0.0.1", live.port), timeout=10) as sock:
             sock.sendall(
-                b"GET /v1/responses HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\n"
+                f"GET /v1/responses HTTP/1.1\r\nHost: 127.0.0.1:{live.port}\r\n".encode()
+                + b"Upgrade: websocket\r\n"
                 b"Connection: Upgrade\r\n\r\n"
             )
-            head = sock.recv(4096)
-        assert head.startswith(b"HTTP/1.0 400") or head.startswith(b"HTTP/1.1 400")
-        assert b"agents.websocket_handshake_invalid" in head
+            response = http.client.HTTPResponse(sock)
+            response.begin()
+            assert response.status == 400
+            body = response.read()
+        assert b"agents.websocket_handshake_invalid" in body
 
     def test_token_is_required_for_the_upgrade(
         self, live_server: Callable[..., Live], monkeypatch: pytest.MonkeyPatch
@@ -124,7 +128,8 @@ class TestResponsesWebSocket:
         url = f"ws://127.0.0.1:{live.port}/v1/responses"
         with socket.create_connection(("127.0.0.1", live.port), timeout=10) as sock:
             sock.sendall(
-                b"GET /v1/responses HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\n"
+                f"GET /v1/responses HTTP/1.1\r\nHost: 127.0.0.1:{live.port}\r\n".encode()
+                + b"Upgrade: websocket\r\n"
                 b"Connection: Upgrade\r\nSec-WebSocket-Version: 13\r\n"
                 b"Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n"
             )

@@ -110,17 +110,32 @@ def test_core_imports_no_concrete_backend_implementation() -> None:
     assert violations == []
 
 
-@pytest.mark.asyncio
-async def test_native_engine_keeps_explicit_provider_over_ambient(iso, monkeypatch):  # noqa: F811
-    from unittest.mock import patch
+def test_wire_adapter_owns_url_without_legacy_transport_helper(monkeypatch):
+    from agent_sandbox.providers.alicloud_express.provider import AlicloudExpressProvider
 
-    from agent_sandbox.engine.client import Engine
-    from agent_sandbox.models.sandbox import SandboxConfig
-    from agent_sandbox.providers.alicloud_express.lifecycle import EngineLifecycle
+    def legacy_helper(*args):
+        raise AssertionError("legacy config URL helper used")
 
-    monkeypatch.setenv("ABX_PROVIDER", "another-provider")
-    lifecycle = EngineLifecycle(None, TransportConfig(provider="alicloud-express"))
-    info = SandboxInfo(sandbox_id="owned", template="base")
-    with patch.object(Engine, "create", new_callable=AsyncMock, return_value=info) as create:
-        assert await lifecycle.create(SandboxConfig()) is info
-    assert create.await_args.kwargs.get("provider") == "alicloud-express"
+    monkeypatch.setattr(TransportConfig, "build_envd_url", legacy_helper)
+    provider = AlicloudExpressProvider()
+    info = SandboxInfo(sandbox_id="owned")
+    config = TransportConfig(sandbox_domain="protocol.test")
+    assert provider.resolve_session_url(info, config) == "https://49983-owned.protocol.test"
+
+
+def test_bundled_schema_does_not_discover_registry_in_a_fresh_process():
+    import subprocess
+    import sys
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys; from agent_sandbox.transport.config import _builtin_schema; "
+            "schema = _builtin_schema(); assert schema.provider_id == 'alicloud-express'; "
+            "assert 'agent_sandbox.providers.registry' not in sys.modules",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr

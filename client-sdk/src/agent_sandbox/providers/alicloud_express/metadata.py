@@ -1,13 +1,17 @@
 """Pure Express configuration metadata. No SDK, engine or cloud calls."""
 
+from typing import Any
+
+from agent_sandbox.providers.shared.e2b.url import envd_url
 from agent_sandbox.utils.config_keys import (
     ALICLOUD_EXPRESS_KEYS,
     BUILTIN_PROVIDER_ID,
     GENERIC_ENDPOINT_KEYS,
 )
 
-CONFIG_METADATA = {
+CONFIG_METADATA: dict[str, Any] = {
     "id": BUILTIN_PROVIDER_ID,
+    "legacy_url_builder": envd_url,
     "keys": ALICLOUD_EXPRESS_KEYS,
     "inherit": frozenset(GENERIC_ENDPOINT_KEYS),
     "derive": {

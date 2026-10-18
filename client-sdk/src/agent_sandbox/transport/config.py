@@ -27,11 +27,10 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from agent_sandbox.providers.bundled_config import (
-    BUNDLED_CONFIGS,
-    BUNDLED_KEYS,
-    DEFAULT_CONFIG,
-    bundled_config,
+from agent_sandbox._provider_schema import ProviderSchema as ProviderSchema
+from agent_sandbox._provider_schema import resolve_provider_schema
+from agent_sandbox.utils.config_keys import (
+    ALICLOUD_EXPRESS_KEYS as BUNDLED_KEYS,
 )
 from agent_sandbox.utils.config_keys import (
     BUILTIN_PROVIDER_ID,
@@ -63,11 +62,11 @@ _PROJECT_ENV_FILE = Path(".env")
 # Module-level cache
 _cached_config: TransportConfig | None = None
 
-DEFAULT_BASE_URL = DEFAULT_CONFIG["endpoint_defaults"]["sandbox_base_url"]
-DEFAULT_DOMAIN = DEFAULT_CONFIG["endpoint_defaults"]["sandbox_domain"]
-_DEFAULT_REGION = str(
-    next((key.default for key in DEFAULT_CONFIG["keys"] if key.key == "region"), "")
-)
+BUNDLED_CONFIGS: tuple[dict[str, Any], ...] = ({"id": BUILTIN_PROVIDER_ID, "keys": BUNDLED_KEYS},)
+
+DEFAULT_BASE_URL = str(next(key.default for key in CORE_KEYS if key.key == "sandbox_base_url"))
+DEFAULT_DOMAIN = str(next(key.default for key in CORE_KEYS if key.key == "sandbox_domain"))
+_DEFAULT_REGION = str(next((key.default for key in BUNDLED_KEYS if key.key == "region"), ""))
 
 
 class TransportConfig(BaseModel):
@@ -119,8 +118,7 @@ class TransportConfig(BaseModel):
         """An explicit external provider never inherits the distribution's cloud endpoints."""
         if not isinstance(value, dict):
             return value
-        metadata = bundled_config(str(value.get("provider", BUILTIN_PROVIDER_ID)))
-        if metadata is None:
+        if value.get("provider", BUILTIN_PROVIDER_ID) != BUILTIN_PROVIDER_ID:
             return {"sandbox_base_url": "", "sandbox_domain": "", "region": "", **value}
         return value
 
@@ -129,7 +127,10 @@ class TransportConfig(BaseModel):
 
         格式: https://{ENVD_PORT}-{sandbox_id}.{sandbox_domain}
         """
-        return f"https://{ENVD_PORT}-{sandbox_id}.{self.sandbox_domain}"
+        builder = resolve_provider_schema(BUILTIN_PROVIDER_ID).legacy_url_builder
+        if builder is None:
+            raise RuntimeError("The distribution does not provide the legacy URL convention.")
+        return builder(sandbox_id, self.sandbox_domain)
 
 
 # ---------------------------------------------------------------------------
@@ -209,61 +210,14 @@ def project_dotenv_value(names: tuple[str, ...]) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-class ProviderSchema:
-    """What the resolver needs to know about the selected provider."""
-
-    def __init__(
-        self,
-        provider_id: str,
-        keys: tuple[ConfigKey, ...],
-        inherit: frozenset[str],
-        derive: dict[str, str] | None = None,
-        endpoint_defaults: dict[str, str] | None = None,
-    ) -> None:
-        self.provider_id = provider_id
-        self.keys = keys
-        self.inherit = inherit
-        self.derive = derive or {}
-        self.endpoint_defaults = endpoint_defaults or {}
-        metadata = bundled_config(provider_id) or {}
-        self.legacy_fields = frozenset(metadata.get("legacy_fields", ()))
-        self.omit_default_options = bool(metadata.get("omit_default_options", False))
-
-    @property
-    def builtin(self) -> bool:
-        return bundled_config(self.provider_id) is not None
-
-
-def _metadata_schema(metadata: dict[str, Any]) -> ProviderSchema:
-    return ProviderSchema(
-        metadata["id"],
-        metadata["keys"],
-        metadata["inherit"],
-        metadata["derive"],
-        metadata["endpoint_defaults"],
-    )
-
-
 def _builtin_schema() -> ProviderSchema:
-    """Compatibility view of the distribution default metadata."""
-    return _metadata_schema(DEFAULT_CONFIG)
+    """Compatibility view of the lazily composed default provider schema."""
+    return resolve_provider_schema(BUILTIN_PROVIDER_ID)
 
 
 def provider_schema(provider_id: str) -> ProviderSchema:
-    """Configuration is supplied by bundled metadata or the selected provider."""
-    metadata = bundled_config(provider_id)
-    if metadata is not None:
-        return _metadata_schema(metadata)
-    from agent_sandbox.providers.registry import get_provider
-
-    provider = get_provider(provider_id)
-    return ProviderSchema(
-        provider.id,
-        provider.config_keys(),
-        frozenset(provider.inherit),
-        dict(provider.derive),
-        dict(provider.endpoint_defaults),
-    )
+    """Obtain the selected provider's schema through the injected composition callback."""
+    return resolve_provider_schema(provider_id)
 
 
 def select_provider_id(sources: Sources) -> str:

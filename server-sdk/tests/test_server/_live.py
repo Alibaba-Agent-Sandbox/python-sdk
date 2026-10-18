@@ -57,11 +57,17 @@ class Live:
         self.thread.start()
         deadline = time.time() + 5
         while time.time() < deadline:
+            if self.server._httpd is None:
+                time.sleep(0.02)
+                continue
             try:
                 with socket.create_connection(("127.0.0.1", self.port), timeout=0.2):
                     break
             except OSError:
                 time.sleep(0.02)
+        else:
+            self.close()
+            raise RuntimeError("The local test server did not bind its HTTP listener in time")
 
     def close(self) -> None:
         if self._closed:

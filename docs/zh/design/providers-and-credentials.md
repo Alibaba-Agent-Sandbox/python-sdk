@@ -699,3 +699,5 @@ Node CLI 根据 `cli/docs/design/providers-and-credentials-cli.md` 里的规格�
 6. **`[template]` 只用于创作。** 它不改变创建时 `template` 字符串的含义；那由插件定义（OpenSandbox：镜像 URI）。
 7. **清单文件名。** 清单是 `abx-provider.toml`。插件根目录没有它时，以 E8014 失败（“file not found at the plugin root”），并提示使用 `owner/repo//subdir` / `--subdir`。
 8. **一致性。** 契约套件要求未知 id 返回 `SandboxNotFoundError`（E2009）。
+
+旧重试名称是兼容值，不代表内置 HTTP 实现了重试或退避。见[明确边界](../reference/configuration.md#旧重试配置的兼容边界)。

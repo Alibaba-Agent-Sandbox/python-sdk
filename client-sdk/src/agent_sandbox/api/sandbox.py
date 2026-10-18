@@ -219,7 +219,6 @@ class Sandbox:
         resolved_capabilities: ResolvedCapabilities | None = None,
         declared_capabilities: frozenset[str] | None = None,
         provider_id: str | None = None,
-        engine_data: bool = False,
     ) -> None:
         self._info = info
         self._config = config
@@ -277,7 +276,6 @@ class Sandbox:
         # What a provider declares; the module gates stay permissive so the provider's own
         # protocol gate refuses a missing feature with E8004 naming it.
         self._declared_capabilities = declared_capabilities
-        self._engine_data = engine_data
 
     # ---- Properties ----
 
@@ -985,9 +983,6 @@ class Sandbox:
                     "declared_capabilities", frozenset(prov.capabilities())
                 ),
                 provider_id=prov.id,
-                engine_data=binding.pop(
-                    "engine_data", bool(getattr(prov, "uses_engine_data", False))
-                ),
                 **binding,
             )
         except Exception:
@@ -1041,9 +1036,6 @@ class Sandbox:
                     "declared_capabilities", frozenset(prov.capabilities())
                 ),
                 provider_id=prov.id,
-                engine_data=binding.pop(
-                    "engine_data", bool(getattr(prov, "uses_engine_data", False))
-                ),
                 **binding,
             )
         except Exception:
@@ -1065,13 +1057,6 @@ class Sandbox:
             self._killed = True
             logger.info("Sandbox killed: %s", self.id)
         finally:
-            if self._engine_data:
-                from agent_sandbox.engine.client import Engine
-
-                try:
-                    await Engine().op("release", sandbox_id=self.id)
-                except Exception:
-                    logger.debug("engine session release failed for %s", self.id)
             await self._http_client.close()
 
     async def close(self) -> None:

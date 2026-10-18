@@ -1,8 +1,10 @@
 # 认证详解
 
-> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
+当前 SDK 安装使用[配套源码安装指南](install-python.md)。
 
-Agent Sandbox 支持两种认证模式：**API Key** 和 **AK/SK（阿里云 AccessKey）**。
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（[CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
+
+沙箱运行时请求需要 **API Key**；**AK/SK（阿里云 AccessKey）**用于独立的官方控制面操作。
 
 凭证属于某个[提供方](providers.md)。内置提供方是**阿里云极速版（Alibaba Cloud Express Edition）**，id 为 `alicloud-express`，也是默认提供方。沙箱密钥是 `ABX_SANDBOX_API_KEY`。阿里云 AccessKey 使用官方名字 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`。地域是 `ALIBABA_CLOUD_REGION_ID`。每个键只有一个名字。
 
@@ -15,7 +17,7 @@ Agent Sandbox 支持两种认证模式：**API Key** 和 **AK/SK（阿里云 Acc
 Agent Sandbox 存在三条认证路径，适用于不同场景：
 
 - **API Key 模式**：最常用。通过 `Authorization: Bearer {api_key}` 请求头访问平台 API。适用于个人开发、CI/CD、SDK 调用等绝大多数场景。
-- **AK/SK 模式（阿里云 AccessKey）🧪 实验性**：使用阿里云 AccessKey 对，通过 token 交换获取临时 API Key。框架已实现，但 token 交换端点待 FC 平台确认，当前推荐仍使用 API Key 模式。适用于阿里云生态集成、企业内部使用 RAM 角色授权的场景。
+- **AK/SK 控制面**：用于官方模板、镜像与 ACR 操作，不会自动创建或交换沙箱 API Key。
 - **envd 内部认证**：沙箱创建后，SDK 与沙箱内部 envd 服务之间的通信认证。使用 `envdAccessToken`（从创建响应中获取），由 SDK 自动管理，用户无需手动处理。
 
 ---
@@ -75,44 +77,28 @@ sandbox = await Sandbox.connect("sbx-xxxx", sandbox_api_key="your-api-key")
 
 ---
 
-## AK/SK 阿里云扩展认证 🧪
+<a id="aksk-阿里云扩展认证-"></a>
+## AK/SK 控制面与迁移
 
-> **⚠️ 实验性功能**：AK/SK → API Key 的 token 交换框架已在 SDK 中实现（`transport/auth.py`），但 token 交换端点的 action 名称（`CreateApiKey`）和响应字段解析**仍待 FC 平台团队确认**。TTL（3600s）和提前刷新时间（300s）是占位值，要等平台确认端点之后才算数。当前可用于本地调试，**生产环境仍推荐使用 API Key 认证**。
+过去自动将 AK/SK 换成沙箱密钥的默认路径已删除。仅配置 AccessKey 时，沙箱鉴权
+会在本地、任何交换请求或网络请求之前抛出 `InvalidAPIKeyError`（E1001）。
+沙箱创建、连接、列表及运行时请求请配置 `ABX_SANDBOX_API_KEY`，或显式传入
+`sandbox_api_key=` / `api_key=`。
 
-AK/SK 模式使用阿里云 AccessKey 对，通过 token 交换获取临时 API Key（设计 TTL 3600 秒，到期前 300 秒自动刷新）。
+官方模板、镜像和 ACR 控制面仍使用 `ALICLOUD_ACCESS_KEY_ID`、
+`ALICLOUD_ACCESS_KEY_SECRET` 与对应区域；这些操作使用独立客户端，已有支持的
+端点不变。需要运行时和模板部署的工作流，可以同时配置 API Key 与 AccessKey。
 
-### 配置方式
+锁定的官方 FCSandbox SDK 确实有 `CreateApiKey`，但其模型是
+`POST /pop/2026-05-09/api-keys`，返回结构化 `apiKey.apiKeyValue`。这个凭据资源
+API 不能证明存在 STS 式的一小时交换或安全自动刷新生命周期。因此退役旧的猜测式
+RPC GET、签名与解析实现，运行时不会隐式创建凭据。
 
-#### 1. 环境变量
-
-```bash
-export ALICLOUD_ACCESS_KEY_ID="your-access-key-id"
-export ALICLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
-```
-
-这是 AccessKey 对唯一的环境变量。地域是 `ALIBABA_CLOUD_REGION_ID`。
-
-#### 2. 持久化文件（`~/.abx/.env`）
-
-由 `abx config set access_key_id ...` / `access_key_secret ...` 写入（文件权限 600；见 [CLI 认证配置指南](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authentication.md)），存储为 `~/.abx/.env` 中的 `ALICLOUD_ACCESS_KEY_ID=...` / `ALICLOUD_ACCESS_KEY_SECRET=...`，SDK 会读取它。
-
-#### 3. 代码参数
-
-```python
-sandbox = await Sandbox.create(
-    access_key_id="your-ak-id",
-    access_key_secret="your-ak-secret",
-)
-```
-
-### AK/SK 工作原理
-
-1. SDK 使用 AK/SK 通过阿里云 RPC (POP) V1 HMAC-SHA1 签名调用 `https://fcsandbox.{region}.aliyuncs.com` 的 token 交换端点获取临时 API Key
-2. 临时 Key 缓存在内存中（不持久化到磁盘）
-3. 设计有效期 3600 秒，SDK 在到期前 300 秒自动刷新（实际参数以 FC 平台最终确认为准）
-4. 后续请求使用临时 Key 作为 Bearer Token
-
-> **注意**：以上参数（TTL、端点 action 名等）基于 ACR token exchange 模式实现，正式上线前可能调整。
+应用自行拥有 token 服务时，公开的 `AkSkAuth` 仍可通过
+`set_exchange_func()` 显式设置回调。回调必须返回非空字符串，结构对象或空值会
+失败且不进入缓存。端点、凭据生命周期与准确 TTL 由应用负责；旧缓存常量只是本地
+策略，不代表阿里云 token 有效期。默认工厂不再注入回调。直接导入旧私有交换/
+签名辅助函数的代码，应迁移到自己确认的服务契约。
 
 ---
 
@@ -136,7 +122,7 @@ GitHub token 和区域走同一条链。空白或只含空格的值会被跳过�
 
 插件的每个选项都遵循同一条规则：规范名是 `ABX_<PROVIDER_ID>_<FIELD>`（连字符变下划线），清单可以用 `env = [...]` 把厂商自己的变量加为别名。密钥字段（`secret = true`）只存在于环境变量或 `.env` 文件（权限 0600），命令行上会被拒绝；其他字段也可以放在 `config.toml` 的 `[providers.<id>]` 下。2026-10-13 用 OpenSandbox 验证：只要 `ABX_OPENSANDBOX_API_KEY` 和 `ABX_OPENSANDBOX_BASE_URL`，CLI 和 SDK 都能驱动真实服务器；`OPEN_SANDBOX_API_KEY` 与 `OPEN_SANDBOX_DOMAIN` 是它声明的原生别名，两者同时设置时规范名优先。声明了 `[core] inherit = ["sandbox_api_key"]` 的插件，只有在你于安装时同意之后才会收到通用密钥；`abx provider info <id>` 会在「Inherits」下显示这份清单。
 
-在同一层级内，API Key 优先于 AK/SK：
+沙箱 API Key 不会由 AK/SK 自动生成。同时配置时，运行时使用 API Key：
 - 若同时提供了 `sandbox_api_key` 和 `access_key_id`，使用 API Key
 - 若同时设置了 `ABX_SANDBOX_API_KEY` 和 `ALICLOUD_ACCESS_KEY_ID`，使用 `ABX_SANDBOX_API_KEY`
 
@@ -199,10 +185,10 @@ envd 认证需要以下 HTTP 头（已由 SDK 自动设置）：
 ### TokenExpiredError (E1002)
 
 ```text
-[E1002] The SDK should auto-refresh tokens. If this persists, check system clock synchronization.
+[E1002] envdAccessToken not available. Sandbox may not be created or connected.
 ```
 
-**解决**：检查系统时钟是否准确。SDK 会自动刷新 token，如果持续出现此错误，可能是时钟偏差过大。
+**解决**：重新连接以获得有效 envd token，或检查显式配置的自定义交换；API Key 不会自动创建或刷新。
 
 ---
 

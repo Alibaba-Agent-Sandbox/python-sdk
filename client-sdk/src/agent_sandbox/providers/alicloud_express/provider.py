@@ -41,6 +41,12 @@ class AlicloudExpressProvider(Provider):
     display_name = BUILTIN_PROVIDER_NAME
     display_name_zh = BUILTIN_PROVIDER_NAME_ZH
     kind = "builtin"
+    from .metadata import CONFIG_METADATA as _METADATA
+
+    derive = _METADATA["derive"]
+    endpoint_defaults = _METADATA["endpoint_defaults"]
+    legacy_fields = _METADATA["legacy_fields"]
+    omit_default_options = True
     # Explicit implementations; new registry features never grant builtin support.
     features = frozenset(
         {
@@ -108,7 +114,16 @@ class AlicloudExpressProvider(Provider):
         return session_protocols(http)
 
     def resolve_session_url(self, info: Any, config: Any) -> str:
-        return str(info.envd_url or config.build_envd_url(info.sandbox_id))
+        from agent_sandbox.providers.shared.e2b.url import envd_url
+
+        return str(info.envd_url or envd_url(info.sandbox_id, config.sandbox_domain))
+
+    @staticmethod
+    def legacy_session_url(sandbox_id: str, domain: str) -> str:
+        """Compatibility URL helper exposed through the composition schema."""
+        from agent_sandbox.providers.shared.e2b.url import envd_url
+
+        return envd_url(sandbox_id, domain)
 
     async def prepare_session(
         self, infra: ProviderInfra, info: Any, *, operation: str, template: str
@@ -132,55 +147,22 @@ class AlicloudExpressProvider(Provider):
             "resolved_capabilities": resolved,
             "declared_capabilities": frozenset(resolved.capabilities),
         }
-        if operation == "create":
-            if http is None:
-                raise RuntimeError("Express session is missing its HTTP client")
-            from agent_sandbox.engine.protocols import (
-                EngineFilesystemProtocol,
-                EngineProcessProtocol,
-            )
-            from agent_sandbox.providers.shared.e2b.filesystem import FilesystemProtocol
-
-            binding.update(
-                process_protocol=EngineProcessProtocol(info.sandbox_id),
-                filesystem_protocol=EngineFilesystemProtocol(
-                    info.sandbox_id, bounded_reader=FilesystemProtocol(http)
-                ),
-                engine_data=True,
-            )
         return binding
 
     async def open_terminal(self, sandbox: Any, **options: Any) -> Any:
-        if sandbox._engine_data:
-            from agent_sandbox.engine.protocols import open_terminal
-
-            return await open_terminal(
-                sandbox.id, cols=options.get("cols", 80), rows=options.get("rows", 24)
-            )
         from agent_sandbox.providers.shared.e2b.terminal import TerminalSession
 
         return await TerminalSession.create(
             envd_url=sandbox.url, envd_token=sandbox._envd_token, config=sandbox._config, **options
         )
 
-    async def kill_engine_resource(self, request: Any) -> None:
-        from .engine import kill_engine_resource
-
-        await kill_engine_resource(request)
-
-    async def create_engine_session(self, request: Any) -> Any:
-        from .engine import create_engine_session
-
-        return await create_engine_session(request)
-
     async def build_infra(self, config: TransportConfig) -> ProviderInfra:
         from agent_sandbox.providers.alicloud_express.auth import create_auth_provider
         from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
         from agent_sandbox.providers.shared.e2b.filesystem import FilesystemProtocol
         from agent_sandbox.providers.shared.e2b.process import ProcessProtocol
+        from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
         from agent_sandbox.transport.http import HttpClient
-
-        from .lifecycle import EngineLifecycle
 
         auth = create_auth_provider(
             api_key=config.sandbox_api_key,
@@ -192,7 +174,7 @@ class AlicloudExpressProvider(Provider):
             config=config,
             auth=auth,
             http_client=http,
-            sandbox_protocol=EngineLifecycle(http, config),
+            sandbox_protocol=SandboxProtocol(http),
             process_protocol=ProcessProtocol(http),
             filesystem_protocol=FilesystemProtocol(http),
             code_interpreter_protocol=CodeInterpreterProtocol(http),

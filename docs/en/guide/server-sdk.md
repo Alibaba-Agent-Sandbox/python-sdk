@@ -1,9 +1,11 @@
 # Server SDK
 
+For current SDK installation, use the [paired source installation guide](install-python.md).
+
 The Server SDK runs **inside the sandbox**. It is the HTTP service the image keeps listening on, port 9000 by default. The package is `agent-sandbox-server`. Import `agent_sandbox.server`. A template's `commands.py` uses it to register commands, turn capabilities on, and call `start(9000)`.
 
 ```bash
-pip install agent-sandbox-server
+python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk"
 ```
 
 ```python

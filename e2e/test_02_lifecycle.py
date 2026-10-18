@@ -121,3 +121,38 @@ def test_sandbox_expires_after_its_ttl(run, sandbox_factory):  # type: ignore[no
     H.eventually(
         lambda: run(_not_running(sb.id)), timeout=150, interval=5, what="TTL expiry of a 45 s sandbox"
     )
+
+
+def test_background_work_survives_independent_handle_polling(run, sandbox_factory):  # type: ignore[no-untyped-def]
+    """Issue35: a live builtin sandbox has no process-local session dependency."""
+    from agent_sandbox import Sandbox
+
+    held = sandbox_factory(H.OFFICIAL_BASE, timeout=180)
+    path = H.unique_dir() + ".native-poll"
+    other = run(Sandbox.connect(held.id))
+    try:
+        # The worker runs independently; its creation is never replayed by polling.
+        started = run(
+            held.commands.run(
+                f"nohup sh -c 'sleep 4; printf completed > {path}' </dev/null >/dev/null 2>&1 &",
+                shell=True,
+            )
+        )
+        assert started.exit_code == 0
+        observations = 0
+
+        def _completed():  # type: ignore[no-untyped-def]
+            nonlocal observations
+            info = run(held.refresh_info())
+            assert info.sandbox_id == held.id
+            assert info.status.value == "running"
+            result = run(other.commands.run(f"cat {path} 2>/dev/null || true", shell=True))
+            observations += 1
+            return result.stdout == "completed"
+
+        H.eventually(_completed, timeout=30, interval=0.5, what="background worker completion")
+        assert observations >= 1
+        assert run(held.files.read(path)) == "completed"
+        assert run(other.refresh_info()).sandbox_id == held.id
+    finally:
+        run(other.close())

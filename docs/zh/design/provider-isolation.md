@@ -12,7 +12,7 @@
 | 认证、端点、协议映射、后端错误和状态、生命周期、可选创建参数 | 所选 Provider |
 | 模板认证、构建、注册、轮询、删除以及 Docker/镜像仓库细节 | Provider 模板实现 |
 | 模板源码搜索下载、项目生成、运行时验证 | 宿主，通过所选 Provider 的元数据和工厂调用 |
-| 极速版 SDK、AK/SK 签名和换取凭据、FC/ACR 部署、CLI 参数和提示、AI 管理工具定义 | `providers/alicloud_express/` |
+| 极速版 SDK、管理面签名、显式自定义凭据交换、FC/ACR 部署、CLI 参数和提示、AI 管理工具定义 | `providers/alicloud_express/` |
 | 可复用的 E2B/envd 协议及 token 头格式 | `providers/shared/e2b/`，由 Provider 显式选用 |
 
 发行包的组装入口注册内置适配器、配置描述、CLI 扩展和 AI 扩展。生成的配置目录属于
@@ -22,10 +22,12 @@
 
 ## SDK 契约
 
-内置默认项和插件均通过 `Provider.build_infra(config)` 构建基础设施。
-`session_protocols`、`prepare_session`、`resolve_session_url`、`open_terminal`
-负责各自会话。可选 `create_engine_session`、`kill_engine_resource` 钩子消除了
-核心 gRPC 引擎对具体云后端的选择；极速版保留原有引擎创建行为和协议格式。
+内置默认后端和插件均通过 `Provider.build_infra(config)` 构建基础设施。
+`session_protocols`、`prepare_session`、`resolve_session_url` 和 `open_terminal`
+组装 Provider 自己的会话。极速版创建和连接都使用原生 HTTP 控制面及数据面，不再安装、
+选择或恢复本地 gRPC daemon。目录插件继续使用独立的 Node Provider 引擎。
+普通沙箱调用需要显式沙箱 API Key；AK/SK 用于管理面。兼容的自定义凭据交换回调
+必须显式设置，不会自动创建 API Key。
 
 `TransportConfig(provider="external")` 和 `load_config` 均不补上未声明的域名或
 region，显式端点保持有效。创建绑定失败回收本次新建资源；连接失败保留借用资源。
@@ -36,4 +38,10 @@ CLI 模板工厂及 CLI/AI 发现归属 CLI 仓库，本次不新增 Python 镜�
 内置 Provider 继续随匹配的 SDK 版本更新。适配器隔离不代表 SDK 零改动迁移，也不会
 产生后端本身没有的能力。
 
-极速版适配器向内部引擎显式传递所选 Provider，因此环境默认项不会覆盖调用方明确选择的后端。
+显式 Provider 选择优先于无关的环境默认值。HTTP 回归在旧 daemon 不可用时检查空和非空
+Volume 参数。会话 URL 由所选协议适配器构建；历史 TransportConfig URL 方法只委托
+组合入口注入的构建器，不用于选择其他后端。
+
+配置 Schema 解析由包的组合入口注入。读取内置 Schema 只加载纯元数据，不发现注册表；
+Provider 包的公共导出保持延迟加载。兼容名称、常量和生成的配置声明保留为公共数据，
+每项后端行为只在适配器中保留一份运行时实现。

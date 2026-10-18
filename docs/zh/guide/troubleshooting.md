@@ -1,6 +1,8 @@
 # 常见问题（FAQ）
 
-> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
+当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（[CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
 ---
 
@@ -70,10 +72,10 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 ### E1002 — Token 过期
 
 ```text
-[E1002] The SDK should auto-refresh tokens. If this persists, check system clock synchronization.
+[E1002] envdAccessToken not available. Sandbox may not be created or connected.
 ```
 
-**解决**：检查系统时钟是否准确。SDK 会自动刷新 AK/SK 临时 token（有效期 3600 秒，到期前 300 秒刷新）。
+**解决**：检查系统时钟是否准确。重新连接获取有效 envd token，或检查显式配置的自定义交换；API Key 不会被自动创建或刷新。
 
 ---
 
@@ -227,10 +229,12 @@ entries = await sandbox.files.list("/home/user")
 
 ```bash
 # 确保使用正确的包名
-pip install agent-sandbox-client
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 
 # 如果遇到依赖冲突
-pip install agent-sandbox-client --force-reinstall
+python -m pip check
 ```
 
 ### Python SDK 未找到
@@ -238,9 +242,9 @@ pip install agent-sandbox-client --force-reinstall
 确认 Python 的 bin 目录在 PATH 中：
 
 ```bash
-python -m agent_sandbox --version
+python -c "from importlib.metadata import version; print(version('agent-sandbox-client'))"
 # 或
-pip show agent-sandbox-client | grep Location
+python -m pip show agent-sandbox-client
 ```
 
 ---

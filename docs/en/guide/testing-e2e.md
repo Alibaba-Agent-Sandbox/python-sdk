@@ -8,7 +8,7 @@ How the Python SDK (`agent-sandbox-client`) and the in-sandbox server (`agent-sa
 
 | Layer | Tool | Real components? | Credentials | Typical time |
 |---|---|---|---|---|
-| Unit tests | `make test` (pytest in `client-sdk/tests`, `server-sdk/tests`) | No (mocks) | none | seconds |
+| Unit/component tests | `make test` (pytest in both packages) | Logic mocks and real local HTTP/PTY fixtures | none | seconds to minutes |
 | Real-cloud E2E | `make e2e` | **Yes**: real platform, envd, in-sandbox server | `.env` or environment | ~8 min |
 | E2E incl. slow cases | `make e2e-all` | **Yes** | same | longer |
 
@@ -41,3 +41,16 @@ The full rules and the ADR and evidence templates: [`.agents/notes/DEFINITION-OF
 ## Cloud example practice
 
 Outside the test suite, the walkthrough that runs the example scripts on the default provider is [Cloud end-to-end practice](cloud-examples.md). The Agents API case is not on that page; see [Agents API](agents-api.md).
+
+## Local HTTP and PTY fixture ports
+
+The client component fixture selects distinct HTTP and PTY port candidates before starting either listener. A released ephemeral candidate may be returned again; selection retries are bounded and preserve an explicit PTY port. These local allocation retries do not replay a request or replace real-cloud acceptance. The deterministic reuse regression starts the actual server and verifies both listeners, then normal fixture cleanup shuts them down.
+
+
+## Local raw HTTP fixtures
+
+Raw requests identify the actual listener authority. Fixtures wait for their HTTP server
+to initialize within the existing deadline and read the complete framed response. An
+intermediary can reject intentionally malformed HTTP/WebSocket traffic before it reaches
+the handler; keep those failures visible and run the unchanged assertions in hosted CI.
+Do not substitute skips, longer timeouts or proxy policy changes for protocol coverage.
