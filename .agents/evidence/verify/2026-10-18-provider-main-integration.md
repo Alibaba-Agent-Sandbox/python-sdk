@@ -32,3 +32,6 @@ commands, files, network, server SDK, declarative and MCP acceptance, not mocks.
 Final canonical auth/provider regressions531 PASS/23 SKIP; quality gates PASS.
 Wheel builds, distribution validation and actual paired installation/import PASS.
 Cleanup dry-run confirmation is recorded separately before merge.
+
+Post-run cleanup dry-run:exit0,zero tagged sandbox candidates and zero remaining
+sandboxes listed. No cloud resources remain from this acceptance run.
