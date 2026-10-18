@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Reconcile provider isolation with accepted native transport, explicit-key authentication and retired-module cleanup; preserve canonical compatibility aliases and pure configuration metadata.
+
 ### Documentation
 
 - Retire the unsupported builtin automatic-retry claim. Existing retry configuration names/defaults and EPP compatibility values remain accepted; they do not enable builtin HTTP retries or backoff.
@@ -20,7 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- `Sandbox.create(volume_mounts={"/mnt/data": "existing-volume-name"})` mounts existing Volumes with the built-in provider. Strict validation runs before provider/engine I/O; unsupported providers fail with E8004. The native HTTP lifecycle forwards the hint and emits the official `volumeMounts: [{name, path}]` creation payload; empty maps preserve prior requests. Real OSS storage mount/read/write/cleanup is verified for the tested base template in cn-hangzhou.
+- `Sandbox.create(volume_mounts={"/mnt/data": "existing-volume-name"})` mounts existing Volumes with the built-in provider. Strict validation runs before provider/engine I/O; unsupported providers fail with E8004. The existing gRPC lifecycle forwards the hint and emits the official `volumeMounts: [{name, path}]` creation payload; empty maps preserve prior requests. Real OSS storage mount/read/write/cleanup is verified for the tested base template in cn-hangzhou.
 - `agent_sandbox.providers.commands.list_commands`, `get_command` and `run_command` call the shared Node engine for provider-specific resource operations. Writes and deletes require explicit confirmation; command POST requests are never replayed.
 - Plugin manifests validate bounded `provider-commands/1` descriptors and include commands in installation/update consent; existing manifests and receipts default to an empty command list.
 - Provider manifests accept the independent `templates.deploy` feature for CLI image deployment metadata. Legacy `templates.build` declarations remain valid; the built-in Express provider does not acquire the new feature. No Python deployment API is added.
@@ -54,6 +58,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Keep an explicitly selected Express provider through native engine creation when the ambient default names another backend.
 
 - Built-in Express provider update reports its SDK-bundled lifecycle and coordinated client/server/Node upgrade guidance instead of a missing-plugin error; document existing-account adoption and explicit API/configuration changes.
+
 - Use executable paired-source installation recipes before PyPI publication across current SDK/package guides and examples; replace the retired root version CLI with distribution metadata inspection.
 
 - Keep HTTP and PTY component-test port candidates distinct, preserving explicit PTY settings and preventing intermittent WebSocket CI bind collisions.

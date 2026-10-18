@@ -250,6 +250,7 @@ The CLI (`abx`) formerly lived in `src/agent_sandbox/cli/` (Click commands under
 6. **Type Safety**: Comprehensive use of Python Type Hints + Pydantic validation
 
 - [Provider implementation boundaries](provider-isolation.md)
+
 Provider configuration discovery is assembled lazily by the package composition root. Transport consumes a low-level `ProviderSchema` value and an injected resolver from `_provider_schema.py`; it does not import the provider registry. Builtin configuration resolves without provider discovery. Registered, entry-point and installed providers retain the registry selection and derive/default/inheritance rules. The existing `transport.config.ProviderSchema` import remains an alias of the same schema class.
 
 Builtin platform/envd HTTP uses one transport attempt. Legacy retry fields are compatibility data, with the exact boundary in [configuration](../reference/configuration.md#legacy-retry-compatibility); engine recovery remains separate.

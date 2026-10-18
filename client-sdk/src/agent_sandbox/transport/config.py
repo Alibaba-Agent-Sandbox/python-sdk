@@ -29,8 +29,11 @@ from pydantic import BaseModel, Field, model_validator
 
 from agent_sandbox._provider_schema import ProviderSchema as ProviderSchema
 from agent_sandbox._provider_schema import resolve_provider_schema
-from agent_sandbox.utils.config_keys import (
-    ALICLOUD_EXPRESS_KEYS as BUNDLED_KEYS,
+from agent_sandbox.utils.bundled_config import (
+    BUNDLED_CONFIGS,
+    BUNDLED_KEYS,
+    DEFAULT_CONFIG,
+    bundled_config,
 )
 from agent_sandbox.utils.config_keys import (
     BUILTIN_PROVIDER_ID,
@@ -62,11 +65,11 @@ _PROJECT_ENV_FILE = Path(".env")
 # Module-level cache
 _cached_config: TransportConfig | None = None
 
-BUNDLED_CONFIGS: tuple[dict[str, Any], ...] = ({"id": BUILTIN_PROVIDER_ID, "keys": BUNDLED_KEYS},)
-
-DEFAULT_BASE_URL = str(next(key.default for key in CORE_KEYS if key.key == "sandbox_base_url"))
-DEFAULT_DOMAIN = str(next(key.default for key in CORE_KEYS if key.key == "sandbox_domain"))
-_DEFAULT_REGION = str(next((key.default for key in BUNDLED_KEYS if key.key == "region"), ""))
+DEFAULT_BASE_URL = DEFAULT_CONFIG["endpoint_defaults"]["sandbox_base_url"]
+DEFAULT_DOMAIN = DEFAULT_CONFIG["endpoint_defaults"]["sandbox_domain"]
+_DEFAULT_REGION = str(
+    next((key.default for key in DEFAULT_CONFIG["keys"] if key.key == "region"), "")
+)
 
 
 class TransportConfig(BaseModel):
@@ -118,7 +121,8 @@ class TransportConfig(BaseModel):
         """An explicit external provider never inherits the distribution's cloud endpoints."""
         if not isinstance(value, dict):
             return value
-        if value.get("provider", BUILTIN_PROVIDER_ID) != BUILTIN_PROVIDER_ID:
+        metadata = bundled_config(str(value.get("provider", BUILTIN_PROVIDER_ID)))
+        if metadata is None:
             return {"sandbox_base_url": "", "sandbox_domain": "", "region": "", **value}
         return value
 
@@ -127,10 +131,7 @@ class TransportConfig(BaseModel):
 
         格式: https://{ENVD_PORT}-{sandbox_id}.{sandbox_domain}
         """
-        builder = resolve_provider_schema(BUILTIN_PROVIDER_ID).legacy_url_builder
-        if builder is None:
-            raise RuntimeError("The distribution does not provide the legacy URL convention.")
-        return builder(sandbox_id, self.sandbox_domain)
+        return f"https://{ENVD_PORT}-{sandbox_id}.{self.sandbox_domain}"
 
 
 # ---------------------------------------------------------------------------
@@ -210,13 +211,28 @@ def project_dotenv_value(names: tuple[str, ...]) -> str | None:
 # ---------------------------------------------------------------------------
 
 
+def _metadata_schema(metadata: dict[str, Any]) -> ProviderSchema:
+    return ProviderSchema(
+        metadata["id"],
+        metadata["keys"],
+        metadata["inherit"],
+        metadata["derive"],
+        metadata["endpoint_defaults"],
+        legacy_fields=frozenset(metadata.get("legacy_fields", ())),
+        omit_default_options=bool(metadata.get("omit_default_options", False)),
+    )
+
+
 def _builtin_schema() -> ProviderSchema:
-    """Compatibility view of the lazily composed default provider schema."""
-    return resolve_provider_schema(BUILTIN_PROVIDER_ID)
+    """Compatibility view of the distribution default metadata."""
+    return _metadata_schema(DEFAULT_CONFIG)
 
 
 def provider_schema(provider_id: str) -> ProviderSchema:
-    """Obtain the selected provider's schema through the injected composition callback."""
+    """Configuration is supplied by bundled metadata or the selected provider."""
+    metadata = bundled_config(provider_id)
+    if metadata is not None:
+        return _metadata_schema(metadata)
     return resolve_provider_schema(provider_id)
 
 

@@ -33,7 +33,8 @@ python-sdk/
 │   │   ├── models/                # Data models: config, errors, sandbox, template, session, filesystem, process
 │   │   ├── transport/             # HTTP/WS transport, auth, codec, retry, streaming
 │   │   ├── protocol/              # Protocol abstractions: sandbox, filesystem, process, terminal, port, code_interpreter
-│   │   ├── api/                   # High-level API: Sandbox, files, code, commands, network, capability, session_manager, server client
+│   │   ├── api/                   # High-level API and server client; provider-neutral lifecycle/session contracts
+│   │   ├── providers/             # Backend/session adapters; shared envd wire; external Node engine client
 │   │   ├── agent/                 # AI agent tooling: MCP server, tool definitions
 │   │   ├── compat/                # E2B migration helper (partial; re-exports Sandbox)
 │   │   ├── declarative/           # @sandbox decorator, config, serializer

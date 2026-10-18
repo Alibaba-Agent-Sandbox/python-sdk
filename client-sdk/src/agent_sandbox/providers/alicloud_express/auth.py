@@ -1,4 +1,12 @@
-"""Express authentication with explicit sandbox API keys and separate control-plane credentials."""
+"""Authentication providers for Platform API and Sandbox envd API.
+
+Sandbox requests use an explicitly configured API key as an Authorization Bearer.
+AK/SK is used separately by official control-plane APIs. AkSkAuth remains an
+explicit custom-exchange adapter; no default credential-resource creation occurs.
+
+After sandbox creation, envd API uses envdAccessToken from create response,
+sent via multiple headers (X-Access-Token, E2b-Sandbox-Id, etc. 已实测验证).
+"""
 
 from __future__ import annotations
 
@@ -53,12 +61,6 @@ class AkSkAuth:
 
     TOKEN_TTL = 3600  # Legacy custom-exchange cache policy, not a platform TTL.
     REFRESH_BEFORE_EXPIRY = 300
-
-    def authentication_error(self, path: str) -> InvalidCredentialsError:
-        """Classify this adapter's authentication failure for the generic transport."""
-        return InvalidCredentialsError(
-            f"The Platform API rejected the AK/SK credentials (HTTP 401) for {path}."
-        )
 
     def __init__(self, access_key_id: str, access_key_secret: str) -> None:
         if not access_key_id or not access_key_secret:
@@ -125,6 +127,12 @@ class AkSkAuth:
         self._cached_token = None
         self._token_expires_at = 0.0
         await self._exchange_token()
+
+    def authentication_error(self, path: str) -> InvalidCredentialsError:
+        """Map rejected custom-exchange credentials without exposing their values."""
+        return InvalidCredentialsError(
+            f"The Platform API rejected the custom exchanged credential (HTTP 401) for {path}."
+        )
 
     def set_exchange_func(self, func: Any) -> None:
         """Set the token exchange function (called by transport layer)."""

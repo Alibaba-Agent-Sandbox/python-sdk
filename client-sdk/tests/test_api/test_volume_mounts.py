@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import json
-import sys
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -16,7 +14,10 @@ from agent_sandbox.models.errors import (
     ProviderNotFoundError,
 )
 from agent_sandbox.models.sandbox import SandboxConfig
-from agent_sandbox.providers.base import Provider
+from agent_sandbox.providers.base import Provider, ProviderInfra
+from agent_sandbox.providers.registry import get_provider
+from agent_sandbox.transport.auth_contract import SessionAuth
+from tests.test_api.conftest import make_sandbox_info
 
 INVALID = [
     [],
@@ -82,36 +83,30 @@ async def test_plugin_mounts_require_explicit_create_option() -> None:
 
 
 @pytest.mark.parametrize("mounts", [None, {}, {"/mnt/data": "existing-volume"}])
-async def test_builtin_api_forwards_only_nonempty_mounts(mounts, httpx_mock, monkeypatch):
-    monkeypatch.setitem(sys.modules, "agent_sandbox.engine", None)
-    monkeypatch.setenv("ABX_PROVIDER", "uninstalled-plugin")
-    httpx_mock.add_response(
-        method="POST",
-        url="https://platform.invalid/sandboxes",
-        status_code=201,
-        json={
-            "sandboxID": "owned",
-            "envdUrl": "https://envd.invalid",
-            "envdAccessToken": "placeholder-token",
-        },
-    )
-    httpx_mock.add_response(
-        method="DELETE", url="https://platform.invalid/sandboxes/owned", status_code=204
-    )
-    sandbox = await Sandbox.create(
-        provider="alicloud-express",
-        api_key="placeholder-key",
-        api_url="https://platform.invalid",
-        volume_mounts=mounts,
-    )
-    try:
-        payload = json.loads(httpx_mock.get_requests()[0].content)
-        if mounts:
-            assert payload["volumeMounts"] == [{"name": "existing-volume", "path": "/mnt/data"}]
-        else:
-            assert "volumeMounts" not in payload
-    finally:
-        await sandbox.kill()
+async def test_builtin_api_forwards_only_nonempty_mounts(mounts: Any) -> None:
+    http = AsyncMock()
+    provider = get_provider("alicloud-express")
+
+    async def factory(config):
+        return ProviderInfra(config, None, http, provider_lifecycle, close=http.close)
+
+    provider_lifecycle = AsyncMock()
+    provider_lifecycle.create.return_value = make_sandbox_info()
+    with (
+        patch.object(provider, "build_infra", side_effect=factory),
+        patch.object(
+            provider,
+            "prepare_session",
+            new_callable=AsyncMock,
+            return_value={"envd_token": SessionAuth(None, "sb-1")},
+        ),
+    ):
+        sandbox = await Sandbox.create(volume_mounts=mounts)
+        forwarded = provider_lifecycle.create.call_args.args[0]
+        assert forwarded.volume_mounts == (mounts or {})
+        assert ("volumeMounts" in forwarded.to_create_payload()) is bool(mounts)
+        await sandbox.close()
+    http.close.assert_awaited_once()
 
 
 def test_model_exact_wire_and_empty_compatibility() -> None:
@@ -126,3 +121,9 @@ def test_model_exact_wire_and_empty_compatibility() -> None:
     config.volume_mounts["/"] = "volume"
     with pytest.raises(ProviderConfigError):
         config.to_create_payload()
+
+
+def test_retired_native_grpc_bridge_is_not_packaged() -> None:
+    import importlib.util
+
+    assert importlib.util.find_spec("agent_sandbox.engine") is None

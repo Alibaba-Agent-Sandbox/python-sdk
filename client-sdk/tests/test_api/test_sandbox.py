@@ -435,11 +435,11 @@ class TestSandboxSyncVariants:
 
         protocol = AsyncMock()
 
-        async def create(config, **kwargs):
+        async def _create(config: SandboxConfig, **kwargs: Any) -> SandboxInfo:
             seen["template"] = config.template
             return info
 
-        protocol.create.side_effect = create
+        protocol.create.side_effect = _create
 
         from agent_sandbox.providers.base import ProviderInfra
         from agent_sandbox.providers.registry import get_provider
@@ -455,7 +455,6 @@ class TestSandboxSyncVariants:
         http = MagicMock()
 
         async def _infra(*_args: Any, **_kwargs: Any) -> ProviderInfra:
-
             config = TransportConfig(sandbox_api_key="k")
             return ProviderInfra(config, MagicMock(), http, protocol)
 

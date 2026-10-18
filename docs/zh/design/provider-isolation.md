@@ -12,7 +12,7 @@
 | 认证、端点、协议映射、后端错误和状态、生命周期、可选创建参数 | 所选 Provider |
 | 模板认证、构建、注册、轮询、删除以及 Docker/镜像仓库细节 | Provider 模板实现 |
 | 模板源码搜索下载、项目生成、运行时验证 | 宿主，通过所选 Provider 的元数据和工厂调用 |
-| 极速版 SDK、管理面签名、显式自定义凭据交换、FC/ACR 部署、CLI 参数和提示、AI 管理工具定义 | `providers/alicloud_express/` |
+| 极速版 SDK、AK/SK 签名和换取凭据、FC/ACR 部署、CLI 参数和提示、AI 管理工具定义 | `providers/alicloud_express/` |
 | 可复用的 E2B/envd 协议及 token 头格式 | `providers/shared/e2b/`，由 Provider 显式选用 |
 
 发行包的组装入口注册内置适配器、配置描述、CLI 扩展和 AI 扩展。生成的配置目录属于
@@ -22,12 +22,11 @@
 
 ## SDK 契约
 
-内置默认后端和插件均通过 `Provider.build_infra(config)` 构建基础设施。
-`session_protocols`、`prepare_session`、`resolve_session_url` 和 `open_terminal`
-组装 Provider 自己的会话。极速版创建和连接都使用原生 HTTP 控制面及数据面，不再安装、
-选择或恢复本地 gRPC daemon。目录插件继续使用独立的 Node Provider 引擎。
-普通沙箱调用需要显式沙箱 API Key；AK/SK 用于管理面。兼容的自定义凭据交换回调
-必须显式设置，不会自动创建 API Key。
+内置默认项和插件均通过 `Provider.build_infra(config)` 构建基础设施。
+`session_protocols`、`prepare_session`、`resolve_session_url`、`open_terminal`
+负责各自会话。极速版直接使用原生 HTTP/Connect/WebSocket 适配器；已退役的
+Python gRPC 引擎及生命周期钩子保持删除。外部 Node 引擎/EPP 客户端仍是独立的
+Provider 契约。
 
 `TransportConfig(provider="external")` 和 `load_config` 均不补上未声明的域名或
 region，显式端点保持有效。创建绑定失败回收本次新建资源；连接失败保留借用资源。
@@ -38,13 +37,11 @@ CLI 模板工厂及 CLI/AI 发现归属 CLI 仓库，本次不新增 Python 镜�
 内置 Provider 继续随匹配的 SDK 版本更新。适配器隔离不代表 SDK 零改动迁移，也不会
 产生后端本身没有的能力。
 
-显式 Provider 选择优先于无关的环境默认值。HTTP 回归在旧 daemon 不可用时检查空和非空
-Volume 参数。会话 URL 由所选协议适配器构建；历史 TransportConfig URL 方法只委托
-组合入口注入的构建器，不用于选择其他后端。
+调用方显式选择的 Provider 优先于环境默认项。内置配置纯数据归属
+`utils/bundled_config.py`；传输层只消费 `_provider_schema.py` 契约及注入的
+发现函数，不导入可执行的注册表。
 
-配置 Schema 解析由包的组合入口注入。读取内置 Schema 只加载纯元数据，不发现注册表；
-Provider 包的公共导出保持延迟加载。兼容名称、常量和生成的配置声明保留为公共数据，
-每项后端行为只在适配器中保留一份运行时实现。
+
 
 ## 端口与文件 URL 的归属
 

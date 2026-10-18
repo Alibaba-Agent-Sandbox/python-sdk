@@ -1,0 +1,61 @@
+# Provider/main integration verification — 2026-10-18
+
+Result: PARTIAL pending real Express acceptance and exact-head CI.
+
+Source: provider isolation622dd4fa and accepted maine43a4d8e, ordinary merge
+plus scoped integration repairs. Python3.13, fresh editable client/server packages.
+
+- Full client run:2174 PASS,24 SKIP. Earlier run had one custom-auth mapping
+  failure; adding the provider-owned rejection handler fixed it (nine KI regressions
+  PASS). Subsequent canonical auth/provider run:531 PASS,23 SKIP.
+- Ruff lint/format and Makefile package-scoped mypy:PASS (56 server/99 client files).
+- Health106 PASS,1 WARN,zero FAIL; hygienePASS. Fresh build, twine checks, py.typed
+  checks and actual combined client/server wheel install/import:PASS.
+- First full server run:848 PASS,7 FAIL,1 SKIP,1 teardown ERROR. Six are known
+  platform raw-socket/framing/upgrade limitations (including HTTP501 network-audit
+  disabled responses). One additional test exposed premature fixture readiness.
+  The fixture now waits for its own policy and PTY initialization; focused policy
+  follow-up97 PASS. Full rerun is recorded below; failures are never called passes.
+
+No Python gRPC engine, old lifecycle hooks or engine-only bridge fixtures return.
+Volume validation/payload coverage uses the real native HTTP contract. Config
+metadata remains pure; provider discovery is injected. Root import aliases retain
+class/module identity. No default AK/SK token creation route is restored.
+Real Express E2E is currently running locally; no cloud secret was uploaded.
+
+Final full client run:2174 PASS/24 SKIP. Final full server run:849 PASS/6 FAIL/
+1 SKIP; only the six disclosed platform raw-socket limitations remain, and the
+fixture readiness case now passes. Final local real Express E2E:112 PASS,2 SKIP
+(explicit Volume opt-in absent),2 deselected slow tests,1 expected recorded KI-009
+platform code-interpreter expression limitation; exit0. This is real lifecycle,
+commands, files, network, server SDK, declarative and MCP acceptance, not mocks.
+Final canonical auth/provider regressions531 PASS/23 SKIP; quality gates PASS.
+Wheel builds, distribution validation and actual paired installation/import PASS.
+Cleanup dry-run confirmation is recorded separately before merge.
+
+Post-run cleanup dry-run:exit0,zero tagged sandbox candidates and zero remaining
+sandboxes listed. No cloud resources remain from this acceptance run.
+
+Remote branch advanced before publication. The normal push correctly rejected
+a non-fast-forward update; no force push was used. Ordinary merge retains remote
+9f4a3f9845074281eb3d1e99d2709357a7a53a54 and its lazy composition, native URL and
+accurate raw-HTTP fixture fixes alongside the validated integration. No assertions
+were removed: raw HTTP identifies its actual loopback host and parses full bodies.
+Fresh focused API/auth/provider regressions145 PASS; lint/typecheck/health PASS.
+Focused server tests67 PASS/2 FAIL (remaining host WebSocket/framing limitations).
+Policy/PTY readiness is retained. Pure lower metadata and canonical auth aliases
+remain. Latest-head hosted CI is still required before merge.
+
+The first full port-integration run exposed9 failures/4 setup errors from missing
+legacy callbacks in the composition metadata (2165 PASS/24 SKIP). Lower transport
+must retain pure values, while the composition root needs the provider's decorated
+URL/port/PTY factories. Restoring that separation fixes the actual public network,
+capability and project-server constructors:focused100 PASS, zero failures/errors.
+No fixture assertion or backend refusal was removed. One prior run was invalidated
+by source reconciliation during collection and is not used as acceptance evidence.
+
+Final frozen-source full client run after the composition fix:2178 PASS,24 SKIP,
+zero failures/errors (exit0). Package-scoped lint/format/mypy/hygiene PASS. This
+supersedes the failed integration attempts as the current client result without
+reclassifying or deleting their history. Current actual-head hosted matrix must
+still pass; the disclosed local raw server limitations remain separate.
