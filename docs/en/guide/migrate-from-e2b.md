@@ -170,3 +170,5 @@ sandbox = await Sandbox.create(
 - [Authentication](authentication.md) — Learn about all authentication methods
 - [SDK Usage Guide](sdk-usage.md) — Complete SDK usage
 - [E2B Compatibility Explained](../explanation/e2b-compatibility.md) — Design background and rationale
+
+If the existing E2B client already targets Alibaba Cloud Express, use the [existing Express account migration guide](migrate-from-alicloud-express.md). Resources can stay in place; client/configuration compatibility still needs review.

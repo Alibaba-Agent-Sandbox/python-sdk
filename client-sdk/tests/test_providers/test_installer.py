@@ -29,6 +29,30 @@ from tests.test_providers.helpers import (
 )
 
 
+def test_builtin_update_reports_host_lifecycle_without_plugin_io(iso, monkeypatch):  # noqa: F811
+    def unexpected(*args, **kwargs):
+        raise AssertionError("Bundled updates must not read plugin receipts or fetch sources")
+
+    monkeypatch.setattr(store, "read_receipt", unexpected)
+    result = installer.update("alicloud-express", check=True)
+    assert result["status"] == "bundled"
+    assert result["available"] is None
+    assert result["changes"] == []
+    assert "client and server" in result["message"]
+    assert "abx separately" in result["message"]
+    with pytest.raises(ProviderInstallError, match="bundled provider"):
+        installer.update("alicloud-express", ref="main")
+
+
+def test_builtin_update_cli_reports_actionable_json(iso, capsys):  # noqa: F811
+    from agent_sandbox.providers.__main__ import main
+
+    assert main(["--json", "update", "alicloud-express", "--check"]) == 0
+    result = json.loads(capsys.readouterr().out)[0]
+    assert result["status"] == "bundled"
+    assert "client and server" in result["message"]
+
+
 def _install(src, **kw):
     kw.setdefault("yes", True)
     return installer.install(str(src), **kw)

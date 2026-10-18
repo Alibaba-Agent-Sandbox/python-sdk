@@ -32,3 +32,5 @@ Evidence of the command-line interface lives in the
 - [`verify/2026-09-05-server-framework-full-suite.md`](verify/2026-09-05-server-framework-full-suite.md)
 - [`verify/2026-09-08-real-e2e-verification.md`](verify/2026-09-08-real-e2e-verification.md)
 - [`verify/2026-10-12-e2e-foundation.md`](verify/2026-10-12-e2e-foundation.md)
+
+- [Provider portability and updates](../notes/proposed/architecture/2026-10-18-provider-portability-updates.md) · [verification](verify/2026-10-18-provider-portability-updates.md)

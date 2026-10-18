@@ -30,6 +30,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Built-in Express provider update reports its SDK-bundled lifecycle and coordinated client/server/Node upgrade guidance instead of a missing-plugin error; document existing-account adoption and explicit API/configuration changes.
+
 - **Real-cloud E2E acceptance.** The server fixture keeps envd credentials separate from the unconfigured template server; provider reports reject missing checks and the CLI scenario resolves `ABX_BIN` or an installed `abx` instead of assuming a sibling checkout.
 
 - **MCP timeout typing.** Keep the explicit managed-instance guard valid under the CI type checker while preserving shutdown ownership and renewal cleanup.

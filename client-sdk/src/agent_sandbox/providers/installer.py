@@ -684,8 +684,28 @@ def update(
 
     Returns ``{"id", "status", "installed", "available", "changes"}`` where ``status`` is one of
     ``up-to-date``, ``pinned`` (pinned and no new ``ref`` given), ``available`` (``check=True``) or
-    ``updated``. ``local``/``link`` installs raise :class:`ProviderInstallError`.
+    ``updated``. The built-in provider returns ``bundled`` and host upgrade guidance,
+    without a latest-release check or software installation. ``local``/``link``
+    installs raise :class:`ProviderInstallError`.
     """
+    if provider_id == BUILTIN_PROVIDER_ID:
+        if ref:
+            raise ProviderInstallError(
+                "The bundled provider cannot use ref. Select a matching client/server SDK release."
+            )
+        return {
+            "id": provider_id,
+            "status": "bundled",
+            "installed": __version__,
+            "available": None,
+            "changes": [],
+            "message": (
+                "This provider ships with the Python SDK. Upgrade client and server packages "
+                "together using their original installation method; upgrade abx separately for "
+                "Node management commands. Restart only engines you own. This operation does "
+                "not check host releases or change installed software."
+            ),
+        }
     receipt = store.read_receipt(provider_id)
     if receipt is None:
         raise ProviderNotFoundError(f"Provider '{provider_id}' is not installed.")
