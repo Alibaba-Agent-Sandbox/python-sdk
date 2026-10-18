@@ -34,6 +34,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Use executable paired-source installation recipes before PyPI publication across current SDK/package guides and examples; replace the retired root version CLI with distribution metadata inspection.
+
 - Keep HTTP and PTY component-test port candidates distinct, preserving explicit PTY settings and preventing intermittent WebSocket CI bind collisions.
 
 - Verified native builtin Droid background installation, keyless SDK/HTTP runtime and owned cleanup; source-runtime evidence is distinct from template/image/model acceptance.

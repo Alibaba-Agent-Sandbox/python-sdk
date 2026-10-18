@@ -1,5 +1,7 @@
 # SDK Usage Guide
 
+For current SDK installation, use the [paired source installation guide](install-python.md).
+
 This document covers the complete usage of the Agent Sandbox Python SDK.
 
 ---
@@ -7,7 +9,9 @@ This document covers the complete usage of the Agent Sandbox Python SDK.
 ## Installation
 
 ```bash
-pip install agent-sandbox-client
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 ```
 
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.

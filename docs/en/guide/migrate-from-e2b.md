@@ -1,5 +1,7 @@
 # Migrating from E2B
 
+For current SDK installation, use the [paired source installation guide](install-python.md).
+
 Agent Sandbox uses E2B-style method names so that most E2B call sites port with an import change. It is not a drop-in replacement: the wire protocol, credentials and several behaviours differ. This page lists what to change.
 
 ---
@@ -154,7 +156,7 @@ sandbox = await Sandbox.create(
 
 ## Migration Steps
 
-1. **Replace dependency**: `pip install agent-sandbox-client` (uninstall `e2b`)
+1. **Replace dependency**: [paired source installation guide](install-python.md) (uninstall `e2b`)
 2. **Replace imports**:
    - Minimal changes: `from e2b import Sandbox` → `from agent_sandbox.compat import Sandbox`
    - Recommended: `from agent_sandbox.api.sandbox import Sandbox`

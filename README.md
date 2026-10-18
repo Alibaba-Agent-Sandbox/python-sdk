@@ -4,8 +4,6 @@
 
 <!-- badges -->
 [![CI](https://github.com/alibaba-agent-sandbox/python-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/alibaba-agent-sandbox/python-sdk/actions/workflows/ci.yml)
-[![PyPI version](https://img.shields.io/pypi/v/agent-sandbox-client)](https://pypi.org/project/agent-sandbox-client/)
-[![Python 3.10+](https://img.shields.io/pypi/pyversions/agent-sandbox-client)](https://pypi.org/project/agent-sandbox-client/)
 [![License](https://img.shields.io/github/license/agent-sandbox/python-sdk)](LICENSE)
 
 > Cloud sandboxes for AI agents — create, execute, and manage isolated environments in seconds.
@@ -15,17 +13,16 @@
 `abx template build|deploy` from the CLI. The SDK uses E2B-shaped method names so that E2B code
 ports with few changes; it is not a drop-in replacement (see [Migrate from E2B](docs/en/guide/migrate-from-e2b.md)).
 
-This repository (`python-sdk`) contains the **Python SDK**, published as two lock-step PyPI
-distributions. The `abx` command-line tool is a separate Node.js project that lives in the
+This repository (`python-sdk`) contains the **Python SDK**, packaged as two lock-step distributions. The `abx` command-line tool is a separate Node.js project that lives in the
 [`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) repository (see [Related: the abx CLI](#related-the-abx-cli)).
 
-| Folder | PyPI distribution | Import path | Purpose |
+| Folder | Distribution | Import path | Purpose |
 |--------|-------------------|-------------|---------|
 | [`client-sdk/`](client-sdk/) | `agent-sandbox-client` | `agent_sandbox` | Async client SDK: `Sandbox`, files, commands, code interpreter, named commands, declarative `@sandbox`, Agents API client, MCP server, E2B migration helper |
 | [`server-sdk/`](server-sdk/) | `agent-sandbox-server` | `agent_sandbox.server` | Container-side runtime: the persistent HTTP service (default port 9000) that runs *inside* a sandbox image |
 
 Both distributions share the `agent_sandbox` namespace (the client owns `agent_sandbox/__init__.py`,
-the server only ships `agent_sandbox/server/`) and are **released in lockstep** with the same version number.
+the server only ships `agent_sandbox/server/`) and are **versioned in lockstep** with the same version number.
 
 **Client SDK** runs on your machine: create a sandbox and use it. Guide: [Client SDK](docs/en/guide/client-sdk.md). Examples: `examples/quickstart/`, `examples/compat-demos/`, `examples/agents/`, `examples/scenarios/`.
 
@@ -60,15 +57,21 @@ The installer fetches the catalog index at `https://registry.agent-sandbox.cn/pr
 
 ## Installation
 
-```bash
-# Core client SDK only
-pip install agent-sandbox-client
+Current version 0.3.0 is not on PyPI. Use the [paired source installation guide](docs/en/guide/install-python.md); both source URLs must use the same commit.
 
-# Everything (MCP + fast JSON + sessions + declarative + server)
-pip install "agent-sandbox-client[all]"
+```bash
+# Client and matching runtime
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+
+# Optional extras (MCP + fast JSON + sessions + declarative)
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 
 # Container-side runtime (install this inside your sandbox image)
-pip install agent-sandbox-server
+python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk"
 pip install playwright                       # only if you enable the browser capability group
 
 # Development (from the repository root; includes test & lint tooling for both packages)
@@ -77,7 +80,7 @@ pip install -e ./server-sdk -e "./client-sdk[dev]"
 
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project. This client is `agent-sandbox-client`.
 
-`agent-sandbox-client` depends on `agent-sandbox-server` of the same version, so `pip install agent-sandbox-client` also provides `agent_sandbox.server` (needed locally by the `@sandbox` decorator's server proxy). The `[server]` extra is kept as a harmless alias.
+`agent-sandbox-client` depends on `agent-sandbox-server` of the same version, so installing the [paired sources](docs/en/guide/install-python.md) also provides `agent_sandbox.server` (needed locally by the `@sandbox` decorator's server proxy). The `[server]` extra is kept as a harmless alias.
 
 The `abx` CLI is no longer part of the Python package (there is no `[cli]` extra and no `abx`
 console script); it is distributed from the [`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) repository
@@ -227,7 +230,7 @@ The `abx` command-line tool (`@agent-sandbox/cli`, Node.js) is developed in the
 credentials with this SDK. Its installation, command reference, tutorials, MCP server
 commands and the Agent Skill (`SKILL.md`) are documented there:
 
-- [CLI README](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/README.md) — installation (`npm install -g @agent-sandbox/cli`)
+- [CLI README](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/README.md) — installation ([CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md))
 - [CLI Tutorial](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/cli-tutorial.md) · [CLI Reference](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/cli-reference.md)
 - [Agent Skill Installation & Distribution](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/agent-skill-installation.md)
 

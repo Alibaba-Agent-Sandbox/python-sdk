@@ -1,5 +1,7 @@
 # 命令与 SDK 对照
 
+当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+
 同一行是同一件事在三家产品里的最近入口。它不是参数级兼容，也不是把 Agent Sandbox 收成其中一家的子集。
 
 `abx` 是 Agent Sandbox 的命令行。Python SDK 是 `agent-sandbox-client`。默认提供方是阿里云极速版。装上 `opensandbox` 提供方之后，`abx` 的命令名不变，请求改发到 OpenSandbox 服务。那和直接运行 `osb` 不是同一条命令。
@@ -20,7 +22,7 @@ E2B 形状的少量方法也可以从 `agent_sandbox.compat` 导入。差异和�
 
 | 做什么 | abx | Agent Sandbox SDK | e2b | E2B SDK | osb | OpenSandbox SDK |
 |---|---|---|---|---|---|---|
-| 安装 | `npm install -g @agent-sandbox/cli` | `pip install agent-sandbox-client` | `npm install -g @e2b/cli` | `pip install e2b` | `pip install opensandbox-cli` | `pip install opensandbox` |
+| 安装 | [CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md) | [配套源码安装指南](install-python.md) | `npm install -g @e2b/cli` | `pip install e2b` | `pip install opensandbox-cli` | `pip install opensandbox` |
 | 写入凭证 | `abx config set sandbox_api_key` | 环境变量 `ABX_SANDBOX_API_KEY` | `e2b auth login` | 环境变量 `E2B_API_KEY` | `osb config set connection.api_key` | `ConnectionConfig(api_key=…)` 或 `OPEN_SANDBOX_API_KEY` |
 | 查看生效配置 | `abx config list` | — | `e2b auth info` | — | `osb config show` | — |
 

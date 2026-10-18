@@ -1,5 +1,7 @@
 # Cloud end-to-end practice
 
+For current SDK installation, use the [paired source installation guide](install-python.md).
+
 Run the repository's cloud examples against a real sandbox on the default provider, **Alibaba Cloud Express** (`alicloud-express`). Do not push an image to ACR.
 
 > 中文版: [../../zh/guide/cloud-examples.md](../../zh/guide/cloud-examples.md)
@@ -11,7 +13,9 @@ The Agents API case is not repeated here. For the request sequence, the local st
 The client reads `ABX_SANDBOX_API_KEY`. The current client does not treat `E2B_API_KEY` as the sandbox key.
 
 ```bash
-pip install "agent-sandbox-client[declarative]"
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[declarative] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 export ABX_SANDBOX_API_KEY="your-api-key"
 ```
 
