@@ -59,3 +59,8 @@ URL happens to use HTTP. The core never constructs `/files` routes for foreign p
 
 Neutral Python transport/protocol imports do not load built-in authentication or wire
 adapters. Public compatibility imports resolve lazily when explicitly requested.
+
+Pure bundled configuration, image and legacy URL metadata remains provider-owned.
+Lower configuration reads its declarative data through distribution composition and
+compatibility exports; it does not import authentication or runtime adapters. Compatibility
+URL helpers delegate to declared templates or the composed owned builder.

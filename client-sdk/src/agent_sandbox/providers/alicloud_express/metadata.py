@@ -2,8 +2,8 @@
 
 from typing import Any
 
+from agent_sandbox.providers.alicloud_express.config_metadata import DEFAULT_CONFIG
 from agent_sandbox.providers.shared.e2b.url import envd_url
-from agent_sandbox.utils.bundled_config import DEFAULT_CONFIG
 
 
 def _legacy_ports(context: Any) -> Any:

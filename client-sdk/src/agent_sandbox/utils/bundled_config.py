@@ -1,32 +1,14 @@
-"""Pure Express configuration metadata. No SDK, engine or cloud calls."""
+"""Compatibility exports of the pure distribution metadata composition."""
 
-from typing import Any
-
-from agent_sandbox.utils.config_keys import (
-    ALICLOUD_EXPRESS_KEYS,
-    BUILTIN_PROVIDER_ID,
-    GENERIC_ENDPOINT_KEYS,
+from agent_sandbox.providers.config_distribution import (
+    BUNDLED_CONFIGS as BUNDLED_CONFIGS,
 )
-
-DEFAULT_CONFIG: dict[str, Any] = {
-    "id": BUILTIN_PROVIDER_ID,
-    "keys": ALICLOUD_EXPRESS_KEYS,
-    "inherit": frozenset(GENERIC_ENDPOINT_KEYS),
-    "derive": {
-        "sandbox_base_url": "https://api.{region}.e2b.fc.aliyuncs.com",
-        "sandbox_domain": "{region}.e2b.fc.aliyuncs.com",
-    },
-    "endpoint_defaults": {
-        "sandbox_base_url": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
-        "sandbox_domain": "cn-hangzhou.e2b.fc.aliyuncs.com",
-    },
-    "legacy_fields": frozenset({"region", "access_key_id", "access_key_secret"}),
-    "omit_default_options": True,
-}
-
-BUNDLED_CONFIGS: tuple[dict[str, Any], ...] = (DEFAULT_CONFIG,)
-BUNDLED_KEYS = tuple(key for entry in BUNDLED_CONFIGS for key in entry["keys"])
-
-
-def bundled_config(provider_id: str) -> dict[str, Any] | None:
-    return next((entry for entry in BUNDLED_CONFIGS if entry["id"] == provider_id), None)
+from agent_sandbox.providers.config_distribution import (
+    BUNDLED_KEYS as BUNDLED_KEYS,
+)
+from agent_sandbox.providers.config_distribution import (
+    DEFAULT_CONFIG as DEFAULT_CONFIG,
+)
+from agent_sandbox.providers.config_distribution import (
+    bundled_config as bundled_config,
+)
