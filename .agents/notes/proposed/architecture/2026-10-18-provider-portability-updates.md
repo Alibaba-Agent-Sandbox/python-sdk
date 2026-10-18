@@ -20,7 +20,7 @@ Separate built-in plugin updates would split the SDK release contract. Automatic
 
 ## Dependencies
 
-Shared host design: https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/design/provider-portability-and-updates.md; Node management requires compatible abx.
+Shared host design: https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/c5a6a3c75921cfb4359f1c23041ec847ce63c932/docs/en/design/provider-portability-and-updates.md; Node management requires compatible abx.
 
 ## Test Strategy
 

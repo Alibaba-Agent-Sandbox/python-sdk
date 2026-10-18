@@ -5,6 +5,11 @@ Team, API key, template IDs/aliases, Volumes and RAM roles. Existing resources d
 need to be recreated just to use the client. There is no implemented zero-change or
 one-click migration. Review the API calls your application actually uses.
 
+This guide covers Python and the CLI. The public
+[Node SDK](https://github.com/Alibaba-Agent-Sandbox/nodejs-sdk/blob/main/README.md)
+currently provides `ServerClient` and configuration names, not cloud sandbox lifecycle.
+Changing an E2B JavaScript import to that package is not a supported migration.
+
 ## What changes
 
 | Existing Express application | Agent Sandbox client |
@@ -83,5 +88,5 @@ the SDK release: `python -m agent_sandbox.providers --json update alicloud-expre
 returns `bundled` and guidance, not a latest-version check or a software update.
 Upgrade matching client/server versions with your original install method; upgrade
 abx separately for Node management. Restart only engines you own. The host's
-[ownership/update design](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/design/provider-portability-and-updates.md)
+[ownership/update design](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/c5a6a3c75921cfb4359f1c23041ec847ce63c932/docs/en/design/provider-portability-and-updates.md)
 defines consent, pinning, rollback and the pending template-adapter work.

@@ -4,6 +4,11 @@
 Volume、RAM 角色都可以继续使用，不必仅为接入客户端而重建资源。目前没有已实现的
 零改动或一键迁移；应核对应用实际使用的 API。
 
+本指南面向 Python 和 CLI。公开的
+[Node SDK](https://github.com/Alibaba-Agent-Sandbox/nodejs-sdk/blob/main/README.md)
+当前只有 `ServerClient` 和配置名称，没有云端沙箱生命周期；不支持把 E2B JavaScript
+应用仅改导入到该包就完成迁移。
+
 ## 需要修改的内容
 
 | 原极速版应用 | Agent Sandbox 客户端 |
@@ -73,5 +78,5 @@ Volume 和存储角色，不创建底层存储，也不自动证明权限正确�
 `python -m agent_sandbox.providers --json update alicloud-express --check` 返回
 `bundled` 和指引，不检查最新版本、不执行软件升级。按原安装方式同步升级匹配的
 client/server，Node 管理操作还需单独升级 abx。只重启自己管理的引擎。
-[宿主职责/更新设计](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/zh/design/provider-portability-and-updates.md)
+[宿主职责/更新设计](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/c5a6a3c75921cfb4359f1c23041ec847ce63c932/docs/zh/design/provider-portability-and-updates.md)
 定义确认、固定版本、回滚及待完成的模板适配器工作。
