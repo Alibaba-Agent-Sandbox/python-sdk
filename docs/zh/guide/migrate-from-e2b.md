@@ -56,3 +56,5 @@ finally:
 快照列表的可选 `name` 过滤是阿里云文档定义的扩展，本项目在固定 Python 参考版本基础上补齐，保留原有调用方式；删除全名时进行路径编码。
 
 已对真实 python-hello 函数补充探测：pause 返回“pauseSession is not enabled for this function”，快照创建返回“sandbox runtime does not support snapshot”。客户端入口已实现，但该函数未启用暂停，且运行时不支持快照；不能把文档中的运行时能力等同于任意模板都已启用，需要已启用暂停的函数与支持快照的 MicroVM 模板验证成功路径。
+
+标准入口接收 `E2B_*` 设置；原生 `ProviderSandbox` 保留规范的 `ABX_SANDBOX_*` 配置。标准入口仍可回退到现有项目配置，不能把兼容名称整体改写到原生配置注册表。

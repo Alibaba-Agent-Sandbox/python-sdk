@@ -43,3 +43,8 @@ interpreter, asynchronous AsyncSandbox/ProviderSandbox and server imports PASS.
 Neither upstream E2B runtime distribution is present. This changes documentation
 only and does not claim a PyPI release. The accepted implementation remains
 pinned independently of subsequent documentation-only commits.
+
+Contributor guidance now states both actual public entry shapes, canonical native
+configuration and tested source-install requirements. Removed stale package-release
+wording and the obsolete blanket not-drop-in characterization; account capability
+restrictions remain explicit. This is a documentation/instruction correction only.

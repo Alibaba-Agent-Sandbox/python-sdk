@@ -4,7 +4,7 @@ The standard Python API targets `e2b==2.31.0` and `e2b-code-interpreter==2.8.1`,
 
 ## Installation and imports
 
-Install `agent-sandbox-client` from this checkout (`pip install ./server-sdk ./client-sdk`) until the new package is released. Keep the existing Alibaba `E2B_API_KEY`, `E2B_API_URL` and `E2B_DOMAIN` configuration. `abx config` and project/home configuration files also feed these settings; explicit SDK keyword arguments take precedence. No old `ABX_SANDBOX_*` aliases are required.
+Install `agent-sandbox-client` from this checkout (`pip install ./server-sdk ./client-sdk`) until the new package is released. Keep the existing Alibaba `E2B_API_KEY`, `E2B_API_URL` and `E2B_DOMAIN` configuration. `abx config` and project/home configuration files also feed these settings; explicit SDK keyword arguments take precedence. Standard entries accept `E2B_*` settings; the native `ProviderSandbox` retains canonical `ABX_SANDBOX_*` configuration. Existing project configuration remains the fallback for standard entries.
 
 | Previous import | New import |
 |---|---|
