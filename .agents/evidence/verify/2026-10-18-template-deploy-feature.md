@@ -3,7 +3,7 @@
 - Date: 2026-10-18
 - Change: SDK Issue https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/50
 - Base: `0ce8359026028cd4dcf9ee0a7e51493c387f1e25`
-- Result: PARTIAL
+- Result: PASS
 - Packages: paired editable client/server 0.3.0 from this branch.
 - Environment: Linux, Python 3.12.15. Credentials supplied only in process memory.
 
@@ -55,9 +55,14 @@ selected explicitly: **6 FAIL in 2.94 seconds**, reproducing the same test ident
 and platform HTTP 501 responses. No server source or server test is changed in this
 PR. This comparison was actually executed; it is not inferred from the feature diff.
 
-Result remains PARTIAL pending latest-head hosted CI. The
-local failures remain recorded; only an actual complete latest-head CI pass can
-provide full-suite success. A focused real-cloud pass does not erase local failures.
+Exact reviewed product head `326e142772efce2bf2c4a45cfa1577e1574f54d0`
+subsequently passed **all nine hosted checks**: the complete client and server
+suites across Python 3.10/3.11/3.12, package build/install checks, hygiene and docs.
+Run: https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/39087792959.
+Independent root review found no blocking defect. This supplies full-suite success
+without rewriting the failed local run. The note is accepted for this narrow
+metadata change; final bookkeeping-head CI and actual merge state must still be
+checked separately before delivery is reported complete.
 
 ## Cleanup
 
@@ -69,4 +74,4 @@ resource was created.
 
 No native provider image deployment, Python deployment API, hosted MCP endpoint,
 public package installation or package publication is asserted. CLI behavior is
-tracked separately: https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/issues/41.
+tracked separately: https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/pull/42.

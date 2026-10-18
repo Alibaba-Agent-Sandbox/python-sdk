@@ -1,6 +1,6 @@
 # Decision: Accept independent template deployment metadata
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -31,7 +31,8 @@ or automatic feature inheritance. CLI factory behavior is owned separately.
 ## Dependencies
 
 - SDK Issue: https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/50
-- CLI dispatch: https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/issues/41
+- CLI dispatch: https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/pull/42
+- Registry metadata: https://github.com/Alibaba-Agent-Sandbox/registry/pull/5
 - CLI/provider consumers must implement and verify dispatch before declaring it.
 
 ## Test Strategy
