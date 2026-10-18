@@ -50,3 +50,11 @@ remain owned by the CLI repository. Historical evidence remains unchanged; accep
 The Express wrapper explicitly forwards its selected provider into engine creation;
 [follow-up verification](../../../evidence/verify/2026-10-18-provider-explicit-engine-routing.md)
 records the failing negative control, 2152-pass client suite and real conflict-case cleanup.
+
+
+The current-host integration retains the accepted API-key-only runtime authentication,
+independent CLI error renderer and retired native gRPC slice. Provider-owned URL builders
+replace core wire-format logic. Python schema composition remains lazy and injected;
+CLI tool schemas and handler discovery are recomputed together. Earlier engine-routing
+verification remains historical, not evidence that the retired daemon is still used.
+See the [integration checkpoint](../../../evidence/verify/2026-10-18-provider-current-host-checkpoint.md).

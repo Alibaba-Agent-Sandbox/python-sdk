@@ -77,7 +77,9 @@ class RestProvider(Provider):
         return session_protocols(http)
 
     def resolve_session_url(self, info: Any, config: Any) -> str:
-        return str(info.envd_url or config.build_envd_url(info.sandbox_id))
+        from agent_sandbox.providers.shared.e2b.url import envd_url
+
+        return str(info.envd_url or envd_url(info.sandbox_id, config.sandbox_domain))
 
     async def open_terminal(self, sandbox: Any, **options: Any) -> Any:
         self.require("pty")

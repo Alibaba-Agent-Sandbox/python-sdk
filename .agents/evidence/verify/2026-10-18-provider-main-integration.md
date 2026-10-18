@@ -35,3 +35,13 @@ Cleanup dry-run confirmation is recorded separately before merge.
 
 Post-run cleanup dry-run:exit0,zero tagged sandbox candidates and zero remaining
 sandboxes listed. No cloud resources remain from this acceptance run.
+
+Remote branch advanced before publication. The normal push correctly rejected
+a non-fast-forward update; no force push was used. Ordinary merge retains remote
+9f4a3f9845074281eb3d1e99d2709357a7a53a54 and its lazy composition, native URL and
+accurate raw-HTTP fixture fixes alongside the validated integration. No assertions
+were removed: raw HTTP identifies its actual loopback host and parses full bodies.
+Fresh focused API/auth/provider regressions145 PASS; lint/typecheck/health PASS.
+Focused server tests67 PASS/2 FAIL (remaining host WebSocket/framing limitations).
+Policy/PTY readiness is retained. Pure lower metadata and canonical auth aliases
+remain. Latest-head hosted CI is still required before merge.

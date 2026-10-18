@@ -15,7 +15,7 @@ import json
 import os
 import shlex
 import shutil
-import subprocess  # nosec B404 - audited argv-only subprocess boundary; no shell
+import subprocess
 import time
 import weakref
 from dataclasses import dataclass
@@ -137,8 +137,7 @@ async def _spawn() -> EngineRecord:
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / "engine.log").open("ab") as log:
         try:
-            # ABX_BIN/PATH selects the user's trusted local engine, never a remote command.
-            subprocess.Popen(  # noqa: S603  # nosec B603 - argv only; shell defaults to False
+            subprocess.Popen(  # noqa: S603 - the launcher is the user's own abx
                 argv,
                 stdin=subprocess.DEVNULL,
                 stdout=log,
@@ -246,7 +245,7 @@ class EngineClient:
                     raise _unknown_outcome() from exc
                 last = exc
                 continue
-            if retry and res.status_code == 401 and attempt == 0:
+            if res.status_code == 401 and attempt == 0 and retry:
                 continue
             return res
         raise ProviderProtocolError(f"The provider engine is not reachable: {last}")

@@ -41,6 +41,12 @@ class AlicloudExpressProvider(Provider):
     display_name = BUILTIN_PROVIDER_NAME
     display_name_zh = BUILTIN_PROVIDER_NAME_ZH
     kind = "builtin"
+    from .metadata import CONFIG_METADATA as _METADATA
+
+    derive = _METADATA["derive"]
+    endpoint_defaults = _METADATA["endpoint_defaults"]
+    legacy_fields = _METADATA["legacy_fields"]
+    omit_default_options = True
     # Explicit implementations; new registry features never grant builtin support.
     features = frozenset(
         {
@@ -108,7 +114,16 @@ class AlicloudExpressProvider(Provider):
         return session_protocols(http)
 
     def resolve_session_url(self, info: Any, config: Any) -> str:
-        return str(info.envd_url or config.build_envd_url(info.sandbox_id))
+        from agent_sandbox.providers.shared.e2b.url import envd_url
+
+        return str(info.envd_url or envd_url(info.sandbox_id, config.sandbox_domain))
+
+    @staticmethod
+    def legacy_session_url(sandbox_id: str, domain: str) -> str:
+        """Compatibility URL helper exposed through the composition schema."""
+        from agent_sandbox.providers.shared.e2b.url import envd_url
+
+        return envd_url(sandbox_id, domain)
 
     async def prepare_session(
         self, infra: ProviderInfra, info: Any, *, operation: str, template: str
