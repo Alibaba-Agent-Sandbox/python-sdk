@@ -1,5 +1,7 @@
 # Getting Started
 
+For current SDK installation, use the [paired source installation guide](install-python.md).
+
 This is the **Client SDK**: install it on your machine, create a sandbox, and use it. The service that starts inside the image is the [Server SDK](server-sdk.md).
 
 This tutorial covers the lifecycle from install through teardown.
@@ -16,16 +18,20 @@ This tutorial covers the lifecycle from install through teardown.
 
 ```bash
 # Install the SDK
-pip install agent-sandbox-client
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 
 # Install with all extras (recommended)
-pip install "agent-sandbox-client[all]"
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 ```
 
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
 
 The `abx` CLI is not part of the Python package (there is no `[cli]` extra); it is a separate Node.js project, see [Related: the abx CLI](#related-the-abx-cli). The container-side runtime
-(`agent_sandbox.server`) is the separate `agent-sandbox-server` package (`pip install agent-sandbox-server`); `agent-sandbox-client`
+(`agent_sandbox.server`) is the separate `agent-sandbox-server` package ([paired source installation guide](install-python.md)); `agent-sandbox-client`
 depends on it, so installing the client provides it too.
 
 ### Working from a source checkout

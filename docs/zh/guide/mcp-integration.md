@@ -1,6 +1,8 @@
 # MCP 集成
 
-> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
+当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（[CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
 Agent Sandbox 提供 MCP（Model Context Protocol）Server，使 AI IDE 和工具能够直接操作沙箱。
 
@@ -13,11 +15,13 @@ MCP（Model Context Protocol）是一个开放协议，允许 AI 模型与外部
 ### 环境要求
 
 ```bash
-pip install agent-sandbox-client            # SDK 自带的 MCP STDIO server：python -m agent_sandbox.agent.mcp
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[mcp] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 export ABX_SANDBOX_API_KEY=your-api-key
 ```
 
-Node.js `abx` CLI 提供同一服务器的另一套实现（`abx mcp ...`，用 `npm install -g @agent-sandbox/cli` 安装）；见[相关：abx CLI](#相关abx-cli)。
+Node.js `abx` CLI 提供同一服务器的另一套实现（`abx mcp ...`，用 [CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md) 安装）；见[相关：abx CLI](#相关abx-cli)。
 
 ## 配置 IDE
 
@@ -96,7 +100,9 @@ printf '%s\n' \
 ### 本地以 uvicorn 运行
 
 ```bash
-pip install "agent-sandbox-client[mcp]"
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[mcp] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 
 export ABX_MCP_AUTH_TOKEN=replace_me   # Bearer token（省略则关闭认证）
 export ABX_SANDBOX_API_KEY=your-api-key

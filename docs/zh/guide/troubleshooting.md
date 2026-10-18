@@ -1,6 +1,8 @@
 # 常见问题（FAQ）
 
-> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
+当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+
+> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（[CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
 ---
 
@@ -227,10 +229,12 @@ entries = await sandbox.files.list("/home/user")
 
 ```bash
 # 确保使用正确的包名
-pip install agent-sandbox-client
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 
 # 如果遇到依赖冲突
-pip install agent-sandbox-client --force-reinstall
+python -m pip check
 ```
 
 ### Python SDK 未找到
@@ -238,9 +242,9 @@ pip install agent-sandbox-client --force-reinstall
 确认 Python 的 bin 目录在 PATH 中：
 
 ```bash
-python -m agent_sandbox --version
+python -c "from importlib.metadata import version; print(version('agent-sandbox-client'))"
 # 或
-pip show agent-sandbox-client | grep Location
+python -m pip show agent-sandbox-client
 ```
 
 ---

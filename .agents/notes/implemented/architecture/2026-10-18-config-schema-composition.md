@@ -1,5 +1,5 @@
 # Decision: Inject provider schema discovery outside transport
-Status: proposed
+Status: implemented
 
 ## Problem
 

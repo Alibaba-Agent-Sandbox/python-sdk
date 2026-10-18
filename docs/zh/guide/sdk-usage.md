@@ -1,5 +1,7 @@
 # SDK 使用指南
 
+当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+
 本文详述 Agent Sandbox Python SDK 的完整使用方法。
 
 ---
@@ -7,7 +9,9 @@
 ## 安装
 
 ```bash
-pip install agent-sandbox-client
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 ```
 
 不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。

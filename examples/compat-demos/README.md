@@ -7,7 +7,7 @@ These demos showcase **E2B-style** (imperative) and **Modal-style** (declarative
 ## Prerequisites
 
 - Python 3.10+
-- `pip install agent-sandbox-client` (or dev install from the python-sdk repo root: `pip install -e ./server-sdk -e "./client-sdk[dev]"`)
+- [paired source installation guide](../../docs/en/guide/install-python.md) (or dev install from the python-sdk repo root: `pip install -e ./server-sdk -e "./client-sdk[dev]"`)
 - Environment variables:
 
 ```bash

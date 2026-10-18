@@ -31,6 +31,7 @@ The installer fetches the catalog index at `https://registry.agent-sandbox.cn/pr
 
 | Guide | Description |
 |-------|-------------|
+| [Paired source installation](guide/install-python.md) | Current source packages, extras and version alignment |
 | [Client SDK](guide/client-sdk.md) | What this side is, and how the guides below fit together |
 | [Getting Started](guide/getting-started.md) | Install, configure, first sandbox |
 | [Express quickstart](guide/express-quickstart.md) | Deploy a generation-2 template and call a named command |

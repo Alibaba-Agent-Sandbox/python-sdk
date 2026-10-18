@@ -1,5 +1,7 @@
 # 从 E2B 迁移
 
+当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+
 Agent Sandbox 沿用 E2B 风格的方法名，所以大多数 E2B 调用点只需改 import 就能迁移。它不是即插即用的替代品：线协议、凭证和一些行为都不同。本页列出需要改动的地方。
 
 ---
@@ -153,7 +155,7 @@ sandbox = await Sandbox.create(
 
 ## 迁移步骤
 
-1. **替换依赖**：`pip install agent-sandbox-client`（卸载 `e2b`）
+1. **替换依赖**：[配套源码安装指南](install-python.md)（卸载 `e2b`）
 2. **替换导入**：
    - 最小改动：`from e2b import Sandbox` → `from agent_sandbox.compat import Sandbox`
    - 推荐：`from agent_sandbox.api.sandbox import Sandbox`

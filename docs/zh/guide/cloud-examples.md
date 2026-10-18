@@ -1,5 +1,7 @@
 # 云上端到端练习
 
+当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+
 在默认提供方 **阿里云极速版**（`alicloud-express`）上，用真实沙箱把仓库里的云端示例跑一遍。不需要把镜像推到 ACR。
 
 > English: [../../en/guide/cloud-examples.md](../../en/guide/cloud-examples.md)
@@ -11,7 +13,9 @@ Agents API 的完整案例不在本页。那一组请求、本地替身 CLI，�
 客户端读取 `ABX_SANDBOX_API_KEY`。旧名字 `E2B_API_KEY` 不会被当前客户端当成沙箱密钥。
 
 ```bash
-pip install "agent-sandbox-client[declarative]"
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[declarative] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 export ABX_SANDBOX_API_KEY="your-api-key"
 ```
 

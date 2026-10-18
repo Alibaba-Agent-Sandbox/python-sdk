@@ -1,5 +1,7 @@
 # agent-sandbox-server
 
+For the current version, use the [paired source installation guide](../docs/en/guide/install-python.md); source references below keep client and server versions matched.
+
 **Server SDK.** This package runs *inside* a sandbox image. It is the HTTP service the image starts (default port 9000). It does not create the sandbox. Creating and calling the sandbox is the [client SDK](https://github.com/alibaba-agent-sandbox/python-sdk/blob/main/client-sdk/README.md) or the `abx` CLI. Guide: [Server SDK](https://github.com/alibaba-agent-sandbox/python-sdk/blob/main/docs/en/guide/server-sdk.md).
 
 It exposes files, processes, system info, a PTY terminal, optional dev tools / browser automation, and your own registered commands.
@@ -10,7 +12,7 @@ Import path: `agent_sandbox.server` (a namespace shared with `agent-sandbox-clie
 ## Install
 
 ```bash
-pip install agent-sandbox-server
+python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk"
 ```
 
 The opt-in browser capability group imports Playwright lazily; install `playwright` in the

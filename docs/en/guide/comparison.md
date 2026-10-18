@@ -1,6 +1,8 @@
 # Comparison with Other Sandbox Tools
 
-> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
+For current SDK installation, use the [paired source installation guide](install-python.md).
+
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository ([CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
 This document provides an objective comparison of Agent Sandbox (abx) with other popular sandbox and remote execution platforms: E2B, Modal, and Docker Sandbox.
 
@@ -22,7 +24,7 @@ This document provides an objective comparison of Agent Sandbox (abx) with other
 | Dimension | Agent Sandbox | E2B | Modal |
 |-----------|-------------|-----|-------|
 | **Language** | Python | Python, JS/TS, Kotlin, Go | Python |
-| **Install** | `pip install agent-sandbox-client` | `pip install e2b` | `pip install modal` |
+| **Install** | [paired source installation guide](install-python.md) | `pip install e2b` | `pip install modal` |
 | **Sandbox creation** | `await Sandbox.create()`, or the Modal-style `@sandbox` decorator | `await Sandbox.create()` | `@app.function()` decorator |
 | **Sync support** | `Sandbox.create_sync()` | `Sandbox()` (sync class) | N/A (async-native) |
 | **Command execution** | `sandbox.commands.run()` | `sandbox.commands.run()` | Remote function call |
@@ -117,7 +119,7 @@ result = analyze(my_data)
 
 | Dimension | abx | e2b CLI | modal CLI |
 |-----------|-----|---------|-----------|
-| **Install** | `npm install -g @agent-sandbox/cli` | `npm i -g @e2b/cli` | `pip install modal` |
+| **Install** | [CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md) | `npm i -g @e2b/cli` | `pip install modal` |
 | **Runtime** | Node.js (TypeScript) | Node.js | Python (Typer) |
 | **Create sandbox** | `abx create` | `e2b sandbox create` | N/A (code-driven) |
 | **List sandboxes** | `abx sandbox list` | `e2b sandbox list` | `modal container list` |
