@@ -70,10 +70,10 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 ### E1002 — Token 过期
 
 ```text
-[E1002] The SDK should auto-refresh tokens. If this persists, check system clock synchronization.
+[E1002] envdAccessToken not available. Sandbox may not be created or connected.
 ```
 
-**解决**：检查系统时钟是否准确。SDK 会自动刷新 AK/SK 临时 token（有效期 3600 秒，到期前 300 秒刷新）。
+**解决**：检查系统时钟是否准确。重新连接获取有效 envd token，或检查显式配置的自定义交换；API Key 不会被自动创建或刷新。
 
 ---
 

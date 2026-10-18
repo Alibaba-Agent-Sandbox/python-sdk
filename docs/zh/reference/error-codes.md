@@ -22,7 +22,7 @@ except SandboxError as e:
 |--------|--------|------|------|----------|
 | E1000 | `AuthenticationError` | 认证失败（基类） | — | 认证相关通用错误 |
 | E1001 | `InvalidAPIKeyError` | API Key 无效或缺失 | 检查 `ABX_SANDBOX_API_KEY` 环境变量，或传入 `sandbox_api_key` 参数 | 未配置任何 API Key 即调用需认证的 API |
-| E1002 | `TokenExpiredError` | 认证令牌已过期 | SDK 应自动刷新 token；持续出现请检查系统时钟同步 | AK/SK 临时令牌过期且自动刷新失败 |
+| E1002 | `TokenExpiredError` | 认证令牌已过期 | 重新连接获取 envd token，或检查自定义交换 | envd token 缺失/失效，或显式配置的自定义交换失败 |
 | E1003 | `InvalidCredentialsError` | AK/SK 凭证无效 | 检查 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET` 环境变量 | AK/SK 为空或格式错误 |
 
 ### 排查步骤

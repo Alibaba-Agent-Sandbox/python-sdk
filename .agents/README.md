@@ -48,4 +48,6 @@ Move the file and edit `Status:` in the same commit. Required sections and the t
 
 - [Independent template deployment metadata](notes/implemented/feature/2026-10-18-template-deploy-feature.md) · [verification](evidence/verify/2026-10-18-template-deploy-feature.md)
 
+Auth migration: [explicit sandbox API keys](notes/proposed/architecture/2026-10-18-data-plane-auth-contract.md).
+
 Engine recovery proposal: [avoid uncertain mutation replay](notes/proposed/architecture/2026-10-18-engine-write-replay.md).

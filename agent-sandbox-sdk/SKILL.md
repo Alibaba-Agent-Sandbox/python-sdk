@@ -55,7 +55,7 @@ asyncio.run(main())
 
 | id | What it is | Required environment |
 |---|---|---|
-| `alicloud-express` | Alibaba Cloud Express. The default. Built into the SDK. | `ABX_SANDBOX_API_KEY`, or AK/SK |
+| `alicloud-express` | Alibaba Cloud Express. The default. Built into the SDK. | `ABX_SANDBOX_API_KEY`; AK/SK is separate control-plane configuration |
 
 URLs, headers, and calls that raise `E8004` for Express are in `references/providers.md`. The `abx` CLI loads `alicloud-express` plus installed `node`, `exec` and `rest` plugins. The four catalog providers are `node`. After `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes`, `abx --provider <id>` works. A manifest with `kind = "python"` cannot be installed. An in-code `Provider` subclass still works from the SDK only.
 

@@ -29,7 +29,7 @@
 
 每项凭证在真正使用时都按上面的分层顺序解析。`abx config list` 会标出来源：`(env)`、`(user)`、`(default)` 或 `(not set)`。
 
-每个键只有一个名字。产品自己的设置用 `ABX_<KEY>`。厂商已经公布的变量就用那个变量：阿里云 AccessKey 是 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`，地域是 `ALIBABA_CLOUD_REGION_ID`，GitHub token 是 `GITHUB_TOKEN`。模板构建（`ACR_*`、`team_id`）和模板生成（`ABX_LLM_*`）的设置属于 `abx` CLI，见其[配置参考](https://github.com/alibaba-agent-sandbox/cli/blob/main/docs/zh/reference/configuration.md)；Python SDK 不读取它们。
+每个键只有一个名字。产品自己的设置用 `ABX_<KEY>`。厂商已经公布的变量就用那个变量：阿里云 AccessKey 是 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`，地域是 `ALIBABA_CLOUD_REGION_ID`，GitHub token 是 `GITHUB_TOKEN`。模板构建（`ACR_*`、`team_id`）和模板生成（`ABX_LLM_*`）的设置属于 `abx` CLI，见其[配置参考](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/configuration.md)；Python SDK 不读取它们。
 
 | 要用的值 | 键 | 环境变量 |
 |---|---|---|
@@ -59,6 +59,8 @@
 为提供方 `P` 解析时，永远不会读取其他提供方 `Q` 的 `ABX_<Q>_*` 或 `[providers.Q]`。
 
 ---
+
+沙箱调用需要 `ABX_SANDBOX_API_KEY`；AK/SK 用于独立官方控制面，不能替代沙箱密钥。见[鉴权迁移](../guide/authentication.md)。
 
 ## 环境变量
 
