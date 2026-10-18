@@ -21,11 +21,13 @@ from agent_sandbox.utils.config_keys import (
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
-    from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
-    from agent_sandbox.protocol.filesystem import FilesystemProtocol
-    from agent_sandbox.protocol.process import ProcessProtocol
-    from agent_sandbox.protocol.sandbox import SandboxProtocol
-    from agent_sandbox.transport.auth import AuthProvider
+    from agent_sandbox.protocol.contracts import (
+        CodeInterpreterProtocol,
+        FilesystemProtocol,
+        ProcessProtocol,
+        SandboxProtocol,
+    )
+    from agent_sandbox.transport.auth_contract import AuthProvider
     from agent_sandbox.transport.config import TransportConfig
     from agent_sandbox.transport.http import HttpClient
 
@@ -232,6 +234,67 @@ class Provider(ABC):
     derive: Mapping[str, str] = MappingProxyType({})
     #: Static endpoint defaults (``sandbox_base_url``/``sandbox_domain``) of declarative providers.
     endpoint_defaults: Mapping[str, str] = MappingProxyType({})
+
+    #: Optional create inputs explicitly implemented by the backend.
+    create_options: frozenset[str] = frozenset()
+
+    def session_protocols(self, http: Any) -> dict[str, Any]:
+        """Missing protocols fail explicitly rather than acquiring a native transport."""
+
+        class Unsupported:
+            prepare_session = None
+
+            def __init__(self, provider: str, feature: str) -> None:
+                self.provider, self.feature = provider, feature
+
+            def __getattr__(self, name: str) -> Any:
+                async def fail(*args: Any, **kwargs: Any) -> Any:
+                    raise ProviderFeatureNotSupportedError(self.provider, self.feature)
+
+                return fail
+
+        return {
+            name: Unsupported(self.id, feature)
+            for name, feature in (
+                ("sandbox_protocol", "sandbox.lifecycle"),
+                ("process_protocol", "exec.run"),
+                ("filesystem_protocol", "files.rw"),
+                ("code_interpreter_protocol", "code.interpret"),
+            )
+        }
+
+    def build_legacy_infra(self, **options: Any) -> Any:
+        """Compatibility hook. Normal operations always use build_infra."""
+        raise ProviderFeatureNotSupportedError(self.id, "sandbox.legacy-infra")
+
+    def resolve_session_url(self, info: Any, config: Any) -> str:
+        return str(info.envd_url or "")
+
+    async def prepare_session(
+        self, infra: ProviderInfra, info: Any, *, operation: str, template: str
+    ) -> dict[str, Any]:
+        """Return only the backend's session binding; core never supplies wire adapters."""
+        from agent_sandbox.transport.auth_contract import SessionAuth
+
+        binder = getattr(infra.sandbox_protocol, "prepare_session", None)
+        if callable(binder):
+            return dict(await binder(info))
+        return {"envd_token": SessionAuth(info.envd_access_token, info.sandbox_id)}
+
+    async def open_terminal(self, sandbox: Any, **options: Any) -> Any:
+        self.require("pty")
+        opener = getattr(sandbox._process_protocol, "open_terminal", None)
+        if opener is None:
+            raise ProviderFeatureNotSupportedError(self.id, "pty")
+        return await opener(sandbox.id, cols=options.get("cols", 80), rows=options.get("rows", 24))
+
+    async def create_engine_session(self, request: Any) -> Any:
+        """Optional host-engine entry point, implemented by each participating backend."""
+        raise ProviderFeatureNotSupportedError(self.id, "engine.create")
+
+    async def kill_engine_resource(self, request: Any) -> None:
+        """Control-plane deletion without an engine-held session is backend owned."""
+        raise ProviderFeatureNotSupportedError(self.id, "engine.kill")
 
     def require(self, feature: str) -> None:
         """Raise :class:`ProviderFeatureNotSupportedError` unless *feature* is implemented."""

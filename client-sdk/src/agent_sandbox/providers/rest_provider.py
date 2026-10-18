@@ -64,11 +64,34 @@ class RestProvider(Provider):
         self.derive = dict(ep.get("derive", {}))
         self._auth_cfg = dict(ep.get("auth", {"scheme": "bearer"}))
 
+    async def prepare_session(
+        self, infra: ProviderInfra, info: Any, *, operation: str, template: str
+    ) -> dict[str, Any]:
+        from agent_sandbox.providers.shared.e2b.session import prepare_session
+
+        return await prepare_session(self, info)
+
+    def session_protocols(self, http: Any) -> dict[str, Any]:
+        from agent_sandbox.providers.shared.e2b.session import session_protocols
+
+        return session_protocols(http)
+
+    def resolve_session_url(self, info: Any, config: Any) -> str:
+        return str(info.envd_url or config.build_envd_url(info.sandbox_id))
+
+    async def open_terminal(self, sandbox: Any, **options: Any) -> Any:
+        self.require("pty")
+        from agent_sandbox.providers.shared.e2b.terminal import TerminalSession
+
+        return await TerminalSession.create(
+            envd_url=sandbox.url, envd_token=sandbox._envd_token, config=sandbox._config, **options
+        )
+
     async def build_infra(self, config: TransportConfig) -> ProviderInfra:
-        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
-        from agent_sandbox.protocol.filesystem import FilesystemProtocol
-        from agent_sandbox.protocol.process import ProcessProtocol
-        from agent_sandbox.protocol.sandbox import SandboxProtocol
+        from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.providers.shared.e2b.filesystem import FilesystemProtocol
+        from agent_sandbox.providers.shared.e2b.process import ProcessProtocol
+        from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
         from agent_sandbox.transport.http import HttpClient
 
         self.validate_config(config)

@@ -205,10 +205,13 @@ class Engine:
     ) -> SandboxInfo:
         """Create a sandbox. The engine performs the platform HTTP call."""
         mounts = validate_volume_mounts(volume_mounts)
-        if mounts and provider not in {None, "", "alicloud-express"}:
+        from agent_sandbox.providers.registry import get_provider, resolve_provider_id
+
+        selected = get_provider(resolve_provider_id(provider))
+        if mounts and "volume_mounts" not in selected.create_options:
             from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
 
-            raise ProviderFeatureNotSupportedError(provider, "volume_mounts")
+            raise ProviderFeatureNotSupportedError(selected.id, "volume_mounts")
         request = _pb2.CreateRequest(
             template=template,
             timeout=timeout,
@@ -236,7 +239,7 @@ class Engine:
                         from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
 
                         raise ProviderFeatureNotSupportedError(
-                            "alicloud-express",
+                            selected.id,
                             "volume_mounts",
                             message="The running Python engine does not support volume_mounts.",
                             suggestion="Upgrade and restart the local Python provider engine.",

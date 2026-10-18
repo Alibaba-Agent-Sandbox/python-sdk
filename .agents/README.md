@@ -48,3 +48,5 @@ Move the file and edit `Status:` in the same commit. Required sections and the t
 
 - [Provider portability and updates](notes/proposed/architecture/2026-10-18-provider-portability-updates.md) · [verification](evidence/verify/2026-10-18-provider-portability-updates.md)
 - [Independent template deployment metadata](notes/implemented/feature/2026-10-18-template-deploy-feature.md) · [verification](evidence/verify/2026-10-18-template-deploy-feature.md)
+
+- [Provider isolation verification](evidence/verify/2026-10-18-provider-complete-isolation.md)

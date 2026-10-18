@@ -77,11 +77,11 @@ async def test_builtin_create_goes_through_the_engine(
 
 
 @pytest.mark.asyncio
-async def test_engine_rejects_catalog_provider(
+async def test_engine_reports_uninstalled_catalog_provider(
     tmp_path: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("ABX_ENGINE_SOCKET", str(tmp_path / "engine.sock"))
-    with pytest.raises(ProviderNotFoundError, match="only creates alicloud-express"):
+    with pytest.raises(ProviderNotFoundError, match="not installed"):
         await Engine().create(
             "base",
             provider="opensandbox",

@@ -8,11 +8,11 @@ Python update treats the built-in provider as an uninstalled plugin. Existing Ex
 
 ## Decision
 
-Report the SDK-bundled release lifecycle without fetching or installing software. Document explicit config/API changes, ownership-safe adoption, native lifecycle versus Node management and coordinated client/server upgrades.
+Route bundled and external backends through the same Provider factory and session hooks. Move Express authentication, native engine creation and lifecycle binding into providers/alicloud_express; move explicit E2B wire adapters under providers/shared/e2b. Core depends on structural protocols. Preserve historical import/module identity, reject foreign defaults and distinguish created-resource cleanup from borrowed-resource ownership. Retain SDK-bundled update guidance without fetching/installing software.
 
 ## API Design
 
-installer.update(alicloud-express) returns status bundled, installed SDK version, available null, changes and message; ref is rejected. Existing Git/catalog behavior is retained.
+installer.update(alicloud-express) returns status bundled, installed SDK version, available null, changes and message; ref is rejected. Existing Git/catalog behavior is retained. Provider session_protocols, prepare_session, resolve_session_url, open_terminal and optional engine hooks own backend assembly; absent implementations fail closed.
 
 ## Alternatives considered
 
@@ -24,14 +24,25 @@ Shared host design: https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/
 
 ## Test Strategy
 
-Existing installer suite plus offline no-receipt and actual CLI regressions, both-package lint/format/typecheck, scoped links and required full aggregate. Historical cloud storage evidence is linked without claiming another live run.
+Existing installer suite plus offline no-receipt and actual CLI regressions, both-package lint/format/typecheck, scoped links and required full aggregate. Add architecture import-boundary and create/connect ownership regressions. Run real Express create/exec/files/connect/list/cleanup against current sources; historical storage evidence remains separate.
 
 ## Acceptance criteria
 
 Bundled update is actionable and performs no plugin I/O; Git/catalog regressions pass; migration explicitly distinguishes resource reuse and source compatibility; mandatory gates pass before merge.
+
+Acceptance also requires no concrete backend imports in core implementation, no
+null/default-provider lifecycle bypass, provider-owned authentication/session/URL/terminal
+assembly, no foreign configuration defaults, and owned-versus-borrowed cleanup regressions.
 
 ## Evidence
 
 [Verification](../../../evidence/verify/2026-10-18-provider-portability-updates.md).
 
 Owner issue: https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/52.
+
+## Implementation
+
+The full-isolation follow-up removes the earlier guard-only limitation. Authentication,
+cloud mappings and session defaults are provider-owned. CLI templates and UI metadata
+remain owned by the CLI repository. Historical evidence remains unchanged; acceptance is tracked in the new
+[isolation verification](../../../evidence/verify/2026-10-18-provider-complete-isolation.md).

@@ -12,9 +12,15 @@ from agent_sandbox.api.sandbox import Sandbox
 from agent_sandbox.engine.client import Engine
 from agent_sandbox.engine.engine_pb2 import CreateRequest, HealthStatus
 from agent_sandbox.engine.server import ProviderEngine
-from agent_sandbox.models.errors import ProviderConfigError, ProviderFeatureNotSupportedError
+from agent_sandbox.models.errors import (
+    ProviderConfigError,
+    ProviderFeatureNotSupportedError,
+    ProviderNotFoundError,
+)
 from agent_sandbox.models.sandbox import SandboxConfig
-from agent_sandbox.providers.builtin import AlicloudExpressProvider
+from agent_sandbox.providers.base import Provider, ProviderInfra
+from agent_sandbox.providers.registry import get_provider
+from agent_sandbox.transport.auth_contract import SessionAuth
 from agent_sandbox.transport.config import TransportConfig
 from tests.test_api.conftest import make_sandbox_info
 
@@ -65,29 +71,44 @@ async def test_invalid_mounts_never_select_or_build_provider(mounts: Any) -> Non
         channel.assert_not_called()
 
 
-@pytest.mark.parametrize("provider", ["uninstalled-plugin", AlicloudExpressProvider()])
-async def test_plugin_mounts_rejected_before_loading_or_building(provider: Any) -> None:
-    if not isinstance(provider, str):
-        provider.id = "programmatic-plugin"
-    with (
-        patch("agent_sandbox.api.sandbox._select_provider") as select,
-        patch("agent_sandbox.api.sandbox._build_infra") as build,
-        pytest.raises(ProviderFeatureNotSupportedError) as caught,
-    ):
-        await Sandbox.create(provider=provider, volume_mounts={"/mnt/data": "existing-volume"})
-    assert caught.value.code == "E8004"
-    select.assert_not_called()
-    build.assert_not_called()
+async def test_unknown_provider_mounts_fail_before_building() -> None:
+    with patch("agent_sandbox.api.sandbox._provider_infra") as build:
+        with pytest.raises(ProviderNotFoundError):
+            await Sandbox.create(
+                provider="uninstalled-plugin", volume_mounts={"/mnt/data": "volume"}
+            )
+        build.assert_not_called()
+
+
+async def test_plugin_mounts_require_explicit_create_option() -> None:
+    class Plugin(Provider):
+        id = "programmatic-plugin"
+
+        async def build_infra(self, config):
+            raise AssertionError("must fail before provider I/O")
+
+    with pytest.raises(ProviderFeatureNotSupportedError):
+        await Sandbox.create(provider=Plugin(), volume_mounts={"/mnt/data": "volume"})
 
 
 @pytest.mark.parametrize("mounts", [None, {}, {"/mnt/data": "existing-volume"}])
 async def test_builtin_api_forwards_only_nonempty_mounts(mounts: Any) -> None:
     http = AsyncMock()
+    provider = get_provider("alicloud-express")
+
+    async def factory(config):
+        return ProviderInfra(config, None, http, provider_lifecycle, close=http.close)
+
+    from agent_sandbox.providers.alicloud_express.lifecycle import EngineLifecycle
+
+    provider_lifecycle = EngineLifecycle(http, TransportConfig())
     with (
-        patch("agent_sandbox.api.sandbox._select_provider", return_value=(None, None)),
-        patch(
-            "agent_sandbox.api.sandbox._build_infra",
-            return_value=(TransportConfig(), AsyncMock(), http, AsyncMock()),
+        patch.object(provider, "build_infra", side_effect=factory),
+        patch.object(
+            provider,
+            "prepare_session",
+            new_callable=AsyncMock,
+            return_value={"envd_token": SessionAuth(None, "sb-1")},
         ),
         patch("agent_sandbox.engine.client.Engine.create", new_callable=AsyncMock) as create,
     ):
@@ -117,7 +138,7 @@ def test_model_exact_wire_and_empty_compatibility() -> None:
 
 async def test_engine_nonbuiltin_mounts_never_open_channel() -> None:
     with patch("agent_sandbox.engine.client._channel") as channel:
-        with pytest.raises(ProviderFeatureNotSupportedError):
+        with pytest.raises(ProviderNotFoundError):
             await Engine().create(provider="plugin", volume_mounts={"/mnt/data": "volume"})
         channel.assert_not_called()
 
@@ -132,7 +153,7 @@ async def test_raw_grpc_request_cannot_bypass_provider_or_path_gate(
         await ProviderEngine().Create(request, context)
         build.assert_not_called()
     error = json.loads(context.abort.call_args.args[1])
-    assert error["code"] == ("E8004" if provider else "E8002")
+    assert error["code"] == ("E8001" if provider else "E8002")
 
 
 @pytest.mark.parametrize("mounts", [None, {}, {"/mnt/data": "volume"}])

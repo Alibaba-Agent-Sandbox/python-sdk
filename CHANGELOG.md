@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Provider isolation
+
+- Route bundled and external backends through the same Provider contract. Move Express authentication,
+  cloud SDK/template deployment and native session binding into provider modules; preserve public import facades.
+- Resolve provider-owned CLI/AI/config metadata per selection, reject undeclared native defaults/options,
+  and clean up newly created resources when session binding fails without deleting borrowed sandboxes.
+
+
 ### Added
 
 - `Sandbox.create(volume_mounts={"/mnt/data": "existing-volume-name"})` mounts existing Volumes with the built-in provider. Strict validation runs before provider/engine I/O; unsupported providers fail with E8004. The existing gRPC lifecycle forwards the hint and emits the official `volumeMounts: [{name, path}]` creation payload; empty maps preserve prior requests. Real OSS storage mount/read/write/cleanup is verified for the tested base template in cn-hangzhou.

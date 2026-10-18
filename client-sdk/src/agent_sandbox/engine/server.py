@@ -7,12 +7,13 @@ import inspect
 import ipaddress
 import json
 import os
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
+
+    from agent_sandbox.providers.engine_contract import Session
 
 import grpc
 import httpx
@@ -60,20 +61,6 @@ def loopback_url(url: str) -> bool:
     return bool(address.is_loopback)
 
 
-@dataclass
-class Session:
-    """Backend connections for one sandbox. Tokens stay in this process."""
-
-    sandbox_id: str
-    provider: str
-    envd_url: str
-    token: Any
-    http: Any
-    process: Any
-    files: Any
-    sandbox_protocol: Any
-
-
 SESSIONS: dict[str, Session] = {}
 
 
@@ -112,20 +99,16 @@ class ProviderEngine(_grpc.ProviderEngineServicer):
 
     async def Create(self, request: Any, context: Any) -> Any:  # noqa: N802
         try:
-            provider = (getattr(request, "provider", "") or "").strip()
-            if getattr(request, "volume_mounts", {}) and provider not in {"", "alicloud-express"}:
-                raise ProviderFeatureNotSupportedError(provider, "volume_mounts")
-            if provider not in {"", "alicloud-express"}:
-                from agent_sandbox.models.errors import ProviderNotFoundError
+            from agent_sandbox.providers.registry import get_provider, resolve_provider_id
 
-                raise ProviderNotFoundError(
-                    "The local engine only creates alicloud-express sandboxes.",
-                    suggestion=(
-                        "Catalog providers run in the Python SDK. Install with "
-                        "'python -m agent_sandbox.providers install registry:<id> --yes'."
-                    ),
-                )
-            state, session = await _alicloud_create(request)
+            provider = get_provider(resolve_provider_id(getattr(request, "provider", None)))
+            if (
+                getattr(request, "volume_mounts", {})
+                and "volume_mounts" not in provider.create_options
+            ):
+                raise ProviderFeatureNotSupportedError(provider.id, "volume_mounts")
+            info, session = await provider.create_engine_session(request)
+            state = _state(info)
             SESSIONS[state.sandbox_id] = session
             return state
         except Exception as exc:
@@ -294,7 +277,9 @@ class ProviderEngine(_grpc.ProviderEngineServicer):
         except Exception as exc:
             await abort_exc(context, exc)
             return
-        async for frame in _ali_pty(session, first, request_iterator):
+        if session.terminal is None:
+            raise ProviderFeatureNotSupportedError(session.provider, "pty")
+        async for frame in session.terminal(session, first, request_iterator):
             yield frame
 
     async def Op(self, request: Any, context: Any) -> Any:  # noqa: N802
@@ -314,74 +299,15 @@ async def _drain(incoming: Any) -> None:
         return
 
 
-async def _alicloud_create(request: Any) -> tuple[Any, Session]:
-    from agent_sandbox.api.sandbox import SandboxConfig, _build_infra
-    from agent_sandbox.protocol.filesystem import FilesystemProtocol
-    from agent_sandbox.protocol.process import ProcessProtocol
-    from agent_sandbox.transport.auth import EnvdTokenManager
-    from agent_sandbox.transport.http import stream_envelope_for_envd
-
-    sandbox_config = SandboxConfig(
-        template=request.template or "base",
-        timeout=request.timeout or 300,
-        metadata=dict(request.metadata),
-        env_vars=dict(request.envs),
-        cpu=request.cpu or None,
-        memory=request.memory or None,
-        disk=request.disk or None,
-        gpu=request.gpu or None,
-        volume_mounts=dict(getattr(request, "volume_mounts", {})),
-    )
-    _config, _auth, http_client, protocol = _build_infra(
-        api_key=_opt(request.api_key),
-        api_url=_opt(request.api_url),
-        access_key_id=_opt(request.access_key_id),
-        access_key_secret=_opt(request.access_key_secret),
-        region=_opt(request.region),
-    )
-    try:
-        info = await protocol.create(
-            sandbox_config,
-            request_timeout=request.request_timeout or None,
-        )
-    except Exception:
-        await _close(http_client)
-        raise
-    if not info.envd_url and info.sandbox_id:
-        info.envd_url = _config.build_envd_url(info.sandbox_id)
-    http_client._stream_envelope = stream_envelope_for_envd(info.envd_version)
-    token = EnvdTokenManager(info.envd_access_token, sandbox_id=info.sandbox_id)
-    session = Session(
-        sandbox_id=info.sandbox_id,
-        provider="alicloud-express",
-        envd_url=info.envd_url or "",
-        token=token,
-        http=http_client,
-        process=ProcessProtocol(http_client),
-        files=FilesystemProtocol(http_client),
-        sandbox_protocol=protocol,
-    )
-    return _state(info), session
-
-
 async def _kill(request: Any) -> None:
     session = SESSIONS.get(request.sandbox_id)
     if session is not None and session.sandbox_protocol is not None:
         await session.sandbox_protocol.kill(request.sandbox_id)
     else:
-        from agent_sandbox.api.sandbox import _build_infra
+        from agent_sandbox.providers.registry import get_provider, resolve_provider_id
 
-        _config, _auth, http_client, protocol = _build_infra(
-            api_key=_opt(request.api_key),
-            api_url=_opt(request.api_url),
-            access_key_id=_opt(request.access_key_id),
-            access_key_secret=_opt(request.access_key_secret),
-            region=_opt(request.region),
-        )
-        try:
-            await protocol.kill(request.sandbox_id)
-        finally:
-            await _close(http_client)
+        provider = get_provider(resolve_provider_id(getattr(request, "provider", None)))
+        await provider.kill_engine_resource(request)
     await _drop(request.sandbox_id)
 
 
@@ -421,7 +347,7 @@ async def _file_op(request: Any) -> list[dict[str, Any]]:
     if op == "move":
         await files.move(url, token, source=request.path, destination=request.destination)
         return []
-    raise ProviderFeatureNotSupportedError("alicloud-express", op or "files.rw")
+    raise ProviderFeatureNotSupportedError(session.provider, op or "files.rw")
 
 
 def _entry(info: Any) -> dict[str, Any]:
@@ -456,67 +382,7 @@ async def _op(request: Any, payload: dict[str, Any]) -> dict[str, Any]:
             data=str(payload.get("data") or ""),
         )
         return {}
-    raise ProviderFeatureNotSupportedError("alicloud-express", op or "sandbox.lifecycle")
-
-
-async def _ali_pty(
-    session: Session, first: Any, request_iterator: AsyncIterator[Any]
-) -> AsyncIterator[Any]:
-    ws_url = session.envd_url.replace("https://", "wss://").replace("http://", "ws://")
-    ws_url = f"{ws_url}/terminal"
-    headers: dict[str, str] = {}
-    if session.token is not None and getattr(session.token, "token", None):
-        headers = session.token.get_headers()
-    async with websockets.connect(ws_url, additional_headers=headers) as socket:
-        if first.cols or first.rows:
-            await socket.send(
-                json.dumps({"type": "resize", "cols": first.cols, "rows": first.rows})
-            )
-        yield _pb2.PtyFrame(op="open")
-        outgoing: asyncio.Queue[Any] = asyncio.Queue(maxsize=4)
-
-        async def from_socket() -> None:
-            try:
-                async for message in socket:
-                    data = message if isinstance(message, bytes) else message.encode()
-                    await outgoing.put(_pb2.PtyFrame(op="data", data=data))
-            finally:
-                await outgoing.put(None)
-
-        async def from_client() -> None:
-            async for frame in request_iterator:
-                if frame.op == "resize":
-                    text = json.dumps({"type": "resize", "cols": frame.cols, "rows": frame.rows})
-                    await socket.send(text)
-                elif frame.op == "close":
-                    return
-                elif frame.data:
-                    await socket.send(frame.data)
-
-        reader = asyncio.create_task(from_socket())
-        writer = asyncio.create_task(from_client())
-        try:
-            async for item in _until_client_closes(outgoing, writer):
-                yield item
-        finally:
-            writer.cancel()
-            reader.cancel()
-
-
-async def _until_client_closes(
-    outgoing: asyncio.Queue[Any], writer: asyncio.Task[None]
-) -> AsyncIterator[Any]:
-    """Yield socket frames until the client closes the RPC."""
-    while True:
-        incoming = asyncio.create_task(outgoing.get())
-        done, _pending = await asyncio.wait({incoming, writer}, return_when=asyncio.FIRST_COMPLETED)
-        if writer in done and incoming not in done:
-            incoming.cancel()
-            return
-        item = incoming.result()
-        if item is None:
-            return
-        yield item
+    raise ProviderFeatureNotSupportedError(session.provider, op or "sandbox.lifecycle")
 
 
 def _grpc_status() -> Any:

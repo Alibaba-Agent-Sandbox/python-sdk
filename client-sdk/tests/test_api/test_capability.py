@@ -162,7 +162,7 @@ class TestSandboxCapabilitiesProperty:
         resolved = ResolvedCapabilities(capabilities={"shell", "files"})
         sb = Sandbox(
             info=info,
-            config=MagicMock(),
+            config=MagicMock(provider="alicloud-express"),
             http_client=AsyncMock(),
             auth=AsyncMock(),
             envd_token=EnvdTokenManager(TEST_ENVD_TOKEN),
@@ -176,7 +176,7 @@ class TestSandboxCapabilitiesProperty:
         info = make_sandbox_info()
         sb = Sandbox(
             info=info,
-            config=MagicMock(),
+            config=MagicMock(provider="alicloud-express"),
             http_client=AsyncMock(),
             auth=AsyncMock(),
             envd_token=EnvdTokenManager(TEST_ENVD_TOKEN),
