@@ -53,3 +53,9 @@ URL/port/PTY factories. Restoring that separation fixes the actual public networ
 capability and project-server constructors:focused100 PASS, zero failures/errors.
 No fixture assertion or backend refusal was removed. One prior run was invalidated
 by source reconciliation during collection and is not used as acceptance evidence.
+
+Final frozen-source full client run after the composition fix:2178 PASS,24 SKIP,
+zero failures/errors (exit0). Package-scoped lint/format/mypy/hygiene PASS. This
+supersedes the failed integration attempts as the current client result without
+reclassifying or deleting their history. Current actual-head hosted matrix must
+still pass; the disclosed local raw server limitations remain separate.
