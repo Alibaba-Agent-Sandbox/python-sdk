@@ -12,8 +12,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - Retired the experimental Python gRPC engine and grpcio/protobuf hard dependencies after migrating builtin create, process, files and terminal operations to existing native HTTP protocols. Full platform metadata and envd-version framing are retained; Node provider engine contracts remain. See the bilingual builtin data-plane migration guide.
 
-### Removed
-
 - Removed the unconfirmed automatic AK/SK-to-sandbox-key RPC exchange and its private signing/parser helpers. Sandbox requests now fail locally without an API Key; official template/ACR AK/SK operations remain. Explicit custom exchange adapters remain and reject empty/structured token returns. This changes AK/SK-only runtime authentication; see the bilingual migration guide.
 
 ### Added
