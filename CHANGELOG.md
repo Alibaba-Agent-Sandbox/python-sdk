@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Documentation
+
+- Retire the unsupported builtin automatic-retry claim. Existing retry configuration names/defaults and EPP compatibility values remain accepted; they do not enable builtin HTTP retries or backoff.
+
 ### Removed
 
 - Retired the experimental Python gRPC engine and grpcio/protobuf hard dependencies after migrating builtin create, process, files and terminal operations to existing native HTTP protocols. Full platform metadata and envd-version framing are retained; Node provider engine contracts remain. See the bilingual builtin data-plane migration guide.

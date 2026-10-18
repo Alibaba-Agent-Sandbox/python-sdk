@@ -694,3 +694,5 @@ These rules were added after driving a real OpenSandbox server through the abstr
 6. **`[template]` is for authoring.** It never changes what the create-time `template` string means; that is plugin-defined (OpenSandbox: an image URI).
 7. **Manifest name.** The manifest is `abx-provider.toml`. A plugin root without it fails with E8014 ("file not found at the plugin root") and points at `owner/repo//subdir` / `--subdir`.
 8. **Conformance.** The contract kit expects `SandboxNotFoundError` (E2009) for an unknown id.
+
+Legacy retry names are compatibility values, not an implementation of builtin HTTP retry/backoff. See [the explicit boundary](../reference/configuration.md#legacy-retry-compatibility).

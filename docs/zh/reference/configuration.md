@@ -77,8 +77,8 @@
 | `ALIBABA_CLOUD_REGION_ID` | `region` | 内置提供方的区域 |
 | `ABX_HTTP_TIMEOUT` | `http_timeout` | HTTP 超时秒数 |
 | `ABX_HTTP2` | `http2` | 是否启用 HTTP/2 |
-| `ABX_MAX_RETRIES` | `max_retries` | 最大重试次数 |
-| `ABX_MAX_CONNECTIONS`、`ABX_MAX_KEEPALIVE_CONNECTIONS`、`ABX_KEEPALIVE_EXPIRY`、`ABX_WS_PING_INTERVAL`、`ABX_RETRY_BASE_DELAY` | 同名小写 | 连接池、保活、WebSocket 和退避调优 |
+| `ABX_MAX_RETRIES` | `max_retries` | 兼容保留值；内置 HTTP 不进行自动重试 |
+| `ABX_MAX_CONNECTIONS`、`ABX_MAX_KEEPALIVE_CONNECTIONS`、`ABX_KEEPALIVE_EXPIRY`、`ABX_WS_PING_INTERVAL` | 同名小写 | 连接池、保活和 WebSocket 调优 |
 | `ABX_LOG_LEVEL` | `log_level` | SDK 日志级别（默认 `WARNING`） |
 | `ABX_DEFAULT_TEMPLATE` | `default_template` | 默认模板（MCP server） |
 
@@ -137,7 +137,7 @@ provider = "alicloud-express"   # 默认提供方（abx provider default NAME）
 sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
 sandbox_domain = "cn-hangzhou.e2b.fc.aliyuncs.com"
 http_timeout = 30.0
-max_retries = 3
+# 旧重试配置不会启用内置 HTTP 自动重试。
 
 [providers.alicloud-express]
 region = "cn-hangzhou"
@@ -174,8 +174,8 @@ ps   = "sandbox process list"
 | `keepalive_expiry` | `float` | `30.0` | 保活连接过期时间（秒） |
 | `http2` | `bool` | `True` | 是否启用 HTTP/2 |
 | `ws_ping_interval` | `float` | `30.0` | WebSocket ping 间隔（秒） |
-| `max_retries` | `int` | `3` | 最大重试次数 |
-| `retry_base_delay` | `float` | `1.0` | 重试基础延迟（秒） |
+| `max_retries` | `int` | `3` | 兼容保留值；内置 HTTP 不进行自动重试 |
+| `retry_base_delay` | `float` | `1.0` | 兼容保留值；内置 HTTP 不使用该值 |
 
 构造函数和 `load_config(...)` 使用这些字段名。
 
@@ -259,3 +259,14 @@ ABX_PROVIDER=alicloud-express
 ## 相关：abx CLI
 
 从命令行读写这些配置属于 CLI 功能：`abx config list|get|set|init`、`abx config get|set` 接受的键，以及显示变量 `ABX_ACTIVITY_LINES`。它们记录在 CLI 仓库：[CLI 配置参考](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/configuration.md)；面向 provider 的键见其 [Provider 与凭证 CLI 规格](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/design/providers-and-credentials-cli.md)。
+
+### 旧重试配置的兼容边界
+
+`max_retries`（默认3）与 `retry_base_delay`（默认1.0）及其既有环境变量/TOML
+名称继续作为配置和扩展契约的兼容值保留。内置平台/envd HTTP 传输不读取这两个值，
+每次只执行一次传输尝试；设置它们不会启用自动重试或退避。EPP 连接仍转发
+`max_retries`，插件如何解释由插件决定，不代表内置传输提供重试保证。
+
+提供方引擎重新发现/读取恢复、显式自定义认证刷新是独立机制，不受这些字段控制。
+应用需要重试时应对安全读取使用有界策略；写操作结果未知时先核对远端状态，再决定
+是否重新执行。保留旧配置名称不会引入自动重试功能。
