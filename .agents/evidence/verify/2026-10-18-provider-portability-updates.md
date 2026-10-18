@@ -25,3 +25,7 @@ The independent complete client run used a unique test-owned Unix socket: `cd cl
 ## Accepted-main integration
 
 Accepted main `145341d` is retained by normal merge. Conflicting record indexes retain both entries. Builtin feature declarations use explicit implemented support instead of inheriting new registry names; management commands remain present, and unsupported domain/storage/VPC/deployment features are not granted. CLI retains main's conservative pause declaration. Current integrated validation results are recorded separately from the earlier full aggregate above.
+
+Final integrated client validation after main 145341d: **2147 PASS / 24 SKIP**, 143.85 seconds, exit 0, using a separate owned Unix socket. Both-package lint/format/typecheck pass again (56 server / 87 client source files). `templates.deploy` parsing/consent remains supported without granting the builtin a factory. This does not convert the earlier full-server aggregate failure into a pass.
+
+Final integrated repository health: **106 PASS / 1 WARN / 0 FAIL**.
