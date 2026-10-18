@@ -45,3 +45,11 @@ Fresh focused API/auth/provider regressions145 PASS; lint/typecheck/health PASS.
 Focused server tests67 PASS/2 FAIL (remaining host WebSocket/framing limitations).
 Policy/PTY readiness is retained. Pure lower metadata and canonical auth aliases
 remain. Latest-head hosted CI is still required before merge.
+
+The first full port-integration run exposed9 failures/4 setup errors from missing
+legacy callbacks in the composition metadata (2165 PASS/24 SKIP). Lower transport
+must retain pure values, while the composition root needs the provider's decorated
+URL/port/PTY factories. Restoring that separation fixes the actual public network,
+capability and project-server constructors:focused100 PASS, zero failures/errors.
+No fixture assertion or backend refusal was removed. One prior run was invalidated
+by source reconciliation during collection and is not used as acceptance evidence.
