@@ -28,6 +28,8 @@ class ProviderSchema:
         legacy_fields: frozenset[str] = frozenset(),
         omit_default_options: bool = False,
         legacy_url_builder: Callable[[str, str], str] | None = None,
+        legacy_port_factory: Callable[[object], object] | None = None,
+        legacy_pty_url_builder: Callable[[str, int, int], str] | None = None,
     ) -> None:
         self.provider_id = provider_id
         self.keys = keys
@@ -37,6 +39,8 @@ class ProviderSchema:
         self.legacy_fields = legacy_fields
         self.omit_default_options = omit_default_options
         self.legacy_url_builder = legacy_url_builder
+        self.legacy_port_factory = legacy_port_factory
+        self.legacy_pty_url_builder = legacy_pty_url_builder
 
     @property
     def builtin(self) -> bool:

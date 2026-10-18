@@ -64,6 +64,8 @@ def _resolve_provider_schema(provider_id: str) -> Any:
             legacy_fields=metadata["legacy_fields"],
             omit_default_options=metadata["omit_default_options"],
             legacy_url_builder=metadata["legacy_url_builder"],
+            legacy_port_factory=metadata["legacy_port_factory"],
+            legacy_pty_url_builder=metadata["legacy_pty_url_builder"],
         )
     from agent_sandbox.providers.registry import get_provider
 

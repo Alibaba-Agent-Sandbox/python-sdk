@@ -132,6 +132,7 @@ def mock_process_protocol() -> AsyncMock:
 def mock_filesystem_protocol() -> AsyncMock:
     """Mock FilesystemProtocol with sensible defaults."""
     proto = AsyncMock(spec=FilesystemProtocol)
+    proto.transfer_url.side_effect = FilesystemProtocol(None).transfer_url
     proto.read_text.return_value = "file content"
     proto.read.return_value = b"file bytes"
     proto.write.return_value = None

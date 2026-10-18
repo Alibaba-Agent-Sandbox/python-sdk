@@ -69,3 +69,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 
 - [Provider/main integration](notes/proposed/architecture/2026-10-18-provider-main-integration.md) · [verification](evidence/verify/2026-10-18-provider-main-integration.md)
 - [Current-host provider integration](evidence/verify/2026-10-18-provider-current-host-checkpoint.md)
+
+- [Provider port and file URL boundary checkpoint](evidence/verify/2026-10-18-provider-port-url-boundaries.md)
