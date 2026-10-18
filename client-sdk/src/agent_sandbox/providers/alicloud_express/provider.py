@@ -156,6 +156,7 @@ class AlicloudExpressProvider(Provider):
         return binding
 
     async def open_terminal(self, sandbox: Any, **options: Any) -> Any:
+        self.require("pty")
         from agent_sandbox.providers.shared.e2b.terminal import TerminalSession
 
         return await TerminalSession.create(
