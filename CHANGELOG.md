@@ -34,6 +34,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Keep HTTP and PTY component-test port candidates distinct, preserving explicit PTY settings and preventing intermittent WebSocket CI bind collisions.
+
 - Verified native builtin Droid background installation, keyless SDK/HTTP runtime and owned cleanup; source-runtime evidence is distinct from template/image/model acceptance.
 
 - Python Node-provider engine recovery no longer repeats mutations after a lost connection, including SSE before its first event. Unknown outcomes raise `ProviderProtocolError`; safe reads and explicit authentication rejection retain bounded recovery.
