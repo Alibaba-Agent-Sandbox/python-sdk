@@ -17,3 +17,8 @@ janitor zero candidates/zero total resources. Unconfigured native vendors are
 skips. Health106 PASS /1 existing WARN /0 FAIL; hygiene PASS. Latest-head hosted
 three-interpreter client/server, package/links/hygiene and review remain required.
 No config key, source vector, dependency or provider receipt format is changed.
+
+Hosted a852139 Python3.11 initially failed the unrelated HTTP/PTY fixture port
+reuse race. The deterministic fix landed independently in PR64 after9/9 checks,
+merge5d700d6eaa1fd75f62297b3f289be2a45be772b4. Ordinary merge of current main
+retains that regression and accepted PR62 retry docs (merge3c27c67568e7c53165ea60b32b109f208cca22ad), resolving only adjacent index/architecture paragraphs by preserving both. Move those already merged owner notes to implemented; original evidence remains unchanged. This composition source and the previously successful real-cloud run are unchanged by the fixture/docs merge. Fresh focused/health/latest hosted matrix remain required before acceptance; no failed job was simply rerun without its cause being fixed.

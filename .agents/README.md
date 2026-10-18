@@ -54,4 +54,8 @@ Accepted engine recovery: [avoid uncertain mutation replay](notes/implemented/ar
 
 
 Configuration composition: [schema resolver](notes/proposed/architecture/2026-10-18-config-schema-composition.md).
+
+- [Legacy retry compatibility](notes/implemented/architecture/2026-10-18-retry-compatibility.md).
 Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-native-builtin-data-plane.md).
+
+- [Distinct local listener ports](notes/implemented/process/2026-10-18-distinct-local-server-ports.md).

@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Documentation
+
+- Retire the unsupported builtin automatic-retry claim. Existing retry configuration names/defaults and EPP compatibility values remain accepted; they do not enable builtin HTTP retries or backoff.
+
 ### Removed
 
 - Retired the experimental Python gRPC engine and grpcio/protobuf hard dependencies after migrating builtin create, process, files and terminal operations to existing native HTTP protocols. Full platform metadata and envd-version framing are retained; Node provider engine contracts remain. See the bilingual builtin data-plane migration guide.
@@ -29,6 +33,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Add the Chinese counterpart of the historical OpenSandbox provider research archive, preserving its versioned evidence and current-adapter boundary.
 
 ### Fixed
+
+- Keep HTTP and PTY component-test port candidates distinct, preserving explicit PTY settings and preventing intermittent WebSocket CI bind collisions.
 
 - Verified native builtin Droid background installation, keyless SDK/HTTP runtime and owned cleanup; source-runtime evidence is distinct from template/image/model acceptance.
 
