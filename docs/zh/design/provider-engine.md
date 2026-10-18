@@ -1,6 +1,6 @@
 # Provider 引擎
 
-> **状态：对目录提供方已被取代。** 现行设计是 Node 引擎：`127.0.0.1` 上的 HTTP、SSE 和 WebSocket，协议 `abx-engine/1`。见 [cli/docs/zh/reference/engine-api.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/engine-api.md) 和 [Node 提供方架构](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/node-provider-architecture.md)。本页是较早的 Python gRPC 记录（`agent_sandbox.engine`、`engine.proto`、Unix socket `~/.abx/engine.sock`），作为历史保留。Python SDK 里内置的 `alicloud-express` 路径仍会调用这个切片。目录提供方不会。
+> **状态：已退役的 Python gRPC 历史设计。** 内置提供方现使用[直接 HTTP](builtin-data-plane.md)，目录 Node 插件使用独立的 [Node 引擎](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/zh/reference/engine-api.md)。下文示例是历史记录，不再是受支持的命令。
 
 历史状态：试验切片，数据面还没有全部迁完。阿里云极速版的 `Create` 走引擎。套接字是 `0600`，活着的套接字会复用，`Exec` / `Terminal` 只接受回环地址。已经建好的沙箱上，命令和文件仍由 SDK 自己的 HTTP 客户端发送。其余步骤见 [provider-engine-plan.md](provider-engine-plan.md)。
 

@@ -230,3 +230,5 @@ graph TB
 ## 许可证
 
 [Apache-2.0](LICENSE) —— 版权信息见 [`NOTICE`](NOTICE)。
+
+[内置运行通道与 Python 引擎迁移](docs/zh/design/builtin-data-plane.md).

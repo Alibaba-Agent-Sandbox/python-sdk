@@ -4,9 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-> **Status: superseded for catalog providers.** The "Local provider engine" entry below, the one that describes gRPC on `~/.abx/engine.sock`, is the earlier Python slice. The current design is the Node engine: HTTP, SSE and WebSocket, protocol `abx-engine/1`. See [cli/docs/en/reference/engine-api.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md). That entry is kept as history.
+> **Status: retired Python gRPC slice.** The "Local provider engine" entry below, the one that describes gRPC on `~/.abx/engine.sock`, is the earlier Python slice. The current design is the Node engine: HTTP, SSE and WebSocket, protocol `abx-engine/1`. See [cli/docs/en/reference/engine-api.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md). That entry is kept as history.
 
 ## [Unreleased]
+
+### Removed
+
+- Retired the experimental Python gRPC engine and grpcio/protobuf hard dependencies after migrating builtin create, process, files and terminal operations to existing native HTTP protocols. Full platform metadata and envd-version framing are retained; Node provider engine contracts remain. See the bilingual builtin data-plane migration guide.
 
 ### Removed
 

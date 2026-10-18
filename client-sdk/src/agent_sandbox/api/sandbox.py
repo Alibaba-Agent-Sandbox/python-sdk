@@ -239,7 +239,6 @@ class Sandbox:
         resolved_capabilities: ResolvedCapabilities | None = None,
         declared_capabilities: frozenset[str] | None = None,
         provider_id: str = BUILTIN_PROVIDER_ID,
-        engine_data: bool = False,
     ) -> None:
         self._info = info
         self._config = config
@@ -270,7 +269,6 @@ class Sandbox:
         # What a provider declares; the module gates stay permissive so the provider's own
         # protocol gate refuses a missing feature with E8004 naming it.
         self._declared_capabilities = declared_capabilities
-        self._engine_data = engine_data
 
     # ---- Properties ----
 
@@ -617,25 +615,22 @@ class Sandbox:
 
         info = None
         try:
-            from agent_sandbox.engine.client import Engine
-
-            # The built-in provider's platform HTTP call runs inside the engine.
-            info = await Engine().create(
-                template,
-                timeout=timeout,
-                metadata=metadata or {},
-                envs=envs or {},
-                api_key=config.sandbox_api_key,
-                api_url=config.sandbox_base_url,
-                access_key_id=config.access_key_id,
-                access_key_secret=config.access_key_secret,
-                region=config.region or region,
+            info = await sandbox_protocol.create(
+                SandboxConfig(
+                    templateID=template,
+                    timeout=timeout,
+                    metadata=metadata or {},
+                    envVars=envs or {},
+                    cpu=cpu,
+                    memory=memory,
+                    disk=disk,
+                    gpu=gpu,
+                ),
                 request_timeout=request_timeout,
-                cpu=cpu,
-                memory=memory,
-                disk=disk,
-                gpu=gpu,
             )
+            from agent_sandbox.transport.http import stream_envelope_for_envd
+
+            http_client._stream_envelope = stream_envelope_for_envd(info.envd_version)
 
             envd_token = EnvdTokenManager(info.envd_access_token, sandbox_id=info.sandbox_id)
 
@@ -650,11 +645,6 @@ class Sandbox:
                 info.alias_name,
             )
 
-            from agent_sandbox.engine.protocols import (
-                EngineFilesystemProtocol,
-                EngineProcessProtocol,
-            )
-
             return cls(
                 info=info,
                 config=config,
@@ -662,14 +652,11 @@ class Sandbox:
                 auth=auth,
                 envd_token=envd_token,
                 sandbox_protocol=sandbox_protocol,
-                process_protocol=EngineProcessProtocol(info.sandbox_id),  # type: ignore[arg-type]
-                filesystem_protocol=EngineFilesystemProtocol(
-                    info.sandbox_id, bounded_reader=FilesystemProtocol(http_client)
-                ),  # type: ignore[arg-type]
+                process_protocol=ProcessProtocol(http_client),
+                filesystem_protocol=FilesystemProtocol(http_client),
                 domain=domain or config.sandbox_domain,
                 secure=True if secure is None else secure,
                 resolved_capabilities=resolved,
-                engine_data=True,
             )
         except Exception:
             if info is not None:
@@ -677,12 +664,6 @@ class Sandbox:
                     await sandbox_protocol.kill(info.sandbox_id)
                 except Exception:
                     logger.debug("failed to kill orphaned sandbox %s", info.sandbox_id)
-                try:
-                    from agent_sandbox.engine.client import Engine
-
-                    await Engine().op("release", sandbox_id=info.sandbox_id)
-                except Exception:
-                    logger.debug("engine session release failed for %s", info.sandbox_id)
             await http_client.close()
             raise
 
@@ -1059,14 +1040,6 @@ class Sandbox:
             await sandbox_protocol.kill(sandbox_id)
             logger.info("Sandbox killed (by ID): %s", sandbox_id)
         finally:
-            # Built-in create holds an engine session. Release is a no-op when this
-            # id was never registered with the local engine.
-            from agent_sandbox.engine.client import Engine
-
-            try:
-                await Engine().op("release", sandbox_id=sandbox_id)
-            except Exception:
-                logger.debug("engine session release failed for %s", sandbox_id)
             await http_client.close()
 
     @classmethod
@@ -1126,7 +1099,6 @@ class Sandbox:
                 resolved_capabilities=resolved,
                 declared_capabilities=frozenset(prov.capabilities()),
                 provider_id=prov.id,
-                engine_data=bool(getattr(prov, "uses_engine_data", False)),
             )
         except Exception:
             await closer.close()
@@ -1165,7 +1137,6 @@ class Sandbox:
                 resolved_capabilities=resolved,
                 declared_capabilities=frozenset(prov.capabilities()),
                 provider_id=prov.id,
-                engine_data=bool(getattr(prov, "uses_engine_data", False)),
             )
         except Exception:
             await closer.close()
@@ -1186,13 +1157,6 @@ class Sandbox:
             self._killed = True
             logger.info("Sandbox killed: %s", self.id)
         finally:
-            if self._engine_data:
-                from agent_sandbox.engine.client import Engine
-
-                try:
-                    await Engine().op("release", sandbox_id=self.id)
-                except Exception:
-                    logger.debug("engine session release failed for %s", self.id)
             await self._http_client.close()
 
     async def close(self) -> None:
@@ -1292,10 +1256,6 @@ class Sandbox:
         opener = getattr(self._process_protocol, "open_terminal", None)
         if opener is not None:
             return await opener(self.id, cols=cols, rows=rows)  # type: ignore[no-any-return]
-        if self._engine_data:
-            from agent_sandbox.engine.protocols import open_terminal
-
-            return await open_terminal(self.id, cols=cols, rows=rows)  # type: ignore[return-value]
         from agent_sandbox.protocol.terminal import TerminalSession
 
         return await TerminalSession.create(

@@ -423,10 +423,13 @@ class TestSandboxSyncVariants:
         info.alias_name = "cached-alias"
         seen: dict[str, Any] = {}
 
-        class _FakeEngine:
-            async def create(self, template: str, **kwargs: Any) -> SandboxInfo:
-                seen["template"] = template
-                return info
+        protocol = AsyncMock()
+
+        async def _create(config: SandboxConfig, **kwargs: Any) -> SandboxInfo:
+            seen["template"] = config.template
+            return info
+
+        protocol.create.side_effect = _create
 
         def _select(*_args: Any, **_kwargs: Any) -> tuple[None, None]:
             return None, None
@@ -436,7 +439,7 @@ class TestSandboxSyncVariants:
         http = MagicMock()
 
         def _infra(**_kwargs: Any) -> tuple[Any, Any, Any, Any]:
-            return config, MagicMock(), http, MagicMock()
+            return config, MagicMock(), http, protocol
 
         async def _resolve(*ids: str | None, **_kwargs: Any) -> ResolvedCapabilities:
             seen["ids"] = ids
@@ -445,7 +448,6 @@ class TestSandboxSyncVariants:
         with (
             patch("agent_sandbox.api.sandbox._select_provider", _select),
             patch("agent_sandbox.api.sandbox._build_infra", _infra),
-            patch("agent_sandbox.engine.client.Engine", _FakeEngine),
             patch("agent_sandbox.api.sandbox.resolve_capabilities_for", _resolve),
         ):
             sb = await Sandbox.create(template="unique-alias", api_key="k")

@@ -51,3 +51,5 @@ Move the file and edit `Status:` in the same commit. Required sections and the t
 Auth migration: [explicit sandbox API keys](notes/proposed/architecture/2026-10-18-data-plane-auth-contract.md).
 
 Engine recovery proposal: [avoid uncertain mutation replay](notes/proposed/architecture/2026-10-18-engine-write-replay.md).
+
+Builtin transport: [direct HTTP proposal](notes/proposed/architecture/2026-10-18-native-builtin-data-plane.md).
