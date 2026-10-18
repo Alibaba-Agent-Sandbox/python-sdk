@@ -49,7 +49,13 @@ response, the environment returns HTTP 501 with a platform network-audit-disable
 message. These required checks remain failed; no network setting was changed and
 no gate was bypassed. Full current-head hosted CI remains separate.
 
-Result remains PARTIAL pending baseline comparison and latest-head hosted CI. The
+The same six exact tests were then executed in a separate untouched accepted-main
+checkout at `0ce8359026028cd4dcf9ee0a7e51493c387f1e25`, with its own source paths
+selected explicitly: **6 FAIL in 2.94 seconds**, reproducing the same test identities
+and platform HTTP 501 responses. No server source or server test is changed in this
+PR. This comparison was actually executed; it is not inferred from the feature diff.
+
+Result remains PARTIAL pending latest-head hosted CI. The
 local failures remain recorded; only an actual complete latest-head CI pass can
 provide full-suite success. A focused real-cloud pass does not erase local failures.
 
