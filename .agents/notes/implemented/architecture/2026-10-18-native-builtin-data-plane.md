@@ -1,5 +1,5 @@
 # Decision: Retire the builtin Python gRPC session bridge
-Status: proposed
+Status: implemented
 
 ## Problem
 

@@ -33,3 +33,5 @@ async with await Sandbox.create("base", timeout=300, request_timeout=30) as sb:
 调用 CLI 的 **Node 引擎**。它与 EPP 进程适配器是独立且仍有效的契约，本次均保留。
 见 [Node 引擎 API](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/zh/reference/engine-api.md)。
 [旧 Python 引擎](provider-engine.md)和[计划](provider-engine-plan.md)作为历史保留，不是安装指南。
+
+原生控制端还通过了真实 Droid0.241.1 后台安装及独立 SDK/HTTP 验证，并确认自有资源清理完成。见[准确的源码运行证据](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/aaef5b63ee11b6b76b93b7ebbc8ad2530b21f576/.agents/evidence/verify/2026-10-18-droid-native-runtime.md)。该结果与 Dockerfile/模板部署及模型验收分开记录。
