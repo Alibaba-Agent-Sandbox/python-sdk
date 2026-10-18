@@ -53,3 +53,5 @@ Auth migration: [explicit sandbox API keys](notes/implemented/architecture/2026-
 Accepted engine recovery: [avoid uncertain mutation replay](notes/implemented/architecture/2026-10-18-engine-write-replay.md).
 
 Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-native-builtin-data-plane.md).
+
+- [Distinct local listener ports](notes/proposed/process/2026-10-18-distinct-local-server-ports.md).
