@@ -38,3 +38,5 @@ Evidence of the command-line interface lives in the
 - [Current provider isolation and Express acceptance](verify/2026-10-18-provider-isolation-acceptance.md)
 
 - [Final provider convergence acceptance](verify/2026-10-18-provider-convergence-acceptance.md)
+
+- [Provider-owned metadata follow-up](verify/2026-10-18-provider-owned-metadata-followup.md)

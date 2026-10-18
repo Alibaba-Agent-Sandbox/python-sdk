@@ -72,3 +72,7 @@ Native image factories and unconfigured backend E2E remain separate acceptance w
 
 [Convergence verification](../../../evidence/verify/2026-10-18-provider-convergence-acceptance.md) records the ordinary remote
 merges, provider-owned pure metadata restoration and current Express smoke results.
+
+The final owner follow-up is tracked in https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/66 and
+https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/67; [negative controls](../../../evidence/verify/2026-10-18-provider-owned-metadata-followup.md)
+prove both merged-main failures and repaired adapter-rule delegation.
