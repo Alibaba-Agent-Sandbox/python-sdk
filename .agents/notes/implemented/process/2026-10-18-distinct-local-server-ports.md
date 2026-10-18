@@ -1,5 +1,5 @@
 # Decision: Keep local HTTP and PTY test listeners on distinct ports
-Status: proposed
+Status: implemented
 
 ## Problem
 

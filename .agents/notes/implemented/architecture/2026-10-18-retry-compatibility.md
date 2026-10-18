@@ -1,5 +1,5 @@
 # Decision: Retire the unimplemented builtin retry promise
-Status: proposed
+Status: implemented
 
 ## Problem
 

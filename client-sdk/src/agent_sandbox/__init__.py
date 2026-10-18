@@ -46,3 +46,24 @@ def __getattr__(name: str) -> Any:
 
         return _sandbox
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def _resolve_provider_schema(provider_id: str) -> Any:
+    """Composition adapter; discovery stays lazy and outside transport."""
+    from agent_sandbox._provider_schema import ProviderSchema
+    from agent_sandbox.providers.registry import get_provider
+
+    provider = get_provider(provider_id)
+    return ProviderSchema(
+        provider.id,
+        provider.config_keys(),
+        frozenset(provider.inherit),
+        dict(provider.derive),
+        dict(getattr(provider, "endpoint_defaults", {}) or {}),
+    )
+
+
+from agent_sandbox._provider_schema import _set_resolver  # noqa: E402
+
+_set_resolver(_resolve_provider_schema)
+del _set_resolver
