@@ -185,6 +185,12 @@ class FilesystemProtocol:
     def __init__(self, http_client: HttpClient) -> None:
         self._http = http_client
 
+    async def transfer_url(
+        self, envd_url: str, envd_token: EnvdTokenManager, *, path: str, operation: str
+    ) -> str:
+        """Legacy envd URL; callers must also send the data-plane auth headers."""
+        return f"{envd_url}/files?path={path}&username=user"
+
     async def _rpc(
         self,
         envd_url: str,

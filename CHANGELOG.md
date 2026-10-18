@@ -46,6 +46,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Keep port addresses, gateway headers and file-transfer URLs in selected provider adapters; reject missing hooks instead of guessing native routes. Resolve Python compatibility imports lazily.
+
+
 - Integrate provider isolation with native HTTP creation, API-key-only runtime authentication and lazy schema composition. Preserve no-replay management requests and provider-owned authentication diagnostics; make local HTTP fixtures address and await their actual listener.
 
 - Keep an explicitly selected Express provider through native engine creation when the ambient default names another backend.

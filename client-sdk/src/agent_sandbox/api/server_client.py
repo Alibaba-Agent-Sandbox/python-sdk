@@ -25,7 +25,6 @@ import asyncio
 import base64
 import contextlib
 import json
-import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 from urllib.parse import quote, urlsplit, urlunsplit
@@ -1168,16 +1167,13 @@ class ServerClient:
         return urlunsplit((scheme, parts.netloc, parts.path.rstrip("/"), "", ""))
 
     def _derive_pty_url(self) -> str:
-        parts = urlsplit(self.base_url)
-        host = parts.hostname or ""
-        gateway = re.match(rf"^{DEFAULT_SERVER_PORT}-(.+)$", host)
-        if gateway:
-            netloc = f"{DEFAULT_PTY_PORT}-{gateway.group(1)}"
-            if parts.port:
-                netloc += f":{parts.port}"
-        else:
-            netloc = f"{host}:{DEFAULT_PTY_PORT}"
-        return urlunsplit((parts.scheme, netloc, "", "", ""))
+        from agent_sandbox._provider_schema import resolve_provider_schema
+        from agent_sandbox.utils.config_keys import BUILTIN_PROVIDER_ID
+
+        builder = resolve_provider_schema(BUILTIN_PROVIDER_ID).legacy_pty_url_builder
+        if builder is None:
+            raise RuntimeError("Supply an explicit pty_url for this distribution.")
+        return builder(self.base_url, DEFAULT_SERVER_PORT, DEFAULT_PTY_PORT)
 
     def auth_headers(self) -> dict[str, str]:
         """Headers sent on every request (gateway headers plus the server bearer token)."""

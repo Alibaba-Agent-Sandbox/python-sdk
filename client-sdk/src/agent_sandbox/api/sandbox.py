@@ -214,7 +214,7 @@ class Sandbox:
         process_protocol: ProcessProtocol | None = None,
         filesystem_protocol: FilesystemProtocol | None = None,
         code_interpreter_protocol: CodeInterpreterProtocol | None = None,
-        domain: str = "e2b.dev",
+        domain: str | None = None,
         secure: bool = True,
         resolved_capabilities: ResolvedCapabilities | None = None,
         declared_capabilities: frozenset[str] | None = None,
@@ -235,7 +235,7 @@ class Sandbox:
         self._killed = False
         self._auth = auth
         self._envd_token = envd_token
-        self._domain = domain
+        self._domain = domain if domain is not None else config.sandbox_domain
         self._secure = secure
         defaults = (
             get_provider(self._provider_id).session_protocols(http_client)
@@ -358,6 +358,8 @@ class Sandbox:
     def network(self) -> NetworkModule:
         """Network sub-module for port URL calculation."""
         from agent_sandbox.api.network import NetworkModule
+        from agent_sandbox.protocol.port_contract import PortContext
+        from agent_sandbox.providers.registry import get_provider
 
         return NetworkModule(
             sandbox_id=self.id,
@@ -366,6 +368,15 @@ class Sandbox:
             access_token=self._envd_token.token if self._envd_token else None,
             capabilities=self._capabilities,
             port_resolver=self._port_resolver(),
+            port_access=get_provider(self._provider_id).create_port_access(
+                PortContext(
+                    self.id,
+                    self._domain,
+                    self._secure,
+                    self._envd_token.token if self._envd_token else None,
+                ),
+                self._sandbox_protocol,
+            ),
         )
 
     @functools.cached_property
@@ -420,12 +431,7 @@ class Sandbox:
         return ServerClient(
             self.network.get_url(port),
             token=token,
-            # Express publishes port 9000 without requiring the sandbox access
-            # token. Forwarding X-Access-Token makes an unconfigured
-            # agent-sandbox-server return 401 (it treats any presented
-            # credential as a login). Callers that need the gateway header
-            # use network.get_access_headers() themselves.
-            headers=None,
+            headers=self.network.get_server_headers() or None,
             pty_url=self.network.get_url(pty_port),
             timeout=timeout,
         )

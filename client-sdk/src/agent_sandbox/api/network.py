@@ -1,16 +1,17 @@
-"""网络模块 — 端口 URL 计算和访问。
-
-端口 URL 由客户端本地计算，格式为：https://{port}-{sandbox_id}.{domain}
-其中 sandbox_id 已包含 "sbx-" 前缀（如 "sbx-xxxx"）。
-不需要服务端 API 调用。secure 模式下端口访问需要 X-Access-Token header。
-"""
+"""Provider-owned port addressing and access headers."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
+
+from agent_sandbox._provider_schema import resolve_provider_schema
+from agent_sandbox.protocol.port_contract import PortContext
+from agent_sandbox.utils.config_keys import BUILTIN_PROVIDER_ID
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
+
+    from agent_sandbox.protocol.port_contract import PortAccess
 
 from agent_sandbox.models.template import DEFAULT_CAPABILITIES
 from agent_sandbox.utils.logging import get_logger
@@ -19,11 +20,7 @@ logger = get_logger("api.network")
 
 
 class NetworkModule:
-    """高层网络接口 — 端口 URL 计算和访问 header 管理。
-
-    所有方法均为本地计算，不涉及任何网络请求。
-    端口 URL 格式参见官方文档端口访问说明。
-    """
+    """Port access through the selected adapter; async discovery uses resolve()."""
 
     def __init__(
         self,
@@ -33,8 +30,17 @@ class NetworkModule:
         access_token: str | None = None,
         capabilities: set[str] | None = None,
         port_resolver: Callable[[int], Awaitable[tuple[str, dict[str, str]]]] | None = None,
+        port_access: PortAccess | None = None,
     ) -> None:
         self._port_resolver = port_resolver
+        if port_access is None:
+            factory = resolve_provider_schema(BUILTIN_PROVIDER_ID).legacy_port_factory
+            if factory is None:
+                raise RuntimeError("The distribution has no legacy port factory.")
+            port_access = cast(
+                "PortAccess", factory(PortContext(sandbox_id, domain, secure, access_token))
+            )
+        self._port_access = port_access
         self._sandbox_id = sandbox_id
         self._domain = domain
         self._secure = secure
@@ -42,33 +48,20 @@ class NetworkModule:
         self._capabilities = capabilities if capabilities is not None else set(DEFAULT_CAPABILITIES)
 
     def get_host(self, port: int) -> str:
-        """获取端口访问的 host。
-
-        格式：{port}-{sandbox_id}.{domain}
-        其中 sandbox_id 已包含 "sbx-" 前缀。
-        """
-        return f"{port}-{self._sandbox_id}.{self._domain}"
+        """Return the host supplied by the synchronous adapter hook."""
+        return self._port_access.get_host(port)
 
     def get_url(self, port: int) -> str:
-        """获取端口访问的完整 URL。
-
-        格式：https://{port}-{sandbox_id}.{domain}（secure 模式）
-        或 http://{port}-{sandbox_id}.{domain}（非 secure 模式）
-        """
-        scheme = "https" if self._secure else "http"
-        return f"{scheme}://{self.get_host(port)}"
+        """Return the URL supplied by the synchronous adapter hook."""
+        return self._port_access.get_url(port)
 
     def get_access_headers(self) -> dict[str, str]:
-        """端口访问所需的 HTTP headers。
+        """Return access headers supplied by the selected adapter."""
+        return self._port_access.get_access_headers()
 
-        secure 模式下包含 ``X-Access-Token``（envd 与部分网关）。Express 上
-        端口 9000 的 ``agent-sandbox-server`` 在未设置 ``ABX_SERVER_TOKEN`` 时
-        会把这个头当成登录失败（HTTP 401）。命名命令走 :meth:`Sandbox.run`，
-        不带这个头。
-        """
-        if self._secure and self._access_token:
-            return {"X-Access-Token": self._access_token}
-        return {}
+    def get_server_headers(self) -> dict[str, str]:
+        """Gateway headers for the project server, owned by the selected adapter."""
+        return self._port_access.get_server_headers()
 
     async def resolve(self, port: int) -> tuple[str, dict[str, str]]:
         """Return ``(url, headers)`` for *port*, asking the provider when it can answer.

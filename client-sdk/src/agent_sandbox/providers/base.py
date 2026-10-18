@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 
 from agent_sandbox.models.errors import (
     InvalidCredentialsError,
@@ -27,6 +27,7 @@ if TYPE_CHECKING:
         ProcessProtocol,
         SandboxProtocol,
     )
+    from agent_sandbox.protocol.port_contract import PortAccess, PortContext
     from agent_sandbox.transport.auth_contract import AuthProvider
     from agent_sandbox.transport.config import TransportConfig
     from agent_sandbox.transport.http import HttpClient
@@ -269,6 +270,15 @@ class Provider(ABC):
 
     def resolve_session_url(self, info: Any, config: Any) -> str:
         return str(info.envd_url or "")
+
+    def create_port_access(self, context: PortContext, protocol: Any = None) -> PortAccess:
+        """Select local port semantics explicitly; absent implementations fail closed."""
+        from agent_sandbox.protocol.port_contract import UnsupportedPortAccess
+
+        factory = getattr(protocol, "create_port_access", None)
+        if callable(factory):
+            return cast("PortAccess", factory(context))
+        return UnsupportedPortAccess(self.id)
 
     async def prepare_session(
         self, infra: ProviderInfra, info: Any, *, operation: str, template: str

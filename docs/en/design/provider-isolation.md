@@ -53,3 +53,16 @@ Configuration schema discovery is injected from the package composition root. Re
 the bundled schema loads pure provider metadata without discovering the registry;
 provider package exports remain lazy. Compatibility names/constants and generated
 configuration declarations remain public data, with one runtime implementation per adapter.
+
+## Port and file URL ownership
+
+The selected adapter implements synchronous port access and project-server gateway
+headers. An adapter exposing only asynchronous port discovery must be called through
+`await sandbox.network.resolve(port)`; synchronous helpers fail E8004 instead of
+guessing an Express/E2B address or sending a foreign token. Direct standalone network
+constructors keep their documented bundled compatibility behavior. File transfer URLs
+are optional filesystem adapter hooks; missing hooks fail E8004 even if the session
+URL happens to use HTTP. The core never constructs `/files` routes for foreign providers.
+
+Neutral Python transport/protocol imports do not load built-in authentication or wire
+adapters. Public compatibility imports resolve lazily when explicitly requested.

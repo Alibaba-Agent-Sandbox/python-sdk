@@ -260,3 +260,24 @@ class TestFilesSyncVariants:
 
     def test_remove_sync_exists(self) -> None:
         assert hasattr(FilesModule, "remove_sync")
+
+
+@pytest.mark.asyncio
+async def test_transfer_urls_require_an_explicit_filesystem_adapter():
+    from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+
+    files = FilesModule("https://foreign.example/runtime", None, object(), provider_id="foreign")
+    with pytest.raises(ProviderFeatureNotSupportedError):
+        await files.upload_url("/private")
+    with pytest.raises(ProviderFeatureNotSupportedError):
+        await files.download_url("/private")
+
+    class CustomFiles:
+        async def transfer_url(self, url, token, *, path, operation):
+            return f"https://foreign.example/{operation}/opaque"
+
+    files = FilesModule(
+        "https://foreign.example/runtime", None, CustomFiles(), provider_id="foreign"
+    )
+    assert await files.upload_url("/private") == "https://foreign.example/upload/opaque"
+    assert await files.download_url("/private") == "https://foreign.example/download/opaque"

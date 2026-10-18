@@ -15,6 +15,7 @@ from agent_sandbox.utils.config_keys import (
 )
 
 if TYPE_CHECKING:
+    from agent_sandbox.protocol.port_contract import PortAccess, PortContext
     from agent_sandbox.transport.config import TransportConfig
 
 
@@ -112,6 +113,11 @@ class AlicloudExpressProvider(Provider):
         from agent_sandbox.providers.shared.e2b.session import session_protocols
 
         return session_protocols(http)
+
+    def create_port_access(self, context: PortContext, protocol: Any = None) -> PortAccess:
+        from agent_sandbox.providers.shared.e2b.ports import WirePortAccess
+
+        return WirePortAccess(context, server_auth=False)
 
     def resolve_session_url(self, info: Any, config: Any) -> str:
         from agent_sandbox.providers.shared.e2b.url import envd_url

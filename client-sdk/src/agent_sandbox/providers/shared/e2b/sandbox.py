@@ -22,6 +22,7 @@ from agent_sandbox.models.sandbox import SandboxConfig, SandboxInfo, SandboxStat
 from agent_sandbox.utils.logging import get_logger
 
 if TYPE_CHECKING:
+    from agent_sandbox.protocol.port_contract import PortAccess, PortContext
     from agent_sandbox.transport.http import HttpClient
 
 logger = get_logger("protocol.sandbox")
@@ -35,6 +36,11 @@ class SandboxProtocol:
         from .auth import EnvdTokenManager
 
         return {"envd_token": EnvdTokenManager(info.envd_access_token, sandbox_id=info.sandbox_id)}
+
+    def create_port_access(self, context: PortContext) -> PortAccess:
+        from .ports import WirePortAccess
+
+        return WirePortAccess(context)
 
     def __init__(self, http_client: HttpClient, *, unknown_if_absent: bool = False) -> None:
         self._http = http_client

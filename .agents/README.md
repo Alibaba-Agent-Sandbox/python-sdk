@@ -67,3 +67,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Current paired source installation](notes/proposed/process/2026-10-18-current-source-installation.md).
 
 - [Current-host provider integration](evidence/verify/2026-10-18-provider-current-host-checkpoint.md)
+
+- [Provider port and file URL boundary checkpoint](evidence/verify/2026-10-18-provider-port-url-boundaries.md)

@@ -58,3 +58,9 @@ replace core wire-format logic. Python schema composition remains lazy and injec
 CLI tool schemas and handler discovery are recomputed together. Earlier engine-routing
 verification remains historical, not evidence that the retired daemon is still used.
 See the [integration checkpoint](../../../evidence/verify/2026-10-18-provider-current-host-checkpoint.md).
+
+Port access and file-transfer URL conventions now belong to explicit adapter hooks.
+Asynchronous-only discovery fails closed in synchronous helpers. Neutral Python imports
+remain lazy; a fresh-process regression prevents built-in auth/wire loading.
+
+[Port and file URL boundary checkpoint](../../../evidence/verify/2026-10-18-provider-port-url-boundaries.md).

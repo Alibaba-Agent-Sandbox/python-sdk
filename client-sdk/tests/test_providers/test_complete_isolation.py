@@ -85,6 +85,7 @@ def test_core_imports_no_concrete_backend_implementation() -> None:
             "protocol/process.py",
             "protocol/code_interpreter.py",
             "protocol/terminal.py",
+            "protocol/port.py",
         }:
             continue
         for node in ast.walk(tree):
@@ -139,3 +140,60 @@ def test_bundled_schema_does_not_discover_registry_in_a_fresh_process():
         text=True,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_core_contract_import_does_not_load_builtin_auth_or_wire():
+    import subprocess
+    import sys
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys; from agent_sandbox.transport.http import HttpClient; "
+            "from agent_sandbox.protocol import contracts; "
+            "assert 'agent_sandbox.providers.alicloud_express.auth' not in sys.modules; "
+            "assert 'agent_sandbox.providers.shared.e2b.sandbox' not in sys.modules",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.asyncio
+async def test_async_provider_ports_never_inherit_native_addresses_or_headers(iso):  # noqa: F811
+    from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+    from agent_sandbox.transport.auth_contract import SessionAuth
+
+    class PortProvider(IsolatedProvider):
+        features = frozenset({"sandbox.lifecycle", "ports.url"})
+
+        async def prepare_session(self, *args, **kwargs):
+            return {"envd_token": SessionAuth("opaque-token", "owned")}
+
+        async def build_infra(self, config):
+            infra = await super().build_infra(config)
+            infra.sandbox_protocol.has_port_url = True
+            infra.sandbox_protocol.port_url = AsyncMock(
+                return_value=(
+                    "https://gateway.example/owned/service",
+                    {"Provider-Gateway": "placeholder"},
+                )
+            )
+            return infra
+
+    sandbox = await Sandbox.create(provider=PortProvider())
+    try:
+        with pytest.raises(ProviderFeatureNotSupportedError):
+            sandbox.network.get_url(8080)
+        with pytest.raises(ProviderFeatureNotSupportedError):
+            sandbox.network.get_access_headers()
+        assert await sandbox.network.resolve(8080) == (
+            "https://gateway.example/owned/service",
+            {"Provider-Gateway": "placeholder"},
+        )
+        with pytest.raises(ProviderFeatureNotSupportedError):
+            sandbox.server_at()
+    finally:
+        await sandbox.kill()

@@ -228,30 +228,20 @@ class FilesModule:
         )
 
     async def upload_url(self, path: str) -> str:
-        """envd file URL for an upload. The request must send ``X-Access-Token``.
-
-        This is not a signature-only URL. A client that only has the URL is
-        denied by the data plane.
-        """
-        self._require_envd_file_url()
-        return f"{self._envd_url}/files?path={path}&username=user"
+        """Ask the filesystem adapter for an upload URL and its access requirements."""
+        return await self._transfer_url(path, "upload")
 
     async def download_url(self, path: str) -> str:
-        """envd file URL for a download. The request must send ``X-Access-Token``.
+        """Ask the filesystem adapter for a download URL."""
+        return await self._transfer_url(path, "download")
 
-        This is not a signature-only URL. A client that only has the URL is
-        denied by the data plane.
-        """
-        self._require_envd_file_url()
-        return f"{self._envd_url}/files?path={path}&username=user"
-
-    def _require_envd_file_url(self) -> None:
-        """Signed-style file URLs exist only on an envd HTTP data plane."""
-        if self._envd_url.startswith(("http://", "https://")):
-            return
+    async def _transfer_url(self, path: str, operation: str) -> str:
         from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
 
-        raise ProviderFeatureNotSupportedError(self._provider_id, "files.transfer")
+        resolver = getattr(self._fs, "transfer_url", None)
+        if not callable(resolver):
+            raise ProviderFeatureNotSupportedError(self._provider_id, "files.transfer")
+        return str(await resolver(self._envd_url, self._envd_token, path=path, operation=operation))
 
     # Sync variants
     read_sync = make_sync(read)
