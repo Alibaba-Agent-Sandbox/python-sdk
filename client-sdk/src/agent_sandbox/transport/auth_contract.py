@@ -25,7 +25,7 @@ class ApiKeyAuth:
     """API Key authentication for Platform API.
 
     Uses ABX_SANDBOX_API_KEY environment variable or explicit api_key parameter.
-    Sends X-API-KEY header on Platform API requests.
+    Sends an Authorization Bearer header on Platform API requests.
     """
 
     def __init__(self, api_key: str) -> None:

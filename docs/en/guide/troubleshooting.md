@@ -1,6 +1,8 @@
 # Troubleshooting (FAQ)
 
-> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
+For current SDK installation, use the [paired source installation guide](install-python.md).
+
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository ([CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
 ---
 
@@ -70,10 +72,10 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 ### E1002 — Token Expired
 
 ```text
-[E1002] The SDK should auto-refresh tokens. If this persists, check system clock synchronization.
+[E1002] envdAccessToken not available. Sandbox may not be created or connected.
 ```
 
-**Solution**: Check that the system clock is accurate. The SDK auto-refreshes AK/SK temporary tokens (valid for 3600 seconds, refreshed 300 seconds before expiry).
+**Solution**: Check that the system clock is accurate. Reconnect for a current envd token or inspect an explicitly configured custom exchange; API keys are not automatically minted or refreshed.
 
 ---
 
@@ -227,10 +229,12 @@ Check file permissions. The default user in the sandbox is `user`; you can speci
 
 ```bash
 # Ensure the correct package name
-pip install agent-sandbox-client
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 
 # If dependency conflicts occur
-pip install agent-sandbox-client --force-reinstall
+python -m pip check
 ```
 
 ### Python SDK Not Found
@@ -238,9 +242,9 @@ pip install agent-sandbox-client --force-reinstall
 Confirm that Python's bin directory is in your PATH:
 
 ```bash
-python -m agent_sandbox --version
+python -c "from importlib.metadata import version; print(version('agent-sandbox-client'))"
 # Or
-pip show agent-sandbox-client | grep Location
+python -m pip show agent-sandbox-client
 ```
 
 ---

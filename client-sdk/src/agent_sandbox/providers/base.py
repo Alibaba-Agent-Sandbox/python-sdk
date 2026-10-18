@@ -288,14 +288,6 @@ class Provider(ABC):
             raise ProviderFeatureNotSupportedError(self.id, "pty")
         return await opener(sandbox.id, cols=options.get("cols", 80), rows=options.get("rows", 24))
 
-    async def create_engine_session(self, request: Any) -> Any:
-        """Optional host-engine entry point, implemented by each participating backend."""
-        raise ProviderFeatureNotSupportedError(self.id, "engine.create")
-
-    async def kill_engine_resource(self, request: Any) -> None:
-        """Control-plane deletion without an engine-held session is backend owned."""
-        raise ProviderFeatureNotSupportedError(self.id, "engine.kill")
-
     def require(self, feature: str) -> None:
         """Raise :class:`ProviderFeatureNotSupportedError` unless *feature* is implemented."""
         if feature not in self.features:

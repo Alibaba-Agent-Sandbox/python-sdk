@@ -111,16 +111,27 @@ def test_core_imports_no_concrete_backend_implementation() -> None:
 
 
 @pytest.mark.asyncio
-async def test_native_engine_keeps_explicit_provider_over_ambient(iso, monkeypatch):  # noqa: F811
+async def test_native_http_keeps_explicit_provider_over_ambient(iso, monkeypatch):  # noqa: F811
     from unittest.mock import patch
 
-    from agent_sandbox.engine.client import Engine
-    from agent_sandbox.models.sandbox import SandboxConfig
-    from agent_sandbox.providers.alicloud_express.lifecycle import EngineLifecycle
+    from agent_sandbox.providers.alicloud_express.provider import AlicloudExpressProvider
+    from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
 
     monkeypatch.setenv("ABX_PROVIDER", "another-provider")
-    lifecycle = EngineLifecycle(None, TransportConfig(provider="alicloud-express"))
-    info = SandboxInfo(sandbox_id="owned", template="base")
-    with patch.object(Engine, "create", new_callable=AsyncMock, return_value=info) as create:
-        assert await lifecycle.create(SandboxConfig()) is info
-    assert create.await_args.kwargs.get("provider") == "alicloud-express"
+    provider = AlicloudExpressProvider()
+    infra = await provider.build_infra(
+        TransportConfig(provider="alicloud-express", sandbox_api_key="fixture-key")
+    )
+    try:
+        assert isinstance(infra.sandbox_protocol, SandboxProtocol)
+        assert infra.config.provider == "alicloud-express"
+        info = SandboxInfo(sandbox_id="owned", template="base")
+        with patch.object(
+            infra.sandbox_protocol, "create", new_callable=AsyncMock, return_value=info
+        ) as create:
+            from agent_sandbox.models.sandbox import SandboxConfig
+
+            assert await infra.sandbox_protocol.create(SandboxConfig()) is info
+        create.assert_awaited_once()
+    finally:
+        await infra.http_client.close()

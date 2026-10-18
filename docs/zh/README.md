@@ -31,6 +31,7 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 
 | 文档 | 说明 |
 |------|------|
+| [配套源码安装](guide/install-python.md) | 当前源码包、extras 与版本对齐 |
 | [Client SDK](guide/client-sdk.md) | 这一侧是什么，以及下面这些文档怎么串起来 |
 | [快速开始](guide/getting-started.md) | 安装、配置、第一个沙箱 |
 | [Express 快速开始](guide/express-quickstart.md) | 部署 generation-2 模板并调用命名命令 |

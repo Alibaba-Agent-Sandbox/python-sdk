@@ -1,6 +1,8 @@
 # MCP Integration
 
-> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository (`npm install -g @agent-sandbox/cli`). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
+For current SDK installation, use the [paired source installation guide](install-python.md).
+
+> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository ([CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
 Agent Sandbox provides an MCP (Model Context Protocol) Server, enabling AI IDEs and tools to operate sandboxes directly.
 
@@ -13,11 +15,13 @@ MCP (Model Context Protocol) is an open protocol that allows AI models to intera
 ### Requirements
 
 ```bash
-pip install agent-sandbox-client            # the SDK's own MCP STDIO server: python -m agent_sandbox.agent.mcp
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[mcp] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 export ABX_SANDBOX_API_KEY=your-api-key
 ```
 
-The Node.js `abx` CLI ships a second implementation of the same server (`abx mcp ...`, installed with `npm install -g @agent-sandbox/cli`); see [Related: the abx CLI](#related-the-abx-cli).
+The Node.js `abx` CLI ships a second implementation of the same server (`abx mcp ...`, installed with [CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)); see [Related: the abx CLI](#related-the-abx-cli).
 
 ## Configure an IDE
 
@@ -97,7 +101,9 @@ For team sharing or remote access, run the MCP Server as a Streamable HTTP servi
 ### Run Locally with uvicorn
 
 ```bash
-pip install "agent-sandbox-client[mcp]"
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[mcp] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
 
 export ABX_MCP_AUTH_TOKEN=replace_me   # Bearer token (omit to disable auth)
 export ABX_SANDBOX_API_KEY=your-api-key

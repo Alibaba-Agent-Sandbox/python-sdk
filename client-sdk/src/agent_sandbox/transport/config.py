@@ -27,7 +27,9 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from agent_sandbox.providers.bundled_config import (
+from agent_sandbox._provider_schema import ProviderSchema as ProviderSchema
+from agent_sandbox._provider_schema import resolve_provider_schema
+from agent_sandbox.utils.bundled_config import (
     BUNDLED_CONFIGS,
     BUNDLED_KEYS,
     DEFAULT_CONFIG,
@@ -209,31 +211,6 @@ def project_dotenv_value(names: tuple[str, ...]) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-class ProviderSchema:
-    """What the resolver needs to know about the selected provider."""
-
-    def __init__(
-        self,
-        provider_id: str,
-        keys: tuple[ConfigKey, ...],
-        inherit: frozenset[str],
-        derive: dict[str, str] | None = None,
-        endpoint_defaults: dict[str, str] | None = None,
-    ) -> None:
-        self.provider_id = provider_id
-        self.keys = keys
-        self.inherit = inherit
-        self.derive = derive or {}
-        self.endpoint_defaults = endpoint_defaults or {}
-        metadata = bundled_config(provider_id) or {}
-        self.legacy_fields = frozenset(metadata.get("legacy_fields", ()))
-        self.omit_default_options = bool(metadata.get("omit_default_options", False))
-
-    @property
-    def builtin(self) -> bool:
-        return bundled_config(self.provider_id) is not None
-
-
 def _metadata_schema(metadata: dict[str, Any]) -> ProviderSchema:
     return ProviderSchema(
         metadata["id"],
@@ -241,6 +218,8 @@ def _metadata_schema(metadata: dict[str, Any]) -> ProviderSchema:
         metadata["inherit"],
         metadata["derive"],
         metadata["endpoint_defaults"],
+        legacy_fields=frozenset(metadata.get("legacy_fields", ())),
+        omit_default_options=bool(metadata.get("omit_default_options", False)),
     )
 
 
@@ -254,16 +233,7 @@ def provider_schema(provider_id: str) -> ProviderSchema:
     metadata = bundled_config(provider_id)
     if metadata is not None:
         return _metadata_schema(metadata)
-    from agent_sandbox.providers.registry import get_provider
-
-    provider = get_provider(provider_id)
-    return ProviderSchema(
-        provider.id,
-        provider.config_keys(),
-        frozenset(provider.inherit),
-        dict(provider.derive),
-        dict(provider.endpoint_defaults),
-    )
+    return resolve_provider_schema(provider_id)
 
 
 def select_provider_id(sources: Sources) -> str:

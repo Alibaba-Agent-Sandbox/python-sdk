@@ -397,19 +397,6 @@ async def test_cancelled_download_closes_stream():
         await client.close()
 
 
-async def test_created_native_adapter_uses_existing_bounded_envd_reader():
-    from agent_sandbox.engine.protocols import EngineFilesystemProtocol
-
-    reader = SimpleNamespace(read=AsyncMock(return_value=b"\0\xff"))
-    protocol = EngineFilesystemProtocol("owned", bounded_reader=reader)
-    token = EnvdTokenManager("placeholder")
-    fs = FilesModule("https://example.invalid", token, protocol)
-    assert await fs.read_bytes("/tmp/file", max_bytes=2) == b"\0\xff"
-    reader.read.assert_awaited_once_with(
-        "https://example.invalid", token, path="/tmp/file", max_bytes=2
-    )
-
-
 async def test_node_provider_bounded_read_never_falls_back_to_unlimited_download():
     from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
     from agent_sandbox.providers.engine_provider import EngineFilesystemProtocol

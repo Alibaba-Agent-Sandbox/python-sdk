@@ -27,9 +27,9 @@ choose its authentication and adapters. It never chooses a cloud backend.
 
 `Provider.build_infra(config)` is used for the bundled default and plugins alike.
 `session_protocols`, `prepare_session`, `resolve_session_url` and `open_terminal`
-assemble provider-owned sessions. The optional `create_engine_session` and
-`kill_engine_resource` hooks remove vendor selection from the gRPC engine server.
-The Express provider retains its existing engine-backed create behavior and wire format.
+assemble provider-owned sessions. Express uses native HTTP/Connect/WebSocket
+adapters directly; the retired Python gRPC engine and its lifecycle hooks stay
+removed. The external Node engine/EPP client remains a separate provider contract.
 
 `TransportConfig(provider="external")` and `load_config` leave undeclared endpoint and
 region defaults empty. Explicit endpoints remain intact. Failed create binding cleans
@@ -42,4 +42,6 @@ image deployment API is introduced. See the [CLI boundary contract](https://gith
 Bundled provider updates still follow matching SDK releases. Adapter isolation does
 not promise zero-change migration or capabilities absent from a backend.
 
-The Express wrapper forwards the selected provider to its internal engine, so an explicit native selection wins over an unrelated ambient default.
+Explicit provider selection wins over an unrelated ambient default. Pure bundled
+configuration values live in `utils/bundled_config.py`; transport consumes the
+`_provider_schema.py` contract and injected discovery rather than importing a registry.

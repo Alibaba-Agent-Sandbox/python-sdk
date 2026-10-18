@@ -24,8 +24,9 @@
 
 内置默认项和插件均通过 `Provider.build_infra(config)` 构建基础设施。
 `session_protocols`、`prepare_session`、`resolve_session_url`、`open_terminal`
-负责各自会话。可选 `create_engine_session`、`kill_engine_resource` 钩子消除了
-核心 gRPC 引擎对具体云后端的选择；极速版保留原有引擎创建行为和协议格式。
+负责各自会话。极速版直接使用原生 HTTP/Connect/WebSocket 适配器；已退役的
+Python gRPC 引擎及生命周期钩子保持删除。外部 Node 引擎/EPP 客户端仍是独立的
+Provider 契约。
 
 `TransportConfig(provider="external")` 和 `load_config` 均不补上未声明的域名或
 region，显式端点保持有效。创建绑定失败回收本次新建资源；连接失败保留借用资源。
@@ -36,4 +37,6 @@ CLI 模板工厂及 CLI/AI 发现归属 CLI 仓库，本次不新增 Python 镜�
 内置 Provider 继续随匹配的 SDK 版本更新。适配器隔离不代表 SDK 零改动迁移，也不会
 产生后端本身没有的能力。
 
-极速版适配器向内部引擎显式传递所选 Provider，因此环境默认项不会覆盖调用方明确选择的后端。
+调用方显式选择的 Provider 优先于环境默认项。内置配置纯数据归属
+`utils/bundled_config.py`；传输层只消费 `_provider_schema.py` 契约及注入的
+发现函数，不导入可执行的注册表。

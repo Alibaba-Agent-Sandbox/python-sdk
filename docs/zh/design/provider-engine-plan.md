@@ -1,6 +1,6 @@
 # Provider 引擎：方案与对抗验证
 
-> **状态：对目录提供方已被取代。** 现行设计是 Node 引擎：`127.0.0.1` 上的 HTTP、SSE 和 WebSocket，协议 `abx-engine/1`。见 [cli/docs/zh/reference/engine-api.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/engine-api.md) 和 [Node 提供方架构](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/node-provider-architecture.md)。下面这份 Unix socket 上的 gRPC 方案作为历史保留。
+> **状态：已退役的 Python gRPC 历史设计。** 内置提供方现使用[直接 HTTP](builtin-data-plane.md)，目录 Node 插件使用独立的 [Node 引擎](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/zh/reference/engine-api.md)。下文示例是历史记录，不再是受支持的命令。
 
 状态：方案。2026-10-14 由三方对抗得出。试验切片见 [provider-engine.md](provider-engine.md)。英文对照：[provider-engine-plan.md](../../en/design/provider-engine-plan.md)。
 

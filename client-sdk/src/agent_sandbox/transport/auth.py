@@ -1,16 +1,10 @@
-"""Compatibility exports; backend implementation lives in its provider."""
+"""Compatibility aliases; Express owns platform authentication."""
 
 import sys as _sys
 from importlib import import_module as _import_module
 
 from agent_sandbox.providers.alicloud_express.auth import (
     _ENVD_BASIC_AUTH as _ENVD_BASIC_AUTH,
-)
-from agent_sandbox.providers.alicloud_express.auth import (
-    _TOKEN_EXCHANGE_ACTION as _TOKEN_EXCHANGE_ACTION,
-)
-from agent_sandbox.providers.alicloud_express.auth import (
-    _TOKEN_EXCHANGE_API_VERSION as _TOKEN_EXCHANGE_API_VERSION,
 )
 from agent_sandbox.providers.alicloud_express.auth import (
     ENVD_AUTH_HEADER as ENVD_AUTH_HEADER,
@@ -35,15 +29,6 @@ from agent_sandbox.providers.alicloud_express.auth import (
 )
 from agent_sandbox.providers.alicloud_express.auth import (
     EnvdTokenManager as EnvdTokenManager,
-)
-from agent_sandbox.providers.alicloud_express.auth import (
-    _exchange_aksk_for_api_key as _exchange_aksk_for_api_key,
-)
-from agent_sandbox.providers.alicloud_express.auth import (
-    _percent_encode as _percent_encode,
-)
-from agent_sandbox.providers.alicloud_express.auth import (
-    _sign_rpc as _sign_rpc,
 )
 from agent_sandbox.providers.alicloud_express.auth import (
     build_envd_headers as build_envd_headers,

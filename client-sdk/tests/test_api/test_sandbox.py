@@ -433,10 +433,13 @@ class TestSandboxSyncVariants:
         info.alias_name = "cached-alias"
         seen: dict[str, Any] = {}
 
-        class _FakeEngine:
-            async def create(self, template: str, **kwargs: Any) -> SandboxInfo:
-                seen["template"] = template
-                return info
+        protocol = AsyncMock()
+
+        async def _create(config: SandboxConfig, **kwargs: Any) -> SandboxInfo:
+            seen["template"] = config.template
+            return info
+
+        protocol.create.side_effect = _create
 
         from agent_sandbox.providers.base import ProviderInfra
         from agent_sandbox.providers.registry import get_provider
@@ -452,10 +455,8 @@ class TestSandboxSyncVariants:
         http = MagicMock()
 
         async def _infra(*_args: Any, **_kwargs: Any) -> ProviderInfra:
-            from agent_sandbox.providers.alicloud_express.lifecycle import EngineLifecycle
-
             config = TransportConfig(sandbox_api_key="k")
-            return ProviderInfra(config, MagicMock(), http, EngineLifecycle(http, config))
+            return ProviderInfra(config, MagicMock(), http, protocol)
 
         async def _resolve(*ids: str | None, **_kwargs: Any) -> ResolvedCapabilities:
             seen["ids"] = ids
@@ -464,7 +465,6 @@ class TestSandboxSyncVariants:
         with (
             patch("agent_sandbox.api.sandbox._select_provider", _select),
             patch.object(provider, "build_infra", _infra),
-            patch("agent_sandbox.engine.client.Engine", _FakeEngine),
             patch("agent_sandbox.api.capability.resolve_capabilities_for", _resolve),
         ):
             sb = await Sandbox.create(template="unique-alias", api_key="k")
