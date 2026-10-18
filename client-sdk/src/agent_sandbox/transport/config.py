@@ -27,6 +27,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from agent_sandbox._provider_schema import ProviderSchema as ProviderSchema
+from agent_sandbox._provider_schema import resolve_provider_schema
 from agent_sandbox.utils.config_keys import (
     ALICLOUD_EXPRESS_KEYS,
     BUILTIN_PROVIDER_ID,
@@ -197,28 +199,6 @@ def project_dotenv_value(names: tuple[str, ...]) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-class ProviderSchema:
-    """What the resolver needs to know about the selected provider."""
-
-    def __init__(
-        self,
-        provider_id: str,
-        keys: tuple[ConfigKey, ...],
-        inherit: frozenset[str],
-        derive: dict[str, str] | None = None,
-        endpoint_defaults: dict[str, str] | None = None,
-    ) -> None:
-        self.provider_id = provider_id
-        self.keys = keys
-        self.inherit = inherit
-        self.derive = derive or {}
-        self.endpoint_defaults = endpoint_defaults or {}
-
-    @property
-    def builtin(self) -> bool:
-        return self.provider_id == BUILTIN_PROVIDER_ID
-
-
 def _builtin_schema() -> ProviderSchema:
     return ProviderSchema(
         BUILTIN_PROVIDER_ID,
@@ -232,16 +212,7 @@ def provider_schema(provider_id: str) -> ProviderSchema:
     """Schema of *provider_id* (built-in or registered/installed)."""
     if provider_id == BUILTIN_PROVIDER_ID:
         return _builtin_schema()
-    from agent_sandbox.providers.registry import get_provider
-
-    provider = get_provider(provider_id)
-    return ProviderSchema(
-        provider.id,
-        provider.config_keys(),
-        frozenset(provider.inherit),
-        dict(provider.derive),
-        dict(getattr(provider, "endpoint_defaults", {}) or {}),
-    )
+    return resolve_provider_schema(provider_id)
 
 
 def select_provider_id(sources: Sources) -> str:

@@ -248,3 +248,5 @@ The CLI (`abx`) formerly lived in `src/agent_sandbox/cli/` (Click commands under
 4. **Alibaba Cloud Native**: Built for the Alibaba Cloud FC sandbox service
 5. **AI First**: Built-in AI CLI tools in sandboxes and MCP Server are first-class citizens; SDK has zero LLM dependencies
 6. **Type Safety**: Comprehensive use of Python Type Hints + Pydantic validation
+
+Provider configuration discovery is assembled lazily by the package composition root. Transport consumes a low-level `ProviderSchema` value and an injected resolver from `_provider_schema.py`; it does not import the provider registry. Builtin configuration resolves without provider discovery. Registered, entry-point and installed providers retain the registry selection and derive/default/inheritance rules. The existing `transport.config.ProviderSchema` import remains an alias of the same schema class.
