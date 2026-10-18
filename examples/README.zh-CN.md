@@ -15,13 +15,13 @@
 ```bash
 # 完整安装（推荐，包含声明式装饰器、MCP 服务等）
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
 
 # 或按需安装
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[declarative] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[declarative] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
 
 # 从源码安装（在 python-sdk 仓库根目录执行）
 pip install -e ./server-sdk -e ./client-sdk

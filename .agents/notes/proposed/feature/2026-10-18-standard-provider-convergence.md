@@ -7,7 +7,8 @@ The standard client branch predates accepted session/authentication/provider own
 changes. Globally renaming native configuration keys silently replaces those contracts.
 
 ## Decision
-Keep standard synchronous Sandbox and asynchronous AsyncSandbox plus explicit
+Pin live source installation recipes to a tested standard implementation revision,
+so the documented entry shape matches installed code. Keep standard synchronous Sandbox and asynchronous AsyncSandbox plus explicit
 ProviderSandbox. Retain canonical ABX configuration for native APIs; standard
 ConnectionConfig alone reads E2B settings. Compose provider-owned session adapters
 at the lower-level registration seam. Keep active standard protobuf but retire gRPC

@@ -64,16 +64,16 @@ Node.js 项目，位于 [`cli`](https://github.com/alibaba-agent-sandbox/agent-s
 ```bash
 # 仅核心客户端 SDK
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
 
 # 完整安装（MCP + 快速 JSON + 会话 + 声明式 + server）
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
 
 # 容器侧运行时（安装到你的沙箱镜像内）
-python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk"
+python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk"
 pip install playwright                       # 仅在启用 browser 能力组时需要
 
 # 开发环境（在仓库根目录执行；含两个包的测试与 lint 工具）

@@ -30,3 +30,16 @@ framing/WebSocket rejection to502). No assertions or transport checks were remov
 Maintained lint/format PASS; mypy56 server/105 client files PASS; pinned public
 contract354 PASS. Both sdist/wheel builds PASS. Paired artifact and record checks
 are recorded below; exact-head hosted matrix is separate from these local results.
+
+Final paired distributions:twine check PASS, both py.typed markers PASS, clean
+combined wheel installation/import PASS; hygienePASS; health106 PASS/1 historical
+WARN/zero FAIL. Exact implementation headcceb318d hosted matrix10/10 PASS.
+
+Documentation audit found the standard sync examples still installed a pre-port
+async-root source revision. Updated15 live installation/example guides in both
+languages to the verified implementationcceb318d. Actual displayed two-archive
+recipe installed in a fresh environment; pip check PASS; synchronous Sandbox/
+interpreter, asynchronous AsyncSandbox/ProviderSandbox and server imports PASS.
+Neither upstream E2B runtime distribution is present. This changes documentation
+only and does not claim a PyPI release. The accepted implementation remains
+pinned independently of subsequent documentation-only commits.
