@@ -35,6 +35,8 @@ async with await Sandbox.create(template="base") as sb:
 
 ---
 
+当前内置运行通道：[直接 HTTP 与迁移](design/builtin-data-plane.md)。
+
 ## 架构概览
 
 SDK 采用严格分层架构 — 低层绝不导入高层：

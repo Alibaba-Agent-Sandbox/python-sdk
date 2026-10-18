@@ -50,7 +50,7 @@ asyncio.run(main())
 - `sb.run_code(...)` checks capability `code` and raises when the template does not declare it. An omitted `capabilities` list means `shell`, `files`, and `code`.
 - Files on `sb.files`: `write`, `read`, `read_bytes`, `list`, `exists`, `remove`, `make_dir`, `upload`, `download`. On Express, `sb.files.upload_url` and `sb.files.download_url` return an envd URL that still needs header `X-Access-Token`. A provider that does not declare `files.transfer` raises `E8004`. `sb.upload_url` and `sb.download_url` always refuse. Do not invent a signature-only URL.
 - The context manager kills the sandbox. Otherwise call `await sb.kill()`.
-- The default provider is `alicloud-express`. Express sends create through a local engine on `~/.abx/engine.sock` (`ABX_ENGINE_SOCKET`). Do not open those backend sockets yourself and do not spawn a provider process. `python -m agent_sandbox.engine` is only a shared engine process.
+- The default provider is `alicloud-express`. Its lifecycle and envd operations use SDK HTTP protocols directly; no Python gRPC daemon or `ABX_ENGINE_SOCKET` is required. Installed Node providers still use the CLI Node engine.
 - The only built-in provider is `alicloud-express`. `opensandbox`, `alicloud-container`, `cubesandbox`, and `e2b` are not part of this package. Install them from the catalog with `python -m agent_sandbox.providers install registry:<id> --yes`, then pass that id to `Sandbox.create`. Their notes are in `awesome-providers/<id>/docs/README.md`. Only Express reads `ABX_SANDBOX_API_KEY`.
 
 | id | What it is | Required environment |
