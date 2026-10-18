@@ -137,12 +137,13 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 | `pty` | 交互式终端 |
 | `files.rw`、`files.watch`、`files.transfer` | 读、写、列出、移动、删除；监听；带签名的上传和下载 URL |
 | `code.interpret` | 有状态的代码上下文 |
-| `templates.read`、`templates.build` | 列出和查看模板；构建、部署和删除模板 |
+| `templates.read`、`templates.build` | 列出和查看模板；原有镜像构建、部署和删除 |
+| `templates.deploy` | 显式声明通过提供方模板工厂部署现有镜像 |
 | `ports.url`、`ports.domain` | 端口的公网 URL；自定义域名 |
 | `storage.mount`、`network.vpc` | 对象存储挂载；VPC 接入 |
 | `sessions` | 沙箱在进程结束后仍存在，可按 id 重新连接 |
 
-`alicloud-express` 实现了全部 18 个特性。`abx provider list` 用一行显示每个提供方声明的特性（`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`；`python -m agent_sandbox.providers list` 输出相同），`abx provider info <id>` 显示完整清单。
+`templates.deploy` 是独立的 manifest 声明，`templates.build` 不会隐含启用它。内置 `alicloud-express` 保留原有 18 个声明，不声明 `templates.deploy`。本 SDK 接受该元数据，不新增 Python 模板部署方法；工厂分发由 CLI 负责。`abx provider list` 用一行显示每个提供方声明的特性（`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`；`python -m agent_sandbox.providers list` 输出相同），`abx provider info <id>` 显示完整清单。
 
 清单里的特性标志在运行时对每一种提供方都会被强制执行：
 
@@ -200,7 +201,7 @@ await sb.kill()
 
 ### 扩展能力
 
-上面 18 个 feature id 是工具的公共面。提供方在这之外的操作登记到 `Provider.extensions`。它们不进 `features`，所以 `provider list` 的一行摘要里没有，别的提供方也不会带上。
+上面的 feature id 是工具的公共面。提供方在这之外的操作登记到 `Provider.extensions`。它们不进 `features`，所以 `provider list` 的一行摘要里没有，别的提供方也不会带上。
 
 `describe()["extensions"]` 始终给出该提供方的全部登记。`extensions_for(sandbox_id=...)` 只给出这个沙箱满足条件的项：`code` 只在镜像名包含 `code-interpreter` 时出现，`networkpolicy` 只在创建时要了 egress 时出现，`command.logs` 只在已经有命令 id 时出现。`implemented=False` 的项在这些条件下可见，`require_extension` 仍然返回 `E8004`。早先的 Python 版 OpenSandbox 提供方这样登记了 `code`、`session`、`command.logs`、`snapshot`、`networkpolicy`、`metadata.patch`、`diagnostics`、`metrics`。现行目录提供方是 `kind = "node"`（`EngineProvider`），它的 `extensions` 是空的。
 

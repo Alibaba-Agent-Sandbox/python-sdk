@@ -77,7 +77,8 @@ files.watch         files.watch
 files.transfer      upload_url / download_url
 code.interpret      run_code
 templates.read      template list
-templates.build     template build
+templates.build     legacy template build
+templates.deploy    opt-in image deployment via a provider template factory (CLI owned)
 ports.url           network.resolve_url
 ports.domain        a separate domain feature
 storage.mount       volume mount
@@ -89,7 +90,7 @@ Declare a feature only when the backend actually implements that call. A
 declared feature that 404s is worse than `E8004`, because the caller thinks
 the call was attempted for real.
 
-An API that is not one of those 18 ids is an extension, not a new feature id.
+An API that is not one of those feature ids is an extension, not a new feature id.
 On a Python `Provider`, set `extensions` to `Extension(id, summary, summary_zh, implemented, when)`.
 `when` is `sandbox`, `code_interpreter_image`, `egress`, or `command`.
 `extensions_for(sandbox_id=...)` is empty until a sandbox id is passed.

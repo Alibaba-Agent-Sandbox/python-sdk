@@ -139,12 +139,13 @@ A provider declares the features it implements. Calling something it lacks raise
 | `pty` | interactive terminal |
 | `files.rw`, `files.watch`, `files.transfer` | read, write, list, move, remove; watching; signed upload and download URLs |
 | `code.interpret` | stateful code contexts |
-| `templates.read`, `templates.build` | list and inspect templates; build, deploy and delete them |
+| `templates.read`, `templates.build` | list and inspect templates; legacy image build, deploy and delete |
+| `templates.deploy` | opt-in deployment from an existing image through a provider template factory |
 | `ports.url`, `ports.domain` | public URL for a port; custom domains |
 | `storage.mount`, `network.vpc` | object-storage mounts; VPC attachment |
 | `sessions` | the sandbox survives the process and can be re-attached by id |
 
-`alicloud-express` implements all 18 features. `abx provider list` shows the declared features of every provider on one line (`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`; `python -m agent_sandbox.providers list` prints the same), and `abx provider info <id>` shows the full list.
+`templates.deploy` is an independent manifest declaration; `templates.build` does not imply it. The built-in `alicloud-express` retains its existing 18 declarations and does not declare `templates.deploy`. This SDK accepts the metadata but adds no Python template deployment method; the CLI owns factory dispatch. `abx provider list` shows the declared features of every provider on one line (`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`; `python -m agent_sandbox.providers list` prints the same), and `abx provider info <id>` shows the full list.
 
 The manifest flag is enforced at run time, for every provider kind:
 
@@ -202,7 +203,7 @@ The capability table is [OpenSandbox provider](../design/provider-opensandbox-ma
 
 ### Extra capabilities
 
-The 18 feature ids above are the shared tool surface. A provider that has operations outside that list registers them on `Provider.extensions`. They do not appear in `features`, so `provider list` does not print them, and another provider does not gain them.
+The feature ids above are the shared tool surface. A provider that has operations outside that list registers them on `Provider.extensions`. They do not appear in `features`, so `provider list` does not print them, and another provider does not gain them.
 
 `describe()["extensions"]` always shows the provider's full registration. `extensions_for(sandbox_id=...)` shows only the entries that match that sandbox: `code` only on a `code-interpreter` image, `networkpolicy` only when egress was requested, `command.logs` only when a command id is known. An entry with `implemented=False` is visible under those rules and still raises `E8004` from `require_extension`. An earlier Python OpenSandbox provider registered `code`, `session`, `command.logs`, `snapshot`, `networkpolicy`, `metadata.patch`, `diagnostics` and `metrics` this way. The current catalog provider is `kind = "node"` (`EngineProvider`); its `extensions` tuple is empty.
 
