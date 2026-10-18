@@ -1,6 +1,6 @@
 # Decision: Describe built-in provider updates and existing Express adoption
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -64,3 +64,8 @@ Asynchronous-only discovery fails closed in synchronous helpers. Neutral Python 
 remain lazy; a fresh-process regression prevents built-in auth/wire loading.
 
 [Port and file URL boundary checkpoint](../../../evidence/verify/2026-10-18-provider-port-url-boundaries.md).
+
+Current host/adapter acceptance is complete for the tested Express configuration; see
+[final verification](../../../evidence/verify/2026-10-18-provider-isolation-acceptance.md). Hosted checks pass on the tested
+implementation revisions. The evidence-only PR head must pass its gates before merge.
+Native image factories and unconfigured backend E2E remain separate acceptance work.
