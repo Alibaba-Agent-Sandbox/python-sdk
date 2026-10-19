@@ -91,3 +91,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Provider preflight](notes/proposed/feature/2026-10-18-provider-preflight.md) · [verification](evidence/verify/2026-10-18-provider-preflight.md)
 
 - [Conditional Express acceptance](notes/proposed/feature/2026-10-19-conditional-acceptance.md) · [verification](evidence/verify/2026-10-19-conditional-acceptance.md)
+
+- [Dispatch native server startup before readiness](notes/proposed/feature/2026-10-19-server-start-acknowledgement.md) · [verification](evidence/verify/2026-10-19-server-start-acknowledgement.md)

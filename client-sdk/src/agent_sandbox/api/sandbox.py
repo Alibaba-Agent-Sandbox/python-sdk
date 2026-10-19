@@ -35,6 +35,7 @@ from agent_sandbox.utils.logging import get_logger
 
 if TYPE_CHECKING:
     import builtins
+    from asyncio import Task
     from collections.abc import Callable
 
     from agent_sandbox.api.code import CodeContextModule as CodeContextModule
@@ -233,6 +234,7 @@ class Sandbox:
             )
         self._http_client = http_client
         self._killed = False
+        self._server_stream_tasks: set[Task[None]] = set()
         self._auth = auth
         self._envd_token = envd_token
         self._domain = domain if domain is not None else config.sandbox_domain
@@ -460,7 +462,7 @@ class Sandbox:
             token: Sets ``ABX_SERVER_TOKEN`` for the server and authenticates the client.
             env: Extra environment variables for the server process.
             command: Full command line override (default ``agent-sandbox-server serve``).
-            wait: Wait until healthy.
+            wait: Wait until healthy. Process startup is acknowledged even when False.
             timeout: Seconds to wait for health.
 
         Raises:
@@ -469,6 +471,8 @@ class Sandbox:
         import asyncio
 
         from agent_sandbox.models.errors import ConnectionError_
+        from agent_sandbox.models.process import ProcessChunkType
+        from agent_sandbox.transport.streaming import StreamReader
 
         server_env: dict[str, str] = dict(env or {})
         if token:
@@ -481,24 +485,71 @@ class Sandbox:
                 cmd += f" --commands {shlex.quote(commands)}"
             if isinstance(policy, str):
                 cmd += f" --preset {shlex.quote(policy)}"
-        self._server_process = await self.commands.run(
+        stream = await self.commands.run(
             cmd, background=True, env=server_env or None, timeout=86400
         )
+        if not isinstance(stream, StreamReader):
+            raise ConnectionError_("SandboxServer did not return a process stream")
+        self._server_process = stream
+        started: asyncio.Future[bool] = asyncio.get_running_loop().create_future()
+
+        async def drain() -> None:
+            try:
+                async for chunk in stream:
+                    if chunk.pid and not started.done():
+                        started.set_result(True)
+                    if chunk.type == ProcessChunkType.EXIT:
+                        break
+            except Exception:
+                # Process output and transport errors can contain command secrets.
+                logger.debug("SandboxServer process stream stopped")
+            finally:
+                if not started.done():
+                    started.set_result(False)
+                await stream.cancel()
+
+        task = asyncio.create_task(drain())
+        self._server_stream_tasks.add(task)
+        task.add_done_callback(self._server_stream_tasks.discard)
         client = self.server_at(port, token=token)
-        if not wait:
-            return client
         loop = asyncio.get_running_loop()
         deadline = loop.time() + timeout
-        while True:
-            if await client.health():
-                return client
-            if loop.time() >= deadline:
-                await client.aclose()
+        try:
+            try:
+                acknowledged = await asyncio.wait_for(started, timeout)
+            except asyncio.TimeoutError:
                 raise ConnectionError_(
-                    f"SandboxServer did not become healthy on port {port} within {timeout:g}s",
-                    suggestion="Is agent-sandbox-server installed in the template image?",
+                    "SandboxServer process did not acknowledge startup"
+                ) from None
+            if not acknowledged or task.done():
+                raise ConnectionError_(
+                    "SandboxServer process stopped before startup",
+                    suggestion="Check the server executable and process PATH, or pass command= "
+                    "with an absolute path or python3 -m agent_sandbox.server serve.",
                 )
-            await asyncio.sleep(0.5)
+            if not wait:
+                return client
+            while True:
+                if task.done():
+                    raise ConnectionError_("SandboxServer process stopped before becoming healthy")
+                if await client.health():
+                    if task.done():
+                        raise ConnectionError_(
+                            "SandboxServer process stopped before becoming healthy"
+                        )
+                    return client
+                if loop.time() >= deadline:
+                    raise ConnectionError_(
+                        f"SandboxServer did not become healthy on port {port} within {timeout:g}s",
+                        suggestion="Is agent-sandbox-server installed in the template image?",
+                    )
+                await asyncio.sleep(0.5)
+        except BaseException:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+            self._server_stream_tasks.discard(task)
+            await client.aclose()
+            raise
 
     # ---- Factory classmethods ----
 
@@ -1063,11 +1114,23 @@ class Sandbox:
             self._killed = True
             logger.info("Sandbox killed: %s", self.id)
         finally:
+            await self._close_server_streams()
             await self._http_client.close()
 
     async def close(self) -> None:
         """Release client-side resources (connections, plugin process); the sandbox stays up."""
+        await self._close_server_streams()
         await self._http_client.close()
+
+    async def _close_server_streams(self) -> None:
+        """Release local readers without killing the remote server or sandbox."""
+        import asyncio
+
+        tasks = list(self._server_stream_tasks)
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        self._server_stream_tasks.difference_update(tasks)
 
     async def set_timeout(self, timeout: int) -> None:
         """Update sandbox timeout."""
