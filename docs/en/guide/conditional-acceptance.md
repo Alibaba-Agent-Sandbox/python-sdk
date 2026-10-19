@@ -6,11 +6,48 @@ E2B_API_KEY/API_URL/DOMAIN. Never send an Express key to another provider.
 Official template operations separately need ALICLOUD_ACCESS_KEY_ID and
 ALICLOUD_ACCESS_KEY_SECRET; a runtime key cannot replace that authorization.
 
+## Implemented interfaces and backend admission
+
+Express supports pause/resume and Snapshot after the corresponding account/region allowlist is enabled. Snapshot additionally requires a generation2 MicroVM runtime. Failure on a default template or a particular account does not establish that the service lacks these features.
+
+| Operation | Standard synchronous Python entry | Standard CLI entry |
+| --- | --- | --- |
+| Pause | `sandbox.pause()` | `abx sandbox pause "$SANDBOX_ID"` |
+| Resume the same sandbox | `Sandbox.connect(sandbox_id)` | `abx sandbox resume "$SANDBOX_ID"` |
+| Create a snapshot | `sandbox.create_snapshot(name="checkpoint", request_timeout=300)` | `abx sandbox snapshot create "$SANDBOX_ID" --name checkpoint` |
+| List snapshots | `Sandbox.list_snapshots(sandbox_id=sandbox_id)`, consume the paginator | `abx sandbox snapshot list "$SANDBOX_ID" --format json` |
+| Create from a snapshot | `Sandbox.create(template=snapshot.snapshot_id)` | `abx create "$SNAPSHOT_ID" --detach` |
+| Delete a snapshot | `Sandbox.delete_snapshot(snapshot.snapshot_id)` | `abx sandbox snapshot delete "$SNAPSHOT_ID"` |
+
+Python examples use `from agent_sandbox import Sandbox`; asynchronous callers use `AsyncSandbox` and await the appropriate operations. These standard clients are distinct from the native Provider/Server extension at `agent_sandbox.api.sandbox.Sandbox`. A native provider feature gate is not a statement that the Express standard API is unavailable. Python spells the method `create_snapshot`; TypeScript uses `createSnapshot`, with argument shapes determined by the installed SDK version.
+
+```python
+import os
+from agent_sandbox import Sandbox
+
+sandbox = Sandbox.create(template=os.environ["E2E_PAUSE_TEMPLATE"], timeout=600)
+try:
+    sandbox.files.write("/tmp/checkpoint.txt", "before-pause")
+    sandbox.pause()  # requires allowlist admission
+    sandbox = Sandbox.connect(sandbox.sandbox_id)
+    assert sandbox.files.read("/tmp/checkpoint.txt") == "before-pause"
+finally:
+    sandbox.kill()
+```
+
+Use `request_timeout=300` for snapshot creation; sandbox lifetime `timeout` is a different setting. Snapshot creation requires a running source. Same-name/same-tag conflicts fail without overwriting an existing snapshot. Filesystem-only pause via `keep_memory=False` is currently unavailable. Automatic pause/resume uses `lifecycle={"on_timeout": "pause", "auto_resume": True}` and remains subject to allowlisting.
+
+Snapshots outlive their source sandbox and must be deleted separately after killing any restored sandboxes that occupy them. Keep the returned Snapshot ID; delete by that ID or a returned qualified name rather than a short name. After an ambiguous create timeout, reconcile existing results by the owned source sandbox before retrying.
+
+This repository already records real generation2 acceptance in its [historical verification](../../../.agents/evidence/verify/2026-10-19-conditional-acceptance.md). It is historical execution evidence, not a new run performed for this documentation change.
+
+Official references: [compatible APIs](https://help.aliyun.com/zh/agent-sandbox/e2b-sdk-compatible-api-list), [pause/resume](https://help.aliyun.com/zh/agent-sandbox/pause-and-resume), and [Snapshot invited test](https://help.aliyun.com/zh/agent-sandbox/snapshot-invited-test).
+
 ## Design and prerequisites
 
 Pause/resume and snapshot tests use separate selectors. Prefer an isolated
-MicroVM generation2 fixture. Generation1 pause may need enablement; snapshots
-require MicroVM and account/region access. Provisioning or admission errors remain
+MicroVM generation2 fixture. Pause/resume requires allowlisting; snapshots additionally
+require a generation2 MicroVM runtime. Provisioning or admission errors remain
 failures, not evidence that a local API key is absent. The public-image fixture
 needs no local Docker build or private registry credentials.
 
@@ -64,7 +101,7 @@ Do not upload credentials or dispatch cloud/model acceptance in Actions.
 
 [Official template setup](https://help.aliyun.com/zh/agent-sandbox/build-and-manage-custom-templates-with-code),
 [compatibility](https://www.alibabacloud.com/help/en/agent-sandbox/e2b-compatibility-explanation),
-[snapshot limits](https://help.aliyun.com/zh/functioncompute/snapshots).
+[snapshot limits](https://help.aliyun.com/zh/agent-sandbox/snapshot-invited-test).
 
 ## SDK test / SDK 测试
 

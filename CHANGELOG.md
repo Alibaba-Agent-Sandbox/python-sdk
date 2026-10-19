@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Documentation
 
+- Clarify implemented Express pause/resume and Snapshot standard interfaces, allowlist/runtime requirements and safe cleanup. / 明确极速版标准入口已实现暂停恢复与快照，以及白名单、运行时和清理要求。
+
+### Documentation
+
 - Use the verified canonical website and registry links in active English/Chinese guides.
 
 ### Fixed
