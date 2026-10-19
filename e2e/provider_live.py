@@ -522,8 +522,8 @@ def opensandbox_ready() -> str:
 
 
 def express_ready() -> str:
-    if not (os.environ.get("ABX_SANDBOX_API_KEY") or "").strip():
-        return "ABX_SANDBOX_API_KEY is not set"
+    if not (os.environ.get("E2B_API_KEY") or "").strip():
+        return "E2B_API_KEY is not set"
     return ""
 
 

@@ -1,7 +1,6 @@
 # SDK 使用指南
 
-当前 SDK 安装使用[配套源码安装指南](install-python.md)。
-
+本页介绍异步 **ProviderSandbox** 的 Provider/服务端扩展。仅修改导入迁移 E2B 时，使用根目录 `Sandbox` / `AsyncSandbox` 或 `agent_sandbox.code_interpreter`，见[从 E2B 迁移](migrate-from-e2b.md)。这些入口的同步/异步调用及结果模型遵循固定标准契约。
 本文详述 Agent Sandbox Python SDK 的完整使用方法。
 
 ---
@@ -9,9 +8,7 @@
 ## 安装
 
 ```bash
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+pip install agent-sandbox-client
 ```
 
 不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。
@@ -19,7 +16,7 @@ python -m pip install \
 ## 导入
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 ```
 
 ---
@@ -31,7 +28,7 @@ from agent_sandbox.api.sandbox import Sandbox
 ```python
 import asyncio
 
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 TEMPLATE = "hello-x"  # generation-2 模板的名称或 id
 
@@ -507,7 +504,7 @@ except ServerAPIError as exc:                   # 基类：status_code、error_t
 
 ```python
 import asyncio
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async def agent_workflow(task_code: str) -> str:
     """Agent → 创建沙箱 → 执行代码 → 读取结果 → 销毁沙箱"""

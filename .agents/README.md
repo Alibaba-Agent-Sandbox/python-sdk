@@ -44,6 +44,15 @@ Move the file and edit `Status:` in the same commit. Required sections and the t
 
 `scripts/check-repo-health.sh` enforces ADR naming, the `Status:`/directory match, and that no slug dangles.
 
+## Standard E2B behavior work
+
+The active [proposed contract](notes/proposed/architecture/2026-10-16-e2b-behavior-contract.md) defines the pinned Alibaba migration surface and project extension boundary. Verification evidence is point-in-time; read the latest E2B run before reporting completion.
+
+The [provider-boundary verification](evidence/verify/2026-10-16-provider-boundary-review.md) distinguishes standard E2B clients, provider adapters and pending typed management registration.
+
+The multi-agent review proposes [provider context and availability](notes/proposed/architecture/2026-10-16-provider-context-and-availability.md). Standard protocol clients remain separate from the provider API; CLI operation unification is owned by its companion repository.
+
+See the [multi-agent SDK verification](evidence/verify/2026-10-16-multi-agent-provider-review.md) for explicit-provider regressions, source-port maintenance gaps and remaining acceptance gates.
 - [Bounded MCP binary files](notes/implemented/feature/2026-10-16-mcp-binary-files.md) · [verification](evidence/verify/2026-10-16-mcp-binary-files.md)
 
 - [Provider portability and updates](notes/implemented/architecture/2026-10-18-provider-portability-updates.md) · [verification](evidence/verify/2026-10-18-provider-portability-updates.md)
@@ -72,6 +81,7 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 
 - [Provider port and file URL boundary checkpoint](evidence/verify/2026-10-18-provider-port-url-boundaries.md)
 
+- [Standard/provider convergence](notes/proposed/feature/2026-10-18-standard-provider-convergence.md) · [verification](evidence/verify/2026-10-18-standard-provider-convergence.md)
 - [Current provider isolation and Express acceptance](evidence/verify/2026-10-18-provider-isolation-acceptance.md)
 
 - [Final provider convergence acceptance](evidence/verify/2026-10-18-provider-convergence-acceptance.md)
@@ -79,3 +89,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Provider-owned metadata follow-up](evidence/verify/2026-10-18-provider-owned-metadata-followup.md)
 
 - [Provider preflight](notes/proposed/feature/2026-10-18-provider-preflight.md) · [verification](evidence/verify/2026-10-18-provider-preflight.md)
+
+- [Conditional Express acceptance](notes/proposed/feature/2026-10-19-conditional-acceptance.md) · [verification](evidence/verify/2026-10-19-conditional-acceptance.md)

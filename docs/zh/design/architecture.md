@@ -4,6 +4,22 @@
 
 ---
 
+
+## 公开入口
+
+| 入口 | 契约 |
+| --- | --- |
+| `agent_sandbox.Sandbox` / `AsyncSandbox` | 固定 E2B2.31.0 标准协议的同步/异步入口 |
+| `agent_sandbox.code_interpreter` | 固定解释器2.8.1 的模型和客户端 |
+| `agent_sandbox.ProviderSandbox` | 下文描述的异步 Provider、项目服务器、声明式和 MCP 扩展 |
+
+标准实现归属 `_standard/`，保留原始源码哈希、明确补丁及 MIT 署名。其 Connect
+消息仍使用 protobuf；`grpcio` 与旧 Python 引擎保持删除。Provider 扩展只消费
+结构化契约，由各自适配器负责协议、会话、端口和文件地址；运行时不依赖已安装的
+E2B 包。接口形状相同不等于后端能力已验收，暂停、快照等条件能力仍需相应环境。
+后续分层说明描述 Provider 扩展。
+
+
 ## 1. 架构总览图
 
 ```mermaid

@@ -8,7 +8,7 @@
 
 本文档介绍如何创建自定义 Agent Sandbox 模板，包括目录结构、字段参考、能力声明、注册命令和发布流程。
 
-模板是一个由纯文件组成的目录，可手写也可生成。`abx template init` 命令有三种生成方式（内置脚手架、一句话描述、适配已有源码的项目）；该工作流记录在 CLI 仓库：[模板编写（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authoring-templates.md)。
+模板是一个由纯文件组成的目录，可手写也可生成。`abx template scaffold` 命令有三种生成方式（内置脚手架、一句话描述、适配已有源码的项目）；该工作流记录在 CLI 仓库：[模板编写（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authoring-templates.md)。
 
 ---
 
@@ -153,7 +153,7 @@ OpenSandbox 以及没有 `[template]` 配置的提供者使用 `FROM python:3.12
 
 Python SDK 是运行时客户端，不构建也不部署模板。构建、推送并注册模板用 CLI：`abx template build` 和 `abx template deploy`（或 `abx deploy`）。见[构建与部署](build-and-deploy.md)。
 
-将模板发布到 GitHub、从本地或 registry 安装模板、适配已有项目（`abx template init --adopt`），或通过命令行构建并注册模板（`abx deploy`、`abx template deploy|create`），请使用 `abx` CLI；见[相关：abx CLI](#相关abx-cli)。
+将模板发布到 GitHub、从本地或 registry 安装模板、适配已有项目（`abx template scaffold --adopt`），或通过命令行构建并注册模板（`abx deploy`、`abx template deploy|create`），请使用 `abx` CLI；见[相关：abx CLI](#相关abx-cli)。
 
 ## 下一步
 
@@ -165,4 +165,4 @@ Python SDK 是运行时客户端，不构建也不部署模板。构建、推送
 
 ## 相关：abx CLI
 
-模板的命令行工作流记录在 CLI 仓库：[模板编写（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authoring-templates.md)（`abx template init`、`--adopt`、发布、`template install`）、[部署与构建](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/deploy-and-build.md)（`abx deploy`、`abx template deploy|create`）和[模板使用](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/using-templates.md)。
+模板的命令行工作流记录在 CLI 仓库：[模板编写（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authoring-templates.md)（`abx template scaffold`、`--adopt`、发布、`template install`）、[部署与构建](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/deploy-and-build.md)（`abx deploy`、`abx template deploy|create`）和[模板使用](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/using-templates.md)。

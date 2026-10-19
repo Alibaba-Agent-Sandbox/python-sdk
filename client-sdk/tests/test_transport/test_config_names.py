@@ -208,7 +208,7 @@ class TestExplain:
 class TestAudit:
     def test_retired_names_are_not_reported(self, iso, monkeypatch):  # noqa: F811
         monkeypatch.setenv("SANDBOX_API_KEY", "secret-value")
-        monkeypatch.setenv("E2B_API_KEY", "x")
+        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "x")
         iso.write_env("SANDBOX_REGION=cn-beijing\n")
         iso.write_toml('[transport]\napi_url = "https://t"\n')
         assert audit_config() == []

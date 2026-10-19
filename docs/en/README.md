@@ -31,7 +31,6 @@ The installer fetches the catalog index at `https://registry.agent-sandbox.cn/pr
 
 | Guide | Description |
 |-------|-------------|
-| [Paired source installation](guide/install-python.md) | Current source packages, extras and version alignment |
 | [Client SDK](guide/client-sdk.md) | What this side is, and how the guides below fit together |
 | [Getting Started](guide/getting-started.md) | Install, configure, first sandbox |
 | [Express quickstart](guide/express-quickstart.md) | Deploy a generation-2 template and call a named command |
@@ -44,7 +43,6 @@ The installer fetches the catalog index at `https://registry.agent-sandbox.cn/pr
 | [Session persistence](guide/session-persistence.md) | Local session storage |
 | [Migrate from E2B](guide/migrate-from-e2b.md) | Move from the E2B SDK |
 | [Providers](guide/providers.md) | Choose, install, and write a provider |
-| [Provider management commands](guide/provider-commands.md) | Discover and invoke provider resource operations through the shared engine |
 | [Environment variables](guide/environment-variables.md) | Injection and reads inside the sandbox |
 | [Troubleshooting](guide/troubleshooting.md) | Common failures |
 | [Comparison](guide/comparison.md) | Next to E2B, Modal, and Docker Sandbox |
@@ -146,4 +144,6 @@ These pages are reviews or target design, not the current specification.
 
 The `abx` CLI (npm `@agent-sandbox/cli`) is documented in the [`cli` repository](https://github.com/alibaba-agent-sandbox/agent-sandbox): [documentation index](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/README.md), [Getting Started](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/getting-started.md), [CLI Reference](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/cli-reference.md), [CLI Architecture](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/architecture.md), [CLI Command System](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/cli-design.md), [Templates Catalog](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/templates-catalog.md), [Deploy & Build](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/deploy-and-build.md), [Agent Skill Installation](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/agent-skill-installation.md).
 
-- [Adopt an existing Express account](guide/migrate-from-alicloud-express.md): resource reuse, API/config changes and bundled-provider updates.
+The [E2B migration contract](guide/migrate-from-e2b.md) defines synchronous Sandbox, asynchronous AsyncSandbox and the interpreter API; provider/server extensions use ProviderSandbox.
+
+- [Local conditional acceptance](guide/conditional-acceptance.md)

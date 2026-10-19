@@ -15,9 +15,9 @@ Quickstart demos showing core **Agent Sandbox** SDK capabilities — sandbox lif
 export $(grep -v '^#' ../../.env | xargs)
 
 # Or set manually
-export ABX_SANDBOX_API_KEY=your-api-key
-export ABX_SANDBOX_BASE_URL=https://api.cn-hangzhou.e2b.fc.aliyuncs.com
-export ABX_SANDBOX_DOMAIN=e2b.fc.aliyuncs.com
+export E2B_API_KEY=your-api-key
+export E2B_API_URL=https://api.cn-hangzhou.e2b.fc.aliyuncs.com
+export E2B_DOMAIN=e2b.fc.aliyuncs.com
 ```
 
 ## Demo List

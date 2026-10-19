@@ -9,7 +9,7 @@
 
 | 条目 | 状态 | 现状 |
 |---|---|---|
-| 1.1 密钥变量名 | 已完成 | 文档与代码统一为 `ABX_SANDBOX_API_KEY` |
+| 1.1 密钥变量名 | 已完成 | 文档与代码统一为 `E2B_API_KEY` |
 | 1.2 「兼容 E2B 协议 / drop-in」标语 | 已完成 | 标语已删，文档只说「E2B 形状的 API」及其差异 |
 | 1.3 全局 `--profile` | 已完成 | 已删除 |
 | 1.4 `config init` 引导范围 | 已完成 | 默认只问凭证和区域 |
@@ -50,9 +50,9 @@
 
 ### 1.1 文档里的密钥变量名不是代码读的那个
 
-`docs/zh/DESIGN.md` 和 `docs/en/DESIGN.md` 的「快速上手」写 `export SANDBOX_API_KEY=your-api-key`。代码里这个变量的规范名是 `ABX_SANDBOX_API_KEY`（`utils/config_keys.py`，`abx config` 与 `command-map.md` 也都用这个名字）。照着首页文档做的人会得到鉴权失败，却没有任何提示指向变量名。
+`docs/zh/DESIGN.md` 和 `docs/en/DESIGN.md` 的「快速上手」写 `export SANDBOX_API_KEY=your-api-key`。代码里这个变量的规范名是 `E2B_API_KEY`（`utils/config_keys.py`，`abx config` 与 `command-map.md` 也都用这个名字）。照着首页文档做的人会得到鉴权失败，却没有任何提示指向变量名。
 
-建议：把 DESIGN 里的变量改成 `ABX_SANDBOX_API_KEY`，并在 `abx config init` 的末尾打印「已写入的变量名」。这是纯文档修改。
+建议：把 DESIGN 里的变量改成 `E2B_API_KEY`，并在 `abx config init` 的末尾打印「已写入的变量名」。这是纯文档修改。
 
 ### 1.2 首页标语说「兼容 E2B 协议」，其余文档说「不是」
 
@@ -73,7 +73,7 @@
 
 ### 1.4 `abx config init` 把三种不相干的配置塞进同一次引导
 
-引导覆盖「凭证、区域、ACR 命名空间、LLM」。只想 `abx create --template base` 的人只需要第一项。ACR 是构建推送镜像用的，LLM 只服务 `abx create "描述"` 的 AI 建模板。结果是第一次运行要回答一串与当前目的无关的问题。
+引导覆盖「凭证、区域、ACR 命名空间、LLM」。只想 `abx create base` 的人只需要第一项。ACR 是构建推送镜像用的，LLM 只服务 `abx create --prompt "描述"` 的 AI 建模板。结果是第一次运行要回答一串与当前目的无关的问题。
 
 建议：`config init` 默认只问凭证和区域；`--with-build`、`--with-llm` 才追加其余两段，或者在第一次用到时再问。
 
@@ -87,7 +87,7 @@
 | `sb.agent.code()` / `sb.agent.shell()` | 只有设计稿，没有实现 | `design/built-in-agents.md` 自己写着「设计稿，本质是 `commands.run()` 的语法糖」；`api/sandbox.py` 没有 `agent` 属性 |
 | `BUILTIN_AGENTS` 关键字表 | 导出了，没有调用方 | `agent/builtin.py`（207 行）除 `__init__` 外无引用 |
 | `abx agent …` 一组命令 | 只有规格，CLI 没有这个命令 | `design/agents-api-cli-followups.md`；`abx agent --help` 报用法错误 |
-| 自然语言建模板的内置 Agent（`abx create "描述"`、`coding_agent`、`qwen_code`） | 真实现，但它是「生成模板」的工具，不是「运行 Agent」 | `cli/src/agent/*`，约 8,200 行 |
+| 自然语言建模板的内置 Agent（`abx create --prompt "描述"`、`coding_agent`、`qwen_code`） | 真实现，但它是「生成模板」的工具，不是「运行 Agent」 | `cli/src/agent/*`，约 8,200 行 |
 
 用户看到「Agent」这个词有五种含义。其中前三条合在一起是「已经被 Agents API 取代的另一套想法」，和刚删掉的自带 Agent 是同一类。
 

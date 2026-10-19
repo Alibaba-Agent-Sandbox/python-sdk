@@ -1,19 +1,20 @@
 # 在已有极速版账号上使用 Agent Sandbox
 
 这里更换的是客户端和工具，不是云后端。原账号、地域、Team、API Key、模板 ID/别名、
-Volume、RAM 角色都可以继续使用，不必仅为接入客户端而重建资源。目前没有已实现的
-零改动或一键迁移；应核对应用实际使用的 API。
+Volume、RAM 角色都可以继续使用，不必仅为接入客户端而重建资源。采用原生扩展时，应核对应用实际使用的 API。
 
 本指南面向 Python 和 CLI。公开的
 [Node SDK](https://github.com/Alibaba-Agent-Sandbox/nodejs-sdk/blob/main/README.md)
 当前只有 `ServerClient` 和配置名称，没有云端沙箱生命周期；不支持把 E2B JavaScript
 应用仅改导入到该包就完成迁移。
 
+本页介绍显式原生 ProviderSandbox 扩展及其 ABX 配置。标准同步/异步 E2B 兼容根入口，以及受支持范围内仅更换导入的迁移路径，见[标准迁移指南](migrate-from-e2b.md)。云端运行时和账号限制仍然适用。
+
 ## 需要修改的内容
 
 | 原极速版应用 | Agent Sandbox 客户端 |
 | --- | --- |
-| `from e2b import Sandbox` | `from agent_sandbox import Sandbox` |
+| `from e2b import Sandbox` | `from agent_sandbox import ProviderSandbox as Sandbox` |
 | 隐式读取 `E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN` | 显式配置 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL`、`ABX_SANDBOX_DOMAIN`，不静默读取旧名称。 |
 | `Sandbox.kill(id)` | `Sandbox.kill_by_id(id)` |
 | `sandbox.get_host(port)` | `sandbox.network.get_host(port)` |
@@ -40,7 +41,7 @@ AK/SK 及镜像仓库前提。API 的 `api_key`、`api_url`、`domain` 仍是对
 ```python
 import asyncio
 import os
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async def main():
     sandbox = await Sandbox.create(

@@ -4,17 +4,17 @@ The Python SDK (`agent-sandbox-client`) is the **runtime** client. It creates, u
 
 | Step | Command | Notes |
 |------|---------|-------|
-| Author | `abx template init` | Writes `Dockerfile`, `template.yaml`, `commands.py` |
+| Author | `abx template scaffold` | Writes `Dockerfile`, `template.yaml`, `commands.py` |
 | Build | `abx template build` | `docker build` the template directory |
 | Publish | `abx template deploy` (or `abx deploy`) | Build, push to Alibaba Cloud ACR, register the template, wait until it is ready |
-| Launch | `abx create --template <TEMPLATE_ID>` or `Sandbox.create(template=...)` | Runtime; this is where the SDK starts |
+| Launch | `abx create <TEMPLATE_ID>` or `Sandbox.create(template=...)` | Runtime; this is where the SDK starts |
 
 The full workflow, every option and the AI-assisted authoring steps are documented in the CLI's [Deploy and Build](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/deploy-and-build.md) guide.
 
 ## Using the result from Python
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async with await Sandbox.create(template="<TEMPLATE_ID or alias>") as sandbox:
     print(await sandbox.run("hello", name="Ada"))      # a command registered in the template's server

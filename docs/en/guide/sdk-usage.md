@@ -1,17 +1,13 @@
 # SDK Usage Guide
 
-For current SDK installation, use the [paired source installation guide](install-python.md).
-
-This document covers the complete usage of the Agent Sandbox Python SDK.
+This page documents the asynchronous **ProviderSandbox** provider/server extensions. For import-only E2B migration use root `Sandbox` / `AsyncSandbox` or `agent_sandbox.code_interpreter`, following [Migrate from E2B](migrate-from-e2b.md). Their synchronous/asynchronous calls and result models follow the pinned standard contract.
 
 ---
 
 ## Installation
 
 ```bash
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+pip install agent-sandbox-client
 ```
 
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
@@ -19,7 +15,7 @@ Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated projec
 ## Import
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 ```
 
 ---
@@ -31,7 +27,7 @@ Verified 2026-10-15 on Alibaba Cloud Express (`alicloud-express`) with a generat
 ```python
 import asyncio
 
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 TEMPLATE = "hello-x"  # name or id of a generation-2 template
 
@@ -508,7 +504,7 @@ This is the canonical pattern for AI Agent scenarios — create a sandbox, run t
 
 ```python
 import asyncio
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async def agent_workflow(task_code: str) -> str:
     """Agent → create sandbox → exec code → read result → kill sandbox"""

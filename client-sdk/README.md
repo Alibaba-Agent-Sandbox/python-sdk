@@ -5,7 +5,7 @@ For the current version, use the [paired source installation guide](../docs/en/g
 **Client SDK.** The product is Agent Sandbox. The import path is `agent_sandbox`. This package runs on your machine: create a sandbox, use it, and kill it. The HTTP service inside the image is [`agent-sandbox-server`](../server-sdk/README.md). Guide: [Client SDK](../docs/en/guide/client-sdk.md).
 
 Template build and deploy are done by the CLI (`abx template build|deploy`). Method names are
-E2B-shaped to ease migration; this is not a drop-in replacement (see the "Migrate from E2B" guide).
+The standard root Sandbox/AsyncSandbox and code_interpreter APIs follow Alibaba-supported E2B behavior: [migration guide](../docs/en/guide/migrate-from-e2b.md) ([中文](../docs/zh/guide/migrate-from-e2b.md)). Provider/server/declarative extensions use the explicit ProviderSandbox entry.
 
 This package is the `agent_sandbox` import namespace *except* `agent_sandbox.server`, which is
 the container-side runtime shipped separately as
@@ -19,11 +19,11 @@ The command-line tool (`abx`) is a separate Node.js project that lives in the [`
 
 ```bash
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
 ```
 
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
@@ -32,7 +32,7 @@ Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated projec
 
 ```python
 import asyncio
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 
 async def main():
@@ -70,7 +70,7 @@ and command POST requests are never automatically replayed.
 | `agent_sandbox.agent` | L5 — tool schemas, MCP stdio/HTTP servers |
 
 Run the MCP stdio server directly with `python -m agent_sandbox.agent.mcp`
-(reads `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL`, `ABX_SANDBOX_DOMAIN`, `ABX_DEFAULT_TEMPLATE`).
+(reads `E2B_API_KEY`, `E2B_API_URL`, `E2B_DOMAIN`, `ABX_DEFAULT_TEMPLATE`).
 
 ## Develop
 

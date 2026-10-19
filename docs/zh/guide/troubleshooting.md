@@ -42,7 +42,7 @@
 
 ```text
 [E1001] API key cannot be empty
-  Suggestion: Check your ABX_SANDBOX_API_KEY environment variable or pass sandbox_api_key.
+  Suggestion: Check your E2B_API_KEY environment variable or pass sandbox_api_key.
 ```
 
 **解决**：
@@ -54,7 +54,7 @@ abx config get sandbox_api_key
 abx config set sandbox_api_key your-api-key
 
 # 或设置环境变量
-export ABX_SANDBOX_API_KEY="your-api-key"
+export E2B_API_KEY="your-api-key"
 ```
 
 ### E1003 — AK/SK 凭证无效
@@ -97,7 +97,7 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
    ```
 3. 使用默认模板测试：
    ```bash
-   abx create --template base
+   abx create base
    ```
 
 ### E2009 — SandboxNotFoundError
@@ -199,7 +199,7 @@ abx exec sbx-xxxx "long-command" --timeout 300
 
 ## 构建与部署相关
 
-构建、推送、部署的错误（`E7xxx` 错误码，以及 `abx create` / `abx template init` 缺少 LLM Key）由 `abx` CLI 抛出，不属于这个 SDK。见 CLI 的排障指南和[构建与部署](build-and-deploy.md)。
+构建、推送、部署的错误（`E7xxx` 错误码，以及 `abx create` / `abx template scaffold` 缺少 LLM Key）由 `abx` CLI 抛出，不属于这个 SDK。见 CLI 的排障指南和[构建与部署](build-and-deploy.md)。
 
 ---
 
@@ -230,8 +230,8 @@ entries = await sandbox.files.list("/home/user")
 ```bash
 # 确保使用正确的包名
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
 
 # 如果遇到依赖冲突
 python -m pip check
@@ -259,4 +259,4 @@ python -m pip show agent-sandbox-client
 
 ## 相关：abx CLI
 
-CLI 特有的问题（找不到 `abx`、`abx deploy` 没有 Dockerfile、部署步骤长时间无输出、无效的快捷方式目标、`abx template init --adopt` 确认提示）见 CLI 仓库：[故障排查（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/troubleshooting.md)。
+CLI 特有的问题（找不到 `abx`、`abx deploy` 没有 Dockerfile、部署步骤长时间无输出、无效的快捷方式目标、`abx template scaffold --adopt` 确认提示）见 CLI 仓库：[故障排查（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/troubleshooting.md)。

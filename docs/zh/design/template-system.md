@@ -348,7 +348,7 @@ workdir: /app
 
 ```bash
 # 1. 初始化模板项目（生成 template.yaml, Dockerfile 等脚手架）
-abx template init my-template
+abx template scaffold my-template
 
 # 2. 本地开发和测试
 abx create ./my-template

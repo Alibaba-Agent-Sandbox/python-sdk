@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pytest
 
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 from agent_sandbox.models import errors as E
 from agent_sandbox.providers import registry, store
 

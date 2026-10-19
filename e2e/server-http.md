@@ -12,7 +12,7 @@ sets `ABX_SERVER_ENABLED_GROUPS=agents`.
 ## Run
 
 From `python-sdk/e2e` (the cloud `conftest.py` skips every test in this directory when
-`ABX_SANDBOX_API_KEY` is unset, so this file is run with `--noconftest`):
+`E2B_API_KEY` is unset, so this file is run with `--noconftest`):
 
 ```bash
 cd e2e

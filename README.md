@@ -2,23 +2,25 @@
 
 **English** | [中文](README.zh-CN.md)
 
+[Standard E2B migration contract](docs/en/guide/migrate-from-e2b.md)
+
 <!-- badges -->
 [![CI](https://github.com/alibaba-agent-sandbox/python-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/alibaba-agent-sandbox/python-sdk/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/agent-sandbox/python-sdk)](LICENSE)
 
 > Cloud sandboxes for AI agents — create, execute, and manage isolated environments in seconds.
 
-**Agent Sandbox** is a Python SDK for sandboxes. The default provider is Alibaba Cloud Express (`alicloud-express`, Function Compute). OpenSandbox, the container edition, CubeSandbox, and E2B are catalog `node` plugins in `awesome-providers` (`provider.mjs`). Install one with `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` (or `python -m agent_sandbox.providers install registry:<id> --yes`). After that, both `abx --provider <id>` and `Sandbox.create(provider="<id>")` use it. The Python SDK reaches a `node` provider through the local engine (`abx provider engine serve`; `abx` on `PATH` or `ABX_BIN`). The CLI loads Express plus installed `node`, `exec` and `rest` plugins. It is the
-**runtime** client: create, use and kill sandboxes. Building and deploying templates is done with
+**Agent Sandbox** is a Python SDK for sandboxes. The default provider is Alibaba Cloud Express (`alicloud-express`, Function Compute). OpenSandbox, the container edition, CubeSandbox, and E2B are catalog `node` plugins in `awesome-providers` (`provider.mjs`). Install one with `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` (or `python -m agent_sandbox.providers install registry:<id> --yes`). After that, both `abx --provider <id>` and `ProviderSandbox.create(provider="<id>")` use it. The Python SDK reaches a `node` provider through the local engine (`abx provider engine serve`; `abx` on `PATH` or `ABX_BIN`). The CLI loads Express plus installed `node`, `exec` and `rest` plugins. It is the
+standard sync/async runtime and Template client. Project provider/server template workflows use
 `abx template build|deploy` from the CLI. The SDK uses E2B-shaped method names so that E2B code
-ports with few changes; it is not a drop-in replacement (see [Migrate from E2B](docs/en/guide/migrate-from-e2b.md)).
+ports with few changes; the standard API follows Alibaba-supported E2B behavior (see [Migrate from E2B](docs/en/guide/migrate-from-e2b.md)).
 
 This repository (`python-sdk`) contains the **Python SDK**, packaged as two lock-step distributions. The `abx` command-line tool is a separate Node.js project that lives in the
 [`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) repository (see [Related: the abx CLI](#related-the-abx-cli)).
 
 | Folder | Distribution | Import path | Purpose |
 |--------|-------------------|-------------|---------|
-| [`client-sdk/`](client-sdk/) | `agent-sandbox-client` | `agent_sandbox` | Async client SDK: `Sandbox`, files, commands, code interpreter, named commands, declarative `@sandbox`, Agents API client, MCP server, E2B migration helper |
+| [`client-sdk/`](client-sdk/) | `agent-sandbox-client` | `agent_sandbox` | Sync/async client SDK: `Sandbox`, `AsyncSandbox`, `ProviderSandbox`, files, commands, code interpreter, named commands, declarative `@sandbox`, Agents API client, MCP server, E2B migration helper |
 | [`server-sdk/`](server-sdk/) | `agent-sandbox-server` | `agent_sandbox.server` | Container-side runtime: the persistent HTTP service (default port 9000) that runs *inside* a sandbox image |
 
 Both distributions share the `agent_sandbox` namespace (the client owns `agent_sandbox/__init__.py`,
@@ -43,12 +45,12 @@ Provider management operations are available through `agent_sandbox.providers.co
 
 ## Client SDK
 
-- **Async-first** — `Sandbox.create()`, shell execution, code interpretation, file I/O, port forwarding, and WebSocket streaming.
+- **Sync and async standard clients** — `Sandbox.create()` and `AsyncSandbox.create()`, shell execution, code interpretation, file I/O, port forwarding, and WebSocket streaming.
 - **Three execution primitives** — `sandbox.commands.run()` (bare shell), `sandbox.run_code()` (code interpreter), `sandbox.run("name", **kwargs)` (a command the Server SDK registered).
 - **MCP server** — expose sandbox operations as MCP tools for LLM agents.
 - **Declarative decorator** — `@sandbox` turns a plain function into a remote sandbox execution with automatic serialisation.
 - **Session persistence** — save and restore sandbox state across runs.
-- **E2B-shaped methods** — `agent_sandbox.compat` covers part of the E2B surface; see [Migrate from E2B](docs/en/guide/migrate-from-e2b.md).
+- **E2B-shaped methods** — `agent_sandbox.compat` re-exports the standard Sandbox and AsyncSandbox; see [Migrate from E2B](docs/en/guide/migrate-from-e2b.md).
 
 ## Server SDK
 
@@ -64,16 +66,16 @@ Current version 0.3.0 is not on PyPI. Use the [paired source installation guide]
 ```bash
 # Client and matching runtime
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
 
 # Optional extras (MCP + fast JSON + sessions + declarative)
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
 
 # Container-side runtime (install this inside your sandbox image)
-python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk"
+python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk"
 pip install playwright                       # only if you enable the browser capability group
 
 # Development (from the repository root; includes test & lint tooling for both packages)
@@ -90,11 +92,27 @@ console script); it is distributed from the [`cli`](https://github.com/alibaba-a
 
 ## Quick Start
 
-Set `ABX_SANDBOX_API_KEY` before the first create. The SDK does not read `E2B_API_KEY`. This snippet uses `python-base` because that image registers `hello`. `Sandbox.create()` with no template uses `base`.
+Configure `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL`, `ABX_SANDBOX_DOMAIN`. Replace E2B imports as described in the [migration guide](docs/en/guide/migrate-from-e2b.md).
+
+```python
+from agent_sandbox.code_interpreter import Sandbox
+
+sandbox = Sandbox.create(template="code-interpreter-v1")
+try:
+    print(sandbox.commands.run("printf hello").stdout)
+    print(sandbox.run_code("1 + 1").text)
+finally:
+    sandbox.kill()
+```
+
+## Provider and server extensions
+
+
+Set `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and `ABX_SANDBOX_DOMAIN` before creating a sandbox. This snippet uses `python-base` because that image registers `hello`. `Sandbox.create()` with no template uses `base`.
 
 ```python
 import asyncio
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async def main():
     async with await Sandbox.create(template="python-base") as sandbox:

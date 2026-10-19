@@ -24,7 +24,7 @@ repository; see "Related: the abx CLI" below.
 
 ## Architecture
 
-Five-layer architecture (lower layers never import upper layers):
+The ProviderSandbox/server extensions use this layered architecture; the standard source port is isolated under _standard and code_interpreter. Lower layers never import upper layers:
 
 - L1 Transport & Auth: HTTP/2 connection pooling, WebSocket, API Key / AK-SK auth
 - L2 Core Protocol: envd REST + WebSocket, sandbox lifecycle, filesystem, process, terminal, port
@@ -34,26 +34,49 @@ Five-layer architecture (lower layers never import upper layers):
 
 ## Key APIs
 
-### SDK (Python, async-first)
+### Standard SDK (Python, E2B behavior)
+
+The pinned contract is E2B 2.31.0 and Code Interpreter 2.8.1. Root Sandbox is
+synchronous; AsyncSandbox is asynchronous. Interpreter imports use their own namespace.
+Configure E2B_API_KEY, E2B_API_URL and E2B_DOMAIN, or project/home config.
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox.code_interpreter import Sandbox
 
-async with await Sandbox.create(template="python-hello") as sb:
-    result = await sb.run_code("print('hello')")      # code execution
-    await sb.files.write("/tmp/f.txt", b"data")       # file I/O
-    proc = await sb.commands.run("ls /tmp")            # raw shell command
-    out = await sb.run("hello", name="Ada")            # command registered in the sandbox server
+sb = Sandbox.create(template="code-interpreter-v1")
+try:
+    print(sb.commands.run("printf hello").stdout)
+    print(sb.run_code("1 + 1").text)
+finally:
+    sb.kill()
 ```
+
+Lists are lazy paginators. Preserve result models, errors, process handles and
+timeout units. Conditional backend restrictions remain; an API symbol does not
+enable pauseSession or a snapshot-capable runtime.
+
+### Provider/server extensions
+
+```python
+from agent_sandbox import ProviderSandbox
+
+async with await ProviderSandbox.create(template="python-hello") as sb:
+    print(await sb.run("hello", name="Ada"))
+```
+
+Named commands, custom providers, sessions and declarative calls use this explicit
+extension interface; do not treat it as a legacy mode of standard Sandbox.
 
 ## Source Layout
 
+- client-sdk/src/agent_sandbox/_standard/ — maintained pinned protocol/client source and provenance
+- client-sdk/src/agent_sandbox/code_interpreter/ — standard interpreter/context/result APIs
 - client-sdk/src/agent_sandbox/transport/ — HTTP, WebSocket, auth, codec
 - client-sdk/src/agent_sandbox/protocol/ — sandbox lifecycle, filesystem, process, terminal
 - client-sdk/src/agent_sandbox/models/ — Pydantic data models, error hierarchy
 - client-sdk/src/agent_sandbox/api/ — Sandbox class, file/code/command/network APIs
 - client-sdk/src/agent_sandbox/agent/ — MCP server, tool definitions
-- client-sdk/src/agent_sandbox/compat/ — E2B migration helper (partial)
+- client-sdk/src/agent_sandbox/compat/ — standard sync/async import aliases
 - client-sdk/src/agent_sandbox/declarative/ — @sandbox decorator
 - client-sdk/src/agent_sandbox/integrations/ — Framework adapters (planned — directory currently empty; see ADR 2026-09-23)
 - server-sdk/src/agent_sandbox/server/ — container-side runtime (`agent-sandbox-server`): HTTP routes, command registry, PTY, dev tools, browser

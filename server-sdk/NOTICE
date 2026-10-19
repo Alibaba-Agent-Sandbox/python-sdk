@@ -12,3 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+Includes MIT-licensed E2B 2.31.0 and Code Interpreter 2.8.1 protocol/client sources,
+ported into the Agent Sandbox namespace. Copyright FoundryLabs, Inc. and E2B authors.
+See agent_sandbox/_standard/LICENSE, code_interpreter/LICENSE and _standard/SOURCES.json.

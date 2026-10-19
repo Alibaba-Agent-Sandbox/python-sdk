@@ -12,7 +12,7 @@ stream requests for envd0.5 and Connect envelopes for envd0.6. The sandbox TTL
 and the create HTTP request timeout remain separate options.
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async with await Sandbox.create("base", timeout=300, request_timeout=30) as sb:
     result = await sb.commands.run("echo ready")

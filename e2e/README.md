@@ -9,6 +9,20 @@ because mocks cannot prove the product works (see the Definition of Done in
 > 中文说明见 [README.zh-CN.md](README.zh-CN.md). Known product defects pinned by this suite:
 > [KNOWN-ISSUES.md](KNOWN-ISSUES.md).
 
+## Standard E2B migration verification
+
+Run `python -m pytest e2e/test_standard_contract.py -ra` from the repository root
+for the standard Sandbox/AsyncSandbox and code_interpreter entry points. It
+checks actual cloud lifecycle, files, background stdin, interpreter contexts,
+callbacks, lazy pagination and network deny/restore. The separate native suites
+continue to exercise ProviderSandbox. Do not count their mocks as cloud evidence.
+
+Snapshot restoration additionally needs `E2E_SNAPSHOT_TEMPLATE`, naming a MicroVM
+template in an account with the snapshot allowlist. Without it that scenario is
+explicitly skipped. The test deletes its snapshots and tracks restored sandboxes.
+Conditional pause/resume requires a supported runtime/account; a preserved method
+alone is not verification. See the bilingual migration guide for service limits.
+
 ## Run
 
 ```bash
@@ -23,7 +37,7 @@ cd e2e && python -m pytest test_03_commands.py -k "timeout"   # a subset
 cd e2e && python -m pytest -m "not e2e_slow" -ra               # what `make e2e` runs, plus summary
 ```
 
-Required: `ABX_SANDBOX_API_KEY` (plus `ABX_SANDBOX_BASE_URL`/`ABX_SANDBOX_DOMAIN` for non-default
+Required: `E2B_API_KEY` (plus `E2B_API_URL`/`E2B_DOMAIN` for non-default
 regions). Values come from the environment or the gitignored `.env` files (`e2e/.env`, `.env`, `client-sdk/.env`);
 the environment wins.
 

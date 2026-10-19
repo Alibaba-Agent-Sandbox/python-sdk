@@ -10,7 +10,7 @@ envd0.5 的流请求使用原始 JSON，envd0.6 使用 Connect 封包。
 沙箱 TTL 与创建请求的 HTTP 超时仍是两个独立参数。
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async with await Sandbox.create("base", timeout=300, request_timeout=30) as sb:
     result = await sb.commands.run("echo ready")

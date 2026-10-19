@@ -1,7 +1,5 @@
 # Command and SDK map
 
-For current SDK installation, use the [paired source installation guide](install-python.md).
-
 Each row is the closest entry point for the same job in the three products. It is not parameter-for-parameter compatibility, and it does not shrink Agent Sandbox to a subset of either product.
 
 `abx` is the Agent Sandbox command line. The Python SDK is `agent-sandbox`. The default provider is Alibaba Cloud Express. After the `opensandbox` provider is installed, the `abx` command names stay the same and the calls go to an OpenSandbox server. That is a different command from running `osb`.
@@ -22,8 +20,8 @@ A cell with "—" means that side has no matching public command or method.
 
 | Job | abx | Agent Sandbox SDK | e2b | E2B SDK | osb | OpenSandbox SDK |
 |---|---|---|---|---|---|---|
-| Install | [CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md) | [paired source installation guide](install-python.md) | `npm install -g @e2b/cli` | `pip install e2b` | `pip install opensandbox-cli` | `pip install opensandbox` |
-| Store a credential | `abx config set sandbox_api_key` | environment variable `ABX_SANDBOX_API_KEY` | `e2b auth login` | environment variable `E2B_API_KEY` | `osb config set connection.api_key` | `ConnectionConfig(api_key=…)` or `OPEN_SANDBOX_API_KEY` |
+| Install | `npm install -g @agent-sandbox/cli` | `pip install agent-sandbox-client` | `npm install -g @e2b/cli` | `pip install e2b` | `pip install opensandbox-cli` | `pip install opensandbox` |
+| Store a credential | `abx config set sandbox_api_key` | environment variable `E2B_API_KEY` | `e2b auth login` | environment variable `E2B_API_KEY` | `osb config set connection.api_key` | `ConnectionConfig(api_key=…)` or `OPEN_SANDBOX_API_KEY` |
 | Show the effective config | `abx config list` | — | `e2b auth info` | — | `osb config show` | — |
 
 Alibaba Cloud access keys keep the official names `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. The OpenSandbox address is `osb config set connection.domain`, and the environment variable is `OPEN_SANDBOX_DOMAIN`.
@@ -32,7 +30,7 @@ Alibaba Cloud access keys keep the official names `ALICLOUD_ACCESS_KEY_ID` and `
 
 | Job | abx | Agent Sandbox SDK | e2b | E2B SDK | osb | OpenSandbox SDK |
 |---|---|---|---|---|---|---|
-| Create | `abx create --template <name>` | `Sandbox.create(template=…)` | `e2b sandbox create [template]` | `Sandbox.create(template)` | `osb sandbox create --image <image>` | `Sandbox.create("<image>")` |
+| Create | `abx create <name>` | `Sandbox.create(template=…)` | `e2b sandbox create [template]` | `Sandbox.create(template)` | `osb sandbox create --image <image>` | `Sandbox.create("<image>")` |
 | Attach to an existing sandbox | `abx connect <id>` | `Sandbox.connect(id)` | `e2b sandbox connect <id>` | `Sandbox.connect(id)` | — | `Sandbox.connect(sandbox_id)` |
 | List | `abx list` | `Sandbox.list()` | `e2b sandbox list` | `Sandbox.list()` | `osb sandbox list` | a manager lists sandboxes |
 | Inspect one | `abx info <id>` | `sandbox.refresh_info()` | `e2b sandbox info <id>` | read the object after create or connect | `osb sandbox get <id>` | read the object after connect |
@@ -88,7 +86,7 @@ E2B file operations live on the SDK. The CLI reaches files through `e2b sandbox 
 
 | Job | abx | Agent Sandbox SDK | e2b | E2B SDK | osb | OpenSandbox SDK |
 |---|---|---|---|---|---|---|
-| Scaffold a local project | `abx template init` | — | `e2b template init` | the `Template()` builder | — | — |
+| Scaffold a local project | `abx template scaffold` | — | `e2b template init` | the `Template()` builder | — | — |
 | Build and publish | `abx template deploy`; the steps are `build` and `push` | — (the CLI builds and deploys) | `e2b template create <name>` (`template build` is deprecated) | `Template.build` | `osb template create --image … --publish …` | the SDK template API |
 | List | `abx template list` | — | `e2b template list` | the template API | `osb template list` | the same API |
 | Inspect | `abx template info` | — | — | — | `osb template get <id>` | the same API |

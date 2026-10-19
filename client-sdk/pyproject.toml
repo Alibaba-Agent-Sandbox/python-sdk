@@ -26,10 +26,20 @@ classifiers = [
 ]
 
 dependencies = [
-    "httpx[http2]>=0.27",
+    "httpx[http2]>=0.27,<1",
+    "httpcore>=1.0.5,<2",
+    "h2>=4,<5",
+    "python-dateutil>=2.8.2",
+    "attrs>=23.2",
+    "packaging>=24.1",
+    "typing-extensions>=4.1",
+    "wcmatch>=10.1,<11",
+    "dockerfile-parse>=2.0.1,<3",
+    "rich>=14",
     "websockets>=16.1.1",
     "pydantic>=2.14.0",
     "python-dotenv>=1.0",
+    "protobuf>=5",
     "tomli>=2.0; python_version < '3.11'",
     # Lock-step release: the container-side runtime (``agent_sandbox.server``) used to ship inside
     # ``agent-sandbox-client`` itself, so it stays a hard dependency. Keep the pin equal to ``_version.py``.
@@ -103,6 +113,7 @@ markers = [
 target-version = "py310"
 line-length = 100
 src = ["src", "tests"]
+extend-exclude = ["*_pb2.py", "*_pb2_grpc.py", "src/agent_sandbox/_standard", "src/agent_sandbox/code_interpreter"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "TCH"]
@@ -116,6 +127,7 @@ python_version = "3.10"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
+exclude = ["src/agent_sandbox/_standard/", "src/agent_sandbox/code_interpreter/"]
 
 # ``tomli`` is only present as a fallback on older interpreters (the stdlib ``tomllib`` is
 # unavailable before Python 3.11).
@@ -125,3 +137,9 @@ module = [
 ]
 ignore_missing_imports = true
 follow_imports = "skip"
+
+# The pinned protocol port retains upstream generated schemas and typing style.
+[[tool.mypy.overrides]]
+module = ["agent_sandbox._standard.*", "agent_sandbox.code_interpreter.*"]
+follow_imports = "skip"
+ignore_errors = true

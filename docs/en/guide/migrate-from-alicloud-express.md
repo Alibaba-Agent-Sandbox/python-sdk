@@ -2,19 +2,20 @@
 
 This changes your client/tooling, not your cloud provider. Keep your account, region,
 Team, API key, template IDs/aliases, Volumes and RAM roles. Existing resources do not
-need to be recreated just to use the client. There is no implemented zero-change or
-one-click migration. Review the API calls your application actually uses.
+need to be recreated just to use the client. Review the native API calls your application actually uses.
 
 This guide covers Python and the CLI. The public
 [Node SDK](https://github.com/Alibaba-Agent-Sandbox/nodejs-sdk/blob/main/README.md)
 currently provides `ServerClient` and configuration names, not cloud sandbox lifecycle.
 Changing an E2B JavaScript import to that package is not a supported migration.
 
+This page adopts the explicit native ProviderSandbox extensions and their ABX configuration. For the standard sync/async E2B-compatible root entries and import-only supported migration, read the [standard migration guide](migrate-from-e2b.md). Existing backend/runtime restrictions still apply.
+
 ## What changes
 
 | Existing Express application | Agent Sandbox client |
 | --- | --- |
-| `from e2b import Sandbox` | `from agent_sandbox import Sandbox` |
+| `from e2b import Sandbox` | `from agent_sandbox import ProviderSandbox as Sandbox` |
 | Implicit `E2B_API_KEY`, `E2B_API_URL`, `E2B_DOMAIN` | Explicit `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL`, `ABX_SANDBOX_DOMAIN`; old names are not silently read. |
 | `Sandbox.kill(id)` | `Sandbox.kill_by_id(id)` |
 | `sandbox.get_host(port)` | `sandbox.network.get_host(port)` |
@@ -45,7 +46,7 @@ After installing a compatible client/server release using the
 ```python
 import asyncio
 import os
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async def main():
     sandbox = await Sandbox.create(

@@ -11,7 +11,7 @@ This tutorial covers the lifecycle from install through teardown.
 ## Prerequisites
 
 - Python 3.10 or later
-- For the default provider (`alicloud-express`): an API key from the [Agent Sandbox product docs](https://help.aliyun.com/zh/functioncompute/product-overview-of-fc-agent-sandbox). The variable is `ABX_SANDBOX_API_KEY`. The SDK does not read `E2B_API_KEY`.
+- For the default provider (`alicloud-express`): an API key from the [Agent Sandbox product docs](https://help.aliyun.com/zh/functioncompute/product-overview-of-fc-agent-sandbox). The variable is `E2B_API_KEY`. The standard SDK reads `E2B_API_KEY`, `E2B_API_URL` and `E2B_DOMAIN`.
 - Network access to the Alibaba Cloud Hangzhou region (default `cn-hangzhou`)
 
 ## 1. Installation
@@ -19,13 +19,13 @@ This tutorial covers the lifecycle from install through teardown.
 ```bash
 # Install the SDK
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
 
 # Install with all extras (recommended)
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
 ```
 
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
@@ -62,12 +62,12 @@ sandbox = await Sandbox.create(sandbox_api_key="your-api-key-here")
 ### Option 2: Environment variable (recommended for CI/CD)
 
 ```bash
-export ABX_SANDBOX_API_KEY="your-api-key-here"
+export E2B_API_KEY="your-api-key-here"
 ```
 
 ### Option 3: Persisted file (`~/.abx/.env`)
 
-Used when neither the environment nor the project `.env` sets the key. The file is written by the `abx` CLI (`abx config set sandbox_api_key your-api-key`, permissions 600; see [Related: the abx CLI](#related-the-abx-cli)) or edited by hand: `ABX_SANDBOX_API_KEY=your-api-key`.
+Used when neither the environment nor the project `.env` sets the key. The file is written by the `abx` CLI (`abx config set sandbox_api_key your-api-key`, permissions 600; see [Related: the abx CLI](#related-the-abx-cli)) or edited by hand: `E2B_API_KEY=your-api-key`.
 
 ## 3. Create Your First Sandbox
 

@@ -21,7 +21,7 @@ When `api_key` is set, the client sends `X-API-Key`. When it is unset, the clien
 `domain` is the suffix in port hosts `{port}-{sandboxID}.{domain}`.
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 sb = await Sandbox.create(
     provider="cubesandbox",

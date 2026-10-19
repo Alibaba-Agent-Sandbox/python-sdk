@@ -11,7 +11,7 @@
 ## 前置条件
 
 - Python 3.10 或更高版本
-- 默认提供方是 `alicloud-express`。API Key 从[智能体沙箱产品文档](https://help.aliyun.com/zh/functioncompute/product-overview-of-fc-agent-sandbox)获取。变量名是 `ABX_SANDBOX_API_KEY`。SDK 不读取 `E2B_API_KEY`。
+- 默认提供方是 `alicloud-express`。API Key 从[智能体沙箱产品文档](https://help.aliyun.com/zh/functioncompute/product-overview-of-fc-agent-sandbox)获取。变量名是 `E2B_API_KEY`。标准 SDK 读取 `E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN`。
 - 网络可访问阿里云杭州区域（默认 `cn-hangzhou`）
 
 ## 1. 安装
@@ -19,13 +19,13 @@
 ```bash
 # 安装 SDK
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
 
 # 安装全部额外依赖（推荐）
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/e86cb0be24e0083a27396b260298e7cf27b660d6.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
 ```
 
 不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。
@@ -60,12 +60,12 @@ sandbox = await Sandbox.create(sandbox_api_key="your-api-key-here")
 ### 方式二：环境变量（推荐用于 CI/CD）
 
 ```bash
-export ABX_SANDBOX_API_KEY="your-api-key-here"
+export E2B_API_KEY="your-api-key-here"
 ```
 
 ### 选项 3：持久化文件（`~/.abx/.env`）
 
-环境变量和项目 `.env` 都没写这个键时，才用这里保存的值。该文件由 `abx` CLI 写入（`abx config set sandbox_api_key your-api-key`，权限 600；见[相关：abx CLI](#相关abx-cli)），也可以手工编辑：`ABX_SANDBOX_API_KEY=your-api-key`。
+环境变量和项目 `.env` 都没写这个键时，才用这里保存的值。该文件由 `abx` CLI 写入（`abx config set sandbox_api_key your-api-key`，权限 600；见[相关：abx CLI](#相关abx-cli)），也可以手工编辑：`E2B_API_KEY=your-api-key`。
 
 ## 3. 创建第一个 Sandbox
 

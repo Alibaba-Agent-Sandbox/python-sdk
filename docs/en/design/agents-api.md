@@ -557,7 +557,7 @@ does not exist.
 ## 7. Python client (`agent_sandbox.agents`)
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 from agent_sandbox.agents import Agent, Runner, Session
 
 async with await Sandbox.create(template="base") as sb:

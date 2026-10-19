@@ -6,7 +6,11 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from agent_sandbox.models.errors import ProviderConflictError, ProviderNotFoundError
+from agent_sandbox.models.errors import (
+    ProviderConfigError,
+    ProviderConflictError,
+    ProviderNotFoundError,
+)
 from agent_sandbox.providers import store
 from agent_sandbox.providers.alicloud_express.provider import AlicloudExpressProvider
 from agent_sandbox.providers.base import Provider, ordered_features
@@ -225,16 +229,16 @@ def ambient_provider_id() -> str:
 
 
 def parse_sandbox_ref(ref: str) -> tuple[str | None, str]:
-    """Split ``provider:sandbox_id``; the prefix counts only if it names a known provider."""
+    """Split ``provider:sandbox_id``; explicit namespaces must resolve before backend work."""
     if ":" in ref:
         prefix, _, rest = ref.partition(":")
-        valid = prefix == BUILTIN_PROVIDER_ID or validate_provider_id(prefix) is None
-        if rest and valid:
-            try:
-                get_provider(prefix)
-            except ProviderNotFoundError:
-                return None, ref
-            return prefix, rest
+        if not rest:
+            raise ProviderConfigError(f"Sandbox reference '{ref}' is missing its sandbox id.")
+        problem = None if prefix == BUILTIN_PROVIDER_ID else validate_provider_id(prefix)
+        if problem is not None:
+            raise ProviderConfigError(f"Invalid provider namespace '{prefix}': {problem}.")
+        get_provider(prefix)
+        return prefix, rest
     return None, ref
 
 

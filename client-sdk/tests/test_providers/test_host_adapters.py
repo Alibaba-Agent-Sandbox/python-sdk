@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 from agent_sandbox.models import errors as E  # noqa: N812
 from agent_sandbox.models.sandbox import SandboxConfig
 from agent_sandbox.providers import exec_provider as xp

@@ -222,11 +222,11 @@ async def test_error_response_is_mapped(tmp_path):
 
 @pytest.mark.asyncio
 async def test_secret_values_are_redacted_everywhere(tmp_path):
-    secret = "s3cr3t-token-value"
+    secret = "s3cr3t-token-value"  # placeholder for the redaction regression
     client = _client(
         tmp_path,
         serve(f"""
-        sys.stderr.write("token=" + {secret!r} + "\\n"); sys.stderr.flush()
+        sys.stderr.write("token=" + {secret!r} + "\\n"); sys.stderr.flush()  # placeholder redaction payload
         send({{"jsonrpc": "2.0", "id": msg["id"], "error": {{"code": -32000, "message": "bad " + {secret!r}}}}})
     """),
         secrets=[secret],
@@ -273,7 +273,6 @@ class TestScrubbedEnv:
                 "PATH": "/bin",
                 "HOME": "/h",
                 "LC_ALL": "C",
-                "ABX_SANDBOX_API_KEY": "secret",
                 "E2B_API_KEY": "secret",
                 "AWS_SECRET_ACCESS_KEY": "secret",
                 "MY_PASS": "yes",

@@ -1,3 +1,5 @@
+> The standard public API is now synchronous Sandbox / asynchronous AsyncSandbox. The provider/server extension design below uses ProviderSandbox, including its native `_sync` wrappers; it does not define the standard client API. Standard clients do not switch protocol when `ABX_PROVIDER` changes. See [migration](../guide/migrate-from-e2b.md).
+
 # SDK API Design
 
 > The `agent-sandbox-client` package is the **runtime** client: create a sandbox, use it, kill it. It offers two ways to write that code (imperative and declarative). Building and deploying templates belongs to the `abx` CLI, and running an agent belongs to the Agents API.
@@ -25,14 +27,14 @@
 - **One way to run an agent.** The Agents API (`/v1/agents/**`) on the SandboxServer. The SDK has no `sb.agent.*` helpers.
 - **Typed, explicit surface.** No `__getattr__` dispatch; every method has a signature that mypy checks (`py.typed`).
 - **Async first, sync twin.** Every coroutine has a `_sync` twin that manages an event loop for you.
-- **Honest E2B-shaped names.** Method names follow the E2B SDK to ease porting, and `agent_sandbox.compat` is a small, partial migration helper. The wire protocol, configuration and error model are Agent Sandbox's own. See [E2B compatibility](../explanation/e2b-compatibility.md).
+- **Explicit standard and extension contracts.** This page describes the native ProviderSandbox protocol, configuration and error model. `agent_sandbox.compat` re-exports standard `Sandbox` / `AsyncSandbox`; those clients and `code_interpreter` follow the pinned Alibaba-supported E2B contract. See [Migrate from E2B](../guide/migrate-from-e2b.md).
 
 ---
 
 ## Paradigm 1: Imperative
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 sb = await Sandbox.create(template="code-interpreter")
 
@@ -173,7 +175,7 @@ Results are Pydantic models: `CodeResult`, `ProcessResult`, `ProcessChunk`, `Fil
 Every exception derives from `SandboxError` and carries `code`, `message`, `suggestion` and `docs_url`.
 
 ```python
-from agent_sandbox import Sandbox, SandboxError
+from agent_sandbox import ProviderSandbox as Sandbox, SandboxError
 from agent_sandbox.models.errors import TemplateNotFoundError, TimeoutError
 
 try:
@@ -197,7 +199,7 @@ The full code list is in [Error codes](../reference/error-codes.md).
 | Not provided | Use instead |
 |--------------|-------------|
 | Template build, push, deploy (`Image`, `DockerBuilder`, `Sandbox.deploy`) | `abx template build` and `abx template deploy` |
-| Natural-language sandbox creation, `Sandbox.plan()` | `abx create "DESCRIPTION"` and `abx template init "DESCRIPTION"` in the CLI |
+| Natural-language sandbox creation, `Sandbox.plan()` | `abx create --prompt "DESCRIPTION"` and `abx template scaffold "DESCRIPTION"` in the CLI |
 | `sb.agent.*` helpers, `Agent(...)` | The [Agents API](../guide/agents-api.md) |
 | `Sandbox.custom()`, `run_command()`, `custom_commands` in `template.yaml` | `sandbox.run(name, **kwargs)` with a server-registered command |
 | `SandboxPool` | Not planned; create sandboxes per task |

@@ -9,7 +9,7 @@ import sys
 
 import pytest
 
-from agent_sandbox import Sandbox
+from agent_sandbox.api.sandbox import Sandbox
 
 
 @pytest.mark.parametrize("envd_version", ["0.5.2", "0.6.1"])

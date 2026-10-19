@@ -98,8 +98,10 @@ class TestRegistry:
         installer.install(str(LOCAL_PROCESS), yes=True)
         assert parse_sandbox_ref("local-process:abc") == ("local-process", "abc")
         assert parse_sandbox_ref("abc") == (None, "abc")
-        assert parse_sandbox_ref("unknown-prov:abc") == (None, "unknown-prov:abc")
-        assert parse_sandbox_ref("local-process:") == (None, "local-process:")
+        with pytest.raises(E.ProviderNotFoundError):
+            parse_sandbox_ref("unknown-prov:abc")
+        with pytest.raises(E.ProviderConfigError):
+            parse_sandbox_ref("local-process:")
         assert qualify("alicloud-express", "sb1", ambient="alicloud-express") == "sb1"
         assert qualify("alicloud-express", "sb1", ambient="local-process") == "alicloud-express:sb1"
         assert qualify("local-process", "sb1", ambient="alicloud-express") == "local-process:sb1"

@@ -1,0 +1,960 @@
+{
+  "base": "e2b==2.31.0",
+  "interpreter": "e2b-code-interpreter==2.8.1",
+  "namespace_rewrite": "e2b -> agent_sandbox._standard; e2b_code_interpreter -> agent_sandbox.code_interpreter",
+  "files": [
+    {
+      "source": "e2b-2.31.0/e2b/paginator.py",
+      "sha256": "dc78b4a20768fa6fe1a6c17d8c06e36327df71c3fb92ff987c3e26ee76f1cc20"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/__init__.py",
+      "sha256": "72dc3e2bbcf4f2079390b438afe4e336078aac8414a38aec12a2194ad813c091"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/exceptions.py",
+      "sha256": "240d3041be4d5b9a07bbbde362b99ec66ffc3546fe05f32ee5bf7d4eee52f316"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/connection_config.py",
+      "sha256": "048a5aaa23de536cbf7bcd5ffb9de5be41df57c6817a5397b5d11d3d779a49dc"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/io_utils.py",
+      "sha256": "6704bf131c658d579075d5cef6a7c85c26835136417054e6635b66300c97adaf"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_domains.py",
+      "sha256": "2e35dc788f9f5b26eceff362be1f728a7c381f25c0e45f1749b34c1f11c5e288"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/py.typed",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/signature.py",
+      "sha256": "c6066b2bd874a26df95a4867f7d3dec93d0651eae5035d56ffe7a6723cc46b76"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/main.py",
+      "sha256": "b6e8b4d72749fc5afac3fcf1e6133ed97096709b588cd5de0d204bfe1caee6d2"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/mcp.py",
+      "sha256": "66ddbdd5093af9c5d1c1dfcae6f285c9b441aaa0eaf52e7f1ec392f37419ad89"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/sandbox_api.py",
+      "sha256": "f310ce7b6516e6a5ee73050ad108c62dc7c7b7faedebe714dbe4b4e9f7c7f0b4"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/network.py",
+      "sha256": "a7f7753a05a8f43538ac5a542810c2072adb6f514c76a6609b1d998f96c63f79"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/utils.py",
+      "sha256": "13663666158e7eae063e522830fdb69837c82eb8132f654c7df12c3ff2dbe4e8"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_async/main.py",
+      "sha256": "9f83bc7e19533bab49f288a8d13b2f823fe4659c6825186ebd037b5b371e5c9e"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_async/paginator.py",
+      "sha256": "bc29b0eaf264028b39463570dd0a3e91b736f358049d748202b282ea9270b8fa"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_async/git.py",
+      "sha256": "3aa653c12b0b9b09427778abd5a6b8cf607c11446e097d14de4471d3d31d16ff"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_async/sandbox_api.py",
+      "sha256": "f11c55abb6b7fb2fecf54f0fb278ec0a70a6a2f5b0e4fa45b84000b0070d1ffc"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_async/utils.py",
+      "sha256": "9a99619e80dab753ecc0392c0259f3d99a78cf350648876bffbea488561940af"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/__init__.py",
+      "sha256": "0b6ffe67dbf63b2fcb7ff33d4015a3c51954793ea82c64187901226477788e64"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/metadata.py",
+      "sha256": "f02a8a1553224bc67c4d24e18a99b7bcf05ebb17104a591b8cbea08d9503154b"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/volume_sync.py",
+      "sha256": "8a3e2b2a96c3e305f23facf84ba4a9acdc8286441c73b9a4e59caab4828faaff"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/types.py",
+      "sha256": "3daa2597947954e84571681b28fa5b032c15023724fb8899ac07eea7da6634a8"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/connection_config.py",
+      "sha256": "61f4562bf8c97643bcd474a23be786ff6e5772a5fa787d87c1484dad45b202ad"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/utils.py",
+      "sha256": "7427f27175afa87a8541a409ade3f2d81d0c424e3f898d636d7fe6949cc324d8"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/volume_async.py",
+      "sha256": "ceecdd06bd1c6b224c21c11000afe557ac48168e18331403aaf70db21ed1dd5b"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/template_sync/main.py",
+      "sha256": "9fa89666a2544a7bb2d2ea0a3c5d49dbe0918cd04a9478a7fc4af7199f9e7014"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/template_sync/build_api.py",
+      "sha256": "64a678f82f988b5616a4caa74443e4127fe04088ab8859ee936c40e5e1b9a655"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_sync/main.py",
+      "sha256": "38b1870bf17db1d332f1a6e771b0baa0620e663eb906c0c21d9a5eea67bd19d9"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_sync/paginator.py",
+      "sha256": "3dc0197153f0565dff6a2d46732944fc8b0e4a42feac499e7173baab794df3ca"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_sync/git.py",
+      "sha256": "9b7cab9549286d42f16fe1c14189b5ffcea2d2338ba32c59162ad88240959c97"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_sync/sandbox_api.py",
+      "sha256": "2254df7ec87e733686ade1c49524a87b3c5266fe726630f4dcd5642c9dcae10c"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/template_async/main.py",
+      "sha256": "5dd45148d8d4d5dfd1b05d0fbb4abad18267b78180a4a688ff704c80d55a6f2d"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/template_async/build_api.py",
+      "sha256": "3a4895f67ab43a28d4ba01c69ec663e595aff3bfab2670f6cdd85830a5e59790"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/envd/versions.py",
+      "sha256": "133c6460a7e02918d462db00617e055e5313c07db26e1f3b8569e9aea8a62430"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/envd/api.py",
+      "sha256": "d5f8d8c22d73aeec43c11bb0b5cc3250a0449ae2721fdb273c450c0f7f79b509"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/envd/rpc.py",
+      "sha256": "ac9c3ff0415dc830a2eec010bc7dcaddb264a4074b3883f975ea646e0ef9d7c3"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/template/dockerfile_parser.py",
+      "sha256": "42b9ef27ed21f9af5cf299dbce4244624c10e2396c53a946e390bb47e755bc45"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/template/main.py",
+      "sha256": "f327caba6c528eb65b5a2082ee72e61321aab27ea2eca0de8ac1ecdc9a440750"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/template/readycmd.py",
+      "sha256": "6585d27f11c18444f91bc1b8b8bcc1f5ddc50bb9a8695133a11540ab0f80d620"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/template/consts.py",
+      "sha256": "981e9e90493741e73f4fa14d5e0543675b8ecb41d0e0d8a6997e566619391845"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/template/types.py",
+      "sha256": "a2d12d479dc58377442ce85181f8ccdab2a43b56167e9ef53e180bd78ea9df8c"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/template/logger.py",
+      "sha256": "8996a24b05cec2b489061676bea36ed56d1740c1d8cd80adfc2e7e073f460703"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/template/utils.py",
+      "sha256": "28b74c1f921219c0069fdbde7397e011bd232b48bdbee11af1ab4b5a003cb0b8"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/envd/process/process_pb2.py",
+      "sha256": "5a0bb522fdc24523758f8bf46f9c82a5d3dd834c22ad35d2d86caa2ea4eff8a6"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/envd/process/process_connect.py",
+      "sha256": "b54db205ff8aff8a5a4f8622abd8b5680b640d63d610e4d51eeeef96a72d7c4e"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/envd/filesystem/filesystem_connect.py",
+      "sha256": "d13df00fbc864ff4cc3cd3acb25f7d72c869fa138ed564a225bbd45081cf79eb"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/envd/filesystem/filesystem_pb2.py",
+      "sha256": "c4f176df22fe21f9445188fadf9455fbf305b1f0bbf23a016814cb30a49a8625"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_sync/filesystem/watch_handle.py",
+      "sha256": "fb751d393c68f9dec34dc955d367e651148840efff2fac2c3746ae0042f4ac50"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_sync/filesystem/filesystem.py",
+      "sha256": "bcb5e4b754ac64038313c2729f7ff04a78d46a4cf55ba3b9c63ec47afc00d72c"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_sync/commands/pty.py",
+      "sha256": "38a287d2268d67128c3d79f209780528036d7ff7ce7b11eee995ee119a47bc66"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_sync/commands/command.py",
+      "sha256": "e4a8d04813ff0a096c26fb3a2b8e90a68825a64c19950516b7fda9b7470ec7dd"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_sync/commands/command_handle.py",
+      "sha256": "35dfd0db2ab1a3cd83946d43f622db388493ffbe3fbdfb80bf4d5b3e0f503852"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client_async/__init__.py",
+      "sha256": "52d162df70f8ee443b5951820cd3266a7d2724fa32854ff9867024130ee2b716"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/errors.py",
+      "sha256": "80ef060662aa992360020f84e684fea0ecb1cedbe9ed5ffa5c6ece5134f5e6ad"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/client.py",
+      "sha256": "3ba32221b4e0fd9facce188d8bc461681c08edc862df2f71bcf7e762219731be"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/__init__.py",
+      "sha256": "d2cefce220d68f2e761cec6b09d41555e17c16aadcf60ce1d5c2e931df6c380f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/types.py",
+      "sha256": "017e28af14194096addef66b82327e4d86f6b0d04bf24368f72a980d3fa7f32f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/py.typed",
+      "sha256": "f19254b31662b8ecb5a0979586c4d64214c6ffaa535475579398492fbf5e6d39"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client_sync/__init__.py",
+      "sha256": "eb8b408d2409d60781a377187ad60c46dfdd6460ca881c4b5edd4e9f61688637"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/api/__init__.py",
+      "sha256": "cd34a21bfba34a302a58fc9ce37e585da5fd5d39693238895816d5f9ff98b5d0"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/models/volume_entry_stat_type.py",
+      "sha256": "da51c057ded60fa2c01231e577c427f590d48f8628f2fbc04ed61078a5f8e1c7"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/models/__init__.py",
+      "sha256": "d8e2586a3b0dd9d88cd76dfc6479d48ea8634936c388fd8a2e696684c2d45ba5"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/models/error.py",
+      "sha256": "7b87bd3a62df05e502e249bf91b19f6a0ed385f8d2d616945edfc2568aeaa941"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/models/volume_entry_stat.py",
+      "sha256": "64c831ad9e95d0a2d9626cd01496a442812aca85bcb058989fbe7e3610790f25"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/models/patch_volumecontent_volume_id_path_body.py",
+      "sha256": "f1ea5188e4ec1256ff486f8f911f49b7a8fe2b18e8278d19acd32c455edfd3e7"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/api/volumes/patch_volumecontent_volume_id_path.py",
+      "sha256": "3cc0e1d23e1784e2fb54c852c2f2f96f80fee74100fbcda3e97d541354bebee6"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/api/volumes/get_volumecontent_volume_id_dir.py",
+      "sha256": "46083996fbc120e42501413094d77ae5a54bcb086055cc9bc059474f2f8c3081"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/api/volumes/post_volumecontent_volume_id_dir.py",
+      "sha256": "dfa173c3f1c093e502bd82fcd1ccc94246c73a44e68132c9ac6da51b5731a7bd"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/api/volumes/__init__.py",
+      "sha256": "e6f77db895808d1a9af71cf1cd890b0f5ca8675d8b77f6c068d079597e1f6c4f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/api/volumes/put_volumecontent_volume_id_file.py",
+      "sha256": "ed5b1ecbb268b009c21aecad43caeea03a7701b507ea93fab08885d80a809ffc"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/api/volumes/get_volumecontent_volume_id_file.py",
+      "sha256": "a4f0dce0e2e744865414e9ff117e25c1f3c47b932921d164ffda33b21c793b02"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/api/volumes/get_volumecontent_volume_id_path.py",
+      "sha256": "d681ad426b61b3855b5ffc749898c99791fceb4694b721fb962e7afb9c07fe5c"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/volume/client/api/volumes/delete_volumecontent_volume_id_path.py",
+      "sha256": "e7803318819e7232cfd9e278c242d3989a36918bef2551194e64c5f2c655b7e3"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client_async/__init__.py",
+      "sha256": "2f016d16b714464ea84f64644c94ef69c693dd4eef90c710f2fe7da09e8b3e18"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/errors.py",
+      "sha256": "80ef060662aa992360020f84e684fea0ecb1cedbe9ed5ffa5c6ece5134f5e6ad"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/client.py",
+      "sha256": "3ba32221b4e0fd9facce188d8bc461681c08edc862df2f71bcf7e762219731be"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/__init__.py",
+      "sha256": "d2cefce220d68f2e761cec6b09d41555e17c16aadcf60ce1d5c2e931df6c380f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/types.py",
+      "sha256": "017e28af14194096addef66b82327e4d86f6b0d04bf24368f72a980d3fa7f32f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/py.typed",
+      "sha256": "f19254b31662b8ecb5a0979586c4d64214c6ffaa535475579398492fbf5e6d39"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client_sync/__init__.py",
+      "sha256": "5c85e654efbb08e9ec0c44ab9df8f38bc56b3c225a67d3b2e357032f739ea2af"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/__init__.py",
+      "sha256": "cd34a21bfba34a302a58fc9ce37e585da5fd5d39693238895816d5f9ff98b5d0"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/created_team_api_key.py",
+      "sha256": "40eda300847cbb55f19f6ea39dfb640cd602235984a8332df99508412d72d4d5"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/new_team_api_key.py",
+      "sha256": "9de60bbefbf3c8f7295d85798031d592ffe8be329d2012944d7d38703e502860"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_build_info.py",
+      "sha256": "21764cd7a839b566f0aad18c9f3523dc84647771fd1e6b18c29342104a7f0244"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/mcp_type_0.py",
+      "sha256": "53ff03b26c625240f8b38fce0db13ab00954453848a92eafd6b529b77084d451"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_with_builds.py",
+      "sha256": "ab297a184277448103ed4580637272eb4555bc109506c5f4209f9e22adcbda9e"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/new_access_token.py",
+      "sha256": "b23950edd123e01c82830b9def9d126f1c328e0800281d6cfa8fcdedd442a3bb"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_state.py",
+      "sha256": "8b3b43ba9485d92ad84065765137276511ff5371b14a61d828730c524b0effb3"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_volume_mount.py",
+      "sha256": "d600b39cabab713a34c9da99f42be8da94c88f708c5fae63469f2b4d9ff5a544"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_log.py",
+      "sha256": "b57c37e63de9a33ec3309acb7a8c6be2861d6dc6095797a9dc4d1b55d42c4b6a"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/gcp_registry.py",
+      "sha256": "8d4d3f887d47d090461f2974215b90978e32435f2ac93a9868f35df12ff26728"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/build_status_reason.py",
+      "sha256": "ac6c0461b988163486dd03e93e6fa25f5ac35433c2dc9927df77439636cbc963"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/volume_token.py",
+      "sha256": "e4ddd80350b3c84ffd09f787e7815dbd15481faa6f84f9471e98ab03993f15fd"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/aws_registry_type.py",
+      "sha256": "f2006b3a47ddd8e6810cf451243985eadda5bafcf4d40d10131cdf1d1b20520f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/resumed_sandbox.py",
+      "sha256": "b294923f44d75b3f10983a09a6ba88453a24b6077ca6f9a23d3c19b79a4a076c"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/machine_info.py",
+      "sha256": "feaba420d85b194f93070503ab9682e4e4d95c26ad82ad9a36585e2631048fa8"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/update_team_api_key.py",
+      "sha256": "5041c7509c701d64ce77e02e0c4f99dba138957d8293d48fabc30ef93adcf547"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandboxes_with_metrics.py",
+      "sha256": "0ae399d62b26ca33cbaf13dc29a0ea2ca64be48ba7d278cdef442a86e6dcd4fb"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_tag.py",
+      "sha256": "b3f3c4ab38916f52d14c1a0e76c22dfba36edebdd386ee467c5e0bab91e948c3"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_build_file_upload.py",
+      "sha256": "8aa81010a549c560fc7b377fc38e0da189850950f24d251c1f8ef829109a5c36"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_build.py",
+      "sha256": "e46a422a9bc8eaf8bceabef0576625bf7a90c4910bdf005bad7091c7b953150a"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_network_transform.py",
+      "sha256": "abe01f3212ba6b3bcea5dd1aa267709855031ee5df42280f1de5e7dbcf15daac"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/assign_template_tags_request.py",
+      "sha256": "d182b87606b75c1b362c4ed71866fdae5c7d9064a7c1c84b02cd5b894919a471"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_lifecycle.py",
+      "sha256": "dfffc7fd0cfffec04588ed20e8ab5356afbdcd609370da6a677ec013c7cedfce"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/node_detail.py",
+      "sha256": "cdd352439d5e3221163bfbaa7a8c7488543d245d98e1c1446cb8473f50368ff4"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/__init__.py",
+      "sha256": "1aa06fb83b31ea1f931595d750de4d49c5b9e47da219fcbb341d05e9aca25626"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/error.py",
+      "sha256": "c46bf2610407bf466bc6f86b56f1655cf6a8b26b76e22bc8877538808b6904a6"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/assigned_template_tags.py",
+      "sha256": "cb74b39dad5ea6239526b707c9db536d247a5980cdaea8c5655a251a3588e7a4"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/logs_direction.py",
+      "sha256": "73642c7b1433f1bab332f434d6f9ac79e77e99c9f38d0e02d18f104eb16e0a61"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/build_log_entry.py",
+      "sha256": "24a6c6101bb960c34bf28eb6c6e5fb621ace8bc4fc10157e7bf828b6ef233a3f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/gcp_registry_type.py",
+      "sha256": "41c33083da94cabe9eed54629c8d2245af65858bebca3eef6447932b4c846553"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/connect_sandbox.py",
+      "sha256": "d3de6736bb9d34ac2b0f57e3b134cd79a7fee03fe327636cbc81108580150476"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_build_start_v2.py",
+      "sha256": "4c86630dca8f0b01907873965cc60f6dfdd6d5f91b6c232a23dc68f038504446"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/volume.py",
+      "sha256": "3a1f120f27a5cb84e2c2079ba3eeaa269b53ddf9016ecf28b08efa676e31656c"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_alias_response.py",
+      "sha256": "1d6a9c47ce6f5b7cc38acec2a2b01e6e3ee1ed192fd51387636f82cbd5df4684"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_step.py",
+      "sha256": "aa60ac78ae4e25737615f8ab9740342789deab27c3a80f9afa66196e6c0a3b23"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_build_status.py",
+      "sha256": "3294d9fdb33cfbf5afb6d260d50d3cfd918776b27a253125ffaa6ff0d1444f23"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_network_config_rules.py",
+      "sha256": "302801d4c652d35ee2fb62f88150b1673563bf91db24f317506cbf4efb314b7a"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_update_response.py",
+      "sha256": "49f923ff1bf1a940f97a0c79cce450bd7f10beaa24376a464760b3ed771353f1"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/new_sandbox.py",
+      "sha256": "a86d3e92b5d68568a64d142772f698b03dea83b3016f9c50928499e7599e18d2"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_detail.py",
+      "sha256": "4d2b29750e176ee85752b5431540a88673772869b5e675c7c1a2ee9a616d4852"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_network_update_config.py",
+      "sha256": "c64a2c2edbdf6b3382071dda774722fd8bdbca25f2c6c7bd1f795bf4089c32f4"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/admin_build_cancel_result.py",
+      "sha256": "f36de038341193d74ef79ce1b04d0bcd02a5f1fba70acbca3e10b15bd5cadf89"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_log_entry_fields.py",
+      "sha256": "498c2d12034e28fb667fd06a222452e386c481c6db6c732adaa7424a1a63f102"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/new_volume.py",
+      "sha256": "e4f13d7e71c4973d377c51312b6552d6bf8e81d42d77ff105fcbb43e5e924774"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_build_request.py",
+      "sha256": "88ccbae79b69d3d7d3afc80d82ef2e1f0426e0803ff08531e31590c59427ce32"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_log_entry.py",
+      "sha256": "adbc18d8c05a8512e17023f4f355dccd0237024b2e2cc6df94d87da4e7827e30"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/node_status_change.py",
+      "sha256": "82db93d15759e16f3e63d2721c5a184de6d45cfe39cbddeb238f506196156859"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/general_registry.py",
+      "sha256": "27ffa2ee42e6b0fcb4d7c6058412831f96004e87b2e0c9c2222bcf50a4a94dcf"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/created_access_token.py",
+      "sha256": "56353fb6e5baef3aed737575a68f8c56d3e8f09d5db51930cbeeae4ded8011fd"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_network_config.py",
+      "sha256": "f2574592446152ec484123463c4bd55d797a004e6f2c497b2f52f0b94e805aec"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_network_update_config_rules.py",
+      "sha256": "15d9cf0b7e4d8a924bc93a45f5f004297720c565f1fd96519ecc3fc12b67c12b"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_on_timeout.py",
+      "sha256": "2543ae6af52d9c155fe1c70898e7b23445b4614e3dcd18223438acacb62a8cb8"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/node_status.py",
+      "sha256": "8753614c1a6a0087813733319274af23a2f060f48ebb476f4c7086ee5283bfc8"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/team_api_key.py",
+      "sha256": "e1aa914fc805df6589c2eb5eaba87b6a0db076966e542a5a38466e8f58f70f1e"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_update_request.py",
+      "sha256": "28c952c867fb857ef91aa5f110ff8e884c67001aa5e0c29d2c17c73ddd36805a"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/snapshot_info.py",
+      "sha256": "48ac1002141b7ba7bb7a1c17131dc39e1c3039915f718b6586347d7859329686"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_logs_v2_response.py",
+      "sha256": "d13aa8b54f3ef47fc332e70e641bd215b8ad4914f4aaa860d949efa925e4f4a5"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/post_sandboxes_sandbox_id_timeout_body.py",
+      "sha256": "89acb8a4b8f022bc9be89f1f8f1dd48d386c349e40bea02bcc0c2be4af0b9cdb"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/volume_and_token.py",
+      "sha256": "330f1412e9412077d1717947cb8d94589c317a6fe688eabe9a011d5598397815"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_pause_request.py",
+      "sha256": "2354527e07f95ff8603f178872454d269a5205918905836c4be25dea0ac60dd9"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_auto_resume_config.py",
+      "sha256": "613669bc94d6b3aed225dee5219f5b607e7a128c756ef8f950bbb14ebe07f9bf"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/team.py",
+      "sha256": "ac62ce7e9873b0fed503d48b9909fcbe751fc41f4a20b7ccc0d7e1e21572dc81"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/listed_sandbox.py",
+      "sha256": "b4d74bc24f3bb41864aee363d6a03adcb4cee7ca8a98bad5c255de2aad4dbdf1"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_build_logs_response.py",
+      "sha256": "6de53578cdac3973ba4a01c2f009d363b2f3b014318b631760102de90523cabe"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_logs.py",
+      "sha256": "dd40b79e08a552997b5b27bbae5e4c77d0d1d65a1affb721193071f6d45be8b6"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_network_rule.py",
+      "sha256": "449c205d57e2eb8c7adb11a4289219931b90822df6dc585c366f9e279eab1366"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_metric.py",
+      "sha256": "cf60f26a20fd0437533e4e4036e2ae389939d9649eb58d0d600f822b22315695"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/node_metrics.py",
+      "sha256": "12f786d4cd9d2d6b5e6ad156bc540c6bd68acf3f2ead194e399ed00fff17774a"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_build_request_v2.py",
+      "sha256": "2a81136128560971c1a3a32de1617f5871c99c7c5deba71b010d0932e9bc227a"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/team_user.py",
+      "sha256": "7f16e0a3d5f6fea16743c29a2ee291e44d842c7128b44de43cc21c307fd768d9"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/post_sandboxes_sandbox_id_snapshots_body.py",
+      "sha256": "6d497cecc1ad58974bda7722f8ef25df57be308dbd9f1cba8bf9754eacd3cbf8"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox_network_transform_headers.py",
+      "sha256": "15f7a8446a472e335c8acdd6c295de00beccea2b3858ea8b8f1dd6fe829b4021"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/sandbox.py",
+      "sha256": "cf939424072dcf316adaeb36b6d33e05053ea49f5eb22d2a0632adaea3618c4d"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/node.py",
+      "sha256": "ce33aa8366e82d51ff8e647f5789cb00b35df846aeaeef95043b4821aa424473"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/delete_template_tags_request.py",
+      "sha256": "d3918d136dba406c3a6437d0b251e20ff3a232ef2067b6aaa7f1053253ca6ace"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_legacy.py",
+      "sha256": "310d06a6fa07f950f287ed3bb1062a9ee777019c780380212be4a94c2912e38e"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/admin_sandbox_kill_result.py",
+      "sha256": "549d3d0da3fd3870134b772f52f4d354709d20144cd888328965127d34c0da18"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/team_metric.py",
+      "sha256": "8ad70c9b7853c6ffd2ec31b5e09608d8b4ce20fc2b73fd6b84ff94991411b7ce"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/log_level.py",
+      "sha256": "bafeaed6792a7f37714e3240c4b65d5ae1f9828548fe0f942cb861e93539770f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/general_registry_type.py",
+      "sha256": "570c842addb9c14874cbc423e16a5ea25bacf82a6ddf54a7861cbe50cfc37cc9"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template.py",
+      "sha256": "1e7456d9f0b7e70c1485306910a6a2f2e87877e8665140a14cb03ac861d808d2"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/disk_metrics.py",
+      "sha256": "d9b6447bce0fdb006a41bf7f451fb147be37643282ce36f35e68e64c3b17c08f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/identifier_masking_details.py",
+      "sha256": "f7bc5283836bdc3e716e3183b99d7a76810c3a5724d04b728ccc6d1d047d4ca9"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/aws_registry.py",
+      "sha256": "60ac105c2baeb6fdd7c2010959b053c97e8a98b8bcebaf804ac1e9bbe9f41f6c"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/logs_source.py",
+      "sha256": "389fd2814668dd82179ff288113d2fcdc4ddb666f97a21ddb4c9f561d7ad14d9"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_request_response_v3.py",
+      "sha256": "eaf871a68c0cb5e05e9da199430a291d67bd81018fd88ff08effdd2d1c810dcf"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/template_build_request_v3.py",
+      "sha256": "6f4d5bbdd3c7365ca89aa03d93c7fda7b818105b5c70e3dff717e090d87b99e7"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/post_sandboxes_sandbox_id_refreshes_body.py",
+      "sha256": "570328041f72daf14fee470b0c9d10f64546381a83d96dd5bc010abff5c77766"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/models/max_team_metric.py",
+      "sha256": "1d0b830451cc22c4c96d64e5d24397e000c87d66f513dec9f8f07434da11242c"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/volumes/post_volumes.py",
+      "sha256": "7b654c404a66ec97d6edccf15498750a4b096d83d09466f2144c97a9b67174b8"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/volumes/get_volumes_volume_id.py",
+      "sha256": "4a3e835573fcfbe354a8e795bcdad6e9a3d8d16e03dacdcc5dd3aa85f3deee33"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/volumes/__init__.py",
+      "sha256": "e6f77db895808d1a9af71cf1cd890b0f5ca8675d8b77f6c068d079597e1f6c4f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/volumes/delete_volumes_volume_id.py",
+      "sha256": "0f2849fad49c548c36544c6ff18b25023aaffd88671c7d1d036b745609f73901"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/volumes/get_volumes.py",
+      "sha256": "d684a0882af244680902a7a754afe70cceeb3e6a122f8d0c2cb140d7eb6d35bf"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/post_sandboxes_sandbox_id_snapshots.py",
+      "sha256": "11f245743f5977756beeced82655eae1fed3d4dd3f7d3e393632b75d6d11b625"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/get_v2_sandboxes.py",
+      "sha256": "bd2475b6aaf571ac1a42a3c1997f218fbf51e3a7e5b8820e290c0f94018c367b"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/post_sandboxes.py",
+      "sha256": "5f280583aabd9c5e5a35950e10c9fe5b570bd0ed2b366b42458f6f5eb2d289a8"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/get_sandboxes_sandbox_id_metrics.py",
+      "sha256": "8c4e6bef47f869503bada6bd9d1c37b321a65d68e628c74b0fbf8dad52e3765d"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/post_sandboxes_sandbox_id_refreshes.py",
+      "sha256": "7ae099ad608f0ef48616aeffd2a2e05d217a15ff798e86df40c7609e92d01bcd"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/delete_sandboxes_sandbox_id.py",
+      "sha256": "7b10640f814fd2def7d2ebae2af34f5b09bd3cc384ebc04379a2a6b7df203e58"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/post_sandboxes_sandbox_id_pause.py",
+      "sha256": "559b55ab61865a5381ea893fadd6b3aa2ca12ae3a3faf1e9c7800da59ef8c4b3"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/__init__.py",
+      "sha256": "e6f77db895808d1a9af71cf1cd890b0f5ca8675d8b77f6c068d079597e1f6c4f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/post_sandboxes_sandbox_id_connect.py",
+      "sha256": "57c8719dab03b8b680c24f95e60d224fe45ca42b5ea76aaff893f6a5d1b45629"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/get_sandboxes_metrics.py",
+      "sha256": "2821756926f1ff53cbdb10217c5a81608b9e2d8cb30a24689a34a05ce53d1c10"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/get_sandboxes_sandbox_id_logs.py",
+      "sha256": "ba35f73ccc877d19e52dc1a75014f8e400f9db1dd88451cdfccdab1e499a2991"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/get_v_2_sandboxes_sandbox_id_logs.py",
+      "sha256": "83ae286471a544e3cc45ef2274ee3be9a276a7e4ec1f5a41dfad55ae754d81af"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/post_sandboxes_sandbox_id_resume.py",
+      "sha256": "ac61c7db8681358acc1e4bc3a10902d79caf4ba2aef138f39dab83eef714b738"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/post_sandboxes_sandbox_id_timeout.py",
+      "sha256": "3c3b61691e7b90b998e8dcf516ba5c0ea3d6666fc5f8a691df7f3e6d06a0ae4d"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/put_sandboxes_sandbox_id_network.py",
+      "sha256": "1c03e3c2c569ac329c9f23f36c045fda5800617c3a7bd17400c67cd028f0f0b5"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/get_sandboxes_sandbox_id.py",
+      "sha256": "3386bc96b3343606881781baaccc362dca0bb3614ae9be037dcd79268ae84a47"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/sandboxes/get_sandboxes.py",
+      "sha256": "72d7bef68c9713181ebf0dbc266a1870517f1a209e0abd2f9027f8ecb1ad2f10"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/snapshots/get_snapshots.py",
+      "sha256": "27439a01cd494aa9cbff1a1b4dab0532a4bee7d4241803154928ac501a55cecb"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/snapshots/__init__.py",
+      "sha256": "e6f77db895808d1a9af71cf1cd890b0f5ca8675d8b77f6c068d079597e1f6c4f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/get_templates_template_id_builds_build_id_status.py",
+      "sha256": "c9e6463e696edbcbc7b1086e25479511a3eb4e926f81d3648be4e54c63098b58"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/post_templates_template_id.py",
+      "sha256": "622192d35cd83878155dd443e61852107cd77ee4d1cc951d2f7e618d1fd91b8e"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/get_templates.py",
+      "sha256": "64ddcf1b5fc7b099cb989674d19cc593d5c67fd99333a2712cd953f79177034c"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/__init__.py",
+      "sha256": "e6f77db895808d1a9af71cf1cd890b0f5ca8675d8b77f6c068d079597e1f6c4f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/get_templates_template_id_builds_build_id_logs.py",
+      "sha256": "3518cf4c666fe0be5be42616c341996ddab66d24dd6ff3ab58d2f2480bd66448"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/post_v2_templates.py",
+      "sha256": "849733abd689a5a3e8e22fee6e8e5b4332fe879018b98db560eb0b24014b16e0"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/get_templates_template_id.py",
+      "sha256": "cb36efa9398b5f0e24cb8c8604be54a9ac7ea02dead511f3b0a2473f6bc6a1bf"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/post_templates.py",
+      "sha256": "f99e1994f0835d2cbe0092e0964e881dcd0c26c3cc566f3155b1da6e868778ac"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/post_v3_templates.py",
+      "sha256": "8577cef2a2c2093f0cdb56dd5727e0f1fe9705508a3893929b98131b3aae8402"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/get_templates_template_id_files_hash.py",
+      "sha256": "ee7b42152c59111e1fd8a511670b6d240c348be84212e79929d1eef466420a2f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/patch_v_2_templates_template_id.py",
+      "sha256": "2fff5803ecc8113007eaed7696a1e7146acc5fcf3051c2ea183b9d923a5709a1"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/patch_templates_template_id.py",
+      "sha256": "44c0955fc59754cbb0806aa6a5ea8079d559f12563b8b47bb8bd0c80af3b2209"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/get_templates_aliases_alias.py",
+      "sha256": "70146582ea84991dc12c0645ceb1232a9aa80c18d44994263fe362a483201d55"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/post_templates_template_id_builds_build_id.py",
+      "sha256": "c4290894fdc2574647b1fb08a78aa2e32341a8f95ce2b8c6d0cfefc60769c13a"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/delete_templates_template_id.py",
+      "sha256": "92e93d642ca4d4b35bd648635be3dcc0fed8acc5d8a733b4ae70168175c7f984"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/templates/post_v_2_templates_template_id_builds_build_id.py",
+      "sha256": "52aaecd84a5ca1804a7bd973ff7ebd04ec6de89d12f8da7984772dfe9e13dcd0"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/tags/__init__.py",
+      "sha256": "e6f77db895808d1a9af71cf1cd890b0f5ca8675d8b77f6c068d079597e1f6c4f"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/tags/delete_templates_tags.py",
+      "sha256": "62a121461da578a65c01379b9b52e717f30e5a3a7db419ad44e3b1921a362b58"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/tags/get_templates_template_id_tags.py",
+      "sha256": "bc52828f122399b10d2dfa3e007b88975efc9de126b1d7c9f17241960456c11c"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/api/client/api/tags/post_templates_tags.py",
+      "sha256": "b96b63bf2206759a63e4ef819f6f54867b34618859af839885a5ec868d00895b"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_async/filesystem/watch_handle.py",
+      "sha256": "6ec16e69c81448ddfda4d32e911e0de9e26e2c6e0bb5fda0fd940bf357bbd447"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_async/filesystem/filesystem.py",
+      "sha256": "6e35c91657dbb7ba957226f2801d9640173dfff12656a1f5dc19bf5fd4e7a861"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_async/commands/pty.py",
+      "sha256": "ced83ab9d2ca1572338b55e05cb1d54080197aa94bcd6dc5667662e0b388c3dd"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_async/commands/command.py",
+      "sha256": "490412c4e617757c7cf98993427edffc12bbfb59e97f84bc5ca1741a8284ea0e"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox_async/commands/command_handle.py",
+      "sha256": "ad9024bbbedb74cf7d1196e1e64bd02eae07ef7ddad4ca0c5b075da171f28ae6"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/filesystem/watch_handle.py",
+      "sha256": "5f5e3467770d55eb2322ace620879b770246a3431f0786070613e36b38afe499"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/filesystem/filesystem.py",
+      "sha256": "4435c3214fad9a1c27fe95a2f2f764eca854624c5f01d1d15e2b65cb764f5611"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/_git/parse.py",
+      "sha256": "b3c36ef5e157189cfc3e08069e4fb0d68961643de184ba5999f1ff6e814785ef"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/_git/auth.py",
+      "sha256": "c95585e09aca7713242094f0489a22c0b202f483d1c4bfa7319a78f6bfb02b91"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/_git/config.py",
+      "sha256": "7e7277789044a7890be9de70f340cd8c2f742070900197dbd6b8834bc8d73d5b"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/_git/__init__.py",
+      "sha256": "a7df5054587cad50e19fb6061930519afd92d90772780a3721fd65bdbd5295eb"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/_git/types.py",
+      "sha256": "37637df58de527f8720e64321a3153ffc264d8bb624edd5984dd8b31a113acd2"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/_git/args.py",
+      "sha256": "00ea292215a35145696cfd76babe813ba6532463dc0af07345dc2fabe18ef958"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/commands/main.py",
+      "sha256": "b7c864e38c195f6ecea91ad81e8fc586f8737cebc854afba34ee07a5f88e869a"
+    },
+    {
+      "source": "e2b-2.31.0/e2b/sandbox/commands/command_handle.py",
+      "sha256": "1c8d1a7b2b07edf59a780b98ee8ae5531dbb9e6043ef8c2fae8cb8d43cdc2f58"
+    },
+    {
+      "source": "e2b-code-interpreter-2.8.1/e2b_code_interpreter/__init__.py",
+      "sha256": "340d49fe2ceb40c352204d7dbfaa7c940d346914e983aed4e41d59010bbd39da"
+    },
+    {
+      "source": "e2b-code-interpreter-2.8.1/e2b_code_interpreter/code_interpreter_async.py",
+      "sha256": "c002586198ead74347ac27ac25907c8a104fa216340c0f60a1bdb4efa9b99220"
+    },
+    {
+      "source": "e2b-code-interpreter-2.8.1/e2b_code_interpreter/constants.py",
+      "sha256": "1acf8e360ceb7ebbc59c267357d76bbff2e0985d83a266f9e8b67f91c77d1fca"
+    },
+    {
+      "source": "e2b-code-interpreter-2.8.1/e2b_code_interpreter/code_interpreter_sync.py",
+      "sha256": "c4714bd7bc9487199328ec3affbd8f9affe25c596fc36adf2ca181fada4ca0fa"
+    },
+    {
+      "source": "e2b-code-interpreter-2.8.1/e2b_code_interpreter/exceptions.py",
+      "sha256": "d39de7163bdf9a8b3d264ae4a77467f0aede4d5a890b569bd059caffc73a934a"
+    },
+    {
+      "source": "e2b-code-interpreter-2.8.1/e2b_code_interpreter/models.py",
+      "sha256": "b70b6d36d81291887c8c540c6a40e1de42c5b70b01f0aa6da9fef99f008a2432"
+    },
+    {
+      "source": "e2b-code-interpreter-2.8.1/e2b_code_interpreter/charts.py",
+      "sha256": "713c06ac6ab27218e95bec7e3a04fdfb45ce39102f2b104c07384143f85a50d3"
+    },
+    {
+      "source": "e2b-2.31.0/e2b_connect/client.py",
+      "sha256": "ea971eecee3467947094067ad4518cc2d69685f82dc1dd55921d1323fd123bf1"
+    },
+    {
+      "source": "e2b-2.31.0/e2b_connect/__init__.py",
+      "sha256": "4e818de3fda9fad57741550a71f1cd83a535a9b6c445a523ca6f1224ddd50a5b"
+    }
+  ],
+  "local_changes": "PATCHES.md"
+}

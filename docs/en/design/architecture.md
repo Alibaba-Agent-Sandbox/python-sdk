@@ -4,6 +4,24 @@
 
 ---
 
+
+## Public entry points
+
+| Entry | Contract |
+| --- | --- |
+| `agent_sandbox.Sandbox` / `AsyncSandbox` | Pinned synchronous/asynchronous standard protocol, E2B2.31.0 |
+| `agent_sandbox.code_interpreter` | Pinned interpreter2.8.1 models and clients |
+| `agent_sandbox.ProviderSandbox` | Async provider selection, project server and declarative/MCP extensions described below |
+
+The standard implementation is maintained under `_standard/`, with original source
+hashes, explicit patches and MIT attribution. It uses protobuf Connect messages;
+`grpcio` and the retired Python engine remain absent. Provider extensions consume
+structural contracts and provider-owned wire/session/port/file adapters. Installed
+E2B distributions are never runtime dependencies. Schema equality does not certify
+backend support: conditional pause/snapshot and other unsupported operations retain
+their documented prerequisites. The remaining sections describe provider extensions.
+
+
 ## 1. Architecture Overview
 
 ```mermaid

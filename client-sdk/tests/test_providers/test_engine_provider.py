@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 from agent_sandbox.models.errors import SandboxNotFoundError
 from agent_sandbox.providers import engine_client, installer, registry
 from tests.iso import iso  # noqa: F401

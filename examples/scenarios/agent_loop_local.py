@@ -36,7 +36,7 @@ def main() -> int:
         "ABX_SERVER_TOKEN",
         "ABX_SERVER_POLICY",
         "ABX_SERVER_POLICY_FILE",
-        "ABX_SANDBOX_API_KEY",
+        "E2B_API_KEY",
         "E2B_API_KEY",
     ):
         env.pop(name, None)

@@ -12,7 +12,7 @@ All three catalog adapters reuse the E2B-shaped `SandboxProtocol`. The control-p
 | CubeSandbox | Yes for create, commands, files, pause, and directory watch. `run_code` posts to Jupyter `:49999/execute` | API on `:3000`, `ABX_CUBESANDBOX_DOMAIN=cube.app`, and a template id that exists on that cluster. Do not assume a template named `base` |
 | Container edition | Yes for the native protocol. The private data-plane URL is filled on create, connect, and get | `ABX_ALICLOUD_CONTAINER_DOMAIN` and `ABX_ALICLOUD_CONTAINER_API_KEY`. The documented sample template is `code-interpreter` |
 
-None of them reads `ABX_SANDBOX_API_KEY`. E2B and the container edition refuse before any request when their own key is missing.
+None of them reads `E2B_API_KEY`. E2B and the container edition refuse before any request when their own key is missing.
 
 ## Mismatches already aligned
 

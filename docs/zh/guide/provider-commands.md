@@ -11,7 +11,7 @@
 内置提供方的 `Sandbox.create()`（以及 `create_sync`）接受 `volume_mounts`：
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async with await Sandbox.create(
     provider="alicloud-express",

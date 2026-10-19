@@ -22,18 +22,49 @@ Do not run `pip install agent-sandbox`. That PyPI name is an unrelated project.
 
 ## Credentials
 
-The client reads `ABX_SANDBOX_API_KEY` from the process environment, `./.env`,
-or `~/.abx/.env`. It does not read `E2B_*` or `SANDBOX_*`.
+The client reads `E2B_API_KEY` from the process environment, `./.env`,
+or `~/.abx/.env`. The canonical connection settings are E2B_API_KEY, E2B_API_URL and E2B_DOMAIN; project/home configuration supplies their fallback. Explicit standard SDK keywords take precedence.
 
 AK/SK, when a call needs them, are `ALICLOUD_ACCESS_KEY_ID` and
 `ALICLOUD_ACCESS_KEY_SECRET`. Never print a key, never commit one, and never
 put one in a template. Examples use `REPLACE_ME`.
 
-## Client
+## Standard E2B migration
+
+Root Sandbox is synchronous and AsyncSandbox is asynchronous, following E2B 2.31.0.
+The code_interpreter namespace follows interpreter 2.8.1. Existing supported Alibaba
+E2B code changes imports and keeps its configured credentials/endpoints:
+
+```python
+from agent_sandbox.code_interpreter import Sandbox
+
+sb = Sandbox.create(template="code-interpreter-v1", timeout=300)
+try:
+    print(sb.commands.run("printf hello").stdout)
+    print(sb.run_code("1 + 1").text)
+finally:
+    sb.kill()
+```
+
+Do not add await to synchronous code. Use the async class for async code. Preserve
+lazy paginators, standard result/error models, seconds-based timeout arguments and
+process handles. Signed file URLs and conditional pause/snapshot/network APIs keep
+the reference protocol and backend restrictions; do not apply the ProviderSandbox
+limitations below to the standard clients. Pause success requires an enabled
+function; snapshots require a supported MicroVM runtime/account. Third-party
+hardcoded imports need an adapter injection hook or a maintained small fork.
+See the [migration contract](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/migrate-from-e2b.md).
+
+## Provider/server extensions
+
+The rest of this skill describes the explicit asynchronous ProviderSandbox API
+for custom providers, named server commands, sessions and declarative execution.
+Do not import the root standard Sandbox for these examples.
+
 
 ```python
 import asyncio
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async def main() -> None:
     async with await Sandbox.create(template="python-hello", timeout=300) as sb:
@@ -50,12 +81,12 @@ asyncio.run(main())
 - `sb.run_code(...)` checks capability `code` and raises when the template does not declare it. An omitted `capabilities` list means `shell`, `files`, and `code`.
 - Files on `sb.files`: `write`, `read`, `read_bytes`, `list`, `exists`, `remove`, `make_dir`, `upload`, `download`. On Express, `sb.files.upload_url` and `sb.files.download_url` return an envd URL that still needs header `X-Access-Token`. A provider that does not declare `files.transfer` raises `E8004`. `sb.upload_url` and `sb.download_url` always refuse. Do not invent a signature-only URL.
 - The context manager kills the sandbox. Otherwise call `await sb.kill()`.
-- The default provider is `alicloud-express`. Its lifecycle and envd operations use SDK HTTP protocols directly; no Python gRPC daemon or `ABX_ENGINE_SOCKET` is required. Installed Node providers still use the CLI Node engine.
-- The only built-in provider is `alicloud-express`. `opensandbox`, `alicloud-container`, `cubesandbox`, and `e2b` are not part of this package. Install them from the catalog with `python -m agent_sandbox.providers install registry:<id> --yes`, then pass that id to `Sandbox.create`. Their notes are in `awesome-providers/<id>/docs/README.md`. Only Express reads `ABX_SANDBOX_API_KEY`.
+- ProviderSandbox defaults to alicloud-express. Use its configured provider transport; do not hardcode a local engine socket or spawn a separate provider implementation.
+- The only built-in provider is `alicloud-express`. `opensandbox`, `alicloud-container`, `cubesandbox`, and `e2b` are not part of this package. Install them from the catalog with `python -m agent_sandbox.providers install registry:<id> --yes`, then pass that id to `Sandbox.create`. Their notes are in `awesome-providers/<id>/docs/README.md`. Native ProviderSandbox reads canonical `ABX_SANDBOX_API_KEY`; only the standard entry maps `E2B_*` settings.
 
 | id | What it is | Required environment |
 |---|---|---|
-| `alicloud-express` | Alibaba Cloud Express. The default. Built into the SDK. | `ABX_SANDBOX_API_KEY`; AK/SK is separate control-plane configuration |
+| `alicloud-express` | Alibaba Cloud Express. The default. Built into the SDK. | `ABX_SANDBOX_API_KEY`; AK/SK separately authorizes control-plane operations |
 
 URLs, headers, and calls that raise `E8004` for Express are in `references/providers.md`. The `abx` CLI loads `alicloud-express` plus installed `node`, `exec` and `rest` plugins. The four catalog providers are `node`. After `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes`, `abx --provider <id>` works. A manifest with `kind = "python"` cannot be installed. An in-code `Provider` subclass still works from the SDK only.
 
@@ -164,7 +195,7 @@ EXPOSE 9000
 CMD ["python3", "commands.py"]
 ```
 
-`abx template init` writes this same `commands.py` shape. `abx template deploy`
+`abx template scaffold` writes this same `commands.py` shape. `abx template deploy`
 injects the server wheel into the build context. Without a wheel, the image
 installs `agent-sandbox-server` from PyPI. Generation, reserved ports, group
 policy, and platform steps are in `references/templates.md` next to this file.
@@ -206,5 +237,5 @@ Do not upload from a laptop. Do not put a PyPI token in the repo or in chat.
 1. Client code imports `agent_sandbox`. `commands.py` imports `agent_sandbox.server` only.
 2. Named commands are `@command` and `start()` under `if __name__ == "__main__"`.
 3. The default provider's Dockerfile is the FC base image, with no `CMD`.
-4. Do not read or write `E2B_*`.
+4. Keep native provider configuration on `ABX_*`; standard entry configuration may read `E2B_*`. Never substitute Express credentials for another backend.
 5. Do not leak credentials. Do not leave sandboxes running.

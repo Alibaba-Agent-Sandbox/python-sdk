@@ -87,7 +87,7 @@ class TransportConfig(BaseModel):
 
     # Authentication
     sandbox_api_key: str | None = Field(
-        default=None, description="Sandbox API key (ABX_SANDBOX_API_KEY)", repr=False
+        default=None, description="Sandbox API key (E2B_API_KEY)", repr=False
     )
     access_key_id: str | None = Field(default=None, description="Provider AccessKey ID")
     access_key_secret: str | None = Field(

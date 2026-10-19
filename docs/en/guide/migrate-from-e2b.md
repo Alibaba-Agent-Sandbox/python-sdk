@@ -1,176 +1,56 @@
-# Migrating from E2B
+# Migrating an Alibaba E2B application
 
-For current SDK installation, use the [paired source installation guide](install-python.md).
+The standard Python API targets `e2b==2.31.0` and `e2b-code-interpreter==2.8.1`, the versions recommended in [Alibaba's compatibility contract](https://help.aliyun.com/zh/agent-sandbox/e2b-compatibility-explanation). It owns its protocol implementation and installs neither E2B package. This contract applies to Alibaba Express; other providers use the explicit `ProviderSandbox` extension API. Node SDK migration is outside this change.
 
-Agent Sandbox uses E2B-style method names so that most E2B call sites port with an import change. It is not a drop-in replacement: the wire protocol, credentials and several behaviours differ. This page lists what to change.
+## Installation and imports
 
----
+Install `agent-sandbox-client` from this checkout (`pip install ./server-sdk ./client-sdk`) until the new package is released. Keep the existing Alibaba `E2B_API_KEY`, `E2B_API_URL` and `E2B_DOMAIN` configuration. `abx config` and project/home configuration files also feed these settings; explicit SDK keyword arguments take precedence. Standard entries accept `E2B_*` settings; the native `ProviderSandbox` retains canonical `ABX_SANDBOX_*` configuration. Existing project configuration remains the fallback for standard entries.
 
-## API Mapping Table
-
-| E2B SDK | Agent Sandbox | Notes |
-|---------|-------------|-------|
-| `from e2b import Sandbox` | `from agent_sandbox.api.sandbox import Sandbox` | Main class import |
-| `Sandbox.create()` | `Sandbox.create()` | ✅ Same call shape |
-| `Sandbox.connect(id)` | `Sandbox.connect(id)` | ✅ Same call shape |
-| `Sandbox.list()` | `Sandbox.list()` | ✅ Same call shape |
-| `sandbox.kill()` | `sandbox.kill()` | ✅ Same call shape |
-| `Sandbox.kill(id)` | `Sandbox.kill_by_id(id)` | ⚠️ Different method name |
-| `sandbox.is_running()` | `sandbox.is_running()` | ✅ Same call shape |
-| `sandbox.pause()` | `sandbox.pause()` | ✅ Same call shape |
-| `sandbox.set_timeout(t)` | `sandbox.set_timeout(t)` | ✅ Same call shape |
-| `sandbox.commands.run(cmd)` | `sandbox.commands.run(cmd)` | ✅ Same call shape |
-| `sandbox.files.read(path)` | `sandbox.files.read(path)` | ✅ Same call shape |
-| `sandbox.files.write(path, d)` | `sandbox.files.write(path, d)` | ✅ Same call shape |
-| `sandbox.run_code(code)` | `sandbox.run_code(code)` | ✅ Same call shape |
-| `sandbox.get_host(port)` | `sandbox.network.get_host(port)` | ⚠️ Requires the network submodule |
-| `sandbox.upload_url(path)` | `sandbox.upload_url(path)` | Raises `FileOperationError`. E2B returns a URL that works from the signature alone; this data plane does not accept that |
-| `sandbox.download_url(path)` | `sandbox.download_url(path)` | Same as upload |
-
----
-
-## Import Path Replacement
-
-### Change the Import
-
-```python
-# E2B
-from e2b import Sandbox
-
-# Agent Sandbox (recommended)
-from agent_sandbox.api.sandbox import Sandbox
-```
-
-### Using the Compatibility Layer
-
-```python
-# Compatibility layer import (minimal changes)
-from agent_sandbox.compat import Sandbox
-```
-
-The compatibility layer `agent_sandbox.compat` re-exports the `Sandbox` class (method names follow the E2B SDK; behaviour differences are listed below).
-
----
-
-## Compatibility Layer Details
-
-The compatibility module `agent_sandbox.compat.sandbox` provides:
-
-```python
-from agent_sandbox.compat import Sandbox
-from agent_sandbox.compat import E2BSandbox  # Alias
-```
-
-Both are the same `Sandbox` class, only differing in name.
-
----
-
-## Environment Variables
-
-Agent Sandbox uses one environment variable per setting. Set these when you move a project off E2B:
-
-| Setting | Environment variable |
+| Previous import | New import |
 |---|---|
-| Sandbox API key | `ABX_SANDBOX_API_KEY` |
-| Platform API URL | `ABX_SANDBOX_BASE_URL` |
-| Data-plane domain | `ABX_SANDBOX_DOMAIN` |
-
----
-
-## Incompatibilities and Solutions
-
-### 1. `Sandbox.kill(id)` → `Sandbox.kill_by_id(id)`
-
-In E2B, the class method `Sandbox.kill(id)` destroys a sandbox by ID. In Agent Sandbox, this is provided by `Sandbox.kill_by_id(id)`; `sandbox.kill()` is an instance method.
+| `from e2b import Sandbox, AsyncSandbox` | `from agent_sandbox import Sandbox, AsyncSandbox` |
+| `from e2b_code_interpreter import Sandbox, AsyncSandbox` | `from agent_sandbox.code_interpreter import Sandbox, AsyncSandbox` |
+| `from e2b.exceptions import SandboxException` | `from agent_sandbox.exceptions import SandboxException` |
 
 ```python
-# E2B
-await Sandbox.kill("sbx-xxxx")
+from agent_sandbox.code_interpreter import Sandbox
 
-# Agent Sandbox
-await Sandbox.kill_by_id("sbx-xxxx")
+sandbox = Sandbox.create(template="code-interpreter-v1", timeout=300)
+try:
+    sandbox.files.write("/tmp/input.txt", "hello")
+    print(sandbox.commands.run("cat /tmp/input.txt").stdout)
+    sandbox.run_code("value = 41")
+    print(sandbox.run_code("value + 1").text)
+finally:
+    sandbox.kill()
 ```
 
-### 2. `get_host(port)` requires the network submodule
+`Sandbox` is synchronous; `AsyncSandbox` retains asynchronous methods. Do not add `await` to synchronous E2B code. `Sandbox.list()` returns a lazy paginator: use `has_next`, `next_items()` and `next_token`; the async paginator awaits `next_items()`. Class and instance lifecycle methods keep their E2B names (`Sandbox.kill(id)` and `sandbox.kill()`, likewise connect, get_info and set_timeout). Timeouts are seconds; `request_timeout=0` disables the request timeout. Nonzero commands raise `CommandExitException` with `exit_code`, `stdout`, `stderr`. Background execution returns a process handle with PID, wait, stdin and kill operations. File writes return `WriteInfo`; reads support text, bytes and streaming. Interpreter results, errors, callbacks and persistent code contexts retain their standard models.
 
-```python
-# E2B
-host = sandbox.get_host(8080)
+## Capability boundary
 
-# Agent Sandbox
-host = sandbox.network.get_host(8080)
-url = sandbox.network.get_url(8080)
-```
+| Capability | Contract / restriction |
+|---|---|
+| Lifecycle, queries, metadata filters, pagination, timeout, host and signed file URL generation | Standard API; URL usability still depends on backend envd authentication support, exactly as with the reference SDK |
+| Commands, background processes, stdin, PTY, files and directory watch | Standard envd protocol and handle behavior |
+| Interpreter, contexts, execution counts, stdout/stderr/result callbacks, multiple languages | Use `agent_sandbox.code_interpreter`; requires an interpreter-enabled template; charts must be saved to files on Alibaba |
+| Templates, image-based builds | Standard Python Template API plus project CLI build/deploy extensions; actual backend permissions and build capabilities apply |
+| Runtime network updates | Implemented (`update_network`), including allow/deny rules; `egress_proxy` has no effect on Alibaba; public traffic and host masking are creation-only settings |
+| Pause/resume | Gen1 requires allowlist; Gen2 provides the capability, subject to actual function/account settings. The tested python-hello function rejected pause because pauseSession was not enabled |
+| Snapshots | Implemented creation, lazy listing, deletion and restoration; MicroVM and allowlist required. Retention, qualified names, occupied snapshots and restore overrides follow [Alibaba's snapshot rules](https://help.aliyun.com/zh/agent-sandbox/snapshot-invited-test). Use `request_timeout=300`; preserve returned IDs/names |
+| File metadata | Gen2/envd version dependent; older envd produces the same version error as the reference |
+| Metrics/Logs | Alibaba docs have conflicting examples; no blanket availability promise. Service errors are preserved; console observability remains available |
+| Volume, Team, API-key/access-token administration, MCP gateway | Outside Alibaba's supported E2B migration path. Exposed upstream types do not create missing service capabilities; manage these through supported cloud tools |
+| OSS, VPC, Alibaba extensions | Provider/project extensions; not added to standard E2B arguments |
 
-> **Note**: `network.get_host()` and `network.get_url()` are local URL-computation helpers. They are logically associated with the `ports` capability but **do not** perform a runtime capability check — calls succeed regardless of the template's capability declaration.
+`ProviderSandbox` is the project's asynchronous provider/server/declarative extension API. Existing examples that use named server commands, sessions, custom providers or `sandbox.network` import it explicitly. These extensions are separate from the migration contract and are not alternate modes of `Sandbox`.
 
-### 3. `upload_url()` / `download_url()`
+## Third-party integrations
 
-The E2B Python SDK methods are `sandbox.upload_url(path)` and `sandbox.download_url(path)` (JavaScript: `uploadUrl` / `downloadUrl`). They return `https://49983-<sandbox>.<domain>/files?path=...&signature=v1_...`. A browser POSTs that URL with a multipart field named `file`, or GETs it, and does not send `X-Access-Token`. The access token is not in the URL.
+Update imports in code you control, including wrappers and integration adapters. For a dependency that hardcodes `e2b` or checks E2B class identity, use its client factory/injection hook or maintain a small fork changing those imports; pin and test that adapter. Do not replace `sys.modules`, install a fake `e2b` package, or assume a string import rewrite changes runtime type checks. Private E2B internals and newer SDK versions are outside the pinned contract.
 
-The Express data plane does not offer this. A `/files` request without `X-Access-Token` is 403 `access denied: X-Access-Token header is required`, and the file is not written. The request succeeds only with that header. A `signature` query parameter does not authorize it. The URL returned by the official E2B SDK against this same data plane behaves the same way.
+## Implementation provenance and verification
 
-Agent Sandbox `sandbox.upload_url()` / `sandbox.download_url()` therefore raise `FileOperationError` instead of returning a URL that cannot be used. `get_upload_url()` / `get_download_url()` are aliases and do the same. `files.upload_url()` / `files.download_url()` return an unsigned `/files` URL; the caller still has to send `X-Access-Token`.
+The protocol client is a maintained source port of the pinned MIT-licensed clients, relocated into the project namespace. Source hashes are in `client-sdk/src/agent_sandbox/_standard/SOURCES.json`; licenses accompany both source trees. There is no runtime E2B dependency. Contract regressions are in `client-sdk/tests/test_api/test_standard_contract.py`; real-cloud migration scenarios are in `e2e/test_standard_contract.py`. Passing interface tests does not imply every account has conditional cloud features enabled. See the engineering evidence for executed checks and limitations.
 
-Move files with `files.write()`, `files.read()`, `files.upload()`, and `files.download()`. The SDK sends the access token on those calls.
-
-### 4. Capability model
-
-Agent Sandbox introduces a capability model. Templates declare capabilities in `template.yaml`. Only the `code` capability is **runtime-enforced (fail-closed)** — `CodeContextModule` methods raise `CapabilityNotSupportedError` (E3004) when the `code` capability is missing. Other modules forward requests without a runtime gate:
-
-- `run_code()` / `code.*` → Requires the `code` capability — **runtime-enforced (E3004)**
-- `commands.run()` → Logically associated with `shell` (no runtime gate)
-- `files.*` → Logically associated with `files` (no runtime gate)
-- `network.*` → Logically associated with `ports` (no runtime gate)
-- `get_terminal()` → Logically associated with `terminal` (no runtime gate)
-
-The default capability set `{shell, files, code}` covers most common operations.
-
-### 5. Alibaba Cloud extensions
-
-Agent Sandbox adds Alibaba Cloud AK/SK authentication, which does not exist in E2B:
-
-```python
-sandbox = await Sandbox.create(
-    access_key_id="your-ak",
-    access_key_secret="your-sk",
-)
-```
-
-### 6. Per-request timeout
-
-`Sandbox.create(request_timeout=...)` mirrors E2B's `request_timeout`: it bounds
-how long the client waits for the create HTTP response and is independent of
-`timeout` (the sandbox TTL). When omitted, the global `http_timeout` /
-`ABX_HTTP_TIMEOUT` applies.
-
-```python
-sandbox = await Sandbox.create(
-    template="python-hello",
-    timeout=300,            # sandbox lifetime (TTL)
-    request_timeout=120,    # HTTP wait for this create call only
-)
-```
-
----
-
-## Migration Steps
-
-1. **Replace dependency**: [paired source installation guide](install-python.md) (uninstall `e2b`)
-2. **Replace imports**:
-   - Minimal changes: `from e2b import Sandbox` → `from agent_sandbox.compat import Sandbox`
-   - Recommended: `from agent_sandbox.api.sandbox import Sandbox`
-3. **Replace `Sandbox.kill(id)`**: Change to `Sandbox.kill_by_id(id)`
-4. **Replace `get_host()`**: Change to `sandbox.network.get_host()`
-5. **`upload_url` / `download_url`**: These calls raise `FileOperationError`. Use `files.write()` / `files.read()`. `files.upload_url()` is not a signed URL a browser can open on its own
-6. **Set environment variables**: `ABX_SANDBOX_API_KEY` for the sandbox API key. Each setting has one variable; see [Configuration](../reference/configuration.md).
-
----
-
-## Next Steps
-
-- [Authentication](authentication.md) — Learn about all authentication methods
-- [SDK Usage Guide](sdk-usage.md) — Complete SDK usage
-- [E2B Compatibility Explained](../explanation/e2b-compatibility.md) — Design background and rationale
-
-If the existing E2B client already targets Alibaba Cloud Express, use the [existing Express account migration guide](migrate-from-alicloud-express.md). Resources can stay in place; client/configuration compatibility still needs review.
+The optional snapshot `name` list filter is an Alibaba extension added beyond the pinned Python reference; existing signatures remain compatible. Qualified snapshot names are encoded in deletion paths.

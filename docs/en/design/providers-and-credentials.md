@@ -33,9 +33,9 @@ Sources scanned: `transport/config.py`, `transport/auth.py`, `models/config.py`,
 
 | Concept | `abx config` key | config.toml | Environment variable | SDK field / kwarg |
 |---|---|---|---|---|
-| Sandbox API key | `sandbox_api_key` | secret in `~/.abx/.env` | `ABX_SANDBOX_API_KEY` | `sandbox_api_key` |
-| Platform base URL | `sandbox_base_url` | `[transport] sandbox_base_url` | `ABX_SANDBOX_BASE_URL` | `sandbox_base_url` |
-| Data-plane domain | `sandbox_domain` | `[transport] sandbox_domain` | `ABX_SANDBOX_DOMAIN` | `sandbox_domain` |
+| Sandbox API key | `sandbox_api_key` | secret in `~/.abx/.env` | `E2B_API_KEY` | `sandbox_api_key` |
+| Platform base URL | `sandbox_base_url` | `[transport] sandbox_base_url` | `E2B_API_URL` | `sandbox_base_url` |
+| Data-plane domain | `sandbox_domain` | `[transport] sandbox_domain` | `E2B_DOMAIN` | `sandbox_domain` |
 | Region | `region` | `[providers.alicloud-express] region` | `ALIBABA_CLOUD_REGION_ID` | `region` |
 | HTTP timeout | `http_timeout` | `[transport] http_timeout` | `ABX_HTTP_TIMEOUT` | `http_timeout` |
 | HTTP/2 | `http2` | `http2` | `ABX_HTTP2` | `http2` |
@@ -76,7 +76,7 @@ Sandbox TTL (`Sandbox.create(timeout=)`, `--timeout/-t`) is not an HTTP timeout.
 | GitHub token | `github_token` | `GITHUB_TOKEN` | flag `--token` (template install/search/update). Stored in `~/.abx/.env`. |
 | Template index URL | `template_index_url` | `ABX_TEMPLATE_INDEX_URL` | environment only |
 | Template dir | `template_dir` | `ABX_TEMPLATE_DIR` | environment only |
-| MCP server | `mcp_*` | `ABX_MCP_AUTH_TOKEN`, `ABX_MCP_ALLOWED_ORIGINS`, `ABX_MCP_RUNTIME_DIR` | environment only; sandbox calls use `ABX_SANDBOX_API_KEY` |
+| MCP server | `mcp_*` | `ABX_MCP_AUTH_TOKEN`, `ABX_MCP_ALLOWED_ORIGINS`, `ABX_MCP_RUNTIME_DIR` | environment only; sandbox calls use `E2B_API_KEY` |
 | CLI display | — | `ABX_ACTIVITY_LINES`, `ABX_DISCOVER_COMMANDS` | not stored by `abx config` |
 | Shortcuts | `shortcuts`, `shortcuts.<name>` | — | `[shortcuts]` table of `config.toml` |
 | Secret store | — | — | `~/.abx/secrets.json` (SDK `SecretStore`, 0600) — not a config surface |
@@ -113,7 +113,7 @@ Every key in §3 has one environment variable. Product settings use `ABX_<KEY>`.
 
 1. **Keys are `snake_case`, one name per concept, identical in every surface.** The config key, the SDK field, the keyword argument and the flag (kebab-cased) are the same word: `sandbox_base_url` / `--sandbox-base-url`.
 2. **Prefix = what the value is about.** `sandbox_*` for the sandbox control/data plane (generic, protocol level); `llm_*` for the LLM profile; `acr_*` for the container registry; `mcp_*` for the MCP server; `http_*` for HTTP client tuning; bare words for provider-scoped keys inside their provider namespace (`region`, `access_key_id`).
-3. **One environment variable per key.** Product settings use `ABX_` + `UPPER(key)` (`sandbox_api_key` → `ABX_SANDBOX_API_KEY`). A vendor that already publishes a variable keeps that variable, and that variable is the only name: Alibaba Cloud access keys are `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`, the region is `ALIBABA_CLOUD_REGION_ID`, ACR settings are `ACR_NAMESPACE` and the matching `ACR_*` names, and the GitHub token is `GITHUB_TOKEN`. `team_id` is optional; its variable is `ABX_ALICLOUD_EXPRESS_TEAM_ID`. A plugin field is `ABX_` + `UPPER(provider_id with - → _)` + `_` + `UPPER(key)`.
+3. **One environment variable per key.** Product settings use `ABX_` + `UPPER(key)` (`sandbox_api_key` → `E2B_API_KEY`). A vendor that already publishes a variable keeps that variable, and that variable is the only name: Alibaba Cloud access keys are `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`, the region is `ALIBABA_CLOUD_REGION_ID`, ACR settings are `ACR_NAMESPACE` and the matching `ACR_*` names, and the GitHub token is `GITHUB_TOKEN`. `team_id` is optional; its variable is `ABX_ALICLOUD_EXPRESS_TEAM_ID`. A plugin field is `ABX_` + `UPPER(provider_id with - → _)` + `_` + `UPPER(key)`.
 4. **Provider scoping.** Keys are either *core* (provider-independent: `provider`, `sandbox_api_key`, `sandbox_base_url`, `sandbox_domain`, `http_*`, `max_retries`, `llm_*`, `github_token`, `mcp_*`, ...) or *provider-scoped* (declared by a provider's config schema: `region`, `access_key_id`, `access_key_secret`, `acr_*`, `team_id` for `alicloud-express`). A provider may also declare that it consumes core keys (`uses_core`) and may **override** them in its own scope (`providers.<id>.sandbox_api_key`), which is how two providers get two different API keys.
 
 ---
@@ -125,9 +125,9 @@ Every key in §3 has one environment variable. Product settings use `ABX_<KEY>`.
 | Key | Type | Secret | Environment variable | Default |
 |---|---|---|---|---|
 | `provider` | id | no | `ABX_PROVIDER` | `alicloud-express` |
-| `sandbox_api_key` | str | **yes** | `ABX_SANDBOX_API_KEY` | none |
-| `sandbox_base_url` | url | no | `ABX_SANDBOX_BASE_URL` | provider-derived (see §4.5) |
-| `sandbox_domain` | host | no | `ABX_SANDBOX_DOMAIN` | provider-derived |
+| `sandbox_api_key` | str | **yes** | `E2B_API_KEY` | none |
+| `sandbox_base_url` | url | no | `E2B_API_URL` | provider-derived (see §4.5) |
+| `sandbox_domain` | host | no | `E2B_DOMAIN` | provider-derived |
 | `http_timeout` | float ≥ 1 | no | `ABX_HTTP_TIMEOUT` | `30.0` |
 | `http2` | bool | no | `ABX_HTTP2` | `true` |
 | `max_retries` | int ≥ 0 | no | `ABX_MAX_RETRIES` | `3` |
@@ -196,7 +196,7 @@ ps = "sandbox process list"
 
 | Key | Stored as |
 |---|---|
-| `sandbox_api_key` | `ABX_SANDBOX_API_KEY` |
+| `sandbox_api_key` | `E2B_API_KEY` |
 | `access_key_id`, `access_key_secret` | `ALICLOUD_ACCESS_KEY_ID`, `ALICLOUD_ACCESS_KEY_SECRET` |
 | `acr_namespace`, `acr_password`, and the other secret or credential-like `acr_*` values | the `ACR_*` / `ACREE_INSTANCE_ID` variable for that key |
 | `llm_api_key` | `ABX_LLM_API_KEY` |
@@ -282,7 +282,7 @@ Derivation applies only when the base URL was **not** given by an explicit argum
 
 * **Scoped beats generic** only while `P` is the active provider: `providers.<P>.<key>` / `ABX_<P>_<KEY>` outrank the generic name of a core key `P` is allowed to read.
 * **Credentials and endpoints never cross providers.** Resolving for provider `P` never looks at `ABX_<Q>_*` or `[providers.Q]` for `Q ≠ P`.
-* **The generic credential/endpoint keys (`sandbox_api_key`, `sandbox_base_url`, `sandbox_domain`) belong to the built-in provider.** Without this rule, switching the default provider would silently send the Alibaba Cloud key to a third-party plugin (and a plugin's key to the Alibaba endpoint). A non-builtin provider receives them **only** when (a) its manifest lists them in `[core] inherit` **and** (b) the user consented to that at install/update time (the receipt records the consented list; the consent screen prints a warning line naming the keys). The effective list is `manifest.inherit ∩ receipt.consented.inherit`. The reference `e2b-compatible` provider inherits all three, so `ABX_SANDBOX_API_KEY` and `ABX_SANDBOX_BASE_URL` are delivered to it only by that recorded consent.
+* **The generic credential/endpoint keys (`sandbox_api_key`, `sandbox_base_url`, `sandbox_domain`) belong to the built-in provider.** Without this rule, switching the default provider would silently send the Alibaba Cloud key to a third-party plugin (and a plugin's key to the Alibaba endpoint). A non-builtin provider receives them **only** when (a) its manifest lists them in `[core] inherit` **and** (b) the user consented to that at install/update time (the receipt records the consented list; the consent screen prints a warning line naming the keys). The effective list is `manifest.inherit ∩ receipt.consented.inherit`. The reference `e2b-compatible` provider inherits all three, so `E2B_API_KEY` and `E2B_API_URL` are delivered to it only by that recorded consent.
 * Non-secret tuning keys (`http_timeout`, `http2`, `max_retries`, pool/WS/backoff) are shared with every provider.
 * LLM, GitHub and MCP keys are not provider credentials and are **never** delivered to a provider.
 * A plugin's own credentials are scoped fields it declares (environment variable `ABX_<P>_<KEY>`).

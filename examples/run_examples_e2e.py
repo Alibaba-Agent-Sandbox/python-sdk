@@ -48,7 +48,7 @@ def _base_env(home: Path | None = None) -> dict[str, str]:
     env = os.environ.copy()
     for name in (
         "ABX_SERVER_TOKEN",
-        "ABX_SANDBOX_API_KEY",
+        "E2B_API_KEY",
         "E2B_API_KEY",
         "OPENAI_API_KEY",
         "CODEX_API_KEY",

@@ -23,7 +23,7 @@ CubeSandbox 是目录提供方，源码在 `awesome-providers/cubesandbox`，id 
 `domain` 是端口主机名 `{port}-{sandboxID}.{domain}` 的后缀。
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 sb = await Sandbox.create(
     provider="cubesandbox",

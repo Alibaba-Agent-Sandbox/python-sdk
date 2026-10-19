@@ -4,17 +4,17 @@ Python SDK（`agent-sandbox-client`）是**运行时**客户端：创建、使�
 
 | 步骤 | 命令 | 说明 |
 |------|------|------|
-| 编写 | `abx template init` | 生成 `Dockerfile`、`template.yaml`、`commands.py` |
+| 编写 | `abx template scaffold` | 生成 `Dockerfile`、`template.yaml`、`commands.py` |
 | 构建 | `abx template build` | 对模板目录执行 `docker build` |
 | 发布 | `abx template deploy`（或 `abx deploy`） | 构建、推送到阿里云 ACR、注册模板、等待就绪 |
-| 启动 | `abx create --template <TEMPLATE_ID>` 或 `Sandbox.create(template=...)` | 运行时；SDK 从这里开始 |
+| 启动 | `abx create <TEMPLATE_ID>` 或 `Sandbox.create(template=...)` | 运行时；SDK 从这里开始 |
 
 完整流程、全部选项和 AI 辅助编写步骤见 CLI 的[部署与构建](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/deploy-and-build.md)指南。
 
 ## 在 Python 里使用结果
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async with await Sandbox.create(template="<TEMPLATE_ID 或别名>") as sandbox:
     print(await sandbox.run("hello", name="Ada"))      # 注册在模板 server 里的命令

@@ -40,7 +40,7 @@ abx run <sandbox-id> run_script --code "print(1+1)"
 SDK 侧等价写法：
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 sandbox = Sandbox.create_sync(template="python-hello")
 print(sandbox.run_sync("hello", name="Alice"))  # Hello, Alice!

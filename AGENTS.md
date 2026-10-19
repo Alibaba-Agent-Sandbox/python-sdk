@@ -5,9 +5,9 @@
 
 ## Project Overview
 
-**Agent Sandbox** (`agent-sandbox-client` on PyPI) is a Python SDK for the Alibaba Cloud FC Agent Sandbox service. It is the **runtime** client (create, use, kill sandboxes); templates are built and deployed with `abx template build|deploy`. Method names are E2B-shaped to ease migration; it is not a drop-in replacement (see `docs/en/guide/migrate-from-e2b.md`).
+**Agent Sandbox** (distribution name `agent-sandbox-client`, import `agent_sandbox`) provides standard synchronous/asynchronous Express clients and the explicit asynchronous `ProviderSandbox` for provider/server extensions. Standard entries follow the pinned Alibaba-supported E2B contract; conditional capabilities still depend on the actual account/function. Templates are built and deployed with `abx template build|deploy`; read `docs/en/guide/migrate-from-e2b.md` before changing either surface.
 
-This repository (`python-sdk`) holds the **Python SDK only**, split into two PyPI distributions that share the `agent_sandbox` namespace and are **released in lockstep** (same version number):
+This repository (`python-sdk`) holds the **Python SDK only**, split into two distributions that share the `agent_sandbox` namespace and are **versioned in lockstep** (same version number):
 
 | Folder | PyPI distribution | Import path | Source |
 |--------|-------------------|-------------|--------|
@@ -33,10 +33,12 @@ python-sdk/
 │   │   ├── models/                # Data models: config, errors, sandbox, template, session, filesystem, process
 │   │   ├── transport/             # HTTP/WS transport, auth, codec, retry, streaming
 │   │   ├── protocol/              # Protocol abstractions: sandbox, filesystem, process, terminal, port, code_interpreter
+│   │   ├── _standard/             # Pinned standard sync/async wire clients
+│   │   ├── code_interpreter/      # Pinned interpreter models and clients
 │   │   ├── api/                   # High-level API and server client; provider-neutral lifecycle/session contracts
 │   │   ├── providers/             # Backend/session adapters; shared envd wire; external Node engine client
 │   │   ├── agent/                 # AI agent tooling: MCP server, tool definitions
-│   │   ├── compat/                # E2B migration helper (partial; re-exports Sandbox)
+│   │   ├── compat/                # Legacy migration helpers (preserve their explicit contract)
 │   │   ├── declarative/           # @sandbox decorator, config, serializer
 │   │   ├── session/               # Session persistence: local (LocalSessionStore)
 │   │   └── utils/                 # Async bridge, secret store, logging, registry, retry
@@ -254,3 +256,17 @@ See [`.agents/notes/README.md`](.agents/notes/README.md) for the full template a
 9. **Layer dependency constraint.** Lower layers must never import upper layers (L0 must not import L1+, L1 must not import L2+, etc.). If you need a type from a higher layer, refactor it downward or use dependency injection.
 10. **Maintain `__all__` exports.** When adding or removing any public symbol in a module's `__init__.py`, update the `__all__` list to match.
 11. **Pydantic alias convention.** Model fields that map to camelCase API responses use `Field(alias="camelCaseName")`. Always use `model_config = ConfigDict(populate_by_name=True)` so both the alias and the Python snake_case name work.
+
+
+## Public API and maintained standard sources
+
+Root Sandbox/AsyncSandbox and code_interpreter expose the pinned standard clients.
+ProviderSandbox is the explicit asynchronous provider/server extension. Preserve
+both contracts and document which one each example uses. The active generated
+standard Connect messages use protobuf; the retired Python engine and grpcio stay
+removed. Keep original source hashes, patch descriptions and license attribution.
+
+Live source-install recipes must pin a tested implementation with the documented
+public entry shape. Verify the displayed paired archives in a fresh environment,
+including standard sync/async, ProviderSandbox and server imports plus pip check.
+A documentation-only follow-up does not require inventing a new package release.

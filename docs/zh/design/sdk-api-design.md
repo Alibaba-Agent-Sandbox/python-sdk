@@ -1,3 +1,5 @@
+> 标准公开 API 现在使用同步 Sandbox 与异步 AsyncSandbox。下文 Provider/Server 扩展及原生 `_sync` 包装器对应 ProviderSandbox，不定义标准客户端 API；`ABX_PROVIDER` 不切换标准客户端协议。见[迁移指南](../guide/migrate-from-e2b.md)。
+
 # SDK API 设计
 
 > `agent-sandbox-client` 包是**运行时**客户端：创建沙箱、使用沙箱、销毁沙箱。它提供两种写法（命令式和声明式）。模板的构建与部署归 `abx` CLI，运行 Agent 归 Agents API。
@@ -25,14 +27,14 @@
 - **运行 Agent 只有一个入口。** SandboxServer 上的 Agents API（`/v1/agents/**`）。SDK 没有 `sb.agent.*` 辅助方法。
 - **显式、带类型的接口。** 不用 `__getattr__` 分发；每个方法都有 mypy 检查的签名（`py.typed`）。
 - **异步优先，同步孪生。** 每个协程都有 `_sync` 版本，由它替你管理事件循环。
-- **如实的 E2B 风格命名。** 方法名沿用 E2B SDK 以便迁移，`agent_sandbox.compat` 是一个小的、部分覆盖的迁移辅助。线协议、配置和错误模型是 Agent Sandbox 自己的。见 [E2B 兼容性](../explanation/e2b-compatibility.md)。
+- **明确标准与扩展契约。** 本文描述原生 ProviderSandbox 的协议、配置和错误模型。`agent_sandbox.compat` 重新导出标准 `Sandbox`／`AsyncSandbox`；标准客户端及 `code_interpreter` 遵循固定的阿里云 E2B 契约。见[从 E2B 迁移](../guide/migrate-from-e2b.md)。
 
 ---
 
 ## 范式一：命令式
 
 ```python
-from agent_sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 sb = await Sandbox.create(template="code-interpreter")
 
@@ -173,7 +175,7 @@ export ALICLOUD_ACCESS_KEY_SECRET=your-sk
 所有异常都派生自 `SandboxError`，携带 `code`、`message`、`suggestion` 和 `docs_url`。
 
 ```python
-from agent_sandbox import Sandbox, SandboxError
+from agent_sandbox import ProviderSandbox as Sandbox, SandboxError
 from agent_sandbox.models.errors import TemplateNotFoundError, TimeoutError
 
 try:
@@ -197,7 +199,7 @@ except SandboxError as e:
 | 不提供 | 替代方案 |
 |--------|----------|
 | 模板构建、推送、部署（`Image`、`DockerBuilder`、`Sandbox.deploy`） | `abx template build` 与 `abx template deploy` |
-| 自然语言创建沙箱、`Sandbox.plan()` | CLI 的 `abx create "DESCRIPTION"` 与 `abx template init "DESCRIPTION"` |
+| 自然语言创建沙箱、`Sandbox.plan()` | CLI 的 `abx create --prompt "DESCRIPTION"` 与 `abx template scaffold "DESCRIPTION"` |
 | `sb.agent.*` 辅助方法、`Agent(...)` | [Agents API](../guide/agents-api.md) |
 | `Sandbox.custom()`、`run_command()`、`template.yaml` 中的 `custom_commands` | `sandbox.run(name, **kwargs)` 调用 server 注册的命令 |
 | `SandboxPool` | 不计划提供；按任务创建沙箱 |
