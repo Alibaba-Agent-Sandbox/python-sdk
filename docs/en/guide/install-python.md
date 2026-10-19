@@ -1,6 +1,6 @@
 # Install the Python packages
 
-Current development version 0.3.0 is not published on PyPI: both distribution metadata endpoints returned 404 on 2026-10-18. Package names do not prove publication. Use the tested paired source recipe below or a development checkout. The CLI is installed separately from its own repository.
+Current development version 0.3.0 is not published on PyPI: both distribution metadata endpoints returned 404 on 2026-10-19. Package names do not prove publication. Use the tested paired source recipe below or a development checkout. The CLI is installed separately from its own repository.
 
 ## Paired immutable source
 
