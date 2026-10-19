@@ -8,8 +8,8 @@ Agent Sandbox is a sandbox SDK with pluggable providers. The default provider is
 
 | Site | URL |
 |---|---|
-| Official site | https://www.agent-sandbox.com |
-| Provider registry | https://registry.agent-sandbox.com |
+| Official site | https://www.agent-sandbox.cn |
+| Provider registry | https://registry.agent-sandbox.cn |
 
 The installer fetches the catalog index at `https://registry.agent-sandbox.cn/providers/index.json`. `ABX_PROVIDER_REGISTRY` overrides that URL.
 

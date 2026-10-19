@@ -8,8 +8,8 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 
 | 网站 | 地址 |
 |---|---|
-| 官网 | https://www.agent-sandbox.com |
-| 提供方注册站 | https://registry.agent-sandbox.com |
+| 官网 | https://www.agent-sandbox.cn |
+| 提供方注册站 | https://registry.agent-sandbox.cn |
 
 安装器拉取的目录索引是 `https://registry.agent-sandbox.cn/providers/index.json`。`ABX_PROVIDER_REGISTRY` 可以改这个地址。
 

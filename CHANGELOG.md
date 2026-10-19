@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Documentation
+
+- Use the verified canonical website and registry links in active English/Chinese guides.
+
 ### Fixed
 
 - Start native SandboxServer processes before reporting readiness; bound startup acknowledgement, drain output without accumulation and release local readers while retaining remote ownership. / 原生 SandboxServer 启动先确认进程，限制等待并释放本地读取连接，保留远程资源所有权。

@@ -1,7 +1,7 @@
 """Provider catalog.
 
-The human registry site is https://registry.agent-sandbox.com. The official
-site is https://www.agent-sandbox.com. The installer fetches ``REGISTRY_INDEX``
+The human registry site is https://registry.agent-sandbox.cn. The official
+site is https://www.agent-sandbox.cn. The installer fetches ``REGISTRY_INDEX``
 on registry.agent-sandbox.cn. The SDK ships only ``alicloud-express``. Every
 other provider is installed from this index. A background check compares
 installed versions and writes ``~/.abx/providers/updates.json``. It never
