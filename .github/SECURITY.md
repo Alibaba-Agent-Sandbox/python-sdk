@@ -21,8 +21,8 @@ Alternatively, report privately through GitHub Security Advisories:
 🔒 https://github.com/alibaba-agent-sandbox/python-sdk/security/advisories/new
 
 This applies to all security issues in the Agent Sandbox Python packages
-(`agent-sandbox` and `agent-sandbox-server`), the `abx` CLI (maintained in the
-`cli` repository, which follows the same private reporting process), and the
+(`agent-sandbox-client` and `agent-sandbox-server`), the `abx` CLI (maintained in the
+`agent-sandbox` repository, which follows the same private reporting process), and the
 project's code.
 
 ### What to Include
@@ -54,15 +54,15 @@ When reporting a vulnerability, please include:
 
 ## Security Best Practices for Users
 
-- Keep `agent-sandbox` and `agent-sandbox-server` updated to the latest version (they are released in lockstep)
+- Keep `agent-sandbox-client` and `agent-sandbox-server` updated to the latest version (they are released in lockstep)
 - Never commit API keys, tokens, or credentials to your repository
 - Use environment variables or the SDK's keychain for authentication
 - Review sandbox templates before deploying to production
 
 ## Scope
 
-This security policy covers the Agent Sandbox project code: the `agent-sandbox`
-and `agent-sandbox-server` Python packages, and the `abx` CLI (in the `cli`
+This security policy covers the Agent Sandbox project code: the `agent-sandbox-client`
+and `agent-sandbox-server` Python packages, and the `abx` CLI (in the `agent-sandbox`
 repository).
 
 Thank you for helping keep Agent Sandbox and its users safe! 🔒

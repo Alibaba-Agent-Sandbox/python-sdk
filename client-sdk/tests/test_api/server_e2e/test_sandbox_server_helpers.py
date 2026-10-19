@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock
@@ -10,8 +11,12 @@ import pytest
 
 from agent_sandbox.api.server_client import ServerClient
 from agent_sandbox.models.errors import ConnectionError_
+from agent_sandbox.models.process import ProcessChunk, ProcessChunkType
+from agent_sandbox.transport.streaming import StreamReader
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from agent_sandbox.api.sandbox import Sandbox
 
 
@@ -48,17 +53,31 @@ class TestServerAt:
 class _Spy:
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict[str, Any]]] = []
+        self.started = 0
+        self.closed = 0
 
-    async def run(self, cmd: str, **kwargs: Any) -> object:
+    async def run(self, cmd: str, **kwargs: Any) -> StreamReader[ProcessChunk]:
         self.calls.append((cmd, kwargs))
-        return object()
+
+        async def frames() -> AsyncIterator[dict[str, Any]]:
+            self.started += 1
+            try:
+                yield {"pid": 42}
+                await asyncio.Event().wait()
+            finally:
+                self.closed += 1
+
+        return StreamReader(
+            frames(), lambda frame: ProcessChunk(type=ProcessChunkType.STDOUT, pid=frame["pid"])
+        )
 
 
 @pytest.fixture
-def spy(sandbox: Sandbox, monkeypatch: pytest.MonkeyPatch) -> _Spy:
+async def spy(sandbox: Sandbox, monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[_Spy]:
     spy = _Spy()
     monkeypatch.setattr(sandbox.commands, "run", spy.run)
-    return spy
+    yield spy
+    await sandbox.close()
 
 
 @pytest.fixture
@@ -69,6 +88,79 @@ def healthy(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
 
 
 class TestStartServer:
+    async def test_activates_lazy_process_before_reporting_ready(
+        self, sandbox: Sandbox, spy: _Spy, healthy: AsyncMock
+    ) -> None:
+        client = await sandbox.start_server()
+        assert spy.started == 1
+        await client.aclose()
+        await sandbox.close()
+        assert spy.closed == 1
+
+    async def test_start_failure_is_bounded_and_does_not_expose_remote_output(
+        self, sandbox: Sandbox, monkeypatch: pytest.MonkeyPatch, healthy: AsyncMock
+    ) -> None:
+        async def frames() -> AsyncIterator[dict[str, Any]]:
+            raise RuntimeError("private process output")
+            yield {}
+
+        stream = StreamReader(frames(), lambda frame: ProcessChunk(type=ProcessChunkType.STDOUT))
+        monkeypatch.setattr(sandbox.commands, "run", AsyncMock(return_value=stream))
+        with pytest.raises(ConnectionError_, match="stopped before startup") as exc:
+            await sandbox.start_server()
+        assert "private" not in str(exc.value)
+        healthy.assert_not_awaited()
+        assert not sandbox._server_stream_tasks
+
+    async def test_wait_false_still_requires_start_acknowledgement(
+        self, sandbox: Sandbox, monkeypatch: pytest.MonkeyPatch, healthy: AsyncMock
+    ) -> None:
+        closed = asyncio.Event()
+
+        async def frames() -> AsyncIterator[dict[str, Any]]:
+            try:
+                await asyncio.Event().wait()
+                yield {}
+            finally:
+                closed.set()
+
+        stream = StreamReader(frames(), lambda frame: ProcessChunk(type=ProcessChunkType.STDOUT))
+        monkeypatch.setattr(sandbox.commands, "run", AsyncMock(return_value=stream))
+        with pytest.raises(ConnectionError_, match="did not acknowledge startup"):
+            await sandbox.start_server(wait=False, timeout=0.05)
+        assert closed.is_set()
+        healthy.assert_not_awaited()
+        assert not sandbox._server_stream_tasks
+
+    async def test_existing_health_does_not_hide_process_exit(
+        self, sandbox: Sandbox, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        stop = asyncio.Event()
+
+        async def frames() -> AsyncIterator[dict[str, Any]]:
+            yield {"pid": 42}
+            await stop.wait()
+            yield {"exited": True}
+
+        stream = StreamReader(
+            frames(),
+            lambda frame: ProcessChunk(
+                type=ProcessChunkType.EXIT if frame.get("exited") else ProcessChunkType.STDOUT,
+                pid=frame.get("pid"),
+            ),
+        )
+
+        async def health(_client: ServerClient) -> bool:
+            stop.set()
+            await asyncio.sleep(0)
+            return True
+
+        monkeypatch.setattr(sandbox.commands, "run", AsyncMock(return_value=stream))
+        monkeypatch.setattr(ServerClient, "health", health)
+        with pytest.raises(ConnectionError_, match="stopped before becoming healthy"):
+            await sandbox.start_server()
+        assert not sandbox._server_stream_tasks
+
     async def test_default_command_and_background(
         self, sandbox: Sandbox, spy: _Spy, healthy: AsyncMock
     ) -> None:
@@ -121,6 +213,7 @@ class TestStartServer:
     ) -> None:
         client = await sandbox.start_server(wait=False)
         healthy.assert_not_awaited()
+        assert spy.started == 1
         await client.aclose()
 
     async def test_polls_until_healthy(

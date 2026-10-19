@@ -5,7 +5,7 @@ labels: []
 
 👋 **Welcome to the Agent Sandbox community!**
 
-We're excited to have you here. Agent Sandbox is a Python SDK (and the `abx` CLI, maintained in the `cli` repository) for creating, managing, and interacting with cloud sandboxes designed for AI agents — with E2B-style method names and Alibaba Cloud authentication and templates.
+We're excited to have you here. Agent Sandbox is a Python SDK (and the `abx` CLI, maintained in the `agent-sandbox` repository) for creating, managing, and interacting with cloud sandboxes designed for AI agents — with E2B-style method names and Alibaba Cloud authentication and templates.
 
 ## 🗂️ Community Guide
 
@@ -20,18 +20,17 @@ Please use the right channel for your needs:
 
 ## 🚀 Quick Start
 
-```bash
-pip install agent-sandbox-client
-```
+Install the matching client/server pair with the [source installation guide](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/install-python.md); these packages are not yet published on PyPI. Configure your local credentials as described in [getting started](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/getting-started.md).
 
 ```python
 from agent_sandbox import Sandbox
 
-async def main():
-    async with await Sandbox.create(template="python-base") as sb:
-        result = await sb.run_code("print('Hello from sandbox!')")
-        print(result.text)
+with Sandbox.create("base", timeout=60) as sb:
+    result = sb.commands.run("printf hello")
+    print(result.stdout)
 ```
+
+For code execution use [the code-interpreter guide](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/client-sdk.md). The separate `abx` CLI is installed through its [binary installation guide](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md).
 
 ## 📚 Resources
 

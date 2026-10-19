@@ -5,7 +5,7 @@
 Server SDK 跑在**沙箱里面**。它是镜像启动后一直听着的 HTTP 服务，默认端口 9000。包名是 `agent-sandbox-server`，导入 `agent_sandbox.server`。模板的 `commands.py` 用它注册命令、打开能力，然后 `start(9000)`。
 
 ```bash
-python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk"
+python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=server-sdk"
 ```
 
 ```python
@@ -64,3 +64,26 @@ agent-sandbox-server serve --commands ./commands.py --port 9000
 - `examples/templates/agents-cli/commands.py` — 只打开发话相关的 Agents 路由
 
 `examples/templates/python-hello/call_api.py` 不是 Server SDK。它在沙箱外面，对已经在听的服务发请求，归在 Client SDK。
+
+## 从原生客户端启动
+
+`ProviderSandbox.start_server()` 会消费远程进程的启动确认，再检查健康状态。`wait=False` 只跳过健康轮询，仍然真正启动进程。客户端保持连接时会持续消费惰性输出流；关闭本地客户端只释放读取连接，保留远程服务和沙箱。自建沙箱用完后应显式销毁。
+
+镜像必须安装运行时，且进程环境能找到它。用户目录安装的控制台脚本不在进程 PATH 时，使用绝对路径或对应的 Python 解释器：
+
+```python
+from agent_sandbox import ProviderSandbox
+
+sandbox = await ProviderSandbox.connect(sandbox_id)
+client = await sandbox.start_server(
+    command="python3 -m agent_sandbox.server serve --port 9000 --commands /app/commands.py",
+    timeout=30,
+)
+try:
+    result = await client.commands.run("hello", name="Ada")
+finally:
+    await client.aclose()
+    await sandbox.close()
+```
+
+启动失败或超时不会附带可能包含密钥的原始进程输出。安装成功并不意味着服务已经启动。

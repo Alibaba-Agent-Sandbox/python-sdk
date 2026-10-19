@@ -1,15 +1,15 @@
 # 安装 Python 配套包
 
-当前开发版本0.3.0尚未发布到 PyPI：2026-10-18 两个发行包的元数据端点均返回404。包名存在于项目中不等于已发布。请使用下面验证过的配套源码安装方式，或从开发检出安装。CLI 从其独立仓库安装。
+当前开发版本0.3.0尚未发布到 PyPI：2026-10-19 两个发行包的元数据端点均返回404。包名存在于项目中不等于已发布。请使用下面验证过的配套源码安装方式，或从开发检出安装。CLI 从其独立仓库安装。
 
 ## 固定提交的配套源码
 
-使用 Python 3.10或更高版本及虚拟环境。这个已验收的原生运行时提交包含鉴权、变更请求恢复修复；它是已测试的固定来源，不代表最新主线提交。
+使用 Python 3.10或更高版本及虚拟环境。此已验证的固定实现包含标准同步/异步客户端、原生 Provider/server 扩展及服务启动确认修复；并不声称它是最新主线提交。
 
 ```bash
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=client-sdk"
 python -m pip check
 python -c "import agent_sandbox, agent_sandbox.server; from importlib.metadata import version; print(version('agent-sandbox-client'), version('agent-sandbox-server'))"
 ```
@@ -22,8 +22,8 @@ python -c "import agent_sandbox, agent_sandbox.server; from importlib.metadata i
 
 ```bash
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=client-sdk"
 ```
 
 可把 `[all]` 换成 `[mcp]`、`[declarative]`、`[session]` 或 `[fast]`。MCP 需要相应 extra；空的 `[server]` 别名本身不添加功能。浏览器自动化还需在镜像内单独安装 Playwright。
@@ -31,7 +31,7 @@ python -m pip install \
 ## 镜像内只安装服务端
 
 ```bash
-python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk"
+python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=server-sdk"
 ```
 
 沙箱内服务端和本地客户端职责不同，安装服务端不会创建沙箱。

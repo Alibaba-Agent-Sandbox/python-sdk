@@ -5,7 +5,7 @@ For current SDK installation, use the [paired source installation guide](install
 The Server SDK runs **inside the sandbox**. It is the HTTP service the image keeps listening on, port 9000 by default. The package is `agent-sandbox-server`. Import `agent_sandbox.server`. A template's `commands.py` uses it to register commands, turn capabilities on, and call `start(9000)`.
 
 ```bash
-python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/cceb318d58fad0096def8809165d6646029a35e2.tar.gz#subdirectory=server-sdk"
+python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=server-sdk"
 ```
 
 ```python
@@ -66,3 +66,26 @@ These `commands.py` files start with the image. See the [example index](../../..
 - `examples/templates/agents-cli/commands.py` — only the session Agents routes are open
 
 `examples/templates/python-hello/call_api.py` is not the Server SDK. It runs outside the sandbox and sends HTTP to a server that is already listening. That script is a Client SDK example.
+
+## Starting from the native client
+
+`ProviderSandbox.start_server()` starts an installed runtime and waits for the remote process acknowledgement before checking health. `wait=False` skips the health polling, but still starts the process. The native process API's lazy output stream is drained while the local client remains open. Closing the local client releases that reader and leaves the remote server and sandbox running; destroy an owned sandbox explicitly when finished.
+
+The runtime must be installed in the image and reachable from its process environment. When a user-installed console script is missing from the process PATH, use its absolute path or the matching Python interpreter:
+
+```python
+from agent_sandbox import ProviderSandbox
+
+sandbox = await ProviderSandbox.connect(sandbox_id)
+client = await sandbox.start_server(
+    command="python3 -m agent_sandbox.server serve --port 9000 --commands /app/commands.py",
+    timeout=30,
+)
+try:
+    result = await client.commands.run("hello", name="Ada")
+finally:
+    await client.aclose()
+    await sandbox.close()
+```
+
+Startup failures and timeout errors omit raw process output, which may contain secrets. Successful installation alone does not establish a running server.

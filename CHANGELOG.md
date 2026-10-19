@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Start native SandboxServer processes before reporting readiness; bound startup acknowledgement, drain output without accumulation and release local readers while retaining remote ownership. / 原生 SandboxServer 启动先确认进程，限制等待并释放本地读取连接，保留远程资源所有权。
+
 ### Changed
 
 - Align Alibaba Express standard lifecycle, process, file and interpreter behavior with the pinned E2B contract; use canonical `E2B_*` connection settings.

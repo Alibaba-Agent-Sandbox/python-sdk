@@ -1,8 +1,10 @@
 # Command and SDK map
 
+> Historical native-interface comparison: these tables predate the current standard CLI/client migration and do not specify the current command surface. For working installation and current APIs, use [Python installation](install-python.md), [E2B migration](migrate-from-e2b.md), [native SDK usage](sdk-usage.md), and the [current CLI README](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox#readme). External product versions below are historical references.
+
 Each row is the closest entry point for the same job in the three products. It is not parameter-for-parameter compatibility, and it does not shrink Agent Sandbox to a subset of either product.
 
-`abx` is the Agent Sandbox command line. The Python SDK is `agent-sandbox`. The default provider is Alibaba Cloud Express. After the `opensandbox` provider is installed, the `abx` command names stay the same and the calls go to an OpenSandbox server. That is a different command from running `osb`.
+`abx` is the Agent Sandbox command line. The Python distribution is `agent-sandbox-client`. The default provider is Alibaba Cloud Express. After the `opensandbox` provider is installed, the `abx` command names stay the same and the calls go to an OpenSandbox server. That is a different command from running `osb`.
 
 Public surfaces used for this map:
 
@@ -20,7 +22,7 @@ A cell with "—" means that side has no matching public command or method.
 
 | Job | abx | Agent Sandbox SDK | e2b | E2B SDK | osb | OpenSandbox SDK |
 |---|---|---|---|---|---|---|
-| Install | `npm install -g @agent-sandbox/cli` | `pip install agent-sandbox-client` | `npm install -g @e2b/cli` | `pip install e2b` | `pip install opensandbox-cli` | `pip install opensandbox` |
+| Install | [CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md) | [Paired source install](install-python.md) | `npm install -g @e2b/cli` | `pip install e2b` | `pip install opensandbox-cli` | `pip install opensandbox` |
 | Store a credential | `abx config set sandbox_api_key` | environment variable `E2B_API_KEY` | `e2b auth login` | environment variable `E2B_API_KEY` | `osb config set connection.api_key` | `ConnectionConfig(api_key=…)` or `OPEN_SANDBOX_API_KEY` |
 | Show the effective config | `abx config list` | — | `e2b auth info` | — | `osb config show` | — |
 

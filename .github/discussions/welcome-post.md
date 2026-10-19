@@ -4,7 +4,7 @@ Hey everyone! Welcome to the **Agent Sandbox** community — we're thrilled to h
 
 ## What is Agent Sandbox?
 
-Agent Sandbox is a Python SDK (and the `abx` CLI, maintained in the `cli` repository) for creating, managing, and interacting with cloud sandboxes designed for AI agents. It uses E2B-style method names to ease porting, and adds Alibaba Cloud authentication and templates. Whether you're building autonomous agents, code interpreters, or secure execution environments, Agent Sandbox gives you the tools to do it with zero-config simplicity.
+Agent Sandbox is a Python SDK (and the `abx` CLI, maintained in the `agent-sandbox` repository) for creating, managing, and interacting with cloud sandboxes designed for AI agents. It uses E2B-style method names to ease porting, and adds Alibaba Cloud authentication and templates. Whether you're building autonomous agents, code interpreters, or secure execution environments, Agent Sandbox gives you the tools to do it with zero-config simplicity.
 
 ## 🗂️ How to Use This Community
 
@@ -19,26 +19,17 @@ We want to keep things organized so everyone can find what they need:
 
 ## 🚀 Quick Start
 
-```bash
-pip install agent-sandbox-client
-```
+Install the matching client/server pair with the [source installation guide](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/install-python.md); these packages are not yet published on PyPI. Configure your local credentials as described in [getting started](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/getting-started.md).
 
 ```python
 from agent_sandbox import Sandbox
 
-async def main():
-    async with await Sandbox.create(template="python-base") as sb:
-        result = await sb.run_code("print('Hello from sandbox!')")
-        print(result.text)  # Hello from sandbox!
+with Sandbox.create("base", timeout=60) as sb:
+    result = sb.commands.run("printf hello")
+    print(result.stdout)
 ```
 
-Or use the CLI (a separate Node.js project in the `cli` repository):
-
-```bash
-npm install -g @agent-sandbox/cli
-abx create --template python-base
-abx exec <sandbox-id> "echo hello"
-```
+For code execution use [the code-interpreter guide](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/client-sdk.md). The separate `abx` CLI is installed through its [binary installation guide](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md).
 
 ## 📚 Key Links
 
