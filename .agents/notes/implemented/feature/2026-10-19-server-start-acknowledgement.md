@@ -1,6 +1,6 @@
 # Decision: Dispatch native server startup before readiness
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -29,3 +29,7 @@ Reproduce zero dispatch with a real lazy reader, then verify acknowledgement, wa
 ## Acceptance criteria
 
 New behavior regressions pass; clean artifacts install with matched versions; real named command and retained-server receipt passes; no owned sandbox remains; latest-head required CI passes before merge. Source installation recipes pin a tested immutable implementation.
+
+## Implementation
+
+Implementation and scoped local verification are complete. Hosted checks and actual merge state are separate gates recorded in the PR; public deployment readback, where applicable, remains a post-merge acceptance check. No package release is implied.
