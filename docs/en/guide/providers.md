@@ -4,7 +4,7 @@ This guide describes asynchronous `ProviderSandbox` provider extensions. Root `S
 
 > **Note:** The `abx provider ...` commands on this page are provided by the Node.js CLI in the `cli` repository. Python-only users get the same operations from `python -m agent_sandbox.providers ...`. Both use the same install directory, the same receipts and the same tree digest.
 
-A **provider** is a sandbox backend. The SDK and the CLI ship only `alicloud-express`. The others install with `python -m agent_sandbox.providers install registry:<id> --yes` from `https://registry.agent-sandbox.cn/providers/index.json`. A background check writes newer versions to `~/.abx/providers/updates.json`. `ABX_PROVIDER_UPDATE_CHECK=0` turns the check off. `ABX_PROVIDER_REGISTRY` changes the index URL. The official site is <https://www.agent-sandbox.com>. The registry website is <https://registry.agent-sandbox.com>.
+A **provider** is a sandbox backend. The SDK and the CLI ship only `alicloud-express`. The others install with `python -m agent_sandbox.providers install registry:<id> --yes` from `https://registry.agent-sandbox.cn/providers/index.json`. A background check writes newer versions to `~/.abx/providers/updates.json`. `ABX_PROVIDER_UPDATE_CHECK=0` turns the check off. `ABX_PROVIDER_REGISTRY` changes the index URL. The official site is <https://www.agent-sandbox.cn>. The registry website is <https://registry.agent-sandbox.cn>.
 
 | Id | Name | Kind | Default |
 |---|---|---|---|

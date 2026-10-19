@@ -4,7 +4,7 @@
 
 > **说明：** 本页的 `abx provider ...` 命令由 `cli` 仓库中的 Node.js CLI 提供。只用 Python 的用户可以用 `python -m agent_sandbox.providers ...` 完成同样的操作。两者使用相同的安装目录、相同的回执和相同的目录树摘要。
 
-**提供方**就是一个沙箱后端。SDK 和 CLI 只内置 `alicloud-express`。其余提供方用 `python -m agent_sandbox.providers install registry:<id> --yes` 安装，索引是 `https://registry.agent-sandbox.cn/providers/index.json`。启动时会在后台对照这份索引检查更新，结果写到 `~/.abx/providers/updates.json`。`ABX_PROVIDER_UPDATE_CHECK=0` 关掉检查。`ABX_PROVIDER_REGISTRY` 可以改索引地址。官网是 <https://www.agent-sandbox.com>。提供方注册站是 <https://registry.agent-sandbox.com>。
+**提供方**就是一个沙箱后端。SDK 和 CLI 只内置 `alicloud-express`。其余提供方用 `python -m agent_sandbox.providers install registry:<id> --yes` 安装，索引是 `https://registry.agent-sandbox.cn/providers/index.json`。启动时会在后台对照这份索引检查更新，结果写到 `~/.abx/providers/updates.json`。`ABX_PROVIDER_UPDATE_CHECK=0` 关掉检查。`ABX_PROVIDER_REGISTRY` 可以改索引地址。官网是 <https://www.agent-sandbox.cn>。提供方注册站是 <https://registry.agent-sandbox.cn>。
 
 | Id | 名称 | 类型 | 默认 |
 |---|---|---|---|
