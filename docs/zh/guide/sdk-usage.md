@@ -7,9 +7,7 @@
 
 ## 安装
 
-```bash
-pip install agent-sandbox-client
-```
+请按[配套源码安装指南](install-python.md)安装。客户端/服务端0.3.0尚未发布到 PyPI；应从同一已验证提交安装两个发行包。
 
 不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。
 

@@ -14,7 +14,7 @@
 方便 E2B 代码迁移，标准接口遵循阿里云支持版本的行为契约（见[从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md)）。
 
 本仓库（`python-sdk`）包含 **Python SDK**，以两个版本同步的分发包提供。命令行工具 `abx` 是独立的
-Node.js 项目，位于 [`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) 仓库（见[相关：abx CLI](#相关abx-cli)）。
+Node.js 项目，位于 [`agent-sandbox`](https://github.com/alibaba-agent-sandbox/agent-sandbox) 仓库（见[相关：abx CLI](#相关abx-cli)）。
 
 | 目录 | PyPI 分发包 | 导入路径 | 用途 |
 |------|-------------|----------|------|
@@ -85,7 +85,7 @@ pip install -e ./server-sdk -e "./client-sdk[dev]"
 `agent-sandbox-client` 依赖同版本的 `agent-sandbox-server`，因此 [配套源码安装指南](docs/zh/guide/install-python.md) 同样会提供 `agent_sandbox.server`（`@sandbox` 装饰器的 server 代理在本地需要它）。`[server]` extra 作为无害的别名保留。
 
 `abx` CLI 不再属于 Python 包（不再有 `[cli]` extra，也没有 `abx` 控制台脚本），由
-[`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) 仓库分发（见[相关：abx CLI](#相关abx-cli)）。
+[`agent-sandbox`](https://github.com/alibaba-agent-sandbox/agent-sandbox) 仓库分发（见[相关：abx CLI](#相关abx-cli)）。
 
 ## 快速开始
 
@@ -238,7 +238,7 @@ graph TB
 
 ## 相关：abx CLI
 
-命令行工具 `abx`（`@agent-sandbox/cli`，Node.js）在 [`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) 仓库中开发，
+命令行工具 `abx`（`@agent-sandbox/cli`，Node.js）在 [`agent-sandbox`](https://github.com/alibaba-agent-sandbox/agent-sandbox) 仓库中开发，
 与本 SDK 共享沙箱、模板与凭证。其安装方式、命令参考、教程、MCP Server 命令以及 Agent Skill（`SKILL.md`）
 均在该仓库中维护：
 

@@ -16,7 +16,7 @@ standard sync/async runtime and Template client. Project provider/server templat
 ports with few changes; the standard API follows Alibaba-supported E2B behavior (see [Migrate from E2B](docs/en/guide/migrate-from-e2b.md)).
 
 This repository (`python-sdk`) contains the **Python SDK**, packaged as two lock-step distributions. The `abx` command-line tool is a separate Node.js project that lives in the
-[`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) repository (see [Related: the abx CLI](#related-the-abx-cli)).
+[`agent-sandbox`](https://github.com/alibaba-agent-sandbox/agent-sandbox) repository (see [Related: the abx CLI](#related-the-abx-cli)).
 
 | Folder | Distribution | Import path | Purpose |
 |--------|-------------------|-------------|---------|
@@ -87,7 +87,7 @@ Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated projec
 `agent-sandbox-client` depends on `agent-sandbox-server` of the same version, so installing the [paired sources](docs/en/guide/install-python.md) also provides `agent_sandbox.server` (needed locally by the `@sandbox` decorator's server proxy). The `[server]` extra is kept as a harmless alias.
 
 The `abx` CLI is no longer part of the Python package (there is no `[cli]` extra and no `abx`
-console script); it is distributed from the [`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) repository
+console script); it is distributed from the [`agent-sandbox`](https://github.com/alibaba-agent-sandbox/agent-sandbox) repository
 (see [Related: the abx CLI](#related-the-abx-cli)).
 
 ## Quick Start
@@ -246,7 +246,7 @@ Lower layers never import upper layers. Full design: [`docs/en/design/architectu
 ## Related: the abx CLI
 
 The `abx` command-line tool (`@agent-sandbox/cli`, Node.js) is developed in the
-[`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) repository. It shares sandboxes, templates and
+[`agent-sandbox`](https://github.com/alibaba-agent-sandbox/agent-sandbox) repository. It shares sandboxes, templates and
 credentials with this SDK. Its installation, command reference, tutorials, MCP server
 commands and the Agent Skill (`SKILL.md`) are documented there:
 

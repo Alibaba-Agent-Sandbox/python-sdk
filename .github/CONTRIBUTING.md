@@ -9,11 +9,11 @@ distributions that share the `agent_sandbox` namespace and are versioned in lock
 
 | Folder | PyPI distribution | Import path | Purpose |
 |--------|-------------------|-------------|---------|
-| `client-sdk/` | `agent-sandbox-client` | `agent_sandbox` | Async client SDK (`Sandbox`, `ServerClient`, `@sandbox`, MCP server, E2B migration helper, ...) |
+| `client-sdk/` | `agent-sandbox-client` | `agent_sandbox` | Standard sync/async clients and native provider/server extensions (`ProviderSandbox`, `ServerClient`, `@sandbox`, MCP server, ...) |
 | `server-sdk/` | `agent-sandbox-server` | `agent_sandbox.server` | Container-side runtime that runs inside sandbox images |
 
 The `abx` command-line tool is a separate Node.js/TypeScript project that lives in the
-`cli` repository. CLI issues and pull requests belong there, not here.
+`agent-sandbox` repository. CLI issues and pull requests belong there, not here.
 
 ## Development Setup
 
@@ -194,7 +194,7 @@ Your template repository should include:
 
 ### Searching Templates
 
-Use the CLI (`abx`, from the `cli` repository) to search the remote index:
+Use the CLI (`abx`, from the `agent-sandbox` repository) to search the remote index:
 ```bash
 abx template search python      # search by tag or keyword
 abx template search ai-agent    # find AI agent templates

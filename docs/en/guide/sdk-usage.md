@@ -6,9 +6,7 @@ This page documents the asynchronous **ProviderSandbox** provider/server extensi
 
 ## Installation
 
-```bash
-pip install agent-sandbox-client
-```
+Follow the [paired source installation guide](install-python.md). The client/server0.3.0 packages are not yet published on PyPI; install both from the same tested revision.
 
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
 

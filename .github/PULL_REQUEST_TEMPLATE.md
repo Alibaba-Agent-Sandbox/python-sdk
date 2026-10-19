@@ -2,7 +2,7 @@
 
 <!-- Briefly describe what this PR does -->
 
-> This repository contains the Python SDK (`client-sdk/`, `server-sdk/`). Changes to the `abx` CLI belong in the `cli` repository.
+> This repository contains the Python SDK (`client-sdk/`, `server-sdk/`). Changes to the `abx` CLI belong in the `agent-sandbox` repository.
 
 ## Type of Change
 
