@@ -95,3 +95,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Dispatch native server startup before readiness](notes/implemented/feature/2026-10-19-server-start-acknowledgement.md) · [verification](evidence/verify/2026-10-19-server-start-acknowledgement.md)
 
 - [Canonical guide links](notes/implemented/process/2026-10-19-canonical-guide-links.md) · [verification](evidence/verify/2026-10-19-canonical-guide-links.md)
+
+- [Express conditional support](notes/implemented/process/2026-10-19-express-conditional-support.md) · [verification](evidence/verify/2026-10-19-express-conditional-support.md)
