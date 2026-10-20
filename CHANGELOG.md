@@ -43,6 +43,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Removed the unconfirmed automatic AK/SK-to-sandbox-key RPC exchange and its private signing/parser helpers. Sandbox requests now fail locally without an API Key; official template/ACR AK/SK operations remain. Explicit custom exchange adapters remain and reject empty/structured token returns. This changes AK/SK-only runtime authentication; see the bilingual migration guide.
 
 ### Added
+
+- Provider-registered Express pause/resume and Snapshot create/list/restore/delete, shared by CLI and Python engine clients without backend duplication. / Provider 注册的极速版暂停恢复及快照全流程，两端共用实现。
 - Add local generation2 pause/snapshot acceptance with memory/files/clone assertions, owned cleanup and bilingual provisioning guidance.
 
 - `Sandbox.create(volume_mounts={"/mnt/data": "existing-volume-name"})` mounts existing Volumes with the built-in provider. Strict validation runs before provider/engine I/O; unsupported providers fail with E8004. The existing gRPC lifecycle forwards the hint and emits the official `volumeMounts: [{name, path}]` creation payload; empty maps preserve prior requests. Real OSS storage mount/read/write/cleanup is verified for the tested base template in cn-hangzhou.

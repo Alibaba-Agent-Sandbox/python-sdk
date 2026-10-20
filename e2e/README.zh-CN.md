@@ -104,3 +104,14 @@ cd e2e && python -m pytest -m "not e2e_slow" -ra               # 等同 `make e2
 `test_09_mcp_lifecycle.py` 验证真实 Python MCP 创建、白名单元数据、列表可见性、
 续期、命令与文件，以及外部查询会话退出时不误删资源。仅列表按既有最终一致
 40 秒窗口重试，不据此推断 IDE 或新镜像部署通过。
+
+## 共享 Provider 条件能力验收（仅本地）
+
+准备含六个注册命令的 CLI 构建，以及已开通暂停/快照的二代模板。凭据只保留本地：
+
+```sh
+python e2e/provider_conditional.py --abx "$ABX_BIN" \
+  --template "$E2E_SNAPSHOT_TEMPLATE" --env-file .env --report provider-conditional-report.json
+```
+
+控制器启动隔离的真实引擎，比较两端发现结果，双向验证暂停恢复、快照创建/列表/恢复/删除、内存文件连续性、克隆隔离和独立清理。不会创建或删除传入的模板。二进制应放在不会被另一轮构建清理的独立位置。报告不包含凭据及资源标识；该手动控制器不会被 pytest 收集，也不从 Actions 调度。

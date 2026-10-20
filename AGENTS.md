@@ -270,3 +270,7 @@ Live source-install recipes must pin a tested implementation with the documented
 public entry shape. Verify the displayed paired archives in a fresh environment,
 including standard sync/async, ProviderSandbox and server imports plus pip check.
 A documentation-only follow-up does not require inventing a new package release.
+
+## Provider command ownership
+
+Common code owns configuration isolation, schema validation, transport and generic discovery/dispatch. Keep vendor API mappings, resource identifiers and admission conditions in the owning Provider. Prefer the existing `provider-commands/1` contract for provider-specific operations: the CLI `provider command` namespace and Python `agent_sandbox.providers.commands` discover the same engine catalog. Do not add a backend switch or duplicate cloud implementation in each consumer. Stable typed APIs may be thin wrappers; registration does not generate language methods or establish live-account readiness. Express is bundled in the CLI provider tree; catalog plugin source remains in awesome-providers. Standard compatibility clients keep their existing contract.
