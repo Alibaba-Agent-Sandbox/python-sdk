@@ -134,3 +134,18 @@ python e2e/provider_conditional.py --abx "$ABX_BIN" \
 ```
 
 The controller starts an isolated real engine, compares CLI/Python discovery, tests both directions of pause/resume and Snapshot create/list/restore/delete, checks in-memory/file continuity and clone isolation, and independently verifies owned cleanup. It does not create/delete the supplied template. Keep the binary outside a build directory that another build can erase. The report excludes credentials and resource identifiers. This manual controller is not collected by pytest and is not dispatched from Actions.
+
+
+### Optional native CLI named-array regression
+
+Set `ABX_BIN` to an installed CLI executable for the existing provider CLI cases.
+Set `ABX_E2E_CLI` to the same executable to enable the native `--json-args` string-array
+regression in `test_19_named_string_array.py`. That regression uploads and verifies
+this checkout's server source into a fresh tracked sandbox; it does not assume
+an updated server is preinstalled. Its fixture polls the owned command catalogue
+because platform health can answer before port forwarding is ready.
+
+运行 CLI 用例时，通过 `ABX_BIN` 指定已安装的 CLI；将 `ABX_E2E_CLI` 指向同一个
+可执行文件，可启用 `test_19_named_string_array.py` 的原生 JSON 数组回归。
+该用例上传并校验当前 checkout 的服务器源码，使用独立、受跟踪的沙箱，
+不会假定预置服务器已更新；以命令目录的就绪作为异步端口转发生效的依据。

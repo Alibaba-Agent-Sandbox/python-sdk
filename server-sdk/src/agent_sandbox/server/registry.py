@@ -16,15 +16,17 @@ Named commands have exactly one mechanism: a function registered here is listed 
     def greet(name: str) -> str:
         return f"Hello, {name}!"
 
-Argument types come from the annotations (``str``, ``int``, ``float``, ``bool``).  The client
-SDK's ``@sandbox.register`` ends in the same registry.  A private :class:`CommandRegistry` can be
-handed to :class:`~agent_sandbox.server.SandboxServer` for tests.
+Argument types come from ``str``, ``int``, ``float``, ``bool`` and ``list[str]`` annotations.
+The client SDK's ``@sandbox.register`` ends in the same registry. A private
+:class:`CommandRegistry` can be handed to
+:class:`~agent_sandbox.server.SandboxServer` for tests.
 """
 
 from __future__ import annotations
 
 import dataclasses
 import inspect
+import json
 import typing
 from typing import Any
 
@@ -37,10 +39,12 @@ __all__ = [
 ]
 
 # ---------------------------------------------------------------------------
-# Valid scalar types
+# Valid scalar and homogeneous string-array types
 # ---------------------------------------------------------------------------
 
-_VALID_ARG_TYPES: frozenset[str] = frozenset({"string", "integer", "float", "boolean"})
+_VALID_ARG_TYPES: frozenset[str] = frozenset(
+    {"string", "integer", "float", "boolean", "string_array"}
+)
 
 
 # ---------------------------------------------------------------------------
@@ -54,8 +58,8 @@ class CommandArg:
 
     Attributes:
         name: Argument name (must match the function parameter name).
-        type: Scalar type hint — one of ``"string"``, ``"integer"``,
-            ``"float"``, or ``"boolean"``.
+        type: Argument type hint — one of ``"string"``, ``"integer"``,
+            ``"float"``, ``"boolean"``, or ``"string_array"`` (native JSON list of strings).
         required: Whether the caller *must* supply this argument.
         default: Default value (as a string) when the argument is omitted.
         description: Human-readable description shown in ``GET /commands``.
@@ -68,9 +72,16 @@ class CommandArg:
     description: str = ""
 
     def __post_init__(self) -> None:
-        """Validate that *type* is one of the allowed scalar types."""
+        """Validate the argument type and any string-array default."""
         if self.type not in _VALID_ARG_TYPES:
             raise ValueError(f"Invalid arg type {self.type!r}; allowed: {sorted(_VALID_ARG_TYPES)}")
+        if self.type == "string_array" and self.default is not None:
+            try:
+                value = json.loads(self.default)
+            except (ValueError, TypeError) as exc:
+                raise ValueError("string_array default must be a JSON array of strings") from exc
+            if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+                raise ValueError("string_array default must be a JSON array of strings")
 
 
 @dataclasses.dataclass
@@ -215,25 +226,41 @@ class CommandRegistry:
                     resolved_hints = typing.get_type_hints(fn)
                 except Exception:
                     resolved_hints = {}
+                # Python3.10 get_type_hints adds Optional for a None default.
+                # Inspect the declared list annotation before that implicit widening.
+                try:
+                    declared_hints = inspect.get_annotations(fn, eval_str=True)
+                except Exception:
+                    declared_hints = {}
                 inferred_args: list[CommandArg] = []
                 for param_name, param in sig.parameters.items():
                     arg_type = "string"  # default
                     # Prefer resolved hint; fall back to raw annotation
                     annotation = resolved_hints.get(param_name, param.annotation)
+                    declared = declared_hints.get(param_name, param.annotation)
+                    if typing.get_origin(declared) is list and typing.get_args(declared) == (str,):
+                        annotation = declared
                     if annotation != inspect.Parameter.empty:
                         _annotation_map = {
                             int: "integer",
                             float: "float",
                             bool: "boolean",
                         }
-                        arg_type = _annotation_map.get(annotation, "string")
+                        if typing.get_origin(annotation) is list and typing.get_args(
+                            annotation
+                        ) == (str,):
+                            arg_type = "string_array"
+                        else:
+                            arg_type = _annotation_map.get(annotation, "string")
 
                     required = param.default is inspect.Parameter.empty
-                    default = (
-                        None
-                        if required
-                        else (str(param.default) if param.default is not None else None)
-                    )
+                    default = None
+                    if not required and (param.default is not None or arg_type == "string_array"):
+                        default = (
+                            json.dumps(param.default)
+                            if arg_type == "string_array"
+                            else str(param.default)
+                        )
 
                     inferred_args.append(
                         CommandArg(

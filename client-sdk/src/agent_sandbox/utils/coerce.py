@@ -1,4 +1,4 @@
-"""Shared scalar type coercion for command arguments.
+"""Shared scalar and string-array type coercion for command arguments.
 
 Both the **server** layer (``server/routes.py``) and the client SDK's
 **declarative** layer (``declarative/decorator.py``) need identical
@@ -15,6 +15,7 @@ The functions accept any arg object exposing ``.name``, ``.type``,
 
 from __future__ import annotations
 
+import json
 from typing import Any, Protocol, runtime_checkable
 
 __all__ = [
@@ -38,7 +39,7 @@ def parse_scalar(value: Any, type_str: str) -> Any:
     """Parse / coerce *value* according to its declared *type_str*.
 
     Supported *type_str* values: ``"string"``, ``"integer"``, ``"float"``,
-    ``"boolean"``.
+    ``"boolean"``, and ``"string_array"`` (JSON arrays of strings only).
 
     Bool parsing uses a whitelist (``true/false/yes/no/1/0``) to avoid the
     ``bool("False") == True`` pitfall.
@@ -78,6 +79,11 @@ def parse_scalar(value: Any, type_str: str) -> Any:
         raise ValueError(
             f"Cannot parse {value!r} as boolean; accepted values: true/false/yes/no/1/0"
         )
+
+    if type_str == "string_array":
+        if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+            raise ValueError("Expected a JSON array containing only strings")
+        return list(value)
 
     raise ValueError(f"Unknown type: {type_str!r}")
 
@@ -143,6 +149,14 @@ def coerce_kwargs(
         elif arg.required:
             raise ValueError(f"Required argument {arg.name!r} missing")
         elif arg.default is not None:
+            if arg.type == "string_array":
+                try:
+                    coerced[arg.name] = parse_scalar(json.loads(arg.default), arg.type)
+                except (ValueError, TypeError) as exc:
+                    raise TypeError(
+                        f"Invalid string_array default for argument {arg.name!r}"
+                    ) from exc
+                continue
             # Best-effort coercion of the default; fall back to the raw
             # string if conversion fails (e.g. a placeholder like "N/A").
             try:

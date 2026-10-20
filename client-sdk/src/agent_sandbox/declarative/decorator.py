@@ -29,6 +29,7 @@ import contextlib
 import functools
 import importlib
 import inspect
+import json
 import shlex
 import textwrap
 import typing
@@ -60,15 +61,18 @@ _SCALAR_TYPE_MAP: dict[type, str] = {
 def _annotation_to_type_str(annotation: Any) -> str:
     """Map a Python type annotation to a command-arg type string.
 
-    Only scalar types ``str``, ``int``, ``float``, ``bool`` are supported.
+    Scalar types ``str``, ``int``, ``float``, ``bool`` and ``list[str]`` are supported.
     Missing annotations default to ``"string"``.
     """
     if annotation is inspect.Parameter.empty:
         return "string"
+    if typing.get_origin(annotation) is list and typing.get_args(annotation) == (str,):
+        return "string_array"
     if annotation in _SCALAR_TYPE_MAP:
         return _SCALAR_TYPE_MAP[annotation]
     raise TypeError(
-        f"Unsupported parameter type {annotation!r}; only str, int, float, bool are allowed"
+        f"Unsupported parameter type {annotation!r}; "
+        "only str, int, float, bool, list[str] are allowed"
     )
 
 
@@ -186,9 +190,17 @@ class _RegisterProxy:
             hints = typing.get_type_hints(func)
         except Exception:
             hints = {}
+        # Keep a declared list[str] consistent on3.10, which widens None defaults.
+        try:
+            declared_hints = inspect.get_annotations(func, eval_str=True)
+        except Exception:
+            declared_hints = {}
         args: list[_CommandArg] = []
         for pname, param in sig.parameters.items():
             annotation = hints.get(pname, param.annotation)
+            declared = declared_hints.get(pname, param.annotation)
+            if typing.get_origin(declared) is list and typing.get_args(declared) == (str,):
+                annotation = declared
             arg_type = _annotation_to_type_str(annotation)
             has_default = param.default is not inspect.Parameter.empty
             args.append(
@@ -196,7 +208,13 @@ class _RegisterProxy:
                     name=pname,
                     type=arg_type,
                     required=not has_default,
-                    default=(str(param.default) if has_default else None),
+                    default=(
+                        json.dumps(param.default)
+                        if arg_type == "string_array"
+                        else str(param.default)
+                    )
+                    if has_default
+                    else None,
                 )
             )
         cmd = _RegisteredCommand(

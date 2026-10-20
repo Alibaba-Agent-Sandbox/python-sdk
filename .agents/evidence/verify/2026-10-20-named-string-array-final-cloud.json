@@ -1,0 +1,22 @@
+{
+  "provider": "alicloud-express",
+  "result": "PASS",
+  "source_commit": "fd72d3210b85079d93dcf08e19bfded73643162b",
+  "run": "e2e-named-array-20261020-1792501326",
+  "command": "make e2e",
+  "passed": 121,
+  "skipped": 8,
+  "deselected": 2,
+  "xfailed": 1,
+  "duration_s": 246.51,
+  "janitor_dry_run_exit": 0,
+  "janitor_tagged_candidates": 0,
+  "independent_owned_remaining": 0,
+  "runtime_sha256": {
+    "server-sdk/src/agent_sandbox/server/registry.py": "7ce9aa0ac05e6a6e9a2802389a02b49feb722057df3923a3eb0bd93d80ed05bd",
+    "server-sdk/src/agent_sandbox/server/_coerce.py": "5c63fd8b14ff011b9aa93cf0a87d0ed371c34c1c9b739fb6fab6d8b6f895f8d1",
+    "client-sdk/src/agent_sandbox/declarative/decorator.py": "8db2c3dc566016aada1cfd53945473bad5b69a70cc3eaf8e2958fbddd49444c2",
+    "client-sdk/src/agent_sandbox/utils/coerce.py": "82dc00ee75200747820d4d7043a6baa5542bbd381f17b39e8e6719239ec1da56"
+  },
+  "scope": "Includes native Python/CLI arrays on uploaded SHA256-checked source, full native Express suite, explicit skip reasons and KI-009 platform xfail; no other provider certification"
+}

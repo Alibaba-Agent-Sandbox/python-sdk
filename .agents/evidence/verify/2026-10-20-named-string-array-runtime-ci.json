@@ -1,0 +1,67 @@
+{
+  "head": "fd72d3210b85079d93dcf08e19bfded73643162b",
+  "checks": [
+    {
+      "name": "Build packages",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/39427405082/job/118645948312"
+    },
+    {
+      "name": "client-sdk (Python 3.10)",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/39427405082/job/118643326872"
+    },
+    {
+      "name": "client-sdk (Python 3.12)",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/39427405082/job/118643326500"
+    },
+    {
+      "name": "No local paths or secrets",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/39427405082/job/118643326472"
+    },
+    {
+      "name": "server-sdk (Python 3.11)",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/39427405082/job/118643326382"
+    },
+    {
+      "name": "server-sdk (Python 3.10)",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/39427405082/job/118643326290"
+    },
+    {
+      "name": "server-sdk (Python 3.12)",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/39427405082/job/118643326223"
+    },
+    {
+      "name": "client-sdk (Python 3.11)",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/39427405082/job/118643326125"
+    },
+    {
+      "name": "Pinned E2B public contract",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/39427405082/job/118643325932"
+    },
+    {
+      "name": "Markdown links",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/39427405072/job/118643324566"
+    }
+  ],
+  "required_scope": "Python3.10/3.11/3.12 client/server lint/format/type/unit, packages, public contract, hygiene and links",
+  "result": "PASS"
+}

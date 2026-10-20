@@ -40,6 +40,8 @@ name for the endpoints that declare it. `core` is always on, the groups through 
 `groups: [dev_tools]`, or with `ABX_SERVER_ENABLED_GROUPS=dev_tools` in the environment. See the
 [server API design](https://github.com/alibaba-agent-sandbox/python-sdk/blob/main/docs/en/design/server-api.md).
 
+Command registration supports `list[str]` with strict native JSON arrays. See the [bilingual server API guide](../docs/en/guide/template-server-api.md#string-array-command-arguments).
+
 ## Develop
 
 ```bash

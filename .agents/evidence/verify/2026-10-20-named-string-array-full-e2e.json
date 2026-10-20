@@ -1,0 +1,31 @@
+{
+  "provider": "alicloud-express",
+  "result": "PASS",
+  "passed": 121,
+  "skipped": 8,
+  "deselected": 2,
+  "xfailed": 1,
+  "duration_s": 248.7,
+  "test_command": "make e2e",
+  "native_cli_version": "0.3.0",
+  "server_under_test": "this checkout source uploaded into fresh owned sandboxes and SHA256-checked before extraction",
+  "source_sha256": {
+    "server-sdk/src/agent_sandbox/server/registry.py": "6475a2d17c0128f881ab88ea1d7c6132b735c953b5bb095e1786c26f37feb698",
+    "server-sdk/src/agent_sandbox/server/_coerce.py": "5c63fd8b14ff011b9aa93cf0a87d0ed371c34c1c9b739fb6fab6d8b6f895f8d1",
+    "client-sdk/src/agent_sandbox/utils/coerce.py": "82dc00ee75200747820d4d7043a6baa5542bbd381f17b39e8e6719239ec1da56",
+    "client-sdk/src/agent_sandbox/declarative/decorator.py": "698b4e675495b1a63b89219b47d6194851ec1625d5c477ffdb610c1793f458aa",
+    "e2e/test_19_named_string_array.py": "085b8651344f4e8002a75f1c95bf1a6405c1a415d9750934e34d2267d18fff8b"
+  },
+  "cleanup": {
+    "janitor_dry_run_exit": 0,
+    "all_tagged_candidates": 0,
+    "independent_owned_remaining": 0
+  },
+  "skip_scope": [
+    "uninstalled catalog providers",
+    "volume opt-in absent",
+    "pause template absent",
+    "snapshot allowlist/template absent"
+  ],
+  "xfail_scope": "KI-009: Jupyter unavailable; shell fallback does not return trailing expression"
+}

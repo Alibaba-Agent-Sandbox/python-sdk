@@ -254,6 +254,8 @@ commands and the Agent Skill (`SKILL.md`) are documented there:
 - [CLI Tutorial](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/cli-tutorial.md) · [CLI Reference](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/cli-reference.md)
 - [Agent Skill Installation & Distribution](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/agent-skill-installation.md)
 
+Named commands support native `list[str]` JSON arguments. See the [server API guide](docs/en/guide/template-server-api.md#string-array-command-arguments) for validation and server compatibility.
+
 ## Contributing
 
 We welcome contributions! Please read the [Contributing Guide](.github/CONTRIBUTING.md) to get started.

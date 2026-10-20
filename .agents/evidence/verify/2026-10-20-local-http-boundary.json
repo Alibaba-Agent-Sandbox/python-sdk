@@ -1,0 +1,23 @@
+{
+  "scope": "authored local HTTP server with no SDK involved",
+  "results": [
+    {
+      "case": "normal",
+      "status": 400,
+      "owned_response_marker": true,
+      "owned_handler_invocations": 1
+    },
+    {
+      "case": "chunked",
+      "status": 502,
+      "owned_response_marker": false,
+      "owned_handler_invocations": 1
+    },
+    {
+      "case": "websocket_without_key",
+      "status": 501,
+      "owned_response_marker": false,
+      "owned_handler_invocations": 0
+    }
+  ]
+}
