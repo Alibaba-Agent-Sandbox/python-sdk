@@ -255,3 +255,5 @@ graph TB
 [Apache-2.0](LICENSE) —— 版权信息见 [`NOTICE`](NOTICE)。
 
 [内置运行通道与 Python 引擎迁移](docs/zh/design/builtin-data-plane.md).
+
+Optional application control plane / 可选应用控制面: [Agent 应用](docs/zh/guide/agent-applications.md).

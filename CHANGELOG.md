@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- Add explicit optional application run control plane, typed client, external remote-tool loop, narrow in-sandbox adapter, PostgreSQL/outbox lifecycle and signed FC task delivery; cloud acceptance remains pending. / 新增可选应用运行控制面、类型客户端、外部远程工具循环、内部窄适配器、PostgreSQL/outbox 生命周期与 FC 签名任务投递，真实云验收待完成。
+
 ### Documentation
 
 - Clarify implemented Express pause/resume and Snapshot standard interfaces, allowlist/runtime requirements and safe cleanup. / 明确极速版标准入口已实现暂停恢复与快照，以及白名单、运行时和清理要求。
