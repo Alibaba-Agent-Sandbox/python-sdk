@@ -24,7 +24,22 @@ def free_port():
         return listener.getsockname()[1]
 
 
-def test_three_process_http_remote_tools_and_restart(tmp_path):
+@pytest.fixture(params=["sqlite", pytest.param("postgres", marks=pytest.mark.integration)])
+def application_database_url(request, tmp_path):
+    """Run the same real HTTP roles against each supported database without containers."""
+    if request.param == "sqlite":
+        yield "sqlite:///" + str(tmp_path / "state.db")
+        return
+    pgserver = pytest.importorskip("pgserver", reason="Optional PostgreSQL binary is unavailable")
+    pytest.importorskip("psycopg")
+    server = pgserver.get_server(tmp_path / "postgres", cleanup_mode="stop")
+    try:
+        yield server.get_uri()
+    finally:
+        server.cleanup()
+
+
+def test_three_process_http_remote_tools_and_restart(tmp_path, application_database_url):
     """Gateway acceptance survives restart; real worker drives remote server file APIs."""
     token = "local-business-token-placeholder-" + "x" * 32
     internal = "local-internal-token-placeholder-" + "y" * 32
@@ -51,7 +66,7 @@ def test_three_process_http_remote_tools_and_restart(tmp_path):
         "ABX_APP_BIND": "127.0.0.1",
         "ABX_APP_AUTH_FILE": str(auth),
         "ABX_APP_INTERNAL_TOKEN": internal,
-        "ABX_APP_DATABASE_URL": "sqlite:///" + str(tmp_path / "state.db"),
+        "ABX_APP_DATABASE_URL": application_database_url,
         "ABX_LOCAL_WORKSPACE": str(tmp_path),
         "ABX_LOCAL_WORKER_URL": urls["worker"],
         "PYTHONPATH": str(Path(__file__).parent / "fixtures"),

@@ -78,6 +78,7 @@ cleanup evidence; local model fixtures cannot substitute for that gate.
 ## Evidence
 
 - [Verification](../../../evidence/verify/2026-10-20-agent-application-runtime.md)
+- [Direct-process and PostgreSQL verification](../../../evidence/verify/2026-10-20-agent-application-direct-process.md)
 - [Runtime guide](../../../../docs/en/guide/agent-applications.md)
 
 - Owner issue: https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/74

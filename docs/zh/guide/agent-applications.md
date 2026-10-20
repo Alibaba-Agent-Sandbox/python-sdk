@@ -35,8 +35,8 @@ python -m agent_sandbox.applications worker
 python -m agent_sandbox.applications dispatcher
 ```
 
-三个角色分别运行在独立容器/函数，监听 `ABX_APP_BIND` / `ABX_APP_PORT`，默认
-`0.0.0.0:9000`。网关提供六个业务操作；worker、dispatcher 只提供私有
+三个角色可分别运行在独立 Python 进程、容器或函数中，监听 `ABX_APP_BIND` / `ABX_APP_PORT`，默认
+`0.0.0.0:9000`；同一主机运行时使用不同端口。网关提供六个业务操作；worker、dispatcher 只提供私有
 `POST /invoke`。Worker 完成执行和清理后才返回，不依赖返回 `202` 后继续后台工作。
 FC Custom Container 将 InvokeFunction 请求转发到这个固定路径。
 [FC 官方协议](https://www.alibabacloud.com/help/en/functioncompute/code-development-in-custom-container-runtimes)。
@@ -148,6 +148,20 @@ PostgreSQL，默认最多 100 个、总计 10 MiB，以 octet-stream 下载；�
 
 ## 本地验证与剩余门禁
 
+Python 运行时测试不需要 Docker。Gateway、worker 和 dispatcher 可以直接作为 Python
+进程运行；`pgserver` 提供不依赖容器的真实临时 PostgreSQL。从仓库根目录执行：
+
+```bash
+python -m pip install -e ./server-sdk -e './client-sdk[dev,applications-fc]' pgserver==0.1.4
+python -m pytest client-sdk/tests/test_applications -q -ra
+# 真实远程 sandbox：须已有 E2B_API_KEY 及对应地域的 SDK 配置：
+python -m pytest e2e/test_10_application_runtime.py -q -ra
+```
+
+HTTP 场景同时覆盖 SQLite 和 PostgreSQL，包括网关重启、幂等、私有调用鉴权、
+远程文件/产物、SSE 重放和取消。缺少可选依赖时 PostgreSQL 场景明确跳过，
+缺少凭据时云场景跳过；跳过不算通过。云场景使用确定性模型，实际执行远程命令、文件和产物操作。
+
 SQLite 只接受显式 `Store(url, local=True)` / `ABX_APP_LOCAL=1`，检测到 FC 函数/实例
 环境标识时拒绝。FC 临时文件系统不能作为持久控制数据库。
 
@@ -161,7 +175,9 @@ pytest tests/test_applications/test_postgres.py
 
 子进程集成使用真实 gateway/worker/dispatcher HTTP 进程、真实 SandboxServer 文件 API、
 确定性模型夹具，覆盖重启、幂等、产物和 SSE。它不能证明云网络/IAM、FC 镜像兼容、
-真实 LLM 或操作系统 sandbox 隔离。真实 FC、模型、Provider 验收及远程 CI/Review
+真实 LLM 或操作系统 sandbox 隔离。临时本地 PostgreSQL 也不等于生产托管数据库绑定。
+镜像可在 CI 或其他构建环境制作；运行时及远程 sandbox 测试不要求本地安装 Docker。
+实际 FC 镜像部署、持久状态、IAM 和入口仍需单独验收。真实 FC、模型、Provider 验收及远程 CI/Review
 仍是发布门禁。
 
 自定义 executor 回调须响应 asyncio 取消，阻塞代码需进程隔离。清理时间窗后仍运行

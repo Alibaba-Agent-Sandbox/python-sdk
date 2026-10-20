@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Documentation
 
+- Document direct Python-process and temporary PostgreSQL application verification without Docker. / 补充无需 Docker 的 Python 进程及临时 PostgreSQL 应用验证方法。
+
 - Clarify implemented Express pause/resume and Snapshot standard interfaces, allowlist/runtime requirements and safe cleanup. / 明确极速版标准入口已实现暂停恢复与快照，以及白名单、运行时和清理要求。
 
 ### Documentation

@@ -42,7 +42,8 @@ python -m agent_sandbox.applications dispatcher
 ```
 
 Each command starts an HTTP service on `ABX_APP_BIND` / `ABX_APP_PORT` (defaults
-`0.0.0.0:9000`). Run them in separate containers/functions. The gateway exposes
+`0.0.0.0:9000`). Run them in separate processes, containers or functions; use
+distinct ports when sharing a host. The gateway exposes
 the six business operations below. Worker and dispatcher expose only private
 `POST /invoke`; a worker response is returned after work and cleanup, with no
 background continuation after a `202`. FC custom containers forward signed
@@ -195,6 +196,23 @@ public API. Artifacts are small-result retention, not a bulk object storage API.
 
 ## Local verification and remaining gates
 
+Docker is not required to test the Python runtime. Gateway, worker and dispatcher
+can run as ordinary Python processes, and `pgserver` supplies a real temporary
+PostgreSQL server without a container. From the repository root:
+
+```bash
+python -m pip install -e ./server-sdk -e './client-sdk[dev,applications-fc]' pgserver==0.1.4
+python -m pytest client-sdk/tests/test_applications -q -ra
+# Real remote sandbox; requires existing E2B_API_KEY and regional SDK configuration:
+python -m pytest e2e/test_10_application_runtime.py -q -ra
+```
+
+The HTTP scenario runs against both SQLite and PostgreSQL, including gateway
+restart, idempotency, private invocation authentication, remote file/artifact APIs,
+SSE replay and cancellation. PostgreSQL cases explicitly skip if their optional
+dependencies are absent; cloud tests skip without credentials. A skip is not a pass.
+The cloud scenario uses a deterministic model and real remote shell/files/artifacts.
+
 SQLite is accepted only with `Store(url, local=True)` / `ABX_APP_LOCAL=1`, and is
 rejected when FC function/instance environment markers are present. Never put an FC
 control database in its ephemeral filesystem.
@@ -210,7 +228,11 @@ pytest tests/test_applications/test_postgres.py
 The subprocess integration test runs real gateway, worker and dispatcher HTTP
 processes, a real SandboxServer file API, a deterministic model fixture, restart,
 idempotency, artifacts and SSE. It does not establish cloud network/IAM, FC image
-compatibility, real LLM behavior or operating-system sandbox isolation. Real FC,
+compatibility, real LLM behavior or operating-system sandbox isolation. A temporary
+local PostgreSQL server is not a production managed-state binding. Image construction
+can run in CI or another build environment; a local Docker installation is not
+required for runtime or remote-sandbox testing. Actual FC image deployment and
+its persistent state, IAM and ingress still require separate acceptance. Real FC,
 model and provider acceptance plus required remote CI/review remain release gates.
 
 Custom executor callbacks must cooperate with asyncio cancellation; blocking

@@ -27,3 +27,10 @@ model account or sandbox templates, and does not claim a tested/published image.
 该镜像使用真实运行时、PostgreSQL 与 FC SDK 适配器。三个角色共用镜像，通过启动命令
 区分。应用配置来自单一模板，凭据由部署绑定注入。云端验收须验证 IAM、私有入口、
 周期触发、模型、Sandbox 与清理；本地构建示例不代表这些资源已创建或验收通过。
+
+Runtime testing does not require an image build or Docker. The bilingual guides
+above include ordinary Python-process, real temporary PostgreSQL and real remote
+sandbox test commands. This Dockerfile is for the separate image/deployment path.
+
+运行时可直接用 Python 进程和真实临时 PostgreSQL 测试，不需要先构建镜像或安装 Docker；
+上方中英文指南提供直接运行的命令。此 Dockerfile 用于独立的镜像/部署验收。
