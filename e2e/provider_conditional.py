@@ -288,6 +288,17 @@ async def exercise(args, argv, child_env, settings, result, engine_client):
             assert (await source.commands.run(probe)).stdout.strip() == token
             passed(label + " preserves memory and files")
 
+        async def running_again():
+            return source_id in await tagged_ids(
+                SandboxState.RUNNING
+            ) and source_id not in await tagged_ids(SandboxState.PAUSED)
+
+        await until(running_again)
+        # Resume's data plane can answer before snapshot admission has settled.
+        # Observe running state and a quiet interval before the first mutation;
+        # this is not a replay of any failed/ambiguous Snapshot request.
+        await asyncio.sleep(30)
+
         for create_client, restore_client, delete_client, label in [
             (sdk, cli, sdk, "Python Snapshot / CLI restore"),
             (cli, sdk, cli, "CLI Snapshot / Python restore"),

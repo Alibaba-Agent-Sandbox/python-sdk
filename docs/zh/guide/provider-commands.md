@@ -220,3 +220,5 @@ Python 仓库的手动验收控制器通过两端访问同一个真实 Provider�
 克隆隔离及自有资源清理；不新增云端/模型 Actions 验收。官方限制：
 [暂停恢复](https://help.aliyun.com/zh/agent-sandbox/pause-and-resume)、
 [快照](https://help.aliyun.com/zh/agent-sandbox/snapshot-invited-test)。
+
+真实验收中，恢复后立即创建快照曾返回 HTTP503；先确认运行状态并等待服务准入稳定，再首次创建。最终验收使用30秒静置间隔，该值是验收观察，不是服务就绪 SLA。失败写入不自动重试。

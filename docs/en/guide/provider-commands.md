@@ -229,6 +229,9 @@ implementation, not a live account capability probe.
 Snapshot creation defaults to a300-second request timeout, independent of sandbox lifetime. The
 provider's outer deadline is360 seconds; mutations are never automatically retried. After an
 uncertain timeout, list by the exclusively owned source sandbox before repeating a creation.
+Immediate Snapshot creation after resume returned HTTP503 during acceptance; wait for running
+state and service admission to settle before the first creation. The final test used a30-second
+quiet interval, which is an acceptance observation, not a service readiness SLA.
 `next_token` is the service's opaque pagination cursor. Restore creates a new sandbox; it does not
 resume or replace the source. Supply unique `metadata` when a restored sandbox must be reconciled
 after an uncertain result. Kill owned clones first and delete Snapshots independently; killing a

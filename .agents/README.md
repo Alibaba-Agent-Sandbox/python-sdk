@@ -98,4 +98,4 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 
 - [Express conditional support](notes/implemented/process/2026-10-19-express-conditional-support.md) · [verification](evidence/verify/2026-10-19-express-conditional-support.md)
 
-- [Shared conditional Provider operations](notes/proposed/architecture/2026-10-20-provider-conditional-capabilities.md) · [verification](evidence/verify/2026-10-20-provider-conditional-capabilities.md)
+- [Shared conditional Provider operations](notes/implemented/architecture/2026-10-20-provider-conditional-capabilities.md) · [verification](evidence/verify/2026-10-20-provider-conditional-capabilities.md)

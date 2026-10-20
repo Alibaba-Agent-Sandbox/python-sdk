@@ -1,6 +1,6 @@
 # Decision: Register Express conditional operations once for every consumer
 
-Status: proposed
+Status: implemented
 
 ## Problem
 Standard clients already implement allowlisted pause/resume and generation2 Snapshots, but these operations are absent from the shared provider command catalog. Duplicating vendor mappings in each consumer would defeat the existing engine architecture.
@@ -28,3 +28,9 @@ Provider wire/schema/error regressions, actual CLI/Python engine discovery, owne
 - All six operations pass local real Express acceptance with zero owned residuals.
 - Authentication domains remain separate; no silent retries or template-name deletion.
 - Bilingual guides, README, changelog, contributor boundary, owner evidence and required CI pass before merge.
+
+## Evidence
+
+- CLI owner: https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/pull/79
+- Python consumer: https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/73
+- [Verification](../../../evidence/verify/2026-10-20-provider-conditional-capabilities.md)
