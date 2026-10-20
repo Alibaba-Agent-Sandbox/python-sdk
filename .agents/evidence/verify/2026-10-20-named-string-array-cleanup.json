@@ -1,0 +1,8 @@
+{
+  "provider": "alicloud-express",
+  "owned_run_prefix": "e2e-named-array-20261020-",
+  "independent_owned_sandbox_absence": true,
+  "owned_remaining": 0,
+  "scope": "Independent current list of up to200 sandboxes; existing E2E tracker also attempted known-ID deletion and per-run sweep. Other actors resources were not deleted.",
+  "janitor_dry_run_exit": 0
+}

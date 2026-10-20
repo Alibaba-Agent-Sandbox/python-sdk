@@ -204,7 +204,7 @@ PTY WebSocket（端口 9001，路径 `/pty`）检查同样的凭据。它接受 
 }
 ```
 
-`type` 为 `string`、`integer`、`float` 或 `boolean`。
+`type` 为 `string`、`integer`、`float`、`boolean` 或 `string_array`。
 
 #### `POST /commands/{name}`
 
@@ -222,7 +222,32 @@ PTY WebSocket（端口 9001，路径 `/pty`）检查同样的凭据。它接受 
 | `404` | `Unknown command '<name>'; available: <按名排序>` — available 列表包含隐藏命令 |
 | `500` | 函数抛出异常。`error` 是 `str(exc)`，`type` 是异常类名 |
 
-转换规则：`integer` 用 `int`，`float` 用 `float`，`boolean` 接受 `true`/`false`/`yes`/`no`/`1`/`0`（不区分大小写）。其余类型变成 `str`。仅当省略该字段且注册的默认值不是 `None` 时才套用默认值。
+转换规则：`integer` 用 `int`，`float` 用 `float`，`boolean` 接受 `true`/`false`/`yes`/`no`/`1`/`0`（不区分大小写）。`string_array` 仅接受所有元素均为字符串的原生 JSON 数组；JSON 编码字符串、混合数组、对象和 null 返回 `400`，空数组有效。字符串参数继续使用 `str` 转换。仅当省略该字段且注册的默认值不是 `None` 时才套用默认值。
+
+
+#### 字符串数组命令参数
+
+```python
+@command("echo_args")
+def echo_args(args: list[str]) -> list[str]:
+    return args
+```
+
+向 `POST /commands/echo_args` 发送 `{"args": ["-i", "literal file.wav", "中文"]}`，
+返回 `{"result": ["-i", "literal file.wav", "中文"]}`。空格、Unicode 和 shell 元字符
+作为字面字符串保留，SDK 不会执行它们。
+显式声明 `CommandArg(type="string_array", default='["seed"]', name="args")` 时，
+默认值在元数据中使用 JSON 文本，以保留原有字符串 `default` 字段契约。
+服务器在注册时验证默认值，并为每次请求独立复制；调用者提供的数组也会复制。
+声明式客户端 `@sandbox.register` 支持相同注解。
+
+```python
+result = await server_client.commands.run("echo_args", args=["-i", "literal file.wav"])
+```
+
+需要包含此实现的服务器；旧服务器会把该注解转换成字符串。
+公开此命令前先用新服务器重建模板。已有标量命令保留原有转换行为。
+不支持嵌套数组、数字数组或任意对象数组。原生 CLI 的 `--json-args` 发送同一 JSON 对象。
 
 ### `file_ops`
 
@@ -639,7 +664,7 @@ def _debug_info() -> dict:
 start(9000)
 ```
 
-`GET /commands` 列出 `hello`，不列出 `_debug_info`。`POST /commands/hello` 带 `{"name": "Ada"}` 返回 `{"result": "Hello, Ada!"}`。`POST /commands/_debug_info` 带 `{}` 仍然会执行。名字默认取函数名。参数类型来自注解：`int` → `integer`，`float` → `float`，`bool` → `boolean`，其他 → `string`。没有默认值的参数是 `required: true` 且 `default: null`。除非传入显式的 `CommandArg` 列表作为 `args`，否则每个参数的 `description` 保持 `""`。`scopes=(...)` 要求调用方具备这些 scope；不具备的调用方在 `GET /commands` 里看不到该命令，也不能运行它。`hidden=True` 使命令不出现在 `GET /commands` 中。抛出异常即返回 `500`。注册表在服务启动时冻结，所以要在导入时注册。
+`GET /commands` 列出 `hello`，不列出 `_debug_info`。`POST /commands/hello` 带 `{"name": "Ada"}` 返回 `{"result": "Hello, Ada!"}`。`POST /commands/_debug_info` 带 `{}` 仍然会执行。名字默认取函数名。参数类型来自注解：`int` → `integer`，`float` → `float`，`bool` → `boolean`，`list[str]`（含 `typing.List[str]`）→ `string_array`，其他 → `string`。没有默认值的参数是 `required: true` 且 `default: null`。除非传入显式的 `CommandArg` 列表作为 `args`，否则每个参数的 `description` 保持 `""`。`scopes=(...)` 要求调用方具备这些 scope；不具备的调用方在 `GET /commands` 里看不到该命令，也不能运行它。`hidden=True` 使命令不出现在 `GET /commands` 中。抛出异常即返回 `500`。注册表在服务启动时冻结，所以要在导入时注册。
 
 需要隔离的测试可以新建私有的 `CommandRegistry()`，作为 `SandboxServer(registry=...)` 传入。生产模板用 `@command`。
 

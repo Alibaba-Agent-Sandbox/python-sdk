@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- Native named-command `list[str]` arguments use strict JSON `string_array` metadata and per-call copies in server and declarative client; scalar conversion stays compatible. / 原生命名命令支持严格 JSON 字符串数组，服务器与声明式客户端按次复制参数及默认值，保留标量转换兼容性。
+
 ### Documentation
 
 - Clarify implemented Express pause/resume and Snapshot standard interfaces, allowlist/runtime requirements and safe cleanup. / 明确极速版标准入口已实现暂停恢复与快照，以及白名单、运行时和清理要求。
@@ -17,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Use the verified canonical website and registry links in active English/Chinese guides.
 
 ### Fixed
+
+- Repair native asynchronous E2E lifecycle/MCP cleanup entries and distinguish uninstalled-provider refusal from installed-provider credential validation. / 修复原生异步 E2E 生命周期和 MCP 清理入口，区分未安装 provider 的本地拒绝与已安装 provider 的凭据校验。
 
 - Start native SandboxServer processes before reporting readiness; bound startup acknowledgement, drain output without accumulation and release local readers while retaining remote ownership. / 原生 SandboxServer 启动先确认进程，限制等待并释放本地读取连接，保留远程资源所有权。
 

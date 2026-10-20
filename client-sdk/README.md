@@ -72,6 +72,8 @@ and command POST requests are never automatically replayed.
 Run the MCP stdio server directly with `python -m agent_sandbox.agent.mcp`
 (reads `E2B_API_KEY`, `E2B_API_URL`, `E2B_DOMAIN`, `ABX_DEFAULT_TEMPLATE`).
 
+Named-command string-array arguments (`list[str]`) preserve native JSON values. See the [server API guide](../docs/en/guide/template-server-api.md#string-array-command-arguments).
+
 ## Develop
 
 ```bash

@@ -13,9 +13,9 @@ import e2e_helpers as helpers
 
 
 def test_mcp_background_reconnect_complete_and_cancel(run, tracker):  # type: ignore[no-untyped-def]
-    from agent_sandbox import Sandbox
     from agent_sandbox.agent.mcp import SandboxManager
     from agent_sandbox.agent.tools import dispatch_tool
+    from agent_sandbox.api.sandbox import Sandbox
 
     async def wait_terminal(handle, manager):  # type: ignore[no-untyped-def]
         deadline = time.monotonic() + 30

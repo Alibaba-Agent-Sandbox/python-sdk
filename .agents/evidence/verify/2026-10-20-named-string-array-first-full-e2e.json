@@ -1,0 +1,15 @@
+{
+  "provider": "alicloud-express",
+  "run": "e2e-named-array-20261020-1792499863",
+  "result": "FAIL",
+  "passed": 115,
+  "failed": 6,
+  "skipped": 8,
+  "deselected": 2,
+  "xfailed": 1,
+  "duration_s": 230.7,
+  "followup_issue": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/77",
+  "named_array_sdk_cli": "2 passed",
+  "owned_remaining_independent": 0,
+  "janitor_dry_run_exit": 0
+}

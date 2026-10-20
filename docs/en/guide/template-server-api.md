@@ -204,7 +204,7 @@ Visible commands from the command registry (hidden commands are omitted). Comman
 }
 ```
 
-`type` is `string`, `integer`, `float`, or `boolean`.
+`type` is `string`, `integer`, `float`, `boolean`, or `string_array`.
 
 #### `POST /commands/{name}`
 
@@ -222,7 +222,35 @@ Body is a JSON object of arguments. `200`:
 | `404` | `Unknown command '<name>'; available: <sorted names>` — the available list includes hidden commands |
 | `500` | The function raised. `error` is `str(exc)`, `type` is the exception class name |
 
-Coercion: `integer` via `int`, `float` via `float`, `boolean` from `true`/`false`/`yes`/`no`/`1`/`0` (case-insensitive). Anything else is `str`. A default is applied only when the field is omitted and the registered default is not `None`.
+Coercion: `integer` via `int`, `float` via `float`, `boolean` from `true`/`false`/`yes`/`no`/`1`/`0` (case-insensitive). `string_array` accepts only a native JSON array whose elements are all strings; JSON encoded inside a string, mixed arrays, objects and null return `400`. Empty arrays are accepted. String arguments retain `str` conversion. A default is applied only when the field is omitted and the registered default is not `None`.
+
+
+#### String-array command arguments
+
+```python
+@command("echo_args")
+def echo_args(args: list[str]) -> list[str]:
+    return args
+```
+
+`POST /commands/echo_args` with `{"args": ["-i", "literal file.wav", "中文"]}`
+returns `{"result": ["-i", "literal file.wav", "中文"]}`. Spaces, Unicode and
+shell metacharacters remain literal strings; the SDK does not execute them.
+A declared `CommandArg(type="string_array", default='["seed"]', name="args")`
+uses JSON text in metadata for compatibility with the existing string-valued
+`default` field. The server validates it at registration and copies defaults
+for every call. Supplied arrays are also copied before invoking the command.
+Use the same annotation with `@sandbox.register` in the declarative client.
+
+```python
+result = await server_client.commands.run("echo_args", args=["-i", "literal file.wav"])
+```
+
+The extension requires a server containing the string-array implementation;
+older servers coerce this annotation to a string. Rebuild the template with
+the updated server before exposing this command. Existing scalar commands
+keep their conversion behavior. Nested, numeric and arbitrary object arrays
+are unsupported. Native CLI `--json-args` sends the same JSON object.
 
 ### `file_ops`
 
@@ -639,7 +667,7 @@ def _debug_info() -> dict:
 start(9000)
 ```
 
-`GET /commands` lists `hello` and not `_debug_info`. `POST /commands/hello` with `{"name": "Ada"}` returns `{"result": "Hello, Ada!"}`. `POST /commands/_debug_info` with `{}` still runs. The name defaults to the function name. Argument types come from annotations: `int` → `integer`, `float` → `float`, `bool` → `boolean`, anything else → `string`. A parameter with no default is `required: true` and `default: null`. `description` on each arg stays `""` unless you pass an explicit `args` list of `CommandArg`. `scopes=(...)` requires those scopes from the caller; a caller without them neither sees the command in `GET /commands` nor can run it. `hidden=True` omits the command from `GET /commands`. Raise to return `500`. The registry is frozen when the server starts, so register at import time.
+`GET /commands` lists `hello` and not `_debug_info`. `POST /commands/hello` with `{"name": "Ada"}` returns `{"result": "Hello, Ada!"}`. `POST /commands/_debug_info` with `{}` still runs. The name defaults to the function name. Argument types come from annotations: `int` → `integer`, `float` → `float`, `bool` → `boolean`, `list[str]` (also `typing.List[str]`) → `string_array`, anything else → `string`. A parameter with no default is `required: true` and `default: null`. `description` on each arg stays `""` unless you pass an explicit `args` list of `CommandArg`. `scopes=(...)` requires those scopes from the caller; a caller without them neither sees the command in `GET /commands` nor can run it. `hidden=True` omits the command from `GET /commands`. Raise to return `500`. The registry is frozen when the server starts, so register at import time.
 
 Tests that need isolation can create a private `CommandRegistry()` and pass it as `SandboxServer(registry=...)`. Production templates use `@command`.
 

@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
+import e2e_helpers as H  # noqa: N812
 import pytest
-
-import e2e_helpers as H
 
 
 def test_create_info_and_kill(run, sandbox_factory):  # type: ignore[no-untyped-def]
@@ -43,7 +42,9 @@ def test_created_sandbox_appears_in_list_with_metadata(run, sandbox_factory):  #
         infos = run(Sandbox.list(limit=200))
         return next((i for i in infos if i.sandbox_id == sb.id), None)
 
-    info = H.eventually(_find, timeout=40, interval=2, what="sandbox in list (eventually consistent)")
+    info = H.eventually(
+        _find, timeout=40, interval=2, what="sandbox in list (eventually consistent)"
+    )
     assert info.metadata.get("e2e_kind") == "list-check"
     assert info.metadata.get(H.TAG_KEY) == H.RUN_ID
 
@@ -119,13 +120,16 @@ def test_sandbox_expires_after_its_ttl(run, sandbox_factory):  # type: ignore[no
     """A sandbox created with a short TTL disappears without an explicit kill."""
     sb = sandbox_factory(H.OFFICIAL_BASE, timeout=45)
     H.eventually(
-        lambda: run(_not_running(sb.id)), timeout=150, interval=5, what="TTL expiry of a 45 s sandbox"
+        lambda: run(_not_running(sb.id)),
+        timeout=150,
+        interval=5,
+        what="TTL expiry of a 45 s sandbox",
     )
 
 
 def test_background_work_survives_independent_handle_polling(run, sandbox_factory):  # type: ignore[no-untyped-def]
     """Issue35: a live builtin sandbox has no process-local session dependency."""
-    from agent_sandbox import Sandbox
+    from agent_sandbox.api.sandbox import Sandbox
 
     held = sandbox_factory(H.OFFICIAL_BASE, timeout=180)
     path = H.unique_dir() + ".native-poll"
