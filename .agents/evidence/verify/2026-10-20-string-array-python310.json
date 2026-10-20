@@ -1,0 +1,8 @@
+{
+  "python": "3.10.20",
+  "implicit_optional": "typing.Optional[list[str]]",
+  "declared_annotation": "list[str]",
+  "scope": "Actual Python3.10 stdlib registry before/after, no mock transport",
+  "before_rejected_none": false,
+  "after_rejected_none": true
+}

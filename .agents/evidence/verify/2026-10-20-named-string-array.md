@@ -75,3 +75,17 @@ Current-head remote CI remains pending. Other catalog providers and opt-in
 volume/pause/snapshot scenarios are skipped with their actual reason, not certified.
 KI-009 remains an expected platform failure. Arbitrary JSON/numeric/nested arrays
 are outside the implemented public string-array contract.
+
+
+## Python3.10 current-head CI correction
+
+Initial remote client matrix3.10/3.11/3.12 and server3.11/3.12 passed. Server3.10
+found a real inconsistency in the new None-default rejection: get_type_hints
+implicitly widens a declared list[str] default None to Optional[list[str]] on3.10.
+No assertions were relaxed. Server and declarative inference now inspect the
+declared list annotation before that historical implicit widening, preserving
+all existing scalar resolution and making invalid None defaults fail consistently.
+The actual isolated Python3.10.20 [before/after proof](2026-10-20-string-array-python310.json)
+confirms the preregression and fix using stdlib registry imports. Final scoped
+server15/client12cases, lint/typecheck/hygiene pass; a fresh full cloud run and
+new current-head remote matrix are required before ready/merge.

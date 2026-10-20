@@ -226,11 +226,20 @@ class CommandRegistry:
                     resolved_hints = typing.get_type_hints(fn)
                 except Exception:
                     resolved_hints = {}
+                # Python3.10 get_type_hints adds Optional for a None default.
+                # Inspect the declared list annotation before that implicit widening.
+                try:
+                    declared_hints = inspect.get_annotations(fn, eval_str=True)
+                except Exception:
+                    declared_hints = {}
                 inferred_args: list[CommandArg] = []
                 for param_name, param in sig.parameters.items():
                     arg_type = "string"  # default
                     # Prefer resolved hint; fall back to raw annotation
                     annotation = resolved_hints.get(param_name, param.annotation)
+                    declared = declared_hints.get(param_name, param.annotation)
+                    if typing.get_origin(declared) is list and typing.get_args(declared) == (str,):
+                        annotation = declared
                     if annotation != inspect.Parameter.empty:
                         _annotation_map = {
                             int: "integer",

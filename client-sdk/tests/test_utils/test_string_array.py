@@ -52,3 +52,14 @@ def test_declarative_registration_keeps_array_annotation_and_json_default() -> N
     assert metadata["type"] == "string_array"
     assert metadata["default"] == '["\\u03bb"]'
     assert coerce_kwargs(factory._registry["echo"].args, {}) == {"args": ["λ"]}
+
+
+def test_declarative_none_array_default_is_rejected_on_all_python_versions() -> None:
+    from agent_sandbox.declarative.decorator import _SandboxFactory
+
+    factory = _SandboxFactory()
+    with pytest.raises(ValueError, match="string_array default"):
+
+        @factory.register
+        def invalid(args: list[str] = None) -> list[str]:  # type: ignore[assignment]
+            return args

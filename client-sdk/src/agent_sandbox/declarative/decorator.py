@@ -190,9 +190,17 @@ class _RegisterProxy:
             hints = typing.get_type_hints(func)
         except Exception:
             hints = {}
+        # Keep a declared list[str] consistent on3.10, which widens None defaults.
+        try:
+            declared_hints = inspect.get_annotations(func, eval_str=True)
+        except Exception:
+            declared_hints = {}
         args: list[_CommandArg] = []
         for pname, param in sig.parameters.items():
             annotation = hints.get(pname, param.annotation)
+            declared = declared_hints.get(pname, param.annotation)
+            if typing.get_origin(declared) is list and typing.get_args(declared) == (str,):
+                annotation = declared
             arg_type = _annotation_to_type_str(annotation)
             has_default = param.default is not inspect.Parameter.empty
             args.append(
