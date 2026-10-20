@@ -264,4 +264,6 @@ We welcome contributions! Please read the [Contributing Guide](.github/CONTRIBUT
 
 [Builtin runtime architecture and Python engine migration](docs/en/design/builtin-data-plane.md).
 
+Optional application control plane / 可选应用控制面: [Agent applications](docs/en/guide/agent-applications.md).
+
 Provider-owned pause/resume and Snapshot commands share one implementation across CLI and SDK; see the [registration and usage guide](docs/en/guide/provider-commands.md).

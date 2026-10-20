@@ -47,6 +47,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+applications-postgres = [
+    "psycopg[binary]>=3.2,<4",
+]
+applications-fc = [
+    "agent-sandbox-client[applications-postgres]",
+    "alibabacloud-fc20230330>=4.8.3,<5",
+    "alibabacloud-credentials>=1.0.12,<2",
+]
 mcp = [
     "mcp>=1.0.0",
     "starlette>=1.7.0",
@@ -139,6 +147,10 @@ ignore_missing_imports = true
 follow_imports = "skip"
 
 # The pinned protocol port retains upstream generated schemas and typing style.
+[[tool.mypy.overrides]]
+module = ["psycopg.*", "alibabacloud_credentials.*", "alibabacloud_fc20230330.*", "alibabacloud_tea_openapi.*", "alibabacloud_tea_util.*"]
+ignore_missing_imports = true
+
 [[tool.mypy.overrides]]
 module = ["agent_sandbox._standard.*", "agent_sandbox.code_interpreter.*"]
 follow_imports = "skip"

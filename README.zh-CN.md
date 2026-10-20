@@ -256,4 +256,6 @@ graph TB
 
 [内置运行通道与 Python 引擎迁移](docs/zh/design/builtin-data-plane.md).
 
+Optional application control plane / 可选应用控制面: [Agent 应用](docs/zh/guide/agent-applications.md).
+
 暂停/恢复和快照命令由 Provider 注册，CLI 与 SDK 共用实现，见[注册与使用说明](docs/zh/guide/provider-commands.md)。
