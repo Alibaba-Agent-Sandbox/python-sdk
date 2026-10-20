@@ -100,4 +100,4 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 
 - [Shared conditional Provider operations](notes/implemented/architecture/2026-10-20-provider-conditional-capabilities.md) · [verification](evidence/verify/2026-10-20-provider-conditional-capabilities.md)
 
-- [Named-command string arrays](notes/proposed/feature/2026-10-20-named-string-array.md) · [verification](evidence/verify/2026-10-20-named-string-array.md).
+- [Named-command string arrays](notes/implemented/feature/2026-10-20-named-string-array.md) · [verification](evidence/verify/2026-10-20-named-string-array-final.md).

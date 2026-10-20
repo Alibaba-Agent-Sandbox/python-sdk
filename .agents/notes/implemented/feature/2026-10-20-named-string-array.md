@@ -1,6 +1,6 @@
 # Decision: Native string-array arguments for named commands
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -65,4 +65,4 @@ unit, static, distribution, health, hygiene and real-cloud gates.
 
 ## Evidence
 
-- [Verification](../../../evidence/verify/2026-10-20-named-string-array.md)
+- [Verification](../../../evidence/verify/2026-10-20-named-string-array-final.md)
