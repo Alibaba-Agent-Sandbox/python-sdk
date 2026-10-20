@@ -123,3 +123,14 @@ valid credential refusals. Cube live acceptance requires an explicitly configure
    `@pytest.mark.known_issue` + `@pytest.mark.xfail(strict=True, reason="KI-0NN: ...")` and add the
    entry to [KNOWN-ISSUES.md](KNOWN-ISSUES.md) (both languages).
 3. Record the run in `.agents/evidence/verify/<date>-<topic>.md` (Definition of Done).
+
+## Shared Provider conditional acceptance (local only)
+
+Use a CLI build containing the six Express command descriptors and a ready generation2 template admitted to pause/Snapshot. Run against local credentials:
+
+```sh
+python e2e/provider_conditional.py --abx "$ABX_BIN" \
+  --template "$E2E_SNAPSHOT_TEMPLATE" --env-file .env --report provider-conditional-report.json
+```
+
+The controller starts an isolated real engine, compares CLI/Python discovery, tests both directions of pause/resume and Snapshot create/list/restore/delete, checks in-memory/file continuity and clone isolation, and independently verifies owned cleanup. It does not create/delete the supplied template. Keep the binary outside a build directory that another build can erase. The report excludes credentials and resource identifiers. This manual controller is not collected by pytest and is not dispatched from Actions.

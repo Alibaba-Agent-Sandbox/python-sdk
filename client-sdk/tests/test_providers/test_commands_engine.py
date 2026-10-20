@@ -65,12 +65,22 @@ async def test_builtin_discovery_through_real_engine(real_engine: Any) -> None:
         "quota.list",
         "quota.update",
         "quota.delete",
+        "sandbox.pause",
+        "sandbox.resume",
+        "snapshot.create",
+        "snapshot.list",
+        "snapshot.restore",
+        "snapshot.delete",
     }
-    assert len(descriptors) == 20
+    assert len(descriptors) == 26
     assert {descriptor["id"] for descriptor in descriptors} == expected
     descriptor = await commands.get_command("alicloud-express", "volume.list")
     assert descriptor["effect"] == "read" and descriptor["idempotent"]
     assert descriptor["input_schema"]["additionalProperties"] is False
+    snapshot = await commands.get_command("alicloud-express", "snapshot.create")
+    assert snapshot["effect"] == "write" and not snapshot["idempotent"]
+    assert "sandbox_id" in snapshot["input_schema"]["required"]
+    assert "request_timeout" in snapshot["input_schema"]["properties"]
 
 
 @pytest.mark.asyncio
