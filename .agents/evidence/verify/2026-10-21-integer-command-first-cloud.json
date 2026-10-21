@@ -1,0 +1,10 @@
+{
+  "result": "FAIL",
+  "scope": "initial regression controller on actual owned Express target",
+  "reason": "controller used absent native Sandbox.get_host; corrected to sandbox.network.get_url",
+  "duration_s": 7.45,
+  "failed": 1,
+  "owned_tracked": 1,
+  "owned_remaining_after_finalizer": 0,
+  "product_acceptance": "NOT_REACHED"
+}

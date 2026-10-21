@@ -218,6 +218,31 @@ class TestRunCommand:
         assert status == 200
         assert body == {"result": 7}
 
+    @pytest.mark.parametrize("value", [True, False])
+    def test_boolean_integer_rejected_before_command_execution(
+        self, value: bool, server_port: int, test_registry: CommandRegistry
+    ) -> None:
+        calls: list[int] = []
+
+        @test_registry.command("bounded_integer")
+        def bounded_integer(seconds: int) -> int:
+            calls.append(seconds)
+            return seconds
+
+        status, body = _request(
+            server_port, "POST", "/commands/bounded_integer", body={"seconds": value}
+        )
+        assert status == 400
+        assert body["type"] == "TypeError"
+        assert calls == []
+        for valid in [1, "2"]:
+            status, body = _request(
+                server_port, "POST", "/commands/bounded_integer", body={"seconds": valid}
+            )
+            assert status == 200
+            assert body["result"] == int(valid)
+        assert calls == [1, 2]
+
     def test_unknown_command_404(self, server_port: int) -> None:
         status, body = _request(server_port, "POST", "/commands/nonexistent", body={})
         assert status == 404

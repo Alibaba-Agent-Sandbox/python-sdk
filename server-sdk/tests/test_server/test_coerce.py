@@ -34,6 +34,11 @@ class TestParseScalar:
     def test_integer_from_str(self) -> None:
         assert parse_scalar("123", "integer") == 123
 
+    @pytest.mark.parametrize("value", [True, False])
+    def test_integer_rejects_json_boolean(self, value: bool) -> None:
+        with pytest.raises(ValueError, match="boolean"):
+            parse_scalar(value, "integer")
+
     def test_integer_rejects_float_str(self) -> None:
         with pytest.raises(ValueError):
             parse_scalar("3.14", "integer")

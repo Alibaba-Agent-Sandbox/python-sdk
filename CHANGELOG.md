@@ -22,6 +22,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Recognize existing dated JSON verification evidence in repository-health references while retaining missing-record detection. / 仓库健康检查识别已有日期化 JSON 验证记录，并保留缺失记录检测。
+
+- Reject JSON booleans for integer named-command arguments before dispatch in the server and declarative client; retain numeric CLI strings and boolean-typed arguments. / 服务器与声明式客户端在执行前拒绝把 JSON 布尔值当作整数命令参数，保留数字字符串和布尔类型参数。
+
 - Repair native asynchronous E2E lifecycle/MCP cleanup entries and distinguish uninstalled-provider refusal from installed-provider credential validation. / 修复原生异步 E2E 生命周期和 MCP 清理入口，区分未安装 provider 的本地拒绝与已安装 provider 的凭据校验。
 
 - Start native SandboxServer processes before reporting readiness; bound startup acknowledgement, drain output without accumulation and release local readers while retaining remote ownership. / 原生 SandboxServer 启动先确认进程，限制等待并释放本地读取连接，保留远程资源所有权。
