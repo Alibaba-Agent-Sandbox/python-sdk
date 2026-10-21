@@ -59,6 +59,8 @@ def parse_scalar(value: Any, type_str: str) -> Any:
         return str(value)
 
     if type_str == "integer":
+        if isinstance(value, bool):
+            raise ValueError("JSON boolean is not an integer argument")
         if isinstance(value, int) and not isinstance(value, bool):
             return value
         return int(value)

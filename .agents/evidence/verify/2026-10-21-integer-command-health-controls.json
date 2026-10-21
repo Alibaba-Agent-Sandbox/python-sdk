@@ -1,0 +1,11 @@
+{
+  "original_main_false_missing_json_records": 6,
+  "existing_json_records_after_fix": "PASS",
+  "existing_json_records_scoped_to": ".agents/evidence/",
+  "negative_control": {
+    "exit_code": 1,
+    "actual_missing_dated_record_rejected": true
+  },
+  "final_health_exit_code": 0,
+  "historical_evidence_changed": false
+}

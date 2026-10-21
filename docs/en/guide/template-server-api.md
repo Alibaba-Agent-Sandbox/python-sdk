@@ -222,7 +222,7 @@ Body is a JSON object of arguments. `200`:
 | `404` | `Unknown command '<name>'; available: <sorted names>` — the available list includes hidden commands |
 | `500` | The function raised. `error` is `str(exc)`, `type` is the exception class name |
 
-Coercion: `integer` via `int`, `float` via `float`, `boolean` from `true`/`false`/`yes`/`no`/`1`/`0` (case-insensitive). `string_array` accepts only a native JSON array whose elements are all strings; JSON encoded inside a string, mixed arrays, objects and null return `400`. Empty arrays are accepted. String arguments retain `str` conversion. A default is applied only when the field is omitted and the registered default is not `None`.
+Coercion: `integer` via `int` after rejecting JSON booleans (`true`/`false` return `400` before the command runs), `float` via `float`, `boolean` from `true`/`false`/`yes`/`no`/`1`/`0` (case-insensitive). `string_array` accepts only a native JSON array whose elements are all strings; JSON encoded inside a string, mixed arrays, objects and null return `400`. Empty arrays are accepted. String arguments retain `str` conversion. A default is applied only when the field is omitted and the registered default is not `None`.
 
 
 #### String-array command arguments

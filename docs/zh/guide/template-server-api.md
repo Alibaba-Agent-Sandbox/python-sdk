@@ -222,7 +222,7 @@ PTY WebSocket（端口 9001，路径 `/pty`）检查同样的凭据。它接受 
 | `404` | `Unknown command '<name>'; available: <按名排序>` — available 列表包含隐藏命令 |
 | `500` | 函数抛出异常。`error` 是 `str(exc)`，`type` 是异常类名 |
 
-转换规则：`integer` 用 `int`，`float` 用 `float`，`boolean` 接受 `true`/`false`/`yes`/`no`/`1`/`0`（不区分大小写）。`string_array` 仅接受所有元素均为字符串的原生 JSON 数组；JSON 编码字符串、混合数组、对象和 null 返回 `400`，空数组有效。字符串参数继续使用 `str` 转换。仅当省略该字段且注册的默认值不是 `None` 时才套用默认值。
+转换规则：`integer` 先拒绝 JSON 布尔值（`true`/`false` 在执行命令前返回 `400`），其余值用 `int`，`float` 用 `float`，`boolean` 接受 `true`/`false`/`yes`/`no`/`1`/`0`（不区分大小写）。`string_array` 仅接受所有元素均为字符串的原生 JSON 数组；JSON 编码字符串、混合数组、对象和 null 返回 `400`，空数组有效。字符串参数继续使用 `str` 转换。仅当省略该字段且注册的默认值不是 `None` 时才套用默认值。
 
 
 #### 字符串数组命令参数

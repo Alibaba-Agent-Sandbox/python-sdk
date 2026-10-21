@@ -317,7 +317,12 @@ else:
     report("PASS", "every ADR has a dated name, '# Decision:' title and Status matching its directory")
 
 # 4. ADR slugs referenced but absent from this repository
-stems = {p.stem for p in files if adr_re.match(p.name)}
+evidence_re = re.compile(r"^\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*\.json$")
+stems = {
+    p.stem for p in files
+    if adr_re.match(p.name)
+    or (rel(p).startswith(".agents/evidence/") and evidence_re.match(p.name))
+}
 ref_re = re.compile(r"(?<![0-9A-Za-z-])(\d{4}-\d{2}-\d{2}-[a-z][a-z0-9-]*[a-z0-9])(?![0-9A-Za-z-])")
 dangling = {}
 for p in files:
