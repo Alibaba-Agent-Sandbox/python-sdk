@@ -1,6 +1,6 @@
 # Decision: Reject JSON booleans for integer named-command arguments
 
-Status: proposed
+Status: implemented
 
 ## Problem
 Python `int(True)` silently converts a JSON boolean into an integer before a named command can reject its input. Actual Express QM Sandbox acceptance exposed this behavior in the shared client/server parser. See [Issue 80](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/80).
@@ -29,3 +29,6 @@ The regression fails before the fix, all required checks and current-head review
 
 ## Evidence
 - [Verification](../../../evidence/verify/2026-10-21-integer-command-booleans.md)
+
+## Implementation
+Runtime c6fc4e5 passes actual Express acceptance and the complete remote matrix. Final record-only head still requires current-head checks and normal merge.

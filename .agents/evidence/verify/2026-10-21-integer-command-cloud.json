@@ -1,0 +1,23 @@
+{
+  "provider": "alicloud-express",
+  "runtime_head": "c6fc4e5efe1c7e13e6301b6ab7ad4812f84e8262",
+  "run": "e2e-integer-command-20261021-1792547634",
+  "result": "PASS",
+  "passed": 122,
+  "skipped": 8,
+  "deselected": 2,
+  "xfailed": 1,
+  "duration_s": 277.12,
+  "new_integer_raw_http_and_actual_sdk_no_dispatch": "PASS",
+  "existing_named_array_sdk_and_native_cli": "PASS",
+  "native_cli_version": "0.4.1",
+  "server_delivery": "complete checkout server source uploaded to fresh owned target and SHA256 checked before startup",
+  "sha256": {
+    "server-sdk/src/agent_sandbox/server/_coerce.py": "af773070e5ced9b90310faafa8435e644755e8ae3ff105a645234cd26d531dda",
+    "client-sdk/src/agent_sandbox/utils/coerce.py": "e5324ad1ca8db20e0d9e22ee6d2ec59d137065f6c0a0046ce3c33ce4bc8804d4",
+    "e2e/test_20_integer_arguments.py": "74bee42dd2b5ba14cd725742137db71d08cf243e071f14c3483145ae2bc98a70"
+  },
+  "skips": "Four unavailable third-party provider cases; two opt-in volumes; pause-template and snapshot-allowlist cases. No pass claim for skipped cases.",
+  "known_xfail": "KI-009: platform Jupyter service unavailable (HTTP404), trailing expression fallback differs",
+  "cleanup": "make e2e janitor dry-run 0 candidates; independent own-run readback0, separately recorded"
+}
