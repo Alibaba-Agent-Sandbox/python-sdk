@@ -1,6 +1,6 @@
 # Decision: Remove retired project compatibility
 
-Status: proposed
+Status: implemented
 
 ## Problem
 The maintainer states that the project has not formally released and requests removing old template management/API behavior and other project compatibility layers. Keeping aliases, alternate factories and fallback branches expands an API that is not meant to be supported.
@@ -31,3 +31,9 @@ Run the repository's required local checks and regressions for current observabl
 - [Verification](../../../evidence/verify/2026-10-22-remove-legacy-compatibility.md)
 
 Issue: https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/84
+
+## Acceptance
+
+Verified merged implementation: https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/85. The source merge commit is `d1a54f78e447bc67b90dbfdf48168b020275c871`.
+
+- [Remote acceptance](../../../evidence/verify/2026-10-22-remove-legacy-acceptance.md)
