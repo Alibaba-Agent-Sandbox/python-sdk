@@ -125,12 +125,8 @@ def test_sync_classmethod_aliases_dispatch_and_close(operation, fail):
 
         def run():
             if operation == "inspect":
-                return Sandbox.get_info_by_id_sync(
-                    "existing", sandbox_domain="unused.example.invalid"
-                )
-            return Sandbox.set_timeout_by_id_sync(
-                "existing", 600, sandbox_domain="unused.example.invalid"
-            )
+                return Sandbox.get_info_by_id_sync("existing")
+            return Sandbox.set_timeout_by_id_sync("existing", 600)
 
         if fail:
             with pytest.raises(RuntimeError, match="operation failed"):

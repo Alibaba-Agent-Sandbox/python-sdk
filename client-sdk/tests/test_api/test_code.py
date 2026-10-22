@@ -240,7 +240,7 @@ class TestCodeRunEnvs:
         self,
     ) -> None:
         """Verify envs end up as envVars in the protocol payload."""
-        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -268,7 +268,7 @@ class TestCodeRunEnvs:
         self,
     ) -> None:
         """Verify envVars is NOT in payload when envs is None."""
-        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -299,7 +299,7 @@ class TestCodeRunStreamingCallbacks:
         self,
     ) -> None:
         """on_stdout callback is invoked with stdout content at protocol layer."""
-        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -326,7 +326,7 @@ class TestCodeRunStreamingCallbacks:
         self,
     ) -> None:
         """on_stderr callback is invoked with stderr content at protocol layer."""
-        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -353,7 +353,7 @@ class TestCodeRunStreamingCallbacks:
         self,
     ) -> None:
         """on_result callback receives the full result dict."""
-        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -381,7 +381,7 @@ class TestCodeRunStreamingCallbacks:
         self,
     ) -> None:
         """All three callbacks fire when all are provided."""
-        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -428,7 +428,7 @@ class TestCodeRunStreamingCallbacks:
         self,
     ) -> None:
         """on_stdout is NOT called when stdout is empty."""
-        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -455,7 +455,7 @@ class TestCodeRunStreamingCallbacks:
         self,
     ) -> None:
         """Verify callbacks pass from CodeContextModule.run() to protocol."""
-        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -496,7 +496,7 @@ class TestCodeRunStreamingCallbacks:
         self,
     ) -> None:
         """Callbacks work with response that wraps data in 'result' key."""
-        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
 
         mock_http = AsyncMock()
         mock_http.envd_request.return_value = {
@@ -751,7 +751,7 @@ class TestCodeRunFallback:
         self,
     ) -> None:
         """If process_protocol was not injected, fallback raises RuntimeError."""
-        from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
 
         mock_ci = AsyncMock(spec=CodeInterpreterProtocol)
         mock_ci.run_code.side_effect = _make_404_exc()

@@ -50,7 +50,7 @@ RESERVED_PROVIDER_PREFIXES = ("abx-", "alicloud-", "shortcuts")
 OFFICIAL_CATALOG_IDS = frozenset({"opensandbox", "cubesandbox", "e2b", "alicloud-container"})
 
 KEY_TYPES = ("str", "url", "int", "float", "bool", "enum", "path", "csv")
-ALIAS_KINDS = ("compat", "native", "legacy")
+ALIAS_KINDS = ("native",)
 ALIAS_SURFACES = ("env", "config", "kwarg", "flag")
 
 _TRUE = {"true", "1", "yes", "on"}
@@ -90,8 +90,7 @@ class ConfigKey:
     description: str = ""
     description_zh: str = ""
     aliases: tuple[Alias, ...] = ()
-    storage_phase1: Storage | None = None
-    storage_phase2: Storage | None = None
+    storage: Storage | None = None
     choices: tuple[str, ...] = ()
     settable: bool = True
     env_override: str | None = None
@@ -154,8 +153,7 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         default=BUILTIN_PROVIDER_ID,
         description="Default provider id (see 'abx provider list')",
         description_zh="默认 provider 标识（见 'abx provider list'）",
-        storage_phase1=Storage("toml", "provider", "core"),
-        storage_phase2=Storage("toml", "provider", "core"),
+        storage=Storage("toml", "provider", "core"),
         toml_section="core",
     ),
     ConfigKey(
@@ -165,8 +163,7 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         group=_G_AUTH,
         description="Agent Sandbox API key of the active provider",
         description_zh="当前 provider 的 Agent Sandbox API Key",
-        storage_phase1=Storage("env", "ABX_SANDBOX_API_KEY"),
-        storage_phase2=Storage("env", "ABX_SANDBOX_API_KEY"),
+        storage=Storage("env", "ABX_SANDBOX_API_KEY"),
     ),
     ConfigKey(
         "sandbox_base_url",
@@ -175,8 +172,7 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         default=_BASE_URL_DEFAULT,
         description="Agent Sandbox API endpoint of the active provider",
         description_zh="当前 provider 的 Agent Sandbox API 端点",
-        storage_phase1=Storage("toml", "sandbox_base_url", "transport"),
-        storage_phase2=Storage("toml", "sandbox_base_url", "transport"),
+        storage=Storage("toml", "sandbox_base_url", "transport"),
         toml_section="transport",
     ),
     ConfigKey(
@@ -185,8 +181,7 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         default=_DOMAIN_DEFAULT,
         description="Envd data-plane domain",
         description_zh="envd 数据面域名",
-        storage_phase1=Storage("toml", "sandbox_domain", "transport"),
-        storage_phase2=Storage("toml", "sandbox_domain", "transport"),
+        storage=Storage("toml", "sandbox_domain", "transport"),
         toml_section="transport",
     ),
     ConfigKey(
@@ -196,8 +191,7 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         default=30.0,
         description="HTTP request timeout in seconds",
         description_zh="HTTP 请求超时（秒）",
-        storage_phase1=Storage("toml", "http_timeout", "transport"),
-        storage_phase2=Storage("toml", "http_timeout", "transport"),
+        storage=Storage("toml", "http_timeout", "transport"),
         toml_section="transport",
     ),
     ConfigKey(
@@ -207,19 +201,7 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         default=True,
         description="Use HTTP/2",
         description_zh="启用 HTTP/2",
-        storage_phase1=Storage("toml", "http2", "transport"),
-        storage_phase2=Storage("toml", "http2", "transport"),
-        toml_section="transport",
-    ),
-    ConfigKey(
-        "max_retries",
-        type="int",
-        group=_G_CONN,
-        default=3,
-        description="Maximum automatic retries",
-        description_zh="最大自动重试次数",
-        storage_phase1=Storage("toml", "max_retries", "transport"),
-        storage_phase2=Storage("toml", "max_retries", "transport"),
+        storage=Storage("toml", "http2", "transport"),
         toml_section="transport",
     ),
     ConfigKey("max_connections", type="int", default=100, settable=False, toml_section="transport"),
@@ -237,17 +219,13 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         "ws_ping_interval", type="float", default=30.0, settable=False, toml_section="transport"
     ),
     ConfigKey(
-        "retry_base_delay", type="float", default=1.0, settable=False, toml_section="transport"
-    ),
-    ConfigKey(
         "log_level",
         type="enum",
         choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
         default="WARNING",
         description="Log level",
         description_zh="日志级别",
-        storage_phase1=Storage("toml", "log_level", "transport"),
-        storage_phase2=Storage("toml", "log_level", "transport"),
+        storage=Storage("toml", "log_level", "transport"),
         toml_section="transport",
     ),
     ConfigKey(
@@ -255,8 +233,7 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         default="base",
         description="Template used when none is given",
         description_zh="未指定模板时使用的模板",
-        storage_phase1=Storage("toml", "default_template", "transport"),
-        storage_phase2=Storage("toml", "default_template", "transport"),
+        storage=Storage("toml", "default_template", "transport"),
         toml_section="transport",
     ),
     ConfigKey(
@@ -266,8 +243,7 @@ CORE_KEYS: tuple[ConfigKey, ...] = (
         description="GitHub token for the template index",
         description_zh="用于模板索引的 GitHub Token",
         env_override="GITHUB_TOKEN",
-        storage_phase1=Storage("env", "GITHUB_TOKEN"),
-        storage_phase2=Storage("env", "GITHUB_TOKEN"),
+        storage=Storage("env", "GITHUB_TOKEN"),
     ),
     ConfigKey("template_index_url", type="url", settable=False),
     ConfigKey("template_dir", type="path", settable=False),
@@ -282,7 +258,7 @@ _ALI = BUILTIN_PROVIDER_ID
 def _ali(
     key: str,
     *,
-    phase1: Storage | None = None,
+    storage: Storage | None = None,
     env_override: str | None = None,
     **kw: Any,
 ) -> ConfigKey:
@@ -290,7 +266,7 @@ def _ali(
 
     ``env_override`` is the only environment variable when the vendor already has a name.
     """
-    storage1 = phase1 or Storage("toml", key, "providers." + _ALI)
+    storage1 = storage or Storage("toml", key, "providers." + _ALI)
     if env_override and storage1.file == "env":
         storage2 = Storage("env", env_override)
     elif storage1.file == "env":
@@ -302,8 +278,7 @@ def _ali(
         scope=_ALI,
         aliases=(),
         env_override=env_override,
-        storage_phase1=storage1,
-        storage_phase2=storage2,
+        storage=storage2,
         **kw,
     )
 
@@ -314,7 +289,7 @@ ALICLOUD_EXPRESS_KEYS: tuple[ConfigKey, ...] = (
         default="cn-hangzhou",
         group=_G_CONN,
         env_override="ALIBABA_CLOUD_REGION_ID",
-        phase1=Storage("toml", "region", "transport"),
+        storage=Storage("toml", "region", "transport"),
         description="Region id (derives the API URL and domain)",
         description_zh="地域（用于推导 API 地址和域名）",
     ),
@@ -323,7 +298,7 @@ ALICLOUD_EXPRESS_KEYS: tuple[ConfigKey, ...] = (
         credential=True,
         group=_G_ALI,
         env_override="ALICLOUD_ACCESS_KEY_ID",
-        phase1=Storage("env", "ALICLOUD_ACCESS_KEY_ID"),
+        storage=Storage("env", "ALICLOUD_ACCESS_KEY_ID"),
         description="Alibaba Cloud AccessKey ID",
         description_zh="阿里云 AccessKey ID",
     ),
@@ -333,7 +308,7 @@ ALICLOUD_EXPRESS_KEYS: tuple[ConfigKey, ...] = (
         credential=True,
         group=_G_ALI,
         env_override="ALICLOUD_ACCESS_KEY_SECRET",
-        phase1=Storage("env", "ALICLOUD_ACCESS_KEY_SECRET"),
+        storage=Storage("env", "ALICLOUD_ACCESS_KEY_SECRET"),
         description="Alibaba Cloud AccessKey secret",
         description_zh="阿里云 AccessKey Secret",
     ),
@@ -349,12 +324,10 @@ CORE_KEY_NAMES = tuple(k.key for k in CORE_KEYS)
 TUNING_KEYS = (
     "http_timeout",
     "http2",
-    "max_retries",
     "max_connections",
     "max_keepalive_connections",
     "keepalive_expiry",
     "ws_ping_interval",
-    "retry_base_delay",
 )
 
 
@@ -441,10 +414,7 @@ def env_names(key: ConfigKey, *, scoped_for: str | None = None) -> tuple[str, ..
     if scoped_for and key.scope == "core":
         names.append(provider_env_name(scoped_for, key.key))
     names.append(key.env)
-    names.extend(
-        a.name for a in key.aliases if a.surface == "env" and a.kind in ("compat", "native")
-    )
-    names.extend(a.name for a in key.aliases if a.surface == "env" and a.kind == "legacy")
+    names.extend(a.name for a in key.aliases if a.surface == "env" and a.kind == "native")
     seen: dict[str, None] = {}
     for n in names:
         seen.setdefault(n)
@@ -455,6 +425,8 @@ def _toml_lookups(
     key: ConfigKey, toml: Mapping[str, Any], scoped_for: str | None
 ) -> list[tuple[str, Any]]:
     """(display name, raw value) candidates inside a TOML document, most specific first."""
+    if key.secret or (key.storage is not None and key.storage.file == "env"):
+        return []
     out: list[tuple[str, Any]] = []
     providers = toml.get("providers")
     prov_scope = key.scope if key.scope != "core" else scoped_for
@@ -476,10 +448,6 @@ def _toml_lookups(
         for n in names:
             if n in table_obj:
                 out.append((f"{section}.{n}", table_obj[n]))
-    elif section == "transport" and "transport" not in toml:
-        for n in names:
-            if n in toml and not isinstance(toml[n], Mapping):
-                out.append((n, toml[n]))
     return out
 
 
@@ -560,8 +528,7 @@ def export_schema(extra_provider_keys: Sequence[ConfigKey] = ()) -> dict[str, An
             "aliases": [{"name": a.name, "kind": a.kind, "surface": a.surface} for a in k.aliases],
             "env_names": list(env_names(k)),
             "toml_section": k.toml_section,
-            "storage_phase1": storage(k.storage_phase1),
-            "storage_phase2": storage(k.storage_phase2),
+            "storage": storage(k.storage),
             "default": k.default,
             "choices": list(k.choices),
             "group": k.group,

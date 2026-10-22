@@ -57,7 +57,7 @@ class TestSyncDecoration:
         mock_sb = _make_mock_sandbox(stdout=json.dumps({"result": 42}))
         mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
 
-        @sandbox(template="test-tpl", api_key="k")
+        @sandbox(template="test-tpl", sandbox_api_key="k")
         def my_func(x: int) -> dict[str, Any]:
             return {"result": x}
 
@@ -76,7 +76,7 @@ class TestSyncDecoration:
         mock_sb = _make_mock_sandbox(stdout=json.dumps("hello world"))
         mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
 
-        @sandbox(api_key="k")
+        @sandbox(sandbox_api_key="k")
         def greet(name: str, greeting: str = "Hello") -> str:
             return f"{greeting} {name}"
 
@@ -97,7 +97,7 @@ class TestAsyncDecoration:
         mock_sb = _make_mock_sandbox(stdout=json.dumps([1, 2, 3]))
         mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
 
-        @sandbox(api_key="k")
+        @sandbox(sandbox_api_key="k")
         async def async_fn(data: list[int]) -> list[int]:
             return data
 
@@ -119,7 +119,7 @@ class TestKeepAlive:
         mock_sb = _make_mock_sandbox(stdout=json.dumps(None))
         mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
 
-        @sandbox(keep_alive=True, api_key="k")
+        @sandbox(keep_alive=True, sandbox_api_key="k")
         def noop() -> None:
             return None
 
@@ -140,7 +140,7 @@ class TestSandboxIdReuse:
         mock_sb = _make_mock_sandbox(stdout=json.dumps("ok"))
         mock_sandbox_cls.connect = AsyncMock(return_value=mock_sb)
 
-        @sandbox(sandbox_id="sbx-existing", api_key="k")
+        @sandbox(sandbox_id="sbx-existing", sandbox_api_key="k")
         def fn() -> str:
             return "ok"
 
@@ -164,7 +164,7 @@ class TestPackageInstallation:
         mock_sb = _make_mock_sandbox(stdout=json.dumps(None))
         mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
 
-        @sandbox(packages=["numpy", "pandas"], api_key="k")
+        @sandbox(packages=["numpy", "pandas"], sandbox_api_key="k")
         def fn() -> None:
             return None
 
@@ -198,7 +198,7 @@ class TestErrorHandling:
         )
         mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
 
-        @sandbox(api_key="k")
+        @sandbox(sandbox_api_key="k")
         def failing_fn() -> None:
             raise ValueError("boom")
 
@@ -283,7 +283,7 @@ class TestTemplateWiring:
         mock_sb = _make_mock_sandbox(stdout=json.dumps(None))
         mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
 
-        @sandbox(template="my-tpl", api_key="k")
+        @sandbox(template="my-tpl", sandbox_api_key="k")
         def fn() -> None:
             return None
 
@@ -306,7 +306,7 @@ class TestCpuMemoryPassThrough:
         mock_sb = _make_mock_sandbox(stdout=json.dumps(None))
         mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
 
-        @sandbox(cpu=4, memory=2048, api_key="k")
+        @sandbox(cpu=4, memory=2048, sandbox_api_key="k")
         def fn() -> None:
             return None
 
@@ -322,7 +322,7 @@ class TestCpuMemoryPassThrough:
         mock_sb = _make_mock_sandbox(stdout=json.dumps(None))
         mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
 
-        @sandbox(api_key="k")
+        @sandbox(sandbox_api_key="k")
         def fn() -> None:
             return None
 

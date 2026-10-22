@@ -12,7 +12,11 @@ import httpx
 import pytest
 
 from agent_sandbox.models.errors import ConnectionError_, EnvdRpcError, ExecutionError
-from agent_sandbox.transport.auth import PLATFORM_AUTH_HEADER, ApiKeyAuth, EnvdTokenManager
+from agent_sandbox.providers.alicloud_express.auth import (
+    PLATFORM_AUTH_HEADER,
+    ApiKeyAuth,
+    EnvdTokenManager,
+)
 from agent_sandbox.transport.codec import CONNECT_CONTENT_TYPE
 from agent_sandbox.transport.config import TransportConfig
 from agent_sandbox.transport.http import HttpClient

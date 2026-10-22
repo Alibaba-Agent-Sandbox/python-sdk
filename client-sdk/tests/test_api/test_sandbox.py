@@ -16,7 +16,7 @@ from agent_sandbox.api.server_client import ServerClient
 from agent_sandbox.models.errors import CommandNotFoundError, ServerAPIError
 from agent_sandbox.models.process import CodeResult
 from agent_sandbox.models.sandbox import SandboxConfig, SandboxInfo, SandboxStatus
-from agent_sandbox.transport.auth import EnvdTokenManager
+from agent_sandbox.providers.alicloud_express.auth import EnvdTokenManager
 from agent_sandbox.transport.config import TransportConfig
 from agent_sandbox.transport.http import HttpClient
 from tests.test_api.conftest import (
@@ -72,12 +72,12 @@ class TestSandboxCreate:
             patch("agent_sandbox.transport.http.HttpClient") as mock_http_cls,
             patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_proto_cls,
         ):
-            mock_load_config.return_value = TransportConfig(api_key=TEST_API_KEY)
+            mock_load_config.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_create_auth.return_value = mock_auth
             mock_http_cls.return_value = mock_http
             mock_proto_cls.return_value = mock_sandbox_proto
 
-            sb = await Sandbox.create(template="python-base", api_key=TEST_API_KEY)
+            sb = await Sandbox.create(template="python-base", sandbox_api_key=TEST_API_KEY)
 
             assert sb.id == TEST_SANDBOX_ID
             assert sb.status == SandboxStatus.RUNNING
@@ -99,7 +99,7 @@ class TestSandboxCreate:
             patch("agent_sandbox.transport.http.HttpClient"),
             patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_proto_cls,
         ):
-            mock_load_config.return_value = TransportConfig(api_key=TEST_API_KEY)
+            mock_load_config.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_create_auth.return_value = AsyncMock()
             mock_proto_cls.return_value = mock_sandbox_proto
 
@@ -107,7 +107,7 @@ class TestSandboxCreate:
                 template="node-base",
                 timeout=600,
                 envs={"FOO": "bar"},
-                api_key=TEST_API_KEY,
+                sandbox_api_key=TEST_API_KEY,
             )
 
             call_args = mock_sandbox_proto.create.call_args
@@ -131,11 +131,11 @@ class TestSandboxCreate:
             patch("agent_sandbox.transport.http.HttpClient"),
             patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_proto_cls,
         ):
-            mock_load_config.return_value = TransportConfig(api_key=TEST_API_KEY)
+            mock_load_config.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_create_auth.return_value = AsyncMock()
             mock_proto_cls.return_value = mock_sandbox_proto
 
-            await Sandbox.create(template="base", api_key=TEST_API_KEY)
+            await Sandbox.create(template="base", sandbox_api_key=TEST_API_KEY)
 
             assert mock_sandbox_proto.create.call_args.kwargs["request_timeout"] is None
 
@@ -154,14 +154,14 @@ class TestSandboxCreate:
             patch("agent_sandbox.transport.http.HttpClient"),
             patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_proto_cls,
         ):
-            mock_load_config.return_value = TransportConfig(api_key=TEST_API_KEY)
+            mock_load_config.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_create_auth.return_value = AsyncMock()
             mock_proto_cls.return_value = mock_sandbox_proto
 
             await Sandbox.create(
                 template="python-hello",
                 request_timeout=120.0,
-                api_key=TEST_API_KEY,
+                sandbox_api_key=TEST_API_KEY,
             )
 
             assert mock_sandbox_proto.create.call_args.kwargs["request_timeout"] == 120.0
@@ -174,7 +174,7 @@ class TestSandboxCreate:
             await Sandbox.create(
                 template="base",
                 request_timeout=bad_value,
-                api_key=TEST_API_KEY,
+                sandbox_api_key=TEST_API_KEY,
             )
 
 
@@ -196,11 +196,11 @@ class TestSandboxConnect:
             patch("agent_sandbox.transport.http.HttpClient"),
             patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_proto_cls,
         ):
-            mock_load_config.return_value = TransportConfig(api_key=TEST_API_KEY)
+            mock_load_config.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_create_auth.return_value = AsyncMock()
             mock_proto_cls.return_value = mock_sandbox_proto
 
-            sb = await Sandbox.connect(TEST_SANDBOX_ID, api_key=TEST_API_KEY)
+            sb = await Sandbox.connect(TEST_SANDBOX_ID, sandbox_api_key=TEST_API_KEY)
 
             assert sb.id == TEST_SANDBOX_ID
             mock_sandbox_proto.connect.assert_called_once_with(TEST_SANDBOX_ID)
@@ -467,7 +467,7 @@ class TestSandboxSyncVariants:
             patch.object(provider, "build_infra", _infra),
             patch("agent_sandbox.api.capability.resolve_capabilities_for", _resolve),
         ):
-            sb = await Sandbox.create(template="unique-alias", api_key="k")
+            sb = await Sandbox.create(template="unique-alias", sandbox_api_key="k")
 
         assert seen["template"] == "unique-alias"
         assert seen["ids"] == ("unique-alias", "plat-id", "cached-alias")
@@ -505,7 +505,7 @@ class TestSandboxSyncVariants:
             patch.object(provider, "build_infra", _infra),
             patch("agent_sandbox.api.capability.resolve_capabilities_for", _resolve),
         ):
-            sb = await Sandbox.connect("sbx-123", api_key="k")
+            sb = await Sandbox.connect("sbx-123", sandbox_api_key="k")
 
         assert seen["ids"] == ("plat-id", "cached-alias")
         assert sb.capabilities == frozenset({"files"})
@@ -526,7 +526,7 @@ class TestSandboxResourceParams:
             patch("agent_sandbox.transport.http.HttpClient"),
             patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_pc,
         ):
-            mock_lc.return_value = TransportConfig(api_key=TEST_API_KEY)
+            mock_lc.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()
             mock_pc.return_value = mock_sandbox_proto
 
@@ -534,7 +534,7 @@ class TestSandboxResourceParams:
                 template="python-base",
                 cpu=4,
                 memory=8192,
-                api_key=TEST_API_KEY,
+                sandbox_api_key=TEST_API_KEY,
             )
 
             config: SandboxConfig = mock_sandbox_proto.create.call_args[0][0]
@@ -558,7 +558,7 @@ class TestSandboxResourceParams:
             patch("agent_sandbox.transport.http.HttpClient"),
             patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_pc,
         ):
-            mock_lc.return_value = TransportConfig(api_key=TEST_API_KEY)
+            mock_lc.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()
             mock_pc.return_value = mock_sandbox_proto
 
@@ -566,7 +566,7 @@ class TestSandboxResourceParams:
                 template="python-base",
                 disk=10240,
                 gpu="A10",
-                api_key=TEST_API_KEY,
+                sandbox_api_key=TEST_API_KEY,
             )
 
             config: SandboxConfig = mock_sandbox_proto.create.call_args[0][0]
@@ -590,11 +590,11 @@ class TestSandboxResourceParams:
             patch("agent_sandbox.transport.http.HttpClient"),
             patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_pc,
         ):
-            mock_lc.return_value = TransportConfig(api_key=TEST_API_KEY)
+            mock_lc.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()
             mock_pc.return_value = mock_sandbox_proto
 
-            await Sandbox.create(template="base", api_key=TEST_API_KEY)
+            await Sandbox.create(template="base", sandbox_api_key=TEST_API_KEY)
 
             config: SandboxConfig = mock_sandbox_proto.create.call_args[0][0]
             payload = config.to_create_payload()
@@ -732,7 +732,7 @@ class TestSandboxTerminal:
     ) -> None:
         mock_session = AsyncMock()
         with patch(
-            "agent_sandbox.protocol.terminal.TerminalSession.create",
+            "agent_sandbox.providers.shared.e2b.terminal.TerminalSession.create",
             new_callable=AsyncMock,
             return_value=mock_session,
         ) as mock_create:
@@ -770,11 +770,11 @@ class TestSandboxEnvdUrlDerivation:
             patch("agent_sandbox.transport.http.HttpClient"),
             patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_pc,
         ):
-            mock_lc.return_value = TransportConfig(api_key=TEST_API_KEY)
+            mock_lc.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()
             mock_pc.return_value = mock_sandbox_proto
 
-            sb = await Sandbox.create(template="base", api_key=TEST_API_KEY)
+            sb = await Sandbox.create(template="base", sandbox_api_key=TEST_API_KEY)
 
             expected_url = f"https://49983-{TEST_SANDBOX_ID}.cn-hangzhou.e2b.fc.aliyuncs.com"
             assert sb.url == expected_url
@@ -801,11 +801,11 @@ class TestSandboxEnvdUrlDerivation:
             patch("agent_sandbox.transport.http.HttpClient"),
             patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_pc,
         ):
-            mock_lc.return_value = TransportConfig(api_key=TEST_API_KEY)
+            mock_lc.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()
             mock_pc.return_value = mock_sandbox_proto
 
-            sb = await Sandbox.connect(TEST_SANDBOX_ID, api_key=TEST_API_KEY)
+            sb = await Sandbox.connect(TEST_SANDBOX_ID, sandbox_api_key=TEST_API_KEY)
 
             expected_url = f"https://49983-{TEST_SANDBOX_ID}.cn-hangzhou.e2b.fc.aliyuncs.com"
             assert sb.url == expected_url
@@ -840,7 +840,7 @@ class TestSandboxEnvdUrlDerivation:
 
         sb = Sandbox(
             info=info,
-            config=TransportConfig(api_key=TEST_API_KEY),
+            config=TransportConfig(sandbox_api_key=TEST_API_KEY),
             http_client=AsyncMock(spec=HttpClient),
             auth=AsyncMock(),
             envd_token=EnvdTokenManager(TEST_ENVD_TOKEN),

@@ -267,3 +267,5 @@ We welcome contributions! Please read the [Contributing Guide](.github/CONTRIBUT
 [Builtin runtime architecture and Python engine migration](docs/en/design/builtin-data-plane.md).
 
 Provider-owned pause/resume and Snapshot commands share one implementation across CLI and SDK; see the [registration and usage guide](docs/en/guide/provider-commands.md).
+
+Current API / 当前接口: [development contract](docs/en/guide/current-api.md).

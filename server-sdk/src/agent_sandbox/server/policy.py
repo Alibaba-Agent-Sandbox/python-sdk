@@ -175,7 +175,7 @@ _AUDIT_MODES = ("off", "deny", "all")
 _TOP_KEYS = frozenset(
     {"version", "preset", "base_dir", "groups", "defaults", "auth", "endpoints", "description"}
 )
-_AUTH_KEYS = frozenset({"tokens", "allow_anonymous", "anonymous_scopes", "legacy_scopes"})
+_AUTH_KEYS = frozenset({"tokens", "allow_anonymous", "anonymous_scopes"})
 _TOKEN_KEYS = frozenset({"id", "scopes", "token_env", "token_sha256"})
 _GROUP_NAMES = tuple(g.value for g in CapabilityGroup)
 
@@ -220,7 +220,7 @@ def parse_size(value: Any) -> int:
 # Presets
 # ---------------------------------------------------------------------------
 
-_WRITE_ENDPOINTS = ("upload", "files_mkdir", "files_delete", "files_move", "files_upload_stream")
+_WRITE_ENDPOINTS = ("files_mkdir", "files_delete", "files_move", "files_upload_stream")
 _HARDENED_DENY = [
     "/proc",
     "/sys",
@@ -257,8 +257,6 @@ PRESETS: dict[str, dict[str, Any]] = {
         "endpoints": {
             "env_set": {"enabled": False},
             "files_*": {"paths": {"deny": list(_HARDENED_DENY), "symlinks": "within"}},
-            "upload": {"paths": {"deny": list(_HARDENED_DENY)}},
-            "download": {"paths": {"deny": list(_HARDENED_DENY)}},
         },
         "defaults": {"audit": "deny"},
     },
@@ -456,7 +454,7 @@ def _normalise_auth(raw: Any) -> dict[str, Any]:
     for key in ("allow_anonymous",):
         if key in auth:
             out[key] = _check_value("bool", auth[key], f"policy.auth.{key}")
-    for key in ("anonymous_scopes", "legacy_scopes"):
+    for key in ("anonymous_scopes",):
         if key in auth:
             out[key] = _check_scopes(auth[key], f"policy.auth.{key}")
     if "tokens" in auth:
@@ -469,10 +467,8 @@ def _normalise_auth(raw: Any) -> dict[str, Any]:
             where = f"policy.auth.tokens[{index}]"
             _check_keys(tok, _TOKEN_KEYS, where)
             ident = tok.get("id")
-            if not isinstance(ident, str) or not ident or ident == "legacy":
-                raise PolicyConfigError(
-                    f"{where}.id: expected a non-empty string other than 'legacy'"
-                )
+            if not isinstance(ident, str) or not ident:
+                raise PolicyConfigError(f"{where}.id: expected a non-empty string")
             if ident in seen:
                 raise PolicyConfigError(f"{where}.id: duplicate identity {ident!r}")
             seen.add(ident)
@@ -767,7 +763,6 @@ class ServerPolicy:
         self,
         table: Any = None,
         *,
-        legacy_token: str | None = None,
         registry: Any = None,
     ) -> Any:
         """Bind to a route table (the default table when omitted).
@@ -780,7 +775,7 @@ class ServerPolicy:
         from .runtime import PolicyEngine
 
         bound = table if table is not None else default_table()
-        return PolicyEngine(self, bound, legacy_token=legacy_token, registry=registry)
+        return PolicyEngine(self, bound, registry=registry)
 
     def explain(
         self,

@@ -54,9 +54,9 @@ async def test_existing_default_required_without_implicit_creation(tool):
 
 async def test_list_delegates_filters_without_adopting_or_changing_default():
     manager = SandboxManager(
-        api_key="placeholder-api-key",
-        api_url="https://api.example.invalid",
-        domain="example.invalid",
+        sandbox_api_key="placeholder-api-key",
+        sandbox_base_url="https://api.example.invalid",
+        sandbox_domain="example.invalid",
     )
     default = _sandbox("existing-default")
     manager._default_sandbox = default
@@ -75,8 +75,8 @@ async def test_list_delegates_filters_without_adopting_or_changing_default():
             manager,
         )
     listing.assert_awaited_once_with(
-        api_key="placeholder-api-key",
-        api_url="https://api.example.invalid",
+        sandbox_api_key="placeholder-api-key",
+        sandbox_base_url="https://api.example.invalid",
         status=SandboxStatus.RUNNING,
         limit=10,
         offset=20,
@@ -126,7 +126,9 @@ async def test_metadata_allowlist_omits_nested_and_url_secrets(tool):
 
 
 async def test_explicit_get_uses_direct_metadata_without_replacing_default():
-    manager = SandboxManager(api_key="placeholder-api-key", api_url="https://api.example.invalid")
+    manager = SandboxManager(
+        sandbox_api_key="placeholder-api-key", sandbox_base_url="https://api.example.invalid"
+    )
     default = _sandbox("default")
     manager._default_sandbox = default
     with (
@@ -139,7 +141,9 @@ async def test_explicit_get_uses_direct_metadata_without_replacing_default():
     ):
         result = await dispatch_tool("get_sandbox", {"sandbox_id": "other"}, manager)
     get.assert_awaited_once_with(
-        sandbox_id="other", api_key="placeholder-api-key", api_url="https://api.example.invalid"
+        sandbox_id="other",
+        sandbox_api_key="placeholder-api-key",
+        sandbox_base_url="https://api.example.invalid",
     )
     connect.assert_not_awaited()
     assert result["sandbox_id"] == "other"

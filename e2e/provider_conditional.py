@@ -34,9 +34,9 @@ def main() -> None:
 
     values = {**dotenv_values(args.env_file), **os.environ}
     settings = {
-        "api_key": values.get("ABX_SANDBOX_API_KEY") or values.get("E2B_API_KEY"),
-        "api_url": values.get("ABX_SANDBOX_BASE_URL") or values.get("E2B_API_URL"),
-        "domain": values.get("ABX_SANDBOX_DOMAIN") or values.get("E2B_DOMAIN"),
+        "api_key": values.get("ABX_SANDBOX_API_KEY") or values.get("ABX_SANDBOX_API_KEY"),
+        "api_url": values.get("ABX_SANDBOX_BASE_URL") or values.get("ABX_SANDBOX_BASE_URL"),
+        "domain": values.get("ABX_SANDBOX_DOMAIN") or values.get("ABX_SANDBOX_DOMAIN"),
     }
     if not all(settings.values()):
         parser.error("local Express API key, origin and domain are required")

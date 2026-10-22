@@ -9,7 +9,6 @@ from pydantic import ValidationError
 
 from agent_sandbox.transport import config as config_module
 from agent_sandbox.transport.config import (
-    ENVD_PORT,
     TransportConfig,
     http_timeout_configured,
     load_config,
@@ -47,11 +46,6 @@ class TestTransportConfigDefaults:
         cfg = TransportConfig()
         assert cfg.ws_ping_interval == 30.0
 
-    def test_default_retry_settings(self):
-        cfg = TransportConfig()
-        assert cfg.max_retries == 3
-        assert cfg.retry_base_delay == 1.0
-
 
 class TestTransportConfigValidation:
     """Test field validation constraints."""
@@ -68,14 +62,6 @@ class TestTransportConfigValidation:
         with pytest.raises(ValidationError):
             TransportConfig(ws_ping_interval=0.5)
 
-    def test_retry_base_delay_minimum(self):
-        with pytest.raises(ValidationError):
-            TransportConfig(retry_base_delay=0.05)
-
-    def test_max_retries_minimum(self):
-        with pytest.raises(ValidationError):
-            TransportConfig(max_retries=-1)
-
     def test_extra_fields_ignored(self):
         cfg = TransportConfig(unknown_field="value")
         assert not hasattr(cfg, "unknown_field")
@@ -85,12 +71,10 @@ class TestTransportConfigValidation:
             sandbox_base_url="https://custom.example.com",
             region="us-west-1",
             http_timeout=60.0,
-            max_retries=5,
         )
         assert cfg.sandbox_base_url == "https://custom.example.com"
         assert cfg.region == "us-west-1"
         assert cfg.http_timeout == 60.0
-        assert cfg.max_retries == 5
 
 
 class TestLoadConfig:
@@ -306,23 +290,6 @@ class TestDotenvIsolation:
         cfg = load_config(sandbox_api_key="  ", region="   ")
         assert cfg.sandbox_api_key == "from-dotenv"
         assert cfg.region == "cn-beijing"
-
-
-class TestEnvdPort:
-    """Test ENVD_PORT constant and build_envd_url."""
-
-    def test_envd_port_constant(self):
-        assert ENVD_PORT == 49983
-
-    def test_build_envd_url(self):
-        cfg = TransportConfig()
-        url = cfg.build_envd_url("sbx-abc123")
-        assert url == f"https://49983-sbx-abc123.{cfg.sandbox_domain}"
-
-    def test_build_envd_url_custom_domain(self):
-        cfg = TransportConfig(sandbox_domain="custom.domain.com")
-        url = cfg.build_envd_url("sbx-xyz")
-        assert url == "https://49983-sbx-xyz.custom.domain.com"
 
 
 class TestHttpTimeoutConfigured:

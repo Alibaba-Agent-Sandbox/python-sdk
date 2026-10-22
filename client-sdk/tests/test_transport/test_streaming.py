@@ -98,16 +98,6 @@ class TestStreamReader:
         result = await reader.collect()
         assert result == [1, 3]
 
-    async def test_start_returns_self(self):
-        reader = StreamReader(
-            _async_iter([]),
-            transform=lambda f: f,
-        )
-        result = reader.start()
-        assert result is reader
-        # Clean up
-        await reader.collect()
-
     async def test_cancel(self):
         # Create a slow async iterator that can be cancelled
         async def slow_iter():

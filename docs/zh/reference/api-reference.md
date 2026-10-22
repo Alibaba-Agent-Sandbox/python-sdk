@@ -359,7 +359,7 @@ from agent_sandbox.api import ServerClient, ServerCapabilities
 
 | 子 API | 方法 |
 |--------|------|
-| `files` | `list`、`stat`、`exists`、`mkdir`、`delete`、`move`、`search`、`archive`、`watch`/`watch_for`、`upload`、`download`、`read_text`、`upload_file`、`download_file`、`upload_legacy`、`download_legacy` |
+| `files` | `list`、`stat`、`exists`、`mkdir`、`delete`、`move`、`search`、`archive`、`watch`/`watch_for`、`upload`、`download`、`read_text`、`upload_file`、`download_file` |
 | `process` | `shell`、`shell_stream`/`run_stream`、`start`、`list`、`get`、`signal`、`terminate`、`kill`、`send_stdin`、`close_stdin`、`output`、`follow`、`wait` |
 | `pty` | `create`、`list`、`get`、`resize`、`delete`、`connect`（WebSocket `PtyConnection`） |
 | `system` | `info`、`metrics`、`env`、`set_env`、`ports`、`packages` |

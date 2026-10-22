@@ -243,8 +243,5 @@ def parse_sandbox_ref(ref: str) -> tuple[str | None, str]:
 
 
 def qualify(provider_id: str, sandbox_id: str, *, ambient: str | None = None) -> str:
-    """Printable sandbox reference (design §7.7): bare only in the legacy single-provider case."""
-    ambient = ambient if ambient is not None else ambient_provider_id()
-    if provider_id == BUILTIN_PROVIDER_ID and ambient == BUILTIN_PROVIDER_ID:
-        return sandbox_id
+    """Provider-qualified printable sandbox reference."""
     return f"{provider_id}:{sandbox_id}"

@@ -33,8 +33,6 @@ class StreamReader(Generic[T]):
         self,
         raw_frames: AsyncIterator[dict[str, Any]],
         transform: Callable[[dict[str, Any]], T],
-        *,
-        buffer_size: int = 100,  # kept for signature compat; unused
     ) -> None:
         self._raw_frames = raw_frames
         self._transform = transform
@@ -61,14 +59,6 @@ class StreamReader(Generic[T]):
             self._exhausted = True
 
     # --- public API (unchanged signatures) ------------------------------------
-
-    def start(self) -> StreamReader[T]:
-        """No-op retained for backward compatibility.
-
-        Previously started a background producer task. Now the generator
-        is lazily created on first iteration.
-        """
-        return self
 
     def __aiter__(self) -> AsyncIterator[T]:
         if self._iter is None:

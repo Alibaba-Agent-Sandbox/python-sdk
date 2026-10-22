@@ -70,14 +70,14 @@ class SandboxManager:
 
     def __init__(
         self,
-        api_key: str | None = None,
-        api_url: str | None = None,
-        domain: str | None = None,
+        sandbox_api_key: str | None = None,
+        sandbox_base_url: str | None = None,
+        sandbox_domain: str | None = None,
         template: str = "base",
     ) -> None:
-        self._api_key = api_key
-        self._api_url = api_url
-        self._domain = domain
+        self._api_key = sandbox_api_key
+        self._api_url = sandbox_base_url
+        self._domain = sandbox_domain
         self._default_template = template
         self._default_sandbox: Any = None  # Sandbox instance
         self._sandboxes: dict[str, Any] = {}  # sandbox_id -> Sandbox
@@ -90,11 +90,11 @@ class SandboxManager:
         """Build SDK kwargs shared by create, connect, and kill."""
         kwargs = dict(extra)
         if self._api_key:
-            kwargs["api_key"] = self._api_key
+            kwargs["sandbox_api_key"] = self._api_key
         if self._api_url:
-            kwargs["api_url"] = self._api_url
+            kwargs["sandbox_base_url"] = self._api_url
         if self._domain:
-            kwargs["domain"] = self._domain
+            kwargs["sandbox_domain"] = self._domain
         return kwargs
 
     async def _refresh_lifetime(self, sandbox: Any) -> None:
@@ -209,11 +209,11 @@ class SandboxManager:
         from agent_sandbox.api.sandbox import Sandbox
         from agent_sandbox.models.sandbox import SandboxStatus
 
-        # list has no domain kwarg; it only talks to the control plane.
+        # list has no sandbox_domain kwarg; it only talks to the control plane.
         kwargs: dict[str, Any] = {"limit": limit, "offset": offset}
         for name, value in {
-            "api_key": self._api_key,
-            "api_url": self._api_url,
+            "sandbox_api_key": self._api_key,
+            "sandbox_base_url": self._api_url,
             "provider": provider,
             "region": region,
         }.items():
@@ -232,7 +232,7 @@ class SandboxManager:
                 from agent_sandbox.api.sandbox import Sandbox
 
                 kwargs = self._connect_kwargs(sandbox_id=sandbox_id)
-                kwargs.pop("domain", None)
+                kwargs.pop("sandbox_domain", None)
                 return await Sandbox.get_info_by_id(**kwargs)
         sandbox = await self.get_sandbox(
             sandbox_id,
@@ -250,7 +250,7 @@ class SandboxManager:
                 from agent_sandbox.api.sandbox import Sandbox
 
                 kwargs = self._connect_kwargs(sandbox_id=sandbox_id)
-                kwargs.pop("domain", None)
+                kwargs.pop("sandbox_domain", None)
                 await Sandbox.set_timeout_by_id(timeout=timeout, **kwargs)
                 return sandbox_id
         sandbox = await self.get_sandbox(
@@ -287,9 +287,9 @@ class SandboxManager:
 
             kwargs: dict[str, Any] = {"sandbox_id": sandbox_id}
             if self._api_key:
-                kwargs["api_key"] = self._api_key
+                kwargs["sandbox_api_key"] = self._api_key
             if self._api_url:
-                kwargs["api_url"] = self._api_url
+                kwargs["sandbox_base_url"] = self._api_url
             await Sandbox.kill_by_id(**kwargs)
             return sandbox_id
 
@@ -447,16 +447,16 @@ class SandboxMCPServer:
 
     def __init__(
         self,
-        api_key: str | None = None,
-        api_url: str | None = None,
-        domain: str | None = None,
+        sandbox_api_key: str | None = None,
+        sandbox_base_url: str | None = None,
+        sandbox_domain: str | None = None,
         template: str = "base",
         supported_protocol_versions: Sequence[str] | None = None,
     ) -> None:
         self._manager = SandboxManager(
-            api_key=api_key,
-            api_url=api_url,
-            domain=domain,
+            sandbox_api_key=sandbox_api_key,
+            sandbox_base_url=sandbox_base_url,
+            sandbox_domain=sandbox_domain,
             template=template,
         )
         self._initialized = False
@@ -728,15 +728,15 @@ def main() -> None:
     """Entry point for running MCP server directly."""
     import os
 
-    api_key = os.environ.get("ABX_SANDBOX_API_KEY")
-    api_url = os.environ.get("ABX_SANDBOX_BASE_URL")
-    domain = os.environ.get("ABX_SANDBOX_DOMAIN")
+    sandbox_api_key = os.environ.get("ABX_SANDBOX_API_KEY")
+    sandbox_base_url = os.environ.get("ABX_SANDBOX_BASE_URL")
+    sandbox_domain = os.environ.get("ABX_SANDBOX_DOMAIN")
     template = os.environ.get("ABX_DEFAULT_TEMPLATE") or "base"
 
     server = SandboxMCPServer(
-        api_key=api_key,
-        api_url=api_url,
-        domain=domain,
+        sandbox_api_key=sandbox_api_key,
+        sandbox_base_url=sandbox_base_url,
+        sandbox_domain=sandbox_domain,
         template=template,
     )
     asyncio.run(server.run())

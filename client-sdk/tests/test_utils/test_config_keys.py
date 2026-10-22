@@ -152,9 +152,9 @@ class TestCoerce:
         assert ck.coerce(ck.get_key("http2"), raw) is want
 
     def test_int_and_float(self):
-        assert ck.coerce(ck.get_key("max_retries"), "5") == 5
-        assert ck.coerce(ck.get_key("max_retries"), "5.0") == 5
-        assert ck.coerce(ck.get_key("max_retries"), "x") is None
+        assert ck.coerce(ck.get_key("max_connections"), "5") == 5
+        assert ck.coerce(ck.get_key("max_connections"), "5.0") == 5
+        assert ck.coerce(ck.get_key("max_connections"), "x") is None
         assert ck.coerce(ck.get_key("http_timeout"), "2.5") == 2.5
 
     def test_enum_is_case_insensitive_and_validated(self):
@@ -186,7 +186,7 @@ class TestResolvePrecedence:
         assert (r.value, r.layer_index) == ("d2", 1)
         src.dotenv = []
         r = resolve_key(self.KEY, src)
-        assert (r.value, r.layer) == ("t", "toml")
+        assert r is None
 
     def test_retired_name_does_not_beat_the_canonical_name(self):
         src = _src(
@@ -209,13 +209,13 @@ class TestResolvePrecedence:
         assert resolve_key(self.KEY, src, scoped_for="my-prov").value == "scoped"
         assert resolve_key(self.KEY, src).value == "plain"
 
-    def test_scoped_toml_table_beats_transport(self):
+    def test_plaintext_toml_does_not_supply_secrets(self):
         toml = {
             "providers": {"my-prov": {"sandbox_api_key": "scoped"}},
             "transport": {"sandbox_api_key": "plain"},
         }
-        assert resolve_key(self.KEY, _src(toml=toml), scoped_for="my-prov").value == "scoped"
-        assert resolve_key(self.KEY, _src(toml=toml)).value == "plain"
+        assert resolve_key(self.KEY, _src(toml=toml), scoped_for="my-prov") is None
+        assert resolve_key(self.KEY, _src(toml=toml)) is None
 
     def test_toml_ignores_retired_names(self):
         key = ck.get_key("sandbox_base_url")

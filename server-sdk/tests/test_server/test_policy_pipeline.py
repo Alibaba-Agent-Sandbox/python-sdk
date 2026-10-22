@@ -115,13 +115,21 @@ class TestAuthentication:
         live: Live = live_server(policy={"preset": "default"})
         assert live.get("/capabilities")[0] == 401
         status, body = live.get("/capabilities", headers=hdr("legacy-secret"))
-        assert status == 200 and body["identity"]["id"] == "legacy"
+        assert status == 200 and body["identity"]["id"] == "server"
 
     def test_legacy_scopes_can_be_narrowed(
         self, live_server: Any, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("ABX_SERVER_TOKEN", "legacy-secret")
-        live: Live = live_server(policy={"auth": {"legacy_scopes": ["files:read"]}})
+        live: Live = live_server(
+            policy={
+                "auth": {
+                    "tokens": [
+                        {"id": "reader", "scopes": ["files:read"], "token_env": "ABX_SERVER_TOKEN"}
+                    ]
+                }
+            }
+        )
         assert live.post("/shell", {"command": "true"}, headers=hdr("legacy-secret"))[0] == 403
 
 
@@ -377,11 +385,17 @@ class TestDiscovery:
         assert body["identity"] == {"id": "reader", "scopes": ["files:read"]}
         assert body["policy"]["preset"] == "transfer-only" and body["policy"]["configured"]
         eps = body["endpoints"]
-        assert eps["download"]["allowed"] is True
-        assert eps["upload"]["allowed"] is False and eps["upload"]["reason"] == "missing_scope"
+        assert eps["files_download_stream"]["allowed"] is True
+        assert (
+            eps["files_upload_stream"]["allowed"] is False
+            and eps["files_upload_stream"]["reason"] == "missing_scope"
+        )
         assert eps["files_list"]["reason"] == "endpoint_disabled"
         assert eps["shell"]["enabled"] is True or eps["shell"]["reason"] == "endpoint_disabled"
-        assert eps["download"]["method"] == "GET" and eps["download"]["path"] == "/download"
+        assert (
+            eps["files_download_stream"]["method"] == "GET"
+            and eps["files_download_stream"]["path"] == "/files/download-stream"
+        )
 
     def test_denied_endpoints_do_not_leak_config(self, live_server: Any) -> None:
         policy = tokens_policy(
@@ -421,7 +435,9 @@ class TestDiscovery:
         status, body = live.get(f"/files/download-stream?path={bad['path']}", headers=hdr(READER))
         assert status == 403 and body["code"] == decision["code"]
         assert (
-            live.post("/capabilities/check", {"endpoint": "upload"}, headers=hdr(READER))[1]["code"]
+            live.post(
+                "/capabilities/check", {"endpoint": "files_upload_stream"}, headers=hdr(READER)
+            )[1]["code"]
             == "missing_scope"
         )
 

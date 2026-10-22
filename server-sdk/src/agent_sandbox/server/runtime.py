@@ -63,7 +63,6 @@ _DEFAULT_BASE_DIR = "/home/user"
 
 #: Default operation class per path-bearing endpoint.
 DEFAULT_OPS: dict[str, str] = {
-    "upload": OP_WRITE,
     "files_mkdir": OP_WRITE,
     "files_upload_stream": OP_WRITE,
     "files_delete": OP_DELETE,
@@ -208,7 +207,6 @@ class PolicyEngine:
         policy: ServerPolicy,
         table: RouteTable,
         *,
-        legacy_token: str | None = None,
         registry: Any = None,
         enabled_groups: str | None = None,
     ) -> None:
@@ -230,8 +228,7 @@ class PolicyEngine:
         self._audit_log = logging.getLogger(AUDIT_LOGGER)
         self.secret_env_names: set[str] = set(_SECRET_ENV_NAMES)
         self._tokens: list[tuple[str, frozenset[str], bytes]] = []
-        self._legacy: tuple[Identity, bytes] | None = None
-        self._setup_auth(legacy_token)
+        self._setup_auth()
         self._compile(strict=True)
 
     @property
@@ -251,7 +248,7 @@ class PolicyEngine:
 
     # -- authentication ------------------------------------------------- #
 
-    def _setup_auth(self, legacy_token: str | None) -> None:
+    def _setup_auth(self) -> None:
         auth = self.policy.auth
         for entry in auth.get("tokens", []):
             if "token_env" in entry:
@@ -266,13 +263,7 @@ class PolicyEngine:
             else:
                 digest = bytes.fromhex(entry["token_sha256"])
             self._tokens.append((entry["id"], frozenset(entry["scopes"]), digest))
-        if legacy_token:
-            scopes = frozenset(auth.get("legacy_scopes", ["*"]))
-            self._legacy = (
-                Identity("legacy", scopes),
-                hashlib.sha256(legacy_token.encode()).digest(),
-            )
-        self._auth_required = bool(self._tokens) or self._legacy is not None
+        self._auth_required = bool(self._tokens)
         self._anonymous: Identity | None = None
         if not self._auth_required or auth.get("allow_anonymous"):
             scopes = frozenset(auth.get("anonymous_scopes", ["*"]))
@@ -322,12 +313,6 @@ class PolicyEngine:
         for ident, scopes, expected in self._tokens:
             if hmac.compare_digest(digest, expected) and found is None:
                 found = Identity(ident, scopes)
-        if (
-            self._legacy is not None
-            and hmac.compare_digest(digest, self._legacy[1])
-            and found is None
-        ):
-            found = self._legacy[0]
         return found
 
     # -- rule resolution ------------------------------------------------ #
@@ -752,8 +737,6 @@ class PolicyEngine:
         """Return human-readable configuration warnings."""
         warnings: list[str] = []
         identities: list[Identity] = [Identity(i, s) for i, s, _ in self._tokens]
-        if self._legacy:
-            identities.append(self._legacy[0])
         if self._anonymous:
             identities.append(self._anonymous)
         scoped = [

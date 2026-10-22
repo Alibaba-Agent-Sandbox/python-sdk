@@ -365,26 +365,3 @@ class ProcessProtocol:
             {"process": _process_selector(pid), "signal": name},
             request_timeout=request_timeout,
         )
-
-    # --- backward-compat aliases ---
-
-    async def send_stdin(
-        self,
-        envd_url: str,
-        envd_token: EnvdTokenManager,
-        *,
-        pid: int | str,
-        data: str,
-    ) -> None:
-        """Deprecated: use send_input(). Kept for backward compatibility."""
-        await self.send_input(envd_url, envd_token, pid=pid, data=data)
-
-    async def kill(
-        self,
-        envd_url: str,
-        envd_token: EnvdTokenManager,
-        *,
-        pid: int | str,
-    ) -> None:
-        """Deprecated: use send_signal(). Kept for backward compatibility."""
-        await self.send_signal(envd_url, envd_token, pid=pid, signal=9)

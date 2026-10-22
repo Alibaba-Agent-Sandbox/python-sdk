@@ -90,7 +90,7 @@ my-template/
 | `groups` | `list[str]` 或 `map[str, bool]` | 打开能力组（`[agents, dev_tools]`），或开/关（`{process: false}`）。组是它的端点 id 的别名 |
 | `defaults` | 规则 | 先于各端点自身规则应用于所有端点 |
 | `endpoints` | `map[str, 规则]` | 以端点 id 为键的逐端点规则（`files_download_stream`、`shell` 等） |
-| `auth` | map | `tokens`（`id`、`scopes`、`token_env` 或 `token_sha256`）、`allow_anonymous`、`anonymous_scopes`、`legacy_scopes` |
+| `auth` | map | `tokens`（`id`、`scopes`、`token_env` 或 `token_sha256`）、`allow_anonymous`、`anonymous_scopes` |
 
 规则包含 `enabled`、`scopes`、`paths`（`allow`、`deny`、`read_only`、`symlinks`）、`limits`（`max_bytes`、`max_request_bytes`、`timeout_seconds`、`rate_per_minute` 等）、`params`（`overwrite`、`deny_extensions`、`allow_commands` 等）和 `audit`。
 

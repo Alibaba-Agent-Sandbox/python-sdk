@@ -98,7 +98,7 @@ class TestErrorMapping:
                 "type": "PolicyDenied",
                 "code": "missing_scope",
                 "scope": "files:write",
-                "endpoint": "upload",
+                "endpoint": "files_upload_stream",
             },
         )
         assert isinstance(err, errors.PolicyDeniedError)
@@ -107,7 +107,11 @@ class TestErrorMapping:
             "PolicyDenied",
             "missing_scope",
         )
-        assert (err.endpoint, err.scope, err.code) == ("upload", "files:write", "E9002")
+        assert (err.endpoint, err.scope, err.code) == (
+            "files_upload_stream",
+            "files:write",
+            "E9002",
+        )
 
     def test_disabled_endpoint_names_the_rule(self) -> None:
         err = error_from_response(
@@ -226,7 +230,7 @@ class TestServerCapabilities:
                 "limits": {"max_entries": 50},
                 "paths": {"allow": ["/srv"], "read_only": True, "deny_count": 1},
             },
-            "upload": {
+            "files_upload_stream": {
                 "enabled": True,
                 "allowed": False,
                 "reason": "missing_scope",
@@ -245,16 +249,19 @@ class TestServerCapabilities:
     def test_queries(self) -> None:
         caps = ServerCapabilities(self.DOC)
         assert caps.preset == "read-only" and caps.revision == "abc"
-        assert caps.can("files_list") and not caps.can("upload") and not caps.can("shell")
+        assert (
+            caps.can("files_list") and not caps.can("files_upload_stream") and not caps.can("shell")
+        )
         assert not caps.can("never_heard_of_it")
         assert caps.limit("files_list", "max_entries") == 50
         assert caps.limit("files_list", "nope", 7) == 7 and caps.limit("zzz", "x") is None
-        assert caps.param("upload", "overwrite") is False
+        assert caps.param("files_upload_stream", "overwrite") is False
         assert caps.paths("files_list").read_only is True  # type: ignore[union-attr]
         assert caps.endpoints_for("files:read") == ["files_list"]
         assert caps.available() == ["files_list"]
         assert (
-            caps.denial("upload") == "missing_scope" and caps.denial("shell") == "endpoint_disabled"
+            caps.denial("files_upload_stream") == "missing_scope"
+            and caps.denial("shell") == "endpoint_disabled"
         )
         assert caps.warnings == ["w"] and caps.as_dict() == self.DOC
         assert "read-only" in repr(caps)
@@ -263,7 +270,7 @@ class TestServerCapabilities:
         caps = ServerCapabilities(self.DOC)
         assert caps.require("files_list") is not None
         with pytest.raises(errors.PolicyDeniedError) as scope_err:
-            caps.require("upload")
+            caps.require("files_upload_stream")
         assert scope_err.value.scope == "files:write"
         with pytest.raises(errors.EndpointNotAvailableError):
             caps.require("shell")
@@ -292,15 +299,13 @@ class TestServerCapabilities:
 
 
 class TestClientConfiguration:
-    def test_pty_url_derivation(self) -> None:
-        assert ServerClient("http://10.0.0.5:9000").pty_url == "ws://10.0.0.5:9001"
+    def test_pty_url_derivation(self):
+        assert ServerClient("http://127.0.0.1:9000").pty_url == "ws://127.0.0.1:9001"
+        with pytest.raises(ValueError, match="pty_url"):
+            _ = ServerClient("https://9000-sandbox.gateway.example").pty_url
         assert (
-            ServerClient("https://9000-sbx-abc.cn-hangzhou.e2b.fc.aliyuncs.com").pty_url
-            == "wss://9001-sbx-abc.cn-hangzhou.e2b.fc.aliyuncs.com"
-        )
-        assert (
-            ServerClient("http://h:9000", pty_url="https://pty.example/x/").pty_url
-            == "wss://pty.example/x"
+            ServerClient("https://server.example", pty_url="https://pty.example").pty_url
+            == "wss://pty.example"
         )
 
     def test_auth_headers_merge_gateway_and_bearer(self) -> None:

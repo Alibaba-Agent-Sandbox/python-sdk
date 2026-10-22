@@ -208,7 +208,7 @@ class _Api:
 
 
 class ServerFilesApi(_Api):
-    """File operations of the server (``/files/*``, plus the legacy ``/upload``/``/download``)."""
+    """File operations of the server (``/files/*``)."""
 
     async def list(
         self, path: str, *, recursive: bool = False, max_entries: int | None = None
@@ -302,15 +302,6 @@ class ServerFilesApi(_Api):
         payload = await asyncio.to_thread(Path(local_path).read_bytes)
         return await self.upload(remote_path, payload)
 
-    async def upload_legacy(self, path: str, data: bytes | str) -> TransferResult:
-        """Write through the legacy ``POST /upload`` endpoint (own policy rules)."""
-        payload = data.encode("utf-8") if isinstance(data, str) else bytes(data)
-        self._c._precheck("upload")
-        self._precheck_upload("upload", payload, path)
-        body = {"path": path, "content_base64": base64.b64encode(payload).decode("ascii")}
-        out = await self._c._request("upload", "POST", "/upload", json_body=body)
-        return TransferResult.model_validate(out)
-
     @staticmethod
     def _decode_content(data: dict[str, Any]) -> bytes:
         try:
@@ -335,11 +326,6 @@ class ServerFilesApi(_Api):
         payload = await self.download(remote_path)
         await asyncio.to_thread(Path(local_path).write_bytes, payload)
         return len(payload)
-
-    async def download_legacy(self, path: str) -> bytes:
-        """Read through the legacy ``GET /download`` endpoint (own policy rules)."""
-        data = await self._c._request("download", "GET", "/download", params={"path": path})
-        return self._decode_content(data)
 
     async def archive(self, paths: builtins.list[str], format: str = "tar.gz") -> ArchiveResult:
         """Create a ``tar.gz`` or ``zip`` archive of *paths* (returned in memory)."""
@@ -403,11 +389,9 @@ class ServerFilesApi(_Api):
     search_sync = make_sync(search)
     upload_sync = make_sync(upload)
     upload_file_sync = make_sync(upload_file)
-    upload_legacy_sync = make_sync(upload_legacy)
     download_sync = make_sync(download)
     read_text_sync = make_sync(read_text)
     download_file_sync = make_sync(download_file)
-    download_legacy_sync = make_sync(download_legacy)
     archive_sync = make_sync(archive)
     watch_for_sync = make_sync(watch_for)
 
@@ -1078,8 +1062,6 @@ class ServerClient:
         "capabilities_check": ("check",),
         "list_commands": ("commands.list",),
         "run_command": ("commands.run",),
-        "upload": ("files.upload_legacy",),
-        "download": ("files.download_legacy",),
         "shell": ("process.shell",),
         "files_list": ("files.list",),
         "files_stat": ("files.stat", "files.exists"),
@@ -1167,13 +1149,12 @@ class ServerClient:
         return urlunsplit((scheme, parts.netloc, parts.path.rstrip("/"), "", ""))
 
     def _derive_pty_url(self) -> str:
-        from agent_sandbox._provider_schema import resolve_provider_schema
-        from agent_sandbox.utils.config_keys import BUILTIN_PROVIDER_ID
-
-        builder = resolve_provider_schema(BUILTIN_PROVIDER_ID).legacy_pty_url_builder
-        if builder is None:
-            raise RuntimeError("Supply an explicit pty_url for this distribution.")
-        return builder(self.base_url, DEFAULT_SERVER_PORT, DEFAULT_PTY_PORT)
+        parts = urlsplit(self.base_url)
+        host = parts.hostname or ""
+        if host not in {"localhost", "127.0.0.1", "::1"}:
+            raise ValueError("Supply pty_url from the selected provider for a remote server.")
+        netloc = f"[{host}]" if ":" in host else host
+        return urlunsplit((parts.scheme, f"{netloc}:{DEFAULT_PTY_PORT}", "", "", ""))
 
     def auth_headers(self) -> dict[str, str]:
         """Headers sent on every request (gateway headers plus the server bearer token)."""

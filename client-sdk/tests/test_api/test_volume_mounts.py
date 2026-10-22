@@ -52,7 +52,7 @@ INVALID = [
 async def test_invalid_mounts_never_select_or_build_provider(mounts: Any) -> None:
     with (
         patch("agent_sandbox.api.sandbox._select_provider") as select,
-        patch("agent_sandbox.api.sandbox._build_infra") as build,
+        patch("agent_sandbox.api.sandbox._provider_infra") as build,
         pytest.raises(ProviderConfigError),
     ):
         await Sandbox.create(volume_mounts=mounts)

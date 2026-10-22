@@ -107,16 +107,16 @@ class TestParseIndex:
         assert qwen.capabilities == ("shell", "files", "code")
         assert qwen.status == "official"
 
-    def test_missing_schema_version_is_legacy_compatible(self) -> None:
+    def test_missing_schema_version_is_rejected(self) -> None:
         text = INDEX_YAML.replace("schema_version: 1\n", "")
-        index = parse_index(text)
-        assert index.schema_version == INDEX_SCHEMA_VERSION
+        with pytest.raises(TemplateParseError):
+            parse_index(text)
 
     def test_newer_schema_version_is_rejected(self) -> None:
         text = INDEX_YAML.replace("schema_version: 1", "schema_version: 99")
         with pytest.raises(TemplateParseError) as exc_info:
             parse_index(text)
-        assert "newer than supported" in str(exc_info.value)
+        assert "differs from supported" in str(exc_info.value)
         assert "Upgrade agent-sandbox" in (exc_info.value.suggestion or "")
 
     def test_non_integer_schema_version_is_rejected(self) -> None:
@@ -328,7 +328,7 @@ class TestFetchIndexNetwork:
         self, httpx_mock: Any, tmp_path: Path
     ) -> None:
         httpx_mock.add_response(url=INDEX_URL, text="schema_version: 99\ntemplates: []\n")
-        with pytest.raises(TemplateParseError, match="newer than supported"):
+        with pytest.raises(TemplateParseError, match="differs from supported"):
             await fetch_index(INDEX_URL, cache_dir=tmp_path / "cache")
 
 

@@ -39,7 +39,7 @@ _DROP = {
     "OPENAI_API_KEY",
     "CODEX_API_KEY",
     "ANTHROPIC_API_KEY",
-    "E2B_API_KEY",
+    "ABX_SANDBOX_API_KEY",
     "ABX_SERVER_TOKEN",
     "ABX_SERVER_POLICY",
     "ABX_SERVER_POLICY_FILE",
@@ -365,8 +365,8 @@ def test_path_outside_the_base_dir_is_a_403_path_not_allowed(
     outside = str(server.root / "outside.txt")
     for result in (
         server.post("/files/mkdir", {"path": outside}),
-        server.post("/upload", {"path": outside, "content_base64": _b64(b"x")}),
-        server.get("/download", query={"path": outside}),
+        server.post("/files/upload-stream", {"path": outside, "content_base64": _b64(b"x")}),
+        server.get("/files/download-stream", query={"path": outside}),
     ):
         assert result.status == 403, result.text
         assert result.json()["code"] == "path_not_allowed"
@@ -410,7 +410,7 @@ def test_file_upload_list_download_mkdir_delete(servers: dict[str, LiveServer]) 
     assert Path(made.json()["path"]).is_dir()
 
     uploaded = server.post(
-        "/upload",
+        "/files/upload-stream",
         {"path": str(directory / "note.txt"), "content_base64": _b64(payload)},
     )
     assert uploaded.status == 200, uploaded.text
@@ -420,7 +420,7 @@ def test_file_upload_list_download_mkdir_delete(servers: dict[str, LiveServer]) 
     assert listed.status == 200, listed.text
     assert "note.txt" in {entry["name"] for entry in listed.json()["entries"]}
 
-    downloaded = server.get("/download", query={"path": str(directory / "note.txt")})
+    downloaded = server.get("/files/download-stream", query={"path": str(directory / "note.txt")})
     assert downloaded.status == 200, downloaded.text
     assert base64.b64decode(downloaded.json()["content_base64"]) == payload
 
@@ -683,8 +683,7 @@ def test_responses_websocket_upgrade(servers: dict[str, LiveServer]) -> None:
         status = int(parts[1]) if len(parts) > 1 else 0
         if status == 400:
             pytest.skip(
-                f"GET /v1/responses with Upgrade: websocket returned {status}; "
-                f"body={rest[:400]!r}"
+                f"GET /v1/responses with Upgrade: websocket returned {status}; body={rest[:400]!r}"
             )
         assert status == 101, (status_line, rest[:400])
         headers = {
@@ -718,13 +717,17 @@ def test_responses_websocket_upgrade(servers: dict[str, LiveServer]) -> None:
 def _multipart(filename: str, data: bytes) -> tuple[str, bytes]:
     boundary = "----e2eBoundary7MA4YWxk"
     body = (
-        f"--{boundary}\r\n"
-        'Content-Disposition: form-data; name="purpose"\r\n\r\n'
-        "user_data\r\n"
-        f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
-        "Content-Type: application/octet-stream\r\n\r\n"
-    ).encode() + data + f"\r\n--{boundary}--\r\n".encode()
+        (
+            f"--{boundary}\r\n"
+            'Content-Disposition: form-data; name="purpose"\r\n\r\n'
+            "user_data\r\n"
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
+            "Content-Type: application/octet-stream\r\n\r\n"
+        ).encode()
+        + data
+        + f"\r\n--{boundary}--\r\n".encode()
+    )
     return boundary, body
 
 

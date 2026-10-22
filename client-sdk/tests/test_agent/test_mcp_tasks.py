@@ -215,7 +215,7 @@ async def test_bounded_logs_are_drained_without_deadlock(local_sandbox):
 
 
 async def test_external_start_not_adopted_and_private_errors(local_sandbox):
-    manager = SandboxManager(api_key="placeholder-test-secret")
+    manager = SandboxManager(sandbox_api_key="placeholder-test-secret")
     result = await dispatch_tool(
         "start_task",
         {

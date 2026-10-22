@@ -13,8 +13,8 @@ from agent_sandbox.models.errors import (
     TemplateNotFoundError,
 )
 from agent_sandbox.models.sandbox import SandboxConfig, SandboxInfo, SandboxStatus
-from agent_sandbox.protocol.sandbox import SandboxProtocol
-from agent_sandbox.transport.auth import ApiKeyAuth
+from agent_sandbox.providers.alicloud_express.auth import ApiKeyAuth
+from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
 from agent_sandbox.transport.config import TransportConfig
 from agent_sandbox.transport.http import HttpClient
 

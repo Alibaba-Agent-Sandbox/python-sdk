@@ -63,7 +63,7 @@ def test_template_features_are_independent_manifest_declarations(features):
 
 
 def test_builtin_keeps_legacy_template_build_without_image_deploy():
-    from agent_sandbox.providers.builtin import AlicloudExpressProvider
+    from agent_sandbox.providers.alicloud_express.provider import AlicloudExpressProvider
 
     assert "templates.build" in AlicloudExpressProvider.features
     assert "templates.deploy" not in AlicloudExpressProvider.features

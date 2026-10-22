@@ -14,12 +14,12 @@ from agent_sandbox.models.process import (
     ProcessChunkType,
     ProcessInfo,
 )
-from agent_sandbox.protocol.process import (
+from agent_sandbox.providers.alicloud_express.auth import EnvdTokenManager
+from agent_sandbox.providers.shared.e2b.process import (
     _HTTP_TIMEOUT_BUFFER,
     ProcessProtocol,
     _parse_process_chunk,
 )
-from agent_sandbox.transport.auth import EnvdTokenManager
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -226,34 +226,18 @@ class TestListProcesses:
 
 
 class TestSendStdin:
-    """Test ProcessProtocol.send_stdin() (backward compat alias for send_input)."""
+    """Test ProcessProtocol.send_input() (backward compat alias for send_input)."""
 
     async def test_sends_payload(self, envd_url, envd_token):
         mock_http = _make_mock_http()
         proto = ProcessProtocol(mock_http)
-        await proto.send_stdin(envd_url, envd_token, pid=42, data="input\n")
+        await proto.send_input(envd_url, envd_token, pid=42, data="input\n")
 
         mock_http.envd_request.assert_awaited_once()
         call_kwargs = mock_http.envd_request.call_args
         assert call_kwargs.kwargs["payload"] == {
             "process": {"pid": 42},
             "input": {"stdin": base64.b64encode(b"input\n").decode()},
-        }
-
-
-class TestKillProcess:
-    """Test ProcessProtocol.kill() — now delegates to send_signal(signal=9)."""
-
-    async def test_sends_payload(self, envd_url, envd_token):
-        mock_http = _make_mock_http()
-        proto = ProcessProtocol(mock_http)
-        await proto.kill(envd_url, envd_token, pid=42)
-
-        mock_http.envd_request.assert_awaited_once()
-        call_kwargs = mock_http.envd_request.call_args
-        assert call_kwargs.kwargs["payload"] == {
-            "process": {"pid": 42},
-            "signal": "SIGNAL_SIGKILL",
         }
 
 

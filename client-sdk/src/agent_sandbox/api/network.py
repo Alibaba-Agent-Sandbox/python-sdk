@@ -2,11 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
-
-from agent_sandbox._provider_schema import resolve_provider_schema
-from agent_sandbox.protocol.port_contract import PortContext
-from agent_sandbox.utils.config_keys import BUILTIN_PROVIDER_ID
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -34,12 +30,7 @@ class NetworkModule:
     ) -> None:
         self._port_resolver = port_resolver
         if port_access is None:
-            factory = resolve_provider_schema(BUILTIN_PROVIDER_ID).legacy_port_factory
-            if factory is None:
-                raise RuntimeError("The distribution has no legacy port factory.")
-            port_access = cast(
-                "PortAccess", factory(PortContext(sandbox_id, domain, secure, access_token))
-            )
+            raise ValueError("NetworkModule requires the selected provider's port_access.")
         self._port_access = port_access
         self._sandbox_id = sandbox_id
         self._domain = domain

@@ -18,7 +18,6 @@ from agent_sandbox.api.capability import (
 from agent_sandbox.api.code import CodeContextModule
 from agent_sandbox.api.commands import CommandsModule
 from agent_sandbox.api.files import FilesModule
-from agent_sandbox.api.network import NetworkModule
 from agent_sandbox.api.sandbox import Sandbox
 from agent_sandbox.models.errors import (
     CapabilityNotSupportedError,
@@ -34,7 +33,8 @@ from agent_sandbox.models.template import (
     STANDARD_CAPABILITIES,
     SandboxTemplate,
 )
-from agent_sandbox.transport.auth import EnvdTokenManager
+from agent_sandbox.providers.alicloud_express.auth import EnvdTokenManager
+from tests.network_support import provider_network
 from tests.test_api.conftest import (
     TEST_ENVD_TOKEN,
     TEST_ENVD_URL,
@@ -140,7 +140,7 @@ class TestNetworkAllowedPath:
     """Verify network.get_host works (no gating)."""
 
     def test_allowed_with_ports(self) -> None:
-        mod = NetworkModule(
+        mod = provider_network(
             sandbox_id="sbx-1",
             domain="example.com",
             capabilities={"ports"},
@@ -480,7 +480,7 @@ class TestDefaultCapabilities:
         assert mod._capabilities == set(DEFAULT_CAPABILITIES)
 
     def test_network_default(self) -> None:
-        mod = NetworkModule(
+        mod = provider_network(
             sandbox_id="sbx-1",
             domain="example.com",
         )

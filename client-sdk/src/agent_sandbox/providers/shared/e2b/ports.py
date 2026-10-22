@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING
-from urllib.parse import urlsplit, urlunsplit
 
 if TYPE_CHECKING:
     from agent_sandbox.protocol.port_contract import PortContext
@@ -40,17 +38,3 @@ class WirePortAccess:
 
     def get_server_headers(self) -> dict[str, str]:
         return self.get_access_headers() if self._server_auth else {}
-
-
-def legacy_pty_url(base_url: str, server_port: int, pty_port: int) -> str:
-    """Preserve the historical standalone ServerClient gateway convention."""
-    parts = urlsplit(base_url)
-    host = parts.hostname or ""
-    gateway = re.match(rf"^{server_port}-(.+)$", host)
-    if gateway:
-        netloc = f"{pty_port}-{gateway.group(1)}"
-        if parts.port:
-            netloc += f":{parts.port}"
-    else:
-        netloc = f"{host}:{pty_port}"
-    return urlunsplit((parts.scheme, netloc, "", "", ""))

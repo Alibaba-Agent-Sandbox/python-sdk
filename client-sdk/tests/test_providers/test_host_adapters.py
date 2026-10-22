@@ -136,8 +136,8 @@ async def _exercise_every_adapter(client: FakeClient, *, stream: bool) -> None:
     assert isinstance(reader, StreamReader)
     assert [c async for c in reader]
     await proc.list_processes(EPP, token)
-    await proc.kill(EPP, token, pid="proc-1")
-    await proc.kill(EPP, token, pid=7)
+    await proc.send_signal(EPP, token, pid="proc-1", signal=9)
+    await proc.send_signal(EPP, token, pid=7, signal=9)
     await proc.send_signal(EPP, token, pid=7, signal=9)
     await proc.send_input(EPP, token, pid="proc-1", data="x")
 
@@ -393,9 +393,10 @@ async def test_connect_uses_get_when_plugin_has_no_connect(echo):
 
 
 async def test_builtin_network_stays_local():
-    from agent_sandbox.api.network import NetworkModule
 
-    net = NetworkModule("sbx-1", "example.com", secure=True, access_token="t")
+    from tests.network_support import provider_network
+
+    net = provider_network(sandbox_id="sbx-1", domain="example.com", secure=True, access_token="t")
     url, headers = await net.resolve(80)
     assert url == "https://80-sbx-1.example.com"
     assert headers == {"X-Access-Token": "t"}

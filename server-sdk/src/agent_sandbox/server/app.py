@@ -615,9 +615,18 @@ class SandboxServer:
             policy = ServerPolicy.from_dict(policy)
         elif policy is None:
             policy = ServerPolicy.from_environment() or ServerPolicy.from_dict({})
+        if self.auth_token and not policy.auth.get("tokens"):
+            document = policy.to_dict()
+            document["auth"] = {
+                **document.get("auth", {}),
+                "tokens": [
+                    {"id": "server", "scopes": ["*"], "token_env": _TOKEN_ENV_VAR},
+                ],
+            }
+            policy = ServerPolicy.from_dict(document)
         self.policy: ServerPolicy = policy
         self.policy_engine: PolicyEngine = PolicyEngine(
-            policy, self.route_table, legacy_token=self.auth_token, registry=self._registry
+            policy, self.route_table, registry=self._registry
         )
         for warning in self.policy_engine.lint():
             logging.getLogger(__name__).warning("policy lint: %s", warning)

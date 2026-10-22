@@ -7,8 +7,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from agent_sandbox.protocol.code_interpreter import _HTTP_TIMEOUT_BUFFER, CodeInterpreterProtocol
-from agent_sandbox.transport.auth import EnvdTokenManager
+from agent_sandbox.providers.alicloud_express.auth import EnvdTokenManager
+from agent_sandbox.providers.shared.e2b.code_interpreter import (
+    _HTTP_TIMEOUT_BUFFER,
+    CodeInterpreterProtocol,
+)
 
 
 @pytest.fixture

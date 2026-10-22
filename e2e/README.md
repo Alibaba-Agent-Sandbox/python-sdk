@@ -37,7 +37,7 @@ cd e2e && python -m pytest test_03_commands.py -k "timeout"   # a subset
 cd e2e && python -m pytest -m "not e2e_slow" -ra               # what `make e2e` runs, plus summary
 ```
 
-Required: `E2B_API_KEY` (plus `E2B_API_URL`/`E2B_DOMAIN` for non-default
+Required: `ABX_SANDBOX_API_KEY` (plus `ABX_SANDBOX_BASE_URL`/`ABX_SANDBOX_DOMAIN` for non-default
 regions). Values come from the environment or the gitignored `.env` files (`e2e/.env`, `.env`, `client-sdk/.env`);
 the environment wins.
 

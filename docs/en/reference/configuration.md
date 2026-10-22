@@ -79,7 +79,6 @@ Each row is the only environment variable for that key. `abx config set` writes 
 | `ALIBABA_CLOUD_REGION_ID` | `region` | Region of the built-in provider |
 | `ABX_HTTP_TIMEOUT` | `http_timeout` | HTTP timeout in seconds |
 | `ABX_HTTP2` | `http2` | HTTP/2 on or off |
-| `ABX_MAX_RETRIES` | `max_retries` | Legacy compatibility value; builtin HTTP does not retry |
 | `ABX_MAX_CONNECTIONS`, `ABX_MAX_KEEPALIVE_CONNECTIONS`, `ABX_KEEPALIVE_EXPIRY`, `ABX_WS_PING_INTERVAL` | same names, lower case | Pool, keep-alive and WebSocket tuning |
 | `ABX_LOG_LEVEL` | `log_level` | SDK log level (default `WARNING`) |
 | `ABX_DEFAULT_TEMPLATE` | `default_template` | Default template (MCP server) |
@@ -176,8 +175,6 @@ Lookup order for a key inside `config.toml`: `[providers.<id>].<key>`, then `[tr
 | `keepalive_expiry` | `float` | `30.0` | Keep-alive connection expiry (seconds) |
 | `http2` | `bool` | `True` | Whether to enable HTTP/2 |
 | `ws_ping_interval` | `float` | `30.0` | WebSocket ping interval (seconds) |
-| `max_retries` | `int` | `3` | Legacy compatibility value; builtin HTTP does not retry |
-| `retry_base_delay` | `float` | `1.0` | Legacy compatibility value; builtin HTTP ignores it |
 
 The constructor and `load_config(...)` take these field names.
 

@@ -63,45 +63,6 @@ if TYPE_CHECKING:
 logger = get_logger("api.sandbox")
 
 
-def _build_infra(
-    *,
-    api_key: str | None = None,
-    api_url: str | None = None,
-    access_key_id: str | None = None,
-    access_key_secret: str | None = None,
-    region: str | None = None,
-    provider_options: dict[str, Any] | None = None,
-) -> tuple[TransportConfig, AuthProvider, HttpClient, SandboxProtocol]:
-    """Build config, auth, http client, and sandbox protocol from credentials.
-
-    Shared helper for class methods that need standalone infra. This is the built-in
-    (``alicloud-express``) path; other providers go through :func:`_provider_infra`.
-    """
-    from agent_sandbox.providers.registry import get_provider
-
-    return cast(
-        "tuple[TransportConfig, AuthProvider, HttpClient, SandboxProtocol]",
-        get_provider().build_legacy_infra(
-            api_key=api_key,
-            api_url=api_url,
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-            region=region,
-            provider_options=provider_options,
-        ),
-    )
-
-
-def _same(canonical_name: str, canonical: Any, legacy_name: str, legacy: Any) -> Any:
-    """Return whichever of the two equivalent kwargs is set; different values are a bug."""
-    if canonical is not None and legacy is not None and canonical != legacy:
-        raise ValueError(
-            f"Conflicting values for '{canonical_name}' and its legacy name '{legacy_name}'; "
-            "pass only one."
-        )
-    return canonical if canonical is not None else legacy
-
-
 def _select_provider(provider: Any, sandbox_id: str | None = None) -> tuple[Any, str | None]:
     """Resolve a real Provider instance, including for the bundled default.
 
@@ -137,10 +98,6 @@ class _InfraCloser:
     def __init__(self, infra: Any) -> None:
         self._infra = infra
 
-    def __getattr__(self, name: str) -> Any:
-        """Preserve access to the provider HTTP transport for compatibility callers."""
-        return getattr(self._infra.http_client, name)
-
     async def close(self) -> None:
         if self._infra.close is not None:
             await self._infra.close()
@@ -158,9 +115,7 @@ async def _provider_infra(
 
 def _endpoint_overrides(
     *,
-    api_key: str | None,
     sandbox_api_key: str | None,
-    api_url: str | None,
     sandbox_base_url: str | None,
     access_key_id: str | None,
     access_key_secret: str | None,
@@ -168,8 +123,8 @@ def _endpoint_overrides(
 ) -> dict[str, Any]:
     overrides: dict[str, Any] = {}
     for name, value in (
-        ("sandbox_api_key", _same("sandbox_api_key", sandbox_api_key, "api_key", api_key)),
-        ("sandbox_base_url", _same("sandbox_base_url", sandbox_base_url, "api_url", api_url)),
+        ("sandbox_api_key", sandbox_api_key),
+        ("sandbox_base_url", sandbox_base_url),
         ("access_key_id", access_key_id),
         ("access_key_secret", access_key_secret),
         ("region", region),
@@ -215,8 +170,8 @@ class Sandbox:
         process_protocol: ProcessProtocol | None = None,
         filesystem_protocol: FilesystemProtocol | None = None,
         code_interpreter_protocol: CodeInterpreterProtocol | None = None,
-        domain: str | None = None,
         secure: bool = True,
+        domain: str | None = None,
         resolved_capabilities: ResolvedCapabilities | None = None,
         declared_capabilities: frozenset[str] | None = None,
         provider_id: str | None = None,
@@ -568,9 +523,6 @@ class Sandbox:
         disk: int | None = None,
         gpu: str | None = None,
         secure: bool | None = None,
-        api_key: str | None = None,
-        api_url: str | None = None,
-        domain: str | None = None,
         access_key_id: str | None = None,
         access_key_secret: str | None = None,
         sandbox_api_key: str | None = None,
@@ -622,7 +574,7 @@ class Sandbox:
             access_key_secret: AK/SK access key secret.
             sandbox_api_key: Canonical name of *api_key* (same value; a different one is an error).
             sandbox_base_url: Canonical name of *api_url*.
-            sandbox_domain: Canonical name of *domain*.
+            sandbox_domain: Provider data-plane domain.
             region: Built-in provider region (derives the API URL and domain).
             provider: Provider id (or a ``Provider`` object). Default: ``ABX_PROVIDER`` /
                 ``[core] provider`` / ``alicloud-express``. A qualified ``provider:id``
@@ -663,11 +615,9 @@ class Sandbox:
             gpu=gpu,
             volume_mounts=mounts,
             secure=secure,
-            domain=_same("sandbox_domain", sandbox_domain, "domain", domain),
+            domain=sandbox_domain,
             overrides=_endpoint_overrides(
-                api_key=api_key,
                 sandbox_api_key=sandbox_api_key,
-                api_url=api_url,
                 sandbox_base_url=sandbox_base_url,
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
@@ -681,9 +631,6 @@ class Sandbox:
         cls,
         sandbox_id: str,
         *,
-        api_key: str | None = None,
-        api_url: str | None = None,
-        domain: str | None = None,
         access_key_id: str | None = None,
         access_key_secret: str | None = None,
         sandbox_api_key: str | None = None,
@@ -704,7 +651,7 @@ class Sandbox:
             access_key_secret: AK/SK access key secret.
             sandbox_api_key: Canonical name of *api_key* (same value; a different one is an error).
             sandbox_base_url: Canonical name of *api_url*.
-            sandbox_domain: Canonical name of *domain*.
+            sandbox_domain: Provider data-plane domain.
             region: Built-in provider region (derives the API URL and domain).
             provider: Provider id (or a ``Provider`` object). Default: ``ABX_PROVIDER`` /
                 ``[core] provider`` / ``alicloud-express``. A qualified ``provider:id``
@@ -715,15 +662,12 @@ class Sandbox:
             A connected Sandbox instance.
         """
         prov, bare_id = _select_provider(provider, sandbox_id)
-        domain = _same("sandbox_domain", sandbox_domain, "domain", domain)
         return await cls._connect_via_provider(
             prov,
             bare_id or sandbox_id,
-            domain=domain,
+            domain=sandbox_domain,
             overrides=_endpoint_overrides(
-                api_key=api_key,
                 sandbox_api_key=sandbox_api_key,
-                api_url=api_url,
                 sandbox_base_url=sandbox_base_url,
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
@@ -739,8 +683,6 @@ class Sandbox:
         status: SandboxStatus | None = None,
         limit: int = 100,
         offset: int = 0,
-        api_key: str | None = None,
-        api_url: str | None = None,
         access_key_id: str | None = None,
         access_key_secret: str | None = None,
         sandbox_api_key: str | None = None,
@@ -762,7 +704,7 @@ class Sandbox:
             access_key_secret: AK/SK access key secret.
             sandbox_api_key: Canonical name of *api_key* (same value; a different one is an error).
             sandbox_base_url: Canonical name of *api_url*.
-            sandbox_domain: Canonical name of *domain*.
+            sandbox_domain: Provider data-plane domain.
             region: Built-in provider region (derives the API URL and domain).
             provider: Provider id (or a ``Provider`` object). Default: ``ABX_PROVIDER`` /
                 ``[core] provider`` / ``alicloud-express``. A qualified ``provider:id``
@@ -776,9 +718,7 @@ class Sandbox:
         infra = await _provider_infra(
             prov,
             _endpoint_overrides(
-                api_key=api_key,
                 sandbox_api_key=sandbox_api_key,
-                api_url=api_url,
                 sandbox_base_url=sandbox_base_url,
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
@@ -796,13 +736,10 @@ class Sandbox:
         cls,
         sandbox_id: str,
         *,
-        api_key: str | None = None,
-        api_url: str | None = None,
         access_key_id: str | None = None,
         access_key_secret: str | None = None,
         sandbox_api_key: str | None = None,
         sandbox_base_url: str | None = None,
-        sandbox_domain: str | None = None,
         region: str | None = None,
         provider: str | Provider | None = None,
         provider_options: dict[str, Any] | None = None,
@@ -814,16 +751,11 @@ class Sandbox:
 
         Args:
             sandbox_id: Existing sandbox ID, optionally qualified with ``provider:``.
-            sandbox_domain: Accepted for compatibility with lifecycle methods;
-                unused because control-plane routing depends on the API URL.
-
         Returns:
             Current provider-reported sandbox metadata.
         """
         result = await cls._control_plane_by_id(
             sandbox_id,
-            api_key=api_key,
-            api_url=api_url,
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
             sandbox_api_key=sandbox_api_key,
@@ -841,13 +773,10 @@ class Sandbox:
         sandbox_id: str,
         timeout: int,
         *,
-        api_key: str | None = None,
-        api_url: str | None = None,
         access_key_id: str | None = None,
         access_key_secret: str | None = None,
         sandbox_api_key: str | None = None,
         sandbox_base_url: str | None = None,
-        sandbox_domain: str | None = None,
         region: str | None = None,
         provider: str | Provider | None = None,
         provider_options: dict[str, Any] | None = None,
@@ -859,13 +788,9 @@ class Sandbox:
         Args:
             sandbox_id: Existing sandbox ID, optionally qualified with ``provider:``.
             timeout: Remaining sandbox lifetime from now, in seconds.
-            sandbox_domain: Accepted for compatibility with lifecycle methods;
-                unused because control-plane routing depends on the API URL.
         """
         await cls._control_plane_by_id(
             sandbox_id,
-            api_key=api_key,
-            api_url=api_url,
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
             sandbox_api_key=sandbox_api_key,
@@ -884,8 +809,6 @@ class Sandbox:
         *,
         operation: str,
         timeout: int | None = None,
-        api_key: str | None = None,
-        api_url: str | None = None,
         access_key_id: str | None = None,
         access_key_secret: str | None = None,
         sandbox_api_key: str | None = None,
@@ -900,9 +823,7 @@ class Sandbox:
         infra = await _provider_infra(
             prov,
             _endpoint_overrides(
-                api_key=api_key,
                 sandbox_api_key=sandbox_api_key,
-                api_url=api_url,
                 sandbox_base_url=sandbox_base_url,
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
@@ -925,13 +846,10 @@ class Sandbox:
         cls,
         sandbox_id: str,
         *,
-        api_key: str | None = None,
-        api_url: str | None = None,
         access_key_id: str | None = None,
         access_key_secret: str | None = None,
         sandbox_api_key: str | None = None,
         sandbox_base_url: str | None = None,
-        sandbox_domain: str | None = None,
         region: str | None = None,
         provider: str | Provider | None = None,
         provider_options: dict[str, Any] | None = None,
@@ -946,7 +864,7 @@ class Sandbox:
             access_key_secret: AK/SK access key secret.
             sandbox_api_key: Canonical name of *api_key* (same value; a different one is an error).
             sandbox_base_url: Canonical name of *api_url*.
-            sandbox_domain: Canonical name of *domain*.
+            sandbox_domain: Provider data-plane domain.
             region: Built-in provider region (derives the API URL and domain).
             provider: Provider id (or a ``Provider`` object). Default: ``ABX_PROVIDER`` /
                 ``[core] provider`` / ``alicloud-express``. A qualified ``provider:id``
@@ -958,9 +876,7 @@ class Sandbox:
         infra = await _provider_infra(
             prov,
             _endpoint_overrides(
-                api_key=api_key,
                 sandbox_api_key=sandbox_api_key,
-                api_url=api_url,
                 sandbox_base_url=sandbox_base_url,
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,

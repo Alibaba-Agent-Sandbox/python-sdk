@@ -114,10 +114,6 @@ def test_core_imports_no_concrete_backend_implementation() -> None:
 def test_wire_adapter_owns_url_without_legacy_transport_helper(monkeypatch):
     from agent_sandbox.providers.alicloud_express.provider import AlicloudExpressProvider
 
-    def legacy_helper(*args):
-        raise AssertionError("legacy config URL helper used")
-
-    monkeypatch.setattr(TransportConfig, "build_envd_url", legacy_helper)
     provider = AlicloudExpressProvider()
     info = SandboxInfo(sandbox_id="owned")
     config = TransportConfig(sandbox_domain="protocol.test")
@@ -197,16 +193,3 @@ async def test_async_provider_ports_never_inherit_native_addresses_or_headers(is
             sandbox.server_at()
     finally:
         await sandbox.kill()
-
-
-def test_legacy_config_url_uses_the_composed_owned_builder(monkeypatch):
-    from agent_sandbox.providers.alicloud_express.metadata import CONFIG_METADATA
-
-    monkeypatch.setitem(
-        CONFIG_METADATA,
-        "legacy_url_builder",
-        lambda sandbox_id, domain: f"https://{domain}/owned/{sandbox_id}",
-    )
-    assert TransportConfig(sandbox_domain="owned.example").build_envd_url("opaque") == (
-        "https://owned.example/owned/opaque"
-    )

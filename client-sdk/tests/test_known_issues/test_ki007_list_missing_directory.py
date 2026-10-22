@@ -10,7 +10,7 @@ import pytest
 
 from agent_sandbox.api.files import FilesModule
 from agent_sandbox.models.errors import FileNotFoundError_
-from agent_sandbox.protocol.filesystem import FilesystemProtocol
+from agent_sandbox.providers.shared.e2b.filesystem import FilesystemProtocol
 from tests.test_known_issues.helpers import ENVD, make_http, token
 
 LIST_URL = f"{ENVD}/filesystem.Filesystem/ListDir"

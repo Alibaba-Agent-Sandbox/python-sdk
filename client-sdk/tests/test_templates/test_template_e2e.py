@@ -202,11 +202,13 @@ def _assert_upload_download_roundtrip(port: int, base_dir: str) -> None:
     content_b64 = base64.b64encode(test_data).decode()
     file_path = os.path.join(base_dir, "e2e_roundtrip.bin")
 
-    status, body = _http_post(port, "/upload", {"path": file_path, "content_base64": content_b64})
+    status, body = _http_post(
+        port, "/files/upload-stream", {"path": file_path, "content_base64": content_b64}
+    )
     assert status == 200, f"Upload failed: {body}"
     assert body["bytes"] == len(test_data)
 
-    status, body = _http_get(port, f"/download?path={file_path}")
+    status, body = _http_get(port, f"/files/download-stream?path={file_path}")
     assert status == 200, f"Download failed: {body}"
     assert base64.b64decode(body["content_base64"]) == test_data
 

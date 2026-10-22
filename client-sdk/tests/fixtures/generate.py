@@ -10,14 +10,13 @@ from __future__ import annotations
 
 import json
 import sys
-import tempfile
 from pathlib import Path
 from typing import Any
 
 if sys.version_info >= (3, 11):
-    import tomllib
+    pass
 else:
-    import tomli as tomllib
+    pass
 
 HERE = Path(__file__).resolve().parent
 
@@ -452,77 +451,6 @@ def epp_error_vectors() -> dict[str, Any]:
     return {"schema_version": 1, "vectors": out}
 
 
-def migration_vectors() -> dict[str, Any]:
-    from agent_sandbox.transport import config as cfg
-    from agent_sandbox.utils.toml_write import dumps_toml
-
-    cases: list[tuple[str, dict[str, Any], str]] = [
-        ("nothing stored", {}, ""),
-        (
-            "legacy api_url in transport",
-            {"transport": {"api_url": "https://t.example", "http_timeout": 9}},
-            "",
-        ),
-        (
-            "api_base_url alias in transport",
-            {"transport": {"api_base_url": "https://t.example"}},
-            "",
-        ),
-        (
-            "canonical already present: legacy dropped",
-            {"transport": {"api_url": "https://old", "sandbox_base_url": "https://new"}},
-            "",
-        ),
-        ("region moves to the provider table", {"transport": {"region": "cn-beijing"}}, ""),
-        (
-            "region already scoped",
-            {"transport": {"region": "a"}, "providers": {"alicloud-express": {"region": "b"}}},
-            "",
-        ),
-        (
-            "env: phase-1 names renamed, comments kept",
-            {},
-            "# keep me\nE2B_API_KEY=abc\nSANDBOX_REGION=cn-shanghai\nOPENAI_API_KEY=k\n",
-        ),
-        ("env: shadowed legacy dropped", {}, "E2B_API_KEY=abc\nSANDBOX_API_KEY=old\n"),
-        ("env: canonical present wins", {}, "ABX_SANDBOX_API_KEY=new\nE2B_API_KEY=old\n"),
-        (
-            "env: acr and ak legacy names",
-            {},
-            "ACR_REGISTRY=r\nACR_PASSWORD=p\nAccessKey=ak\nAccessSecret=sk\nTEAM_ID=7\n",
-        ),
-        (
-            "env: export prefix and blank values",
-            {},
-            "export SANDBOX_REGION=cn-beijing\nSANDBOX_API_KEY=\n",
-        ),
-    ]
-    out = []
-    for name, toml_doc, env_text in cases:
-        plan = cfg.plan_migration_data(toml_doc, _env_dict(env_text))
-        with tempfile.TemporaryDirectory() as tmp:
-            home = Path(tmp)
-            (home / "config.toml").write_text(dumps_toml(toml_doc), encoding="utf-8")
-            if env_text:
-                (home / ".env").write_text(env_text, encoding="utf-8")
-            cfg.apply_migration(home / "config.toml", home / ".env", backup=False)
-            toml_out = tomllib.loads((home / "config.toml").read_text(encoding="utf-8"))
-            env_out = (
-                (home / ".env").read_text(encoding="utf-8") if (home / ".env").exists() else ""
-            )
-        out.append(
-            {
-                "name": name,
-                "toml": toml_doc,
-                "env": env_text,
-                "plan": plan,
-                "toml_after": toml_out,
-                "env_after": env_out,
-            }
-        )
-    return {"schema_version": 1, "vectors": out}
-
-
 def epp_method_table() -> dict[str, Any]:
     """Machine-readable EPP/1 method table (the single source for params names and types)."""
     S, I, B, O, A = "string", "integer", "boolean", "object", "array"  # noqa: N806, E741
@@ -651,7 +579,8 @@ def epp_method_table() -> dict[str, Any]:
             "process.manage",
             {**sb, "pid": p(SI)},
             "{}",
-            note="pid is an opaque id: the integer pid of process.list or the string process_id of exec.start",
+            host_calls=False,
+            note="direct EPP operation; SDK kill uses process.signal with signal 9",
         ),
         m("process.signal", "process.manage", {**sb, "pid": p(SI), "signal": p(I)}, "{}"),
         m(
@@ -697,7 +626,7 @@ def epp_method_table() -> dict[str, Any]:
             "files.rw",
             {**sb, "source": p(S), "destination": p(S), "overwrite": p(B, False)},
             "{}",
-            note="plugins may additionally accept the legacy aliases src/dest",
+            note="source and destination are required; no alternate field names are accepted",
         ),
         m(
             "files.search",
@@ -727,15 +656,6 @@ def epp_method_table() -> dict[str, Any]:
     return {"schema_version": 1, "methods": methods}
 
 
-def _env_dict(text: str) -> dict[str, str]:
-    from agent_sandbox.transport import config as cfg
-
-    with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / ".env"
-        path.write_text(text, encoding="utf-8")
-        return cfg._read_dotenv(path)
-
-
 def build_all() -> dict[str, Any]:
     from agent_sandbox.utils.config_keys import export_schema
 
@@ -744,7 +664,6 @@ def build_all() -> dict[str, Any]:
         "config-resolution-vectors.json": resolution_vectors(),
         "tree-digest-vectors.json": tree_digest_vectors(),
         "epp-error-mapping.json": epp_error_vectors(),
-        "migration-vectors.json": migration_vectors(),
         "epp-methods.json": epp_method_table(),
     }
 

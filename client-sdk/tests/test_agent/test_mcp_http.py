@@ -106,7 +106,7 @@ class TestSessionStore:
     """Test the SessionStore session lifecycle."""
 
     async def test_create_session(self):
-        store = SessionStore(api_key="test-key", template="python-base")
+        store = SessionStore(sandbox_api_key="test-key", template="python-base")
         sid, server = await store.create_session()
         assert isinstance(sid, str)
         assert len(sid) > 0
@@ -232,7 +232,7 @@ class TestMcpHttpApp:
         """Create a test app with a controlled configuration."""
         return create_mcp_app(
             auth_token=auth_token,
-            api_key="test-key",
+            sandbox_api_key="test-key",
             template="test-tpl",
             **kwargs,
         )

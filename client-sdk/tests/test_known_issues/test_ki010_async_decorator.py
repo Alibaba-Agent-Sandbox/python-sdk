@@ -81,7 +81,7 @@ async def test_decorator_generates_an_awaiting_script_for_async_def(mock_cls: Ma
     )
     mock_cls.create = AsyncMock(return_value=sb)
 
-    @sandbox(api_key="k")
+    @sandbox(sandbox_api_key="k")
     async def double(x: int) -> int:
         return x * 2
 
@@ -98,7 +98,7 @@ def test_decorator_keeps_sync_functions_sync(mock_cls: MagicMock) -> None:
     )
     mock_cls.create = AsyncMock(return_value=sb)
 
-    @sandbox(api_key="k")
+    @sandbox(sandbox_api_key="k")
     def triple(x: int) -> int:
         return x * 3
 

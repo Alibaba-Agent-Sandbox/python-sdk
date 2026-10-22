@@ -187,17 +187,6 @@ class FilesModule:
             path=path,
         )
 
-    async def rename(self, old_path: str, new_path: str) -> None:
-        """Rename or move a file/directory.
-
-        Deprecated: use move() instead.
-
-        Args:
-            old_path: Current path.
-            new_path: New path.
-        """
-        await self.move(old_path, new_path)
-
     async def move(self, source: str, destination: str) -> None:
         """Move/rename a file or directory.
 
@@ -221,7 +210,7 @@ class FilesModule:
         Returns:
             FileInfo with name, path, type, size.
         """
-        return await self._fs.get_info(
+        return await self._fs.stat(
             self._envd_url,
             self._envd_token,
             path=path,
@@ -253,7 +242,6 @@ class FilesModule:
     make_dir_sync = make_sync(make_dir)
     upload_sync = make_sync(upload)
     download_sync = make_sync(download)
-    rename_sync = make_sync(rename)
     move_sync = make_sync(move)
     upload_url_sync = make_sync(upload_url)
     download_url_sync = make_sync(download_url)

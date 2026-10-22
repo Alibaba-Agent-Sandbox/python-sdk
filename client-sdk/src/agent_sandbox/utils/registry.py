@@ -129,21 +129,13 @@ class RegistryClient:
         """从本地目录加载模板。"""
         local_path = Path(ref.local_path)  # type: ignore[arg-type]
 
-        # 验证必要文件存在（template.yaml 或 sandbox-template.yaml 或 sandbox.yaml 或 Dockerfile）
+        # 验证必要文件存在（template.yaml 或 Dockerfile）
         yaml_path = local_path / "template.yaml"
-        alt_yaml_path = local_path / "sandbox-template.yaml"
-        alt2_yaml_path = local_path / "sandbox.yaml"
         dockerfile_path = local_path / "Dockerfile"
 
-        if (
-            not yaml_path.exists()
-            and not alt_yaml_path.exists()
-            and not alt2_yaml_path.exists()
-            and not dockerfile_path.exists()
-        ):
+        if not yaml_path.exists() and not dockerfile_path.exists():
             raise ValueError(
-                f"Local template at {local_path} must contain "
-                f"template.yaml, sandbox-template.yaml, sandbox.yaml, or Dockerfile"
+                f"Local template at {local_path} must contain template.yaml or Dockerfile"
             )
 
         logger.info("Using local template: %s", local_path)
@@ -370,11 +362,7 @@ class RegistryClient:
     def _check_cache(self, owner: str, repo: str, tag: str, path: str | None = None) -> Path | None:
         """检查本地缓存。"""
         cache_path = self._cache_path(owner, repo, tag, path)
-        if cache_path.exists() and (
-            (cache_path / "template.yaml").exists()
-            or (cache_path / "sandbox-template.yaml").exists()
-            or (cache_path / "sandbox.yaml").exists()
-        ):
+        if cache_path.exists() and ((cache_path / "template.yaml").exists()):
             return cache_path
         return None
 

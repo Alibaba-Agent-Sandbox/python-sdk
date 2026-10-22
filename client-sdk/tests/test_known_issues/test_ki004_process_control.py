@@ -20,7 +20,7 @@ import pytest
 
 from agent_sandbox.api.commands import CommandsModule
 from agent_sandbox.models.errors import EnvdRpcError
-from agent_sandbox.protocol.process import ProcessProtocol
+from agent_sandbox.providers.shared.e2b.process import ProcessProtocol
 from tests.test_known_issues.helpers import (
     ENVD,
     body_of,
@@ -80,12 +80,6 @@ async def test_send_input_wraps_data_as_base64_stdin(httpx_mock) -> None:
     assert body["process"] == {"pid": 42}
     assert set(body) == {"process", "input"}
     assert base64.b64decode(body["input"]["stdin"]) == b"typed-input\n"
-
-
-async def test_send_stdin_alias_uses_the_same_body(httpx_mock) -> None:
-    _ok(httpx_mock, "SendInput")
-    await _commands().send_stdin(42, "x")
-    assert body_of(httpx_mock.get_request())["input"] == {"stdin": base64.b64encode(b"x").decode()}
 
 
 async def test_send_input_encodes_non_ascii_as_utf8(httpx_mock) -> None:

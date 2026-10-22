@@ -48,3 +48,9 @@ def test_default_table_is_not_mutated_by_policy_servers(live_server: Any) -> Non
 def test_policy_server_is_constructible_directly() -> None:
     server = SandboxServer(host="127.0.0.1", pty_port=free_port(), policy={"preset": "locked"})
     assert server is not None
+
+
+def test_retired_transfer_routes_are_absent(live_server):
+    live = live_server()
+    assert live.post("/upload", {"path": "/tmp/unused", "content_base64": ""})[0] == 404
+    assert live.get("/download?path=/tmp/unused")[0] == 404

@@ -60,8 +60,8 @@ async def main() -> int:
             provider="opensandbox",
             template="base",
             timeout=120,
-            api_url=BASE,
-            api_key=KEY,
+            sandbox_base_url=BASE,
+            sandbox_api_key=KEY,
         )
         report.add("lifecycle.create", bool(sb.id) and sb.provider == "opensandbox", sb.id)
     except Exception as exc:
@@ -70,12 +70,12 @@ async def main() -> int:
         return 1
 
     try:
-        connected = await Sandbox.connect(sb.id, provider="opensandbox", api_url=BASE, api_key=KEY)
+        connected = await Sandbox.connect(sb.id, provider="opensandbox", sandbox_base_url=BASE, sandbox_api_key=KEY)
         report.add("lifecycle.connect", connected.id == sb.id)
         info = await connected.refresh_info()
         status = info.status.value if hasattr(info.status, "value") else str(info.status)
         report.add("lifecycle.get", info.sandbox_id == sb.id and status == "running", status)
-        listed = await Sandbox.list(provider="opensandbox", api_url=BASE, api_key=KEY)
+        listed = await Sandbox.list(provider="opensandbox", sandbox_base_url=BASE, sandbox_api_key=KEY)
         report.add("lifecycle.list", any(item.sandbox_id == sb.id for item in listed), f"{len(listed)} rows")
         await sb.set_timeout(180)
         report.add("sandbox.timeout", True)
@@ -149,7 +149,7 @@ async def main() -> int:
 
         await sb.kill()
         report.add("lifecycle.kill", True)
-        await Sandbox.kill_by_id(sb.id, provider="opensandbox", api_url=BASE, api_key=KEY)
+        await Sandbox.kill_by_id(sb.id, provider="opensandbox", sandbox_base_url=BASE, sandbox_api_key=KEY)
         report.add("lifecycle.kill-idempotent", True)
         sb = None
     except Exception as exc:

@@ -246,13 +246,14 @@ class TestCommandsKill:
         mock_process_protocol: AsyncMock,
     ) -> None:
         await commands_module.kill(1234)
-        mock_process_protocol.kill.assert_called_once()
-        call_kwargs = mock_process_protocol.kill.call_args[1]
+        mock_process_protocol.send_signal.assert_called_once()
+        call_kwargs = mock_process_protocol.send_signal.call_args[1]
         assert call_kwargs["pid"] == 1234
+        assert call_kwargs["signal"] == 9
 
 
 class TestCommandsSendStdin:
-    """Test CommandsModule.send_stdin()."""
+    """Test CommandsModule.send_input()."""
 
     @pytest.mark.asyncio
     async def test_send_stdin_forwards_data(
@@ -260,7 +261,7 @@ class TestCommandsSendStdin:
         commands_module: CommandsModule,
         mock_process_protocol: AsyncMock,
     ) -> None:
-        await commands_module.send_stdin(1234, "input data\n")
+        await commands_module.send_input(1234, "input data\n")
         mock_process_protocol.send_input.assert_called_once()
         call_kwargs = mock_process_protocol.send_input.call_args[1]
         assert call_kwargs["pid"] == 1234
@@ -411,7 +412,7 @@ class TestCommandsSyncVariants:
         assert hasattr(CommandsModule, "kill_sync")
 
     def test_send_stdin_sync_exists(self) -> None:
-        assert hasattr(CommandsModule, "send_stdin_sync")
+        assert hasattr(CommandsModule, "send_input_sync")
 
     def test_stream_sync_exists(self) -> None:
         assert hasattr(CommandsModule, "stream_sync")

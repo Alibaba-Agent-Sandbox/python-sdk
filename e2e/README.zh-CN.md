@@ -35,7 +35,7 @@ cd e2e && python -m pytest test_03_commands.py -k "timeout"   # 运行子集
 cd e2e && python -m pytest -m "not e2e_slow" -ra               # 等同 `make e2e`,并输出汇总
 ```
 
-必需:`E2B_API_KEY`(非默认地域另需 `E2B_API_URL`/`E2B_DOMAIN`)。
+必需:`ABX_SANDBOX_API_KEY`(非默认地域另需 `ABX_SANDBOX_BASE_URL`/`ABX_SANDBOX_DOMAIN`)。
 取值来自环境变量或被 git 忽略的 `.env` 文件(`e2e/.env`、`.env`、`client-sdk/.env`),环境变量优先。
 
 缺少凭据时所有测试都会**跳过**,并给出 `E2E skipped: missing credentials [...]`。单元 CI 不会收集本套件

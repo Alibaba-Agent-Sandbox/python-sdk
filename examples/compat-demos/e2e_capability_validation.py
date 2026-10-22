@@ -25,6 +25,7 @@
 
 若无凭证或后端不可达，相关 case 标注 BLOCKED 并说明缺什么，不伪造结果。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -153,9 +154,7 @@ def part_a() -> str | None:
     except Exception as exc:  # noqa: BLE001
         record("A", "A-00 rate_limit", "BLOCKED", f"curl/parse failed: {_exc_summary(exc)}")
 
-    token_present = bool(
-        os.environ.get("GITHUB_TOKEN") or os.environ.get("SANDBOX_GITHUB_TOKEN")
-    )
+    token_present = bool(os.environ.get("GITHUB_TOKEN") or os.environ.get("SANDBOX_GITHUB_TOKEN"))
     print(f"  GITHUB_TOKEN/SANDBOX_GITHUB_TOKEN present: {token_present}")
 
     have_budget = token_present or (remaining is not None and remaining > 0)
@@ -165,9 +164,7 @@ def part_a() -> str | None:
     if have_budget:
         # --yes: this is an automated run; skip the interactive build+deploy
         # confirmation prompt (which would otherwise block on stdin).
-        rc, out, err = run_cli(
-            ["-j", "template", "install", github_ref, "--yes"], timeout=180
-        )
+        rc, out, err = run_cli(["-j", "template", "install", github_ref, "--yes"], timeout=180)
         tid = _parse_template_id(out)
         combined = (out + "\n" + err).strip()
         if rc == 0 and tid:
@@ -269,7 +266,7 @@ def part_a() -> str | None:
 # Part B — E2B-style API capability validation (real FC, template="base")
 # ---------------------------------------------------------------------------
 async def _part_b_core() -> None:
-    from agent_sandbox.compat import Sandbox
+    from agent_sandbox import Sandbox
     from agent_sandbox.models.errors import CapabilityNotSupportedError
     from agent_sandbox.models.process import ProcessChunkType
 
@@ -322,10 +319,7 @@ async def _part_b_core() -> None:
 
         # E2B-04 combined workflow: write script -> run python3 -> read output file
         try:
-            script = (
-                "with open('/tmp/out.txt','w') as f:\n"
-                "    f.write(str(sum(range(1,11))))\n"
-            )
+            script = "with open('/tmp/out.txt','w') as f:\n    f.write(str(sum(range(1,11))))\n"
             await sb.files.write("/tmp/calc.py", script)
             run = await sb.commands.run("python3 /tmp/calc.py", timeout=60)
             out_content = await sb.files.read("/tmp/out.txt")
@@ -474,7 +468,7 @@ async def _part_b_core() -> None:
 
 
 def part_b(api_key_present: bool) -> None:
-    hr("Part B — E2B-style API 能力验证（真实 FC, template=\"base\"）")
+    hr('Part B — E2B-style API 能力验证（真实 FC, template="base"）')
     if not api_key_present:
         for case in (
             "E2B-01 shell",
@@ -501,7 +495,7 @@ def part_b(api_key_present: bool) -> None:
 # Part C — Modal-style declarative (real FC, template="code-interpreter-v1")
 # ---------------------------------------------------------------------------
 def part_c(api_key_present: bool) -> None:
-    hr("Part C — Modal 风格声明式（真实 FC, template=\"code-interpreter-v1\"）")
+    hr('Part C — Modal 风格声明式（真实 FC, template="code-interpreter-v1"）')
     if not api_key_present:
         for case in ("MOD-01 add", "MOD-02 numpy", "MOD-04 cross-check"):
             record("C", case, "BLOCKED", "no E2B_API_KEY in env/.env → cannot reach real FC")
@@ -553,7 +547,7 @@ def part_c(api_key_present: bool) -> None:
         modal_res = mult(6, 7)
 
         async def _e2b_side() -> int:
-            from agent_sandbox.compat import Sandbox
+            from agent_sandbox import Sandbox
 
             sb = await Sandbox.create(template="base", timeout=300)
             try:
@@ -592,7 +586,7 @@ def part_d(api_key_present: bool, template_id: str | None) -> None:
         return
 
     async def _try_create() -> str:
-        from agent_sandbox.compat import Sandbox
+        from agent_sandbox import Sandbox
 
         sb = await Sandbox.create(template=template_id, timeout=120)
         try:

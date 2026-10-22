@@ -218,7 +218,7 @@ async def test_builtin_default_uses_registered_provider_factory(iso, monkeypatch
         "prepare_session",
         AsyncMock(return_value={"envd_token": SessionAuth(None, "sb-1")}),
     )
-    sb = await Sandbox.create(api_key="k", api_url="https://api.example")
+    sb = await Sandbox.create(sandbox_api_key="k", sandbox_base_url="https://api.example")
     assert sb.provider == provider.id
     protocol.create.assert_awaited_once()
     await sb.close()

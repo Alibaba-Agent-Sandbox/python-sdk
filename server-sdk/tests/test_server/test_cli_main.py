@@ -49,7 +49,7 @@ def test_check_config_json_lists_endpoints(
     assert main(["check-config", "--preset", "transfer-only", "--json"]) == 0
     doc = json.loads(capsys.readouterr().out)
     enabled = {row["endpoint"] for row in doc["endpoints"] if row["enabled"]}
-    assert {"upload", "download"} <= enabled
+    assert {"files_upload_stream", "files_download_stream"} <= enabled
     assert "shell" not in enabled
 
 
@@ -57,10 +57,10 @@ def test_check_config_invalid_policy_exits_1(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     bad = tmp_path / "p.json"
-    bad.write_text(json.dumps({"endpoints": {"uplaod": {"enabled": True}}}))
+    bad.write_text(json.dumps({"endpoints": {"files_uplaod_stream": {"enabled": True}}}))
     bad.chmod(0o444)
     assert main(["check-config", "--policy", str(bad)]) == 1
-    assert "upload" in capsys.readouterr().err
+    assert "files_upload_stream" in capsys.readouterr().err
 
 
 def test_check_config_explain_exit_codes(
@@ -70,7 +70,9 @@ def test_check_config_explain_exit_codes(
     monkeypatch.delenv("ABX_SERVER_POLICY_FILE", raising=False)
     assert main(["check-config", "--preset", "transfer-only", "--explain", "shell"]) == 3
     assert json.loads(capsys.readouterr().out)["allowed"] is False
-    assert main(["check-config", "--preset", "transfer-only", "--explain", "upload"]) == 0
+    assert (
+        main(["check-config", "--preset", "transfer-only", "--explain", "files_upload_stream"]) == 0
+    )
 
 
 def test_check_config_strict_fails_on_lint(

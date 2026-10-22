@@ -41,7 +41,6 @@
 | 地域 | `region` | `[providers.alicloud-express] region` | `ALIBABA_CLOUD_REGION_ID` | `region` |
 | HTTP 超时 | `http_timeout` | `[transport] http_timeout` | `ABX_HTTP_TIMEOUT` | `http_timeout` |
 | HTTP/2 | `http2` | `http2` | `ABX_HTTP2` | `http2` |
-| 最大重试 | `max_retries` | `max_retries` | `ABX_MAX_RETRIES` | `max_retries` |
 | 日志级别 | `log_level` | `log_level` | `ABX_LOG_LEVEL` | `log_level` |
 | 默认模板 | `default_template` | `default_template` | `ABX_DEFAULT_TEMPLATE` | `default_template` |
 | 提供方 | `provider` | `[core] provider` | `ABX_PROVIDER` | `provider` |
@@ -132,7 +131,6 @@
 | `sandbox_domain` | host | 否 | `E2B_DOMAIN` | 由提供方推导 |
 | `http_timeout` | float ≥ 1 | 否 | `ABX_HTTP_TIMEOUT` | `30.0` |
 | `http2` | bool | 否 | `ABX_HTTP2` | `true` |
-| `max_retries` | int ≥ 0 | 否 | `ABX_MAX_RETRIES` | `3` |
 | `max_connections`、`max_keepalive_connections`、`keepalive_expiry`、`ws_ping_interval`、`retry_base_delay` | 数值 | 否 | `ABX_<KEY>` | 同现状 |
 | `log_level` | 枚举 | 否 | `ABX_LOG_LEVEL` | `WARNING` |
 | `default_template` | str | 否 | `ABX_DEFAULT_TEMPLATE` | `base` |

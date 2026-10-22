@@ -20,7 +20,6 @@ Another provider receives them only through its consented ``inherit`` list.
 
 from __future__ import annotations
 
-import contextlib
 import os
 from pathlib import Path
 from typing import Any
@@ -29,9 +28,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from agent_sandbox._provider_schema import ProviderSchema as ProviderSchema
 from agent_sandbox._provider_schema import resolve_provider_schema
-from agent_sandbox.utils.bundled_config import (
-    BUNDLED_CONFIGS,
-    BUNDLED_KEYS,
+from agent_sandbox.providers.config_distribution import (
     DEFAULT_CONFIG,
     bundled_config,
 )
@@ -39,12 +36,9 @@ from agent_sandbox.utils.config_keys import (
     BUILTIN_PROVIDER_ID,
     CORE_KEYS,
     GENERIC_ENDPOINT_KEYS,
-    ConfigKey,
     Resolved,
     Sources,
-    env_names,
     get_key,
-    provider_env_name,
     resolve_key,
 )
 from agent_sandbox.utils.logging import get_logger
@@ -110,8 +104,6 @@ class TransportConfig(BaseModel):
     )
 
     # Retry settings
-    max_retries: int = Field(default=3, ge=0)
-    retry_base_delay: float = Field(default=1.0, ge=0.1)
 
     model_config = {"extra": "ignore"}
 
@@ -125,16 +117,6 @@ class TransportConfig(BaseModel):
         if metadata is None:
             return {"sandbox_base_url": "", "sandbox_domain": "", "region": "", **value}
         return value
-
-    def build_envd_url(self, sandbox_id: str) -> str:
-        """构建 envd 数据平面 URL（已实测验证）。
-
-        格式: https://{ENVD_PORT}-{sandbox_id}.{sandbox_domain}
-        """
-        builder = resolve_provider_schema(BUILTIN_PROVIDER_ID).legacy_url_builder
-        if builder is None:
-            raise RuntimeError("The distribution does not provide the legacy URL convention.")
-        return builder(sandbox_id, self.sandbox_domain)
 
 
 # ---------------------------------------------------------------------------
@@ -221,7 +203,7 @@ def _metadata_schema(metadata: dict[str, Any]) -> ProviderSchema:
         metadata["inherit"],
         metadata["derive"],
         metadata["endpoint_defaults"],
-        legacy_fields=frozenset(metadata.get("legacy_fields", ())),
+        transport_fields=frozenset(metadata.get("transport_fields", ())),
         omit_default_options=bool(metadata.get("omit_default_options", False)),
     )
 
@@ -369,7 +351,7 @@ def load_config(**overrides: Any) -> TransportConfig:
         )
 
     field_names = set(TransportConfig.model_fields) - {"provider", "provider_options"}
-    field_scoped = schema.legacy_fields
+    field_scoped = schema.transport_fields
     values: dict[str, Any] = {"provider": schema.provider_id}
     opts: dict[str, Any] = {}
     for key_name, res in resolved.items():
@@ -446,269 +428,3 @@ def http_timeout_configured() -> bool:
     key = get_key("http_timeout")
     assert key is not None
     return resolve_key(key, collect_sources(), use_default=False) is not None
-
-
-# ---------------------------------------------------------------------------
-# Audit and migration
-# ---------------------------------------------------------------------------
-
-
-def _legacy_env_index() -> dict[str, tuple[ConfigKey, str]]:
-    idx: dict[str, tuple[ConfigKey, str]] = {}
-    for key in (*CORE_KEYS, *BUNDLED_KEYS):
-        for a in key.aliases:
-            if a.surface == "env" and a.kind == "legacy":
-                idx[a.name] = (key, a.kind)
-    return idx
-
-
-def _toml_legacy_index() -> dict[str, ConfigKey]:
-    idx: dict[str, ConfigKey] = {}
-    for key in (*CORE_KEYS, *BUNDLED_KEYS):
-        for a in key.aliases:
-            if a.surface in ("config", "kwarg") and a.kind == "legacy":
-                idx.setdefault(a.name, key)
-    return idx
-
-
-def audit_data(
-    environ: dict[str, str], dotenv: list[tuple[str, dict[str, str]]], toml: dict[str, Any]
-) -> list[dict[str, str]]:
-    """Pure audit: every *legacy* name in use (names only, never values).
-
-    ``compat`` (E2B_*) and ``native`` names are never reported.
-    """
-    findings: list[dict[str, str]] = []
-    env_idx = _legacy_env_index()
-
-    def env_entry(where: str, name: str, path: str = "") -> None:
-        key, kind = env_idx[name]
-        item = {
-            "where": where,
-            "name": name,
-            "canonical_key": key.key,
-            "canonical_name": key.env,
-            "kind": kind,
-        }
-        if path:
-            item["path"] = path
-        findings.append(item)
-
-    for name in sorted(environ):
-        if name in env_idx and environ[name].strip():
-            env_entry("env", name)
-    for path, values in dotenv:
-        for name in sorted(values):
-            if name in env_idx and values[name].strip():
-                env_entry("dotenv", name, path)
-    toml_idx = _toml_legacy_index()
-    transport = toml.get("transport")
-    if isinstance(transport, dict):
-        for name in sorted(transport):
-            key = toml_idx.get(name)
-            if key is not None and name != key.key:
-                findings.append(
-                    {
-                        "where": "config",
-                        "name": f"transport.{name}",
-                        "canonical_key": key.key,
-                        "canonical_name": f"transport.{key.key}",
-                        "kind": "legacy",
-                    }
-                )
-    return findings
-
-
-def audit_config() -> list[dict[str, str]]:
-    """Legacy names currently in use (process env, ``.env`` files, ``config.toml``)."""
-    dotenv = [(str(c), _read_dotenv(c)) for c in _ENV_FILE_CANDIDATES if c.is_file()]
-    return audit_data(dict(os.environ), dotenv, _load_toml_file(_CONFIG_FILE))
-
-
-def plan_migration_data(toml: dict[str, Any], env: dict[str, str]) -> list[dict[str, Any]]:
-    """Pure migration plan from stored legacy names to canonical ones (``config_format = 2``).
-
-    Item shape: ``{"file": "toml"|"env", "action": "rename"|"drop"|"set", "from", "to"}``.
-    ``drop`` removes a stale legacy entry whose canonical name already exists (or that is
-    shadowed by a higher-priority legacy name). The result is deterministic.
-    """
-    plan: list[dict[str, Any]] = []
-    transport = toml.get("transport")
-    planned_targets: set[str] = set()
-    if isinstance(transport, dict):
-        for key in CORE_KEYS:
-            if key.toml_section != "transport" and key.key != "sandbox_api_key":
-                continue
-            target = f"transport.{key.key}"
-            for name in dict.fromkeys([*key.alias_names("config"), *key.alias_names("kwarg")]):
-                if name == key.key or name not in transport:
-                    continue
-                dup = key.key in transport or target in planned_targets
-                planned_targets.add(target)
-                plan.append(
-                    {
-                        "file": "toml",
-                        "action": "drop" if dup else "rename",
-                        "from": f"transport.{name}",
-                        "to": target,
-                    }
-                )
-        providers = toml.get("providers")
-        for metadata in BUNDLED_CONFIGS:
-            prov_table = providers.get(metadata["id"]) if isinstance(providers, dict) else None
-            for key in metadata["keys"]:
-                p2 = key.storage_phase2
-                if key.key in transport and p2 is not None and p2.file == "toml":
-                    exists = isinstance(prov_table, dict) and key.key in prov_table
-                    plan.append(
-                        {
-                            "file": "toml",
-                            "action": "drop" if exists else "rename",
-                            "from": f"transport.{key.key}",
-                            "to": f"providers.{metadata['id']}.{key.key}",
-                        }
-                    )
-    for key in (*CORE_KEYS, *BUNDLED_KEYS):
-        p2 = key.storage_phase2
-        target_env = p2.name if p2 and p2.file == "env" else key.env
-        # Native names (OPENAI_*, DASHSCOPE_*) are user-owned: only the names that
-        # ``config set`` wrote in phase 1 and the legacy names move.
-        movable = {a.name for a in key.aliases if a.surface == "env" and a.kind == "legacy"}
-        if key.storage_phase1 is not None and key.storage_phase1.file == "env":
-            movable.add(key.storage_phase1.name)
-        ordered = [
-            n for n in env_names(key) if n in movable and n != target_env and env.get(n, "").strip()
-        ]
-        target_present = bool(env.get(target_env, "").strip())
-        for i, name in enumerate(ordered):
-            plan.append(
-                {
-                    "file": "env",
-                    "action": "rename" if (i == 0 and not target_present) else "drop",
-                    "from": name,
-                    "to": target_env,
-                }
-            )
-    plan.append(
-        {"file": "toml", "action": "set", "from": None, "to": "core.config_format", "value": 2}
-    )
-    return plan
-
-
-def plan_migration(
-    config_path: Path | None = None, env_path: Path | None = None
-) -> list[dict[str, Any]]:
-    """Migration plan for the user's files (defaults: ``config.toml`` and the sibling ``.env``)."""
-    cfg = config_path or _CONFIG_FILE
-    env_file = env_path or cfg.parent / ".env"
-    env = _read_dotenv(env_file) if env_file.is_file() else {}
-    return plan_migration_data(_load_toml_file(cfg), env)
-
-
-def apply_migration(
-    config_path: Path | None = None, env_path: Path | None = None, *, backup: bool = True
-) -> list[dict[str, Any]]:
-    """Execute :func:`plan_migration`; keeps ``config.toml.bak`` / ``.env.bak`` (0600)."""
-    from agent_sandbox.utils.toml_write import dumps_toml
-
-    cfg = config_path or _CONFIG_FILE
-    env_file = env_path or cfg.parent / ".env"
-    plan = plan_migration(cfg, env_file)
-    toml = _load_toml_file(cfg)
-    env_lines = env_file.read_text(encoding="utf-8").splitlines() if env_file.is_file() else []
-
-    def secure_write(path: Path, text: str) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write(text)
-        with contextlib.suppress(OSError):
-            os.chmod(path, 0o600)
-
-    if backup:
-        if cfg.is_file():
-            secure_write(cfg.with_name(cfg.name + ".bak"), cfg.read_text(encoding="utf-8"))
-        if env_file.is_file():
-            secure_write(
-                env_file.with_name(env_file.name + ".bak"), env_file.read_text(encoding="utf-8")
-            )
-
-    def pop_path(doc: dict[str, Any], dotted: str) -> Any:
-        parts = dotted.split(".")
-        node: Any = doc
-        for p in parts[:-1]:
-            node = node.get(p)
-            if not isinstance(node, dict):
-                return None
-        return node.pop(parts[-1], None)
-
-    def set_path(doc: dict[str, Any], dotted: str, value: Any) -> None:
-        parts = dotted.split(".")
-        node = doc
-        for p in parts[:-1]:
-            nxt = node.get(p)
-            if not isinstance(nxt, dict):
-                nxt = {}
-                node[p] = nxt
-            node = nxt
-        node[parts[-1]] = value
-
-    for item in plan:
-        if item["file"] != "toml":
-            continue
-        if item["action"] == "set":
-            set_path(toml, item["to"], item["value"])
-        else:
-            value = pop_path(toml, item["from"])
-            if item["action"] == "rename" and value is not None:
-                set_path(toml, item["to"], value)
-
-    moved_from_transport = any(
-        i["file"] == "toml" and str(i.get("from") or "").startswith("transport.") for i in plan
-    )
-    if moved_from_transport and toml.get("transport") == {}:
-        del toml["transport"]
-
-    env_plan = {i["from"]: i for i in plan if i["file"] == "env"}
-    if env_plan:
-        new_lines: list[str] = []
-        for line in env_lines:
-            stripped = line.strip()
-            body = stripped[len("export ") :] if stripped.startswith("export ") else stripped
-            name = (
-                body.split("=", 1)[0].strip()
-                if "=" in body and not stripped.startswith("#")
-                else ""
-            )
-            item_ = env_plan.get(name)
-            if item_ is None:
-                new_lines.append(line)
-            elif item_["action"] == "rename":
-                new_lines.append(line.replace(name, item_["to"], 1))
-        env_lines = new_lines
-    if env_plan:
-        secure_write(env_file, "\n".join(env_lines) + ("\n" if env_lines else ""))
-    secure_write(cfg, dumps_toml(toml))
-    reset_config()
-    return plan
-
-
-__all__ = [
-    "ENVD_PORT",
-    "TransportConfig",
-    "apply_migration",
-    "audit_config",
-    "audit_data",
-    "collect_sources",
-    "explain_config",
-    "http_timeout_configured",
-    "load_config",
-    "mask_secret",
-    "plan_migration",
-    "plan_migration_data",
-    "project_dotenv_value",
-    "provider_env_name",
-    "reset_config",
-    "resolve_all",
-    "select_provider_id",
-]

@@ -10,11 +10,8 @@ from agent_sandbox.models.errors import ProviderConfigError
 from agent_sandbox.providers import Provider, register_provider
 from agent_sandbox.transport.config import (
     TransportConfig,
-    apply_migration,
-    audit_config,
     explain_config,
     load_config,
-    plan_migration,
 )
 from tests.iso import iso  # noqa: F401
 
@@ -59,7 +56,6 @@ class TestCanonicalModel:
         ("ALICLOUD_ACCESS_KEY_ID", "access_key_id", "id"),
         ("ALICLOUD_ACCESS_KEY_SECRET", "access_key_secret", "sec"),
         ("ABX_HTTP_TIMEOUT", "http_timeout", 12.5),
-        ("ABX_MAX_RETRIES", "max_retries", 7),
         ("ABX_HTTP2", "http2", False),
     ],
 )
@@ -94,9 +90,9 @@ class TestPrecedence:
         iso.write_env("ABX_SANDBOX_API_KEY=canon-dotenv\n")
         assert load_config().sandbox_api_key == "from-env"
 
-    def test_override_beats_env_beats_dotenv_beats_toml(self, iso, monkeypatch):  # noqa: F811
+    def test_secret_precedence_ignores_plaintext_toml(self, iso, monkeypatch):  # noqa: F811
         iso.write_toml('[transport]\nsandbox_api_key = "toml"\n')
-        assert load_config().sandbox_api_key == "toml"
+        assert load_config().sandbox_api_key is None
         iso.write_env("ABX_SANDBOX_API_KEY=dotenv\n")
         assert load_config().sandbox_api_key == "dotenv"
         monkeypatch.setenv("ABX_SANDBOX_API_KEY", "env")
@@ -203,73 +199,3 @@ class TestExplain:
     def test_short_secrets_fully_masked(self, iso, monkeypatch):  # noqa: F811
         monkeypatch.setenv("ABX_SANDBOX_API_KEY", "short")
         assert explain_config()["sandbox_api_key"]["value"] == "****"
-
-
-class TestAudit:
-    def test_retired_names_are_not_reported(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("SANDBOX_API_KEY", "secret-value")
-        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "x")
-        iso.write_env("SANDBOX_REGION=cn-beijing\n")
-        iso.write_toml('[transport]\napi_url = "https://t"\n')
-        assert audit_config() == []
-        assert "secret-value" not in str(audit_config())
-
-    def test_empty_when_clean(self, iso, monkeypatch):  # noqa: F811
-        monkeypatch.setenv("ABX_SANDBOX_API_KEY", "x")
-        assert audit_config() == []
-
-
-class TestOptInWarning:
-    def test_default_is_silent(self, iso, monkeypatch, capsys):  # noqa: F811
-        import warnings
-
-        monkeypatch.setenv("SANDBOX_API_KEY", "x")
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            load_config()
-            TransportConfig(api_key="x")
-        out = capsys.readouterr()
-        assert out.out == "" and out.err == ""
-
-    def test_retired_constructor_names_do_not_warn(self, iso, monkeypatch):  # noqa: F811
-        import warnings
-
-        monkeypatch.setenv("ABX_WARN_DEPRECATED", "1")
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            TransportConfig(api_key="x")
-
-
-class TestMigration:
-    def _write(self, iso):  # noqa: F811
-        iso.write_toml(
-            '[transport]\napi_url = "https://t.example"\nregion = "cn-beijing"\nhttp_timeout = 9\n'
-        )
-        iso.write_env(
-            "# keep me\nE2B_API_KEY=abc\nSANDBOX_REGION=cn-shanghai\nSANDBOX_API_KEY=old\nOPENAI_API_KEY=k\n"
-        )
-
-    def test_plan_is_deterministic(self, iso):  # noqa: F811
-        self._write(iso)
-        assert plan_migration() == plan_migration()
-
-    def test_apply_leaves_retired_names_unread(self, iso):  # noqa: F811
-        self._write(iso)
-        before = load_config()
-        assert before.sandbox_api_key is None
-        assert before.sandbox_base_url == "https://api.cn-beijing.e2b.fc.aliyuncs.com"
-        assert before.region == "cn-beijing"
-        assert before.http_timeout == 9
-        plan = apply_migration()
-        after = load_config()
-        assert after.sandbox_api_key is None
-        assert after.http_timeout == 9
-        assert isinstance(plan, list)
-
-    def test_apply_twice_is_stable(self, iso):  # noqa: F811
-        self._write(iso)
-        apply_migration()
-        first = (iso.toml.read_text(), iso.env.read_text())
-        apply_migration()
-        assert (iso.toml.read_text(), iso.env.read_text()) == first
-        assert audit_config() == []
