@@ -13,13 +13,12 @@ SDK, exchange cloud credentials, derive backend URLs, or select a wire protocol.
 | Authentication, endpoints, wire mapping, backend errors/statuses, lifecycle and optional create inputs | Selected Provider |
 | Template authentication, build/register/poll/delete, Docker/registry specifics | Provider template implementation |
 | Template source search/download, project scaffolding and runtime validation | Host, using the selected provider's declared metadata and factories |
-| Express SDK, AK/SK signing/exchange, FC/ACR deployment, CLI options/prompts, AI management schemas | `providers/alicloud_express/` |
+| Express SDK, management-plane signing, FC/ACR deployment, CLI options/prompts, AI management schemas | `providers/alicloud_express/` |
 | Reusable E2B/envd wire adapters and token formatting | `providers/shared/e2b/`, explicitly selected by a provider |
 
 The distribution composition roots register bundled adapters, configuration descriptors,
 CLI extensions and AI extensions. The generated configuration catalog is declarative
-compatibility data. Historical `api`, `protocol` and `transport` imports remain export
-facades; they do not constitute a second implementation or a core fallback.
+configuration data. Retired `api`, `protocol` and `transport` forwarding imports are removed.
 The shared HTTP/Connect transport implements framing and connection reuse; providers
 choose its authentication and adapters. It never chooses a cloud backend.
 
@@ -33,8 +32,7 @@ removed. The external Node engine/EPP client remains a separate provider contrac
 
 `TransportConfig(provider="external")` and `load_config` leave undeclared endpoint and
 region defaults empty. Explicit endpoints remain intact. Failed create binding cleans
-up the newly created resource; failed connect preserves the borrowed one. Public import
-facades retain module identity for historical monkeypatch users. Missing optional
+up the newly created resource; failed connect preserves the borrowed one. Missing optional
 protocols fail E8004 without selecting Express.
 
 CLI template factories and AI/CLI discovery live in the CLI owner; no new Python
@@ -52,15 +50,12 @@ configuration values live in `utils/bundled_config.py`; transport consumes the
 The selected adapter implements synchronous port access and project-server gateway
 headers. An adapter exposing only asynchronous port discovery must be called through
 `await sandbox.network.resolve(port)`; synchronous helpers fail E8004 instead of
-guessing an Express/E2B address or sending a foreign token. Direct standalone network
-constructors keep their documented bundled compatibility behavior. File transfer URLs
+guessing an Express/E2B address or sending a foreign token. Standalone network
+constructors require an explicit port adapter. File transfer URLs
 are optional filesystem adapter hooks; missing hooks fail E8004 even if the session
 URL happens to use HTTP. The core never constructs `/files` routes for foreign providers.
 
 Neutral Python transport/protocol imports do not load built-in authentication or wire
-adapters. Public compatibility imports resolve lazily when explicitly requested.
+adapters. Consumers import implementations from their owning provider modules.
 
-Pure bundled configuration, image and legacy URL metadata remains provider-owned.
-Lower configuration reads its declarative data through distribution composition and
-compatibility exports; it does not import authentication or runtime adapters. Compatibility
-URL helpers delegate to declared templates or the composed owned builder.
+Provider configuration metadata remains declarative. Lower layers consume the shared schema and injected discovery; executable adapters stay in their owning provider modules. Retired forwarding imports and implicit URL builders are removed.

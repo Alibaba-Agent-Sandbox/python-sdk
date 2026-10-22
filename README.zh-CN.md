@@ -48,7 +48,7 @@ Node.js 项目，位于 [`agent-sandbox`](https://github.com/alibaba-agent-sandb
 - **MCP Server** —— 将沙箱操作暴露为 MCP 工具，供 LLM Agent 调用。
 - **声明式装饰器** —— `@sandbox` 将普通函数变为远程沙箱执行，自动序列化。
 - **会话持久化** —— 跨运行保存和恢复沙箱状态。
-- **E2B 风格方法名** —— `agent_sandbox.compat` 导出标准 Sandbox 与 AsyncSandbox，见[从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md)。
+- **标准同步与异步客户端** —— `agent_sandbox` 导出标准 Sandbox 与 AsyncSandbox，见[从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md)。
 
 ## Server SDK
 

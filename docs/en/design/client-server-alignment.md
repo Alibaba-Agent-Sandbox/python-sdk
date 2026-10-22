@@ -51,8 +51,6 @@ one-sided (section 4).
 | `GET /files/download-stream` | `files_download_stream` | `files.read/download` | `server.files.download(path)`, `.read_text`, `.download_file` | NEW |
 | `POST /files/archive` | `files_archive` | — | `server.files.archive(paths, format)` | NEW |
 | `GET /files/watch` | `files_watch` | `files.watch` (WatchDir) | `server.files.watch(path)` -> async iterator of `ServerWatchEvent` (a `WatchEvent` subclass with `is_dir`) | NEW server + client |
-| `POST /upload` (legacy) | `upload` | — | `server.files.upload_legacy(path, data)` | NEW (documented legacy) |
-| `GET /download` (legacy) | `download` | — | `server.files.download_legacy(path)` | NEW (documented legacy) |
 
 ### 2.3 Processes
 
@@ -64,7 +62,7 @@ one-sided (section 4).
 | `GET /process/list` | `process_list` | `commands.list` | `server.process.list()` | NEW |
 | `GET /process/{pid}` | `process_detail` | `commands.connect` (status part) | `server.process.get(pid)` | NEW |
 | `POST /process/{pid}/signal` | `process_signal` | `commands.send_signal/kill` | `server.process.signal(pid, sig)`, `.kill(pid)` | NEW |
-| `POST /process/{pid}/stdin` | `process_stdin` | `commands.send_stdin` | `server.process.send_stdin(pid, data)` | NEW server + client |
+| `POST /process/{pid}/stdin` | `process_stdin` | `commands.send_input` | `server.process.send_stdin(pid, data)` | NEW server + client |
 | `GET /process/{pid}/output` | `process_output` | `commands.connect` (output part) | `server.process.output(pid, since, wait)` | NEW server + client |
 
 ### 2.4 Terminal
@@ -117,7 +115,7 @@ one-sided (section 4).
 | `commands.start` (background) | `process_start` | covered; added `env`, `capture_output`, `stdin` |
 | `commands.list` | `process_list` | covered |
 | `commands.connect(pid)` | **missing output attach** | **added** `process_output` (+ `?wait`) |
-| `commands.send_stdin` | **missing** | **added** `process_stdin` |
+| `commands.send_input` | **missing** | **added** `process_stdin` |
 | `commands.send_signal/kill` | `process_signal` | covered |
 | `ProcessProtocol.update` (pty resize via process) | `pty_resize` | **added** (PTY only) |
 | `get_terminal` (envd WS `/terminal`) | PTY WS on 9001 with REST session create | client `server.pty` implements the server protocol; envd path unchanged |

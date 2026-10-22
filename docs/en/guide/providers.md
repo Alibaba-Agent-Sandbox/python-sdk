@@ -156,13 +156,12 @@ A provider declares the features it implements. Calling something it lacks raise
 | `pty` | interactive terminal |
 | `files.rw`, `files.watch`, `files.transfer` | read, write, list, move, remove; watching; signed upload and download URLs |
 | `code.interpret` | stateful code contexts |
-| `templates.read`, `templates.build` | list and inspect templates; legacy image build, deploy and delete |
-| `templates.deploy` | opt-in deployment from an existing image through a provider template factory |
+| `templates.read`, `templates.build` | list and inspect templates; provider-owned image build, deploy and delete |
 | `ports.url`, `ports.domain` | public URL for a port; custom domains |
 | `storage.mount`, `network.vpc` | object-storage mounts; VPC attachment |
 | `sessions` | the sandbox survives the process and can be re-attached by id |
 
-`templates.deploy` is an independent manifest declaration; `templates.build` does not imply it. The built-in `alicloud-express` retains its existing 18 declarations and does not declare `templates.deploy`. This SDK accepts the metadata but adds no Python template deployment method; the CLI owns factory dispatch. `abx provider list` shows the declared features of every provider on one line (`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`; `python -m agent_sandbox.providers list` prints the same), and `abx provider info <id>` shows the full list.
+`abx provider list` shows the declared features of every provider on one line (`sandbox(lifecycle,pause) exec(run,stream) files(rw) ...`; `python -m agent_sandbox.providers list` prints the same), and `abx provider info <id>` shows the full list.
 
 The manifest flag is enforced at run time, for every provider kind:
 

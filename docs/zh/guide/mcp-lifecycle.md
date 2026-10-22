@@ -74,7 +74,7 @@ metadata、任意 lifecycle 对象或端点 URL。列表结果的 `sandboxes` �
 外部 ID 使用 `Sandbox.get_info_by_id` / `Sandbox.set_timeout_by_id`，没有新增或虚构平台端点。
 同步接口为 `get_info_by_id_sync` / `set_timeout_by_id_sync`。新类方法与 `Sandbox.kill_by_id`
 接受相同凭据、region 和 provider 覆盖参数，并支持 `provider:id` 限定 ID。
-为兼容生命周期调用接受 `sandbox_domain`，但明确不使用：这些方法仅按控制面 API URL 路由，不创建 envd 客户端。Python STDIO 与 Streamable HTTP 共用 schema 和 handler。Node.js CLI
+这些生命周期方法仅按控制面 API URL 路由，不创建 envd 客户端，不接受 `sandbox_domain`。Python STDIO 与 Streamable HTTP 共用 schema 和 handler。Node.js CLI
 有独立 MCP 实现，是否支持这些工具需要单独核对。
 
 单元测试位于 `client-sdk/tests/test_agent/test_mcp_lifecycle.py`，覆盖输入边界、SDK 委托、

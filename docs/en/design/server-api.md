@@ -299,39 +299,9 @@ curl -X POST http://localhost:9000/commands/hello \
 
 ---
 
-### 4.3 FILE_OPS (12)
+### 4.3 FILE_OPS
 
-Includes 2 "legacy" upload/download endpoints (`/upload`, `/download`, registered in
-[`routes.py`](../../../server-sdk/src/agent_sandbox/server/routes.py#L454-L461)) and 9 extended file operation endpoints (registered in
-[`routes_files.py`](../../../server-sdk/src/agent_sandbox/server/routes_files.py#L528-L565)). All paths go through
-the path guard (see §8.1).
-
-#### `POST /upload`
-
-Writes base64-encoded content to a local file.
-
-Request body:
-
-```json
-{"path": "/home/user/file.txt", "content_base64": "<base64>"}
-```
-
-Response: `{"path": "<resolved_absolute_path>", "bytes": <byte_count>}`.
-
-Errors: missing/invalid `path` or `content_base64` → `400`; invalid base64 → `400`; write failure → `500`;
-a path outside the allowed directories → `403 {"code": "path_not_allowed", ...}`.
-
-#### `GET /download?path=...`
-
-Reads a file and returns base64 content.
-
-Response:
-
-```json
-{"path": "/home/user/file.txt", "content_base64": "<base64>"}
-```
-
-Errors: missing `path` → `400`; file not found → `404 {"type": "FileNotFoundError"}`; read failure → `500`.
+File operations are registered in [routes_files.py](../../../server-sdk/src/agent_sandbox/server/routes_files.py). Upload and download use `/files/upload-stream` and `/files/download-stream`. All paths pass through the path guard (see §8.1).
 
 #### `GET /files/list?path=...`
 
@@ -1072,7 +1042,7 @@ Identities hold scopes (`files:read`, `files:write`, `files:delete`, `process:ru
 `process:manage`, `terminal:use`, `system:read`, `system:write`, `devtools:run`, `browser:use`,
 `commands:run`, `commands:run:<name>`, `core:read` (implicit), `*`). Each endpoint requires a
 documented scope (`files_move` requires `files:write` **and** `files:delete`); a rule's `scopes`
-overrides it. Legacy `ABX_SERVER_TOKEN` maps to the identity `legacy` with scope `*`.
+overrides it. If no explicit token list is configured, `ABX_SERVER_TOKEN` supplies a current policy token with identity `server` and scope `*`.
 
 ### 10.3 Error codes
 

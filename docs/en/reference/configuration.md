@@ -138,7 +138,6 @@ provider = "alicloud-express"   # default provider (abx provider default NAME)
 sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
 sandbox_domain = "cn-hangzhou.e2b.fc.aliyuncs.com"
 http_timeout = 30.0
-# Legacy retry values do not enable builtin HTTP retries.
 
 [providers.alicloud-express]
 region = "cn-hangzhou"
@@ -259,17 +258,6 @@ The `abx config set sandbox_api_key <KEY>` command saves the API Key to `~/.abx/
 
 Reading and writing this configuration from the command line is a CLI feature: `abx config list|get|set|init`, the keys accepted by `abx config get|set`, and the `ABX_ACTIVITY_LINES` display variable. They are documented in the CLI repository: [CLI Configuration](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/configuration.md); provider-aware keys are in its [Providers and credentials CLI spec](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/design/providers-and-credentials-cli.md).
 
-### Legacy retry compatibility
+### Transport attempts
 
-`max_retries` (default3) and `retry_base_delay` (default1.0), including their
-existing environment/TOML names, remain accepted for configuration and extension
-compatibility. The builtin platform/envd HTTP transport does not use either
-value and performs one transport attempt. Setting them does not enable automatic
-retry or backoff. EPP connections still forward `max_retries`; a plugin's policy
-belongs to that plugin and is not a builtin transport guarantee.
-
-Provider-engine rediscovery/read recovery and explicit custom authentication
-refresh are separate mechanisms, not controlled by these settings. Applications
-that need retries must use a bounded policy for safe reads; reconcile an unknown
-write outcome before issuing the mutation again. No automatic retry feature is
-introduced by retaining the legacy configuration names.
+Builtin platform/envd HTTP performs one transport attempt. Provider-engine read recovery is separate. Applications that retry safe reads must bound attempts; reconcile an unknown write outcome before repeating a mutation.

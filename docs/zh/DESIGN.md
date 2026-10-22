@@ -14,7 +14,7 @@
 
 ### 核心设计原则
 
-1. **固定标准行为与显式 Provider 扩展** — 根目录 `Sandbox` 是同步客户端，`AsyncSandbox` 是异步客户端；标准与解释器客户端通过本项目维护的 MIT 源码移植遵循阿里云支持的 E2B 基线。`agent_sandbox.compat` 重新导出标准客户端。Provider／Server／声明式扩展使用 `ProviderSandbox`；`ABX_PROVIDER` 不切换标准客户端协议。
+1. **固定标准行为与显式 Provider 扩展** — 根目录 `Sandbox` 是同步客户端，`AsyncSandbox` 是异步客户端；标准与解释器客户端通过本项目维护的 MIT 源码移植遵循阿里云支持的 E2B 基线。Provider／Server／声明式扩展使用 `ProviderSandbox`；`ABX_PROVIDER` 不切换标准客户端协议。
 2. **AI-First** — MCP Server 是一等公民，编码 Agent 通过 Agents API 托管
 3. **明确连接配置** — 沿用既有阿里云 API Key、API URL 和沙箱域名；依赖后端条件的能力仍需实际启用。
 
@@ -128,7 +128,6 @@ graph TB
 | MCP Server（Streamable HTTP） | **已实现** | `mcp_http.py` |
 | FC 部署产物应用 | **已实现** | `agent_sandbox.agent.mcp_http:asgi_app`；产物由 CLI 的 `abx mcp deploy` 生成。见 [mcp-server.md](design/mcp-server.md#7-fc-部署) |
 | 模板 build/push/deploy | **在 CLI 中** | `abx template build` 与 `abx template deploy`；SDK 不构建模板 |
-| E2B 迁移辅助 | **已实现（部分）** | `agent_sandbox.compat` |
 | 每个配置键一个环境变量（SDK） | **已实现** | 见[配置参考](reference/configuration.md)；CLI 规格见 `cli/docs/zh/design/providers-and-credentials-cli.md` |
 | 提供方插件（SDK，`python -m agent_sandbox.providers`） | **已实现** | 见[提供方](guide/providers.md)。CLI 加载已安装的 `node`、`exec` 和 `rest` 插件（`abx provider`、`abx --provider`） |
 | 持久沙箱 | **远期** | 需底层平台支持 |

@@ -46,8 +46,6 @@
 | `GET /files/download-stream` | `files_download_stream` | `files.read/download` | `server.files.download(path)`、`.read_text`、`.download_file` | NEW |
 | `POST /files/archive` | `files_archive` | — | `server.files.archive(paths, format)` | NEW |
 | `GET /files/watch` | `files_watch` | `files.watch`（WatchDir） | `server.files.watch(path)` -> `ServerWatchEvent` 异步迭代器（`WatchEvent` 子类，带 `is_dir`） | NEW 服务端 + 客户端 |
-| `POST /upload`（旧版） | `upload` | — | `server.files.upload_legacy(path, data)` | NEW（文档化的旧版） |
-| `GET /download`（旧版） | `download` | — | `server.files.download_legacy(path)` | NEW（文档化的旧版） |
 
 ### 2.3 进程
 
@@ -59,7 +57,7 @@
 | `GET /process/list` | `process_list` | `commands.list` | `server.process.list()` | NEW |
 | `GET /process/{pid}` | `process_detail` | `commands.connect`（状态部分） | `server.process.get(pid)` | NEW |
 | `POST /process/{pid}/signal` | `process_signal` | `commands.send_signal/kill` | `server.process.signal(pid, sig)`、`.kill(pid)` | NEW |
-| `POST /process/{pid}/stdin` | `process_stdin` | `commands.send_stdin` | `server.process.send_stdin(pid, data)` | NEW 服务端 + 客户端 |
+| `POST /process/{pid}/stdin` | `process_stdin` | `commands.send_input` | `server.process.send_stdin(pid, data)` | NEW 服务端 + 客户端 |
 | `GET /process/{pid}/output` | `process_output` | `commands.connect`（输出部分） | `server.process.output(pid, since, wait)` | NEW 服务端 + 客户端 |
 
 ### 2.4 终端
@@ -112,7 +110,7 @@
 | `commands.start`（后台） | `process_start` | 已覆盖；新增 `env`、`capture_output`、`stdin` |
 | `commands.list` | `process_list` | 已覆盖 |
 | `commands.connect(pid)` | **缺失输出附着** | **新增** `process_output`（+ `?wait`） |
-| `commands.send_stdin` | **缺失** | **新增** `process_stdin` |
+| `commands.send_input` | **缺失** | **新增** `process_stdin` |
 | `commands.send_signal/kill` | `process_signal` | 已覆盖 |
 | `ProcessProtocol.update`（经进程的 pty 缩放） | `pty_resize` | **新增**（仅 PTY） |
 | `get_terminal`（envd WS `/terminal`） | 9001 上的 PTY WS + REST 会话创建 | 客户端 `server.pty` 实现服务端协议；envd 路径不变 |

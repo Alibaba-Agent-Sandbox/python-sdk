@@ -30,9 +30,9 @@ async def create(
     disk: int | None = None,
     gpu: str | None = None,
     secure: bool = True,
-    api_key: str | None = None,
-    api_url: str | None = None,
-    domain: str | None = None,
+    sandbox_api_key: str | None = None,
+    sandbox_base_url: str | None = None,
+    sandbox_domain: str | None = None,
     access_key_id: str | None = None,
     access_key_secret: str | None = None,
 ) -> Sandbox
@@ -53,9 +53,9 @@ async def create(
 | `disk` | `int` | `None` | 磁盘 MB |
 | `gpu` | `str` | `None` | GPU 规格（如 `"A10"`） |
 | `secure` | `bool` | `True` | 安全模式（端口访问需 token） |
-| `api_key` | `str` | `None` | API Key 覆盖 |
-| `api_url` | `str` | `None` | 平台 API URL 覆盖 |
-| `domain` | `str` | `None` | 域名覆盖 |
+| `sandbox_api_key` | `str` | `None` | API Key 覆盖 |
+| `sandbox_base_url` | `str` | `None` | 平台 API URL 覆盖 |
+| `sandbox_domain` | `str` | `None` | 域名覆盖 |
 | `access_key_id` | `str` | `None` | 阿里云 AK |
 | `access_key_secret` | `str` | `None` | 阿里云 SK |
 
@@ -71,9 +71,9 @@ async def connect(
     cls,
     sandbox_id: str,
     *,
-    api_key: str | None = None,
-    api_url: str | None = None,
-    domain: str | None = None,
+    sandbox_api_key: str | None = None,
+    sandbox_base_url: str | None = None,
+    sandbox_domain: str | None = None,
     access_key_id: str | None = None,
     access_key_secret: str | None = None,
 ) -> Sandbox
@@ -95,8 +95,8 @@ async def list(
     status: SandboxStatus | None = None,
     limit: int = 100,
     offset: int = 0,
-    api_key: str | None = None,
-    api_url: str | None = None,
+    sandbox_api_key: str | None = None,
+    sandbox_base_url: str | None = None,
     access_key_id: str | None = None,
     access_key_secret: str | None = None,
 ) -> list[SandboxInfo]
@@ -116,8 +116,8 @@ async def kill_by_id(
     cls,
     sandbox_id: str,
     *,
-    api_key: str | None = None,
-    api_url: str | None = None,
+    sandbox_api_key: str | None = None,
+    sandbox_base_url: str | None = None,
     access_key_id: str | None = None,
     access_key_secret: str | None = None,
 ) -> None
@@ -261,7 +261,6 @@ sandbox.commands  # CommandsModule 实例
 | `list()` | `async def list() -> list[ProcessInfo]` | 列出运行中的进程 |
 | `kill()` | `async def kill(pid: int) -> None` | 终止进程 |
 | `send_input()` | `async def send_input(pid: int, data: str) -> None` | 向进程 stdin 发送数据 |
-| `send_stdin()` | `async def send_stdin(pid: int, data: str) -> None` | （已弃用）同 `send_input()` |
 | `send_signal()` | `async def send_signal(pid: int, signal: int = 15) -> None` | 向进程发送 SIGTERM（15）或 SIGKILL（9）；其他信号值抛出 `ValueError`（envd 仅支持这两种） |
 
 逻辑上关联 `shell` 能力（在 `template.yaml` 中声明；无运行时门控——请求会直接转发到沙箱）。每个异步方法都有 `_sync` 后缀的同步版本（如 `run_sync()`）。
@@ -287,7 +286,6 @@ sandbox.files  # FilesModule 实例
 | `download()` | `async def download(remote_path, local_path) -> None` | 下载沙箱文件到本地 |
 | `watch()` | `async def watch(path) -> StreamReader[WatchEvent]` | 监听目录变更 |
 | `move()` | `async def move(source, destination) -> None` | 移动/重命名 |
-| `rename()` | `async def rename(old_path, new_path) -> None` | （已弃用）同 `move()` |
 | `get_info()` | `async def get_info(path) -> FileInfo` | 获取文件信息 |
 | `upload_url()` | `async def upload_url(path) -> str` | envd `/files` 地址。请求必须带 `X-Access-Token`，不是签名 URL |
 | `download_url()` | `async def download_url(path) -> str` | 同上 |

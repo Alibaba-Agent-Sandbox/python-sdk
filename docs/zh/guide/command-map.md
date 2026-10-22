@@ -14,7 +14,7 @@
 | E2B | `e2b`（`@e2b/cli`，文档版本 2.16.1） | `e2b`，`from e2b import Sandbox` |
 | OpenSandbox | `osb`（`opensandbox-cli`，[CLI 文档](https://open-sandbox.ai/cli/)） | `opensandbox`，`from opensandbox import Sandbox`（[Python SDK](https://open-sandbox.ai/sdks/python)） |
 
-E2B 形状的少量方法也可以从 `agent_sandbox.compat` 导入。差异和迁移步骤在[从 E2B 迁移](migrate-from-e2b.md)。OpenSandbox 的 HTTP 字段对照在设计稿 [provider-opensandbox-mapping](../../en/design/provider-opensandbox-mapping.md)。
+标准同步与异步客户端由 `agent_sandbox` 导出。差异和迁移步骤在[从 E2B 迁移](migrate-from-e2b.md)。OpenSandbox 的 HTTP 字段对照在设计稿 [provider-opensandbox-mapping](../../en/design/provider-opensandbox-mapping.md)。
 
 单元格里的「—」表示这一侧没有对应的公开命令或方法。
 
