@@ -369,7 +369,7 @@ abx create yourname/my-template@v1.0.0
 
 `template.yaml` 是模板的标准化声明文件，定义了模板的元信息、基础环境、构建步骤、资源默认值、沙箱行为和 Agent 集成等完整规范。每个模板仓库的根目录都应包含此文件。
 
-> **命名约定**：规范文件名为 `template.yaml`。为向后兼容，也接受 `sandbox.yaml` 作为简写别名。
+> **命名约定**：模板元数据只使用 `template.yaml`。独立的声明式客户端配置可以使用 `sandbox.yaml`，它不是模板元数据的别名。
 
 ### 完整字段定义
 

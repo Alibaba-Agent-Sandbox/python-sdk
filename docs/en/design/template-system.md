@@ -369,7 +369,7 @@ abx create yourname/my-template@v1.0.0
 
 `template.yaml` is the standardized declaration file for templates, defining the template's metadata, base environment, build steps, resource defaults, sandbox behavior, and Agent integration — the complete specification. Every template repository root should include this file.
 
-> **Naming convention**: The canonical file name is `template.yaml`. For backward compatibility, `sandbox.yaml` is also accepted as a shorthand alias.
+> **Naming convention**: Template metadata uses `template.yaml`. The separate declarative client configuration may use `sandbox.yaml`; it is not a template metadata alias.
 
 ### Complete Field Definitions
 

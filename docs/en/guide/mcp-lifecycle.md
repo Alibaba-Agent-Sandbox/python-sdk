@@ -88,8 +88,7 @@ and `set_timeout`; external IDs use direct `Sandbox.get_info_by_id` and
 `get_info_by_id_sync` / `set_timeout_by_id_sync` variants are available as well.
 The new static methods accept the same credential, region and provider overrides
 as `Sandbox.kill_by_id`; qualified `provider:id` references select the provider.
-`sandbox_domain` is accepted for lifecycle-call compatibility and intentionally
-unused: these methods only use the control-plane API URL, without an envd client. Schemas and handlers are shared by the
+These lifecycle methods use the control-plane API URL without an envd client; they do not accept `sandbox_domain`. Schemas and handlers are shared by the
 Python STDIO and Streamable HTTP servers. The Node.js CLI has its own MCP implementation;
 availability there must be checked separately.
 

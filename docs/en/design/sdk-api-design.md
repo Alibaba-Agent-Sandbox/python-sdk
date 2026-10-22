@@ -27,7 +27,7 @@
 - **One way to run an agent.** The Agents API (`/v1/agents/**`) on the SandboxServer. The SDK has no `sb.agent.*` helpers.
 - **Typed, explicit surface.** No `__getattr__` dispatch; every method has a signature that mypy checks (`py.typed`).
 - **Async first, sync twin.** Every coroutine has a `_sync` twin that manages an event loop for you.
-- **Explicit standard and extension contracts.** This page describes the native ProviderSandbox protocol, configuration and error model. `agent_sandbox.compat` re-exports standard `Sandbox` / `AsyncSandbox`; those clients and `code_interpreter` follow the pinned Alibaba-supported E2B contract. See [Migrate from E2B](../guide/migrate-from-e2b.md).
+- **Explicit standard and extension contracts.** This page describes the native ProviderSandbox protocol, configuration and error model. `agent_sandbox` exports standard `Sandbox` / `AsyncSandbox`; those clients and `code_interpreter` follow the pinned Alibaba-supported E2B contract. See [Migrate from E2B](../guide/migrate-from-e2b.md).
 
 ---
 

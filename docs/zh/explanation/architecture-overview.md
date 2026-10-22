@@ -120,11 +120,9 @@ graph TB
     Decl["declarative/ — 声明式远程执行"]
     AgentMod["agent/ — AI Agent 集成"]
     Sess["session/ — 会话管理"]
-    Compat["compat/ — E2B 迁移辅助"]
 
     AgentMod --> API
     Decl --> API
-    Compat --> API
     Sess --> API
     API --> Protocol --> Transport --> Models
 ```
@@ -138,7 +136,6 @@ graph TB
 - **declarative/**: decorator.py, serializer.py, config.py
 - **agent/**: mcp.py, tools.py
 - **session/**: local.py, base.py
-- **compat/**: sandbox.py
 
 ---
 

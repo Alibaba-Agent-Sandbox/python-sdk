@@ -120,11 +120,9 @@ graph TB
     Decl["declarative/ — Declarative Remote Execution"]
     AgentMod["agent/ — AI Agent Integration"]
     Sess["session/ — Session Management"]
-    Compat["compat/ — E2B migration helper"]
 
     AgentMod --> API
     Decl --> API
-    Compat --> API
     Sess --> API
     API --> Protocol --> Transport --> Models
 ```
@@ -138,7 +136,6 @@ Files contained in each module:
 - **declarative/**: decorator.py, serializer.py, config.py
 - **agent/**: mcp.py, tools.py
 - **session/**: local.py, base.py
-- **compat/**: sandbox.py
 
 ---
 

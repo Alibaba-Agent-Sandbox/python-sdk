@@ -12,8 +12,8 @@
 ## 1. Problem
 
 The server exposes endpoints through **coarse capability groups** (`FILE_OPS`, `PROCESS`, ...).
-Turning on `FILE_OPS` exposes eleven endpoints (list, stat, mkdir, delete, move, search,
-upload, download, archive, legacy upload/download), all confined only by one process-wide
+Turning on `FILE_OPS` exposes file operations (list, stat, mkdir, delete, move, search,
+upload, download, archive), all confined only by one process-wide
 `ABX_SERVER_BASE_DIR`. Product needs finer control:
 
 * expose **only** the upload and download endpoints;
@@ -65,8 +65,8 @@ Each endpoint requires a set of **scopes** (all-of). Defaults come from a built-
 |-------|---------------------|
 | `core:read` | `capabilities`, `capabilities_check` (implicit for every authenticated identity) |
 | `commands:list` / `commands:run` | `list_commands` / `run_command` (+ per-command scopes, 3.8) |
-| `files:read` | `download`, `files_list`, `files_stat`, `files_search`, `files_download_stream`, `files_archive`, `files_watch` |
-| `files:write` | `upload`, `files_mkdir`, `files_upload_stream` |
+| `files:read` | `files_list`, `files_stat`, `files_search`, `files_download_stream`, `files_archive`, `files_watch` |
+| `files:write` | `files_mkdir`, `files_upload_stream` |
 | `files:write` + `files:delete` | `files_move` |
 | `files:delete` | `files_delete` |
 | `process:run` | `shell`, `shell_stream`, `process_start` |
@@ -82,11 +82,9 @@ Scope syntax: `namespace:action`; `*` grants everything; `namespace:*` grants a 
 
 ### 3.3 Identities and tokens
 
-Today: one optional `ABX_SERVER_TOKEN` compared against `X-Access-Token`.
+The policy engine authenticates HTTP and PTY requests. Without configured tokens, the anonymous identity uses the configured anonymous scopes (default `*`). If no explicit token list is configured, `ABX_SERVER_TOKEN` supplies a token with identity `server` and scope `*`.
 
-* **Unchanged default.** No token -> anonymous identity with scope `*` (local mode). One
-  `ABX_SERVER_TOKEN` -> identity `legacy` with scope `*` (override via `auth.legacy_scopes`).
-* **New:** `auth.tokens` — a list of `{id, scopes, token_env | token_sha256}`. Plain tokens
+* `auth.tokens` — a list of `{id, scopes, token_env | token_sha256}`. Plain tokens
   are never accepted inline in files (a secret in a baked image file is a leak). `token_env`
   names an environment variable read at start; `token_sha256` is the hex digest of the token.
 * When `auth.tokens` is present, anonymous access is disabled (`auth.allow_anonymous: true`
@@ -342,7 +340,7 @@ also `AuthenticationError`), `PolicyDeniedError` (E9002; `FilePolicyDeniedError`
 | Behaviour | Value |
 |-----------|-------|
 | Default groups | all but `dev_tools`, `browser`, `agents` (opt-in) |
-| `ABX_SERVER_TOKEN` / `X-Access-Token` or `Authorization: Bearer` | all-or-nothing; identity `legacy`, scope `*` (`anonymous` when no token is set) |
+| `ABX_SERVER_TOKEN` / `X-Access-Token` or `Authorization: Bearer` | current policy token; identity `server`, scope `*` (`anonymous` when no token is set) |
 | Path boundary | `ABX_SERVER_BASE_DIR` (default `/home/user`) for every path-taking endpoint including shell `cwd`; violations are `403 path_not_allowed` |
 | `GET /capabilities` | per-endpoint state, `rule`, derived `groups` and `group_summary` |
 | Error bodies | `{error, type}` plus `code`, `endpoint`, `rule` where they apply |
@@ -380,16 +378,14 @@ Full findings: [fine-grained-capabilities-review.md](../archive/fine-grained-cap
   did-you-mean hint and the JSON path.
 * **HTTP hardening in all modes** (bug fixes): strict `Content-Length` (non-numeric/negative/
   duplicate -> 400), zip archives never follow symlinks that leave the boundary.
-* **Policy-mode only hardening**: duplicate query parameters and `Transfer-Encoding` rejected; boundary/deny check
+* **Policy hardening**: duplicate query parameters and `Transfer-Encoding` rejected; boundary/deny check
   before any `stat` (no existence oracle); relative paths resolve against the first allow
   root; ambiguous credential headers rejected; `Authorization: Bearer` is consulted first.
 * **Secrets**: in identities mode `GET /env` redacts the server's own secrets (`ABX_SERVER_*` and
   every `token_env` name); `env_set` refuses them and the `ABX_` prefix; child processes get an
-  environment scrubbed of the same names only. Arbitrary user variables are never touched (legacy
-  `GET /env` still returns the full environment; use `endpoints.env_get` / `groups.system` to
-  restrict it).
+  environment scrubbed of the same names only. Arbitrary user variables are never touched.
 * **PTY WebSocket** is covered by the policy (`pty_connect`, scope `terminal:use`, header
-  auth); the legacy `?token=` still works.
+  auth); a `?token=` credential is checked by the same policy engine.
 * **Custom routes** may declare `scopes=` and receive `request.context["policy"]`.
 * **Residual risks** (documented, not closable in stdlib Python): intermediate-component symlink
   swap between check and open, hardlinks created through process endpoints, and per-IP

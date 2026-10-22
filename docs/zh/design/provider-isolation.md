@@ -16,7 +16,7 @@
 | 可复用的 E2B/envd 协议及 token 头格式 | `providers/shared/e2b/`，由 Provider 显式选用 |
 
 发行包的组装入口注册内置适配器、配置描述、CLI 扩展和 AI 扩展。生成的配置目录属于
-声明式兼容数据。历史 `api`、`protocol`、`transport` 路径保留导出兼容层，不保留第二份
+声明式配置数据。历史 `api`、`protocol`、`transport` 转发路径已删除，不保留第二份
 实现或核心兜底。共享 HTTP/Connect 传输处理帧和连接复用；认证和协议由 Provider 选择，
 传输层不选择云后端。
 
@@ -30,7 +30,7 @@ Provider 契约。
 
 `TransportConfig(provider="external")` 和 `load_config` 均不补上未声明的域名或
 region，显式端点保持有效。创建绑定失败回收本次新建资源；连接失败保留借用资源。
-公开兼容导出保留历史 monkeypatch 的模块身份。缺失可选协议返回 E8004，不回退极速版。
+缺失可选协议返回 E8004，不回退极速版。
 
 CLI 模板工厂及 CLI/AI 发现归属 CLI 仓库，本次不新增 Python 镜像部署 API，详见
 [CLI 边界契约](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/zh/design/provider-isolation.md)。
@@ -47,13 +47,9 @@ CLI 模板工厂及 CLI/AI 发现归属 CLI 仓库，本次不新增 Python 镜�
 
 同步端口访问和项目服务的网关鉴权头由所选适配器实现。只有异步端口发现能力的
 Provider 应调用 `await sandbox.network.resolve(port)`；同步辅助方法返回 E8004，
-不会猜测极速版或 E2B 地址，也不会发送其他后端的令牌。独立构造网络模块时仍保留
-已文档化的内置兼容行为。文件传输 URL 是文件系统适配器的可选钩子；即便会话地址
+不会猜测极速版或 E2B 地址，也不会发送其他后端的令牌。独立构造网络模块时必须显式传入端口适配器。文件传输 URL 是文件系统适配器的可选钩子；即便会话地址
 使用 HTTP，缺少钩子也返回 E8004。核心不会为其他 Provider 构造 `/files` 路由。
 
-Python 中立传输和协议模块的导入不会加载内置认证或具体协议；显式请求历史兼容
-导入时再延迟解析。
+Python 中立传输和协议模块的导入不会加载内置认证或具体协议；调用方从所属 Provider 模块导入实现。
 
-内置配置、镜像和历史 URL 规则的纯元数据仍由 Provider 维护。底层配置通过发行版
-组合与兼容导出读取声明数据，不导入认证或运行时适配器。兼容 URL 方法委托给声明的
-模板或已组合的 Provider 构造函数。
+Provider 配置元数据保持声明式。底层消费共享 schema 与注入的发现函数，可执行适配器保留在所属 Provider 模块中。旧转发导入与隐式 URL 构造器已删除。

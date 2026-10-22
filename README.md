@@ -50,7 +50,7 @@ Provider management operations are available through `agent_sandbox.providers.co
 - **MCP server** — expose sandbox operations as MCP tools for LLM agents.
 - **Declarative decorator** — `@sandbox` turns a plain function into a remote sandbox execution with automatic serialisation.
 - **Session persistence** — save and restore sandbox state across runs.
-- **E2B-shaped methods** — `agent_sandbox.compat` re-exports the standard Sandbox and AsyncSandbox; see [Migrate from E2B](docs/en/guide/migrate-from-e2b.md).
+- **Standard sync/async clients** — `agent_sandbox` exports the standard Sandbox and AsyncSandbox; see [Migrate from E2B](docs/en/guide/migrate-from-e2b.md).
 
 ## Server SDK
 

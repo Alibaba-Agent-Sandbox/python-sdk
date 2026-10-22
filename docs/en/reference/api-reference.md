@@ -30,9 +30,9 @@ async def create(
     disk: int | None = None,
     gpu: str | None = None,
     secure: bool = True,
-    api_key: str | None = None,
-    api_url: str | None = None,
-    domain: str | None = None,
+    sandbox_api_key: str | None = None,
+    sandbox_base_url: str | None = None,
+    sandbox_domain: str | None = None,
     access_key_id: str | None = None,
     access_key_secret: str | None = None,
 ) -> Sandbox
@@ -53,9 +53,9 @@ Create a new sandbox.
 | `disk` | `int` | `None` | Disk in MB |
 | `gpu` | `str` | `None` | GPU specification (e.g., `"A10"`) |
 | `secure` | `bool` | `True` | Secure mode (port access requires token) |
-| `api_key` | `str` | `None` | API Key override |
-| `api_url` | `str` | `None` | Platform API URL override |
-| `domain` | `str` | `None` | Domain override |
+| `sandbox_api_key` | `str` | `None` | API Key override |
+| `sandbox_base_url` | `str` | `None` | Platform API URL override |
+| `sandbox_domain` | `str` | `None` | Domain override |
 | `access_key_id` | `str` | `None` | Alibaba Cloud AK |
 | `access_key_secret` | `str` | `None` | Alibaba Cloud SK |
 
@@ -71,9 +71,9 @@ async def connect(
     cls,
     sandbox_id: str,
     *,
-    api_key: str | None = None,
-    api_url: str | None = None,
-    domain: str | None = None,
+    sandbox_api_key: str | None = None,
+    sandbox_base_url: str | None = None,
+    sandbox_domain: str | None = None,
     access_key_id: str | None = None,
     access_key_secret: str | None = None,
 ) -> Sandbox
@@ -95,8 +95,8 @@ async def list(
     status: SandboxStatus | None = None,
     limit: int = 100,
     offset: int = 0,
-    api_key: str | None = None,
-    api_url: str | None = None,
+    sandbox_api_key: str | None = None,
+    sandbox_base_url: str | None = None,
     access_key_id: str | None = None,
     access_key_secret: str | None = None,
 ) -> list[SandboxInfo]
@@ -116,8 +116,8 @@ async def kill_by_id(
     cls,
     sandbox_id: str,
     *,
-    api_key: str | None = None,
-    api_url: str | None = None,
+    sandbox_api_key: str | None = None,
+    sandbox_base_url: str | None = None,
     access_key_id: str | None = None,
     access_key_secret: str | None = None,
 ) -> None
@@ -261,7 +261,6 @@ sandbox.commands  # CommandsModule instance
 | `list()` | `async def list() -> list[ProcessInfo]` | List running processes |
 | `kill()` | `async def kill(pid: int) -> None` | Terminate a process |
 | `send_input()` | `async def send_input(pid: int, data: str) -> None` | Send data to process stdin |
-| `send_stdin()` | `async def send_stdin(pid: int, data: str) -> None` | (Deprecated) Same as `send_input()` |
 | `send_signal()` | `async def send_signal(pid: int, signal: int = 15) -> None` | Send SIGTERM (15) or SIGKILL (9) to a process; any other number raises `ValueError` (envd only delivers these two) |
 
 Logically associated with the `shell` capability (declared in `template.yaml`; no runtime gate — requests are forwarded to the sandbox regardless). Each async method has a `_sync` suffixed sync version (e.g., `run_sync()`).
@@ -287,7 +286,6 @@ sandbox.files  # FilesModule instance
 | `download()` | `async def download(remote_path, local_path) -> None` | Download a sandbox file to local |
 | `watch()` | `async def watch(path) -> StreamReader[WatchEvent]` | Watch for directory changes |
 | `move()` | `async def move(source, destination) -> None` | Move/rename |
-| `rename()` | `async def rename(old_path, new_path) -> None` | (Deprecated) Same as `move()` |
 | `get_info()` | `async def get_info(path) -> FileInfo` | Get file info |
 | `upload_url()` | `async def upload_url(path) -> str` | envd `/files` URL. The request must send `X-Access-Token`; this is not a signed URL |
 | `download_url()` | `async def download_url(path) -> str` | Same as upload |

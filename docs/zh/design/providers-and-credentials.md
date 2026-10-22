@@ -35,9 +35,9 @@
 
 | 概念 | `abx config` 键 | config.toml | 环境变量 | SDK 字段 |
 |---|---|---|---|---|
-| 沙箱 API Key | `sandbox_api_key` | 密钥在 `~/.abx/.env` | `E2B_API_KEY` | `sandbox_api_key` |
-| 平台地址 | `sandbox_base_url` | `[transport] sandbox_base_url` | `E2B_API_URL` | `sandbox_base_url` |
-| 数据平面域名 | `sandbox_domain` | `[transport] sandbox_domain` | `E2B_DOMAIN` | `sandbox_domain` |
+| 沙箱 API Key | `sandbox_api_key` | 密钥在 `~/.abx/.env` | `ABX_SANDBOX_API_KEY` | `sandbox_api_key` |
+| 平台地址 | `sandbox_base_url` | `[transport] sandbox_base_url` | `ABX_SANDBOX_BASE_URL` | `sandbox_base_url` |
+| 数据平面域名 | `sandbox_domain` | `[transport] sandbox_domain` | `ABX_SANDBOX_DOMAIN` | `sandbox_domain` |
 | 地域 | `region` | `[providers.alicloud-express] region` | `ALIBABA_CLOUD_REGION_ID` | `region` |
 | HTTP 超时 | `http_timeout` | `[transport] http_timeout` | `ABX_HTTP_TIMEOUT` | `http_timeout` |
 | HTTP/2 | `http2` | `http2` | `ABX_HTTP2` | `http2` |
@@ -77,7 +77,7 @@
 | GitHub token | `github_token` | `GITHUB_TOKEN` | 选项 `--token`（模板安装 / 搜索 / 更新）。存在 `~/.abx/.env`。 |
 | 模板索引 URL | `template_index_url` | `ABX_TEMPLATE_INDEX_URL` | 仅环境变量 |
 | 模板目录 | `template_dir` | `ABX_TEMPLATE_DIR` | 仅环境变量 |
-| MCP server | `mcp_*` | `ABX_MCP_AUTH_TOKEN`、`ABX_MCP_ALLOWED_ORIGINS`、`ABX_MCP_RUNTIME_DIR` | 仅环境变量；沙箱调用用 `E2B_API_KEY` |
+| MCP server | `mcp_*` | `ABX_MCP_AUTH_TOKEN`、`ABX_MCP_ALLOWED_ORIGINS`、`ABX_MCP_RUNTIME_DIR` | 仅环境变量；沙箱调用用 `ABX_SANDBOX_API_KEY` |
 | CLI 显示 | — | `ABX_ACTIVITY_LINES`、`ABX_DISCOVER_COMMANDS` | 不由 `abx config` 存储 |
 | 快捷方式 | `shortcuts`、`shortcuts.<name>` | — | `config.toml` 的 `[shortcuts]` |
 | 密钥库 | — | — | `~/.abx/secrets.json`（SDK `SecretStore`，0600）——不是配置面 |
@@ -114,8 +114,8 @@
 
 1. **键是 `snake_case`，每个概念只有一个名字，在所有位置相同。** 配置键、SDK 字段、关键字参数和选项（kebab-case）是同一个词：`sandbox_base_url` / `--sandbox-base-url`。
 2. **前缀表示这个值关于什么。** `sandbox_*` 表示沙箱控制面 / 数据面；`llm_*` 表示 LLM 配置；`acr_*` 表示容器镜像仓库；`mcp_*` 表示 MCP server；`http_*` 表示 HTTP 客户端调优；提供方作用域的键在其命名空间内使用裸词（`region`、`access_key_id`）。
-3. **每个键一个环境变量。** 产品设置用 `ABX_` + `UPPER(key)`（`sandbox_api_key` → `E2B_API_KEY`）。厂商已经公布的变量就用那个变量，而且它是唯一的名字：阿里云 AccessKey 是 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`，地域是 `ALIBABA_CLOUD_REGION_ID`，ACR 是 `ACR_NAMESPACE` 以及对应的 `ACR_*`，GitHub token 是 `GITHUB_TOKEN`。`team_id` 可选，变量是 `ABX_ALICLOUD_EXPRESS_TEAM_ID`。插件字段是 `ABX_` + `UPPER(提供方 id，- 换成 _)` + `_` + `UPPER(key)`。
-4. **提供方作用域。** 键要么是*核心键*（`provider`、`sandbox_api_key`、`sandbox_base_url`、`sandbox_domain`、`http_*`、`max_retries`、`llm_*`、`github_token`、`mcp_*` 等），要么是*提供方作用域键*（对 `alicloud-express` 是 `region`、`access_key_id`、`access_key_secret`、`acr_*`、`team_id`）。提供方可以声明自己使用某些核心键，并在自己的作用域里覆盖它们（`providers.<id>.sandbox_api_key`）。
+3. **每个键一个环境变量。** 产品设置用 `ABX_` + `UPPER(key)`（`sandbox_api_key` → `ABX_SANDBOX_API_KEY`）。厂商已经公布的变量就用那个变量，而且它是唯一的名字：阿里云 AccessKey 是 `ALICLOUD_ACCESS_KEY_ID` 和 `ALICLOUD_ACCESS_KEY_SECRET`，地域是 `ALIBABA_CLOUD_REGION_ID`，ACR 是 `ACR_NAMESPACE` 以及对应的 `ACR_*`，GitHub token 是 `GITHUB_TOKEN`。`team_id` 可选，变量是 `ABX_ALICLOUD_EXPRESS_TEAM_ID`。插件字段是 `ABX_` + `UPPER(提供方 id，- 换成 _)` + `_` + `UPPER(key)`。
+4. **提供方作用域。** 键要么是*核心键*（`provider`、`sandbox_api_key`、`sandbox_base_url`、`sandbox_domain`、`http_*`、`llm_*`、`github_token`、`mcp_*` 等），要么是*提供方作用域键*（对 `alicloud-express` 是 `region`、`access_key_id`、`access_key_secret`、`acr_*`、`team_id`）。提供方可以声明自己使用某些核心键，并在自己的作用域里覆盖它们（`providers.<id>.sandbox_api_key`）。
 
 ---
 
@@ -126,12 +126,12 @@
 | 键 | 类型 | 密钥 | 环境变量 | 默认值 |
 |---|---|---|---|---|
 | `provider` | id | 否 | `ABX_PROVIDER` | `alicloud-express` |
-| `sandbox_api_key` | str | **是** | `E2B_API_KEY` | 无 |
-| `sandbox_base_url` | url | 否 | `E2B_API_URL` | 由提供方推导（§4.5） |
-| `sandbox_domain` | host | 否 | `E2B_DOMAIN` | 由提供方推导 |
+| `sandbox_api_key` | str | **是** | `ABX_SANDBOX_API_KEY` | 无 |
+| `sandbox_base_url` | url | 否 | `ABX_SANDBOX_BASE_URL` | 由提供方推导（§4.5） |
+| `sandbox_domain` | host | 否 | `ABX_SANDBOX_DOMAIN` | 由提供方推导 |
 | `http_timeout` | float ≥ 1 | 否 | `ABX_HTTP_TIMEOUT` | `30.0` |
 | `http2` | bool | 否 | `ABX_HTTP2` | `true` |
-| `max_connections`、`max_keepalive_connections`、`keepalive_expiry`、`ws_ping_interval`、`retry_base_delay` | 数值 | 否 | `ABX_<KEY>` | 同现状 |
+| `max_connections`、`max_keepalive_connections`、`keepalive_expiry`、`ws_ping_interval` | 数值 | 否 | `ABX_<KEY>` | 同现状 |
 | `log_level` | 枚举 | 否 | `ABX_LOG_LEVEL` | `WARNING` |
 | `default_template` | str | 否 | `ABX_DEFAULT_TEMPLATE` | `base` |
 | `llm_api_key` | str | **是** | `ABX_LLM_API_KEY` | 无 |
@@ -165,7 +165,7 @@
 | `acr_security_group_id` | str | 否 | `ACR_SECURITY_GROUP_ID` | |
 | `team_id` | str | 否 | `ABX_ALICLOUD_EXPRESS_TEAM_ID` | 可选。不是必填项。 |
 
-内置提供方是唯一隐式使用通用 `sandbox_api_key`、`sandbox_base_url`、`sandbox_domain` 的提供方（与所有提供方一样，它也使用非密钥调优键 `http_timeout`、`http2`、`max_retries` 等）。插件只能通过 §4.6 的显式 `inherit` 申请来使用通用凭证 / 端点。
+内置提供方是唯一隐式使用通用 `sandbox_api_key`、`sandbox_base_url`、`sandbox_domain` 的提供方（与所有提供方一样，它也使用非密钥调优键 `http_timeout`、`http2` 等）。插件只能通过 §4.6 的显式 `inherit` 申请来使用通用凭证 / 端点。
 
 ### 3.3 每个名字存在的位置
 
@@ -180,7 +180,6 @@ sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
 sandbox_domain   = "cn-hangzhou.e2b.fc.aliyuncs.com"
 http_timeout = 30.0
 http2 = true
-max_retries = 3
 
 [providers.alicloud-express]
 region = "cn-hangzhou"
@@ -196,13 +195,13 @@ ps = "sandbox process list"
 
 | 键 | 存为 |
 |---|---|
-| `sandbox_api_key` | `E2B_API_KEY` |
+| `sandbox_api_key` | `ABX_SANDBOX_API_KEY` |
 | `access_key_id`、`access_key_secret` | `ALICLOUD_ACCESS_KEY_ID`、`ALICLOUD_ACCESS_KEY_SECRET` |
 | `acr_namespace`、`acr_password` 以及其他密钥或类凭证的 `acr_*` | 该键对应的 `ACR_*` / `ACREE_INSTANCE_ID` |
 | `llm_api_key` | `ABX_LLM_API_KEY` |
 | `github_token` | `GITHUB_TOKEN` |
 | `team_id` | `ABX_ALICLOUD_EXPRESS_TEAM_ID`（可选） |
-| `sandbox_base_url`、`sandbox_domain`、`http_timeout`、`http2`、`max_retries`、`llm_base_url`、`llm_model` | `[transport]` 中的同名键 |
+| `sandbox_base_url`、`sandbox_domain`、`http_timeout`、`http2`、`llm_base_url`、`llm_model` | `[transport]` 中的同名键 |
 | `region` | `[providers.alicloud-express]` 中的 `region`；环境变量 `ALIBABA_CLOUD_REGION_ID` |
 | `provider` | `[core] provider` |
 
@@ -282,8 +281,8 @@ sandbox_domain   = "{region}.e2b.fc.aliyuncs.com"
 
 * **只有当 `P` 是当前提供方时，作用域键才优先于通用键**：`providers.<P>.<key>` / `ABX_<P>_<KEY>` 优先于 `P` 被允许读取的核心键的通用名字。
 * **凭证和端点绝不跨提供方。** 为提供方 `P` 解析时，永远不会查看 `Q ≠ P` 的 `ABX_<Q>_*` 或 `[providers.Q]`。
-* **通用的凭证 / 端点键（`sandbox_api_key`、`sandbox_base_url`、`sandbox_domain`）属于内置提供方。** 没有这条规则，切换默认提供方会悄悄把阿里云密钥发给第三方插件。非内置提供方只有在 (a) 其清单在 `[core] inherit` 里列出它们，并且 (b) 用户在安装 / 更新时同意了，才会收到它们（回执记录同意的列表；同意界面会打印一行点名这些键的警告）。生效的列表是 `manifest.inherit ∩ receipt.consented.inherit`。参考的 `e2b-compatible` 提供方继承这三个键，因此 `E2B_API_KEY` 和 `E2B_API_URL` 只在这份有记录的同意之下才会交给它。
-* 非密钥调优键（`http_timeout`、`http2`、`max_retries`、连接池 / WS / 退避）与所有提供方共享。
+* **通用的凭证 / 端点键（`sandbox_api_key`、`sandbox_base_url`、`sandbox_domain`）属于内置提供方。** 没有这条规则，切换默认提供方会悄悄把阿里云密钥发给第三方插件。非内置提供方只有在 (a) 其清单在 `[core] inherit` 里列出它们，并且 (b) 用户在安装 / 更新时同意了，才会收到它们（回执记录同意的列表；同意界面会打印一行点名这些键的警告）。生效的列表是 `manifest.inherit ∩ receipt.consented.inherit`。参考的 `e2b-compatible` 提供方继承这三个键，因此 `ABX_SANDBOX_API_KEY` 和 `ABX_SANDBOX_BASE_URL` 只在这份有记录的同意之下才会交给它。
+* 非密钥调优键（`http_timeout`、`http2`、连接池 / WS / 退避）与所有提供方共享。
 * LLM、GitHub 和 MCP 键不是提供方凭证，永远不会交给提供方。
 * 插件自己的凭证是它声明的作用域字段（环境变量 `ABX_<P>_<KEY>`）。
 * 插件的值只通过 `initialize` 请求进入插件进程，绝不通过环境变量（§8.3）。
@@ -331,14 +330,13 @@ sandbox_domain   = "{region}.e2b.fc.aliyuncs.com"
 | `code.interpret` | 有状态的代码上下文 | `run_code`、`code.*` | `sandbox code` |
 | `templates.read` | 列出 / 查看模板 | `Template*` 读取 | `template list/info` |
 | `templates.build` | 构建 / 部署 / 删除模板（镜像构建 + 注册） | —（仅 CLI） | `template build/deploy/delete`、`deploy`、`install` |
-| `templates.deploy` | 显式通过提供方模板工厂部署现有镜像 | 仅 manifest 元数据，不新增 Python 方法 | 工厂分发由 CLI 负责 |
 | `ports.url` | 端口的公网 URL | `network.get_url` | `sandbox system ports`、`url` |
 | `ports.domain` | 沙箱 / 模板的自定义域名 | —（没有单沙箱 API） | — |
 | `storage.mount` | 挂载对象存储（OSS） | —（没有单沙箱 API） | — |
 | `network.vpc` | 接入 VPC | —（仅模板 `vpcConfig`） | `--vpc-id` 系列 |
 | `sessions` | 沙箱标识在进程结束后仍存在（可按 id 重新连接） | `Sandbox.connect` + `LocalSessionStore` | `session ...` |
 
-`templates.deploy` 独立于 `templates.build`，不会为已有 manifest 自动启用部署。内置 `alicloud-express` 保留原有特性集合，排除此新标记。沙箱的能力仍是**模板的能力**（不变）；当提供方缺少某个能力标记背后的特性（`shell ← exec.run`、`files ← files.rw`、`code ← code.interpret`、`terminal ← pty`、`ports ← ports.url`）时，调用在调用时抛出 `E8004`。实现不会预先对两个集合求交集：模板是与提供方无关的数据，在调用处以精确的错误失败更简单，也不会与提供方的实际行为不一致。
+沙箱的能力仍是**模板的能力**（不变）；当提供方缺少某个能力标记背后的特性（`shell ← exec.run`、`files ← files.rw`、`code ← code.interpret`、`terminal ← pty`、`ports ← ports.url`）时，调用在调用时抛出 `E8004`。实现不会预先对两个集合求交集：模板是与提供方无关的数据，在调用处以精确的错误失败更简单，也不会与提供方的实际行为不一致。
 
 ### 7.3 取舍分析：插件如何加载？
 
@@ -558,7 +556,7 @@ sandbox_base_url = "https://api.{region}.example.com"
 ### 7.7 多提供方规则
 
 * 每个命令的解析：§4.4。一个命令只与**一个**提供方通信。
-* 沙箱 id 是提供方本地的。CLI 有两种输出格式：**旧格式**（裸 id，没有 `provider` 字段——与今天逐字节相同）当且仅当*环境*提供方（§4.4 去掉显式选项：`ABX_PROVIDER` → `./.env` → `~/.abx/.env` → 配置 → 内置）**和**生效提供方（显式选项或环境提供方）都是 `alicloud-express` 时使用。其他任何情况 CLI 使用**限定格式**：id 打印为 `provider:sandbox_id`（如 `local-process:sbx-1`、`alicloud-express:sbx-9`），`--json` 的行增加 `"provider": "<id>"`，同时 id 字段保持裸 id。理由：恰好在有多个提供方时，不带限定的 id 是有歧义的，而稍后键入的裸 id 会针对环境提供方解析，它可能在 id 被打印之后已经变了。输入始终接受任何提供方的限定形式。裸 id 针对生效提供方解析（§4.4）。
+* 沙箱 ID 属于各自 Provider。输出使用 `provider:sandbox_id`；JSON 行包含 `provider`，ID 字段保留裸 ID。输入支持限定引用，裸 ID 按生效 Provider 解析（§4.4）。
 * 如果显式的 `--provider P` 与限定引用 `Q:id` 冲突，命令以 2 退出（`E8030 ProviderMismatchError`）。
 * `abx list --all-providers` 列出每个*已配置*（具有所需凭证）的提供方，并增加 `PROVIDER` 列 / `provider` 键；失败的提供方作为警告报告并跳过（至少一个成功则退出 0）。
 * 模板目录按提供方划分；`template build/deploy/install` 需要 `templates.build`；没有它的提供方在任何 Docker 工作开始前就以 `E8004` 快速失败。
@@ -698,4 +696,4 @@ Node CLI 根据 `cli/docs/design/providers-and-credentials-cli.md` 里的规格�
 7. **清单文件名。** 清单是 `abx-provider.toml`。插件根目录没有它时，以 E8014 失败（“file not found at the plugin root”），并提示使用 `owner/repo//subdir` / `--subdir`。
 8. **一致性。** 契约套件要求未知 id 返回 `SandboxNotFoundError`（E2009）。
 
-旧重试名称是兼容值，不代表内置 HTTP 实现了重试或退避。见[明确边界](../reference/configuration.md#旧重试配置的兼容边界)。
+内置 HTTP 每次只执行一次传输尝试，见[配置说明](../reference/configuration.md#传输尝试)。

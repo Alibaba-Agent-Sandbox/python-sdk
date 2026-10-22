@@ -38,7 +38,6 @@ python-sdk/
 │   │   ├── api/                   # High-level API and server client; provider-neutral lifecycle/session contracts
 │   │   ├── providers/             # Backend/session adapters; shared envd wire; external Node engine client
 │   │   ├── agent/                 # AI agent tooling: MCP server, tool definitions
-│   │   ├── compat/                # Legacy migration helpers (preserve their explicit contract)
 │   │   ├── declarative/           # @sandbox decorator, config, serializer
 │   │   ├── session/               # Session persistence: local (LocalSessionStore)
 │   │   └── utils/                 # Async bridge, secret store, logging, registry, retry
@@ -88,7 +87,6 @@ graph TB
     subgraph Upper["Upper Layers"]
         Agent["Agent/MCP — MCP server, tool defs"]
         Decl["Declarative — @sandbox decorator"]
-        Compat["Compat — E2B migration helper"]
         Server["Server — SandboxServer SDK, HTTP routes"]
         Sess["Session — Persistence"]
     end
@@ -102,7 +100,6 @@ graph TB
 
     Agent --> L3
     Decl --> L3
-    Compat --> L3
     Server --> L0U
     Sess --> L3
     L3 --> L2 --> L1

@@ -33,9 +33,9 @@ Sources scanned: `transport/config.py`, `transport/auth.py`, `models/config.py`,
 
 | Concept | `abx config` key | config.toml | Environment variable | SDK field / kwarg |
 |---|---|---|---|---|
-| Sandbox API key | `sandbox_api_key` | secret in `~/.abx/.env` | `E2B_API_KEY` | `sandbox_api_key` |
-| Platform base URL | `sandbox_base_url` | `[transport] sandbox_base_url` | `E2B_API_URL` | `sandbox_base_url` |
-| Data-plane domain | `sandbox_domain` | `[transport] sandbox_domain` | `E2B_DOMAIN` | `sandbox_domain` |
+| Sandbox API key | `sandbox_api_key` | secret in `~/.abx/.env` | `ABX_SANDBOX_API_KEY` | `sandbox_api_key` |
+| Platform base URL | `sandbox_base_url` | `[transport] sandbox_base_url` | `ABX_SANDBOX_BASE_URL` | `sandbox_base_url` |
+| Data-plane domain | `sandbox_domain` | `[transport] sandbox_domain` | `ABX_SANDBOX_DOMAIN` | `sandbox_domain` |
 | Region | `region` | `[providers.alicloud-express] region` | `ALIBABA_CLOUD_REGION_ID` | `region` |
 | HTTP timeout | `http_timeout` | `[transport] http_timeout` | `ABX_HTTP_TIMEOUT` | `http_timeout` |
 | HTTP/2 | `http2` | `http2` | `ABX_HTTP2` | `http2` |
@@ -75,7 +75,7 @@ Sandbox TTL (`Sandbox.create(timeout=)`, `--timeout/-t`) is not an HTTP timeout.
 | GitHub token | `github_token` | `GITHUB_TOKEN` | flag `--token` (template install/search/update). Stored in `~/.abx/.env`. |
 | Template index URL | `template_index_url` | `ABX_TEMPLATE_INDEX_URL` | environment only |
 | Template dir | `template_dir` | `ABX_TEMPLATE_DIR` | environment only |
-| MCP server | `mcp_*` | `ABX_MCP_AUTH_TOKEN`, `ABX_MCP_ALLOWED_ORIGINS`, `ABX_MCP_RUNTIME_DIR` | environment only; sandbox calls use `E2B_API_KEY` |
+| MCP server | `mcp_*` | `ABX_MCP_AUTH_TOKEN`, `ABX_MCP_ALLOWED_ORIGINS`, `ABX_MCP_RUNTIME_DIR` | environment only; sandbox calls use `ABX_SANDBOX_API_KEY` |
 | CLI display | — | `ABX_ACTIVITY_LINES`, `ABX_DISCOVER_COMMANDS` | not stored by `abx config` |
 | Shortcuts | `shortcuts`, `shortcuts.<name>` | — | `[shortcuts]` table of `config.toml` |
 | Secret store | — | — | `~/.abx/secrets.json` (SDK `SecretStore`, 0600) — not a config surface |
@@ -112,8 +112,8 @@ Every key in §3 has one environment variable. Product settings use `ABX_<KEY>`.
 
 1. **Keys are `snake_case`, one name per concept, identical in every surface.** The config key, the SDK field, the keyword argument and the flag (kebab-cased) are the same word: `sandbox_base_url` / `--sandbox-base-url`.
 2. **Prefix = what the value is about.** `sandbox_*` for the sandbox control/data plane (generic, protocol level); `llm_*` for the LLM profile; `acr_*` for the container registry; `mcp_*` for the MCP server; `http_*` for HTTP client tuning; bare words for provider-scoped keys inside their provider namespace (`region`, `access_key_id`).
-3. **One environment variable per key.** Product settings use `ABX_` + `UPPER(key)` (`sandbox_api_key` → `E2B_API_KEY`). A vendor that already publishes a variable keeps that variable, and that variable is the only name: Alibaba Cloud access keys are `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`, the region is `ALIBABA_CLOUD_REGION_ID`, ACR settings are `ACR_NAMESPACE` and the matching `ACR_*` names, and the GitHub token is `GITHUB_TOKEN`. `team_id` is optional; its variable is `ABX_ALICLOUD_EXPRESS_TEAM_ID`. A plugin field is `ABX_` + `UPPER(provider_id with - → _)` + `_` + `UPPER(key)`.
-4. **Provider scoping.** Keys are either *core* (provider-independent: `provider`, `sandbox_api_key`, `sandbox_base_url`, `sandbox_domain`, `http_*`, `max_retries`, `llm_*`, `github_token`, `mcp_*`, ...) or *provider-scoped* (declared by a provider's config schema: `region`, `access_key_id`, `access_key_secret`, `acr_*`, `team_id` for `alicloud-express`). A provider may also declare that it consumes core keys (`uses_core`) and may **override** them in its own scope (`providers.<id>.sandbox_api_key`), which is how two providers get two different API keys.
+3. **One environment variable per key.** Product settings use `ABX_` + `UPPER(key)` (`sandbox_api_key` → `ABX_SANDBOX_API_KEY`). A vendor that already publishes a variable keeps that variable, and that variable is the only name: Alibaba Cloud access keys are `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`, the region is `ALIBABA_CLOUD_REGION_ID`, ACR settings are `ACR_NAMESPACE` and the matching `ACR_*` names, and the GitHub token is `GITHUB_TOKEN`. `team_id` is optional; its variable is `ABX_ALICLOUD_EXPRESS_TEAM_ID`. A plugin field is `ABX_` + `UPPER(provider_id with - → _)` + `_` + `UPPER(key)`.
+4. **Provider scoping.** Keys are either *core* (provider-independent: `provider`, `sandbox_api_key`, `sandbox_base_url`, `sandbox_domain`, `http_*`, `llm_*`, `github_token`, `mcp_*`, ...) or *provider-scoped* (declared by a provider's config schema: `region`, `access_key_id`, `access_key_secret`, `acr_*`, `team_id` for `alicloud-express`). A provider may also declare that it consumes core keys (`uses_core`) and may **override** them in its own scope (`providers.<id>.sandbox_api_key`), which is how two providers get two different API keys.
 
 ---
 
@@ -124,12 +124,12 @@ Every key in §3 has one environment variable. Product settings use `ABX_<KEY>`.
 | Key | Type | Secret | Environment variable | Default |
 |---|---|---|---|---|
 | `provider` | id | no | `ABX_PROVIDER` | `alicloud-express` |
-| `sandbox_api_key` | str | **yes** | `E2B_API_KEY` | none |
-| `sandbox_base_url` | url | no | `E2B_API_URL` | provider-derived (see §4.5) |
-| `sandbox_domain` | host | no | `E2B_DOMAIN` | provider-derived |
+| `sandbox_api_key` | str | **yes** | `ABX_SANDBOX_API_KEY` | none |
+| `sandbox_base_url` | url | no | `ABX_SANDBOX_BASE_URL` | provider-derived (see §4.5) |
+| `sandbox_domain` | host | no | `ABX_SANDBOX_DOMAIN` | provider-derived |
 | `http_timeout` | float ≥ 1 | no | `ABX_HTTP_TIMEOUT` | `30.0` |
 | `http2` | bool | no | `ABX_HTTP2` | `true` |
-| `max_connections`, `max_keepalive_connections`, `keepalive_expiry`, `ws_ping_interval`, `retry_base_delay` | num | no | `ABX_<KEY>` | as today |
+| `max_connections`, `max_keepalive_connections`, `keepalive_expiry`, `ws_ping_interval` | num | no | `ABX_<KEY>` | as today |
 | `log_level` | enum | no | `ABX_LOG_LEVEL` | `WARNING` |
 | `default_template` | str | no | `ABX_DEFAULT_TEMPLATE` | `base` |
 | `llm_api_key` | str | **yes** | `ABX_LLM_API_KEY` | none |
@@ -163,7 +163,7 @@ Env-only tuning that is **not** a persistent config key (documented in the envir
 | `acr_security_group_id` | str | no | `ACR_SECURITY_GROUP_ID` | |
 | `team_id` | str | no | `ABX_ALICLOUD_EXPRESS_TEAM_ID` | Optional. Not required. |
 
-The built-in provider is the only one that implicitly consumes the generic `sandbox_api_key`, `sandbox_base_url`, `sandbox_domain` (and, like every provider, the non-secret tuning keys `http_timeout`, `http2`, `max_retries`, ...). Plugins consume generic credentials/endpoints only through the explicit `inherit` opt-in of §4.6.
+The built-in provider is the only one that implicitly consumes the generic `sandbox_api_key`, `sandbox_base_url`, `sandbox_domain` (and, like every provider, the non-secret tuning keys `http_timeout`, `http2`, ...). Plugins consume generic credentials/endpoints only through the explicit `inherit` opt-in of §4.6.
 
 ### 3.3 Where each name lives
 
@@ -178,7 +178,6 @@ sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"
 sandbox_domain   = "cn-hangzhou.e2b.fc.aliyuncs.com"
 http_timeout = 30.0
 http2 = true
-max_retries = 3
 
 [providers.alicloud-express]
 region = "cn-hangzhou"
@@ -194,13 +193,13 @@ ps = "sandbox process list"
 
 | Key | Stored as |
 |---|---|
-| `sandbox_api_key` | `E2B_API_KEY` |
+| `sandbox_api_key` | `ABX_SANDBOX_API_KEY` |
 | `access_key_id`, `access_key_secret` | `ALICLOUD_ACCESS_KEY_ID`, `ALICLOUD_ACCESS_KEY_SECRET` |
 | `acr_namespace`, `acr_password`, and the other secret or credential-like `acr_*` values | the `ACR_*` / `ACREE_INSTANCE_ID` variable for that key |
 | `llm_api_key` | `ABX_LLM_API_KEY` |
 | `github_token` | `GITHUB_TOKEN` |
 | `team_id` | `ABX_ALICLOUD_EXPRESS_TEAM_ID` (optional) |
-| `sandbox_base_url`, `sandbox_domain`, `http_timeout`, `http2`, `max_retries`, `llm_base_url`, `llm_model` | the same key in `[transport]` |
+| `sandbox_base_url`, `sandbox_domain`, `http_timeout`, `http2`, `llm_base_url`, `llm_model` | the same key in `[transport]` |
 | `region` | `region` in `[providers.alicloud-express]`; environment variable `ALIBABA_CLOUD_REGION_ID` |
 | `provider` | `[core] provider` |
 
@@ -280,8 +279,8 @@ Derivation applies only when the base URL was **not** given by an explicit argum
 
 * **Scoped beats generic** only while `P` is the active provider: `providers.<P>.<key>` / `ABX_<P>_<KEY>` outrank the generic name of a core key `P` is allowed to read.
 * **Credentials and endpoints never cross providers.** Resolving for provider `P` never looks at `ABX_<Q>_*` or `[providers.Q]` for `Q ≠ P`.
-* **The generic credential/endpoint keys (`sandbox_api_key`, `sandbox_base_url`, `sandbox_domain`) belong to the built-in provider.** Without this rule, switching the default provider would silently send the Alibaba Cloud key to a third-party plugin (and a plugin's key to the Alibaba endpoint). A non-builtin provider receives them **only** when (a) its manifest lists them in `[core] inherit` **and** (b) the user consented to that at install/update time (the receipt records the consented list; the consent screen prints a warning line naming the keys). The effective list is `manifest.inherit ∩ receipt.consented.inherit`. The reference `e2b-compatible` provider inherits all three, so `E2B_API_KEY` and `E2B_API_URL` are delivered to it only by that recorded consent.
-* Non-secret tuning keys (`http_timeout`, `http2`, `max_retries`, pool/WS/backoff) are shared with every provider.
+* **The generic credential/endpoint keys (`sandbox_api_key`, `sandbox_base_url`, `sandbox_domain`) belong to the built-in provider.** Without this rule, switching the default provider would silently send the Alibaba Cloud key to a third-party plugin (and a plugin's key to the Alibaba endpoint). A non-builtin provider receives them **only** when (a) its manifest lists them in `[core] inherit` **and** (b) the user consented to that at install/update time (the receipt records the consented list; the consent screen prints a warning line naming the keys). The effective list is `manifest.inherit ∩ receipt.consented.inherit`. The reference `e2b-compatible` provider inherits all three, so `ABX_SANDBOX_API_KEY` and `ABX_SANDBOX_BASE_URL` are delivered to it only by that recorded consent.
+* Non-secret tuning keys (`http_timeout`, `http2`, pool/WS/backoff) are shared with every provider.
 * LLM, GitHub and MCP keys are not provider credentials and are **never** delivered to a provider.
 * A plugin's own credentials are scoped fields it declares (environment variable `ABX_<P>_<KEY>`).
 * Plugin values reach a plugin process only through the `initialize` request, never through the environment (§8.3).
@@ -329,14 +328,13 @@ A provider declares which **features** it implements. The SDK/CLI check the feat
 | `code.interpret` | stateful code contexts | `run_code`, `code.*` | `sandbox code` |
 | `templates.read` | list/get templates | `Template*` read | `template list/info` |
 | `templates.build` | build/deploy/delete templates (image build + register) | — (CLI only) | `template build/deploy/delete`, `deploy`, `install` |
-| `templates.deploy` | opt-in deployment from an existing image via a provider template factory | manifest metadata only; no new Python method | provider factory dispatch owned by CLI |
 | `ports.url` | public URL for a port | `network.get_url` | `sandbox system ports`, `url` |
 | `ports.domain` | custom domains for a sandbox/template | — (no per-sandbox API) | — |
 | `storage.mount` | mount object storage (OSS) | — (no per-sandbox API) | — |
 | `network.vpc` | attach a VPC | — (template `vpcConfig` only) | `--vpc-id` family |
 | `sessions` | sandbox identity survives the process (re-attach by id) | `Sandbox.connect` + `LocalSessionStore` | `session ...` |
 
-`templates.deploy` is independent of `templates.build` and does not grant deployment to existing manifests. The built-in `alicloud-express` keeps its legacy feature set and excludes this new flag. A sandbox's capabilities stay the **template's capabilities** (unchanged); where the provider lacks the feature behind a capability token (`shell ← exec.run`, `files ← files.rw`, `code ← code.interpret`, `terminal ← pty`, `ports ← ports.url`) the call raises `E8004` at call time. The implementation does not intersect the two sets up front: the template is provider-independent data, and failing at the call with a precise error is simpler and cannot disagree with the provider's behaviour.
+A sandbox's capabilities stay the **template's capabilities** (unchanged); where the provider lacks the feature behind a capability token (`shell ← exec.run`, `files ← files.rw`, `code ← code.interpret`, `terminal ← pty`, `ports ← ports.url`) the call raises `E8004` at call time. The implementation does not intersect the two sets up front: the template is provider-independent data, and failing at the call with a precise error is simpler and cannot disagree with the provider's behaviour.
 
 ### 7.3 Tradeoff analysis: how do plugins load?
 
@@ -554,7 +552,7 @@ Receipt `.abx-install.json`:
 ### 7.7 Multi-provider rules
 
 * Resolution per command: §4.4. A command talks to **one** provider.
-* Sandbox ids are provider-local. The CLI has two output formats: **legacy format** (bare ids, no `provider` field — byte-identical to today) is used **iff both** the *ambient* provider (§4.4 without the explicit flag: `ABX_PROVIDER` → `./.env` → `~/.abx/.env` → config → built-in) **and** the *effective* provider (explicit flag or ambient) are `alicloud-express`. In every other situation the CLI uses the **qualified format**: ids are printed as `provider:sandbox_id` (e.g. `local-process:sbx-1`, `alicloud-express:sbx-9`) and `--json` rows gain `"provider": "<id>"` while keeping the bare id in the id field. Rationale: an unqualified id is ambiguous exactly when more than one provider is in play, and a bare id typed later resolves against the ambient provider, which may have changed since the id was printed. Input accepts the qualified form for every provider at all times. A bare id resolves against the effective provider (§4.4).
+* Sandbox IDs are provider-local. Output uses `provider:sandbox_id`; JSON rows include `provider` and retain the bare ID in their ID field. Input accepts qualified references, while a bare ID resolves against the effective provider (§4.4).
 * If an explicit `--provider P` conflicts with a qualified reference `Q:id`, the command exits 2 (`E8030 ProviderMismatchError`).
 * `abx list --all-providers` lists every *configured* provider (those with the required credentials) and adds a `PROVIDER` column / `provider` key; providers that fail are reported as warnings and skipped (exit 0 if at least one succeeded).
 * Template catalogs are provider-scoped; `template build/deploy/install` require `templates.build`; a provider without it fails fast with `E8004` before any Docker work starts.
@@ -693,4 +691,4 @@ These rules were added after driving a real OpenSandbox server through the abstr
 7. **Manifest name.** The manifest is `abx-provider.toml`. A plugin root without it fails with E8014 ("file not found at the plugin root") and points at `owner/repo//subdir` / `--subdir`.
 8. **Conformance.** The contract kit expects `SandboxNotFoundError` (E2009) for an unknown id.
 
-Legacy retry names are compatibility values, not an implementation of builtin HTTP retry/backoff. See [the explicit boundary](../reference/configuration.md#legacy-retry-compatibility).
+Builtin HTTP performs one transport attempt; see [configuration](../reference/configuration.md#transport-attempts).

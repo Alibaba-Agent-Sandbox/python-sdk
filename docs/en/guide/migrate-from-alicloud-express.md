@@ -34,9 +34,7 @@ export ABX_SANDBOX_DOMAIN="$E2B_DOMAIN"
 Do not use shell tracing or copy this mapping from a native E2B account. Use the
 existing template ID/alias and the original regional endpoints. No AK/SK is needed
 for ordinary sandbox-key lifecycle, exec and file calls. Cloud management/template
-publication has separate AK/SK and registry prerequisites. Existing `api_key`,
-`api_url` and `domain` API arguments remain compatibility aliases for their
-canonical settings; conflicting canonical/alias values are rejected.
+publication has separate AK/SK and registry prerequisites. Use the canonical `sandbox_api_key`, `sandbox_base_url` and `sandbox_domain` arguments.
 
 ## Verify a new, test-owned sandbox
 

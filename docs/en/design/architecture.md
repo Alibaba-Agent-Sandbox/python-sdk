@@ -260,7 +260,7 @@ The CLI (`abx`) formerly lived in `src/agent_sandbox/cli/` (Click commands under
 
 ## 6. Design Principles
 
-1. **E2B-shaped, not E2B-compatible**: L3 uses E2B-shaped method names and ships a small migration helper (`agent_sandbox.compat`); L2 implements the protocol independently without depending on the E2B SDK
+1. **Explicit standard and provider contracts**: L3 uses E2B-shaped method names through the maintained standard clients; native provider extensions use ProviderSandbox without depending on the E2B SDK
 2. **Progressive Complexity**: Users start at L3 and explore downward or use advanced features upward as needed
 3. **Zero-Config Defaults**: Works out of the box with sensible defaults; just set the `ABX_SANDBOX_API_KEY` environment variable to get started
 4. **Alibaba Cloud Native**: Built for the Alibaba Cloud FC sandbox service
@@ -269,6 +269,6 @@ The CLI (`abx`) formerly lived in `src/agent_sandbox/cli/` (Click commands under
 
 - [Provider implementation boundaries](provider-isolation.md)
 
-Provider configuration discovery is assembled lazily by the package composition root. Transport consumes a low-level `ProviderSchema` value and an injected resolver from `_provider_schema.py`; it does not import the provider registry. Builtin configuration resolves without provider discovery. Registered, entry-point and installed providers retain the registry selection and derive/default/inheritance rules. The existing `transport.config.ProviderSchema` import remains an alias of the same schema class.
+Provider configuration discovery is assembled lazily by the package composition root. Transport consumes a low-level `ProviderSchema` value and an injected resolver from `_provider_schema.py`; it does not import the provider registry. Builtin configuration resolves without provider discovery. Registered, entry-point and installed providers retain the registry selection and derive/default/inheritance rules.
 
-Builtin platform/envd HTTP uses one transport attempt. Legacy retry fields are compatibility data, with the exact boundary in [configuration](../reference/configuration.md#legacy-retry-compatibility); engine recovery remains separate.
+Builtin platform/envd HTTP uses one transport attempt; see [configuration](../reference/configuration.md#transport-attempts). Engine read recovery remains separate.

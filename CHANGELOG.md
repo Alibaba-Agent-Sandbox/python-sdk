@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Align contributor guidance and English/Chinese API, configuration and provider documentation with the removed project compatibility surface. / 同步贡献指南及中英文 API、配置和 Provider 文档，清除已删除项目兼容接口的旧说明。
+
 ### Removed
 
 - Pre-release project compatibility: old template factories/APIs and selector flags, import aliases, migration commands, deprecated method aliases, old server transfer routes, custom AK/SK token exchange and implicit provider URL/port fallbacks.

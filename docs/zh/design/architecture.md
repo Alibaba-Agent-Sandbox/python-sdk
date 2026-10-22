@@ -258,7 +258,7 @@ CLI（`abx`）原先位于 `src/agent_sandbox/cli/`（`commands/` 下的 Click �
 
 ## 6. 设计原则
 
-1. **方法名参考 E2B，但不兼容 E2B**：L3 沿用 E2B 风格的方法名，并提供一个小的迁移辅助（`agent_sandbox.compat`）；L2 层自行实现协议，不依赖 E2B SDK
+1. **显式标准与 Provider 契约**：标准入口维护固定的 E2B 行为契约；原生 Provider 扩展使用 ProviderSandbox，不依赖 E2B SDK
 2. **渐进式复杂度**：用户从 L3 开始，按需向下探索或向上使用高级功能
 3. **零配置默认**：开箱即用的默认值，设置 `ABX_SANDBOX_API_KEY` 环境变量即可启动
 4. **阿里云原生**：为阿里云 FC 沙箱服务而做
@@ -267,6 +267,6 @@ CLI（`abx`）原先位于 `src/agent_sandbox/cli/`（`commands/` 下的 Click �
 
 - [Provider implementation boundaries](provider-isolation.md)
 
-提供方配置发现由包入口延迟装配。传输配置只消费 `_provider_schema.py` 中的低层 `ProviderSchema` 值与注入的解析器，不导入提供方 registry。内置配置不触发提供方发现；注册、entry-point 和已安装提供方仍遵循原有选择、派生、默认值及继承规则。原 `transport.config.ProviderSchema` 导入保留为同一类的别名。
+提供方配置发现由包入口延迟装配。传输配置只消费 `_provider_schema.py` 中的低层 `ProviderSchema` 值与注入的解析器，不导入提供方 registry。内置配置不触发提供方发现；注册、entry-point 和已安装提供方仍遵循原有选择、派生、默认值及继承规则。
 
-内置平台/envd HTTP 每次执行一次传输尝试。旧重试字段作为兼容数据保留，边界见[配置说明](../reference/configuration.md#旧重试配置的兼容边界)，引擎恢复另行处理。
+内置平台/envd HTTP 每次执行一次传输尝试，见[配置说明](../reference/configuration.md#传输尝试)；引擎读取恢复另行处理。

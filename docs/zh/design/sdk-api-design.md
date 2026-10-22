@@ -27,7 +27,7 @@
 - **运行 Agent 只有一个入口。** SandboxServer 上的 Agents API（`/v1/agents/**`）。SDK 没有 `sb.agent.*` 辅助方法。
 - **显式、带类型的接口。** 不用 `__getattr__` 分发；每个方法都有 mypy 检查的签名（`py.typed`）。
 - **异步优先，同步孪生。** 每个协程都有 `_sync` 版本，由它替你管理事件循环。
-- **明确标准与扩展契约。** 本文描述原生 ProviderSandbox 的协议、配置和错误模型。`agent_sandbox.compat` 重新导出标准 `Sandbox`／`AsyncSandbox`；标准客户端及 `code_interpreter` 遵循固定的阿里云 E2B 契约。见[从 E2B 迁移](../guide/migrate-from-e2b.md)。
+- **明确标准与扩展契约。** 本文描述原生 ProviderSandbox 的协议、配置和错误模型。`agent_sandbox` 导出标准 `Sandbox`／`AsyncSandbox`；标准客户端及 `code_interpreter` 遵循固定的阿里云 E2B 契约。见[从 E2B 迁移](../guide/migrate-from-e2b.md)。
 
 ---
 

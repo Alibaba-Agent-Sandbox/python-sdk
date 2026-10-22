@@ -302,39 +302,9 @@ curl -X POST http://localhost:9000/commands/hello \
 
 ---
 
-### 4.3 FILE_OPS（12）
+### 4.3 FILE_OPS
 
-包含 2 个「传统」上传/下载端点（`/upload`、`/download`，注册于
-[`routes.py`](../../../server-sdk/src/agent_sandbox/server/routes.py#L454-L461)）与 9 个扩展文件操作端点（注册于
-[`routes_files.py`](../../../server-sdk/src/agent_sandbox/server/routes_files.py#L528-L565)）。所有路径都会经过
-路径 guard 的防护（见 §8.1）。
-
-#### `POST /upload`
-
-写入 base64 编码内容到本地文件。
-
-请求体：
-
-```json
-{"path": "/home/user/file.txt", "content_base64": "<base64>"}
-```
-
-响应：`{"path": "<解析后的绝对路径>", "bytes": <字节数>}`。
-
-错误：缺失/非法 `path` 或 `content_base64` → `400`；base64 非法 → `400`；写入失败 → `500`；
-路径在允许的目录之外 → `403 {"code": "path_not_allowed", ...}`。
-
-#### `GET /download?path=...`
-
-读取文件，返回 base64 内容。
-
-响应：
-
-```json
-{"path": "/home/user/file.txt", "content_base64": "<base64>"}
-```
-
-错误：缺失 `path` → `400`；文件不存在 → `404 {"type": "FileNotFoundError"}`；读取失败 → `500`。
+文件操作注册于 [routes_files.py](../../../server-sdk/src/agent_sandbox/server/routes_files.py)。上传和下载使用 `/files/upload-stream` 与 `/files/download-stream`。所有路径经过路径 guard（见 §8.1）。
 
 #### `GET /files/list?path=...`
 
@@ -1069,7 +1039,7 @@ server:
 
 身份持有 scope（`files:read`、`files:write`、`files:delete`、`process:run`、`process:manage`、`terminal:use`、`system:read`、`system:write`、
 `devtools:run`、`browser:use`、`commands:run`、`commands:run:<name>`、`core:read`（隐含）、`*`）。每个端点需要一个有文档的 scope
-（`files_move` 同时需要 `files:write` **和** `files:delete`）；规则中的 `scopes` 会覆盖它。旧的 `ABX_SERVER_TOKEN` 对应身份 `legacy`，scope 为 `*`。
+（`files_move` 同时需要 `files:write` **和** `files:delete`）；规则中的 `scopes` 会覆盖它。未配置显式令牌列表时，`ABX_SERVER_TOKEN` 提供当前策略令牌，身份为 `server`，scope 为 `*`。
 
 ### 10.3 错误码
 

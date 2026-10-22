@@ -31,8 +31,7 @@ export ABX_SANDBOX_DOMAIN="$E2B_DOMAIN"
 
 不要启用 shell 跟踪，也不要从原生 E2B 账号复制这组配置。继续使用原模板 ID/别名和
 原地域端点。普通沙箱密钥生命周期、执行和文件调用无需 AK/SK；云管理、模板发布另需
-AK/SK 及镜像仓库前提。API 的 `api_key`、`api_url`、`domain` 仍是对应规范配置的兼容
-别名，与规范名称同时提供不同值时会拒绝。
+AK/SK 及镜像仓库前提。API 参数使用规范名称 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`。
 
 ## 用新建测试沙箱验收
 

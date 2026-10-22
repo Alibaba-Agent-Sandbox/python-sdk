@@ -37,3 +37,9 @@ Issue: https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/84
 Verified merged implementation: https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/85. The source merge commit is `d1a54f78e447bc67b90dbfdf48168b020275c871`.
 
 - [Remote acceptance](../../../evidence/verify/2026-10-22-remove-legacy-acceptance.md)
+
+## Current documentation follow-up
+
+Remove stale instructions that still advertised retired imports, credential aliases, retry settings, template selectors and server transfer routes. The current API references, provider boundary pages and contributor entry point describe the merged implementation.
+
+- [Documentation verification](../../../evidence/verify/2026-10-22-remove-legacy-docs.md)

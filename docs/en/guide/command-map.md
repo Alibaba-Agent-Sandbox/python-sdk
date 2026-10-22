@@ -14,7 +14,7 @@ Public surfaces used for this map:
 | E2B | `e2b` (`@e2b/cli`, docs for 2.16.1) | `e2b`, `from e2b import Sandbox` |
 | OpenSandbox | `osb` (`opensandbox-cli`, [CLI](https://open-sandbox.ai/cli/)) | `opensandbox`, `from opensandbox import Sandbox` ([Python SDK](https://open-sandbox.ai/sdks/python)) |
 
-A small set of E2B-shaped methods is also available from `agent_sandbox.compat`. Differences and the move are in [Migrating from E2B](migrate-from-e2b.md). The HTTP field map for the OpenSandbox provider is the design note [provider-opensandbox-mapping](../design/provider-opensandbox-mapping.md).
+Standard synchronous and asynchronous clients are exported by `agent_sandbox`. Differences and the move are in [Migrating from E2B](migrate-from-e2b.md). The HTTP field map for the OpenSandbox provider is the design note [provider-opensandbox-mapping](../design/provider-opensandbox-mapping.md).
 
 A cell with "—" means that side has no matching public command or method.
 
