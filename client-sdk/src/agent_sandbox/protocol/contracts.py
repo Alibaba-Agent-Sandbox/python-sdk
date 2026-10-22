@@ -84,14 +84,6 @@ class ProcessProtocol(Protocol):
         request_timeout: float | None = None,
     ) -> None: ...
 
-    async def send_stdin(
-        self, envd_url: str, envd_token: EnvdTokenManager, *, pid: int | str, data: str
-    ) -> None: ...
-
-    async def kill(
-        self, envd_url: str, envd_token: EnvdTokenManager, *, pid: int | str
-    ) -> None: ...
-
 
 class FilesystemProtocol(Protocol):
     async def stat(self, envd_url: str, envd_token: EnvdTokenManager, *, path: str) -> FileInfo: ...
@@ -134,10 +126,6 @@ class FilesystemProtocol(Protocol):
 
     async def exists(self, envd_url: str, envd_token: EnvdTokenManager, *, path: str) -> bool: ...
 
-    async def get_info(
-        self, envd_url: str, envd_token: EnvdTokenManager, *, path: str
-    ) -> FileInfo: ...
-
     async def read(
         self,
         envd_url: str,
@@ -153,10 +141,6 @@ class FilesystemProtocol(Protocol):
 
     async def write(
         self, envd_url: str, envd_token: EnvdTokenManager, *, path: str, content: str | bytes
-    ) -> None: ...
-
-    async def rename(
-        self, envd_url: str, envd_token: EnvdTokenManager, *, old_path: str, new_path: str
     ) -> None: ...
 
 

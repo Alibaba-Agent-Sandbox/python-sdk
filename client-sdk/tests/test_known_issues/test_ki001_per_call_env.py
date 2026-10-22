@@ -8,7 +8,7 @@ environment variables never reached the command.
 from __future__ import annotations
 
 from agent_sandbox.api.commands import CommandsModule
-from agent_sandbox.protocol.process import ProcessProtocol
+from agent_sandbox.providers.shared.e2b.process import ProcessProtocol
 from tests.test_known_issues.helpers import (
     ENVD,
     body_of,

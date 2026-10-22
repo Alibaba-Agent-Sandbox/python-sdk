@@ -35,10 +35,23 @@ def wire(
     httpd.auth_token = auth_token
     httpd.registry = registry
     httpd.route_table = default_table()
+    document = dict(policy or {})
+    if auth_token:
+        import hashlib
+
+        document["auth"] = {
+            **document.get("auth", {}),
+            "tokens": [
+                {
+                    "id": "server",
+                    "scopes": ["*"],
+                    "token_sha256": hashlib.sha256(auth_token.encode()).hexdigest(),
+                },
+            ],
+        }
     httpd.policy_engine = PolicyEngine(
-        ServerPolicy.from_dict(policy or {}),
+        ServerPolicy.from_dict(document),
         default_table(),
-        legacy_token=auth_token,
         registry=registry,
     )
     return httpd

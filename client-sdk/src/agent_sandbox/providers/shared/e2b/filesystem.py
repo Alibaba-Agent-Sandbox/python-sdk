@@ -388,16 +388,6 @@ class FilesystemProtocol:
         except Exception:
             return False
 
-    async def get_info(
-        self,
-        envd_url: str,
-        envd_token: EnvdTokenManager,
-        *,
-        path: str,
-    ) -> FileInfo:
-        """Alias for stat(). Kept for backward compatibility."""
-        return await self.stat(envd_url, envd_token, path=path)
-
     async def read(
         self,
         envd_url: str,
@@ -434,14 +424,3 @@ class FilesystemProtocol:
         """Write content to a file via HTTP upload API."""
         raw_bytes = content.encode("utf-8") if isinstance(content, str) else content
         await self.upload_file(envd_url, envd_token, path=path, content=raw_bytes)
-
-    async def rename(
-        self,
-        envd_url: str,
-        envd_token: EnvdTokenManager,
-        *,
-        old_path: str,
-        new_path: str,
-    ) -> None:
-        """Deprecated: use move(). Kept for backward compatibility."""
-        await self.move(envd_url, envd_token, source=old_path, destination=new_path)

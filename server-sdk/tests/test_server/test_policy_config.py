@@ -41,7 +41,7 @@ class TestCatalogue:
 
     def test_group_is_the_expansion_of_declared_endpoints(self) -> None:
         assert len(endpoints_of("agents")) == 70
-        assert "upload" in endpoints_of("file_ops")
+        assert "files_upload_stream" in endpoints_of("file_ops")
         assert sum(len(endpoints_of(g)) for g in CapabilityGroup) == len(ENDPOINTS)
 
     def test_core_endpoints_cannot_be_disabled(self) -> None:
@@ -118,9 +118,9 @@ class TestValidation:
             ServerPolicy.from_dict({"endpoints": {"files_list": {"scopes": ["Bad Scope"]}}})
 
     def test_input_not_mutated(self) -> None:
-        data = {"endpoints": {"download": {"limits": {"max_bytes": "5KB"}}}}
+        data = {"endpoints": {"files_download_stream": {"limits": {"max_bytes": "5KB"}}}}
         ServerPolicy.from_dict(data)
-        assert data["endpoints"]["download"]["limits"]["max_bytes"] == "5KB"
+        assert data["endpoints"]["files_download_stream"]["limits"]["max_bytes"] == "5KB"
 
 
 class TestSizes:
@@ -173,8 +173,8 @@ class TestTokens:
         tok = {"scopes": ["*"], "token_sha256": "a" * 64}
         with pytest.raises(PolicyConfigError, match="duplicate"):
             ServerPolicy.from_dict({"auth": {"tokens": [{"id": "a", **tok}, {"id": "a", **tok}]}})
-        with pytest.raises(PolicyConfigError, match="legacy"):
-            ServerPolicy.from_dict({"auth": {"tokens": [{"id": "legacy", **tok}]}})
+        with pytest.raises(PolicyConfigError, match="non-empty"):
+            ServerPolicy.from_dict({"auth": {"tokens": [{"id": "", **tok}]}})
 
     def test_missing_env_var_fails_closed(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("ABX_TEST_TOK", raising=False)
@@ -217,8 +217,6 @@ class TestPresetsAndHelpers:
             "health",
             "capabilities",
             "capabilities_check",
-            "upload",
-            "download",
             "files_upload_stream",
             "files_download_stream",
         }
@@ -242,7 +240,7 @@ class TestPresetsAndHelpers:
         eng = ServerPolicy.preset("read-only").bind()
         assert eng.rule_for("files_list").enabled
         assert not eng.rule_for("files_delete").enabled
-        assert not eng.rule_for("upload").enabled
+        assert not eng.rule_for("files_upload_stream").enabled
         assert not eng.group_enabled(CapabilityGroup.PROCESS)
 
     def test_hardened_preset_denies_secrets(self) -> None:
@@ -306,7 +304,7 @@ class TestMergeOrder:
         )
         assert eng.rule_for("files_list").audit == "off"
         assert eng.rule_for("files_stat").audit == "all"
-        assert eng.rule_for("upload").audit == "deny"
+        assert eng.rule_for("files_upload_stream").audit == "all"
         assert eng.rule_for("shell").audit == "off"
 
     def test_disabled_wins_at_same_specificity(self) -> None:
@@ -346,14 +344,14 @@ class TestMergeOrder:
     def test_user_overrides_preset(self) -> None:
         eng = ServerPolicy.preset(
             "transfer-only",
-            endpoints={"files_list": {"enabled": True}, "upload": {"enabled": False}},
+            endpoints={"files_list": {"enabled": True}, "files_upload_stream": {"enabled": False}},
         ).bind()
         assert eng.rule_for("files_list").enabled
-        assert not eng.rule_for("upload").enabled
+        assert not eng.rule_for("files_upload_stream").enabled
 
     def test_scopes_replace_catalogue_default(self) -> None:
-        eng = _engine({"endpoints": {"download": {"scopes": ["dl:get"]}}})
-        assert eng.rule_for("download").scopes == ("dl:get",)
+        eng = _engine({"endpoints": {"files_download_stream": {"scopes": ["dl:get"]}}})
+        assert eng.rule_for("files_download_stream").scopes == ("dl:get",)
 
 
 class TestGroups:
@@ -382,10 +380,13 @@ class TestGroups:
 
     def test_exact_endpoint_rule_beats_group_alias(self) -> None:
         eng = ServerPolicy.from_dict(
-            {"groups": {"file_ops": False}, "endpoints": {"download": {"enabled": True}}}
+            {
+                "groups": {"file_ops": False},
+                "endpoints": {"files_download_stream": {"enabled": True}},
+            }
         ).bind()
-        assert eng.rule_for("download").enabled
-        assert not eng.rule_for("upload").enabled
+        assert eng.rule_for("files_download_stream").enabled
+        assert not eng.rule_for("files_upload_stream").enabled
 
     def test_exact_enable_inside_a_default_off_group_has_a_reason_for_the_rest(self) -> None:
         eng = ServerPolicy.only("agents_sessions_create").bind()
@@ -426,7 +427,7 @@ class TestGroups:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("ABX_SERVER_DISABLED_GROUPS", "file_ops")
-        assert ServerPolicy.from_dict({}).bind().rule_for("upload").enabled
+        assert ServerPolicy.from_dict({}).bind().rule_for("files_upload_stream").enabled
 
     def test_table_alias_is_a_lower_layer_than_the_policy(self) -> None:
         table = default_table()
@@ -486,17 +487,21 @@ class TestLint:
         assert any(w.startswith("L2") for w in pol.lint())
 
     def test_l4_overwrite_without_allow(self) -> None:
-        pol = ServerPolicy.from_dict({"endpoints": {"upload": {"params": {"overwrite": False}}}})
+        pol = ServerPolicy.from_dict(
+            {"endpoints": {"files_upload_stream": {"params": {"overwrite": False}}}}
+        )
         assert any(w.startswith("L4") for w in pol.lint())
 
     def test_clean_policy_has_no_warnings(self) -> None:
         assert ServerPolicy.preset("hardened").lint() == []
 
     def test_explain(self) -> None:
-        pol = ServerPolicy.only("download", paths={"allow": ["/srv/out"]})
-        assert pol.explain("download", path="/srv/out/x")["allowed"] is True
-        denied = pol.explain("download", path="/etc/passwd")
+        pol = ServerPolicy.only("files_download_stream", paths={"allow": ["/srv/out"]})
+        assert pol.explain("files_download_stream", path="/srv/out/x")["allowed"] is True
+        denied = pol.explain("files_download_stream", path="/etc/passwd")
         assert denied["allowed"] is False and denied["code"] == "path_not_allowed"
         assert pol.explain("files_list")["code"] == "endpoint_disabled"
-        assert pol.explain("download", scopes=["files:write"])["code"] == "missing_scope"
+        assert (
+            pol.explain("files_download_stream", scopes=["files:write"])["code"] == "missing_scope"
+        )
         assert pol.explain("nope")["code"] == "unknown_endpoint"

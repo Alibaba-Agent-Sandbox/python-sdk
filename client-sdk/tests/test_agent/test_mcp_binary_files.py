@@ -16,8 +16,8 @@ from agent_sandbox.agent.mcp import _STDIO_READ_LIMIT, SandboxMCPServer
 from agent_sandbox.agent.tools import dispatch_tool
 from agent_sandbox.api.files import FilesModule
 from agent_sandbox.models.errors import FileSizeLimitError
-from agent_sandbox.protocol.filesystem import FilesystemProtocol
-from agent_sandbox.transport.auth import ApiKeyAuth, EnvdTokenManager
+from agent_sandbox.providers.alicloud_express.auth import ApiKeyAuth, EnvdTokenManager
+from agent_sandbox.providers.shared.e2b.filesystem import FilesystemProtocol
 from agent_sandbox.transport.config import TransportConfig
 from agent_sandbox.transport.http import HttpClient
 

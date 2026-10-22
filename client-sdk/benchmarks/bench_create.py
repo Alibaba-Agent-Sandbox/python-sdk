@@ -15,8 +15,8 @@ sys.path.insert(0, str(CLIENT_ROOT / "src"))
 async def bench_create():
     """测试沙箱创建时间。"""
     from agent_sandbox.models.sandbox import SandboxConfig
-    from agent_sandbox.protocol.sandbox import SandboxProtocol
-    from agent_sandbox.transport.auth import ApiKeyAuth
+    from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
+    from agent_sandbox.providers.alicloud_express.auth import ApiKeyAuth
     from agent_sandbox.transport.config import TransportConfig
     from agent_sandbox.transport.http import HttpClient
 

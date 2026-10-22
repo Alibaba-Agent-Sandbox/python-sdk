@@ -47,18 +47,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -126,18 +116,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -212,18 +192,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -296,18 +266,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -377,18 +337,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -456,18 +406,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -537,18 +477,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -618,18 +548,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -703,18 +623,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -786,18 +696,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -872,18 +772,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -958,18 +848,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -1044,18 +924,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -1128,18 +998,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -1212,18 +1072,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -1296,18 +1146,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -1381,25 +1221,10 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
           "source": "default",
           "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
-          "source": "default",
-          "name": ""
-        },
-        "sandbox_api_key": {
-          "value": "toml",
-          "source": "toml",
-          "name": "transport.sandbox_api_key"
         },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
@@ -1467,25 +1292,10 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
           "source": "default",
           "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
-          "source": "default",
-          "name": ""
-        },
-        "sandbox_api_key": {
-          "value": "t",
-          "source": "toml",
-          "name": "transport.sandbox_api_key"
         },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
@@ -1553,18 +1363,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -1635,25 +1435,10 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
           "source": "default",
           "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
-          "source": "default",
-          "name": ""
-        },
-        "sandbox_api_key": {
-          "value": "new",
-          "source": "toml",
-          "name": "transport.sandbox_api_key"
         },
         "sandbox_base_url": {
           "value": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
@@ -1720,18 +1505,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -1802,18 +1577,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -1883,18 +1648,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -1965,18 +1720,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -2051,20 +1796,10 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "r-s",
           "source": "toml",
           "name": "providers.alicloud-express.region"
-        },
-        "retry_base_delay": {
-          "value": 1.0,
-          "source": "default",
-          "name": ""
         },
         "sandbox_base_url": {
           "value": "https://api.r-s.e2b.fc.aliyuncs.com",
@@ -2130,20 +1865,10 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-beijing",
           "source": "override",
           "name": "region"
-        },
-        "retry_base_delay": {
-          "value": 1.0,
-          "source": "default",
-          "name": ""
         },
         "sandbox_base_url": {
           "value": "https://api.cn-beijing.e2b.fc.aliyuncs.com",
@@ -2211,18 +1936,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -2292,20 +2007,10 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-beijing",
           "source": "override",
           "name": "region"
-        },
-        "retry_base_delay": {
-          "value": 1.0,
-          "source": "default",
-          "name": ""
         },
         "sandbox_base_url": {
           "value": "https://api.cn-beijing.e2b.fc.aliyuncs.com",
@@ -2374,18 +2079,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -2454,20 +2149,10 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-beijing",
           "source": "override",
           "name": "region"
-        },
-        "retry_base_delay": {
-          "value": 1.0,
-          "source": "default",
-          "name": ""
         },
         "sandbox_base_url": {
           "value": "https://api.cn-beijing.e2b.fc.aliyuncs.com",
@@ -2544,18 +2229,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -2624,18 +2299,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -2709,18 +2374,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -2790,18 +2445,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 7,
-          "source": "environ",
-          "name": "ABX_MAX_RETRIES"
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -2874,18 +2519,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -2953,18 +2588,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -3033,18 +2658,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -3117,18 +2732,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -3202,18 +2807,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -3281,18 +2876,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -3360,18 +2945,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "cn-hangzhou",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -3469,11 +3044,6 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "mode": {
           "value": "safe",
           "source": "default",
@@ -3481,11 +3051,6 @@
         },
         "retries": {
           "value": 2,
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -3573,11 +3138,6 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "mode": {
           "value": "safe",
           "source": "default",
@@ -3585,11 +3145,6 @@
         },
         "retries": {
           "value": 2,
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -3674,11 +3229,6 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "mode": {
           "value": "safe",
           "source": "default",
@@ -3686,11 +3236,6 @@
         },
         "retries": {
           "value": 2,
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -3779,11 +3324,6 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "mode": {
           "value": "safe",
           "source": "default",
@@ -3791,11 +3331,6 @@
         },
         "retries": {
           "value": 2,
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -3887,11 +3422,6 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "mode": {
           "value": "safe",
           "source": "default",
@@ -3899,11 +3429,6 @@
         },
         "retries": {
           "value": 2,
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -4005,11 +3530,6 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "mode": {
           "value": "safe",
           "source": "default",
@@ -4019,16 +3539,6 @@
           "value": 5,
           "source": "dotenv",
           "name": "ABX_PLUG_RETRIES"
-        },
-        "retry_base_delay": {
-          "value": 1.0,
-          "source": "default",
-          "name": ""
-        },
-        "token": {
-          "value": "t",
-          "source": "toml",
-          "name": "providers.plug.token"
         },
         "ws_ping_interval": {
           "value": 30.0,
@@ -4113,11 +3623,6 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "mode": {
           "value": "safe",
           "source": "default",
@@ -4125,11 +3630,6 @@
         },
         "retries": {
           "value": 2,
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -4218,11 +3718,6 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "mode": {
           "value": "safe",
           "source": "default",
@@ -4230,11 +3725,6 @@
         },
         "retries": {
           "value": 2,
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -4327,11 +3817,6 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "mode": {
           "value": "safe",
           "source": "default",
@@ -4339,11 +3824,6 @@
         },
         "retries": {
           "value": 2,
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -4412,16 +3892,6 @@
         },
         "max_keepalive_connections": {
           "value": 20,
-          "source": "default",
-          "name": ""
-        },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -4500,16 +3970,6 @@
         },
         "max_keepalive_connections": {
           "value": 20,
-          "source": "default",
-          "name": ""
-        },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -4602,21 +4062,6 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
-          "source": "default",
-          "name": ""
-        },
-        "sandbox_api_key": {
-          "value": "scoped",
-          "source": "toml",
-          "name": "providers.e2b-like.sandbox_api_key"
-        },
         "sandbox_base_url": {
           "value": "https://api.e2b.dev",
           "source": "default",
@@ -4689,16 +4134,6 @@
         },
         "max_keepalive_connections": {
           "value": 20,
-          "source": "default",
-          "name": ""
-        },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -4778,16 +4213,6 @@
         },
         "max_keepalive_connections": {
           "value": 20,
-          "source": "default",
-          "name": ""
-        },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -4872,18 +4297,8 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "r1",
-          "source": "default",
-          "name": ""
-        },
-        "retry_base_delay": {
-          "value": 1.0,
           "source": "default",
           "name": ""
         },
@@ -4960,20 +4375,10 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "r9",
           "source": "override",
           "name": "region"
-        },
-        "retry_base_delay": {
-          "value": 1.0,
-          "source": "default",
-          "name": ""
         },
         "sandbox_base_url": {
           "value": "https://api.r9.example.com",
@@ -5060,20 +4465,10 @@
           "source": "default",
           "name": ""
         },
-        "max_retries": {
-          "value": 3,
-          "source": "default",
-          "name": ""
-        },
         "region": {
           "value": "r9",
           "source": "override",
           "name": "region"
-        },
-        "retry_base_delay": {
-          "value": 1.0,
-          "source": "default",
-          "name": ""
         },
         "sandbox_base_url": {
           "value": "https://x.example",

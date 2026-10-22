@@ -51,8 +51,8 @@ class TestTransferOnly:
             policy={
                 "preset": "transfer-only",
                 "endpoints": {
-                    "upload": {"paths": {"allow": [str(tree / "out")]}},
-                    "download": {"paths": {"allow": [str(tree / "out")]}},
+                    "files_upload_stream": {"paths": {"allow": [str(tree / "out")]}},
+                    "files_download_stream": {"paths": {"allow": [str(tree / "out")]}},
                 },
             }
         )
@@ -63,19 +63,19 @@ class TestTransferOnly:
     ) -> None:
         caps = await client.discover()
         assert caps.preset == "transfer-only"
-        assert {"upload", "download"} <= set(caps.available())
+        assert {"files_upload_stream", "files_download_stream"} <= set(caps.available())
         assert not caps.can("shell") and not caps.can("files_list")
-        assert caps.paths("upload") is not None
-        assert caps.paths("upload").allow  # type: ignore[union-attr]
+        assert caps.paths("files_upload_stream") is not None
+        assert caps.paths("files_upload_stream").allow  # type: ignore[union-attr]
 
     async def test_allowed_path_roundtrip_with_and_without_discovery(
         self, client: ServerClient, tree: Path
     ) -> None:
         target = str(tree / "out" / "t.bin")
-        await client.files.upload_legacy(target, b"payload")
-        assert await client.files.download_legacy(target) == b"payload"
+        await client.files.upload(target, b"payload")
+        assert await client.files.download(target) == b"payload"
         await client.discover()
-        assert await client.files.download_legacy(target) == b"payload"
+        assert await client.files.download(target) == b"payload"
 
     async def test_disabled_endpoint_server_answer_is_typed(self, client: ServerClient) -> None:
         with pytest.raises(EndpointNotAvailableError) as exc:
@@ -108,11 +108,11 @@ class TestTransferOnly:
         self, client: ServerClient, tree: Path
     ) -> None:
         with pytest.raises(FilePolicyDeniedError) as exc:
-            await client.files.download_legacy(str(tree / "secret" / "s.txt"))
+            await client.files.download(str(tree / "secret" / "s.txt"))
         err = exc.value
         assert isinstance(err, PermissionDeniedError) and isinstance(err, PolicyDeniedError)
         assert err.status_code == 403 and err.error_code == "path_not_allowed"
-        assert err.endpoint == "download"
+        assert err.endpoint == "files_download_stream"
 
     async def test_traversal_and_outside_paths_are_denied(
         self, client: ServerClient, tree: Path
@@ -124,14 +124,18 @@ class TestTransferOnly:
             str(tree / "out" / "%2e%2e" / "secret" / "s.txt"),
         ):
             with pytest.raises((FilePolicyDeniedError, FileNotFoundError_)):
-                await client.files.download_legacy(path)
+                await client.files.download(path)
 
     async def test_server_check_matches_actual_decision(
         self, client: ServerClient, tree: Path
     ) -> None:
         caps = await client.discover()
-        allowed = await caps.check_path("download", str(tree / "out" / "a.txt"), "read")
-        denied = await caps.check_path("download", str(tree / "secret" / "s.txt"), "read")
+        allowed = await caps.check_path(
+            "files_download_stream", str(tree / "out" / "a.txt"), "read"
+        )
+        denied = await caps.check_path(
+            "files_download_stream", str(tree / "secret" / "s.txt"), "read"
+        )
         assert allowed.allowed is True
         assert denied.allowed is False and denied.code == "path_not_allowed"
 

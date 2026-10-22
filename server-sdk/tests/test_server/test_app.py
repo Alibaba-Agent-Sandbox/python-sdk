@@ -285,14 +285,14 @@ class TestUploadDownload:
         status, body = _request(
             server_port,
             "POST",
-            "/upload",
+            "/files/upload-stream",
             body={"path": file_path, "content_base64": encoded},
         )
         assert status == 200
         assert body["bytes"] == len(original)
 
         # Download
-        status, body = _request(server_port, "GET", f"/download?path={file_path}")
+        status, body = _request(server_port, "GET", f"/files/download-stream?path={file_path}")
         assert status == 200
         decoded = base64.b64decode(body["content_base64"])
         assert decoded == original
@@ -302,7 +302,7 @@ class TestUploadDownload:
     ) -> None:
         monkeypatch.setenv("ABX_SERVER_BASE_DIR", str(tmp_path))
         status, body = _request(
-            server_port, "GET", f"/download?path={tmp_path}/nonexistent/file.xyz"
+            server_port, "GET", f"/files/download-stream?path={tmp_path}/nonexistent/file.xyz"
         )
         assert status == 404
         assert body["type"] == "FileNotFoundError"
@@ -407,7 +407,7 @@ class TestGroupAliasToggle:
         status, body = _request(
             server_port,
             "POST",
-            "/upload",
+            "/files/upload-stream",
             body={"path": "/tmp/x", "content_base64": "aGVsbG8="},
         )
         assert status == 404
@@ -417,7 +417,7 @@ class TestGroupAliasToggle:
 
     def test_disable_download(self, server_port: int) -> None:
         default_table().disable_group(CapabilityGroup.FILE_OPS)
-        status, body = _request(server_port, "GET", "/download?path=/tmp/x")
+        status, body = _request(server_port, "GET", "/files/download-stream?path=/tmp/x")
         assert status == 404
 
     def test_disable_shell(self, server_port: int) -> None:
@@ -484,7 +484,7 @@ class TestEdgeCases:
         status, body = _request(
             server_port,
             "POST",
-            "/upload",
+            "/files/upload-stream",
             body={"path": str(tmp_path / "f"), "content_base64": "!!!"},
         )
         assert status == 400
@@ -493,13 +493,13 @@ class TestEdgeCases:
         status, body = _request(
             server_port,
             "POST",
-            "/upload",
+            "/files/upload-stream",
             body={"content_base64": "aGVsbG8="},
         )
         assert status == 400
 
     def test_download_missing_path_param(self, server_port: int) -> None:
-        status, body = _request(server_port, "GET", "/download")
+        status, body = _request(server_port, "GET", "/files/download-stream")
         assert status == 400
 
 
@@ -521,7 +521,7 @@ class TestPathTraversal:
         status, body = _request(
             server_port,
             "POST",
-            "/upload",
+            "/files/upload-stream",
             body={"path": base + "/../../etc/shadow", "content_base64": payload},
         )
         assert status == 403
@@ -533,7 +533,9 @@ class TestPathTraversal:
         base = str(tmp_path / "sandbox")
         os.makedirs(base, exist_ok=True)
         monkeypatch.setenv("ABX_SERVER_BASE_DIR", base)
-        status, body = _request(server_port, "GET", f"/download?path={base}/../../etc/passwd")
+        status, body = _request(
+            server_port, "GET", f"/files/download-stream?path={base}/../../etc/passwd"
+        )
         assert status == 403
         assert body["code"] == "path_not_allowed"
 
@@ -544,7 +546,7 @@ class TestPathTraversal:
         status, body = _request(
             server_port,
             "POST",
-            "/upload",
+            "/files/upload-stream",
             body={"path": file_path, "content_base64": payload},
         )
         assert status == 200
@@ -560,13 +562,13 @@ class TestPathTraversal:
         inside = _request(
             server_port,
             "POST",
-            "/upload",
+            "/files/upload-stream",
             body={"path": str(custom_base / "sub" / "file.txt"), "content_base64": payload},
         )
         outside = _request(
             server_port,
             "POST",
-            "/upload",
+            "/files/upload-stream",
             body={"path": str(tmp_path / "other.txt"), "content_base64": payload},
         )
         assert inside[0] == 200 and outside[0] == 403

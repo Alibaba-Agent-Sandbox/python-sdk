@@ -33,7 +33,7 @@ This document provides an objective comparison of Agent Sandbox (abx) with other
 | **Registered commands** | `sandbox.run(name, **kwargs)` | N/A | N/A |
 | **Network access** | `sandbox.network.get_host()` | `sandbox.get_host()` | Built-in URL routing |
 | **Terminal (PTY)** | `sandbox.get_terminal()` | `sandbox.terminal.start()` | `modal shell` |
-| **E2B migration helper** | `from agent_sandbox.compat import Sandbox` (partial) | Native | N/A |
+| **E2B migration helper** | `from agent_sandbox import Sandbox` (partial) | Native | N/A |
 | **Auth methods** | Depends on the provider. The default uses `E2B_API_KEY`; Alibaba Cloud Express also uses the official AK/SK names | API Key | Token-based |
 
 ### Code Examples
@@ -154,7 +154,7 @@ Agent Sandbox uses E2B-style method names, so E2B code can often be ported with 
 
 ```python
 # Start of a migration: change the import, then follow the guide
-from agent_sandbox.compat import Sandbox
+from agent_sandbox import Sandbox
 ```
 
 See [Migrating from E2B](migrate-from-e2b.md) for the full guide.

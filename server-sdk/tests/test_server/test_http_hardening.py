@@ -156,24 +156,24 @@ class TestBodyLimit:
     ) -> None:
         live: Live = live_server(
             policy={
-                "endpoints": {"upload": {"limits": {"max_request_bytes": 1000}}},
+                "endpoints": {"files_upload_stream": {"limits": {"max_request_bytes": 1000}}},
             }
         )
         payload = json.dumps(
             {"path": "big.bin", "content_base64": base64.b64encode(b"x" * 5000).decode()}
         )
         status, _ = post_raw(
-            live.port, "/upload", [f"Content-Length: {len(payload)}"], payload.encode()
+            live.port, "/files/upload-stream", [f"Content-Length: {len(payload)}"], payload.encode()
         )
         assert status == 413
         assert not (sandbox_tree / "big.bin").exists()
 
     def test_under_cap_is_accepted(self, live_server: Any, sandbox_tree: Any) -> None:
         live: Live = live_server(
-            policy={"endpoints": {"upload": {"limits": {"max_request_bytes": 100000}}}}
+            policy={"endpoints": {"files_upload_stream": {"limits": {"max_request_bytes": 100000}}}}
         )
         status, _ = live.post(
-            "/upload",
+            "/files/upload-stream",
             {
                 "path": str(sandbox_tree / "ok.bin"),
                 "content_base64": base64.b64encode(b"hello").decode(),

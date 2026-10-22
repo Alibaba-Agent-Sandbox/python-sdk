@@ -6,14 +6,16 @@ from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from agent_sandbox.protocol.code_interpreter import (
+    from agent_sandbox.protocol.port import PortClient as PortClient
+    from agent_sandbox.providers.shared.e2b.code_interpreter import (
         CodeInterpreterProtocol as CodeInterpreterProtocol,
     )
-    from agent_sandbox.protocol.filesystem import FilesystemProtocol as FilesystemProtocol
-    from agent_sandbox.protocol.port import PortClient as PortClient
-    from agent_sandbox.protocol.process import ProcessProtocol as ProcessProtocol
-    from agent_sandbox.protocol.sandbox import SandboxProtocol as SandboxProtocol
-    from agent_sandbox.protocol.terminal import TerminalSession as TerminalSession
+    from agent_sandbox.providers.shared.e2b.filesystem import (
+        FilesystemProtocol as FilesystemProtocol,
+    )
+    from agent_sandbox.providers.shared.e2b.process import ProcessProtocol as ProcessProtocol
+    from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol as SandboxProtocol
+    from agent_sandbox.providers.shared.e2b.terminal import TerminalSession as TerminalSession
 
 __all__ = [
     "SandboxProtocol",

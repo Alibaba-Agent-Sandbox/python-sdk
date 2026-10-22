@@ -280,7 +280,7 @@ class TestFileUploadDownload:
 
         # Upload
         status, body = _http_request(
-            f"{base_url}/upload",
+            f"{base_url}/files/upload-stream",
             method="POST",
             data={"path": file_path, "content_base64": content_b64},
         )
@@ -289,7 +289,7 @@ class TestFileUploadDownload:
 
         # Download
         status, body = _http_request(
-            f"{base_url}/download?path={urllib.request.quote(file_path)}",
+            f"{base_url}/files/download-stream?path={urllib.request.quote(file_path)}",
         )
         assert status == 200
         downloaded = base64.b64decode(body["content_base64"])
@@ -302,7 +302,7 @@ class TestFileUploadDownload:
         evil_path = str(tmp_path / ".." / ".." / "etc" / "passwd")
 
         status, body = _http_request(
-            f"{base_url}/upload",
+            f"{base_url}/files/upload-stream",
             method="POST",
             data={"path": evil_path, "content_base64": content_b64},
         )
@@ -314,7 +314,7 @@ class TestFileUploadDownload:
         evil_path = str(tmp_path / ".." / ".." / "etc" / "passwd")
 
         status, body = _http_request(
-            f"{base_url}/download?path={urllib.request.quote(evil_path)}",
+            f"{base_url}/files/download-stream?path={urllib.request.quote(evil_path)}",
         )
         assert status == 403
         assert body["code"] == "path_not_allowed"
@@ -326,7 +326,7 @@ class TestFileUploadDownload:
         file_path = str(tmp_path / "nope.txt")
 
         status, body = _http_request(
-            f"{base_url}/upload",
+            f"{base_url}/files/upload-stream",
             method="POST",
             data={"path": file_path, "content_base64": content_b64},
         )
@@ -338,7 +338,7 @@ class TestFileUploadDownload:
         default_table().disable_group(CapabilityGroup.FILE_OPS)
 
         status, body = _http_request(
-            f"{base_url}/download?path=/some/file",
+            f"{base_url}/files/download-stream?path=/some/file",
         )
         assert status == 404
         assert body["code"] == "endpoint_disabled"

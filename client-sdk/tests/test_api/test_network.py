@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from agent_sandbox.api.network import NetworkModule
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from agent_sandbox.api.network import NetworkModule
+
+from tests.network_support import provider_network
 from tests.test_api.conftest import TEST_ENVD_TOKEN, TEST_SANDBOX_ID
 
 DOMAIN = "cn-hangzhou.e2b.fc.aliyuncs.com"
@@ -37,7 +42,7 @@ class TestNetworkGetUrl:
         assert url == f"https://8080-{TEST_SANDBOX_ID}.{DOMAIN}"
 
     def test_get_url_insecure(self) -> None:
-        mod = NetworkModule(
+        mod = provider_network(
             sandbox_id=TEST_SANDBOX_ID,
             domain=DOMAIN,
             secure=False,
@@ -58,7 +63,7 @@ class TestNetworkGetAccessHeaders:
         assert headers == {"X-Access-Token": TEST_ENVD_TOKEN}
 
     def test_get_access_headers_no_token(self) -> None:
-        mod = NetworkModule(
+        mod = provider_network(
             sandbox_id=TEST_SANDBOX_ID,
             domain=DOMAIN,
             secure=True,
@@ -69,7 +74,7 @@ class TestNetworkGetAccessHeaders:
         assert headers == {}
 
     def test_get_access_headers_insecure_with_token(self) -> None:
-        mod = NetworkModule(
+        mod = provider_network(
             sandbox_id=TEST_SANDBOX_ID,
             domain=DOMAIN,
             secure=False,
@@ -85,11 +90,13 @@ class TestNetworkModuleInit:
     """Test NetworkModule initialization."""
 
     def test_default_secure(self) -> None:
-        mod = NetworkModule(sandbox_id="sbx-1", domain="example.com", capabilities={"ports"})
+        mod = provider_network(sandbox_id="sbx-1", domain="example.com", capabilities={"ports"})
         url = mod.get_url(8080)
         assert url.startswith("https://")
 
     def test_custom_domain(self) -> None:
-        mod = NetworkModule(sandbox_id="sbx-1", domain="custom.domain.com", capabilities={"ports"})
+        mod = provider_network(
+            sandbox_id="sbx-1", domain="custom.domain.com", capabilities={"ports"}
+        )
         host = mod.get_host(3000)
         assert "custom.domain.com" in host

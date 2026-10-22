@@ -261,7 +261,20 @@ def test_route_helpers_deny_and_allow_under_tmp() -> None:
     import tempfile
     from pathlib import Path
 
-    from agent_sandbox.server.routes import enforce_exec_policy, handle_download
+    from agent_sandbox.server.routes import enforce_exec_policy
+    from agent_sandbox.server.routes_files import _handle_files_download_stream
+    from agent_sandbox.server.types import ServerRequest
+
+    def handle_download(path, ctx):
+        response = _handle_files_download_stream(
+            ServerRequest(
+                method="GET",
+                path="/files/download-stream",
+                query={"path": [path]},
+                context={"policy": ctx},
+            )
+        )
+        return response.status, response.body
 
     with tempfile.TemporaryDirectory(prefix="abx-guard-", dir="/tmp") as raw:
         work = Path(raw)
@@ -272,7 +285,7 @@ def test_route_helpers_deny_and_allow_under_tmp() -> None:
         policy = ServerPolicy.from_dict(
             {
                 "endpoints": {
-                    "download": {"paths": {"allow": ["/tmp"], "deny": ["**/.env"]}},
+                    "files_download_stream": {"paths": {"allow": ["/tmp"], "deny": ["**/.env"]}},
                     "shell": {
                         "paths": {"allow": ["/tmp"], "deny": ["**/.env"]},
                         "params": {
@@ -285,7 +298,7 @@ def test_route_helpers_deny_and_allow_under_tmp() -> None:
         )
         engine = policy.bind()
         download_ctx, release_download = engine.admit(
-            engine._routes["download"], Identity("t", frozenset({"*"}))
+            engine._routes["files_download_stream"], Identity("t", frozenset({"*"}))
         )
         shell_ctx, release_shell = engine.admit(
             engine._routes["shell"], Identity("t", frozenset({"*"}))

@@ -326,7 +326,7 @@
       "feature": "process.manage",
       "support": "required",
       "idempotent": false,
-      "host_calls": true,
+      "host_calls": false,
       "params": {
         "sandbox_id": {
           "type": "string",
@@ -338,7 +338,7 @@
         }
       },
       "result": "{}",
-      "note": "pid is an opaque id: the integer pid of process.list or the string process_id of exec.start"
+      "note": "direct EPP operation; SDK kill uses process.signal with signal 9"
     },
     {
       "method": "process.signal",
@@ -540,7 +540,7 @@
         }
       },
       "result": "{}",
-      "note": "plugins may additionally accept the legacy aliases src/dest"
+      "note": "source and destination are required; no alternate field names are accepted"
     },
     {
       "method": "files.search",

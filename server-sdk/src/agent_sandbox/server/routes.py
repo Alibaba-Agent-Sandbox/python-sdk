@@ -11,7 +11,6 @@ Which of them a caller may use is decided by the endpoint policy, not here.
 
 from __future__ import annotations
 
-import base64
 import os
 import shlex
 import subprocess
@@ -19,7 +18,6 @@ from typing import Any
 
 from agent_sandbox.server._coerce import coerce_kwargs as _coerce_kwargs
 
-from .guard import OP_READ, OP_WRITE
 from .guards import check_command, check_env, check_process
 from .policy import PolicyDenied
 from .registry import CommandArg, CommandRegistry, default_registry  # noqa: F401
@@ -31,8 +29,6 @@ __all__ = [
     "handle_health",
     "handle_list_commands",
     "handle_run_command",
-    "handle_upload",
-    "handle_download",
     "handle_shell",
 ]
 
@@ -151,115 +147,6 @@ def handle_run_command(
         return 500, {"error": str(exc), "type": type(exc).__name__}
 
     return 200, {"result": result}
-
-
-def handle_upload(body: dict[str, Any], ctx: EndpointContext) -> tuple[int, dict[str, Any]]:
-    """``POST /upload`` — write base64-encoded content to the local filesystem.
-
-    Expected *body*::
-
-        {"path": "/some/file.txt", "content_base64": "<base64>"}
-
-    Returns:
-        ``(status_code, response_dict)``
-    """
-    path = body.get("path")
-    content_b64 = body.get("content_base64")
-    if not path or not isinstance(path, str):
-        return 400, {"error": "Missing or invalid 'path'", "type": "ValueError"}
-    if not content_b64 or not isinstance(content_b64, str):
-        return 400, {
-            "error": "Missing or invalid 'content_base64'",
-            "type": "ValueError",
-        }
-
-    try:
-        data = base64.b64decode(content_b64, validate=True)
-    except Exception as exc:
-        return 400, {"error": f"Invalid base64: {exc}", "type": "ValueError"}
-
-    # Enforce upload size limit (consistent with routes_files.py).
-    max_size = int(ctx.limit("max_bytes", _max_upload_size()))
-    if len(data) > max_size:
-        return 413, {
-            "error": f"File size {len(data)} exceeds limit {max_size}",
-            "type": "ValueError",
-            "code": "payload_too_large",
-            "limit": max_size,
-        }
-
-    try:
-        safe_path = ctx.resolve_path(path, OP_WRITE)
-    except ValueError as exc:
-        return 400, {"error": str(exc), "type": "ValueError"}
-
-    try:
-        from .routes_files import _extension_check, _write_checked
-
-        os.makedirs(os.path.dirname(safe_path) or ".", exist_ok=True)
-        _extension_check(ctx, safe_path)
-        _write_checked(ctx, safe_path, data)
-    except PolicyDenied:
-        raise
-    except Exception as exc:
-        return 500, {"error": str(exc), "type": type(exc).__name__}
-
-    return 200, {"path": safe_path, "bytes": len(data)}
-
-
-def handle_download(path: str, ctx: EndpointContext) -> tuple[int, dict[str, Any]]:
-    """``GET /download?path=...`` — read a file and return base64-encoded content.
-
-    Args:
-        path: Filesystem path to read.
-
-    Returns:
-        ``(status_code, response_dict)``
-    """
-    if not path:
-        return 400, {"error": "Missing 'path' query parameter", "type": "ValueError"}
-
-    try:
-        safe_path = ctx.resolve_path(path, OP_READ)
-    except ValueError as exc:
-        return 400, {"error": str(exc), "type": "ValueError"}
-
-    if not os.path.isfile(safe_path):
-        return 404, {
-            "error": f"File not found: {safe_path}",
-            "type": "FileNotFoundError",
-        }
-
-    # Enforce download size limit.
-    try:
-        file_size = os.path.getsize(safe_path)
-    except OSError as exc:
-        return 500, {"error": str(exc), "type": type(exc).__name__}
-    max_size = int(ctx.limit("max_bytes", _max_upload_size()))
-    if file_size > max_size:
-        return 413, {
-            "error": f"File size {file_size} exceeds download limit {max_size}",
-            "type": "ValueError",
-            "code": "payload_too_large",
-            "limit": max_size,
-        }
-
-    try:
-        from .routes_files import _read_checked
-
-        read_result = _read_checked(ctx, safe_path)
-        if not isinstance(read_result, bytes):
-            return read_result.status, read_result.body
-        data = read_result
-    except PolicyDenied:
-        raise
-    except Exception as exc:
-        return 500, {"error": str(exc), "type": type(exc).__name__}
-
-    return 200, {
-        "path": safe_path,
-        "content_base64": base64.b64encode(data).decode("ascii"),
-    }
 
 
 _DEFAULT_SHELL_TIMEOUT = 300.0
@@ -423,19 +310,6 @@ def _handle_run_command_wrapped(request: ServerRequest) -> ServerResponse:
     return ServerResponse(status=status, body=resp)
 
 
-def _handle_upload_wrapped(request: ServerRequest) -> ServerResponse:
-    """Adapt :func:`handle_upload` (``POST /upload``)."""
-    status, resp = handle_upload(request.body or {}, context_of(request))
-    return ServerResponse(status=status, body=resp)
-
-
-def _handle_download_wrapped(request: ServerRequest) -> ServerResponse:
-    """Adapt :func:`handle_download` (``GET /download?path=...``)."""
-    file_path = request.query.get("path", [""])[0]
-    status, body = handle_download(file_path, context_of(request))
-    return ServerResponse(status=status, body=body)
-
-
 def _handle_shell_wrapped(request: ServerRequest) -> ServerResponse:
     """Adapt :func:`handle_shell` (``POST /shell``)."""
     status, resp = handle_shell(request.body or {}, context_of(request))
@@ -450,6 +324,4 @@ _table = default_table()
 _table.mount("health", _handle_health_wrapped)
 _table.mount("list_commands", _handle_commands_wrapped)
 _table.mount("run_command", _handle_run_command_wrapped)
-_table.mount("upload", _handle_upload_wrapped)
-_table.mount("download", _handle_download_wrapped)
 _table.mount("shell", _handle_shell_wrapped)

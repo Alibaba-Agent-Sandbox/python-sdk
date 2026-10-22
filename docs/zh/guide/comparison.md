@@ -33,7 +33,7 @@
 | **注册命令** | `sandbox.run(name, **kwargs)` | N/A | N/A |
 | **网络访问** | `sandbox.network.get_host()` | `sandbox.get_host()` | 内置 URL 路由 |
 | **终端 (PTY)** | `sandbox.get_terminal()` | `sandbox.terminal.start()` | `modal shell` |
-| **E2B 迁移辅助** | `from agent_sandbox.compat import Sandbox`（部分对应） | 原生 | N/A |
+| **E2B 迁移辅助** | `from agent_sandbox import Sandbox`（部分对应） | 原生 | N/A |
 | **认证方式** | 随提供方变化。默认提供方用 `E2B_API_KEY`，阿里云极速版另用官方 AK/SK | API Key | Token |
 
 ### 代码示例
@@ -154,7 +154,7 @@ Agent Sandbox 使用 E2B 风格的方法名，E2B 代码通常只需少量改动
 
 ```python
 # 迁移的起点：改导入，然后按指南逐项处理
-from agent_sandbox.compat import Sandbox
+from agent_sandbox import Sandbox
 ```
 
 完整迁移指南参见[从 E2B 迁移](migrate-from-e2b.md)。

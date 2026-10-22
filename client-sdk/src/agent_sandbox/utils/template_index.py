@@ -20,9 +20,8 @@ Design notes
 * Network failures degrade gracefully: when a cached copy exists it is served
   with ``stale=True`` plus a human-readable ``notice``; without a cache the
   error is raised with explicit remediation steps.
-* Schema evolution is explicit: the index declares ``schema_version`` (missing
-  is treated as :data:`INDEX_SCHEMA_VERSION`, i.e. legacy-compatible).  A newer
-  version than this client understands fails loudly instead of being
+* Schema evolution is explicit: the index must declare the supported
+  ``schema_version``. An unsupported version fails loudly instead of being
   misinterpreted.
 """
 
@@ -256,15 +255,15 @@ def parse_index(
             f"Template index must be a YAML mapping with a 'templates' list ({source_url})."
         )
 
-    schema_version = data.get("schema_version", INDEX_SCHEMA_VERSION)
+    schema_version = data.get("schema_version")
     if not isinstance(schema_version, int) or isinstance(schema_version, bool):
         raise TemplateParseError(
             f"Template index declares a non-integer schema_version "
             f"({schema_version!r}) at {source_url}."
         )
-    if schema_version > INDEX_SCHEMA_VERSION:
+    if schema_version != INDEX_SCHEMA_VERSION:
         raise TemplateParseError(
-            f"Template index schema_version {schema_version} is newer than supported "
+            f"Template index schema_version {schema_version} differs from supported "
             f"schema_version {INDEX_SCHEMA_VERSION}.",
             suggestion=(
                 "Upgrade agent-sandbox (`pip install -U agent-sandbox-client`) to read this index."

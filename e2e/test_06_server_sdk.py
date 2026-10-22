@@ -88,8 +88,13 @@ def test_files_upload_download_roundtrip_and_stat(server):  # type: ignore[no-un
 def test_legacy_upload_and_download_routes(server):  # type: ignore[no-untyped-def]
     d = _dir()
     payload = base64.b64encode(b"legacy-route").decode()
-    assert server.post("/upload", json={"path": f"{d}/l.txt", "content_base64": payload}).status_code == 200
-    r = server.get("/download", params={"path": f"{d}/l.txt"})
+    assert (
+        server.post(
+            "/files/upload-stream", json={"path": f"{d}/l.txt", "content_base64": payload}
+        ).status_code
+        == 200
+    )
+    r = server.get("/files/download-stream", params={"path": f"{d}/l.txt"})
     assert base64.b64decode(r.json()["content_base64"]) == b"legacy-route"
 
 
@@ -106,13 +111,17 @@ def test_files_mkdir_list_move_search_delete(server):  # type: ignore[no-untyped
     types = {e["name"]: e["type"] for e in listed}
     assert types["sub"] == "directory" and types["alpha.txt"] == "file"
 
-    mv = server.post("/files/move", json={"source": f"{d}/alpha.txt", "destination": f"{d}/sub/moved.txt"})
+    mv = server.post(
+        "/files/move", json={"source": f"{d}/alpha.txt", "destination": f"{d}/sub/moved.txt"}
+    )
     assert mv.status_code == 200, mv.text
     found = server.post("/files/search", json={"path": d, "pattern": "*.txt"}).json()
     flat = str(found)
     assert "moved.txt" in flat and "beta.log" not in flat
 
-    assert server.request("DELETE", "/files", params={"path": f"{d}/sub/moved.txt"}).status_code == 200
+    assert (
+        server.request("DELETE", "/files", params={"path": f"{d}/sub/moved.txt"}).status_code == 200
+    )
     gone = server.get("/files/stat", params={"path": f"{d}/sub/moved.txt"}).json()
     assert gone["exists"] is False
 

@@ -213,7 +213,7 @@ class TestFilesUploadDownloadUrls:
 
 
 class TestFilesRename:
-    """Test FilesModule.rename()."""
+    """Test FilesModule.move()."""
 
     @pytest.mark.asyncio
     async def test_rename_calls_protocol(
@@ -221,7 +221,7 @@ class TestFilesRename:
         files_module: FilesModule,
         mock_filesystem_protocol: AsyncMock,
     ) -> None:
-        await files_module.rename("/app/old.py", "/app/new.py")
+        await files_module.move("/app/old.py", "/app/new.py")
         mock_filesystem_protocol.move.assert_called_once()
         call_kwargs = mock_filesystem_protocol.move.call_args[1]
         assert call_kwargs["source"] == "/app/old.py"

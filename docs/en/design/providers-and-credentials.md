@@ -39,7 +39,6 @@ Sources scanned: `transport/config.py`, `transport/auth.py`, `models/config.py`,
 | Region | `region` | `[providers.alicloud-express] region` | `ALIBABA_CLOUD_REGION_ID` | `region` |
 | HTTP timeout | `http_timeout` | `[transport] http_timeout` | `ABX_HTTP_TIMEOUT` | `http_timeout` |
 | HTTP/2 | `http2` | `http2` | `ABX_HTTP2` | `http2` |
-| Max retries | `max_retries` | `max_retries` | `ABX_MAX_RETRIES` | `max_retries` |
 | Log level | `log_level` | `log_level` | `ABX_LOG_LEVEL` | `log_level` |
 | Default template | `default_template` | `default_template` | `ABX_DEFAULT_TEMPLATE` | `default_template` |
 | Provider | `provider` | `[core] provider` | `ABX_PROVIDER` | `provider` |
@@ -130,7 +129,6 @@ Every key in §3 has one environment variable. Product settings use `ABX_<KEY>`.
 | `sandbox_domain` | host | no | `E2B_DOMAIN` | provider-derived |
 | `http_timeout` | float ≥ 1 | no | `ABX_HTTP_TIMEOUT` | `30.0` |
 | `http2` | bool | no | `ABX_HTTP2` | `true` |
-| `max_retries` | int ≥ 0 | no | `ABX_MAX_RETRIES` | `3` |
 | `max_connections`, `max_keepalive_connections`, `keepalive_expiry`, `ws_ping_interval`, `retry_base_delay` | num | no | `ABX_<KEY>` | as today |
 | `log_level` | enum | no | `ABX_LOG_LEVEL` | `WARNING` |
 | `default_template` | str | no | `ABX_DEFAULT_TEMPLATE` | `base` |

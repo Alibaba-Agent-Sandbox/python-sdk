@@ -22,9 +22,9 @@ for _src in (REPO_ROOT / "client-sdk" / "src", REPO_ROOT / "server-sdk" / "src")
 
 T = TypeVar("T")
 
-REQUIRED_ENV = ("E2B_API_KEY",)
+REQUIRED_ENV = ("ABX_SANDBOX_API_KEY",)
 SECRET_ENV = (
-    "E2B_API_KEY",
+    "ABX_SANDBOX_API_KEY",
     "OPENAI_API_KEY",
 )
 

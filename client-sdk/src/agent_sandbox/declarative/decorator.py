@@ -315,9 +315,9 @@ class _SandboxFactory:
         serializer: str = "json",
         sandbox_id: str | None = None,
         keep_alive: bool = False,
-        api_key: str | None = None,
-        api_url: str | None = None,
-        domain: str | None = None,
+        sandbox_api_key: str | None = None,
+        sandbox_base_url: str | None = None,
+        sandbox_domain: str | None = None,
         cpu: int | None = None,
         memory: int | None = None,
     ) -> Callable[..., Any]:
@@ -339,9 +339,9 @@ class _SandboxFactory:
             serializer: 序列化模式 (``json``)。
             sandbox_id: 复用已有沙箱 ID，不为 ``None`` 时跳过创建。
             keep_alive: 执行后不销毁沙箱。
-            api_key: API key 覆盖。
-            api_url: 平台 API URL 覆盖。
-            domain: 平台域名。
+            sandbox_api_key: API key 覆盖。
+            sandbox_base_url: 平台 API URL 覆盖。
+            sandbox_domain: 平台域名。
             cpu: 沙箱 CPU 核数（传递给 ``Sandbox.create``）。
             memory: 沙箱内存大小 MB（传递给 ``Sandbox.create``）。
         """
@@ -389,9 +389,9 @@ class _SandboxFactory:
                 if sandbox_id:
                     sb = await Sandbox.connect(
                         sandbox_id,
-                        api_key=api_key,
-                        api_url=api_url,
-                        domain=domain,
+                        sandbox_api_key=sandbox_api_key,
+                        sandbox_base_url=sandbox_base_url,
+                        sandbox_domain=sandbox_domain,
                     )
                 else:
                     sb = await Sandbox.create(
@@ -400,9 +400,9 @@ class _SandboxFactory:
                         envs=envs or {},
                         cpu=cpu,
                         memory=memory,
-                        api_key=api_key,
-                        api_url=api_url,
-                        domain=domain,
+                        sandbox_api_key=sandbox_api_key,
+                        sandbox_base_url=sandbox_base_url,
+                        sandbox_domain=sandbox_domain,
                     )
 
                 try:

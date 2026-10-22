@@ -20,7 +20,7 @@ def test_wrong_api_key_is_rejected(run):  # type: ignore[no-untyped-def]
     from agent_sandbox.api.sandbox import Sandbox
 
     with pytest.raises(Exception) as err:  # noqa: PT011
-        run(Sandbox.list(api_key="e2e-invalid-key-0000000000000000"))
+        run(Sandbox.list(sandbox_api_key="e2e-invalid-key-0000000000000000"))
     assert "401" in str(err.value) or "uthenticat" in str(err.value)
 
 
@@ -29,7 +29,7 @@ def test_wrong_api_key_raises_authentication_error(run):  # type: ignore[no-unty
     from agent_sandbox.models.errors import AuthenticationError
 
     with pytest.raises(AuthenticationError):
-        run(Sandbox.list(api_key="e2e-invalid-key-0000000000000000"))
+        run(Sandbox.list(sandbox_api_key="e2e-invalid-key-0000000000000000"))
 
 
 def test_create_with_unknown_template_fails_cleanly(run):  # type: ignore[no-untyped-def]

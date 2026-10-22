@@ -17,7 +17,7 @@ with the version reported by ``GET /health``. The STDIO transport keeps its own
 
 Authentication:
 - Client → MCP: ``Authorization: Bearer <token>`` (validated here)
-- MCP → Sandbox: ``E2B_API_KEY`` environment variable (forwarded by SandboxManager)
+- MCP → Sandbox: ``ABX_SANDBOX_API_KEY`` environment variable (forwarded by SandboxManager)
 
 Session affinity requires platform routing based on the
 ``Mcp-Session-Id`` response header.
@@ -127,9 +127,9 @@ class SessionStore:
 
     def __init__(
         self,
-        api_key: str | None = None,
-        api_url: str | None = None,
-        domain: str | None = None,
+        sandbox_api_key: str | None = None,
+        sandbox_base_url: str | None = None,
+        sandbox_domain: str | None = None,
         template: str = "base",
         session_ttl_seconds: float = DEFAULT_SESSION_TTL_SECONDS,
         max_sessions: int = DEFAULT_MAX_SESSIONS,
@@ -138,9 +138,9 @@ class SessionStore:
             raise ValueError("session_ttl_seconds must be positive")
         if max_sessions <= 0:
             raise ValueError("max_sessions must be positive")
-        self._api_key = api_key
-        self._api_url = api_url
-        self._domain = domain
+        self._api_key = sandbox_api_key
+        self._api_url = sandbox_base_url
+        self._domain = sandbox_domain
         self._template = template
         self._session_ttl_seconds = session_ttl_seconds
         self._max_sessions = max_sessions
@@ -163,9 +163,9 @@ class SessionStore:
 
         session_id = str(uuid.uuid4())
         server = SandboxMCPServer(
-            api_key=self._api_key,
-            api_url=self._api_url,
-            domain=self._domain,
+            sandbox_api_key=self._api_key,
+            sandbox_base_url=self._api_url,
+            sandbox_domain=self._domain,
             template=self._template,
             # Streamable HTTP transport supports only 2025-06-18 — the same
             # version GET /health reports. Keeps initialize negotiation
@@ -315,9 +315,9 @@ def _reject_origin() -> JSONResponse:
 
 def create_mcp_app(
     auth_token: str | None = None,
-    api_key: str | None = None,
-    api_url: str | None = None,
-    domain: str | None = None,
+    sandbox_api_key: str | None = None,
+    sandbox_base_url: str | None = None,
+    sandbox_domain: str | None = None,
     template: str = "base",
     session_ttl_seconds: float = DEFAULT_SESSION_TTL_SECONDS,
     max_sessions: int = DEFAULT_MAX_SESSIONS,
@@ -328,9 +328,9 @@ def create_mcp_app(
     Args:
         auth_token: Bearer token for client authentication.
             If *None*, authentication is disabled.
-        api_key: ``E2B_API_KEY`` for MCP → Sandbox backend auth.
-        api_url: Override for the sandbox API URL.
-        domain: Override for the sandbox domain.
+        sandbox_api_key: ``ABX_SANDBOX_API_KEY`` for MCP → Sandbox backend auth.
+        sandbox_base_url: Override for the sandbox API URL.
+        sandbox_domain: Override for the sandbox sandbox_domain.
         template: Default sandbox template.
         session_ttl_seconds: Idle time before a session is cleaned up.
         max_sessions: Maximum concurrent sessions in this process.
@@ -349,9 +349,9 @@ def create_mcp_app(
     origins = frozenset(allowed_origins or ())
 
     store = SessionStore(
-        api_key=api_key,
-        api_url=api_url,
-        domain=domain,
+        sandbox_api_key=sandbox_api_key,
+        sandbox_base_url=sandbox_base_url,
+        sandbox_domain=sandbox_domain,
         template=template,
         session_ttl_seconds=session_ttl_seconds,
         max_sessions=max_sessions,
@@ -515,18 +515,18 @@ def _create_default_app() -> Starlette:
 
     Environment variables:
     - ``ABX_MCP_AUTH_TOKEN`` — Bearer token for client auth (optional)
-    - ``E2B_API_KEY`` — Sandbox backend API key
-    - ``E2B_API_URL`` — API URL override
-    - ``E2B_DOMAIN`` — Domain override
+    - ``ABX_SANDBOX_API_KEY`` — Sandbox backend API key
+    - ``ABX_SANDBOX_BASE_URL`` — API URL override
+    - ``ABX_SANDBOX_DOMAIN`` — Domain override
     - ``ABX_DEFAULT_TEMPLATE`` — Default template
     """
     raw_origins = os.environ.get("ABX_MCP_ALLOWED_ORIGINS", "")
     allowed_origins = frozenset(part.strip() for part in raw_origins.split(",") if part.strip())
     return create_mcp_app(
         auth_token=os.environ.get("ABX_MCP_AUTH_TOKEN"),
-        api_key=os.environ.get("E2B_API_KEY") or None,
-        api_url=os.environ.get("E2B_API_URL") or None,
-        domain=os.environ.get("E2B_DOMAIN") or None,
+        sandbox_api_key=os.environ.get("ABX_SANDBOX_API_KEY") or None,
+        sandbox_base_url=os.environ.get("ABX_SANDBOX_BASE_URL") or None,
+        sandbox_domain=os.environ.get("ABX_SANDBOX_DOMAIN") or None,
         template=os.environ.get("ABX_DEFAULT_TEMPLATE") or "base",
         allowed_origins=allowed_origins,
     )

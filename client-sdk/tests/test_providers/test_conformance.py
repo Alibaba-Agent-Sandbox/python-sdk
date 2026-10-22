@@ -13,15 +13,13 @@ import pytest
 from agent_sandbox.providers import store
 from agent_sandbox.providers.base import ConfigField
 from agent_sandbox.providers.epp import exit_code_for, map_error
-from agent_sandbox.transport import config as cfg
 from agent_sandbox.transport.config import ProviderSchema, _builtin_schema, resolve_all
 from agent_sandbox.utils.config_keys import Sources
-from agent_sandbox.utils.toml_write import dumps_toml
 
 if sys.version_info >= (3, 11):
-    import tomllib
+    pass
 else:
-    import tomli as tomllib
+    pass
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 CLI_COPY = Path(__file__).resolve().parents[4] / "cli" / "docs" / "design" / "fixtures"
@@ -30,7 +28,6 @@ NAMES = (
     "config-resolution-vectors.json",
     "tree-digest-vectors.json",
     "epp-error-mapping.json",
-    "migration-vectors.json",
     "epp-methods.json",
 )
 
@@ -134,27 +131,6 @@ def test_epp_error_vectors(vector):
     assert exc.suggestion == exp["suggestion"]
     for secret in vector["secrets"]:
         assert secret not in exc.message
-
-
-@pytest.mark.parametrize("vector", _vectors("migration-vectors.json"))
-def test_migration_vectors(vector, tmp_path):
-    env_dict = {}
-    if vector["env"]:
-        (tmp_path / "in.env").write_text(vector["env"], encoding="utf-8")
-        env_dict = cfg._read_dotenv(tmp_path / "in.env")
-    assert cfg.plan_migration_data(vector["toml"], env_dict) == vector["plan"]
-    (tmp_path / "config.toml").write_text(dumps_toml(vector["toml"]), encoding="utf-8")
-    if vector["env"]:
-        (tmp_path / ".env").write_text(vector["env"], encoding="utf-8")
-    cfg.apply_migration(tmp_path / "config.toml", tmp_path / ".env", backup=False)
-    assert (
-        tomllib.loads((tmp_path / "config.toml").read_text(encoding="utf-8"))
-        == vector["toml_after"]
-    )
-    env_file = tmp_path / ".env"
-    assert (env_file.read_text(encoding="utf-8") if env_file.exists() else "") == vector[
-        "env_after"
-    ]
 
 
 def test_config_keys_fixture_matches_registry():

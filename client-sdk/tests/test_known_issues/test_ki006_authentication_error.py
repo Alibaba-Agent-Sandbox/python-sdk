@@ -12,8 +12,7 @@ from agent_sandbox.models.errors import (
     SandboxCreationError,
     SandboxError,
 )
-from agent_sandbox.protocol.sandbox import SandboxProtocol
-from agent_sandbox.transport.auth import AkSkAuth
+from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
 from agent_sandbox.transport.config import TransportConfig
 from agent_sandbox.transport.http import HttpClient
 from tests.test_known_issues.helpers import API, make_http
@@ -46,16 +45,22 @@ async def test_sandbox_list_api_with_wrong_key(httpx_mock) -> None:
 
     httpx_mock.add_response(method="GET", status_code=401, content=b"")
     with pytest.raises(AuthenticationError):
-        await Sandbox.list(api_key=SECRET, sandbox_base_url=API)
+        await Sandbox.list(sandbox_api_key=SECRET, sandbox_base_url=API)
 
 
 async def test_aksk_auth_maps_to_invalid_credentials(httpx_mock) -> None:
-    class _Aksk(AkSkAuth):
+    class _Aksk:
         def __init__(self) -> None:  # no network / signing in this test
             pass
 
         async def get_headers(self) -> dict[str, str]:
             return {}
+
+        async def refresh(self) -> None:
+            pass
+
+        def authentication_error(self, path: str) -> InvalidCredentialsError:
+            return InvalidCredentialsError("Custom credentials were rejected")
 
     httpx_mock.add_response(method="GET", status_code=401, content=b"")
     client = HttpClient(TransportConfig(sandbox_base_url=API, http2=False), _Aksk())

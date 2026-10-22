@@ -1,6 +1,5 @@
 """Public data models for Agent Sandbox SDK."""
 
-from agent_sandbox.models.config import GlobalConfig
 from agent_sandbox.models.errors import (
     AuthenticationError,
     CapabilityNotSupportedError,
@@ -119,7 +118,6 @@ __all__ = [
     "SessionConfig",
     "SessionInfo",
     # Config
-    "GlobalConfig",
     # Template
     "STANDARD_CAPABILITIES",
     "DEFAULT_CAPABILITIES",

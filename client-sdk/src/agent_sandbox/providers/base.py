@@ -185,12 +185,7 @@ class ConfigField:
             description_zh=self.description_zh,
             choices=self.choices,
             aliases=tuple(Alias(n, "native", "env") for n in self.env),
-            storage_phase1=(
-                Storage("env", provider_env_name(provider_id, self.key))
-                if self.secret
-                else Storage("toml", self.key, f"providers.{provider_id}")
-            ),
-            storage_phase2=(
+            storage=(
                 Storage("env", provider_env_name(provider_id, self.key))
                 if self.secret
                 else Storage("toml", self.key, f"providers.{provider_id}")
@@ -263,10 +258,6 @@ class Provider(ABC):
                 ("code_interpreter_protocol", "code.interpret"),
             )
         }
-
-    def build_legacy_infra(self, **options: Any) -> Any:
-        """Compatibility hook. Normal operations always use build_infra."""
-        raise ProviderFeatureNotSupportedError(self.id, "sandbox.legacy-infra")
 
     def resolve_session_url(self, info: Any, config: Any) -> str:
         return str(info.envd_url or "")

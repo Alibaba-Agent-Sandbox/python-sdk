@@ -110,8 +110,8 @@ async def test_full_sandbox_lifecycle():
 
         sb = await Sandbox.create(
             template="python-base",
-            api_key=API_KEY,
-            api_url=PLATFORM_BASE,
+            sandbox_api_key=API_KEY,
+            sandbox_base_url=PLATFORM_BASE,
         )
         assert sb.id == SANDBOX_ID
         assert sb.status == SandboxStatus.RUNNING
@@ -180,8 +180,8 @@ async def test_sandbox_context_manager():
 
         async with await Sandbox.create(
             template="python-base",
-            api_key=API_KEY,
-            api_url=PLATFORM_BASE,
+            sandbox_api_key=API_KEY,
+            sandbox_base_url=PLATFORM_BASE,
         ) as sb:
             assert sb.id == SANDBOX_ID
 
@@ -222,8 +222,8 @@ async def test_command_streaming():
         )
         sb = await Sandbox.create(
             template="python-base",
-            api_key=API_KEY,
-            api_url=PLATFORM_BASE,
+            sandbox_api_key=API_KEY,
+            sandbox_base_url=PLATFORM_BASE,
         )
 
         # Simulate interleaved stdout/stderr
@@ -273,8 +273,8 @@ async def test_file_operations_e2e():
         )
         sb = await Sandbox.create(
             template="python-base",
-            api_key=API_KEY,
-            api_url=PLATFORM_BASE,
+            sandbox_api_key=API_KEY,
+            sandbox_base_url=PLATFORM_BASE,
         )
 
         # Write a file (via envd_http_request)
@@ -354,8 +354,8 @@ async def test_error_template_not_found():
         with pytest.raises(TemplateNotFoundError) as exc_info:
             await Sandbox.create(
                 template="nonexistent",
-                api_key=API_KEY,
-                api_url=PLATFORM_BASE,
+                sandbox_api_key=API_KEY,
+                sandbox_base_url=PLATFORM_BASE,
             )
         assert "not found" in exc_info.value.message.lower()
         assert exc_info.value.code == "E2001"
@@ -383,8 +383,8 @@ async def test_error_quota_exceeded():
         with pytest.raises(QuotaExceededError) as exc_info:
             await Sandbox.create(
                 template="python-base",
-                api_key=API_KEY,
-                api_url=PLATFORM_BASE,
+                sandbox_api_key=API_KEY,
+                sandbox_base_url=PLATFORM_BASE,
             )
         assert exc_info.value.code == "E2002"
 
@@ -402,8 +402,8 @@ async def test_error_command_timeout():
         )
         sb = await Sandbox.create(
             template="python-base",
-            api_key=API_KEY,
-            api_url=PLATFORM_BASE,
+            sandbox_api_key=API_KEY,
+            sandbox_base_url=PLATFORM_BASE,
         )
 
         # Simulate a stream that raises CommandTimeoutError
@@ -436,8 +436,8 @@ async def test_connect_to_existing_sandbox():
 
         sb = await Sandbox.connect(
             SANDBOX_ID,
-            api_key=API_KEY,
-            api_url=PLATFORM_BASE,
+            sandbox_api_key=API_KEY,
+            sandbox_base_url=PLATFORM_BASE,
         )
         assert sb.id == SANDBOX_ID
 
@@ -481,8 +481,8 @@ async def test_multiple_sandbox_management():
         mock_platform.return_value = _make_httpx_response(json_data=sb1_info)
         sandbox1 = await Sandbox.create(
             template="python-base",
-            api_key=API_KEY,
-            api_url=PLATFORM_BASE,
+            sandbox_api_key=API_KEY,
+            sandbox_base_url=PLATFORM_BASE,
         )
         assert sandbox1.id == "sbx-multi-001"
 
@@ -490,8 +490,8 @@ async def test_multiple_sandbox_management():
         mock_platform.return_value = _make_httpx_response(json_data=sb2_info)
         sandbox2 = await Sandbox.create(
             template="python-base",
-            api_key=API_KEY,
-            api_url=PLATFORM_BASE,
+            sandbox_api_key=API_KEY,
+            sandbox_base_url=PLATFORM_BASE,
         )
         assert sandbox2.id == "sbx-multi-002"
 
@@ -499,10 +499,8 @@ async def test_multiple_sandbox_management():
         mock_platform.return_value = _make_httpx_response(
             json_data=[sb1_info, sb2_info],
         )
-        from agent_sandbox.protocol.sandbox import SandboxProtocol
 
-        proto = SandboxProtocol(sandbox1._http_client)
-        sandboxes = await proto.list()
+        sandboxes = await Sandbox.list(sandbox_api_key=API_KEY, sandbox_base_url=PLATFORM_BASE)
         assert len(sandboxes) == 2
         assert {sb.sandbox_id for sb in sandboxes} == {"sbx-multi-001", "sbx-multi-002"}
 
@@ -531,8 +529,8 @@ async def test_code_execution_languages():
         )
         sb = await Sandbox.create(
             template="python-base",
-            api_key=API_KEY,
-            api_url=PLATFORM_BASE,
+            sandbox_api_key=API_KEY,
+            sandbox_base_url=PLATFORM_BASE,
         )
 
         # Code execution now goes through CodeInterpreterProtocol.run_code()

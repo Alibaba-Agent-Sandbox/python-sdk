@@ -41,9 +41,9 @@ class SessionManager:
         timeout: int = 300,
         metadata: dict[str, str] | None = None,
         envs: dict[str, str] | None = None,
-        api_key: str | None = None,
-        api_url: str | None = None,
-        domain: str | None = None,
+        sandbox_api_key: str | None = None,
+        sandbox_base_url: str | None = None,
+        sandbox_domain: str | None = None,
     ) -> Sandbox:
         """Create a new sandbox and persist the session.
 
@@ -60,17 +60,17 @@ class SessionManager:
             timeout=timeout,
             metadata=metadata,
             envs=envs,
-            api_key=api_key,
-            api_url=api_url,
-            domain=domain,
+            sandbox_api_key=sandbox_api_key,
+            sandbox_base_url=sandbox_base_url,
+            sandbox_domain=sandbox_domain,
         )
 
         session_info = SessionInfo(  # type: ignore[call-arg]
             name=name,
             sandbox_id=sandbox.id,
             template=template,
-            api_url=api_url or "",
-            domain=domain or "",
+            api_url=sandbox_base_url or "",
+            domain=sandbox_domain or "",
             envd_access_token=sandbox.info.envd_access_token or "",
             status="running",
             created_at=datetime.now(timezone.utc),
@@ -85,9 +85,9 @@ class SessionManager:
         self,
         name: str,
         *,
-        api_key: str | None = None,
-        api_url: str | None = None,
-        domain: str | None = None,
+        sandbox_api_key: str | None = None,
+        sandbox_base_url: str | None = None,
+        sandbox_domain: str | None = None,
     ) -> Sandbox:
         """Resume a session by name.
 
@@ -99,9 +99,9 @@ class SessionManager:
 
         sandbox = await Sandbox.connect(
             session.sandbox_id,  # type: ignore[arg-type]
-            api_key=api_key,
-            api_url=api_url or session.api_url or None,
-            domain=domain or session.domain or None,
+            sandbox_api_key=sandbox_api_key,
+            sandbox_base_url=sandbox_base_url or session.api_url or None,
+            sandbox_domain=sandbox_domain or session.domain or None,
         )
 
         # Update last_connected timestamp

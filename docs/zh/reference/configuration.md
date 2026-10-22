@@ -79,7 +79,6 @@
 | `ALIBABA_CLOUD_REGION_ID` | `region` | 内置提供方的区域 |
 | `ABX_HTTP_TIMEOUT` | `http_timeout` | HTTP 超时秒数 |
 | `ABX_HTTP2` | `http2` | 是否启用 HTTP/2 |
-| `ABX_MAX_RETRIES` | `max_retries` | 兼容保留值；内置 HTTP 不进行自动重试 |
 | `ABX_MAX_CONNECTIONS`、`ABX_MAX_KEEPALIVE_CONNECTIONS`、`ABX_KEEPALIVE_EXPIRY`、`ABX_WS_PING_INTERVAL` | 同名小写 | 连接池、保活和 WebSocket 调优 |
 | `ABX_LOG_LEVEL` | `log_level` | SDK 日志级别（默认 `WARNING`） |
 | `ABX_DEFAULT_TEMPLATE` | `default_template` | 默认模板（MCP server） |
@@ -176,8 +175,6 @@ ps   = "sandbox process list"
 | `keepalive_expiry` | `float` | `30.0` | 保活连接过期时间（秒） |
 | `http2` | `bool` | `True` | 是否启用 HTTP/2 |
 | `ws_ping_interval` | `float` | `30.0` | WebSocket ping 间隔（秒） |
-| `max_retries` | `int` | `3` | 兼容保留值；内置 HTTP 不进行自动重试 |
-| `retry_base_delay` | `float` | `1.0` | 兼容保留值；内置 HTTP 不使用该值 |
 
 构造函数和 `load_config(...)` 使用这些字段名。
 

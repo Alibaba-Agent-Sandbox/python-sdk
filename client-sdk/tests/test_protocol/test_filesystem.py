@@ -8,14 +8,14 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 
-from agent_sandbox.models.filesystem import FileInfo, FileType, WatchEvent, WatchEventType
-from agent_sandbox.protocol.filesystem import (
+from agent_sandbox.models.filesystem import FileType, WatchEvent, WatchEventType
+from agent_sandbox.providers.alicloud_express.auth import EnvdTokenManager
+from agent_sandbox.providers.shared.e2b.filesystem import (
     FilesystemProtocol,
     _name_from_path,
     _parse_file_info,
     _parse_watch_event,
 )
-from agent_sandbox.transport.auth import EnvdTokenManager
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -351,25 +351,6 @@ class TestExists:
         assert await proto.exists(envd_url, envd_token, path="/nonexistent") is False
 
 
-class TestGetInfo:
-    """Test FilesystemProtocol.get_info()."""
-
-    async def test_get_file_info(self, envd_url, envd_token):
-        mock_http = _make_mock_http(
-            envd_request_return={
-                "name": "app.py",
-                "path": "/app/app.py",
-                "size": 2048,
-            }
-        )
-        proto = FilesystemProtocol(mock_http)
-        info = await proto.get_info(envd_url, envd_token, path="/app/app.py")
-
-        assert isinstance(info, FileInfo)
-        assert info.name == "app.py"
-        assert info.size == 2048
-
-
 class TestRead:
     """Test FilesystemProtocol.read() — now uses HTTP file API (download_file)."""
 
@@ -445,23 +426,6 @@ class TestRemove:
 
         payload = mock_http.envd_request.call_args.kwargs["payload"]
         assert payload == {"path": "/app/old.txt"}
-
-
-class TestRename:
-    """Test FilesystemProtocol.rename() — delegates to move() with source/destination."""
-
-    async def test_sends_old_and_new_paths(self, envd_url, envd_token):
-        mock_http = _make_mock_http()
-        proto = FilesystemProtocol(mock_http)
-        await proto.rename(
-            envd_url,
-            envd_token,
-            old_path="/app/a.txt",
-            new_path="/app/b.txt",
-        )
-
-        payload = mock_http.envd_request.call_args.kwargs["payload"]
-        assert payload == {"source": "/app/a.txt", "destination": "/app/b.txt"}
 
 
 class TestWatchDir:

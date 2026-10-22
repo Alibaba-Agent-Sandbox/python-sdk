@@ -463,18 +463,6 @@ class ExecProcessProtocol:
             return
         await self._simple("process.signal", envd_url, envd_token, pid=pid, signal=signal)
 
-    async def send_stdin(
-        self, envd_url: str, envd_token: EnvdTokenManager, *, pid: int | str, data: str
-    ) -> None:
-        await self.send_input(envd_url, envd_token, pid=pid, data=data)
-
-    async def kill(self, envd_url: str, envd_token: EnvdTokenManager, *, pid: int | str) -> None:
-        if not is_epp_url(envd_url):
-            assert self._native is not None
-            await self._native.kill(envd_url, envd_token, pid=pid)
-            return
-        await self._simple("process.kill", envd_url, envd_token, pid=pid)
-
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
             raise AttributeError(name)
@@ -594,9 +582,6 @@ class ExecFilesystemProtocol:
         except SandboxError:
             return False
 
-    async def get_info(self, envd_url: str, envd_token: EnvdTokenManager, *, path: str) -> FileInfo:
-        return await self.stat(envd_url, envd_token, path=path)
-
     async def read(self, envd_url: str, envd_token: EnvdTokenManager, *, path: str) -> bytes:
         return await self.download_file(envd_url, envd_token, path=path)
 
@@ -610,11 +595,6 @@ class ExecFilesystemProtocol:
     ) -> None:
         raw = content.encode("utf-8") if isinstance(content, str) else content
         await self.upload_file(envd_url, envd_token, path=path, content=raw)
-
-    async def rename(
-        self, envd_url: str, envd_token: EnvdTokenManager, *, old_path: str, new_path: str
-    ) -> None:
-        await self.move(envd_url, envd_token, source=old_path, destination=new_path)
 
 
 class ExecProvider(Provider):
@@ -665,7 +645,6 @@ class ExecProvider(Provider):
         core.update(
             {
                 "http_timeout": config.http_timeout,
-                "max_retries": config.max_retries,
             }
         )
         secret_values = [

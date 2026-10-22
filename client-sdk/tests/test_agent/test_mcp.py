@@ -55,13 +55,13 @@ class TestSandboxManager:
     """Test SandboxManager lifecycle management."""
 
     def test_init(self):
-        mgr = SandboxManager(api_key="test-key", template="python-base")
+        mgr = SandboxManager(sandbox_api_key="test-key", template="python-base")
         assert mgr._api_key == "test-key"
         assert mgr._default_template == "python-base"
         assert mgr._default_sandbox is None
 
     async def test_create_sandbox(self):
-        mgr = SandboxManager(api_key="k")
+        mgr = SandboxManager(sandbox_api_key="k")
         mock_sb = AsyncMock()
         mock_sb.id = "sbx-001"
         with patch(
@@ -74,7 +74,7 @@ class TestSandboxManager:
             assert "sbx-001" in mgr._sandboxes
 
     async def test_get_sandbox_creates_default(self):
-        mgr = SandboxManager(api_key="k")
+        mgr = SandboxManager(sandbox_api_key="k")
         mock_sb = AsyncMock()
         mock_sb.id = "sbx-default"
         mgr.create_sandbox = AsyncMock(return_value=mock_sb)
@@ -148,7 +148,7 @@ class TestSandboxMCPServer:
     """Test MCP Server request handling."""
 
     def test_init(self):
-        server = SandboxMCPServer(api_key="k", template="t")
+        server = SandboxMCPServer(sandbox_api_key="k", template="t")
         assert not server.initialized
         assert server.manager is not None
 

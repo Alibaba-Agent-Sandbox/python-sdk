@@ -13,8 +13,8 @@ from agent_sandbox.models.errors import (
     SandboxError,
     SandboxNotFoundError,
 )
-from agent_sandbox.protocol.filesystem import FilesystemProtocol
-from agent_sandbox.protocol.sandbox import SandboxProtocol
+from agent_sandbox.providers.shared.e2b.filesystem import FilesystemProtocol
+from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
 from tests.test_known_issues.helpers import API, ENVD, make_http, token
 
 FILES_URL = f"{ENVD}/files?path=%2Ftmp%2Fnope.txt&username=user"
@@ -127,7 +127,7 @@ async def test_sandbox_connect_on_a_missing_sandbox(httpx_mock, monkeypatch) -> 
     monkeypatch.setenv("ABX_PROVIDER", "alicloud-express")
     httpx_mock.add_response(method="GET", status_code=404, json={"message": "nope"})
     with pytest.raises(SandboxNotFoundError):
-        await Sandbox.connect("sbx-00000000", api_key="k", api_url=API)
+        await Sandbox.connect("sbx-00000000", sandbox_api_key="k", sandbox_base_url=API)
 
 
 # --- the new error class ---------------------------------------------------------------------

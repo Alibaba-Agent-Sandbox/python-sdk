@@ -23,6 +23,7 @@ pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="PTY not support
 # Import triggers route registration side-effect.
 import agent_sandbox.server.routes_pty  # noqa: F401, E402
 from agent_sandbox.server.app import SandboxRequestHandler  # noqa: E402
+from agent_sandbox.server.policy import ServerPolicy  # noqa: E402
 from agent_sandbox.server.registry import CommandRegistry  # noqa: E402
 from agent_sandbox.server.router import CapabilityGroup, default_table  # noqa: E402
 from agent_sandbox.server.routes_pty import (  # noqa: E402
@@ -366,7 +367,13 @@ class TestPtyWebSocket:
             stop = asyncio.Event()
             stop_holder.append(stop)
             loop.run_until_complete(
-                start_pty_server("127.0.0.1", port, stop_event=stop, ready_event=ready)
+                start_pty_server(
+                    "127.0.0.1",
+                    port,
+                    stop_event=stop,
+                    ready_event=ready,
+                    policy_engine=ServerPolicy.from_dict({}).bind(),
+                )
             )
 
         t = threading.Thread(target=_run, daemon=True)

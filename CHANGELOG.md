@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Removed
+
+- Pre-release project compatibility: old template factories/APIs and selector flags, import aliases, migration commands, deprecated method aliases, old server transfer routes, custom AK/SK token exchange and implicit provider URL/port fallbacks.
+
+
 ### Added
 
 - Native named-command `list[str]` arguments use strict JSON `string_array` metadata and per-call copies in server and declarative client; scalar conversion stays compatible. / 原生命名命令支持严格 JSON 字符串数组，服务器与声明式客户端按次复制参数及默认值，保留标量转换兼容性。

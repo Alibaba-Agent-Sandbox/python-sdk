@@ -92,7 +92,7 @@ loads automatically.
 | `groups` | `list[str]` or `map[str, bool]` | Turn capability groups on (`[agents, dev_tools]`) or on/off (`{process: false}`). A group is an alias for its endpoint ids |
 | `defaults` | rule | Rule applied to every endpoint before its own rule |
 | `endpoints` | `map[str, rule]` | Per-endpoint rules keyed by endpoint id (`files_download_stream`, `shell`, ...) |
-| `auth` | map | `tokens` (`id`, `scopes`, `token_env` or `token_sha256`), `allow_anonymous`, `anonymous_scopes`, `legacy_scopes` |
+| `auth` | map | `tokens` (`id`, `scopes`, `token_env` or `token_sha256`), `allow_anonymous`, `anonymous_scopes` |
 
 A rule has `enabled`, `scopes`, `paths` (`allow`, `deny`, `read_only`, `symlinks`), `limits` (`max_bytes`, `max_request_bytes`, `timeout_seconds`, `rate_per_minute`, ...), `params` (`overwrite`, `deny_extensions`, `allow_commands`, ...) and `audit`.
 

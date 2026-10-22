@@ -142,8 +142,8 @@ class TestFiles:
 
     async def test_legacy_upload_download(self, server: ServerClient, tree: Path) -> None:
         target = str(tree / "out" / "legacy.bin")
-        assert (await server.files.upload_legacy(target, b"abc")).size == 3
-        assert await server.files.download_legacy(target) == b"abc"
+        assert (await server.files.upload(target, b"abc")).size == 3
+        assert await server.files.download(target) == b"abc"
 
     async def test_watch_reports_changes(self, server: ServerClient, tree: Path) -> None:
         import asyncio

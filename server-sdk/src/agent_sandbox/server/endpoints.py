@@ -177,27 +177,6 @@ _BUILTIN: tuple[Endpoint, ...] = (
     ),
     # FILE_OPS
     _ep(
-        "upload",
-        "POST",
-        "/upload",
-        G.FILE_OPS,
-        summary="Write base64 content to a file.",
-        scopes=("files:write",),
-        limits=("max_bytes",),
-        params=_UPLOAD_PARAMS,
-        paths=True,
-    ),
-    _ep(
-        "download",
-        "GET",
-        "/download",
-        G.FILE_OPS,
-        summary="Read a file as base64.",
-        scopes=("files:read",),
-        limits=("max_bytes",),
-        paths=True,
-    ),
-    _ep(
         "files_list",
         "GET",
         "/files/list",
@@ -904,7 +883,7 @@ ENDPOINTS: dict[str, Endpoint] = {e.name: e for e in (*_BUILTIN, *_AGENTS)}
 #: Endpoints that can never be disabled / locked out.
 CORE_ENDPOINTS = frozenset({"health", "capabilities", "capabilities_check"})
 
-TRANSFER_ENDPOINTS = ("upload", "download", "files_upload_stream", "files_download_stream")
+TRANSFER_ENDPOINTS = ("files_upload_stream", "files_download_stream")
 
 
 def endpoints_of(group: CapabilityGroup | str) -> tuple[str, ...]:

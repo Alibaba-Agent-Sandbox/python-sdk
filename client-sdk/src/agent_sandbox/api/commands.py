@@ -259,22 +259,12 @@ class CommandsModule:
 
     async def kill(self, pid: int | str) -> None:
         """Kill a process by PID."""
-        await self._process.kill(
+        await self._process.send_signal(
             self._envd_url,
             self._envd_token,
             pid=pid,
+            signal=9,
         )
-
-    async def send_stdin(self, pid: int | str, data: str) -> None:
-        """Send data to a process's stdin.
-
-        Deprecated: use send_input() instead.
-
-        Args:
-            pid: Process ID.
-            data: String data to send.
-        """
-        await self.send_input(pid, data)
 
     async def send_input(self, pid: int | str, data: str) -> None:
         """Send data to a process's stdin.
@@ -314,7 +304,6 @@ class CommandsModule:
     run_sync = make_sync(run)
     list_sync = make_sync(list)
     kill_sync = make_sync(kill)
-    send_stdin_sync = make_sync(send_stdin)
     send_input_sync = make_sync(send_input)
     send_signal_sync = make_sync(send_signal)
 

@@ -485,11 +485,8 @@ def _resolve_provider_schema(provider_id: str) -> Any:
             metadata["inherit"],
             dict(metadata["derive"]),
             dict(metadata["endpoint_defaults"]),
-            legacy_fields=metadata["legacy_fields"],
+            transport_fields=metadata["transport_fields"],
             omit_default_options=metadata["omit_default_options"],
-            legacy_url_builder=metadata["legacy_url_builder"],
-            legacy_port_factory=metadata["legacy_port_factory"],
-            legacy_pty_url_builder=metadata["legacy_pty_url_builder"],
         )
     from agent_sandbox.providers.registry import get_provider
 
@@ -500,9 +497,8 @@ def _resolve_provider_schema(provider_id: str) -> Any:
         frozenset(provider.inherit),
         dict(provider.derive),
         dict(getattr(provider, "endpoint_defaults", {}) or {}),
-        legacy_fields=frozenset(getattr(provider, "legacy_fields", ())),
+        transport_fields=frozenset(getattr(provider, "transport_fields", ())),
         omit_default_options=bool(getattr(provider, "omit_default_options", False)),
-        legacy_url_builder=getattr(provider, "legacy_session_url", None),
     )
 
 

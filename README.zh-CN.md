@@ -259,3 +259,5 @@ graph TB
 暂停/恢复和快照命令由 Provider 注册，CLI 与 SDK 共用实现，见[注册与使用说明](docs/zh/guide/provider-commands.md)。
 
 命名命令支持原生 `list[str]` JSON 参数，校验和服务器兼容性见[服务器 API 指南](docs/zh/guide/template-server-api.md#字符串数组命令参数)。
+
+Current API / 当前接口: [development contract](docs/zh/guide/current-api.md).

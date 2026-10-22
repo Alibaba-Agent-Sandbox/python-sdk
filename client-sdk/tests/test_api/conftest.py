@@ -5,6 +5,11 @@ Mocks at the protocol level so we test the API layer in isolation.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from agent_sandbox.api.network import NetworkModule
+
 from unittest.mock import AsyncMock
 
 import pytest
@@ -13,7 +18,6 @@ from agent_sandbox.api.capability import ResolvedCapabilities
 from agent_sandbox.api.code import CodeContextModule
 from agent_sandbox.api.commands import CommandsModule
 from agent_sandbox.api.files import FilesModule
-from agent_sandbox.api.network import NetworkModule
 from agent_sandbox.api.sandbox import Sandbox
 from agent_sandbox.models.filesystem import FileInfo, FileType
 from agent_sandbox.models.process import (
@@ -23,16 +27,17 @@ from agent_sandbox.models.process import (
 )
 from agent_sandbox.models.sandbox import SandboxInfo, SandboxStatus
 from agent_sandbox.models.template import STANDARD_CAPABILITIES
-from agent_sandbox.protocol.code_interpreter import CodeInterpreterProtocol
-from agent_sandbox.protocol.filesystem import FilesystemProtocol
-from agent_sandbox.protocol.process import ProcessProtocol
-from agent_sandbox.protocol.sandbox import SandboxProtocol
-from agent_sandbox.transport.auth import (
+from agent_sandbox.providers.alicloud_express.auth import (
     AuthProvider,
     EnvdTokenManager,
 )
+from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
+from agent_sandbox.providers.shared.e2b.filesystem import FilesystemProtocol
+from agent_sandbox.providers.shared.e2b.process import ProcessProtocol
+from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
 from agent_sandbox.transport.config import TransportConfig
 from agent_sandbox.transport.http import HttpClient
+from tests.network_support import provider_network
 
 # ---- Constants ----
 
@@ -100,7 +105,6 @@ def mock_sandbox_protocol() -> AsyncMock:
     proto.create.return_value = make_sandbox_info()
     proto.get_info.return_value = make_sandbox_info()
     proto.connect.return_value = make_sandbox_info()
-    proto.kill.return_value = None
     proto.set_timeout.return_value = None
     proto.is_running.return_value = True
     proto.pause.return_value = None
@@ -122,7 +126,6 @@ def mock_process_protocol() -> AsyncMock:
     proto.list_processes.return_value = [
         ProcessInfo(pid=1234, command="python3 app.py", status="running"),
     ]
-    proto.kill.return_value = None
     proto.send_input.return_value = None
     proto.send_signal.return_value = None
     return proto
@@ -144,7 +147,7 @@ def mock_filesystem_protocol() -> AsyncMock:
     proto.remove.return_value = None
     proto.make_dir.return_value = None
     proto.move.return_value = None
-    proto.get_info.return_value = FileInfo(
+    proto.stat.return_value = FileInfo(
         name="app.py", path="/app/app.py", type=FileType.FILE, size=1024
     )
     return proto
@@ -270,7 +273,7 @@ def files_module(
 
 @pytest.fixture
 def network_module() -> NetworkModule:
-    return NetworkModule(
+    return provider_network(
         sandbox_id=TEST_SANDBOX_ID,
         domain="cn-hangzhou.e2b.fc.aliyuncs.com",
         secure=True,

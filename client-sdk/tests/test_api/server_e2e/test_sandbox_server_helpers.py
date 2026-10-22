@@ -194,7 +194,10 @@ class TestStartServer:
     async def test_policy_dict_is_passed_through_the_environment(
         self, sandbox: Sandbox, spy: _Spy, healthy: AsyncMock
     ) -> None:
-        policy = {"preset": "transfer-only", "endpoints": {"download": {"enabled": True}}}
+        policy = {
+            "preset": "transfer-only",
+            "endpoints": {"files_download_stream": {"enabled": True}},
+        }
         client = await sandbox.start_server(policy=policy)
         cmd, kwargs = spy.calls[0]
         assert "--preset" not in cmd
@@ -249,6 +252,6 @@ class TestAgainstARealServer:
         client = sandbox.server_at(9000)
         assert await client.health() is True
         caps = await client.discover()
-        assert caps.can("download")
+        assert caps.can("files_download_stream")
         await client.aclose()
         await _client.aclose()

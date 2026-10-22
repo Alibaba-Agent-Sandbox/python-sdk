@@ -12,7 +12,7 @@ import json
 import struct
 from typing import Any
 
-from agent_sandbox.transport.auth import ApiKeyAuth, EnvdTokenManager
+from agent_sandbox.providers.alicloud_express.auth import ApiKeyAuth, EnvdTokenManager
 from agent_sandbox.transport.config import TransportConfig
 from agent_sandbox.transport.http import HttpClient
 

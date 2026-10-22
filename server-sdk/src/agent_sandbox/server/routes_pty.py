@@ -40,7 +40,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import fcntl
-import hmac
 import json
 import logging
 import os
@@ -550,17 +549,13 @@ async def pty_ws_handler(websocket: Any) -> None:
 
     # Authenticate the WebSocket connection.
     engine = _ws_policy_engine
-    expected_token: str | None = os.environ.get(_TOKEN_ENV_VAR) or None
-    if engine is not None:
-        denial = _authorise_ws(engine, websocket, raw_path)
-        if denial is not None:
-            await websocket.close(*denial)
-            return
-    elif expected_token is not None:
-        client_token = _extract_query_param(raw_path, "token") or ""
-        if not hmac.compare_digest(client_token, expected_token):
-            await websocket.close(4001, "Unauthorized")
-            return
+    if engine is None:
+        await websocket.close(1011, "Server policy is not initialized")
+        return
+    denial = _authorise_ws(engine, websocket, raw_path)
+    if denial is not None:
+        await websocket.close(*denial)
+        return
 
     session_id = _extract_query_param(raw_path, "session_id")
 

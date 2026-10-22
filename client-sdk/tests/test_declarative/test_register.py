@@ -450,7 +450,7 @@ class TestDecoratorUuidPath:
         mock_sb = _make_mock_sandbox(stdout=json.dumps(42))
         mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
 
-        @sandbox(api_key="k")
+        @sandbox(sandbox_api_key="k")
         def fn() -> int:
             return 42
 
@@ -475,7 +475,7 @@ class TestDecoratorPipFix:
         mock_sb = _make_mock_sandbox(stdout=json.dumps(None))
         mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
 
-        @sandbox(packages=["numpy", "pandas>=2.0"], api_key="k")
+        @sandbox(packages=["numpy", "pandas>=2.0"], sandbox_api_key="k")
         def fn() -> None:
             return None
 

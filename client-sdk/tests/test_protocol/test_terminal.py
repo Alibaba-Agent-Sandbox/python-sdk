@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import pytest
 
-from agent_sandbox.protocol.terminal import TerminalSession
-from agent_sandbox.transport.auth import EnvdTokenManager
+from agent_sandbox.providers.alicloud_express.auth import EnvdTokenManager
+from agent_sandbox.providers.shared.e2b.terminal import TerminalSession
 from agent_sandbox.transport.config import TransportConfig
 
 
@@ -83,7 +83,7 @@ class TestTerminalURLConversion:
         # Patch WebSocketClient to capture URL
         captured_args: dict = {}
 
-        import agent_sandbox.protocol.terminal as term_mod
+        import agent_sandbox.providers.shared.e2b.terminal as term_mod
 
         original_ws_class = term_mod.WebSocketClient
 
@@ -120,7 +120,7 @@ class TestTerminalURLConversion:
 
         captured_args: dict = {}
 
-        import agent_sandbox.protocol.terminal as term_mod
+        import agent_sandbox.providers.shared.e2b.terminal as term_mod
 
         original_ws_class = term_mod.WebSocketClient
 

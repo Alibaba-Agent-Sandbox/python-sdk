@@ -33,7 +33,6 @@ def transfer(live_server: Any, sandbox_tree: Path) -> Live:
         policy={
             "preset": "transfer-only",
             "endpoints": {
-                "download": {"paths": {"allow": [str(sandbox_tree / "out")], "deny": ["**/.env"]}},
                 "files_download_stream": {
                     "paths": {"allow": [str(sandbox_tree / "out")], "deny": ["**/.env"]},
                     "limits": {"max_bytes": 100},
@@ -43,7 +42,6 @@ def transfer(live_server: Any, sandbox_tree: Path) -> Live:
                     "params": {"overwrite": False, "deny_extensions": [".sh", ".SO"]},
                     "limits": {"max_bytes": 64},
                 },
-                "upload": {"paths": {"allow": [str(sandbox_tree / "uploads")]}},
             },
         }
     )
@@ -72,10 +70,12 @@ class TestTransferOnlyScenario:
             f"/files/download-stream?path={q(sandbox_tree / 'out' / 'a.txt')}"
         )
         assert status == 200 and base64.b64decode(body["content_base64"]) == b"alpha"
-        status, body = transfer.get(f"/download?path={q(sandbox_tree / 'out' / 'a.txt')}")
+        status, body = transfer.get(
+            f"/files/download-stream?path={q(sandbox_tree / 'out' / 'a.txt')}"
+        )
         assert status == 200 and base64.b64decode(body["content_base64"]) == b"alpha"
 
-    @pytest.mark.parametrize("route", ["/files/download-stream", "/download"])
+    @pytest.mark.parametrize("route", ["/files/download-stream", "/files/download-stream"])
     def test_download_outside_allowed_dir_denied(
         self, transfer: Live, sandbox_tree: Path, route: str
     ) -> None:
@@ -84,7 +84,7 @@ class TestTransferOnlyScenario:
             assert status == 403 and body["code"] == "path_not_allowed", (route, target)
             assert "top-secret" not in str(body) and "outside-data" not in str(body)
 
-    @pytest.mark.parametrize("route", ["/files/download-stream", "/download"])
+    @pytest.mark.parametrize("route", ["/files/download-stream", "/files/download-stream"])
     def test_download_denied_pattern(self, transfer: Live, sandbox_tree: Path, route: str) -> None:
         status, body = transfer.get(f"{route}?path={q(sandbox_tree / 'out' / '.env')}")
         assert status == 403 and body["code"] == "path_denied"
@@ -165,12 +165,13 @@ class TestTransferOnlyScenario:
         self, transfer: Live, sandbox_tree: Path
     ) -> None:
         status, _ = transfer.post(
-            "/upload",
+            "/files/upload-stream",
             {"path": str(sandbox_tree / "uploads" / "l.txt"), "content_base64": b64(b"1")},
         )
         assert status == 200
         status, body = transfer.post(
-            "/upload", {"path": str(sandbox_tree / "out" / "l.txt"), "content_base64": b64(b"1")}
+            "/files/upload-stream",
+            {"path": str(sandbox_tree / "out" / "l.txt"), "content_base64": b64(b"1")},
         )
         assert status == 403 and body["code"] == "path_not_allowed"
 
@@ -348,7 +349,7 @@ class TestReadOnlyAndSymlinkNever:
             policy={
                 "endpoints": {
                     "files_*": {"paths": {"read_only": True}},
-                    "upload": {"paths": {"read_only": True}},
+                    "files_upload_stream": {"paths": {"read_only": True}},
                 }
             }
         )
@@ -358,7 +359,7 @@ class TestReadOnlyAndSymlinkNever:
             ("/files/mkdir", {"path": str(sandbox_tree / "n")}),
             ("/files/upload-stream", {"path": p, "content_base64": b64(b"z")}),
             ("/files/move", {"source": p, "destination": p + "2"}),
-            ("/upload", {"path": p, "content_base64": b64(b"z")}),
+            ("/files/upload-stream", {"path": p, "content_base64": b64(b"z")}),
         ]:
             status, resp = live.post(route, body)
             assert status == 403 and resp["code"] == "read_only", route

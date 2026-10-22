@@ -102,7 +102,9 @@ class TestRegistry:
             parse_sandbox_ref("unknown-prov:abc")
         with pytest.raises(E.ProviderConfigError):
             parse_sandbox_ref("local-process:")
-        assert qualify("alicloud-express", "sb1", ambient="alicloud-express") == "sb1"
+        assert (
+            qualify("alicloud-express", "sb1", ambient="alicloud-express") == "alicloud-express:sb1"
+        )
         assert qualify("alicloud-express", "sb1", ambient="local-process") == "alicloud-express:sb1"
         assert qualify("local-process", "sb1", ambient="alicloud-express") == "local-process:sb1"
 

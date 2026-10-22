@@ -94,7 +94,7 @@ class TestRecordToInfo:
 
 class TestSandboxProtocolUnknownIfAbsent:
     def test_plugin_wire_leaves_absent_region_and_timeout_unknown(self):
-        from agent_sandbox.protocol.sandbox import SandboxProtocol
+        from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
 
         bare = {"sandboxID": "s1", "templateID": "base"}
         platform = SandboxProtocol(None)._info(bare)  # type: ignore[arg-type]

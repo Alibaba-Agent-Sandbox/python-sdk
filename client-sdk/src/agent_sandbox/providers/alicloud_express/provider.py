@@ -46,7 +46,7 @@ class AlicloudExpressProvider(Provider):
 
     derive = _METADATA["derive"]
     endpoint_defaults = _METADATA["endpoint_defaults"]
-    legacy_fields = _METADATA["legacy_fields"]
+    transport_fields = _METADATA["transport_fields"]
     omit_default_options = True
     # Explicit implementations; new registry features never grant builtin support.
     features = frozenset(
@@ -80,35 +80,6 @@ class AlicloudExpressProvider(Provider):
 
     create_options = frozenset({"volume_mounts"})
 
-    def build_legacy_infra(self, **options: Any) -> Any:
-        from agent_sandbox.providers.alicloud_express.auth import create_auth_provider
-        from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
-        from agent_sandbox.transport.config import load_config
-        from agent_sandbox.transport.http import HttpClient
-
-        config = load_config(
-            provider=self.id,
-            **{
-                name: value
-                for name, value in {
-                    "sandbox_api_key": options.get("api_key"),
-                    "sandbox_base_url": options.get("api_url"),
-                    "access_key_id": options.get("access_key_id"),
-                    "access_key_secret": options.get("access_key_secret"),
-                    "region": options.get("region"),
-                    "provider_options": options.get("provider_options"),
-                }.items()
-                if value is not None
-            },
-        )
-        auth = create_auth_provider(
-            api_key=config.sandbox_api_key,
-            access_key_id=config.access_key_id,
-            access_key_secret=config.access_key_secret,
-        )
-        http = HttpClient(config, auth)
-        return config, auth, http, SandboxProtocol(http)
-
     def session_protocols(self, http: Any) -> dict[str, Any]:
         from agent_sandbox.providers.shared.e2b.session import session_protocols
 
@@ -123,13 +94,6 @@ class AlicloudExpressProvider(Provider):
         from agent_sandbox.providers.shared.e2b.url import envd_url
 
         return str(info.envd_url or envd_url(info.sandbox_id, config.sandbox_domain))
-
-    @staticmethod
-    def legacy_session_url(sandbox_id: str, domain: str) -> str:
-        """Compatibility URL helper exposed through the composition schema."""
-        from agent_sandbox.providers.shared.e2b.url import envd_url
-
-        return envd_url(sandbox_id, domain)
 
     async def prepare_session(
         self, infra: ProviderInfra, info: Any, *, operation: str, template: str
@@ -173,8 +137,6 @@ class AlicloudExpressProvider(Provider):
 
         auth = create_auth_provider(
             api_key=config.sandbox_api_key,
-            access_key_id=config.access_key_id,
-            access_key_secret=config.access_key_secret,
         )
         http = HttpClient(config, auth)
         return ProviderInfra(

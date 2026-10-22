@@ -62,8 +62,8 @@ async def test_create_preserves_response_and_dials_envd_directly(
     sandbox = await Sandbox.create(
         "native-test",
         provider="alicloud-express",
-        api_key="placeholder-platform-key",
-        api_url="https://platform.invalid",
+        sandbox_api_key="placeholder-platform-key",
+        sandbox_base_url="https://platform.invalid",
         timeout=123,
         request_timeout=7,
         cpu=4,
