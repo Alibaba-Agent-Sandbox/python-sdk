@@ -148,6 +148,8 @@ Missing *credential* fields of a plugin raise the existing `InvalidCredentialsEr
 
 ---
 
+<a id="e9xxx--in-sandbox-server-api-errors-serverapierror"></a>
+
 ## E9xxx — In-sandbox Server API Errors (ServerAPIError)
 
 Raised by `ServerClient` (`Sandbox.server`) for responses of the template's SandboxServer.

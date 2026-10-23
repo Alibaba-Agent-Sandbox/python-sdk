@@ -148,6 +148,8 @@ except SandboxError as e:
 
 ---
 
+<a id="e9xxx--in-sandbox-server-api-errors-serverapierror"></a>
+
 ## E9xxx — 沙箱内服务端 API 错误（ServerAPIError）
 
 由 `ServerClient`（`Sandbox.server`）在处理模板内 SandboxServer 的响应时抛出。
