@@ -119,3 +119,4 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Native startup acknowledgment correction](evidence/verify/2026-10-23-native-startup-acknowledgment.md).
 
 - [Native startup identifier wire table](evidence/verify/2026-10-23-native-startup-wire-table.md).
+- [Complete OpenSandbox workflow acceptance](evidence/verify/2026-10-23-workflow-opensandbox-acceptance.md).

@@ -8,8 +8,8 @@ Use a virtual environment with Python 3.10 or newer. This tested immutable imple
 
 ```bash
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/c8882c29fd6a84fe10f9e6791aeacd1f5c0a5131.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/c8882c29fd6a84fe10f9e6791aeacd1f5c0a5131.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
 python -m pip check
 python -c "import agent_sandbox, agent_sandbox.server; from importlib.metadata import version; print(version('agent-sandbox-client'), version('agent-sandbox-server'))"
 ```
@@ -24,8 +24,8 @@ For all extras, retain the same server URL and use the client extra on its direc
 
 ```bash
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/c8882c29fd6a84fe10f9e6791aeacd1f5c0a5131.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/c8882c29fd6a84fe10f9e6791aeacd1f5c0a5131.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
 ```
 
 Replace `[all]` with `[mcp]`, `[session]` or `[fast]` for that subset. MCP needs its extra; Browser automation requires separately installed Playwright in the image.
@@ -33,7 +33,7 @@ Replace `[all]` with `[mcp]`, `[session]` or `[fast]` for that subset. MCP needs
 ## Server-only image installation
 
 ```bash
-python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/c8882c29fd6a84fe10f9e6791aeacd1f5c0a5131.tar.gz#subdirectory=server-sdk"
+python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk"
 ```
 
 The in-sandbox service and the local client have different roles; installing the server does not create a sandbox.

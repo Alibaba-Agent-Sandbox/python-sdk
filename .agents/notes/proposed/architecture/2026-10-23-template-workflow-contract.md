@@ -35,3 +35,4 @@ Python and CLI pass the same vectors. Package copies match canonical bytes. Curr
 - [Real-cloud migration acceptance](../../../evidence/verify/2026-10-23-workflow-real-cloud.md).
 
 - [Native startup acknowledgment correction](../../../evidence/verify/2026-10-23-native-startup-acknowledgment.md).
+- [Complete OpenSandbox application workflow](../../../evidence/verify/2026-10-23-workflow-opensandbox-acceptance.md).

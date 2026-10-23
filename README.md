@@ -68,16 +68,16 @@ Current version 0.3.0 is not on PyPI. Use the [paired source installation guide]
 ```bash
 # Client and matching runtime
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/c8882c29fd6a84fe10f9e6791aeacd1f5c0a5131.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/c8882c29fd6a84fe10f9e6791aeacd1f5c0a5131.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
 
 # Optional extras (MCP + fast JSON + sessions + declarative)
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/c8882c29fd6a84fe10f9e6791aeacd1f5c0a5131.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/c8882c29fd6a84fe10f9e6791aeacd1f5c0a5131.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
 
 # Container-side runtime (install this inside your sandbox image)
-python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/c8882c29fd6a84fe10f9e6791aeacd1f5c0a5131.tar.gz#subdirectory=server-sdk"
+python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk"
 pip install playwright                       # only if you enable the browser capability group
 
 # Development (from the repository root; includes test & lint tooling for both packages)
