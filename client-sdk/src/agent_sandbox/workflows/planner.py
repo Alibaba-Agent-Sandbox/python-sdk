@@ -170,6 +170,14 @@ def plan_workflow(
             "reason": reason,
         }
 
+    roots = {"workflow": flow, "provider": provider, "manifest": manifest}
+
+    def resolve(path: str) -> Any:
+        value: Any = roots
+        for part in path.split("."):
+            value = value.get(part) if isinstance(value, dict) else None
+        return value
+
     for rule in CONTRACT["rules"]:
         match = True
         for key, values in rule["when"].items():
@@ -177,6 +185,7 @@ def plan_workflow(
             for part in key.split("."):
                 value = value.get(part) if isinstance(value, dict) else None
             match = match and value in values
+        match = match and all(resolve(path) is not None for path in rule.get("when_present", []))
         if match:
             for operation in rule["operations"]:
                 require(operation, rule["phase"], rule["owner"])
@@ -186,14 +195,6 @@ def plan_workflow(
     for constraint in CONTRACT["constraints"]:
         if not all(flow.get(k) in v for k, v in constraint["when"].items()):
             continue
-        roots = {"workflow": flow, "provider": provider, "manifest": manifest}
-
-        def resolve(path: str, roots: dict[str, Any] = roots) -> Any:
-            value: Any = roots
-            for part in path.split("."):
-                value = value.get(part) if isinstance(value, dict) else None
-            return value
-
         left, right = resolve(constraint["left"]), resolve(constraint["right"])
         if left is None or right is None:
             state, reason = "U", "configuration-missing"

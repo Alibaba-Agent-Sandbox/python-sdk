@@ -299,6 +299,17 @@
       ],
       "phase": "before-invoke",
       "owner": "provider"
+    },
+    {
+      "when": {},
+      "when_present": [
+        "manifest.ready_cmd"
+      ],
+      "operations": [
+        "exec.run"
+      ],
+      "phase": "before-invoke",
+      "owner": "provider"
     }
   ],
   "truth_table": {

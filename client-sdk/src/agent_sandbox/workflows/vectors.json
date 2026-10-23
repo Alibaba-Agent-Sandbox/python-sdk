@@ -3414,6 +3414,313 @@
         "consumer": "cli"
       },
       "error": "input"
+    },
+    {
+      "id": "entrypoint-readiness-needs-exec",
+      "input": {
+        "manifest": {
+          "name": "fixture",
+          "spec_version": 4,
+          "workflow_contract_version": 1,
+          "start_cmd": "python commands.py",
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": [
+                "commands.list",
+                "commands.run"
+              ]
+            }
+          },
+          "default_workflow": "application",
+          "workflows": {
+            "application": {
+              "kind": "application",
+              "input": "source",
+              "service": "app",
+              "startup": "entrypoint",
+              "binding": {
+                "transport": "http",
+                "endpoint": "provider-port",
+                "caller": "host",
+                "authentication": "service-token"
+              },
+              "operation": "commands.run",
+              "required_operations": []
+            }
+          },
+          "ready_cmd": "test -f /tmp/ready"
+        },
+        "provider": {
+          "id": "arbitrary",
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed",
+            "service"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ],
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "template.prepare",
+              "sandbox.create",
+              "sandbox.delete",
+              "ports.resolve"
+            ],
+            "python": [
+              "template.prepare",
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          }
+        },
+        "workflow_id": "application",
+        "consumer": "cli"
+      },
+      "expected": {
+        "contract_version": 1,
+        "workflow_id": "application",
+        "consumer": "cli",
+        "state": "F",
+        "requirements": [
+          {
+            "operation": "template.prepare",
+            "phase": "before-prepare",
+            "owner": "provider",
+            "state": "T",
+            "reason": "implemented"
+          },
+          {
+            "operation": "workflow.input",
+            "phase": "before-prepare",
+            "owner": "provider",
+            "state": "T",
+            "reason": "implemented"
+          },
+          {
+            "operation": "sandbox.create",
+            "phase": "before-create",
+            "owner": "provider",
+            "state": "T",
+            "reason": "implemented"
+          },
+          {
+            "operation": "sandbox.delete",
+            "phase": "before-create",
+            "owner": "provider",
+            "state": "T",
+            "reason": "implemented"
+          },
+          {
+            "operation": "workflow.startup",
+            "phase": "before-start",
+            "owner": "provider",
+            "state": "T",
+            "reason": "implemented"
+          },
+          {
+            "operation": "commands.run",
+            "phase": "before-invoke",
+            "owner": "consumer",
+            "state": "T",
+            "reason": "implemented"
+          },
+          {
+            "operation": "exec.run",
+            "phase": "before-invoke",
+            "owner": "provider",
+            "state": "F",
+            "reason": "adapter-unimplemented"
+          },
+          {
+            "operation": "ports.resolve",
+            "phase": "before-invoke",
+            "owner": "provider",
+            "state": "T",
+            "reason": "implemented"
+          }
+        ],
+        "binding": {
+          "transport": "http",
+          "endpoint": "provider-port",
+          "caller": "host",
+          "authentication": "service-token"
+        },
+        "kind": "application",
+        "input": "source",
+        "service": {
+          "protocol": "agent-sandbox-server",
+          "version": 2,
+          "port": 9000,
+          "operations": [
+            "commands.list",
+            "commands.run"
+          ]
+        }
+      }
+    },
+    {
+      "id": "entrypoint-readiness-implemented",
+      "input": {
+        "manifest": {
+          "name": "fixture",
+          "spec_version": 4,
+          "workflow_contract_version": 1,
+          "start_cmd": "python commands.py",
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": [
+                "commands.list",
+                "commands.run"
+              ]
+            }
+          },
+          "default_workflow": "application",
+          "workflows": {
+            "application": {
+              "kind": "application",
+              "input": "source",
+              "service": "app",
+              "startup": "entrypoint",
+              "binding": {
+                "transport": "http",
+                "endpoint": "provider-port",
+                "caller": "host",
+                "authentication": "service-token"
+              },
+              "operation": "commands.run",
+              "required_operations": []
+            }
+          },
+          "ready_cmd": "test -f /tmp/ready"
+        },
+        "provider": {
+          "id": "arbitrary",
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed",
+            "service"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ],
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "template.prepare",
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "template.prepare",
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          }
+        },
+        "workflow_id": "application",
+        "consumer": "cli"
+      },
+      "expected": {
+        "contract_version": 1,
+        "workflow_id": "application",
+        "consumer": "cli",
+        "state": "T",
+        "requirements": [
+          {
+            "operation": "template.prepare",
+            "phase": "before-prepare",
+            "owner": "provider",
+            "state": "T",
+            "reason": "implemented"
+          },
+          {
+            "operation": "workflow.input",
+            "phase": "before-prepare",
+            "owner": "provider",
+            "state": "T",
+            "reason": "implemented"
+          },
+          {
+            "operation": "sandbox.create",
+            "phase": "before-create",
+            "owner": "provider",
+            "state": "T",
+            "reason": "implemented"
+          },
+          {
+            "operation": "sandbox.delete",
+            "phase": "before-create",
+            "owner": "provider",
+            "state": "T",
+            "reason": "implemented"
+          },
+          {
+            "operation": "workflow.startup",
+            "phase": "before-start",
+            "owner": "provider",
+            "state": "T",
+            "reason": "implemented"
+          },
+          {
+            "operation": "commands.run",
+            "phase": "before-invoke",
+            "owner": "consumer",
+            "state": "T",
+            "reason": "implemented"
+          },
+          {
+            "operation": "exec.run",
+            "phase": "before-invoke",
+            "owner": "provider",
+            "state": "T",
+            "reason": "implemented"
+          },
+          {
+            "operation": "ports.resolve",
+            "phase": "before-invoke",
+            "owner": "provider",
+            "state": "T",
+            "reason": "implemented"
+          }
+        ],
+        "binding": {
+          "transport": "http",
+          "endpoint": "provider-port",
+          "caller": "host",
+          "authentication": "service-token"
+        },
+        "kind": "application",
+        "input": "source",
+        "service": {
+          "protocol": "agent-sandbox-server",
+          "version": 2,
+          "port": 9000,
+          "operations": [
+            "commands.list",
+            "commands.run"
+          ]
+        }
+      }
     }
   ]
 }
