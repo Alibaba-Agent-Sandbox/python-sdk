@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- Replace current template capability defaults with strict specification 4 workflows and operation contract 1, canonical cross-language plans, identities and verification profiles. / 当前模板改用严格规范 4 工作流及操作契约 1，新增共享规划、身份与验收范围。
+- Provider interpreter execution separates stateless, persistent default, explicit contexts and realtime callbacks; interpreter 404 no longer falls back to shell. / 解释器分别检查无状态、默认持久上下文、独立上下文与实时回调，404 不再自动转 shell。
+- Application HTTP resolves independently of provider transport, preserving proxy/query bindings and isolating credentials; new workflow launch journals ownership and refuses unchecked payloads. / 应用 HTTP 独立解析入口，保留代理与 query 并隔离凭据；新增工作流启动的资源意图记录和调用前检查。
+
+
 ### Fixed
 
 - Align contributor guidance and English/Chinese API, configuration and provider documentation with the removed project compatibility surface. / 同步贡献指南及中英文 API、配置和 Provider 文档，清除已删除项目兼容接口的旧说明。

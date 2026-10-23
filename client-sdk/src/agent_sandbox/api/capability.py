@@ -1,8 +1,4 @@
-"""Capability resolver — resolves template capabilities.
-
-Phase 1: local-only resolution from ``~/.abx/templates/`` cache.
-Phase 2 will add online fallback via ``GET /templates/{id}`` metadata.
-"""
+"""Strict local workflow discovery. Coarse tokens never authorize provider operations."""
 
 from __future__ import annotations
 
@@ -11,298 +7,82 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from agent_sandbox.models.errors import (
-    CapabilityNotSupportedError,
-    TemplateParseError,
-)
-from agent_sandbox.models.template import (
-    DEFAULT_CAPABILITIES,
-    SandboxTemplate,
-)
-from agent_sandbox.utils.logging import get_logger
-
-logger = get_logger("api.capability")
+from agent_sandbox.models.errors import TemplateParseError
+from agent_sandbox.models.template import SandboxTemplate
 
 TEMPLATE_CACHE_DIR = Path.home() / ".abx" / "templates"
 
 
 class ResolvedCapabilities(BaseModel):
-    """The resolved capability set for a sandbox."""
+    """Discovery derived from an explicitly validated workflow, empty when unknown."""
 
-    capabilities: set[str] = Field(default_factory=lambda: set(DEFAULT_CAPABILITIES))
-    #: True when a local ``template.yaml`` matched. False when the defaults
-    #: were used because nothing on disk matched.
+    capabilities: set[str] = Field(default_factory=set)
     matched: bool = False
 
 
-# ---------------------------------------------------------------------------
-# Capability gate helper
-# ---------------------------------------------------------------------------
-
-
-def check_capability(capabilities: set[str], required: str) -> None:
-    """Raise :class:`CapabilityNotSupportedError` when *required* is missing."""
-    if required not in capabilities:
-        raise CapabilityNotSupportedError(required)
-
-
-# ---------------------------------------------------------------------------
-# Local resolution
-# ---------------------------------------------------------------------------
-
-
-def _template_matches(
-    data: dict[str, Any],
-    yaml_path: Path,
-    template_id: str,
-) -> bool:
-    """Return True when *data* (a raw template dict at *yaml_path*) refers
-    to *template_id*.
-
-    Matching is intentionally broad: it compares against the ``name`` field,
-    the ``alias`` / ``aliases`` fields, and the containing directory name —
-    because a template may be referenced by any of these.  Matching too
-    narrowly would silently fall back to ``DEFAULT_CAPABILITIES`` and
-    wrongly gate a template that actually declares ``terminal`` / ``ports``.
-    """
-    if data.get("name") == template_id:
-        return True
-
-    alias = data.get("alias")
-    if isinstance(alias, str) and alias == template_id:
-        return True
-
-    aliases = data.get("aliases")
-    if isinstance(aliases, str) and aliases == template_id:
-        return True
-    if isinstance(aliases, (list, tuple)) and template_id in aliases:
-        return True
-
-    return yaml_path.parent.name == template_id
-
-
-def _find_local_template(template_id: str) -> SandboxTemplate | None:
-    """Scan ``~/.abx/templates/`` for a ``template.yaml`` that
-    matches *template_id* by ``name``, ``alias``/``aliases``, or directory
-    name.
-
-    Returns ``None`` when nothing matches.
-
-    Fail-closed: when a template *matches* but fails model validation, a
-    :class:`~agent_sandbox.models.errors.TemplateParseError` is raised
-    instead of skipping it — skipping would silently widen permissions by
-    falling back to ``DEFAULT_CAPABILITIES``.  Only unreadable files and
-    non-dict documents are skipped (they cannot have matched).
-    """
-    if not TEMPLATE_CACHE_DIR.exists():
-        return None
-
-    for yaml_path in TEMPLATE_CACHE_DIR.rglob("template.yaml"):
-        # (a) Unreadable file / non-dict document → skip, keep scanning.
-        try:
-            import yaml
-
-            data = yaml.safe_load(yaml_path.read_text())
-        except Exception:
-            logger.debug("Skipping unreadable template at %s", yaml_path, exc_info=True)
-            continue
-        if not isinstance(data, dict):
-            continue
-
-        if not _template_matches(data, yaml_path, template_id):
-            continue
-
-        # (b) Matched but malformed → fail-closed, do NOT fall back.
-        try:
-            return parse_template_data(data)
-        except Exception as exc:
-            logger.warning(
-                "Matched template at %s failed validation; refusing to fall "
-                "back to DEFAULT_CAPABILITIES (fail-closed)",
-                yaml_path,
-                exc_info=True,
-            )
-            raise TemplateParseError(
-                f"Template {template_id!r} at {yaml_path} is malformed: {exc}"
-            ) from exc
-
-    return None
-
-
 def parse_template_data(data: dict[str, Any]) -> SandboxTemplate:
-    """Parse a raw template dict (as loaded from ``template.yaml``).
-
-    Public so that other layers (e.g. AI code generation) can validate a
-    generated manifest against the same schema and the same
-    ``resources.cpu`` / ``resources.memory`` shorthand handling.
-
-    Raises:
-        pydantic.ValidationError: When the manifest fails schema validation.
-    """
-    resources = data.get("resources", {}) or {}
-    if "cpu" in resources and "cpu_count" not in data:
-        data["cpu_count"] = resources["cpu"]
-    if "memory" in resources and "memory_mb" not in data:
-        data["memory_mb"] = resources["memory"]
-    return SandboxTemplate.model_validate(data)
+    """Validate specification 4, preserving unrelated application topology metadata."""
+    normalized = dict(data)
+    resources = normalized.get("resources", {}) or {}
+    if "application" not in normalized and "cpu" in resources and "cpu_count" not in normalized:
+        normalized["cpu_count"] = resources["cpu"]
+    if "application" not in normalized and "memory" in resources and "memory_mb" not in normalized:
+        normalized["memory_mb"] = resources["memory"]
+    return SandboxTemplate.model_validate(normalized)
 
 
-# ---------------------------------------------------------------------------
-# Public resolver
-# ---------------------------------------------------------------------------
+def _read(path: Path) -> SandboxTemplate:
+    import yaml
+
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError("template must be a mapping")
+        return parse_template_data(data)
+    except Exception as exc:
+        raise TemplateParseError(f"Template at {path} is invalid: {exc}") from exc
 
 
 async def resolve_capabilities(
-    template_id: str | None = None,
-    *,
-    local_yaml_path: str | None = None,
+    template_id: str | None = None, *, local_yaml_path: str | None = None
 ) -> ResolvedCapabilities:
-    """Resolve capabilities for a template.
-
-    Resolution order:
-
-    1. If *local_yaml_path* is given, parse it directly.
-    2. Scan ``~/.abx/templates/`` for a matching template name.
-    3. **TODO(Phase2):** ``GET /templates/{id}`` metadata fallback.
-       The platform template payload has no capabilities field, so this
-       cannot be filled from ``GET /templates/{id}`` today.
-    4. Fall back to :data:`DEFAULT_CAPABILITIES`. A cloud template id has no
-       local file, so that fallback is debug-only. A missing explicit
-       *local_yaml_path* still warns.
-
-    Returns:
-        A :class:`ResolvedCapabilities` instance. ``matched`` is True only
-        when a local template was found.
-    """
-    return await _resolve_capabilities(
-        template_id,
-        local_yaml_path=local_yaml_path,
-        log_fallback=True,
-    )
+    """Discover an explicit path or matching cached manifest without granting defaults."""
+    return await resolve_capabilities_for(template_id, local_yaml_path=local_yaml_path)
 
 
 async def resolve_capabilities_for(
-    *template_ids: str | None,
-    local_yaml_path: str | None = None,
+    *template_ids: str | None, local_yaml_path: str | None = None
 ) -> ResolvedCapabilities:
-    """Resolve capabilities, trying each id until one local template matches.
+    """Validate local metadata; an unknown remote reference makes no runtime claims.
 
-    ``Sandbox.create(template=alias)`` often has no
-    ``~/.abx/templates/<alias>/template.yaml``. After the platform responds,
-    ``SandboxInfo.template`` is the template id and may be the cache directory
-    name. The first id that matches wins. Empty and duplicate ids are skipped.
-    A complete miss stays at debug level (or one warning when an explicit
-    *local_yaml_path* was given) and uses :data:`DEFAULT_CAPABILITIES`.
+    An explicit missing, unreadable or malformed file raises. Cached candidates
+    match name, declared source aliases or directory name; matched invalid inputs
+    raise instead of silently switching to another definition.
     """
-    ordered: list[str] = []
-    for raw in template_ids:
-        if isinstance(raw, str) and raw and raw not in ordered:
-            ordered.append(raw)
+    if local_yaml_path is not None:
+        template = _read(Path(local_yaml_path))
+        return ResolvedCapabilities(capabilities=template.discovery_capabilities(), matched=True)
+    import yaml
 
-    if local_yaml_path:
-        resolved = await _resolve_capabilities(
-            ordered[0] if ordered else None,
-            local_yaml_path=local_yaml_path,
-            log_fallback=False,
-        )
-        if resolved.matched:
-            return resolved
-        rest = ordered[1:]
-    else:
-        rest = ordered
-
-    for template_id in rest:
-        resolved = await _resolve_capabilities(
-            template_id,
-            local_yaml_path=None,
-            log_fallback=False,
-        )
-        if resolved.matched:
-            return resolved
-
-    if local_yaml_path:
-        logger.warning(
-            "Could not resolve capabilities for template %r from %s; "
-            "falling back to DEFAULT_CAPABILITIES",
-            ordered[0] if ordered else None,
-            local_yaml_path,
-        )
-    else:
-        shown: str | list[str] | None = ordered[0] if len(ordered) == 1 else ordered or None
-        logger.debug("No local template for %s; using DEFAULT_CAPABILITIES", shown)
-    return ResolvedCapabilities()
-
-
-async def _resolve_capabilities(
-    template_id: str | None,
-    *,
-    local_yaml_path: str | None,
-    log_fallback: bool,
-) -> ResolvedCapabilities:
-    """Single-id resolution. *log_fallback* is False when the caller will try more ids."""
-    template: SandboxTemplate | None = None
-
-    # 1. Explicit local path
-    if local_yaml_path:
-        path = Path(local_yaml_path)
-        if path.exists():
-            # (a) Unreadable / non-dict → skip, fall through to scan+default.
+    for template_id in dict.fromkeys(t for t in template_ids if t):
+        for path in sorted(TEMPLATE_CACHE_DIR.rglob("template.yaml")):
             try:
-                import yaml
-
-                data = yaml.safe_load(path.read_text())
+                data = yaml.safe_load(path.read_text(encoding="utf-8"))
             except Exception:
-                logger.warning(
-                    "Failed to read local template YAML at %s, using defaults",
-                    local_yaml_path,
-                    exc_info=True,
+                if path.parent.name == template_id:
+                    _read(path)
+                continue
+            if not isinstance(data, dict):
+                if path.parent.name == template_id:
+                    _read(path)
+                continue
+            aliases = data.get("aliases", [])
+            names = [data.get("name"), data.get("alias"), path.parent.name]
+            if isinstance(aliases, list):
+                names.extend(aliases)
+            if template_id in names:
+                template = _read(path)
+                return ResolvedCapabilities(
+                    capabilities=template.discovery_capabilities(), matched=True
                 )
-                data = None
-            if isinstance(data, dict):
-                # (b) Explicitly provided + parsed as dict but malformed →
-                # fail-closed rather than silently granting defaults.
-                try:
-                    template = parse_template_data(data)
-                except Exception as exc:
-                    logger.warning(
-                        "Local template YAML at %s failed validation; "
-                        "refusing to fall back to DEFAULT_CAPABILITIES "
-                        "(fail-closed)",
-                        local_yaml_path,
-                        exc_info=True,
-                    )
-                    raise TemplateParseError(
-                        f"Template at {local_yaml_path} is malformed: {exc}"
-                    ) from exc
-
-    # 2. Scan local cache
-    if template is None and template_id:
-        template = _find_local_template(template_id)
-
-    # 3. TODO(Phase2): online fallback — GET /templates/{id} metadata
-
-    # 4. Fallback. A remote template id (the Express case) has no local YAML.
-    if template is None:
-        if log_fallback:
-            if local_yaml_path:
-                logger.warning(
-                    "Could not resolve capabilities for template %r from %s; "
-                    "falling back to DEFAULT_CAPABILITIES",
-                    template_id,
-                    local_yaml_path,
-                )
-            else:
-                logger.debug(
-                    "No local template for %r; using DEFAULT_CAPABILITIES",
-                    template_id,
-                )
-        return ResolvedCapabilities()
-
-    # Build result from the resolved template
-    caps: set[str]
-    if template.capabilities is not None:
-        caps = set(template.capabilities)
-    else:
-        caps = set(DEFAULT_CAPABILITIES)
-
-    return ResolvedCapabilities(capabilities=caps, matched=True)
+    return ResolvedCapabilities()

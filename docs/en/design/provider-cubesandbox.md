@@ -1,82 +1,47 @@
 # CubeSandbox provider
 
-CubeSandbox is a catalog provider. The source is `awesome-providers/cubesandbox` and the id is `cubesandbox`. Install with `abx provider install alibaba-agent-sandbox/awesome-providers//cubesandbox --allow-unpinned --yes` (or `python -m agent_sandbox.providers install registry:cubesandbox --yes`). `Sandbox.create(provider="cubesandbox")` and `abx --provider cubesandbox` talk to CubeAPI with the host's E2B protocol classes plus a few overrides in `provider.mjs`.
+CubeSandbox is a catalog Provider consumed by the CLI and Python `ProviderSandbox` through the local engine. The Node.js server HTTP client is a separate consumer and does not manage cloud sandboxes. [中文](../../zh/design/provider-cubesandbox.md).
 
-The manifest is `kind = "node"`: the Node.js host loads `provider.mjs`, and the Python SDK reaches it through the local engine (`abx provider engine serve`). Its own notes are `awesome-providers/cubesandbox/docs/README.md`.
+The authoritative plugin and operation declarations live in [awesome-providers/cubesandbox](https://github.com/Alibaba-Agent-Sandbox/awesome-providers/tree/main/cubesandbox). Install its Git tree with `abx provider install alibaba-agent-sandbox/awesome-providers//cubesandbox --allow-unpinned --yes`, or use the Python registry installer `python -m agent_sandbox.providers install registry:cubesandbox --yes`. Pin a reviewed full commit for reproducible use.
 
-The control-plane paths were read from [openapi.yml](https://github.com/TencentCloud/CubeSandbox/blob/master/openapi.yml) and the [Python SDK](https://github.com/TencentCloud/CubeSandbox/tree/master/sdk/python). The unit test does not need a live CubeSandbox. It serves `POST /sandboxes` from a local TCP listener on `127.0.0.1`. A live create needs CubeAPI listening on `127.0.0.1:3000`. The one-click installer stopped in preflight here: `/` is overlay, not the XFS filesystem `/data/cubelet` requires, and init is tini rather than systemd. Port 3000 was closed, so that live create did not run.
+## Exact interpreter boundary
 
-## Configure
+The adapter implements only `code.default-context.execute`: persistent variables in a sandbox's default Jupyter context. It sends JSON `code`, `language` and optional `env_vars` to `/execute` on port 49999 and reads the buffered NDJSON result. Call `await sandbox.run_code("x = 42", mode="default-context")` explicitly.
 
-| Field | Type | Environment | Default |
-|---|---|---|---|
-| `base_url` | url | `ABX_CUBESANDBOX_BASE_URL` | `http://127.0.0.1:3000` |
-| `api_key` | secret, optional | `ABX_CUBESANDBOX_API_KEY` | unset |
-| `domain` | string | `ABX_CUBESANDBOX_DOMAIN` | `cube.app` |
+Stateless `code.execute`, explicit context create/execute/list/restart/delete, realtime `code.stream` and `code.results.structured` are not declared. Context IDs and callbacks are rejected before code I/O. A buffered result does not promise realtime callbacks, and missing interpreter services do not fall back to a shell.
 
-The default origin uses port 3000 because the Cube Python SDK README sets `CUBE_API_URL` to `http://127.0.0.1:3000`. Pass `provider_options={"base_url": "..."}` to override it. The value is the CubeAPI origin with no path prefix. Requests go to `/sandboxes`, not `/cubeapi/v1/sandboxes`.
+This mapping is distinct from the removed guessed Connect interpreter RPC. Cube's [official Python SDK README](https://github.com/TencentCloud/CubeSandbox/blob/master/sdk/python/README.md) documents `/execute` and persistent variables. This source mapping and loopback tests do not establish a live Cube deployment pass.
 
-When `api_key` is set, the client sends `X-API-Key`. When it is unset, the client sends no auth header. Local CubeAPI accepts that. This provider does not read `ABX_SANDBOX_API_KEY`. That variable is the Alibaba Cloud Express key.
+## Configure and create
 
-`domain` is the suffix in port hosts `{port}-{sandboxID}.{domain}`.
+| Field | Environment | Default |
+| --- | --- | --- |
+| API origin | `ABX_CUBESANDBOX_BASE_URL` | `http://127.0.0.1:3000` |
+| Optional provider key | `ABX_CUBESANDBOX_API_KEY` | Unset |
+| Port-host suffix | `ABX_CUBESANDBOX_DOMAIN` | `cube.app` |
+| Remote node proxy | `ABX_CUBESANDBOX_PROXY` | Unset |
+
+Provider-scoped keys stay separate from Express credentials. Process and filesystem calls use envd on port 49983; Jupyter uses 49999. Port hosts are `{port}-{sandboxID}.{domain}`. The adapter's optional proxy controls TCP dialing while retaining the virtual Host name.
 
 ```python
-from agent_sandbox import ProviderSandbox as Sandbox
+from agent_sandbox import ProviderSandbox
 
-sb = await Sandbox.create(
+sandbox = await ProviderSandbox.create(
     provider="cubesandbox",
-    provider_options={
-        "base_url": "http://127.0.0.1:3000",
-        "api_key": "...",
-        "domain": "cube.app",
-    },
-    template="base",
+    template="YOUR_NATIVE_TEMPLATE_ID",
+    provider_options={"base_url": "http://127.0.0.1:3000", "domain": "cube.app"},
     timeout=60,
 )
+try:
+    result = await sandbox.run_code("print(42)", mode="default-context")
+finally:
+    await sandbox.kill()
 ```
 
-## Features this adapter calls
+The control-plane mapping follows the [Cube OpenAPI](https://github.com/TencentCloud/CubeSandbox/blob/master/openapi.yml) and [official SDK](https://github.com/TencentCloud/CubeSandbox/tree/master/sdk/python). The plugin maps lifecycle/timeout/pause/resume, exec, files and ports independently. Its manifest is the current operation authority; coarse feature groups do not authorize another workflow. Process management, PTY, file transfer, native template inventory, storage and VPC are not inferred from another supported operation.
 
-| Feature | HTTP the shared protocol sends | Confirmed on Cube |
-|---|---|---|
-| `sandbox.lifecycle` | `POST /sandboxes`, `GET /sandboxes`, `GET /sandboxes/{id}`, `DELETE /sandboxes/{id}`, `GET /v2/sandboxes` | OpenAPI and the SDK |
-| `sandbox.timeout` | `POST /sandboxes/{id}/timeout` | OpenAPI and the SDK |
-| `sandbox.pause` | `POST /sandboxes/{id}/pause` and `POST /sandboxes/{id}/resume` | OpenAPI and the SDK |
-| `exec.run`, `exec.stream` | envd `POST /process.Process/Start` on port 49983 | Cube Python SDK |
-| `files.rw` | envd `GET /files`, `POST /files`, and `POST /filesystem.Filesystem/{Stat,ListDir,MakeDir,Remove,Move}`. User defaults to `root` | Cube Python SDK |
-| `files.watch` | envd `POST /filesystem.Filesystem/WatchDir` | Cube Python SDK `files.watch_dir` |
-| `code.interpret` | envd Connect `POST /code.CodeInterpreter/Execute` | Not the Cube SDK path. See below |
-| `ports.url` | local `{port}-{sandboxID}.{domain}` | Cube SDK `get_host` |
+## Source preparation and evidence
 
-`connect` sends `POST /sandboxes/{id}/connect` first. That is how Cube resumes a paused sandbox. A 4xx falls back to `GET /sandboxes/{id}`. Process and file calls send `root` when the caller omits the user, because Cube envd rejects an empty user.
+CLI source preparation requires an explicit compatible Dockerfile/profile, Docker, a writable image repository and native Cube registration prerequisites. It preserves FROM, USER, COPY and ENTRYPOINT. It returns the same provider's native managed reference; raw OCI references are not treated as Cube template IDs. Python does not declare `template.prepare` and consumes an already prepared reference.
 
-`run_code` posts to `http://49999-{id}.{domain}/execute` with `code`, `language`, and `env_vars`, and reads the ndjson response. Off the node, set `ABX_CUBESANDBOX_PROXY=host:80`. TCP dials that proxy and the Host header stays the virtual hostname.
-
-## Calls that raise E8004
-
-These are not in `features`. `feature_gate` refuses the protocol method before any HTTP request. `Provider.require` refuses the feature id the same way.
-
-| Feature | What is refused |
-|---|---|
-| `files.transfer` | signed or token file URL |
-| `pty` | interactive terminal |
-| `templates.read`, `templates.build` | template list and build |
-| `sessions` | named commands on SandboxServer |
-| `process.manage` | process list, stdin, and signals. `exec.run` still starts a command |
-| `ports.domain` | a separate domain-style feature id. Port hosts still use `domain` |
-| `storage.mount` | the generic mount feature |
-| `network.vpc` | VPC |
-
-## Extensions
-
-OpenAPI has three Cube-only capabilities that are not one of the 18 feature ids. They are registered with `implemented=False` and `when="sandbox"`. Nothing in this adapter calls them.
-
-| Id | OpenAPI |
-|---|---|
-| `volume.mounts` | `NewSandbox.volumeMounts`, `/volumes` |
-| `network.policy` | create body `network`, `PUT /sandboxes/{id}/network` |
-| `distribution.scope` | `NewSandbox.distributionScope` |
-
-`extensions_for` returns nothing until the caller passes a sandbox id. With a sandbox id, all three are visible because `when` is `sandbox`. `require_extension` on any of them raises `E8004` because `implemented` is false. `describe()["extensions"]` lists them even when no sandbox exists.
-
-These OpenAPI operations also exist and are not registered, because they are not the three cube-only items above and this adapter does not call them: `GET /health`, `POST /sandboxes/{id}/refreshes`, `GET /sandboxes/{id}/logs`, `POST /sandboxes/{id}/snapshots`, `POST /sandboxes/{id}/rollback`, `GET /snapshots`, and the `/templates` build surface.
+Cube remains Beta. Unit/loopback tests exercise mapping and failure behavior; native create requires an actual CubeAPI, valid native template and node/runtime setup. This environment has not completed that native acceptance. New source or binding identities require new scoped evidence; a historical record cannot certify the current workflow.

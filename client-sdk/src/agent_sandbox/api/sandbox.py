@@ -16,7 +16,7 @@ from __future__ import annotations
 import functools
 import json
 import shlex
-from typing import TYPE_CHECKING, Any, NoReturn, cast
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, cast
 
 from agent_sandbox.api.capability import (
     ResolvedCapabilities,
@@ -270,6 +270,13 @@ class Sandbox:
             else self._declared_capabilities
         )
 
+    @property
+    def operations(self) -> frozenset[str]:
+        """Exact operations implemented by this provider's Python consumer."""
+        from agent_sandbox.providers.registry import get_provider
+
+        return frozenset(get_provider(self.provider).operations)
+
     # ---- Sub-modules (lazy cached properties) ----
 
     @functools.cached_property
@@ -282,6 +289,8 @@ class Sandbox:
             envd_token=self._envd_token,
             process_protocol=self._process_protocol,
             capabilities=self._capabilities,
+            operations=self.operations,
+            provider_id=self.provider,
         )
 
     @functools.cached_property
@@ -346,8 +355,8 @@ class Sandbox:
             envd_url=self.url,
             envd_token=self._envd_token,
             code_interpreter_protocol=self._code_interpreter_protocol,
-            capabilities=self._capabilities,
-            process_protocol=self._process_protocol,
+            operations=self.operations,
+            provider_id=self.provider,
         )
 
     # ---- In-sandbox SandboxServer ----
@@ -391,6 +400,66 @@ class Sandbox:
             headers=self.network.get_server_headers() or None,
             pty_url=self.network.get_url(pty_port),
             timeout=timeout,
+        )
+
+    async def application_client(
+        self, port: int = 9000, *, token: str | None = None, timeout: float = 30.0
+    ) -> ServerClient:
+        """Resolve application HTTP independently of the sandbox control/data transport.
+
+        The provider supplies this sandbox's port URL and minimal gateway headers.
+        Application credentials are explicit and never inherited from API keys.
+        """
+        from datetime import datetime, timezone
+
+        from agent_sandbox.api.server_client import ServerClient
+        from agent_sandbox.protocol.port_contract import PortContext
+        from agent_sandbox.providers.registry import get_provider
+
+        descriptor = await get_provider(self.provider).application_endpoint(
+            PortContext(
+                self.id,
+                self._domain,
+                self._secure,
+                self._envd_token.token if self._envd_token else None,
+            ),
+            port,
+            self._sandbox_protocol,
+        )
+        if (
+            not isinstance(descriptor, dict)
+            or type(descriptor.get("port")) is not int
+            or any(
+                descriptor.get(key) != expected
+                for key, expected in {
+                    "provider_id": self.provider,
+                    "sandbox_id": self.id,
+                    "port": port,
+                    "authentication_audience": "gateway",
+                }.items()
+            )
+        ):
+            raise ValueError("Application endpoint does not match this provider, sandbox and port")
+        expires = descriptor.get("expires_at")
+        if expires is not None:
+            if not isinstance(expires, str):
+                raise ValueError("Endpoint expiry must be an ISO 8601 timestamp")
+            deadline = datetime.fromisoformat(expires.replace("Z", "+00:00"))
+            if deadline.tzinfo is None or deadline <= datetime.now(timezone.utc):
+                raise ValueError("Application endpoint has expired")
+        url, headers = descriptor.get("url"), descriptor.get("headers")
+        if not isinstance(url, str) or not isinstance(headers, dict):
+            raise ValueError("Application endpoint URL and gateway headers are required")
+        path_mode = descriptor.get("path_mode")
+        if not isinstance(path_mode, str):
+            raise ValueError("Application endpoint path mode is required")
+        return ServerClient(
+            url,
+            headers=headers,
+            token=token,
+            timeout=timeout,
+            path_mode=path_mode,
+            expires_at=expires,
         )
 
     async def start_server(
@@ -440,9 +509,8 @@ class Sandbox:
                 cmd += f" --commands {shlex.quote(commands)}"
             if isinstance(policy, str):
                 cmd += f" --preset {shlex.quote(policy)}"
-        stream = await self.commands.run(
-            cmd, background=True, env=server_env or None, timeout=86400
-        )
+        client = await self.application_client(port, token=token)
+        stream = await self.commands._start_for_startup(cmd, env=server_env or None, timeout=86400)
         if not isinstance(stream, StreamReader):
             raise ConnectionError_("SandboxServer did not return a process stream")
         self._server_process = stream
@@ -466,7 +534,6 @@ class Sandbox:
         task = asyncio.create_task(drain())
         self._server_stream_tasks.add(task)
         task.add_done_callback(self._server_stream_tasks.discard)
-        client = self.server_at(port, token=token)
         loop = asyncio.get_running_loop()
         deadline = loop.time() + timeout
         try:
@@ -531,6 +598,7 @@ class Sandbox:
         region: str | None = None,
         provider: str | Provider | None = None,
         provider_options: dict[str, Any] | None = None,
+        on_created: Callable[[str], None] | None = None,
     ) -> Sandbox:
         """Create a new sandbox.
 
@@ -624,6 +692,7 @@ class Sandbox:
                 region=region,
             ),
             options=provider_options,
+            on_created=on_created,
         )
 
     @classmethod
@@ -910,6 +979,7 @@ class Sandbox:
         domain: str | None,
         overrides: dict[str, Any],
         options: dict[str, Any] | None,
+        on_created: Callable[[str], None] | None = None,
     ) -> Sandbox:
         infra = await _provider_infra(prov, overrides, options)
         closer = _InfraCloser(infra)
@@ -932,6 +1002,8 @@ class Sandbox:
                 sandbox_config, request_timeout=request_timeout
             )
             created = info
+            if on_created is not None:
+                on_created(info.sandbox_id)
             binding = await prov.prepare_session(infra, info, operation="create", template=template)
             logger.info("Sandbox created: %s (provider %s)", info.sandbox_id, prov.id)
             resolved = ResolvedCapabilities(
@@ -958,16 +1030,19 @@ class Sandbox:
                 provider_id=prov.id,
                 **binding,
             )
-        except Exception:
+        except BaseException as exc:
             if created is not None:
+                exc.owned_resource = {"provider_id": prov.id, "sandbox_id": created.sandbox_id}  # type: ignore[attr-defined]
                 try:
                     await infra.sandbox_protocol.kill(created.sandbox_id)
-                except Exception:
-                    logger.warning(
-                        "Created sandbox cleanup failed after session binding failed; "
-                        "inspect provider resources."
-                    )
-            await closer.close()
+                except BaseException:
+                    exc.resource_cleanup_complete = False  # type: ignore[attr-defined]
+                else:
+                    exc.resource_cleanup_complete = True  # type: ignore[attr-defined]
+            try:
+                await closer.close()
+            except BaseException:
+                exc.connection_cleanup_failed = True  # type: ignore[attr-defined]
             raise
 
     @classmethod
@@ -1093,6 +1168,8 @@ class Sandbox:
         *,
         language: str = "python",
         timeout: int = 30,
+        context_id: str | None = None,
+        mode: Literal["stateless", "default-context"] = "stateless",
         envs: dict[str, str] | None = None,
         on_stdout: Callable[[str], None] | None = None,
         on_stderr: Callable[[str], None] | None = None,
@@ -1118,6 +1195,8 @@ class Sandbox:
             code,
             language=language,
             timeout=timeout,
+            context_id=context_id,
+            mode=mode,
             envs=envs,
             on_stdout=on_stdout,
             on_stderr=on_stderr,
@@ -1165,10 +1244,7 @@ class Sandbox:
             ProviderFeatureNotSupportedError: The provider has no HTTP data plane.
             ConnectionError_: The SandboxServer is not reachable.
         """
-        self._require_data_plane("named commands")
-        if server_port == 9000:
-            return await self.server.commands.list()
-        async with self.server_at(server_port) as client:
+        async with await self.application_client(server_port) as client:
             return await client.commands.list()
 
     async def run(
@@ -1207,21 +1283,8 @@ class Sandbox:
             ProviderFeatureNotSupportedError: The provider has no HTTP data plane.
             ConnectionError_: The SandboxServer is not reachable.
         """
-        self._require_data_plane("named commands")
-        if server_port == 9000:
-            return await self.server.commands.run(name, timeout=timeout, **kwargs)
-        async with self.server_at(server_port) as client:
+        async with await self.application_client(server_port) as client:
             return await client.commands.run(name, timeout=timeout, **kwargs)
-
-    def _require_data_plane(self, feature: str) -> None:
-        """Named commands need an HTTP envd. Other URL schemes are refused before any I/O."""
-        del feature
-        url = str(self._info.envd_url or "")
-        if url.startswith(("http://", "https://")):
-            return
-        from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
-
-        raise ProviderFeatureNotSupportedError(self._provider_id, "sessions")
 
     # ---- E2B-shaped URL stubs ----
 

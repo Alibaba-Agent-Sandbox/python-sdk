@@ -10,30 +10,16 @@ Dockerfile 里的 `FROM` 镜像随模板而变。本 HTTP API 不变。凡是启
 
 ## 如何访问沙箱
 
-容器内服务器绑定 `0.0.0.0:9000`（`serve` 的默认端口）。从外面访问时，向 SDK 要该端口的公网地址：
+服务器默认监听 `0.0.0.0:9000`。Provider 必须支持所需端口解析和访问路径，服务也必须实际监听；不能把所有入口都当作 `{port}-{sandbox_id}.{domain}` 主机名拼接。已有沙箱的应用调用独立于内部 envd/EPP 传输：
 
 ```python
-url = sandbox.network.get_url(9000)
-# https://{port}-{sandbox_id}.{domain}
-host = sandbox.network.get_host(9000)
+async with await sandbox.application_client(9000, token=application_token) as client:
+    result = await client.commands.run("hello", name="Python")
 ```
 
-`{domain}` 来自创建该沙箱的提供方。终端组开启时，对 `9001` 做同样的调用就是 PTY WebSocket 端口（`ABX_PTY_PORT`，默认 `9001`）。
+此调用解析当前沙箱和端口的应用端点，保留完整代理前缀及签名 query。平台网关请求头和应用 `ABX_SERVER_TOKEN` 分离，不复制控制面 API key，不做匿名认证重试。重定向（包括同域另一沙箱）、URL 用户信息和寻址覆盖被拒绝；逐操作签名入口必须由 Provider 解析操作请求，不能按 URL 前缀拼接。
 
-如果你是在本机自己执行 `python3 commands.py`，基址就是 `http://127.0.0.1:9000`。
-
-`template.yaml` 的 `ports` 必须包含 `9000`（使用终端时还要包含 `9001`），平台才会发布该端口。`sandbox.network.get_url` 只拼出主机名；容器里必须有进程在监听。
-
-命名命令走 `sandbox.run`（或 `sandbox.server`）。这个客户端不发送沙箱访问令牌。在 Express 上，向没有设置 `ABX_SERVER_TOKEN` 的 `agent-sandbox-server` 发送 `X-Access-Token`，在本版本之前构建的镜像里会返回 HTTP 401。
-
-安全模式下，平台网关有自己的访问头。把它用于 envd，以及你手工访问已发布端口的请求，不要把它交给 `sandbox.run`：
-
-```python
-headers = sandbox.network.get_access_headers()
-# {"X-Access-Token": <沙箱访问令牌>}
-```
-
-服务端以 `ABX_SERVER_TOKEN` 启动时，把该值传给 `sandbox.server_at(9000, token=...)`。它以 `Authorization: Bearer` 发送。
+本机直接启动 `commands.py` 时，可以用显式 `http://127.0.0.1:9000` 访问服务器。终端 WebSocket 的 `ABX_PTY_PORT` 默认是 `9001`，需要独立声明/发布对应端口及协议。镜像端口声明、平台发布、网络绑定、应用协议和服务端策略分别检查。详见[显式模板工作流](template-workflows.md)。
 
 ---
 
@@ -41,7 +27,7 @@ headers = sandbox.network.get_access_headers()
 
 `SandboxServer` 在启动时读取一次 `ABX_SERVER_TOKEN`。
 
-- 未设置或为空：所有路由都接受请求，调用方身份是 `anonymous`。出示的凭据对不上任何已配置令牌时，身份同样保持 `anonymous`（网关的 `X-Access-Token` 不是服务端登录）。本版本之前构建的镜像对这个头返回 `401`；`sandbox.run` 不带它，那些镜像仍然可用。
+- 未设置或为空：认证身份默认为 `anonymous`，端点策略仍然生效。出示的凭据对不上任何已配置令牌时，身份同样保持 `anonymous`（网关的 `X-Access-Token` 不是服务端登录）。
 - 已设置：以 `auth_required=True` 注册的路由（默认如此）要求在 `X-Access-Token` 或 `Authorization: Bearer <token>` 里带上令牌。所有路由两种头都接受，比较方式是 `hmac.compare_digest`。缺少或错误的令牌返回 `401`：
 
 ```json
@@ -95,7 +81,7 @@ PTY WebSocket（端口 9001，路径 `/pty`）检查同样的凭据。它接受 
 
 没有用来关闭组的环境变量。请在 `server:` 里写 `groups: {process: false}`，或写 `endpoints` 规则。层次、具体程度和 `rule` 的写法见[细粒度能力](fine-grained-capabilities.md)。
 
-`template.yaml` 的 `capabilities`（`shell`、`files`、`code`、`terminal`、`ports`）是模板元数据。它们不会切换这些路由。生成的模板按下面的方式对齐：`files` ↔ `file_ops`，`shell` ↔ `process`，`code` ↔ `dev_tools`，`terminal` ↔ `terminal`，`ports` ↔ `system`。
+`provides`、显式工作流、Provider 精确操作和本节端点策略是不同契约。模板不接受旧 `capabilities` 字段；工作流不能自动打开端点。
 
 ---
 
@@ -578,6 +564,8 @@ HTTP 路由管理会话。按键走 `ABX_PTY_PORT`（默认 `9001`）上的 WebS
 ```
 
 超时是 `408`。运行时二进制不存在是 `500`。策略的 `languages` 列表可以拒绝某种语言。
+
+本 `/code/run` 是可选的应用 HTTP 子进程路由，不等同于 Provider 的上下文解释器契约，不据此宣称持久上下文或实时流。缺少此路由时不会自动转成其他执行方式。
 
 #### `GET /git/status?path=.`
 

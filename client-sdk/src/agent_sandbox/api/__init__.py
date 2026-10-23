@@ -14,9 +14,13 @@ from agent_sandbox.api.network import NetworkModule
 from agent_sandbox.api.sandbox import Sandbox
 from agent_sandbox.api.server_capabilities import ServerCapabilities
 from agent_sandbox.api.server_client import ServerClient
+from agent_sandbox.api.workflow import WorkflowError, WorkflowSession, launch_workflow
 
 __all__ = [
     "Sandbox",
+    "WorkflowError",
+    "WorkflowSession",
+    "launch_workflow",
     "ServerClient",
     "ServerCapabilities",
     "CommandsModule",

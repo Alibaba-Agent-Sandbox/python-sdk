@@ -1,4 +1,4 @@
-"""Template.yaml data models (capabilities, server policy block, template references)."""
+"""Strict workflow template, server policy and source reference models."""
 
 from __future__ import annotations
 
@@ -21,11 +21,8 @@ STANDARD_CAPABILITIES: frozenset[str] = frozenset(
 )
 """All recognised capability tokens.  Extensible in future phases."""
 
-DEFAULT_CAPABILITIES: frozenset[str] = frozenset({"shell", "files", "code"})
-"""System default baseline — applied when a template declares no capabilities.
-
-``terminal`` and ``ports`` must be declared explicitly by the template.
-"""
+DEFAULT_CAPABILITIES: frozenset[str] = frozenset()
+"""No runtime operation is inferred when no workflow or provider is known."""
 
 
 SERVER_POLICY_TOP_KEYS: frozenset[str] = frozenset(
@@ -140,7 +137,7 @@ __all__ = [
 class SandboxTemplate(BaseModel):
     """template.yaml 的 Pydantic 模型。
 
-    构建相关字段（base, system_packages, python_packages, node_packages,
+    构建相关字段（system_packages, python_packages, node_packages,
     commands, copy_files）已移除——实际构建流程直接使用 Dockerfile +
     语言原生依赖文件（requirements.txt / package.json）。
     """
@@ -164,26 +161,39 @@ class SandboxTemplate(BaseModel):
     license: str = ""
     tags: list[str] = Field(default_factory=list)
 
-    # ---- Capability model (Phase 1) ----
-    capabilities: list[str] | None = None
-    """Runtime capabilities.  ``None`` → inherit :data:`DEFAULT_CAPABILITIES`;
-    an explicit list overrides the default (may be a subset or include
-    ``terminal`` / ``ports``)."""
+    spec_version: int
+    workflow_contract_version: int
+    provides: dict[str, Any]
+    default_workflow: str
+    workflows: dict[str, Any]
+    start_cmd: str | None = None
+    ready_cmd: str | None = None
 
     server: dict[str, Any] | None = None
     """Declarative SandboxServer policy (the ``server:`` block).  ``None`` keeps the server's
     default behaviour.  Compiled to ``server-policy.json`` by the toolchain."""
 
-    model_config = {"extra": "ignore"}
+    model_config = {"extra": "allow"}
 
     @model_validator(mode="before")
     @classmethod
     def _reject_removed_keys(cls, data: Any) -> Any:
-        if isinstance(data, dict) and "custom_commands" in data:
-            raise ValueError(
-                "template.yaml 'custom_commands' is no longer supported; register named commands "
-                "with @sandbox.register (server-side) and call them with Sandbox.run(name, ...)"
+        from agent_sandbox.workflows import validate_workflow_manifest
+
+        if isinstance(data, dict) and any(
+            k in data
+            for k in (
+                "custom_commands",
+                "system_packages",
+                "python_packages",
+                "node_packages",
+                "copy_files",
             )
+        ):
+            raise ValueError(
+                "retired template fields are not accepted; use Dockerfile and workflows"
+            )
+        validate_workflow_manifest(data)
         return data
 
     @field_validator("server")
@@ -191,20 +201,25 @@ class SandboxTemplate(BaseModel):
     def _validate_server(cls, v: dict[str, Any] | None) -> dict[str, Any] | None:
         return None if v is None else validate_server_block(v)
 
-    @field_validator("capabilities")
-    @classmethod
-    def _validate_capabilities(cls, v: list[str] | None) -> list[str] | None:
-        if v is not None:
-            for cap in v:
-                if cap not in STANDARD_CAPABILITIES:
-                    raise ValueError(
-                        f"Unknown capability {cap!r}; allowed: {sorted(STANDARD_CAPABILITIES)}"
-                    )
-        return v
+    def discovery_capabilities(self) -> set[str]:
+        """Coarse discovery only, derived from workflows rather than permission claims."""
+        result: set[str] = set()
+        for flow in self.workflows.values():
+            operation = flow["operation"]
+            if operation.startswith("code."):
+                result.add("code")
+            elif operation.startswith("exec."):
+                result.add("shell")
+            for op in flow["required_operations"]:
+                if op.startswith("files."):
+                    result.add("files")
+            if flow["binding"]["endpoint"] == "provider-port":
+                result.add("ports")
+        return result
 
 
 class TemplateRef(BaseModel):
-    """模板引用解析结果（向后兼容）。"""
+    """Explicit source reference coordinates."""
 
     owner: str | None = None
     repo: str | None = None

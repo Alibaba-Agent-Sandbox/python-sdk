@@ -107,3 +107,6 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Compatibility cleanup remote acceptance](evidence/verify/2026-10-22-remove-legacy-acceptance.md)
 
 - [Current compatibility-removal documentation verification](evidence/verify/2026-10-22-remove-legacy-docs.md).
+
+- [Explicit template workflows](notes/proposed/architecture/2026-10-23-template-workflow-contract.md) · [canonical vectors](evidence/verify/2026-10-23-workflow-foundation.md) · [provider operations](evidence/verify/2026-10-23-provider-workflow-operations.md) · [independent second-round review](evidence/verify/2026-10-23-workflow-round2-independent.md).
+- [Workflow runtime implementation and review](evidence/verify/2026-10-23-workflow-runtime-review.md).

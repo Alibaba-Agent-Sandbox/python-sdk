@@ -25,9 +25,10 @@ import asyncio
 import base64
 import contextlib
 import json
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
-from urllib.parse import quote, urlsplit, urlunsplit
+from urllib.parse import quote, unquote, urlencode, urlsplit, urlunsplit
 
 import httpx
 
@@ -108,6 +109,50 @@ _FILE_DENIAL_CODES = frozenset(
 )
 
 _SYNC_TIMEOUT_SLACK = 10.0
+
+
+def _check_namespace_path(path: str) -> None:
+    decoded = path
+    for _ in range(8):
+        value = unquote(decoded)
+        if value == decoded:
+            break
+        if value.count("/") != decoded.count("/"):
+            raise ValueError("Encoded path separators are refused")
+        decoded = value
+    else:
+        raise ValueError("Endpoint path is excessively encoded")
+    if (
+        "\\" in decoded
+        or "?" in decoded
+        or "#" in decoded
+        or any(part in {".", ".."} for part in decoded.split("/"))
+        or any((ord(c) <= 32 or ord(c) == 127) for c in decoded)
+    ):
+        raise ValueError("Endpoint path cannot escape its sandbox namespace")
+
+
+def _query_key(value: str) -> str:
+    value = value.replace("+", " ")
+    for _ in range(8):
+        if re.search(r"%(?![0-9a-fA-F]{2})", value):
+            raise ValueError("Malformed encoded query key")
+        decoded = unquote(value, errors="strict")
+        if decoded == value:
+            break
+        value = decoded
+    else:
+        raise ValueError("Excessively encoded query key")
+    if any(ord(c) <= 32 or ord(c) == 127 for c in value) or any(c in value for c in "&=;#?"):
+        raise ValueError("Ambiguous query key")
+    return value.casefold()
+
+
+def _fixed_query_keys(query: str) -> set[str]:
+    keys = [_query_key(pair.partition("=")[0]) for pair in query.split("&") if pair]
+    if len(keys) != len(set(keys)):
+        raise ValueError("Duplicate bound query keys are ambiguous")
+    return set(keys)
 
 
 def error_from_response(
@@ -1011,6 +1056,8 @@ class ServerCommandsApi(_Api):
                 json_body=kwargs,
                 timeout=timeout,
             )
+        except (EndpointNotAvailableError, PolicyDeniedError):
+            raise
         except ServerAPIError as exc:
             if exc.status_code == 404 and exc.error_code != "endpoint_disabled":
                 raise CommandNotFoundError(
@@ -1113,12 +1160,54 @@ class ServerClient:
         headers: dict[str, str] | None = None,
         pty_url: str | None = None,
         timeout: float = 30.0,
+        path_mode: str = "prefix",
+        expires_at: str | None = None,
         http_client: httpx.AsyncClient | None = None,
     ) -> None:
-        self.base_url = base_url.rstrip("/")
+        if path_mode != "prefix":
+            raise ValueError("Operation-signed endpoints require a provider operation resolver")
+        parts = urlsplit(base_url)
+        _check_namespace_path(parts.path)
+        _fixed_query_keys(parts.query)
+        if parts.scheme not in {"http", "https"} or not parts.hostname:
+            raise ValueError("Server endpoint must be an absolute HTTP(S) URL")
+        if parts.username is not None or parts.password is not None or parts.fragment:
+            raise ValueError("Server endpoint cannot contain user information or a fragment")
+        if "\\" in base_url or any((ord(c) <= 32 or ord(c) == 127) for c in base_url):
+            raise ValueError("Server endpoint contains invalid characters")
+        from datetime import datetime
+
+        self._expires_at = (
+            datetime.fromisoformat(expires_at.replace("Z", "+00:00")) if expires_at else None
+        )
+        self._ensure_binding_valid()
+        self._endpoint_url = base_url
+        self._display_url = urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+        self.base_url = self._display_url
         self.timeout = timeout
         self._token = token
         self._headers = dict(headers or {})
+        prohibited = {
+            "host",
+            "connection",
+            "transfer-encoding",
+            "content-length",
+            "proxy-authorization",
+            "forwarded",
+            "x-forwarded-host",
+            "x-forwarded-proto",
+            "x-forwarded-port",
+            "x-original-url",
+            "x-rewrite-url",
+        }
+        if any(k.lower().replace("_", "-") in prohibited for k in self._headers):
+            raise ValueError("Gateway headers cannot override HTTP authority or framing")
+        if token and any(k.lower() == "authorization" for k in self._headers):
+            raise ValueError(
+                "Gateway Authorization and application bearer token need distinct bindings"
+            )
+        if any("\r" in k + v or "\n" in k + v for k, v in self._headers.items()):
+            raise ValueError("Gateway header contains a newline")
         self._pty_url = pty_url.rstrip("/") if pty_url else None
         self._http: httpx.AsyncClient | None = http_client
         self._http_loop: asyncio.AbstractEventLoop | None = None
@@ -1166,11 +1255,12 @@ class ServerClient:
     def with_token(self, token: str | None) -> ServerClient:
         """A new client for the same server using another token (own HTTP session)."""
         return ServerClient(
-            self.base_url,
+            self._endpoint_url,
             token=token,
             headers=self._headers,
             pty_url=self._pty_url,
             timeout=self.timeout,
+            expires_at=self._expires_at.isoformat() if self._expires_at else None,
         )
 
     # -- lifecycle ------------------------------------------------------------ #
@@ -1181,7 +1271,7 @@ class ServerClient:
             return self._http
         if self._http is None or self._http.is_closed or self._http_loop is not loop:
             self._http = httpx.AsyncClient(
-                base_url=self.base_url, timeout=httpx.Timeout(self.timeout)
+                timeout=httpx.Timeout(self.timeout), follow_redirects=False
             )
             self._http_loop = loop
         return self._http
@@ -1228,13 +1318,58 @@ class ServerClient:
     def _raise_connection(self, exc: httpx.HTTPError) -> ConnectionError_:
         if isinstance(exc, httpx.TimeoutException):
             return ConnectionError_(
-                f"Timed out talking to the sandbox server at {self.base_url}",
+                f"Timed out talking to the sandbox server at {self._display_url}",
                 suggestion="Check the server is running or raise ServerClient(timeout=...).",
             )
         return ConnectionError_(
-            f"Could not reach the sandbox server at {self.base_url}: {exc}",
+            f"Could not reach the sandbox server at {self._display_url}",
             suggestion="Is the server running? Try Sandbox.start_server().",
         )
+
+    def _ensure_binding_valid(self) -> None:
+        from datetime import datetime, timezone
+
+        if self._expires_at is not None and (
+            self._expires_at.tzinfo is None or self._expires_at <= datetime.now(timezone.utc)
+        ):
+            raise ValueError("Application endpoint has expired")
+
+    def _operation_url(self, path: str, params: dict[str, Any] | None = None) -> str:
+        """Append an operation within the exact proxy namespace, preserving query bytes."""
+        self._ensure_binding_valid()
+        operation = urlsplit(path)
+        _check_namespace_path(path)
+        if (
+            operation.scheme
+            or operation.netloc
+            or operation.query
+            or operation.fragment
+            or "\\" in path
+            or any(part in {".", ".."} for part in path.split("/"))
+        ):
+            raise ValueError("Operation must be an absolute-path reference without traversal")
+        base = urlsplit(self._endpoint_url)
+        suffix = path.lstrip("/")
+        prefix = base.path.rstrip("/")
+        query = base.query
+        fixed_keys = _fixed_query_keys(base.query)
+        added_keys = [_query_key(str(key)) for key in (params or {})]
+        if len(added_keys) != len(set(added_keys)) or fixed_keys.intersection(added_keys):
+            raise ValueError("Operation parameters cannot override a bound query key")
+        additions = urlencode(params or {}, doseq=True)
+        if additions:
+            query = query + "&" + additions if query else additions
+        return urlunsplit((base.scheme, base.netloc, prefix + "/" + suffix, query, ""))
+
+    @staticmethod
+    def _refuse_redirect(response: httpx.Response, endpoint: str) -> None:
+        if 300 <= response.status_code < 400:
+            raise ServerAPIError(
+                "Sandbox server redirects are refused for bound endpoints",
+                status_code=response.status_code,
+                error_type="BindingRedirect",
+                endpoint=endpoint,
+            )
 
     async def _request(
         self,
@@ -1256,10 +1391,15 @@ class ServerClient:
             kwargs["json"] = json_body
         try:
             response = await self._client().request(
-                method, path, params=params, headers=self._headers_for(), **kwargs
+                method,
+                self._operation_url(path, params),
+                headers=self._headers_for(),
+                follow_redirects=False,
+                **kwargs,
             )
         except httpx.HTTPError as exc:
-            raise self._raise_connection(exc) from exc
+            raise self._raise_connection(exc) from None
+        self._refuse_redirect(response, endpoint)
         body = self._parse_body(response)
         if response.status_code >= 400:
             raise error_from_response(
@@ -1298,12 +1438,13 @@ class ServerClient:
         try:
             async with self._client().stream(
                 method,
-                path,
-                params=params,
+                self._operation_url(path, params),
                 headers=self._headers_for({"Accept": "text/event-stream"}),
+                follow_redirects=False,
                 timeout=http_timeout,
                 **kwargs,
             ) as response:
+                self._refuse_redirect(response, endpoint)
                 if response.status_code >= 400:
                     await response.aread()
                     raise error_from_response(
@@ -1315,7 +1456,7 @@ class ServerClient:
                 async for item in _iter_sse(response):
                     yield item
         except httpx.HTTPError as exc:
-            raise self._raise_connection(exc) from exc
+            raise self._raise_connection(exc) from None
 
     # -- top-level endpoints ------------------------------------------------ #
 
@@ -1330,6 +1471,18 @@ class ServerClient:
     async def discover(self) -> ServerCapabilities:
         """Fetch ``GET /capabilities`` and remember it for fail-fast pre-checks."""
         document = await self._request("capabilities", "GET", "/capabilities", precheck=False)
+        if (
+            type(document.get("api_version")) is not int
+            or document.get("api_version") != 2
+            or not isinstance(document.get("endpoints"), dict)
+        ):
+            self._caps = ServerCapabilities({"api_version": 0, "endpoints": {}}, self)
+            raise ServerAPIError(
+                "Invalid application protocol discovery",
+                status_code=200,
+                error_type="ProtocolError",
+                endpoint="capabilities",
+            )
         caps = ServerCapabilities(document, self)
         self._caps = caps
         return caps
@@ -1365,7 +1518,7 @@ class ServerClient:
     aclose_sync = make_sync(aclose)
 
     def __repr__(self) -> str:
-        return f"ServerClient({self.base_url!r})"
+        return f"ServerClient({self._display_url!r})"
 
 
 __all__ = [

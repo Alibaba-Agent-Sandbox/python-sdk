@@ -19,7 +19,9 @@ from tests.test_known_issues.helpers import (
 
 
 def _commands() -> CommandsModule:
-    return CommandsModule(ENVD, token(), ProcessProtocol(make_http()))
+    return CommandsModule(
+        ENVD, token(), ProcessProtocol(make_http()), operations={"exec.run", "exec.stream"}
+    )
 
 
 class _StallAfterStart(httpx.AsyncByteStream):

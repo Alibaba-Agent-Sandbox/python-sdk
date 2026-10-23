@@ -56,6 +56,9 @@ class _Spy:
         self.started = 0
         self.closed = 0
 
+    async def _start_for_startup(self, cmd: str, **kwargs: Any) -> StreamReader[ProcessChunk]:
+        return await self.run(cmd, background=True, **kwargs)
+
     async def run(self, cmd: str, **kwargs: Any) -> StreamReader[ProcessChunk]:
         self.calls.append((cmd, kwargs))
 
@@ -75,7 +78,7 @@ class _Spy:
 @pytest.fixture
 async def spy(sandbox: Sandbox, monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[_Spy]:
     spy = _Spy()
-    monkeypatch.setattr(sandbox.commands, "run", spy.run)
+    monkeypatch.setattr(sandbox.commands, "_start_for_startup", spy._start_for_startup)
     yield spy
     await sandbox.close()
 
@@ -105,7 +108,7 @@ class TestStartServer:
             yield {}
 
         stream = StreamReader(frames(), lambda frame: ProcessChunk(type=ProcessChunkType.STDOUT))
-        monkeypatch.setattr(sandbox.commands, "run", AsyncMock(return_value=stream))
+        monkeypatch.setattr(sandbox.commands, "_start_for_startup", AsyncMock(return_value=stream))
         with pytest.raises(ConnectionError_, match="stopped before startup") as exc:
             await sandbox.start_server()
         assert "private" not in str(exc.value)
@@ -125,7 +128,7 @@ class TestStartServer:
                 closed.set()
 
         stream = StreamReader(frames(), lambda frame: ProcessChunk(type=ProcessChunkType.STDOUT))
-        monkeypatch.setattr(sandbox.commands, "run", AsyncMock(return_value=stream))
+        monkeypatch.setattr(sandbox.commands, "_start_for_startup", AsyncMock(return_value=stream))
         with pytest.raises(ConnectionError_, match="did not acknowledge startup"):
             await sandbox.start_server(wait=False, timeout=0.05)
         assert closed.is_set()
@@ -155,7 +158,7 @@ class TestStartServer:
             await asyncio.sleep(0)
             return True
 
-        monkeypatch.setattr(sandbox.commands, "run", AsyncMock(return_value=stream))
+        monkeypatch.setattr(sandbox.commands, "_start_for_startup", AsyncMock(return_value=stream))
         monkeypatch.setattr(ServerClient, "health", health)
         with pytest.raises(ConnectionError_, match="stopped before becoming healthy"):
             await sandbox.start_server()
@@ -255,3 +258,15 @@ class TestAgainstARealServer:
         assert caps.can("files_download_stream")
         await client.aclose()
         await _client.aclose()
+
+
+async def test_endpoint_failure_prevents_startup_and_drain(sandbox, monkeypatch):
+    startup = AsyncMock()
+    monkeypatch.setattr(sandbox.commands, "_start_for_startup", startup)
+    monkeypatch.setattr(
+        sandbox, "application_client", AsyncMock(side_effect=ValueError("foreign binding"))
+    )
+    with pytest.raises(ValueError, match="foreign binding"):
+        await sandbox.start_server()
+    startup.assert_not_awaited()
+    assert not sandbox._server_stream_tasks

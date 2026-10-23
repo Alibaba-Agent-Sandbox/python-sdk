@@ -26,7 +26,7 @@ python -m pip install \
   "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=client-sdk"
 ```
 
-可把 `[all]` 换成 `[mcp]`、`[declarative]`、`[session]` 或 `[fast]`。MCP 需要相应 extra；空的 `[server]` 别名本身不添加功能。浏览器自动化还需在镜像内单独安装 Playwright。
+可把 `[all]` 换成 `[mcp]`、`[declarative]`、`[session]` 或 `[fast]`。MCP 需要相应 extra；浏览器自动化还需在镜像内单独安装 Playwright。
 
 ## 镜像内只安装服务端
 

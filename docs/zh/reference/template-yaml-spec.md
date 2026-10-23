@@ -1,87 +1,55 @@
 # template.yaml 规范
 
-本文档精确定义 `template.yaml` 文件的所有字段（使用者视角）。
-
----
+当前模板使用 `spec_version: 4` 和 `workflow_contract_version: 1`。发布清单的完整权威 schema 是 [awesome-templates/template-v4.schema.json](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/spec/template-v4.schema.json)；共享工作流契约见 [contracts](https://github.com/Alibaba-Agent-Sandbox/python-sdk/tree/main/contracts)。应用部署拓扑、hooks 和持久状态字段仍由完整 schema 定义。
 
 ## 文件位置
 
-模板的 `template.yaml` 位于模板目录根下：
-
-```text
-my-template/
-├── template.yaml    ← 本文档定义的文件
-├── Dockerfile       # 可选
-└── ...
-```
-
-安装后位于 `~/.abx/templates/<template-name>/template.yaml`。
-
----
+每个源码模板的根目录包含唯一的 `template.yaml`。目录索引只定位该文件，不重复声明工作流；托管模板条目内嵌完整声明。Dockerfile、命令模块和依赖文件与清单一起组成源码输入。
 
 ## 完整字段定义
 
 ### 基础信息
 
-| 字段 | 类型 | 必须 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `name` | `str` | ✅ | — | 模板名称，用于 `--template` 参数 |
-| `version` | `str` | ❌ | `"1.0.0"` | 语义版本号 |
-| `description` | `str` | ❌ | `""` | 模板描述 |
-| `author` | `str` | ❌ | `""` | 作者 |
-| `license` | `str` | ❌ | `""` | 许可证标识（如 `"MIT"`） |
-| `tags` | `list[str]` | ❌ | `[]` | 分类标签 |
+发布 schema 要求 `name`、`version`、`description`、`author`、`license` 等元数据；`tags`、`priority`、`wave`、`smoke` 的规则见完整 schema。SDK 的运行时模型不是整个发布 schema 的替代品。
 
 ### 运行时配置
 
-| 字段 | 类型 | 必须 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `env` | `dict[str, str]` | ❌ | `{}` | 环境变量（生成 `ENV` 指令） |
-| `ports` | `list[int]` | ❌ | `[]` | 暴露的端口（生成 `EXPOSE` 指令） |
+`env` 是字符串映射，`ports` 是端口列表。`start_cmd`、`ready_cmd` 与显式启动方式配合使用；镜像和服务必须实际提供声明的监听端口。SDK 解析这些字段不会自动改写 Dockerfile。
 
 ### 资源规格
 
-| 字段 | 类型 | 必须 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `cpu_count` | `int` | ❌ | `None` | 默认 CPU 核数 |
-| `memory_mb` | `int` | ❌ | `None` | 默认内存 MB |
+源码发布清单使用 `resources.cpu`、`resources.memory`；SDK 运行时配置还可携带 `cpu_count`、`memory_mb`。应用部署的资源和拓扑字段以完整 schema 为准，不能用工作流规划代替部署执行。
 
 ### 沙箱代数
 
-| 字段 | 类型 | 必须 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `generation` | `int` | ❌ | `1` | 沙箱代数：`1` = 一代（rund），`2` = 二代（MicroVM，Beta）。设置后，CLI 命令（`template deploy`、`template build`、`template create`）会读取此值，除非通过 `--generation` 参数显式覆盖。 |
+`generation` 属于具体模板和提供方启动配置，目录源码模板 schema 当前要求 `2`。是否可以创建，还要检查提供方实际支持的输入和启动方式。
 
-### 能力声明
+<a id="能力声明"></a>
+### 工作流声明
 
-| 字段 | 类型 | 必须 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `capabilities` | `list[str] \| null` | ❌ | `null` | 运行时能力列表 |
+| 字段 | 含义 |
+| --- | --- |
+| `spec_version` | 必须为整数 `4` |
+| `workflow_contract_version` | 必须为整数 `1` |
+| `provides` | 服务映射；每项声明 `protocol`、`version`、`port`、`operations` |
+| `default_workflow` | 必须指向一个已声明工作流 |
+| `workflows` | 具名 `application`、`exec` 或 `interpreter` 路径 |
 
-**可选值**（标准能力集 `STANDARD_CAPABILITIES`）：
+每个工作流显式提供 `kind`、`input`（`source/image/managed/service`）、`startup`（`exec/entrypoint/none`）、`binding`、`operation` 和 `required_operations`；应用工作流另需 `service` 指向 `provides`。绑定包含 `transport`、`endpoint`、`caller`、`authentication`。未知工作流字段直接拒绝。
 
-| 能力 | 说明 |
-|------|------|
-| `shell` | Shell 命令执行（`commands.run()` 等） |
-| `files` | 文件系统操作（`files.read()` 等） |
-| `code` | Code Interpreter 代码执行（`run_code()` 等） |
-| `terminal` | PTY 终端会话（`get_terminal()`） |
-| `ports` | 端口 URL 访问（`network.get_url()` 等） |
+`startup: exec` 需要非空 `start_cmd` 和 `exec.run`。已有入口使用 `entrypoint`，不能再次执行启动命令。`service` 输入只能配 `startup: none`。非空 `ready_cmd` 需要执行能力并实际检查，不能因为启动方式不同而忽略。托管引用必须属于所选 Provider。模板可增加 `required_operations` 和 `required_checks`，不能删减派生要求或最低验收检查。
 
-**行为规则**：
-- `null`（未声明）→ 使用默认能力集 `{shell, files, code}`
-- 显式列表 → 仅启用列出的能力（可以是标准能力集的子集或超集）
-- 列表中的值必须是标准能力集中的项，否则校验失败（抛出 `TemplateParseError` E2004）
+不再接受模板 `capabilities`、`tested_on` 或手填 `providers` 兼容表，也没有默认 `{shell, files, code}` 授权。应用提供 Python/HTTP 服务，不表示 Provider 实现了代码解释器操作。详见[显式模板工作流](../guide/template-workflows.md)。
 
 ### 已移除的键：`custom_commands`
 
-`custom_commands` 不是 `template.yaml` 的键。客户端会拒绝包含它的文件（`TemplateParseError`，E2004）。命名命令只有一种机制：注册在模板 server 里的函数（`commands.py` 中的 `@sandbox.register`），用 `sandbox.run(name, **kwargs)` 或 `abx run <id> <name>` 调用。见[编写模板](../guide/authoring-templates.md#注册命令)。
+`custom_commands` 被拒绝。命名命令由服务端 `commands.py` 中的 `@command` 注册，客户端通过应用 HTTP 调用，不由 YAML 生成函数。
 
 ### 服务端策略（`server`）
 
 可选。声明模板对外暴露哪些 SandboxServer 端点以及各端点的限制（设计见
 [细粒度能力管理](../design/fine-grained-capabilities.md)）。省略即保持服务端默认行为。`SandboxTemplate` 会对该块做结构校验（未知键报错）；
-取值由 `agent-sandbox-server check-config` 校验。工具链会把它编译为 `/etc/agent-sandbox/server-policy.json`，服务端启动时自动加载。
+取值由 `agent-sandbox-server check-config` 校验。服务端读取 `/etc/agent-sandbox/server-policy.json`、`ABX_SERVER_POLICY_FILE` 或 `ABX_SERVER_POLICY`。必须由选定构建/启动流程实际安装策略，仅填写 YAML 不会自动应用。
 
 | 键 | 类型 | 说明 |
 |----|------|------|
@@ -106,43 +74,71 @@ server:
       params: { overwrite: false }
 ```
 
----
 
 ## 完整示例
 
-```yaml
-name: flask-web
-version: "2.0.0"
-description: "Flask Web 开发环境"
-author: "Agent Sandbox Team"
-license: "MIT"
-tags:
-  - python
-  - web
-  - flask
+此源码发布示例包含 schema 要求的元数据；基础镜像占位符必须通过显式配置落实后才能构建。
 
-env:
-  PYTHONUNBUFFERED: "1"
-  FLASK_ENV: "development"
+```yaml
+name: my-python-template
+version: "1.0.1"
+description: "Scaffold for a new Agent Sandbox template. Not a catalog entry."
+author: "alibaba-agent-sandbox"
+license: Apache-2.0
+spec_version: 4
+base: "fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>"
+generation: 2
+start_cmd: "agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py"
+ready_cmd: "agent-sandbox-server healthcheck --port 9000"
+
+resources:
+  cpu: 2
+  memory: 2048
 
 ports:
-  - 5000
-  - 8080
+  - 9000
 
-cpu_count: 2
-memory_mb: 2048
+tags:
+  - example
+  - skeleton
 
-capabilities:
-  - shell
-  - files
-  - code
-  - terminal
-  - ports
+priority: P2
+wave: other
 
+
+env:
+  ABX_SERVER_TOKEN: ""
+
+smoke:
+  - command: hello
+    args:
+      name: Express
+    expect: "Hello, Express!"
+workflow_contract_version: 1
+provides:
+  app:
+    protocol: agent-sandbox-server
+    version: 2
+    port: 9000
+    operations:
+    - commands.list
+    - commands.run
+default_workflow: application
+workflows:
+  application:
+    kind: application
+    input: source
+    service: app
+    startup: exec
+    binding:
+      transport: http
+      endpoint: provider-port
+      caller: host
+      authentication: service-token
+    operation: commands.run
+    required_operations: []
 ```
-
----
 
 ## 构建说明
 
-`template.yaml` 只定义运行时配置（能力、server 策略、环境变量、资源）。镜像构建完全由模板目录中的 `Dockerfile` 负责，使用语言原生依赖文件（`requirements.txt` / `package.json`）管理依赖。
+`base` 是合法的来源/模板元数据；构建以选定的有效 Dockerfile 和显式构建配置为准，不自动替换 `FROM`、用户、复制路径或入口。依赖通过镜像中的原生依赖文件安装。Python 启动器不准备源码，使用已准备的 `image`/`managed` 引用或显式 `service` 路径。

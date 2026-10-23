@@ -116,39 +116,21 @@ The platform answered HTTP 404 to `Sandbox.connect()`, `get_info()`, `set_timeou
 
 ### Symptoms
 
-```text
-[E3004] Capability 'ports' is not supported by this sandbox template.
-  Suggestion: Declare 'ports' in the template's capabilities list (template.yaml) or use a template that supports it.
-```
+A selected catalog path has unmet requirements, or E8004 names an exact operation such as `code.execute` or `code.context.execute`. A server policy-disabled endpoint can instead return `endpoint_disabled` / E9003 (also E3004).
 
 ### Explanation
 
-Agent Sandbox uses a capability model to control sandbox features. Each capability must be explicitly declared in the template:
-
-| Capability | Included by Default | Requires Explicit Declaration |
-|------------|--------------------|-----------------------------|
-| `shell` | ✅ | — |
-| `files` | ✅ | — |
-| `code` | ✅ | — |
-| `terminal` | ❌ | Must be declared in template.yaml |
-| `ports` | ❌ | Must be declared in template.yaml |
+Template software, the project provider adapter, the selected client and the current instance environment are distinct layers. Missing project adapter support does not prove a native platform API is missing. A missing unified interpreter operation does not block unrelated application HTTP. Beta maturity and current path evidence remain separate.
 
 ### Solution
 
-If you need the `terminal` or `ports` capability, use a template that declares it, or create a custom template:
+1. Identify the workflow, consumer and owner of the failed condition. Use a [spec4 manifest](../reference/template-yaml-spec.md); adding retired `capabilities` or `tested_on` is invalid.
+2. Implement/install the missing adapter operation or explicitly choose an implemented workflow. Stateless, default persistent context, explicit contexts and realtime streams are different operations.
+3. For an application, resolve the endpoint independently with `async with await sandbox.application_client(9000, token=application_token)`. Check the listening process, protocol version, gateway configuration and application token.
+4. HTTP 401 never retries anonymously; interpreter HTTP 404 never becomes shell execution. Use the commands API explicitly when shell is intended.
+5. Server policy separately controls nine endpoint groups. `core` stays on; `dev_tools`, `browser` and `agents` start off. Check the actual loaded policy, `server:` and environment, not retired template flags.
 
-```yaml
-# template.yaml
-name: my-web-template
-capabilities:
-  - shell
-  - files
-  - code
-  - terminal
-  - ports
-```
-
-> **Server-side capability groups note**: The server has 8 capability groups. TERMINAL is enabled by default; only DEV_TOOLS and BROWSER are disabled by default (`_DEFAULT_DISABLED = {DEV_TOOLS, BROWSER}`). Client-side capabilities (the `capabilities` field) and server-side capability groups are controls at different levels.
+See [explicit template workflows](template-workflows.md) and [Template server HTTP API](template-server-api.md).
 
 ---
 

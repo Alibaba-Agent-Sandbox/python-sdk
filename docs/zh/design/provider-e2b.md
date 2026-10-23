@@ -1,12 +1,14 @@
 # E2B 提供方
 
+该项目适配器尚未接入统一解释器，原来猜测的 Connect RPC 传输已删除；这不代表平台原生解释器不可用。
+
 E2B 是目录提供方，源码在 `awesome-providers/e2b`，id 是 `e2b`。用 `abx provider install alibaba-agent-sandbox/awesome-providers//e2b --allow-unpinned --yes`（或 `python -m agent_sandbox.providers install registry:e2b --yes`）安装。`Sandbox.create(provider="e2b")` 和 `abx --provider e2b` 用宿主里的 E2B 协议类访问 E2B 公开 API。
 
 它不是随 SDK 编译进去的。清单是 `kind = "node"`：`provider.mjs` 由 Node.js 宿主加载，Python SDK 通过本机引擎（`abx provider engine serve`）使用它。自己的说明在 `awesome-providers/e2b/docs/README.md`。
 
 单元测试不访问 `https://api.e2b.dev`。它在 `127.0.0.1` 上用本地 TCP 服务回答 `POST /sandboxes`。
 
-真实访问 E2B 需要设置 `ABX_ABX_SANDBOX_API_KEY`。没有这个变量时，测试确认 `Sandbox.create(provider="e2b")` 在发出请求前抛出 `InvalidAPIKeyError`。极速版的 `ABX_SANDBOX_API_KEY` 不会被送到 `api.e2b.dev`。这台环境没有单独的 E2B 密钥，所以真实创建没有执行。
+真实访问 E2B 需要设置 `ABX_E2B_API_KEY`。没有这个变量时，测试确认 `Sandbox.create(provider="e2b")` 在发出请求前抛出 `InvalidAPIKeyError`。极速版的 `ABX_SANDBOX_API_KEY` 不会被送到 `api.e2b.dev`。这台环境没有单独的 E2B 密钥，所以真实创建没有执行。
 
 英文页：[provider-e2b.md](../../en/design/provider-e2b.md)。
 
@@ -15,16 +17,16 @@ E2B 是目录提供方，源码在 `awesome-providers/e2b`，id 是 `e2b`。用 
 | 字段 | 类型 | 环境变量 | 默认 |
 |---|---|---|---|
 | `base_url` | url | `ABX_E2B_BASE_URL` | `https://api.e2b.app` |
-| `domain` | 字符串 | `ABX_ABX_SANDBOX_DOMAIN` | `e2b.app` |
-| `api_key` | 密钥 | `ABX_ABX_SANDBOX_API_KEY` | 不设置 |
+| `domain` | 字符串 | `ABX_E2B_DOMAIN` | `e2b.app` |
+| `api_key` | 密钥 | `ABX_E2B_API_KEY` | 不设置 |
 
 这三个名字也可以放在 `provider_options` 里。`Sandbox.create(api_url=...)` 不会改这个源站。解析器读的是 `provider_options["base_url"]`。
 
-设置了密钥时，客户端发送请求头 `X-API-Key`。没有 `ABX_ABX_SANDBOX_API_KEY` 时抛出 `InvalidAPIKeyError`，错误信息里写明 `ABX_ABX_SANDBOX_API_KEY`。这个提供方不读 `ABX_SANDBOX_API_KEY`（阿里云极速版的密钥），也不读 `ABX_SANDBOX_API_KEY`（本产品拒绝的旧名字）。
+设置了密钥时，客户端发送请求头 `X-API-Key`。没有 `ABX_E2B_API_KEY` 时抛出 `InvalidAPIKeyError`，错误信息里写明 `ABX_E2B_API_KEY`。这个提供方不读 `ABX_SANDBOX_API_KEY`（阿里云极速版的密钥），也不读 `ABX_SANDBOX_API_KEY`（本产品拒绝的旧名字）。
 
 `domain` 是 `https://{port}-{sandboxID}.{domain}` 的后缀。envd 端口是 49983。创建响应里没有 `region` 时保持未知（空字符串），不会落成 `cn-hangzhou`。
 
-当前 E2B SDK 用 `https://api.e2b.app`，域名是 `e2b.app`。数据面主机名是 `https://{port}-{sandboxID}.e2b.app`。`https://api.e2b.dev` 是旧源站；账号还在那边时同时设置 `ABX_E2B_BASE_URL` 和 `ABX_ABX_SANDBOX_DOMAIN`。
+当前 E2B SDK 用 `https://api.e2b.app`，域名是 `e2b.app`。数据面主机名是 `https://{port}-{sandboxID}.e2b.app`。`https://api.e2b.dev` 是旧源站；账号还在那边时同时设置 `ABX_E2B_BASE_URL` 和 `ABX_E2B_DOMAIN`。
 
 ```python
 from agent_sandbox import ProviderSandbox as Sandbox
@@ -53,7 +55,6 @@ sb = await Sandbox.create(
 | `process.manage` | envd 的进程列表、标准输入和信号 |
 | `files.rw` | envd 的读、写、列目录、移动和删除 |
 | `files.watch` | envd `WatchDir`。已声明，不会因为未声明而返回 `E8004` |
-| `code.interpret` | envd `POST /code.CodeInterpreter/Execute` |
 | `ports.url` | 本地计算 `https://{port}-{sandboxID}.{domain}` |
 
 ## 会抛出 E8004 的调用

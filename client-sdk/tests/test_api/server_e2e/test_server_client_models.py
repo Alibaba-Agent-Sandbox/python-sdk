@@ -367,8 +367,10 @@ class TestForeignServerStub:
 
     async def test_discover_without_endpoints_blocks_every_call(self, plain_server: str) -> None:
         client = ServerClient(plain_server, timeout=5)
-        caps = await client.discover()
-        assert not caps.can("files_list") and not caps.can("shell")
+        with pytest.raises(errors.ServerAPIError, match="protocol discovery"):
+            await client.discover()
+        caps = client.capabilities
+        assert caps is not None and not caps.can("files_list") and not caps.can("shell")
         with pytest.raises(errors.EndpointNotAvailableError):
             await client.process.shell("echo hi")
         assert await client.health() is True

@@ -470,8 +470,8 @@ class TestSandboxSyncVariants:
             sb = await Sandbox.create(template="unique-alias", sandbox_api_key="k")
 
         assert seen["template"] == "unique-alias"
-        assert seen["ids"] == ("unique-alias", "plat-id", "cached-alias")
-        assert sb.capabilities == frozenset({"shell", "ports"})
+        assert "ids" not in seen
+        assert sb.capabilities == provider.capabilities()
         assert type(sb) is Sandbox
 
     @pytest.mark.asyncio
@@ -507,8 +507,8 @@ class TestSandboxSyncVariants:
         ):
             sb = await Sandbox.connect("sbx-123", sandbox_api_key="k")
 
-        assert seen["ids"] == ("plat-id", "cached-alias")
-        assert sb.capabilities == frozenset({"files"})
+        assert "ids" not in seen
+        assert sb.capabilities == provider.capabilities()
 
 
 class TestSandboxResourceParams:
@@ -650,18 +650,13 @@ class TestSandboxRunCodeCallbacks:
         sandbox: Sandbox,
         mock_code_interpreter_protocol: AsyncMock,
     ) -> None:
-        """run_code() forwards on_stdout/on_stderr/on_result to the protocol."""
+        """A unary provider rejects callbacks before any execution."""
+        from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+
         cb = MagicMock()
-        await sandbox.run_code(
-            "print(1)",
-            on_stdout=cb,
-            on_stderr=cb,
-            on_result=cb,
-        )
-        call_kwargs = mock_code_interpreter_protocol.run_code.call_args.kwargs
-        assert call_kwargs["on_stdout"] is cb
-        assert call_kwargs["on_stderr"] is cb
-        assert call_kwargs["on_result"] is cb
+        with pytest.raises(ProviderFeatureNotSupportedError, match="code.stream"):
+            await sandbox.run_code("print(1)", on_stdout=cb, on_stderr=cb, on_result=cb)
+        mock_code_interpreter_protocol.run_code.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_run_code_without_callbacks_still_works(
@@ -869,7 +864,7 @@ class TestSandboxRunNamedCommand:
             seen.append(request)
             return httpx.Response(200, json={"result": 42})
 
-        sandbox.__dict__["server"] = _server_client(handler)
+        sandbox.application_client = AsyncMock(return_value=_server_client(handler))
 
         assert await sandbox.run("add", x=1, y=2) == 42
         assert seen[0].method == "POST"
@@ -884,7 +879,7 @@ class TestSandboxRunNamedCommand:
             seen.append(request)
             return httpx.Response(200, json={"result": "Hello World"})
 
-        sandbox.__dict__["server"] = _server_client(handler)
+        sandbox.application_client = AsyncMock(return_value=_server_client(handler))
 
         assert await sandbox.run("hello", name="World") == "Hello World"
         assert seen[0].url.path == "/commands/hello"
@@ -892,21 +887,27 @@ class TestSandboxRunNamedCommand:
 
     @pytest.mark.asyncio
     async def test_unknown_command_raises_command_not_found(self, sandbox: Sandbox) -> None:
-        sandbox.__dict__["server"] = _server_client(
-            lambda request: httpx.Response(404, json={"error": "not found", "type": "ValueError"})
+        sandbox.application_client = AsyncMock(
+            return_value=_server_client(
+                lambda request: httpx.Response(
+                    404, json={"error": "not found", "type": "ValueError"}
+                )
+            )
         )
         with pytest.raises(CommandNotFoundError, match="not found"):
             await sandbox.run("nonexistent")
 
     @pytest.mark.asyncio
     async def test_unknown_command_includes_the_server_list(self, sandbox: Sandbox) -> None:
-        sandbox.__dict__["server"] = _server_client(
-            lambda request: httpx.Response(
-                404,
-                json={
-                    "error": "Unknown command 'nope'; available: hello",
-                    "type": "ValueError",
-                },
+        sandbox.application_client = AsyncMock(
+            return_value=_server_client(
+                lambda request: httpx.Response(
+                    404,
+                    json={
+                        "error": "Unknown command 'nope'; available: hello",
+                        "type": "ValueError",
+                    },
+                )
             )
         )
         with pytest.raises(CommandNotFoundError, match="available: hello"):
@@ -916,13 +917,15 @@ class TestSandboxRunNamedCommand:
     async def test_bad_arguments_are_a_command_argument_error(self, sandbox: Sandbox) -> None:
         from agent_sandbox.models.errors import CommandArgumentError
 
-        sandbox.__dict__["server"] = _server_client(
-            lambda request: httpx.Response(
-                400,
-                json={
-                    "error": "Unexpected argument(s): ['nope']; declared: ['name']",
-                    "type": "ValueError",
-                },
+        sandbox.application_client = AsyncMock(
+            return_value=_server_client(
+                lambda request: httpx.Response(
+                    400,
+                    json={
+                        "error": "Unexpected argument(s): ['nope']; declared: ['name']",
+                        "type": "ValueError",
+                    },
+                )
             )
         )
         with pytest.raises(CommandArgumentError, match="Unexpected argument") as caught:
@@ -934,8 +937,10 @@ class TestSandboxRunNamedCommand:
     async def test_command_exception_is_a_command_execution_error(self, sandbox: Sandbox) -> None:
         from agent_sandbox.models.errors import CommandExecutionError, ServerAPIError
 
-        sandbox.__dict__["server"] = _server_client(
-            lambda request: httpx.Response(500, json={"error": "disk full", "type": "OSError"})
+        sandbox.application_client = AsyncMock(
+            return_value=_server_client(
+                lambda request: httpx.Response(500, json={"error": "disk full", "type": "OSError"})
+            )
         )
         with pytest.raises(CommandExecutionError, match="OSError: disk full") as caught:
             await sandbox.run("hello")
@@ -946,8 +951,10 @@ class TestSandboxRunNamedCommand:
     async def test_gateway_502_stays_a_server_api_error(self, sandbox: Sandbox) -> None:
         from agent_sandbox.models.errors import ServerAPIError
 
-        sandbox.__dict__["server"] = _server_client(
-            lambda request: httpx.Response(502, json={"error": "bad gateway"})
+        sandbox.application_client = AsyncMock(
+            return_value=_server_client(
+                lambda request: httpx.Response(502, json={"error": "bad gateway"})
+            )
         )
         with pytest.raises(ServerAPIError, match="bad gateway") as caught:
             await sandbox.run("hello")
@@ -961,14 +968,16 @@ class TestSandboxRunNamedCommand:
             seen.append(request)
             return httpx.Response(200, json={"result": "ok"})
 
-        sandbox.__dict__["server"] = _server_client(handler)
+        sandbox.application_client = AsyncMock(return_value=_server_client(handler))
         assert await sandbox.run("hello", name="Bob", timeout=5) == "ok"
         assert json.loads(seen[0].content) == {"name": "Bob"}
 
     @pytest.mark.asyncio
     async def test_command_failure_raises_server_api_error(self, sandbox: Sandbox) -> None:
-        sandbox.__dict__["server"] = _server_client(
-            lambda request: httpx.Response(500, json={"error": "boom", "type": "RuntimeError"})
+        sandbox.application_client = AsyncMock(
+            return_value=_server_client(
+                lambda request: httpx.Response(500, json={"error": "boom", "type": "RuntimeError"})
+            )
         )
         with pytest.raises(ServerAPIError, match="boom"):
             await sandbox.run("bad")
@@ -983,7 +992,12 @@ class TestSandboxRunNamedCommand:
             seen.append(request)
             return httpx.Response(200, json={"result": "ok"})
 
-        with patch.object(Sandbox, "server_at", return_value=_server_client(handler)) as server_at:
+        with patch.object(
+            Sandbox,
+            "application_client",
+            new_callable=AsyncMock,
+            return_value=_server_client(handler),
+        ) as server_at:
             assert await sandbox.run("ping", server_port=9100, a=1) == "ok"
 
         server_at.assert_called_once_with(9100)
@@ -991,18 +1005,20 @@ class TestSandboxRunNamedCommand:
 
     @pytest.mark.asyncio
     async def test_list_commands_returns_server_commands(self, sandbox: Sandbox) -> None:
-        sandbox.__dict__["server"] = _server_client(
-            lambda request: httpx.Response(
-                200,
-                json={
-                    "commands": [
-                        {
-                            "name": "add",
-                            "description": "Add",
-                            "args": [{"name": "x", "type": "integer", "required": True}],
-                        }
-                    ]
-                },
+        sandbox.application_client = AsyncMock(
+            return_value=_server_client(
+                lambda request: httpx.Response(
+                    200,
+                    json={
+                        "commands": [
+                            {
+                                "name": "add",
+                                "description": "Add",
+                                "args": [{"name": "x", "type": "integer", "required": True}],
+                            }
+                        ]
+                    },
+                )
             )
         )
         commands = await sandbox.list_commands()

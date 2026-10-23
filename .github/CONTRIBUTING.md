@@ -178,7 +178,7 @@ Sandbox templates — content, the machine-readable index (`awesome-templates.ya
 
 1. **Read** the catalog repository's [CONTRIBUTING.md](https://github.com/alibaba-agent-sandbox/awesome-templates/blob/main/CONTRIBUTING.md) — it defines the template anatomy, capability-group rules, and local dev workflow.
 2. **Open a PR** against [alibaba-agent-sandbox/awesome-templates](https://github.com/alibaba-agent-sandbox/awesome-templates) that adds your template folder and updates `awesome-templates.yaml` (plus the README template table) in the same PR.
-3. **Required index fields**: `name`, `description`, `repo`, `tags`, `author`, `capabilities`, `status` (optional: `path` for subdirectory templates, `ref` to pin a version).
+3. **Required index fields**: `name`, `description`, `repo`, `tags`, `author`, `status` (optional: `path` for subdirectory templates, `ref` to pin a version).
 4. **Status values**:
    - `official` — maintained by the alibaba-agent-sandbox team (do not use for community PRs)
    - `community` — community-contributed and maintained
@@ -188,7 +188,7 @@ Sandbox templates — content, the machine-readable index (`awesome-templates.ya
 ### Template Repository Requirements
 
 Your template repository should include:
-- A `template.yaml` defining the sandbox configuration (base image, packages, capabilities, etc.)
+- A `template.yaml` declaring specification 4, `provides`, explicit `workflows` and `default_workflow`
 - A `Dockerfile` and a `README.md` with usage instructions
 - Example code or scripts that demonstrate the template's purpose
 

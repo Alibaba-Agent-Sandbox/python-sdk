@@ -61,11 +61,8 @@ declarative = [
 session = [
     "filelock>=3.12",
 ]
-# Alias kept for ``pip install "agent-sandbox-client[server]"``: ``agent-sandbox-server`` is now a hard
-# dependency of ``agent-sandbox-client``, so this extra adds nothing.
-server = []
 all = [
-    "agent-sandbox-client[fast,session,mcp,declarative,server]",
+    "agent-sandbox-client[fast,session,mcp,declarative]",
 ]
 dev = [
     "agent-sandbox-client[all]",

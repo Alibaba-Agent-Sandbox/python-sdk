@@ -32,7 +32,10 @@ class ServerCapabilities:
         self._document = document
         self._client = client
         raw_endpoints = document.get("endpoints")
-        self.api_version: int = int(document.get("api_version", 0) or 0)
+        version = document.get("api_version", 0)
+        if type(version) is not int or version < 0:
+            raise ValueError("Server api_version must be an exact nonnegative integer")
+        self.api_version: int = version
         self.server_version: str = str(document.get("server_version", ""))
         identity = document.get("identity") or {}
         self.identity_id: str = str(identity.get("id", "")) if isinstance(identity, dict) else ""

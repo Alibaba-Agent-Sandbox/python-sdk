@@ -34,7 +34,9 @@ from tests.test_known_issues.helpers import (
 
 
 def _commands() -> CommandsModule:
-    return CommandsModule(ENVD, token(), ProcessProtocol(make_http()))
+    return CommandsModule(
+        ENVD, token(), ProcessProtocol(make_http()), operations={"exec.run", "exec.stream"}
+    )
 
 
 def _ok(httpx_mock, rpc: str) -> None:  # type: ignore[no-untyped-def]

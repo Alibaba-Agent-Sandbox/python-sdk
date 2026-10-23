@@ -1,5 +1,7 @@
 # Providers
 
+Workflow support uses exact consumer operations; see [template workflows](template-workflows.md).
+
 This guide describes asynchronous `ProviderSandbox` provider extensions. Root `Sandbox` and `AsyncSandbox` follow the pinned standard migration contract; see [Migrate from E2B](migrate-from-e2b.md).
 
 > **Note:** The `abx provider ...` commands on this page are provided by the Node.js CLI in the `cli` repository. Python-only users get the same operations from `python -m agent_sandbox.providers ...`. Both use the same install directory, the same receipts and the same tree digest.
@@ -155,7 +157,6 @@ A provider declares the features it implements. Calling something it lacks raise
 | `exec.run`, `exec.stream`, `process.manage` | buffered commands; streamed output; list, kill and signal processes |
 | `pty` | interactive terminal |
 | `files.rw`, `files.watch`, `files.transfer` | read, write, list, move, remove; watching; signed upload and download URLs |
-| `code.interpret` | stateful code contexts |
 | `templates.read`, `templates.build` | list and inspect templates; provider-owned image build, deploy and delete |
 | `ports.url`, `ports.domain` | public URL for a port; custom domains |
 | `storage.mount`, `network.vpc` | object-storage mounts; VPC attachment |
@@ -190,7 +191,6 @@ Installing a provider does not enable every SDK method or every `abx` command. T
 | `files.rw` | `files.*` | `upload`, `download`, `sandbox files ...` |
 | `files.watch` | `files.watch` | — |
 | `files.transfer` | signed upload and download URLs | — |
-| `code.interpret` | `run_code` | `sandbox code` |
 | `templates.read` | template read APIs | `template list`, `template info` |
 | `templates.build` | image build and template registration | `template build/push/create/deploy/install/delete`, `deploy`, `install` |
 | `ports.url` | `network.get_url` | `sandbox url` |
@@ -221,7 +221,7 @@ The capability table is [OpenSandbox provider](../design/provider-opensandbox-ma
 
 The feature ids above are the shared tool surface. A provider that has operations outside that list registers them on `Provider.extensions`. They do not appear in `features`, so `provider list` does not print them, and another provider does not gain them.
 
-`describe()["extensions"]` always shows the provider's full registration. `extensions_for(sandbox_id=...)` shows only the entries that match that sandbox: `code` only on a `code-interpreter` image, `networkpolicy` only when egress was requested, `command.logs` only when a command id is known. An entry with `implemented=False` is visible under those rules and still raises `E8004` from `require_extension`. An earlier Python OpenSandbox provider registered `code`, `session`, `command.logs`, `snapshot`, `networkpolicy`, `metadata.patch`, `diagnostics` and `metrics` this way. The current catalog provider is `kind = "node"` (`EngineProvider`); its `extensions` tuple is empty.
+`describe()["extensions"]` lists the provider's current extension registration. Extensions do not imply standard operation support; exact consumer operations remain authoritative.
 
 ---
 

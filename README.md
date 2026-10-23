@@ -1,5 +1,7 @@
 # Agent Sandbox
 
+[Template workflows](docs/en/guide/template-workflows.md): explicit services, exact provider operations and independently verified consumer paths.
+
 **English** | [中文](README.zh-CN.md)
 
 [Standard E2B migration contract](docs/en/guide/migrate-from-e2b.md)
@@ -84,7 +86,7 @@ pip install -e ./server-sdk -e "./client-sdk[dev]"
 
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project. This client is `agent-sandbox-client`.
 
-`agent-sandbox-client` depends on `agent-sandbox-server` of the same version, so installing the [paired sources](docs/en/guide/install-python.md) also provides `agent_sandbox.server` (needed locally by the `@sandbox` decorator's server proxy). The `[server]` extra is kept as a harmless alias.
+`agent-sandbox-client` depends on `agent-sandbox-server` of the same version, so installing the [paired sources](docs/en/guide/install-python.md) also provides `agent_sandbox.server` (needed locally by the `@sandbox` decorator's server proxy).
 
 The `abx` CLI is no longer part of the Python package (there is no `[cli]` extra and no `abx`
 console script); it is distributed from the [`agent-sandbox`](https://github.com/alibaba-agent-sandbox/agent-sandbox) repository

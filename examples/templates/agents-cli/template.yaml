@@ -13,10 +13,28 @@ tags:
 
 base: python:3.12-slim
 
-capabilities:
-  - shell
-  - files
-  - ports
+spec_version: 4
+workflow_contract_version: 1
+provides:
+  app:
+    protocol: agent-sandbox-server
+    version: 2
+    port: 9000
+    operations: [agents.sessions.create]
+default_workflow: agents
+workflows:
+  agents:
+    kind: application
+    input: source
+    startup: entrypoint
+    service: app
+    binding:
+      transport: http
+      endpoint: provider-port
+      caller: host
+      authentication: service-token
+    operation: agents.sessions.create
+    required_operations: []
 
 ports:
   - 9000

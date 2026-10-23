@@ -1,89 +1,56 @@
 # template.yaml Specification
 
-This document precisely defines all fields of the `template.yaml` file (from the user's perspective).
-
----
+Current templates use `spec_version: 4` and `workflow_contract_version: 1`. The complete publishing authority is [awesome-templates/template-v4.schema.json](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/spec/template-v4.schema.json); the shared workflow contract lives in [contracts](https://github.com/Alibaba-Agent-Sandbox/python-sdk/tree/main/contracts). The full schema retains application deployment topology, hooks and durable state.
 
 ## File Location
 
-The template's `template.yaml` is located at the root of the template directory:
-
-```text
-my-template/
-├── template.yaml    ← The file defined in this document
-├── Dockerfile       # Optional
-└── ...
-```
-
-After installation, it resides at `~/.abx/templates/<template-name>/template.yaml`.
-
----
+Each source template has one `template.yaml` at its root. Source catalog rows locate that file rather than repeating workflows; managed entries embed the entire declaration. Dockerfiles, command modules and dependency files form the source input alongside the manifest.
 
 ## Complete Field Definitions
 
 ### Basic Information
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `name` | `str` | ✅ | — | Template name, used with the `--template` parameter |
-| `version` | `str` | ❌ | `"1.0.0"` | Semantic version number |
-| `description` | `str` | ❌ | `""` | Template description |
-| `author` | `str` | ❌ | `""` | Author |
-| `license` | `str` | ❌ | `""` | License identifier (e.g., `"MIT"`) |
-| `tags` | `list[str]` | ❌ | `[]` | Classification tags |
+The publishing schema requires metadata including `name`, `version`, `description`, `author` and `license`; consult it for `tags`, `priority`, `wave` and `smoke`. The SDK runtime model does not replace the complete publishing schema.
 
 ### Runtime Configuration
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `env` | `dict[str, str]` | ❌ | `{}` | Environment variables (generates `ENV` instructions) |
-| `ports` | `list[int]` | ❌ | `[]` | Exposed ports (generates `EXPOSE` instructions) |
+`env` is a string map and `ports` lists application ports. `start_cmd` and `ready_cmd` participate in explicit startup behavior. The actual service must listen on the declared port. Parsing SDK metadata never rewrites a Dockerfile.
 
 ### Resource Specifications
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `cpu_count` | `int` | ❌ | `None` | Default CPU core count |
-| `memory_mb` | `int` | ❌ | `None` | Default memory in MB |
+Published source manifests use `resources.cpu` and `resources.memory`; the SDK runtime configuration can also carry `cpu_count` and `memory_mb`. Application resources and topology follow the full schema. Planning a sandbox workflow does not execute an application deployment.
 
 ### Sandbox Generation
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `generation` | `int` | ❌ | `1` | Sandbox generation: `1` = first-gen (rund), `2` = second-gen (MicroVM, Beta). When set, CLI commands (`template deploy`, `template build`, `template create`) use this value unless overridden by the `--generation` flag. |
+`generation` belongs to the selected template/provider startup configuration; the catalog source schema currently requires `2`. Creation still requires the provider to implement the declared input and startup mode.
 
-### Capability Declarations
+<a id="capability-declarations"></a>
+### Workflow Declarations
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `capabilities` | `list[str] \| null` | ❌ | `null` | Runtime capability list |
+| Field | Meaning |
+| --- | --- |
+| `spec_version` | Required integer `4` |
+| `workflow_contract_version` | Required integer `1` |
+| `provides` | Services, each with `protocol`, `version`, `port`, `operations` |
+| `default_workflow` | Required identifier of one declared workflow |
+| `workflows` | Named `application`, `exec` or `interpreter` paths |
 
-**Allowed values** (standard capabilities `STANDARD_CAPABILITIES`):
+Every workflow explicitly supplies `kind`, `input` (`source/image/managed/service`), `startup` (`exec/entrypoint/none`), `binding`, `operation` and `required_operations`. An application also names a `service` from `provides`. Binding fields are `transport`, `endpoint`, `caller`, `authentication`. Unknown workflow fields are rejected.
 
-| Capability | Description |
-|------------|-------------|
-| `shell` | Shell command execution (`commands.run()`, etc.) |
-| `files` | Filesystem operations (`files.read()`, etc.) |
-| `code` | Code Interpreter execution (`run_code()`, etc.) |
-| `terminal` | PTY terminal sessions (`get_terminal()`) |
-| `ports` | Port URL access (`network.get_url()`, etc.) |
+`startup: exec` requires a nonempty `start_cmd` and `exec.run`. Native startup uses `entrypoint` without running the start command again. A `service` input requires `startup: none`. A declared nonempty `ready_cmd` requires execution support and must actually be checked, regardless of startup mode. Managed references belong to one provider. Templates may add `required_operations` and `required_checks`, never remove derived requirements or minimum profile checks.
 
-**Behavior rules**:
-- `null` (undeclared) → Uses the default capability set `{shell, files, code}`
-- Explicit list → Only the listed capabilities are enabled (can be a subset or superset of the standard set)
-- Values in the list must be from the standard capability set; otherwise, validation fails (raises `TemplateParseError` E2004)
+Template `capabilities`, `tested_on` and handwritten `providers` compatibility tables are rejected. There is no default `{shell, files, code}` grant. Providing Python or HTTP does not imply provider interpreter operations. See [explicit template workflows](../guide/template-workflows.md).
 
 ### Removed key: `custom_commands`
 
-`custom_commands` is not a `template.yaml` key. The client rejects a file that contains it (`TemplateParseError`, E2004). Named commands have one mechanism: functions registered in the template's server (`@sandbox.register` in `commands.py`), called with `sandbox.run(name, **kwargs)` or `abx run <id> <name>`. See [Authoring Templates](../guide/authoring-templates.md#registered-commands).
+`custom_commands` is rejected. Register named functions with `@command` in the server's `commands.py` and invoke them through application HTTP; YAML does not generate functions.
 
 ### Server Policy (`server`)
 
 Optional. Declares which SandboxServer endpoints the template exposes and under which restrictions
 (design: [fine-grained-capabilities](../design/fine-grained-capabilities.md)). Absent = the server's default
 behaviour. The block is validated structurally by `SandboxTemplate` (unknown keys are errors); values are
-validated by `agent-sandbox-server check-config`. Tooling compiles it to `/etc/agent-sandbox/server-policy.json`, which the server
-loads automatically.
+validated by `agent-sandbox-server check-config`. The server loads `/etc/agent-sandbox/server-policy.json` or the explicit `ABX_SERVER_POLICY_FILE`/`ABX_SERVER_POLICY` input. Ensure the chosen build/startup flow actually installs that policy; declaring YAML alone does not apply it.
 
 | Key | Type | Description |
 |-----|------|-------------|
@@ -108,43 +75,71 @@ server:
       params: { overwrite: false }
 ```
 
----
 
 ## Complete Example
 
-```yaml
-name: flask-web
-version: "2.0.0"
-description: "Flask Web Development Environment"
-author: "Agent Sandbox Team"
-license: "MIT"
-tags:
-  - python
-  - web
-  - flask
+This source-publishing example includes required metadata. Resolve its base-image placeholders through an explicit configuration before building.
 
-env:
-  PYTHONUNBUFFERED: "1"
-  FLASK_ENV: "development"
+```yaml
+name: my-python-template
+version: "1.0.1"
+description: "Scaffold for a new Agent Sandbox template. Not a catalog entry."
+author: "alibaba-agent-sandbox"
+license: Apache-2.0
+spec_version: 4
+base: "fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>"
+generation: 2
+start_cmd: "agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py"
+ready_cmd: "agent-sandbox-server healthcheck --port 9000"
+
+resources:
+  cpu: 2
+  memory: 2048
 
 ports:
-  - 5000
-  - 8080
+  - 9000
 
-cpu_count: 2
-memory_mb: 2048
+tags:
+  - example
+  - skeleton
 
-capabilities:
-  - shell
-  - files
-  - code
-  - terminal
-  - ports
+priority: P2
+wave: other
 
+
+env:
+  ABX_SERVER_TOKEN: ""
+
+smoke:
+  - command: hello
+    args:
+      name: Express
+    expect: "Hello, Express!"
+workflow_contract_version: 1
+provides:
+  app:
+    protocol: agent-sandbox-server
+    version: 2
+    port: 9000
+    operations:
+    - commands.list
+    - commands.run
+default_workflow: application
+workflows:
+  application:
+    kind: application
+    input: source
+    service: app
+    startup: exec
+    binding:
+      transport: http
+      endpoint: provider-port
+      caller: host
+      authentication: service-token
+    operation: commands.run
+    required_operations: []
 ```
-
----
 
 ## Build Notes
 
-`template.yaml` only defines runtime configuration (capabilities, server policy, environment variables, resources). Image building is entirely handled by the `Dockerfile` in the template directory, using language-native dependency files (`requirements.txt` / `package.json`) for dependency management.
+`base` is valid source/template metadata. Builds use the selected effective Dockerfile and explicit build configuration; they never silently replace `FROM`, users, copy paths or entrypoints. Install dependencies through native files in the image. The Python launcher does not prepare source; select a prepared `image`/`managed` reference or explicit `service` path.

@@ -24,7 +24,9 @@ START_URL = f"{ENVD}/process.Process/Start"
 
 
 def _commands() -> CommandsModule:
-    return CommandsModule(ENVD, token(), ProcessProtocol(make_http()))
+    return CommandsModule(
+        ENVD, token(), ProcessProtocol(make_http()), operations={"exec.run", "exec.stream"}
+    )
 
 
 async def test_run_sends_per_call_env_as_envs(httpx_mock) -> None:

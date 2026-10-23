@@ -26,7 +26,7 @@ python -m pip install \
   "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=client-sdk"
 ```
 
-Replace `[all]` with `[mcp]`, `[declarative]`, `[session]` or `[fast]` for that subset. MCP needs its extra; the empty `[server]` alias alone does not add features. Browser automation requires separately installed Playwright in the image.
+Replace `[all]` with `[mcp]`, `[declarative]`, `[session]` or `[fast]` for that subset. MCP needs its extra; Browser automation requires separately installed Playwright in the image.
 
 ## Server-only image installation
 

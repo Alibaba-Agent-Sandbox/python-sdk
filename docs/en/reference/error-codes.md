@@ -44,7 +44,7 @@ except SandboxError as e:
 | E2001 | `TemplateNotFoundError` | Template does not exist | Run `abx template list` to view available templates | Specified a non-existent template name |
 | E2002 | `QuotaExceededError` | Quota exceeded | Destroy idle sandboxes or request a quota increase | Number of running sandboxes exceeds account quota |
 | E2003 | `RegionUnavailableError` | Region unavailable | Try another region or check service availability | Requested region is temporarily unavailable or does not exist |
-| E2004 | `TemplateParseError` | Template parse failure | Fix template.yaml (see validation errors); capabilities will not be granted until the template parses successfully | template.yaml has format errors or invalid fields |
+| E2004 | `TemplateParseError` | Manifest parse failure | Fix spec4, required workflow fields and unknown/retired fields | Current YAML violates the contract; no default permissions allow it to continue |
 | E2009 | `SandboxNotFoundError` | No sandbox with this ID exists | Run `abx list` to see the running sandboxes; a killed or expired sandbox cannot be reconnected | `Sandbox.connect()` / `get_info()` / `set_timeout()` / `pause()` / `resume()` on an ID the platform answers with HTTP 404 (`kill` stays idempotent) |
 
 ### Troubleshooting Steps
@@ -64,26 +64,17 @@ except SandboxError as e:
 | E3001 | `CommandTimeoutError` | Command execution timeout | Increase the `timeout` parameter or check if the command is hanging | `commands.run()` or `run_code()` exceeded timeout |
 | E3002 | `ProcessError` | Non-zero exit code | — | Command returned a non-zero exit code (carries `exit_code`, `stdout`, `stderr` attributes) |
 | E3003 | `CodeExecutionError` | Code execution failed | Check code syntax and runtime dependencies | Code Interpreter failed to execute code |
-| E3004 | `CapabilityNotSupportedError` | Capability not enabled | Declare the required capability in the template's `capabilities` list, or use a template that supports it | Called a capability that is runtime-gated without it being declared (e.g., calling `run_code()` on a template without the `code` capability). Also raised during `resolve_capabilities()` at template parse time |
+| E3004 | `CapabilityNotSupportedError` | Selected call or endpoint unavailable | Inspect the exact operation and consumer; retired template flags cannot bypass it | Includes disabled server endpoints; unsupported provider operations use E8004 |
 | E3005 | `CommandNotFoundError` | Named command not found | Check the command name with `sandbox.list_commands()`, and make sure the SandboxServer is running in the sandbox (`sandbox.start_server()`) | `Sandbox.run(name)` / `abx run <id> <name>` names a command the in-sandbox SandboxServer does not have (HTTP 404). Carries the `command_name` attribute |
 | E3006 | `EnvdRpcError` | envd rejected an RPC call (HTTP >= 400) | Check the command and arguments, or run with `abx -v` for the raw error response | Sandbox envd returned HTTP >= 400 (e.g., a `process.Process/Start` 500 for an unknown executable). Carries `status_code`, `rpc_path`, `envd_error` (parsed JSON body) and `body_text`; the message never includes the full sandbox URL. `abx connect` maps it to a single friendly notice (e.g., `Command not found: <cmd>`) |
 
 ### E3004 Details
 
-> **Note (ADR 2026-09-23)**: The runtime `check_capability()` gate has been removed from most modules. `CommandsModule`, `FilesModule`, and `NetworkModule` no longer raise E3004 at call time. **Exception:** `CodeContextModule` retains the `code` capability gate — all its methods (`run`, `create_context`, `list_contexts`, `restart_context`, `remove_context`) still raise `CapabilityNotSupportedError` (E3004) when the `code` capability is missing (fail-closed). E3004 is also still raised during template resolution / model validation (e.g., `resolve_capabilities()`).
+The exception retains its `capability` attribute; a server `EndpointNotAvailableError` can use it to identify the disabled endpoint. Provider interpreter gates check exact operations and raise E8004, rather than consulting a template `code` flag.
 
-`CapabilityNotSupportedError` carries a `capability` attribute indicating the missing capability name.
+`code.run()` defaults to stateless `code.execute`, isolated by the backend protocol. `mode="default-context"` explicitly selects the persistent default; `context_id` selects a particular context. Context create/execute/list/restart/delete each require support. Callbacks require `code.stream`. An unknown template grants no default operations, and adding `capabilities` cannot repair it.
 
-```python
-try:
-    result = await sandbox.run_code("print(1)")
-except CapabilityNotSupportedError as e:
-    print(f"Missing capability: {e.capability}")  # "code"
-```
-
-**Standard capabilities**: `shell`, `files`, `code`, `terminal`, `ports`
-
-**Default capability set**: `{shell, files, code}` (automatically granted when `capabilities` is not declared)
+Interpreter HTTP 404, missing runtime and not-ready responses never fall back to shell. Use the commands API explicitly for shell execution. Application HTTP uses its independent client and is not blocked by a missing interpreter API. See [explicit template workflows](../guide/template-workflows.md).
 
 ---
 
@@ -134,7 +125,7 @@ Raised by the provider layer ([Providers guide](../guide/providers.md)). All sub
 | E8001 | `ProviderNotFoundError` | Provider id unknown or not installed | `provider="x"` / `ABX_PROVIDER=x` names nothing registered or installed | 4 |
 | E8002 | `ProviderConfigError` | Invalid or unknown provider option | `provider_options` key not in the plugin schema; wrong type; plugin reports `-32006` | 2 |
 | E8003 | `ProviderConflictError` | Duplicate or reserved provider id | Installing over an existing id without `--force`; registering a reserved id | 1 |
-| E8004 | `ProviderFeatureNotSupportedError` | The provider lacks the feature (also a `CapabilityNotSupportedError`) | Calling `pause()` on a provider that does not declare `sandbox.pause` | 1 |
+| E8004 | `ProviderFeatureNotSupportedError` | The project provider adapter/consumer has not implemented the operation (also a `CapabilityNotSupportedError`) | Missing exact operations such as `code.execute`, `code.context.execute`, `code.stream`; this does not prove missing native platform support | 1 |
 | E8005 | `ProviderResourceNotFoundError` | A sandbox, file or template was not found by the plugin | Plugin reports `-32002` without a more specific `sdk_code` | 4 |
 | E8010 | `ProviderInstallError` | Install could not complete | Source unreachable; symlink, path or size limits; store locked | 1 |
 | E8011 | `ProviderIntegrityError` | Digest or pin mismatch | Installed files changed since install; `--sha256` does not match | 1 |

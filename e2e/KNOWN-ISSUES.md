@@ -1,5 +1,7 @@
 # Known issues recorded by the E2E suite
 
+The previous KI-009 attribution is retired: the project adapter used unverified guessed interpreter RPC paths. That implementation and its shell fallback are removed; project interpreter calls explicitly report unimplemented. Platform-native interpreter behavior is tested separately through the pinned standard client.
+
 The suite pinned every product defect it found as a **strict `xfail`** (`@pytest.mark.known_issue`).
 When the defect is fixed the test flips to XPASS and fails the run (strict), forcing whoever fixed it
 to delete the marker, which keeps this list honest. Issues marked *platform* or *environment* are not
@@ -20,7 +22,6 @@ SDK sources in this repository.
 | KI-006 | SDK bug (**fixed**) | a 401 from the platform surfaces as raw `httpx.HTTPStatusError`, not `AuthenticationError` (the CLI maps it, the SDK does not) | `test_01_platform.py::test_wrong_api_key_raises_authentication_error` (a companion test asserts the raw 401 is at least visible) | `AuthenticationError` |
 | KI-007 | SDK bug (**fixed**) | `files.list` of a missing directory returns `[]` (envd answers 200 with no entries) instead of raising | `test_04_files_envd.py::test_list_missing_directory_raises` | `FileNotFoundError_` |
 | KI-008 | platform / gateway | an envd upload of 1 MB or more exceeds the default 30 s HTTP timeout from the test VM (throughput limited); 400 KB passes. Non-strict because it depends on network throughput | `test_04_files_envd.py::test_one_megabyte_upload_within_default_timeout` (`e2e_slow`) | passes within the default timeout, or the timeout becomes size-aware |
-| KI-009 | platform | the Jupyter code-interpreter service answers HTTP 404 on this cloud, so `run_code` falls back to a shell and the value of a trailing expression (`21*2`) is not returned; stdout works | `test_05_network_and_code.py::test_run_code_returns_last_expression_value` | `results[0].text == "42"` |
 | KI-010 | SDK bug (**fixed**) | `@sandbox` on an `async def` function: the generated remote script calls the coroutine function without awaiting it, so the result is the string `<coroutine object ...>` | `test_07_declarative.py::test_async_decorated_function` | real return value |
 
 Notes

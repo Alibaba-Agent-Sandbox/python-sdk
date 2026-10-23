@@ -6,7 +6,7 @@ For current SDK installation, use the [paired source installation guide](install
 
 This is the **Server SDK**: `commands.py` starts with the image and serves HTTP inside the sandbox. Creating and calling a sandbox from your machine is the [Client SDK](client-sdk.md).
 
-This document explains how to create custom Agent Sandbox templates, including directory structure, field reference, capability declarations, registered commands, and publishing.
+This document explains how to create custom Agent Sandbox templates, including directory structure, field reference, explicit workflows, registered commands, and publishing.
 
 A template is a directory of plain files, written by hand or generated. The `abx template scaffold` command generates one three ways (built-in scaffold, a one-sentence description, or adopting a project that already has source code); that workflow is documented in the CLI repository: [Authoring Templates (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authoring-templates.md).
 
@@ -19,7 +19,7 @@ A complete template directory structure is as follows:
 ```text
 my-template/
 ├── template.yaml      # Required — template definition
-├── Dockerfile         # Optional — custom Docker build (takes priority over build steps in template.yaml)
+├── Dockerfile         # Image build input; no implicit manifest package installer
 ├── commands.py        # Optional — named commands via @command
 └── README.md          # Optional — template description
 ```
@@ -32,25 +32,62 @@ my-template/
 
 ```yaml
 name: my-python-template
-version: "1.0.0"
-description: "Python data analysis environment with pre-installed pandas and matplotlib"
-author: "Your Name"
-tags:
-  - python
-  - data-analysis
+version: "1.0.1"
+description: "Scaffold for a new Agent Sandbox template. Not a catalog entry."
+author: "alibaba-agent-sandbox"
+license: Apache-2.0
+spec_version: 4
+base: "fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>"
+generation: 2
+start_cmd: "agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py"
+ready_cmd: "agent-sandbox-server healthcheck --port 9000"
 
-env:
-  PYTHONUNBUFFERED: "1"
-  APP_DIR: "/app"
-
-capabilities:
-  - shell
-  - files
-  - code
-  - terminal
+resources:
+  cpu: 2
+  memory: 2048
 
 ports:
-  - 8080
+  - 9000
+
+tags:
+  - example
+  - skeleton
+
+priority: P2
+wave: other
+
+
+env:
+  ABX_SERVER_TOKEN: ""
+
+smoke:
+  - command: hello
+    args:
+      name: Express
+    expect: "Hello, Express!"
+workflow_contract_version: 1
+provides:
+  app:
+    protocol: agent-sandbox-server
+    version: 2
+    port: 9000
+    operations:
+    - commands.list
+    - commands.run
+default_workflow: application
+workflows:
+  application:
+    kind: application
+    input: source
+    service: app
+    startup: exec
+    binding:
+      transport: http
+      endpoint: provider-port
+      caller: host
+      authentication: service-token
+    operation: commands.run
+    required_operations: []
 ```
 
 ---
@@ -68,33 +105,20 @@ ports:
 | `ports` | `list[int]` | ❌ | `[]` | Exposed port list |
 | `author` | `str` | ❌ | `""` | Author |
 | `license` | `str` | ❌ | `""` | License |
+| `spec_version` / `workflow_contract_version` | integer | ✅ | — | `4` / `1` |
+| `provides` / `workflows` / `default_workflow` | mapping / identifier | ✅ | — | Explicit workflow contract |
 | `tags` | `list[str]` | ❌ | `[]` | Tags |
-| `capabilities` | `list[str]` | ❌ | `None` | Capability declarations (see below) |
 
 For detailed field definitions, see [template.yaml Spec](../reference/template-yaml-spec.md).
 
 ---
 
-## Capability Declarations
+<a id="capability-declarations"></a>
+## Template Workflows
 
-Declare the runtime capabilities supported by the template via the `capabilities` field:
+`provides` describes software/services and `workflows` declares explicit invocation paths. The default names one workflow and grants no inferred operations. Retired `capabilities`, `tested_on` and provider compatibility tables are rejected; unknown remote references grant no default interpreter. Application HTTP does not depend on a unified code interpreter. See [explicit template workflows](template-workflows.md) for exact operations, T/F/U, contexts and verification scope.
 
-```yaml
-capabilities:
-  - shell      # Shell command execution
-  - files      # Filesystem operations
-  - code       # Code Interpreter
-  - terminal   # PTY terminal
-  - ports      # Port network access
-```
-
-**Standard capability set**: `shell`, `files`, `code`, `terminal`, `ports`
-
-**Default capability set** (when `capabilities` is not declared): `shell`, `files`, `code`
-
-`terminal` and `ports` must be explicitly declared in the template to be used. Capability tokens are used at the template resolution layer (`resolve_capabilities()`) which is fail-closed: if a template’s YAML is malformed or missing, the resolver raises `TemplateParseError` (E2004) rather than silently granting capabilities. All API methods remain callable regardless of declared capabilities; capability declarations serve as metadata for template validation and model inference.
-
-The process started by `commands.py` serves a fixed HTTP API on port 9000. The Dockerfile base image varies by template; the routes do not. The server registers nine capability groups. `core` stays on. `dev_tools`, `browser`, and `agents` start disabled. The `agents` routes are registered and stay off until `ABX_SERVER_ENABLED_GROUPS` includes `agents`. The routes each group turns on, and how to call them, are in [Template server HTTP API](template-server-api.md).
+The HTTP server independently applies endpoint policy across nine groups. `core` stays on; `dev_tools`, `browser` and `agents` start off. `server:` does not authorize provider operations, and a workflow does not automatically enable server endpoints. See [Template server HTTP API](template-server-api.md).
 
 ---
 
@@ -121,31 +145,15 @@ Registered commands are served by the in-sandbox HTTP server (`POST /commands/{n
 
 ## Dockerfile Customization
 
-The `Dockerfile` in the template directory is the image when one is present. `template.yaml` does not install packages. `base`, `system_packages`, `python_packages`, `node_packages`, and `commands` are not build inputs.
+The `Dockerfile` in the template directory is the image when one is present. `template.yaml` does not install packages. `base` is valid source metadata, but is not an instruction to rewrite `FROM`. Retired manifest package-install fields are rejected; dependencies belong in the effective Dockerfile and native dependency files.
 
-The default provider is `alicloud-express`. Its Dockerfile starts from the FC base image and has no `CMD` or `ENTRYPOINT`. `<region>` defaults to `cn-hangzhou`. `<tag>` defaults to `v0.0.49`. Extra packages are `RUN` lines on that base. `FROM python:3.11-slim` is not this image.
-
-```dockerfile
-FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
-WORKDIR /home/user/app
-COPY commands.py /home/user/app/commands.py
-EXPOSE 9000
-```
-
-OpenSandbox and a provider with no `[template]` profile use `FROM python:3.12-slim`, `WORKDIR /app`, and `CMD ["python3", "commands.py"]`. The copy-paste files, including the server wheel install, are in `agent-sandbox-sdk/SKILL.md`.
+Keep the source Dockerfile unchanged. Resolve base-image placeholders in the source or explicitly select a build configuration; never silently substitute another image based on the provider. The valid `base` metadata field does not replace Dockerfile `FROM`.
 
 ## Provider template profile
 
-The server SDK does not select a sandbox provider, and `agent_sandbox.server` does not import one. Port 9000 stays the server listen default. The FC reserved ports (49983, 5000, 49999) are the `alicloud-express` template profile, not properties of the HTTP API.
+The server does not select a provider. Port 9000 is the application HTTP listen default; injected envd, interpreter services and reserved ports belong to each backend. Those differences do not imply the application is unusable. `startup: exec`, `entrypoint` and `none` are distinct paths and must match provider declarations. Do not run native startup and a start command twice; actually check a nonempty `ready_cmd`. Build configurations are explicit, and the effective Dockerfile/arguments participate in input identity.
 
-The CLI owns the image contract. It resolves the provider with `--provider` / `ABX_PROVIDER` / the default `alicloud-express`, then renders that one profile into the Dockerfile and the template prompt:
-
-- `alicloud-express`: `FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>`, no `CMD` or `ENTRYPOINT`, platform `start_cmd` / `ready_cmd`, user `user`, workdir `/home/user/app`.
-- Every other provider: the generic profile (`FROM python:3.12-slim`, `CMD ["python3", "commands.py"]`, `WORKDIR /app`, image-default user) unless the plugin declares `[template]` in `abx-provider.toml`. A missing profile is announced and is not the FC image.
-
-`template.yaml` records the same defaults as `user` and `workdir`. The Dockerfile `WORKDIR` matches `workdir`. `USER` is written only when `user` is non-empty, because `python:3.12-slim` has no `user` account. A later command can pass its own working directory; these two fields are the sandbox default, the same idea as E2B's template user and workdir.
-
-`commands.py` imports only `agent_sandbox.server` and calls `start(port)` under `if __name__ == "__main__"`. The image installs `agent-sandbox-server`.
+`commands.py` imports only `agent_sandbox.server` and calls `start(port)` from its main entry; the image explicitly installs the server SDK. To consume an existing sandbox application, Python uses `async with await sandbox.application_client(9000, token=application_token)`: application endpoint resolution is independent, preserves proxy prefixes and separates gateway/application credentials.
 
 ---
 

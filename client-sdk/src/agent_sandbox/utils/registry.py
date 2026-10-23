@@ -387,9 +387,9 @@ def load_template_from_yaml(path: Path) -> SandboxTemplate:
     with open(path) as f:
         data = yaml.safe_load(f)
     # 映射 resources 嵌套结构到扁平字段
-    resources = data.pop("resources", {}) or {}
-    if "cpu" in resources and "cpu_count" not in data:
+    resources = data.get("resources", {}) or {}
+    if "application" not in data and "cpu" in resources and "cpu_count" not in data:
         data["cpu_count"] = resources["cpu"]
-    if "memory" in resources and "memory_mb" not in data:
+    if "application" not in data and "memory" in resources and "memory_mb" not in data:
         data["memory_mb"] = resources["memory"]
     return SandboxTemplate.model_validate(data)

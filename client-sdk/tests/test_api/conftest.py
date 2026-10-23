@@ -27,11 +27,11 @@ from agent_sandbox.models.process import (
 )
 from agent_sandbox.models.sandbox import SandboxInfo, SandboxStatus
 from agent_sandbox.models.template import STANDARD_CAPABILITIES
+from agent_sandbox.protocol.contracts import CodeInterpreterProtocol
 from agent_sandbox.providers.alicloud_express.auth import (
     AuthProvider,
     EnvdTokenManager,
 )
-from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
 from agent_sandbox.providers.shared.e2b.filesystem import FilesystemProtocol
 from agent_sandbox.providers.shared.e2b.process import ProcessProtocol
 from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
@@ -198,11 +198,21 @@ def transport_config() -> TransportConfig:
     return TransportConfig(api_key=TEST_API_KEY)
 
 
-# ---- All capabilities for backward-compat test fixtures ----
+# ---- Explicit discovery metadata for protocol-isolation fixtures ----
 
 ALL_CAPABILITIES: set[str] = set(STANDARD_CAPABILITIES)
 """All standard capabilities — used by default in test fixtures so
-existing tests that call any API method aren't blocked by gating."""
+tests of protocol behavior can inspect discovery independently."""
+
+
+class ProtocolFixtureSandbox(Sandbox):
+    """An explicitly mocked backend, independent of Express interpreter support."""
+
+    @property
+    def operations(self) -> frozenset[str]:
+        from agent_sandbox.workflows.planner import CONTRACT
+
+        return frozenset(set(CONTRACT["operations"]) - {"code.stream", "code.results.structured"})
 
 
 # ---- Assembled Sandbox Fixture ----
@@ -225,7 +235,7 @@ def sandbox(
     """
     info = make_sandbox_info()
     resolved = ResolvedCapabilities(capabilities=ALL_CAPABILITIES)
-    return Sandbox(
+    return ProtocolFixtureSandbox(
         info=info,
         config=transport_config,
         http_client=mock_http_client,
@@ -248,6 +258,7 @@ def commands_module(
     mock_process_protocol: AsyncMock,
 ) -> CommandsModule:
     return CommandsModule(
+        operations={"exec.run", "exec.stream"},
         envd_url=TEST_ENVD_URL,
         envd_token=envd_token_manager,
         process_protocol=mock_process_protocol,

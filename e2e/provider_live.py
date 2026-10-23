@@ -390,7 +390,7 @@ async def exercise(
             if body != "sdk-file":
                 raise RuntimeError(f"read {body!r}")
             await sandbox.files.make_dir("/tmp/abx-provider-dir")
-            await sandbox.files.rename(path, "/tmp/abx-provider-dir/moved.txt")
+            await sandbox.files.move(path, "/tmp/abx-provider-dir/moved.txt")
             moved = await sandbox.files.read("/tmp/abx-provider-dir/moved.txt")
             await sandbox.files.remove("/tmp/abx-provider-dir/moved.txt")
             if moved != "sdk-file":
@@ -413,12 +413,16 @@ async def exercise(
             "process.manage" in declared,
             lambda: _process_row(sandbox),
         )
-        await _check(
-            report,
-            "code.interpret",
-            "code.interpret" in declared,
-            lambda: _code(sandbox),
-        )
+        for operation, mode in [
+            ("code.execute", "stateless"),
+            ("code.default-context.execute", "default-context"),
+        ]:
+            await _check(
+                report,
+                operation,
+                operation in spec.operations,
+                lambda mode=mode: _code(sandbox, mode=mode),
+            )
         await _check(report, "files.watch", "files.watch" in declared, lambda: _watch_once(sandbox))
 
         async def _transfer() -> str:
@@ -484,8 +488,8 @@ async def exercise(
     return report
 
 
-async def _code(sandbox: Any) -> str:
-    result = await sandbox.run_code("print(40 + 2)")
+async def _code(sandbox: Any, *, mode: str) -> str:
+    result = await sandbox.run_code("print(40 + 2)", mode=mode)
     stdout = getattr(result, "stdout", "") or ""
     text = getattr(result, "text", "") or ""
     blob = f"{stdout}{text}"
@@ -639,7 +643,7 @@ def cli_express() -> Report:
 
     def run(args: list[str], timeout: int = 240) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            [*launcher, *args],
+            [*launcher, "--provider", "alicloud-express", *args],
             cwd=str(root),
             env=env,
             text=True,
@@ -651,15 +655,12 @@ def cli_express() -> Report:
     try:
         created = run(
             [
-                "--json",
                 "sandbox",
                 "create",
-                "--template",
                 "base",
+                "--detach",
                 "--timeout",
                 "300",
-                "--metadata",
-                "e2e=cli-provider",
             ],
             timeout=240,
         )
@@ -669,39 +670,69 @@ def cli_express() -> Report:
             return report
         import json
 
-        payload = json.loads(created.stdout)
-        sandbox_id = str(payload.get("ID") or "")
-        report.sandbox_id = sandbox_id
-        if not sandbox_id:
-            report.add("sandbox.lifecycle", "fail", "create JSON had no ID")
+        # The current pinned standard create command prints only the detached ID.
+        # JSON output belongs to info/list; the retired project ID envelope is not accepted.
+        sandbox_id = created.stdout.strip()
+        if not sandbox_id or any(char.isspace() for char in sandbox_id):
+            report.add("sandbox.lifecycle", "fail", "detached create did not return one sandbox ID")
             return report
-        report.add("sandbox.lifecycle", "pass", f"created {sandbox_id}")
+        report.sandbox_id = sandbox_id
+        info = run(["sandbox", "info", sandbox_id, "--format", "json"])
+        if info.returncode != 0 or json.loads(info.stdout).get("sandboxId") != sandbox_id:
+            report.add(
+                "sandbox.lifecycle",
+                "fail",
+                "standard info JSON did not confirm the created sandboxId",
+            )
+            return report
+        report.add(
+            "sandbox.lifecycle", "pass", f"created {sandbox_id}; confirmed standard sandboxId"
+        )
 
         listed = None
         for _attempt in range(5):
-            listed = run(["--json", "sandbox", "list", "--limit", "100"])
-            if listed.returncode == 0 and sandbox_id in listed.stdout:
-                break
+            listed = run(["sandbox", "list", "--limit", "100", "--format", "json"])
+            if listed.returncode == 0:
+                rows = json.loads(listed.stdout)
+                if isinstance(rows, list) and any(
+                    isinstance(item, dict) and item.get("sandboxId") == sandbox_id for item in rows
+                ):
+                    break
             time.sleep(2)
         assert listed is not None
         if listed.returncode != 0:
             report.add("sandbox.list", "fail", f"exit {listed.returncode} {listed.stderr[-200:]}")
-        elif sandbox_id in listed.stdout:
-            report.add("sandbox.list", "pass", "list contains sandbox")
+        elif isinstance(rows, list) and any(
+            isinstance(item, dict) and item.get("sandboxId") == sandbox_id for item in rows
+        ):
+            report.add("sandbox.list", "pass", "standard JSON list contains the sandboxId")
         else:
             snippet = listed.stdout.strip().replace("\n", " ")[:80]
             report.add("sandbox.list", "fail", f"list missed the new sandbox: {snippet!r}")
 
-        executed = run(["sandbox", "exec", sandbox_id, "--", "echo", "cli-exec-ok"])
+        executed = run(["sandbox", "exec", sandbox_id, "echo", "cli-exec-ok"])
         if executed.returncode == 0 and "cli-exec-ok" in executed.stdout:
             report.add("exec.run", "pass", "stdout cli-exec-ok")
         else:
             detail = f"exit {executed.returncode} {executed.stdout[-120:]} {executed.stderr[-120:]}"
             report.add("exec.run", "fail", detail)
 
-        streamed = run(["sandbox", "exec", "--stream", sandbox_id, "--", "echo", "cli-stream"])
-        if streamed.returncode == 0 and "cli-stream" in streamed.stdout:
-            report.add("exec.stream", "pass", "streamed cli-stream")
+        streamed = run(
+            [
+                "sandbox",
+                "exec",
+                sandbox_id,
+                "sh",
+                "-c",
+                "printf 'cli-stream-a\n'; sleep 0.1; printf 'cli-stream-b\n'",
+            ]
+        )
+        if (
+            streamed.returncode == 0
+            and "cli-stream-a" in streamed.stdout
+            and "cli-stream-b" in streamed.stdout
+        ):
+            report.add("exec.stream", "pass", "standard exec received both streamed output chunks")
         else:
             detail = f"exit {streamed.returncode} {streamed.stderr[-160:]}"
             report.add("exec.stream", "fail", detail)
@@ -721,8 +752,8 @@ def cli_express() -> Report:
         report.add("runner", "fail", _brief(exc))
     finally:
         if sandbox_id:
-            first = run(["sandbox", "kill", "--yes", sandbox_id])
-            second = run(["sandbox", "kill", "--yes", sandbox_id])
+            first = run(["sandbox", "kill", sandbox_id])
+            second = run(["sandbox", "kill", sandbox_id])
             kill_status = "pass" if first.returncode == 0 else "fail"
             report.add("sandbox.kill", kill_status, f"exit {first.returncode}")
             report.add(

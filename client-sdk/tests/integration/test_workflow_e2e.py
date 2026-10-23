@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 import pytest
 import yaml
+from pydantic import ValidationError
 
 from agent_sandbox.api.capability import (
     ResolvedCapabilities,
@@ -22,6 +23,7 @@ from agent_sandbox.models.template import (
     DEFAULT_CAPABILITIES,
     SandboxTemplate,
 )
+from tests.workflow_fixtures import workflow_manifest
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -45,74 +47,38 @@ class TestTemplateDefinition:
         template = SandboxTemplate.model_validate(data)
 
         assert template.name == "python-hello"
-        assert "shell" in template.capabilities
-        assert "ports" in template.capabilities
+        assert "code" not in template.discovery_capabilities()
+        assert "ports" in template.discovery_capabilities()
         assert template.ports == [9000]
 
-    def test_legacy_build_fields_ignored(self):
-        """Legacy build fields are silently ignored by extra='ignore'."""
-        data = yaml.safe_load(_PYTHON_HELLO_YAML.read_text())
-        template = SandboxTemplate.model_validate(data)
-        # Legacy fields should not be present on the model
-        assert not hasattr(template, "base")
-        assert not hasattr(template, "system_packages")
-
-    def test_template_with_capabilities_none_uses_defaults(self):
-        """When capabilities is None, DEFAULT_CAPABILITIES should apply."""
-        tmpl = SandboxTemplate(name="minimal")
-        assert tmpl.capabilities is None
-
-    def test_template_with_explicit_capabilities(self):
-        """Explicit capabilities override defaults."""
-        tmpl = SandboxTemplate(name="custom", capabilities=["shell", "terminal"])
-        assert set(tmpl.capabilities) == {"shell", "terminal"}
-
-
-# ---------------------------------------------------------------------------
-# Test 2: Capability resolution
-# ---------------------------------------------------------------------------
+    def test_old_capability_and_missing_contract_are_rejected(self):
+        with pytest.raises(ValidationError):
+            SandboxTemplate(name="old", capabilities=["code"])
+        with pytest.raises(ValidationError):
+            SandboxTemplate(name="old")
 
 
 class TestCapabilityResolution:
-    """Test resolve_capabilities() with 4-level fallback."""
+    """Resolve current workflow metadata without broad runtime assumptions."""
 
     async def test_resolve_from_local_yaml(self, tmp_path):
-        """Priority 1: explicit local_yaml_path."""
-        yaml_content = {
-            "name": "test-template",
-            "capabilities": ["shell", "files", "terminal"],
-        }
         yaml_file = tmp_path / "template.yaml"
-        yaml_file.write_text(yaml.dump(yaml_content))
-
-        result = await resolve_capabilities(
-            "test-template",
-            local_yaml_path=str(yaml_file),
-        )
+        yaml_file.write_text(yaml.safe_dump(workflow_manifest()))
+        result = await resolve_capabilities("test", local_yaml_path=str(yaml_file))
         assert isinstance(result, ResolvedCapabilities)
-        assert result.capabilities == {"shell", "files", "terminal"}
+        assert result.capabilities == {"ports"}
 
     async def test_resolve_from_local_cache(self, tmp_path):
-        """Priority 2: scan ~/.abx/templates/."""
-        cache_dir = tmp_path / "templates" / "my-template"
+        cache_dir = tmp_path / "templates" / "test"
         cache_dir.mkdir(parents=True)
-        yaml_content = {
-            "name": "my-template",
-            "capabilities": ["shell", "files", "code", "ports"],
-            "ports": [8080],
-        }
-        (cache_dir / "template.yaml").write_text(yaml.dump(yaml_content))
-
+        (cache_dir / "template.yaml").write_text(yaml.safe_dump(workflow_manifest()))
         with patch("agent_sandbox.api.capability.TEMPLATE_CACHE_DIR", tmp_path / "templates"):
-            result = await resolve_capabilities("my-template")
+            result = await resolve_capabilities("test")
+        assert result.capabilities == {"ports"}
 
-        assert "ports" in result.capabilities
-        assert "shell" in result.capabilities
-
-    async def test_resolve_fallback_to_defaults(self):
-        """Priority 4: when nothing matches, fall back to DEFAULT_CAPABILITIES."""
+    async def test_unknown_reference_makes_no_claim(self):
         result = await resolve_capabilities("nonexistent-template-xyz")
-        assert result.capabilities == set(DEFAULT_CAPABILITIES)
+        assert result.capabilities == set(DEFAULT_CAPABILITIES) == set()
 
 
 # ---------------------------------------------------------------------------

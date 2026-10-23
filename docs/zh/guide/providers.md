@@ -1,5 +1,7 @@
 # 提供方（Providers）
 
+工作流按具体消费入口的精确操作判断，见[模板工作流](template-workflows.md)。
+
 本指南描述异步 `ProviderSandbox` 扩展；根级 `Sandbox` 和 `AsyncSandbox` 遵循固定版本的标准迁移契约，详见[从 E2B 迁移](migrate-from-e2b.md)。
 
 > **说明：** 本页的 `abx provider ...` 命令由 `cli` 仓库中的 Node.js CLI 提供。只用 Python 的用户可以用 `python -m agent_sandbox.providers ...` 完成同样的操作。两者使用相同的安装目录、相同的回执和相同的目录树摘要。
@@ -150,7 +152,6 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 | `exec.run`、`exec.stream`、`process.manage` | 缓冲式命令；流式输出；列出、终止和发信号给进程 |
 | `pty` | 交互式终端 |
 | `files.rw`、`files.watch`、`files.transfer` | 读、写、列出、移动、删除；监听；带签名的上传和下载 URL |
-| `code.interpret` | 有状态的代码上下文 |
 | `templates.read`、`templates.build` | 列出和查看模板；原有镜像构建、部署和删除 |
 | `ports.url`、`ports.domain` | 端口的公网 URL；自定义域名 |
 | `storage.mount`、`network.vpc` | 对象存储挂载；VPC 接入 |
@@ -185,7 +186,6 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 | `files.rw` | `files.*` | `upload`、`download`、`sandbox files ...` |
 | `files.watch` | `files.watch` | — |
 | `files.transfer` | 带签名的上传和下载 URL | — |
-| `code.interpret` | `run_code` | `sandbox code` |
 | `templates.read` | 模板读取 API | `template list`、`template info` |
 | `templates.build` | 镜像构建和模板注册 | `template build/push/create/deploy/install/delete`、`deploy`、`install` |
 | `ports.url` | `network.get_url` | `sandbox url` |
@@ -216,7 +216,7 @@ await sb.kill()
 
 上面的 feature id 是工具的公共面。提供方在这之外的操作登记到 `Provider.extensions`。它们不进 `features`，所以 `provider list` 的一行摘要里没有，别的提供方也不会带上。
 
-`describe()["extensions"]` 始终给出该提供方的全部登记。`extensions_for(sandbox_id=...)` 只给出这个沙箱满足条件的项：`code` 只在镜像名包含 `code-interpreter` 时出现，`networkpolicy` 只在创建时要了 egress 时出现，`command.logs` 只在已经有命令 id 时出现。`implemented=False` 的项在这些条件下可见，`require_extension` 仍然返回 `E8004`。早先的 Python 版 OpenSandbox 提供方这样登记了 `code`、`session`、`command.logs`、`snapshot`、`networkpolicy`、`metadata.patch`、`diagnostics`、`metrics`。现行目录提供方是 `kind = "node"`（`EngineProvider`），它的 `extensions` 是空的。
+`describe()["extensions"]` 列出当前 Provider 登记的扩展。扩展不代表标准操作已接入；以具体消费入口的精确操作为准。
 
 ---
 

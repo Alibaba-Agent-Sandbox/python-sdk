@@ -1,5 +1,7 @@
 # Agent Sandbox
 
+[模板工作流](docs/zh/guide/template-workflows.md)：显式服务、Provider 精确操作与独立验证的消费入口。
+
 [English](README.md) | **中文**
 
 [标准 E2B 迁移契约](docs/zh/guide/migrate-from-e2b.md)
@@ -82,7 +84,7 @@ pip install -e ./server-sdk -e "./client-sdk[dev]"
 
 不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。安装本客户端请使用 [配套源码安装指南](docs/zh/guide/install-python.md)。
 
-`agent-sandbox-client` 依赖同版本的 `agent-sandbox-server`，因此 [配套源码安装指南](docs/zh/guide/install-python.md) 同样会提供 `agent_sandbox.server`（`@sandbox` 装饰器的 server 代理在本地需要它）。`[server]` extra 作为无害的别名保留。
+`agent-sandbox-client` 依赖同版本的 `agent-sandbox-server`，因此 [配套源码安装指南](docs/zh/guide/install-python.md) 同样会提供 `agent_sandbox.server`（`@sandbox` 装饰器的 server 代理在本地需要它）。
 
 `abx` CLI 不再属于 Python 包（不再有 `[cli]` extra，也没有 `abx` 控制台脚本），由
 [`agent-sandbox`](https://github.com/alibaba-agent-sandbox/agent-sandbox) 仓库分发（见[相关：abx CLI](#相关abx-cli)）。
