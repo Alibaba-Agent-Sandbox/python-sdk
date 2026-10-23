@@ -13,7 +13,8 @@
       ],
       "source_checks": [
         "prepare"
-      ]
+      ],
+      "kind": "application"
     },
     "application-python": {
       "consumer": "python-provider",
@@ -27,7 +28,8 @@
       ],
       "source_checks": [
         "prepare"
-      ]
+      ],
+      "kind": "application"
     },
     "exec-cli": {
       "consumer": "cli",
@@ -39,7 +41,8 @@
       ],
       "source_checks": [
         "prepare"
-      ]
+      ],
+      "kind": "exec"
     },
     "interpreter-context": {
       "consumer": "python-provider",
@@ -55,6 +58,14 @@
       ],
       "source_checks": [
         "prepare"
+      ],
+      "kind": "interpreter",
+      "required_operations": [
+        "code.context.create",
+        "code.context.execute",
+        "code.context.list",
+        "code.context.restart",
+        "code.context.delete"
       ]
     }
   },

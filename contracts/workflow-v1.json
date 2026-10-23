@@ -133,7 +133,8 @@
     "binding",
     "operation",
     "required_operations",
-    "service"
+    "service",
+    "required_checks"
   ],
   "workflow_required": [
     "kind",
@@ -403,5 +404,12 @@
       "right": "provider.id",
       "reason": "reference-provider-mismatch"
     }
-  ]
+  ],
+  "identity_encoding": {
+    "contract_digest": "sha256:hex of exact workflow-v1.json bytes",
+    "manifest_digest": "sha256:hex of exact manifest bytes",
+    "profile_digest": "bare sha256 hex of canonical sorted compact UTF-8 JSON profile",
+    "binding_digest": "sha256:hex of canonical sorted compact UTF-8 string-only JSON binding",
+    "consumer_version": "consumer@40-lowercase-hex-git-revision"
+  }
 }

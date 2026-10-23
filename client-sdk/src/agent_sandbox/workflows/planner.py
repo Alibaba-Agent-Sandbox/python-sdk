@@ -82,6 +82,8 @@ def validate_workflow_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
         for field, values in CONTRACT["binding_values"].items():
             if binding[field] not in values:
                 raise ValueError(f"binding.{field}: invalid value")
+        if "required_checks" in flow:
+            _strings(flow["required_checks"], "workflow.required_checks")
         operation = flow["operation"]
         if not isinstance(operation, str) or not operation:
             raise ValueError("workflow.operation: expected a nonempty operation")
