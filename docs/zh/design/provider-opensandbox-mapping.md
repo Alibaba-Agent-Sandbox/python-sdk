@@ -1,152 +1,33 @@
 # OpenSandbox 提供方
 
-> 状态：现行记录，2026-10-14。机器可读的同一张表是 `awesome-providers/opensandbox/provider.mjs` 里的 `FEATURES` 和方法表。
->
-> 调研和第 2026-10-13 的 exec 插件实测在 [provider-opensandbox-research.md](../../en/archive/provider-opensandbox-research.md)。那是历史记录，不是下面的适配器。现行实现是 `kind = "node"` 的 `provider.mjs`。
+OpenSandbox 是由 [awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox) 维护的目录 Node Provider。Python `ProviderSandbox` 通过本机 CLI 引擎使用该适配器；引擎传输地址不是应用的 HTTP 地址。平台、适配器、模板和调用客户端是不同层。
 
-OpenSandbox 是目录提供方，源码在 `awesome-providers/opensandbox`，id 是 `opensandbox`。用 `abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox --allow-unpinned --yes`（或 `python -m agent_sandbox.providers install registry:opensandbox --yes`）安装。装好之后，`Sandbox.create(provider="opensandbox")` 和 `abx --provider opensandbox` 都能用。它们从加载 `provider.mjs` 的 Node 宿主进程打 OpenSandbox 的 HTTP、execd 的 SSE 和 WebSocket。Python SDK 通过本机引擎（`abx provider engine serve`，按需启动；`abx` 在 `PATH` 里或由 `ABX_BIN` 指定）用 `EngineProvider` 到达这个模块。这个提供方给出的沙箱地址形如 `engine://opensandbox/<sandbox-id>`。
+## 当前适配器（2026-10-23）
 
-清单是 `kind = "node"`、`protocol = "node/1"`：一个无依赖的 ES 模块（`provider.mjs`）。宿主在进程内运行它的 EPP/1 方法。`node provider.mjs` 仍可在 stdio 上提供 EPP/1。终端需要 Node 22+ 的全局 `WebSocket`。没安装时 `abx --provider opensandbox sandbox create` 退出码 4，错误 `E8001`。自己的说明在 `awesome-providers/opensandbox/docs/README.md`。
+适配器清单声明操作契约 1、分别面向 CLI/Python 的精确操作，以及支持的工作流输入和启动方式。粗粒度特性元数据只用于管理和发现，不授予解释器能力，也不认证模板。安装的代码必须与清单一致。请查阅[插件当前清单](https://github.com/alibaba-agent-sandbox/awesome-providers/blob/main/opensandbox/abx-provider.toml)和[工作流指南](../guide/template-workflows.md)，不要复制历史特性表。
 
-配置：
+插件使用自己的 OpenSandbox 地址和 API Key；极速版 API Key 不是 OpenSandbox 凭据。安装、配置和 Docker 验收命令由插件中英文 README 维护。目录引擎和 WebSocket 实现要求 Node 22。
 
-| 项 | 环境变量 |
-|---|---|
-| 生命周期地址，不带 `/v1` | `ABX_OPENSANDBOX_BASE_URL`，别名 `OPENSANDBOX_BASE_URL`。默认 `http://127.0.0.1:8080` |
-| 请求头 `OPEN-SANDBOX-API-KEY` | `ABX_OPENSANDBOX_API_KEY`，别名 `OPEN_SANDBOX_API_KEY`、`OPENSANDBOX_API_KEY` |
+## 模板与解释器的关系
 
-`template="base"` 使用镜像 `python:3.12-slim`，入口是 `tail -f /dev/null`。带 `:` 或 `/` 的模板名按镜像 URI 使用。
+模板可以提供 Python、Jupyter 或 HTTP 应用，但这些内容不会实现项目 SDK 的协议桥接。当前项目适配器尚未实现统一解释器操作。`code.execute` 或上下文操作被拒绝，表示当前适配器/客户端路径不能调用，不代表 OpenSandbox 原生 API 没有这项能力。解释器镜像名本身也不会授予操作。
 
-下面三张表来自 2026-10-14 的真实调用：本机 OpenSandbox 1.1.1（`127.0.0.1:8080`，Docker，`opensandbox/execd:latest`），以及杭州地域的阿里云极速版。没有全部通过。
+应用 HTTP 独立判断。源码应用使用自己声明的构建配置、启动方式、端口/协议及操作；预构建镜像工作流使用不可变镜像摘要；服务工作流使用显式应用 URL。每条路径都对照所选消费入口的精确操作规划。缺少解释器支持不会阻断无关的应用工作流。
 
-## 两边都有，适配器会调用
+Shell 执行仍是显式的 `exec.run`/`exec.stream` 路径。解释器端点缺失时不会自动改写成临时 Python 脚本或 Shell 命令。历史极速版解释器转 Shell 路径已从当前项目适配器删除；固定标准客户端保持独立契约。
 
-| 能力 | 工具 id | OpenSandbox | 这次的真实结果 |
-|---|---|---|---|
-| 创建、连接、查询、列表、删除 | `sandbox.lifecycle` | `POST` / `GET` / `DELETE /v1/sandboxes` | OpenSandbox 创建成功，列表里能找到，删除两次都返回。阿里云 SDK 和 CLI 也创建并删除成功 |
-| 修改超时 | `sandbox.timeout` | `POST /v1/sandboxes/{id}/renew-expiration` | OpenSandbox 接受 240 秒。阿里云 SDK 接受 420 秒 |
-| 暂停 / 恢复 | `sandbox.pause` | `POST …/pause` 和 `…/resume` | OpenSandbox 从 `PAUSED` 回到 `RUNNING`。阿里云 `POST /pause` 返回 HTTP 400 |
-| 执行命令 | `exec.run` | execd `POST /command`（SSE） | OpenSandbox stdout 是 `osb-exec ok`。阿里云 SDK 是 `sdk-exec ok`，CLI 是 `cli-exec ok` |
-| 流式执行 | `exec.stream` | 同上 | 两边都打出了流式标记 |
-| 进程列表和信号 | `process.manage` | 没有进程接口。列表用 `ps`，信号用 `kill` | OpenSandbox 列出 4 个 pid。阿里云 CLI 看到 `sleep` 的 pid 4 并发了信号 15。阿里云 SDK 的 `commands.list()` 返回 0 |
-| 终端 | `pty` | `POST /pty`，WebSocket `/pty/{id}/ws`，数据帧带 `0x00` 前缀，引擎剥掉 | OpenSandbox 里 `echo $((40+2))` 得到 `42`。阿里云 envd `/terminal` 返回 WebSocket 404 |
-| 文件读写、列目录、移动、删除 | `files.rw` | execd `/files` 和 `/directories` | 两边都读回了写入的内容。CLI 上传再下载得到 `cli-upload` |
-| 端口 URL | `ports.url` | `GET /v1/sandboxes/{id}/endpoints/{port}` | OpenSandbox 返回 `http://127.0.0.1:<端口>`。阿里云 SDK 算出 `8080-sbx-….aliyuncs.com` |
+## 应用端点绑定
 
-进程 stdin 不是独立能力。OpenSandbox 的 `/command` 没有 stdin，调用 `commands.send_input` 返回 `E8004`。
+适配器返回实际沙箱端口端点，包含 Provider ID、沙箱 ID、端口、网关认证受众、路径模式、请求头及可选有效期。Python 使用 `await sandbox.application_client(port, token=application_token)` 获取。网关凭据与应用令牌是不同身份。代理路径前缀和不透明签名查询值保留；重定向、命名空间穿越、歧义域名/查询覆盖在发送负载前被拒绝。
 
-## 当前工具有，OpenSandbox 没有
+`engine://opensandbox/<id>` 是内部传输标识，不会通过猜测主机或路由改写成 HTTP 应用地址。按操作签名的端点需要显式操作解析器，不能直接按前缀拼接。
 
-适配器拒绝这些调用，错误码 `E8004`。
+## 验证范围
 
-| 能力 | 工具 id | 这次的真实结果 |
-|---|---|---|
-| 监听目录 | `files.watch` | OpenSandbox 拒绝。阿里云 SDK 收到 `MODIFIED` |
-| 文件 URL | `files.transfer` | OpenSandbox 没有 envd 的 `/files` 地址 |
-| 读取模板 | `templates.read` | Docker 上的 `GET /templates` 是 501（只给 fsb 微虚拟机）。阿里云 `template list` 返回 26 个账号模板，`template info base` 有真实记录 |
-| 构建并发布模板 | `templates.build` | 这次没有调用。OpenSandbox 的 Docker 运行时不能构建模板 |
-| 域名形式的端口 | `ports.domain` | 只有阿里云计算 `{port}-{id}.{domain}` |
-| 存储挂载 | `storage.mount` | 没有挂载接口被调用 |
-| VPC | `network.vpc` | 阿里云平台选项，不会发给 OpenSandbox |
-| 沙箱内命名命令 | `sessions` | 阿里云 `base` 镜像上 `GET /commands` 是 502，镜像里没有 SandboxServer |
+静态 T/F/U 计划、Provider 成熟度、访问者环境与实际部署证据分别记录。T 只允许进入本地检查；账号、网络和运行应用仍需执行时检查。历史 OpenSandbox 原生 Stable 结果不证明新的 CLI/Python 工作流。作者提交的 PASS JSON 不是项目认证。
 
-## OpenSandbox 有，当前工具没接
+Provider 仓库负责 Docker T4，覆盖插件生命周期/文件、安装后 SDK 集成和可移植应用工作流。验收记录必须绑定精确源码、清单、Provider、消费端、工作流、端点等身份，以及必要检查和清理结果。只有独立审批的 CI 来源能使目录回执获得认证。见[模板工作流](../guide/template-workflows.md#验证范围)。
 
-这些接口不在 `features` 里，适配器不会调用。
+## 历史调研
 
-| OpenSandbox 接口 | 说明 |
-|---|---|
-| `POST /code` | 只有带 Jupyter 的 code-interpreter 镜像才有。`python:3.12-slim` 没有。调用代码解释器返回 `E8004` |
-| `POST /session` 和 `/session/{id}/run` | 有状态 shell，`cd` 和 `export` 可以留下来 |
-| `GET /command/{id}/logs` | 后台命令的日志续读。流式执行走的是前台 SSE |
-| `POST /v1/sandboxes/{id}/snapshots` | 沙箱快照 |
-| `/v1/sandboxes/{id}/networkpolicy` | 出网策略，需要 egress sidecar |
-| `PATCH /v1/sandboxes/{id}/metadata` | 创建之后修改 metadata。创建时仍会发送 metadata |
-| diagnostics、execd `GET /metrics` | 诊断和指标 |
-
-## 阿里云极速版这次没有通过的项
-
-对照不是全绿。上面表格里，阿里云失败或和 OpenSandbox 不一致的是：
-
-- 暂停：平台返回 HTTP 400。
-- 终端：envd `/terminal` WebSocket 404。
-- SDK 进程列表：返回 0。同一类操作在 CLI 上能看到后台 `sleep`。
-- 创建后立刻 `abx sandbox list`：返回 “No sandboxes found.” 同一时刻 `abx sandbox info` 能读到该沙箱。
-- `abx sandbox system ports`：退出码 1，基础镜像里没有 `ss` 和 `netstat`。
-- 命名命令：`GET /commands` 返回 502。
-
-代码解释器在阿里云上 HTTP 404 后改走 shell，`print(6*7)` 的 stdout 是 `42`。这不是 OpenSandbox 的路径。
-
-## 提供方登记更多能力
-
-上面「OpenSandbox 有，当前工具没接」的接口不放进固定的 18 个 feature id。放进去会让 `alicloud-express` 的能力表和契约测试都出现它们。Python 的 `Provider` 子类把它们登记在 `Provider.extensions`。已经安装的目录提供方是 `EngineProvider`（`kind = "node"`），它的 `extensions` 是空的。下面的表描述的是设置了 `extensions` 的子类，不是已安装的 `opensandbox`。
-
-登记只表示「这个提供方知道这件事」。`implemented=False` 时调用仍然是 `E8004`。看见和能调用是两回事。
-
-### 什么时候能看到
-
-| 位置 | 能看到什么 |
-|---|---|
-| `provider.describe()["extensions"]`，以及以后的 `provider info` | 该提供方登记的全部扩展。不看镜像，也不看沙箱是否存在 |
-| `extensions_for(sandbox_id=...)` | 只看这个沙箱满足条件的扩展 |
-| 另一个提供方，例如 `alicloud-express` | 看不到这些 id。它的 `extensions` 是空的 |
-| CLI `abx --provider opensandbox` | 安装之后 CLI 会加载这个提供方，创建可用。`abx provider list` 只打印 `features`。这些扩展 id 不在 `node` 提供方上。没安装的 id 仍然退出码 4、错误 `E8001` |
-
-### 什么时候在沙箱上看不到
-
-`extensions_for` 在没有 `sandbox_id` 时返回空元组。有沙箱 id 之后：
-
-| 扩展 | 沙箱上出现的条件 | 现在能调用吗 |
-|---|---|---|
-| `session`、`snapshot`、`metadata.patch`、`diagnostics`、`metrics` | 只要沙箱 id 存在 | 不能，`require_extension` 返回 `E8004` |
-| `code` | 镜像名包含 `code-interpreter`。`python:3.12-slim` 上看不到 | 不能 |
-| `networkpolicy` | 这次创建带了 egress sidecar | 不能 |
-| `command.logs` | 调用方已经有一条后台命令的 id | 不能 |
-
-`features` 的一行摘要（`abx provider list`）不列扩展。扩展只出现在提供方详情里。
-
-### 怎么登记
-
-Python 提供方在类上写 `extensions`：
-
-```python
-from agent_sandbox.providers.base import Extension, Provider
-
-class Example(Provider):
-    extensions = (
-        Extension(
-            id="session",
-            summary="Stateful shell.",
-            summary_zh="有状态 shell。",
-            implemented=False,
-            when="sandbox",
-        ),
-    )
-```
-
-`when` 只有四个值：`sandbox`、`code_interpreter_image`、`egress`、`command`。早先的 Python 提供方把 OpenSandbox 的八项登记在 `opensandbox_provider.EXTENSIONS`。那个模块已经没有了。现行目录提供方不再登记它们。
-
-exec / rest 插件以后用清单登记，解析器还没接受这段，写进去现在不会生效：
-
-```toml
-[features.extensions.session]
-summary = "Stateful shell."
-summary_zh = "有状态 shell。"
-implemented = false
-when = "sandbox"
-```
-
-不要把这些 id 写进 `[features] supported`。那一列只接受固定的 18 个 id，多出来的会被清单校验拒绝。
-
-### 怎么使用
-
-```python
-from agent_sandbox.providers.registry import get_provider
-
-provider = get_provider("opensandbox")  # 先安装 registry:opensandbox
-provider.kind                              # "node"
-provider.describe()["extensions"]          # EngineProvider 上是 ()
-provider.extensions_for(sandbox_id="sb-1") # ()
-```
-
-Python 子类如果设置了 `extensions`，仍然用 `extensions_for` 过滤；`implemented` 为 false 时 `require_extension` 返回 `E8004`。实现某一项时，把对应 `Extension` 的 `implemented` 改成 `True`，并在 `awesome-providers/opensandbox/provider.mjs` 里加上那个 HTTP 调用。
+早期 exec 插件调研保留在[归档](../../en/archive/provider-opensandbox-research.md)。历史特性表、镜像名推断及 Shell 替代都不是当前契约。当前实现和验收证据由各自仓库维护。

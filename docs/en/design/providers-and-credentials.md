@@ -311,30 +311,23 @@ A reader accepts the variable in §3 and the matching config key. `load_config` 
 
 ### 7.2 Capability matrix (feature flags)
 
-A provider declares which **features** it implements. The SDK/CLI check the feature before calling; an unsupported feature raises `ProviderFeatureNotSupportedError` (`E8004`, subclass of the existing `CapabilityNotSupportedError`) — never an `AttributeError`/HTTP 404.
+Workflow authorization uses operation contract 1, not the retired coarse interpreter feature. A provider declares separate CLI/Python `operations`, `workflow_inputs` and `startup_modes`. See [explicit template workflows](../guide/template-workflows.md) for the current contract. The table lists representative exact operations, not a promise that every adapter implements them.
 
-| Feature id | Meaning | Python SDK surface | CLI commands (need it) |
-|---|---|---|---|
-| `sandbox.lifecycle` | create / connect / list / info / kill | `Sandbox.create/connect/list/kill_by_id`, `info` | `create`, `list`, `info`, `kill`, `connect` |
-| `sandbox.timeout` | change TTL | `set_timeout`, `refresh` | `sandbox timeout` |
-| `sandbox.pause` | pause / resume | `pause`, `resume` | `sandbox pause/resume` |
-| `exec.run` | run a command, buffered result | `commands.run` | `exec`, `run`, `shell` |
-| `exec.stream` | streamed output | `commands.stream` | `exec --stream` |
-| `process.manage` | list/kill/signal/stdin of processes | `commands.list/kill/send_*` | `sandbox process ...` |
-| `pty` | interactive terminal | `get_terminal` | `connect --pty` |
-| `files.rw` | read/write/list/stat/mkdir/remove/move | `files.*` | `files`, `upload`, `download` |
-| `files.watch` | watch directories | `files.watch` | — |
-| `files.transfer` | signed upload/download URLs | `upload_url/download_url` (this data plane raises `FileOperationError`) | — |
-| `code.interpret` | stateful code contexts | `run_code`, `code.*` | `sandbox code` |
-| `templates.read` | list/get templates | `Template*` read | `template list/info` |
-| `templates.build` | build/deploy/delete templates (image build + register) | — (CLI only) | `template build/deploy/delete`, `deploy`, `install` |
-| `ports.url` | public URL for a port | `network.get_url` | `sandbox system ports`, `url` |
-| `ports.domain` | custom domains for a sandbox/template | — (no per-sandbox API) | — |
-| `storage.mount` | mount object storage (OSS) | — (no per-sandbox API) | — |
-| `network.vpc` | attach a VPC | — (template `vpcConfig` only) | `--vpc-id` family |
-| `sessions` | sandbox identity survives the process (re-attach by id) | `Sandbox.connect` + `LocalSessionStore` | `session ...` |
+| Exact operation | Meaning | Python ProviderSandbox entry |
+| --- | --- | --- |
+| `sandbox.create`, `sandbox.connect`, `sandbox.delete` | Owned lifecycle phases | `create`, `connect`, `kill` |
+| `exec.run`, `exec.stream` | Buffered execution and separately declared streaming | `commands.run`, `commands.stream` |
+| `code.execute` | Stateless isolated interpretation | `code.run` |
+| `code.default-context.execute` | Persistent platform default context | `code.run(mode="default-context")` |
+| `code.context.execute` | Execute in the explicitly selected context | `code.run(context_id=...)` |
+| `code.context.create`, `code.context.list`, `code.context.restart`, `code.context.delete` | Independent context operations | Corresponding `code` methods |
+| `code.stream`, `code.results.structured` | Realtime callbacks and structured results | Separate requirements; buffered text does not imply either |
+| `ports.resolve` | Complete application gateway descriptor | `await application_client(port, token=...)` |
+| `template.prepare` | Explicit source preparation | CLI only when the adapter/profile implements it |
 
-A sandbox's capabilities stay the **template's capabilities** (unchanged); where the provider lacks the feature behind a capability token (`shell ← exec.run`, `files ← files.rw`, `code ← code.interpret`, `terminal ← pty`, `ports ← ports.url`) the call raises `E8004` at call time. The implementation does not intersect the two sets up front: the template is provider-independent data, and failing at the call with a precise error is simpler and cannot disagree with the provider's behaviour.
+Templates declare software/services and workflows. Unknown metadata grants no default interpreter, and a missing interpreter operation does not block an unrelated HTTP application. A static F identifies the missing adapter/client/input/startup requirement; T permits local checks and does not certify the account, network or running instance. Runtime refusal E8004 identifies the project adapter operation, not an absence in the upstream platform. An actual missing runtime remains an error; shell execution must be explicitly selected.
+
+Express/E2B/REST project adapters currently declare no interpreter operations; CubeSandbox/container declare persistent default-context execution only. The pinned standard SDK is independent. Current workflows require their exact declared operations.
 
 ### 7.3 Tradeoff analysis: how do plugins load?
 
@@ -360,7 +353,10 @@ class Provider(ABC):
     display_name: str               # "Alibaba Cloud Express Edition"
     display_name_zh: str            # "阿里云极速版"
     version: str
-    features: frozenset[ProviderFeature]
+    features: frozenset[ProviderFeature]  # management/discovery metadata
+    operations: frozenset[str]          # exact Python consumer operations
+    workflow_inputs: tuple[str, ...]
+    startup_modes: tuple[str, ...]
     config_fields: tuple[ConfigField, ...]   # provider-scoped schema
     uses_core: frozenset[str]                # core keys it consumes
     kind: Literal["builtin", "rest", "exec", "python"]

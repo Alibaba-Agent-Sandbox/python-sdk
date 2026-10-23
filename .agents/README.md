@@ -112,3 +112,4 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Workflow runtime implementation and review](evidence/verify/2026-10-23-workflow-runtime-review.md).
 - [Workflow migration real-cloud acceptance](evidence/verify/2026-10-23-workflow-real-cloud.md).
 - [Workflow CI follow-up](evidence/verify/2026-10-23-workflow-ci-followup.md).
+- [Current workflow documentation and Python matrix](evidence/verify/2026-10-23-workflow-current-docs.md).

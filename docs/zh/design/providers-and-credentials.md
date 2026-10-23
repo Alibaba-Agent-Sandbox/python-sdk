@@ -313,30 +313,23 @@ sandbox_domain   = "{region}.e2b.fc.aliyuncs.com"
 
 ### 7.2 能力矩阵（特性标志）
 
-提供方声明自己实现哪些**特性**。SDK / CLI 在调用前检查特性；不支持的特性抛出 `ProviderFeatureNotSupportedError`（`E8004`，现有 `CapabilityNotSupportedError` 的子类）——绝不是 `AttributeError` / HTTP 404。
+工作流授权使用操作契约 1，不再使用已删除的粗粒度解释器特性。Provider 分别声明 CLI/Python `operations`、`workflow_inputs` 和 `startup_modes`。当前契约见[显式模板工作流](../guide/template-workflows.md)。下表列出代表性精确操作，不表示每个适配器都实现了它们。
 
-| 特性 id | 含义 | Python SDK 接口 | 需要它的 CLI 命令 |
-|---|---|---|---|
-| `sandbox.lifecycle` | 创建 / 连接 / 列出 / 详情 / 销毁 | `Sandbox.create/connect/list/kill_by_id`、`info` | `create`、`list`、`info`、`kill`、`connect` |
-| `sandbox.timeout` | 修改 TTL | `set_timeout`、`refresh` | `sandbox timeout` |
-| `sandbox.pause` | 暂停 / 恢复 | `pause`、`resume` | `sandbox pause/resume` |
-| `exec.run` | 运行命令，缓冲结果 | `commands.run` | `exec`、`run`、`shell` |
-| `exec.stream` | 流式输出 | `commands.stream` | `exec --stream` |
-| `process.manage` | 列出 / 终止 / 发信号 / 写 stdin | `commands.list/kill/send_*` | `sandbox process ...` |
-| `pty` | 交互式终端 | `get_terminal` | `connect --pty` |
-| `files.rw` | 读 / 写 / 列出 / stat / mkdir / 删除 / 移动 | `files.*` | `files`、`upload`、`download` |
-| `files.watch` | 监听目录 | `files.watch` | — |
-| `files.transfer` | 带签名的上传 / 下载 URL | `upload_url/download_url`（当前数据面抛出 `FileOperationError`） | — |
-| `code.interpret` | 有状态的代码上下文 | `run_code`、`code.*` | `sandbox code` |
-| `templates.read` | 列出 / 查看模板 | `Template*` 读取 | `template list/info` |
-| `templates.build` | 构建 / 部署 / 删除模板（镜像构建 + 注册） | —（仅 CLI） | `template build/deploy/delete`、`deploy`、`install` |
-| `ports.url` | 端口的公网 URL | `network.get_url` | `sandbox system ports`、`url` |
-| `ports.domain` | 沙箱 / 模板的自定义域名 | —（没有单沙箱 API） | — |
-| `storage.mount` | 挂载对象存储（OSS） | —（没有单沙箱 API） | — |
-| `network.vpc` | 接入 VPC | —（仅模板 `vpcConfig`） | `--vpc-id` 系列 |
-| `sessions` | 沙箱标识在进程结束后仍存在（可按 id 重新连接） | `Sandbox.connect` + `LocalSessionStore` | `session ...` |
+| 精确操作 | 含义 | Python ProviderSandbox 入口 |
+| --- | --- | --- |
+| `sandbox.create`、`sandbox.connect`、`sandbox.delete` | 独立生命周期阶段 | `create`、`connect`、`kill` |
+| `exec.run`、`exec.stream` | 缓冲执行与独立声明的实时流 | `commands.run`、`commands.stream` |
+| `code.execute` | 隔离的无状态解释执行 | `code.run` |
+| `code.default-context.execute` | 平台持久默认上下文 | `code.run(mode="default-context")` |
+| `code.context.execute` | 在显式指定上下文中执行 | `code.run(context_id=...)` |
+| `code.context.create`、`code.context.list`、`code.context.restart`、`code.context.delete` | 各自独立的上下文操作 | 对应 `code` 方法 |
+| `code.stream`、`code.results.structured` | 实时回调和结构化结果 | 需分别声明，缓冲文本不代表二者 |
+| `ports.resolve` | 完整应用网关描述符 | `await application_client(port, token=...)` |
+| `template.prepare` | 显式源码准备 | 仅在 CLI 适配器及构建配置实现后可用 |
 
-沙箱的能力仍是**模板的能力**（不变）；当提供方缺少某个能力标记背后的特性（`shell ← exec.run`、`files ← files.rw`、`code ← code.interpret`、`terminal ← pty`、`ports ← ports.url`）时，调用在调用时抛出 `E8004`。实现不会预先对两个集合求交集：模板是与提供方无关的数据，在调用处以精确的错误失败更简单，也不会与提供方的实际行为不一致。
+模板声明软件、服务和工作流。未知元数据不授予默认解释器，缺少解释器操作也不会阻断无关的 HTTP 应用。静态 F 指明缺少的适配器、客户端、输入或启动条件；T 只允许进入本地检查，不证明账号、网络或运行实例可用。运行时 E8004 指向项目适配器未实现的操作，不能据此判定对方平台原生没有能力。实际 runtime 缺失时直接报错；Shell 执行必须显式选择。
+
+极速版、E2B、REST 项目适配器当前不声明解释器操作；CubeSandbox、容器版仅声明持久默认上下文执行。固定标准 SDK 是独立契约。当前工作流只按自己声明的精确操作授权，不从其他管理接口推断就绪。
 
 ### 7.3 取舍分析：插件如何加载？
 
@@ -362,7 +355,10 @@ class Provider(ABC):
     display_name: str               # "Alibaba Cloud Express Edition"
     display_name_zh: str            # "阿里云极速版"
     version: str
-    features: frozenset[ProviderFeature]
+    features: frozenset[ProviderFeature]  # management/discovery metadata
+    operations: frozenset[str]          # exact Python consumer operations
+    workflow_inputs: tuple[str, ...]
+    startup_modes: tuple[str, ...]
     config_fields: tuple[ConfigField, ...]   # 提供方作用域的 schema
     uses_core: frozenset[str]                # 它使用的核心键
     kind: Literal["builtin", "rest", "exec", "python"]

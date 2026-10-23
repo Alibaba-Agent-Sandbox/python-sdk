@@ -1,671 +1,161 @@
-# 模板体系设计
+# 模板系统设计
 
-> **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（`npm install -g @agent-sandbox/cli`）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
+模板采用规范 4 和显式工作流契约 1。模板描述所提供的软件及其具名使用方式。提供方适配器、所选 SDK/CLI 调用方、本地配置和可信验证是彼此独立的输入；安装 Python 或 HTTP 服务不会实现提供方解释器操作。
 
-> 模板（Template）是 Agent Sandbox 的运行环境蓝图，定义了沙箱的基础镜像、预装软件、默认配置和启动行为。模板体系分为官方核心模板、社区模板和自定义模板三个层次。模板的核心分发机制基于 **GitHub tarball API（按 tag/branch/sha 拉取，无需发布 Release）**，采用类似 Go modules / GitHub Actions 的引用方式。
-
----
+当前规范见 [template.yaml 规范](../reference/template-yaml-spec.md)，发布权威是 [template-v4.schema.json](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/spec/template-v4.schema.json)，执行说明见 [显式模板工作流](../guide/template-workflows.md)。Node.js CLI 由 [agent-sandbox](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) 维护；Python 仓库拥有客户端、沙箱内服务和共享的[工作流契约](https://github.com/Alibaba-Agent-Sandbox/python-sdk/tree/main/contracts)。
 
 ## 1. 官方核心模板
 
-### Tier 1 — 首发模板（5 个）
+当前模板清单以 [awesome-templates](https://github.com/Alibaba-Agent-Sandbox/awesome-templates) 为准。进入目录、作者提供的 smoke 命令和历史验收，都不保证每个提供方/调用方可以运行每条工作流。应读取真实 manifest 和所选工作流，不能使用固定的首发环境承诺推导支持。
 
-发布即可用，覆盖最高频场景。
+<a id="tier-1--首发模板5-个"></a>
+<a id="tier-2--扩展模板5-个"></a>
+以前的首发/扩展列表由源仓库目录取代。本文不承诺模板发布日期、已安装依赖版本或自动安全认证。
 
-#### base
-
-```yaml
-名称:     base
-描述:     最小化 Linux 环境，适合通用任务
-基础镜像:  debian:bookworm-slim
-预装软件:  bash, curl, wget, git, vim, jq, unzip
-Python:   3.11（系统级）
-资源默认:  1 CPU / 2048 MB 内存 / 10 GB 磁盘
-工作目录:  /app
-用户:     user (uid=1000)
-```
-
-#### python-base
-
-```yaml
-名称:     python-base
-描述:     Python 开发环境，含 pip 和常用工具
-基础镜像:  base + Python 生态
-预装软件:  python3.11, pip, venv, poetry, ipython
-预装包:   requests, httpx, pydantic, rich
-资源默认:  1 CPU / 2048 MB 内存 / 10 GB 磁盘
-```
-
-#### python-data-science
-
-```yaml
-名称:     python-data-science
-描述:     数据科学全套环境
-基础镜像:  python-base + 科学计算
-预装包:   pandas, numpy, scipy, matplotlib, seaborn,
-          scikit-learn, statsmodels, openpyxl, xlrd,
-          plotly, bokeh, jupyter
-资源默认:  2 CPU / 4096 MB 内存 / 20 GB 磁盘
-```
-
-#### node-web
-
-```yaml
-名称:     node-web
-描述:     Node.js Web 开发环境
-基础镜像:  base + Node.js 生态
-预装软件:  node 20 LTS, npm, yarn, pnpm
-预装包:   typescript, ts-node, nodemon
-暴露端口:  3000, 8080
-资源默认:  1 CPU / 2048 MB 内存 / 10 GB 磁盘
-```
-
-#### code-interpreter
-
-```yaml
-名称:     code-interpreter
-描述:     代码解释器环境，支持多语言执行
-基础镜像:  python-data-science + 多语言
-预装软件:  python3.11, node20, go1.22, rustc
-特性:     Rich Output（图片、HTML、LaTeX）
-          自动安装缺失的 pip 包
-          代码沙箱隔离执行
-资源默认:  2 CPU / 4096 MB 内存 / 20 GB 磁盘
-```
-
-### Tier 2 — 扩展模板（5 个）
-
-Phase 2 发布，覆盖专业场景。
-
-#### browser-automation
-
-```yaml
-名称:     browser-automation
-描述:     浏览器自动化环境（Playwright + Chromium）
-基础镜像:  base + 浏览器环境
-预装软件:  chromium, playwright, puppeteer
-特性:     Headless 浏览器预启动
-          截图/PDF 生成
-          网络请求拦截
-资源默认:  2 CPU / 4096 MB 内存 / 15 GB 磁盘
-```
-
-#### full-stack
-
-```yaml
-名称:     full-stack
-描述:     全栈开发环境（前后端 + 数据库）
-基础镜像:  node-web + python-base
-预装软件:  node20, python3.11, postgresql, redis, nginx
-特性:     前后端同时运行
-          内置数据库
-          反向代理配置
-暴露端口:  3000, 5000, 5432, 6379
-资源默认:  4 CPU / 8192 MB 内存 / 30 GB 磁盘
-```
-
-#### go-dev
-
-```yaml
-名称:     go-dev
-描述:     Go 开发环境
-基础镜像:  base + Go 生态
-预装软件:  go 1.22, golangci-lint, dlv (debugger)
-          air (热重载), mockgen
-资源默认:  2 CPU / 4096 MB 内存 / 15 GB 磁盘
-```
-
-#### java-dev
-
-```yaml
-名称:     java-dev
-描述:     Java 开发环境
-基础镜像:  base + JDK 生态
-预装软件:  JDK 21, Maven 3.9, Gradle 8.x
-          Spring Boot CLI
-资源默认:  2 CPU / 4096 MB 内存 / 20 GB 磁盘
-```
-
-#### ml-gpu
-
-```yaml
-名称:     ml-gpu
-描述:     GPU 加速机器学习环境
-基础镜像:  nvidia/cuda:12.1 + python-data-science
-预装软件:  CUDA 12.1, cuDNN 8.9
-预装包:   torch, tensorflow, transformers,
-          accelerate, bitsandbytes
-GPU:      默认 A10（可配置 V100/A100）
-资源默认:  4 CPU / 16384 MB 内存 / 50 GB 磁盘
-```
-
----
+<a id="base"></a>
+<a id="python-base"></a>
+<a id="python-data-science"></a>
+<a id="node-web"></a>
+<a id="code-interpreter"></a>
+<a id="browser-automation"></a>
+<a id="full-stack"></a>
+<a id="go-dev"></a>
+<a id="java-dev"></a>
+<a id="ml-gpu"></a>
 
 ## 2. 模板来源与分发机制
 
-模板的核心分发机制基于 **GitHub tarball API（按 tag/branch/sha 拉取，无需发布 Release）**，类似 Go modules / GitHub Actions 的引用方式。SDK 按优先级依次解析模板来源：
-
-```
-模板来源优先级：
-1. 内置模板（SDK 自带的 5 个 Tier 1 模板）
-2. GitHub 模板（owner/repo 格式，按 tag/branch/sha 拉取）
-3. 本地模板（文件路径）
-4. 阿里云 ACR 镜像（registry URL）
-```
-
 ### 2.1 模板名解析规则
 
-```python
-# 内置模板（不含 /）
-"python"               → 内置 python 模板
-"code-interpreter"     → 内置 code-interpreter 模板
+源码索引只定位唯一权威 `template.yaml`，不能覆盖其工作流或启动命令。提供方托管条目内嵌完整严格 manifest，且归属于该提供方。本地源码路径、Git 修订、镜像引用和托管 ID 表示不同输入类型，不能当作可互换别名。
 
-# GitHub 模板（含 /）
-"hello/world"          → github.com/hello/world 默认分支
-"hello/world@v1.0"     → github.com/hello/world ref v1.0（tag/branch/sha）
-"myorg/templates/node"  → github.com/myorg/templates 仓库下 node 子目录（monorepo）
+| 工作流输入 | 含义 |
+| --- | --- |
+| `source` | 项目快照，需要已实现的准备路径及显式构建配置 |
+| `image` | 已准备镜像；Python 启动器要求不可变 SHA256 引用 |
+| `managed` | 提供方拥有的引用；启动需要提供方解析出的不可变身份 |
+| `service` | 已存在的应用 HTTP 服务，使用显式绑定及 `startup: none` |
 
-# 本地路径
-"./my-template"        → 当前目录下的 my-template
-"/abs/path/template"   → 绝对路径
-
-# ACR 镜像
-"acr://registry.cn-hangzhou.aliyuncs.com/ns/image:tag" → 阿里云容器镜像
-```
+未知引用不授予默认操作。Python 独立启动器不准备源码项目；未解析的托管 ID 在创建前拒绝。源码 Dockerfile 不会根据 `base` 元数据被重写，也不会替换成猜测的备用镜像。
 
 ### 2.2 各入口使用方式
 
-```bash
-# CLI 使用
-abx create hello/world                    # → github.com/hello/world 默认分支
-# abx create hello/world --tag v1.2.0       # → 指定 ref（tag/branch/sha）
-abx create myorg/python-ml --tag latest   # → 显式指定 latest
-```
+对于已有沙箱，使用 `ProviderSandbox.connect(...)`，再通过 `await sandbox.application_client(port, token=...)` 访问应用。这会解析独立的提供方端口端点；提供方内部控制或执行端点不是应用 URL。
 
-```python
-# SDK 使用
-sb = await Sandbox.create(template="hello/world")
-sb = await Sandbox.create(template="hello/world@v1.2.0")
+对于新建的已准备镜像工作流，`agent_sandbox.api.launch_workflow(...)` 接收真实 manifest、工作流 ID、提供方和不可变引用。在发送应用负载前检查条件。见[完整 Python 示例与限制](../guide/template-workflows.md#python-应用调用)。
 
-# 装饰器使用
-@sandbox(template="hello/world@v1.2.0")
-def my_func(): ...
-```
+CLI 目录指引使用 `abx template launch SOURCE --workflow ID`；如果存在 portable profile，可移植源码构建还需显式选择 `--build-profile portable`。所选 CLI/提供方必须实际支持对应输入及启动路径。Express 当前只声明 managed 输入和 entrypoint/none 启动；这说明本项目实现范围，不能据此断言平台其他原生 API 无法构建镜像。
 
 ### 2.3 GitHub tarball 解析流程
 
-```mermaid
-flowchart TD
-    A["1. 解析模板名 hello/world @ref"] --> B{"2. 本地缓存命中?"}
-    B -- 是 --> G["7. 构建/使用模板"]
-    B -- 否 --> C["3. 调用 GitHub tarball API"]
-    C --> C1{"ref 是否指定?"}
-    C1 -- 无 ref --> C2["GET /repos/hello/world/tarball（默认分支）"]
-    C1 -- 有 ref --> C3["GET /repos/hello/world/tarball/ref（tag/branch/sha）"]
-    C2 --> D["4. 下载 tarball (.tar.gz)"]
-    C3 --> D
-    D --> E["5. 剥除顶层目录并解压到本地缓存（防路径穿越）"]
-    E --> F["6. 定位 subdir（如有），验证模板结构"]
-    F --> G
-```
-
-GitHub 会自动把 `ref` 解析为 tag/branch/sha，无需区分。公开仓库匿名可用，私有仓库带 `Authorization: Bearer <token>` 即可。
+源码获取和执行分开：解析请求的源码修订，安全获取项目，读取唯一 manifest，冻结符合条件的源码快照，再规划所选工作流。下载归档或命中缓存都不证明提供方支持或运行验证通过。远端认证失败不能静默改为匿名重试，也不能改变源码身份。
 
 ### 2.4 模板包结构（仓库/subdir 内容）
 
-模板仓库的 tarball（按 ref 拉取）中需要包含一个模板包，结构如下：
-
-```
+```text
 my-template/
-├── template.yaml     # 模板规范配置（必须，详见第 4 章）
-├── Dockerfile            # 镜像定义（可选，template.yaml 中可指定 base）
-├── AGENTS.md             # 面向外部 Agent 工具的说明文件（可选；由所使用的 Agent 工具自行消费，不属于 Agent Sandbox 能力）
-├── scripts/
-│   ├── setup.sh          # 初始化脚本（可选）
-│   └── healthcheck.sh    # 健康检查（可选）
-├── files/                # 需要复制到沙箱的文件（可选）
-└── examples/             # 使用示例（可选）
+├── template.yaml       # spec_version: 4，workflow_contract_version: 1
+├── Dockerfile          # 显式原生镜像构建
+├── Dockerfile.portable # 可选，显式选择的构建 profile
+├── commands.py         # 使用命令服务时的应用命令
+└── requirements.txt    # 需要时声明应用依赖
 ```
+
+可选 `AGENTS.md` 由外部智能体工具读取，不会增加运行时操作。快照身份排除不安全的秘密/忽略路径，拒绝不支持的符号链接输入；证据必须写到冻结快照之外，避免自引用。
 
 ### 2.5 官方模板仓库
 
-官方维护一个 `alicloud/sandbox-templates` 仓库（monorepo），包含所有 Tier 1 和 Tier 2 模板：
-
-```bash
-# 官方模板可以用简写
-abx create python-data-science     # 内置 Tier 1
-abx create alicloud/sandbox-templates/browser-automation  # 官方 Tier 2
-
-# 或者直接用简写别名
-abx create browser-automation      # 自动解析为官方模板
-```
+[awesome-templates](https://github.com/Alibaba-Agent-Sandbox/awesome-templates) 拥有源码 manifest、Dockerfile、发布 schema 和目录。[awesome-providers](https://github.com/Alibaba-Agent-Sandbox/awesome-providers) 拥有可安装的适配器。内置 Express 描述由 CLI 拥有。Registry 和官网消费这些来源，不会补足缺失的处理器。
 
 ### 2.6 GitHub Token 配置（私有仓库与限流）
 
-GitHub 匿名请求限流为 **60 次/小时**；携带 token 认证后提升至 **5000 次/小时**。token 依次从进程环境变量 `GITHUB_TOKEN`、`./.env`、`~/.abx/.env` 中持久化的 `github_token` 读取；都没有时按匿名请求处理。token 不会被打印、记录日志或回显。
-
-通过命令行保存 token（`abx config set github_token`，星号脱敏输入，`--token` 作为一次性覆盖）、`abx template search` / `abx template install` 遇到匿名限流（E5000）时提供的引导式重试，以及 CLI 的 `--token` 解析优先级，都属于 CLI 行为；见[相关：abx CLI](#相关abx-cli)。
+源码下载凭据属于获取过程，提供方凭据属于控制面，网关请求头属于解析出的端点，应用 token 属于应用。不能跨受众复制。CLI 实际 token 配置以其维护的文档为准；不得把凭据或签名端点 URL 放入 manifest、receipt 或公开诊断。
 
 ### 2.7 本地缓存管理
 
-从 GitHub tarball API 下载的模板会缓存到本地，避免重复下载。
-
-缓存目录结构：
-
-```
-~/.sandbox/templates/
-├── hello/
-│   └── world/
-│       ├── v1.0.0/
-│       │   ├── template.yaml
-│       │   └── Dockerfile
-│       └── v1.2.0/
-│           ├── template.yaml
-│           └── Dockerfile
-└── myorg/
-    └── python-ml/
-        └── latest/
-            └── ...
-```
-
-列出和清理该缓存的 CLI 命令（`abx template cache list|clean`、`abx create --no-cache`）记录在 CLI 仓库；见[相关：abx CLI](#相关abx-cli)。
-
----
+缓存只是获取优化。复用需要匹配预期身份，不能跳过当前 manifest 校验、操作规划或验证资格检查。可变分支名不能代替当前 receipt 要求的不可变源码/构建/产物身份。
 
 ## 3. 自定义模板方式
 
-### 方式一：CLI + Dockerfile
+<a id="方式一cli--dockerfile"></a>
+### Dockerfile 与显式构建 profile
 
-```dockerfile
-# Dockerfile
-FROM registry.sandbox.alicloud.com/templates/python-base:latest
+将真实依赖、用户、文件和入口设置写入所选 Dockerfile。Portable profile 是显式替代方案，不是对原生构建的静默重写。源码根 context 使用带引号字符串 `'.'`，使 YAML 调用方对其类型达成一致。
 
-RUN pip install flask sqlalchemy celery
-RUN apt-get update && apt-get install -y postgresql-client redis-tools
+<a id="方式二sandboxyaml-声明式"></a>
+### 严格 manifest
 
-COPY ./config/ /app/config/
+`template.yaml` 承载模板元数据和具名工作流。单独的 `sandbox.yaml` 客户端配置不是元数据别名。具名应用函数通过沙箱内服务的 `@command` 注册；YAML 字段不会生成函数。见[编写模板](../guide/authoring-templates.md)。
 
-ENV FLASK_ENV=production
-ENV DATABASE_URL=postgresql://localhost/mydb
+<a id="方式三发布到-github按-tagbranchsha-拉取"></a>
+### 发布源码
 
-EXPOSE 5000 6379
-
-WORKDIR /app
-CMD ["python", "main.py"]
-```
-
-```bash
-# 构建
-abx template build . --name my-flask-app --tag v1.0
-
-# 推送
-abx template push my-flask-app:v1.0
-```
-
-### 方式二：sandbox.yaml 声明式
-
-```yaml
-# sandbox.yaml
-name: my-flask-app
-version: "1.0"
-description: "Flask + PostgreSQL + Celery 应用模板"
-
-base: python-base
-
-packages:
-  pip:
-    - flask==3.0
-    - sqlalchemy==2.0
-    - celery==5.3
-  apt:
-    - postgresql-client
-    - redis-tools
-
-files:
-  - source: ./config/
-    target: /app/config/
-
-env:
-  FLASK_ENV: production
-  DATABASE_URL: postgresql://localhost/mydb
-
-ports:
-  - 5000
-  - 6379
-
-resources:
-  cpu: 2
-  memory: 4096
-  disk: 20480
-
-entrypoint: python /app/main.py
-workdir: /app
-```
-
-### 方式三：发布到 GitHub（按 tag/branch/sha 拉取）
-
-将模板推送到 GitHub，供其他用户通过 `owner/repo[//subdir][@ref]` 格式引用（无需发布 Release）：
-
-```bash
-# 1. 初始化模板项目（生成 template.yaml, Dockerfile 等脚手架）
-abx template scaffold my-template
-
-# 2. 本地开发和测试
-abx create ./my-template
-
-# 3. 发布到 GitHub（推 git tag / 分支即可，无需发 Release）
-cd my-template
-git init && git add . && git commit -m "init"
-git tag v1.0.0 && git push origin v1.0.0
-
-# 4. 其他人即可使用（默认分支或指定 ref）
-abx create yourname/my-template
-abx create yourname/my-template@v1.0.0
-```
-
----
+发布真实源码修订并保留 manifest/构建输入。可变 ref 可以定位源码，但验证必须绑定解析出的内容。发布源码不等于发布提供方托管引用，也不会使工作流变成已验证。
 
 ## 4. 模板规范（template.yaml）
 
-`template.yaml` 是模板的标准化声明文件，定义了模板的元信息、基础环境、构建步骤、资源默认值、沙箱行为和 Agent 集成等完整规范。每个模板仓库的根目录都应包含此文件。
-
-> **命名约定**：模板元数据只使用 `template.yaml`。独立的声明式客户端配置可以使用 `sandbox.yaml`，它不是模板元数据的别名。
-
 ### 完整字段定义
 
-```yaml
-# template.yaml — 模板规范 v1
-version: "1"                          # 规范版本（必须）
-
-# === 元信息 ===
-metadata:
-  name: python-data-science           # 模板名称（必须）
-  display_name: "Python 数据科学"      # 展示名称
-  description: "预装 pandas/numpy/matplotlib 的数据分析环境"
-  version: "1.2.0"                    # 模板版本（SemVer）
-  author: "alicloud"                  # 作者
-  license: "MIT"
-  homepage: "https://github.com/alicloud/sandbox-templates"
-  tags: ["python", "data-science", "jupyter"]
-  category: "data-science"            # 分类：language / data-science / web / browser / ai-ml / devops / database / security
-
-# === 基础环境 ===
-base:
-  image: "ubuntu:22.04"               # 基础镜像（与 from 二选一）
-  from: "alicloud/sandbox-templates/python@v1.0"  # 继承另一个模板（与 image 二选一）
-
-# === 构建步骤 ===
-build:
-  apt_install:                        # 系统包
-    - build-essential
-    - libpq-dev
-  pip_install:                        # Python 包
-    - "pandas>=2.0"
-    - numpy
-    - matplotlib
-  npm_install:                        # Node.js 包（可选）
-    - typescript
-  env:                                # 环境变量
-    PYTHONUNBUFFERED: "1"
-    MPLBACKEND: "Agg"
-  run:                                # 自定义构建命令
-    - "jupyter notebook --generate-config"
-  copy:                               # 复制文件到沙箱
-    - src: "./config/"
-      dest: "/app/config/"
-    - src: "./scripts/setup.sh"
-      dest: "/usr/local/bin/setup.sh"
-
-# === 资源默认值 ===
-resources:
-  cpu: 2                              # 默认 vCPU
-  memory: 4096                        # 默认内存 (MB)
-  disk: 15360                         # 默认磁盘 (MB)
-  gpu: null                           # 默认 GPU（null 表示不需要）
-  timeout: 600                        # 默认超时 (秒)
-  idle_timeout: 300                   # 默认空闲超时 (秒)
-
-# === 网络 ===
-network:
-  ports: [8888]                       # 默认暴露端口
-  public: false                       # 是否默认公开
-
-# === 沙箱行为 ===
-sandbox:
-  mode: "ephemeral"                   # 默认模式：ephemeral | persistent
-  workdir: "/app"               # 默认工作目录
-  user: "user"                     # 默认用户
-  shell: "/bin/bash"                  # 默认 shell
-  startup_command: null               # 启动时自动执行的命令
-  readiness_probe:                    # 就绪探针（可选）
-    type: "tcp"                       # tcp | exec
-    port: 8888                        # tcp 类型时的端口
-    timeout: 30                       # 探测超时
-
-# === 命令能力（capabilities）===
-# 声明本模板支持的标准能力集。标准能力词汇表：shell / files / code / terminal / ports（可扩展）。
-# 省略 capabilities 时继承系统默认基线 DEFAULT_CAPABILITIES = {shell, files, code}。
-# terminal、ports 不在默认基线中，需在此显式声明。
-capabilities:
-  - shell
-  - files
-  - code
-  - ports                             # 显式加入默认基线之外的能力
-
-# 命名命令不是 template.yaml 的键（客户端会拒绝 `custom_commands`）。
-# 在模板的 server 里注册（`commands.py`、`@sandbox.register`），
-# 用 `abx run <id> <name> --arg k=v` 或 `sandbox.run(\"name\", **kwargs)` 调用。
-
-# === Agent 提示 ===
-agent:
-  description: "适用于数据分析、CSV 处理、统计计算、图表生成场景"
-  triggers:                           # 触发关键词（用于自然语言匹配）
-    - "数据分析"
-    - "pandas"
-    - "CSV"
-    - "图表"
-  instructions: |                     # Agent 使用指南
-    在此沙箱中执行数据分析任务时：
-    1. 数据文件放在 /app/data/
-    2. 输出文件放在 /app/output/
-    3. 使用 matplotlib 生成图表时，保存为 PNG
-
-# === 健康检查 ===
-healthcheck:
-  command: "python3 -c 'import pandas'"
-  interval: 30
-  timeout: 5
-  retries: 3
-```
+使用完整[规范参考](../reference/template-yaml-spec.md#完整字段定义)和源仓库 schema，避免维护另一份独立字段清单。发布必须包含 name、version、description、author、license 元数据。`spec_version` 是整数 `4`；`workflow_contract_version` 是整数 `1`。
 
 ### 字段分类说明
 
-| 分区 | 字段 | 必须 | 说明 |
-|------|------|:----:|------|
-| 顶层 | `version` | ✅ | 规范版本号，当前固定为 `"1"` |
-| **metadata** | `name` | ✅ | 模板唯一标识名 |
-| | `display_name` | | 面向用户的展示名称 |
-| | `description` | | 模板描述 |
-| | `version` | | SemVer 版本号，默认跟随 Git tag |
-| | `author` | | 作者 |
-| | `license` | | 许可证 |
-| | `homepage` | | 项目主页 URL |
-| | `tags` | | 标签列表，用于搜索和筛选 |
-| | `category` | | 分类，可选值：`language` / `data-science` / `web` / `browser` / `ai-ml` / `devops` / `database` / `security` |
-| **base** | `image` | ⚠️ | 基础 Docker 镜像（与 `from` 二选一） |
-| | `from` | ⚠️ | 继承的模板引用，支持 `owner/repo@tag` 格式（与 `image` 二选一） |
-| **build** | `apt_install` | | 系统级 apt 包列表 |
-| | `pip_install` | | Python pip 包列表，支持版本约束 |
-| | `npm_install` | | Node.js 全局包列表 |
-| | `env` | | 构建时注入的环境变量 |
-| | `run` | | 自定义 shell 命令列表，按顺序执行 |
-| | `copy` | | 文件复制映射（`src` → `dest`） |
-| **resources** | `cpu` | | 默认 vCPU 数（默认 1） |
-| | `memory` | | 默认内存 MB（默认 2048） |
-| | `disk` | | 默认磁盘 MB（默认 10240） |
-| | `gpu` | | GPU 类型，null 表示不需要 |
-| | `timeout` | | 沙箱超时秒数（默认 300） |
-| | `idle_timeout` | | 空闲超时秒数（默认 120） |
-| **network** | `ports` | | 暴露端口列表 |
-| | `public` | | 是否默认启用公网（默认 false） |
-| **sandbox** | `mode` | | 运行模式：`ephemeral` / `persistent`（默认 ephemeral） |
-| | `workdir` | | 工作目录（默认 /app） |
-| | `user` | | 运行用户（默认 user） |
-| | `shell` | | 默认 shell（默认 /bin/bash） |
-| | `startup_command` | | 启动时自动执行的命令 |
-| | `readiness_probe` | | 就绪探针配置（`type` + `port`/`command` + `timeout`） |
-| **capabilities** | （列表） | | 模板支持的标准能力集，词汇表：`shell` / `files` / `code` / `terminal` / `ports`（可扩展）。省略时继承默认基线 `{shell, files, code}`；`terminal`/`ports` 需显式声明 |
-| **agent** | `description` | | 面向 AI Agent 的场景描述 |
-| | `triggers` | | 触发关键词列表，用于自然语言模板匹配 |
-| | `instructions` | | Agent 使用指南，描述如何在此沙箱中工作 |
-| **healthcheck** | `command` | | 健康检查命令 |
-| | `interval` | | 检查间隔秒数（默认 30） |
-| | `timeout` | | 超时秒数（默认 10） |
-| | `retries` | | 重试次数（默认 3） |
+| 声明 | 职责 |
+| --- | --- |
+| `provides` | 模板实际提供的服务协议/版本/端口和应用操作 |
+| `workflows` | 具名的 kind、input、startup、binding、operation、service 及附加条件 |
+| `default_workflow` | 未指定其他 ID 时选择的唯一已声明工作流 |
+| `start_cmd` / `ready_cmd` | 显式启动/就绪命令；非空就绪命令即使配合 entrypoint/none 也需要执行能力 |
+| `build_profiles` | 显式 Dockerfile/context 选择，不做隐式可移植改写 |
+| `server` | 沙箱内端点策略，必须由所选构建/启动路径实际安装并应用 |
 
-> **⚠️ 标记说明**：`base.image` 和 `base.from` 必须二选一，不能同时指定。
+旧 `capabilities`、`tested_on`、手写 `providers` 兼容结论和未知工作流字段均被拒绝。省略字段不授予 `{shell, files, code}`。`base` 仍是合法元数据，不会静默改写 Dockerfile `FROM`，也不会构造模板继承链。
 
 ### 关键设计要点
 
-1. **`base` 双模式**：`image` 直接指定 Docker 镜像，`from` 继承另一个模板（支持 GitHub owner/repo 引用），形成模板继承链
-2. **`agent` 字段是 AI-Friendly 的关键**：让 AI Agent 通过 `triggers` 和 `description` 理解模板适用场景，通过 `instructions` 获取使用指南
-3. **`resources` 默认值语义**：模板声明的是推荐默认值，用户创建沙箱时可通过 SDK 参数或 CLI 选项覆盖
-4. **`readiness_probe`**：支持 `tcp`（端口探测）和 `exec`（命令执行）两种就绪检测方式，确保沙箱真正可用后才返回
-5. **`capabilities` 能力模型**：命令能力由模板声明，不再假设所有沙箱都具备 shell/upload/download。标准能力词汇表为 `shell` / `files` / `code` / `terminal` / `ports`（可扩展）。系统默认基线为单一常量 `DEFAULT_CAPABILITIES = {shell, files, code}`；模板可显式声明子集或加入 `terminal`/`ports`，省略 `capabilities` 时继承默认基线。**仅 `code` 能力在运行时强制执行（fail-closed）**：`CodeContextModule` 方法在 `code` 不在有效能力集时抛出 `CapabilityNotSupportedError`（E3004）。其他模块（`commands`、`files`、`network`）直接转发请求，无运行时门控——能力对这些模块仅用于发现和文档。详见 ADR `2026-09-03-capability-model.md`
-6. **命名命令**：不在 `template.yaml` 中声明。它们是注册在模板 server 里的函数，通过 `abx run` 或 `sandbox.run("name", **kwargs)` 调用。
+1. 模板提供软件和应用协议，无法通过声明实现平台适配器或调用方处理器。
+2. 提供方操作契约按调用方分别声明精确操作，以及支持的输入/启动方式。例如 `exec.run`、`ports.resolve`、`code.context.execute` 是不同操作。
+3. 规划采用三值：T 允许继续本地检查；F 表示明确不匹配或缺失实现；U 表示信息尚未解析。F 优先于 U。本项目缺少适配不能证明原生平台缺少该能力。
+4. 应用服务可以通过 shell 启动及已解析 HTTP 端口使用，不需要统一解释器。缺少解释器只阻断对应解释器工作流。
+5. SDK/CLI 传输和网络绑定必须符合所选操作。即使处理器存在，服务端策略仍可拒绝应用端点。未知发现结果按拒绝处理；应用负载在协议及策略检查之后发送。
+6. 成熟度、本地环境检查和当前可信验证相互独立。Stable 标签或历史测试不能认证当前 manifest、调用方及绑定。
 
 ### 示例：基于 GitHub 模板的扩展
 
-```yaml
-# template.yaml
-version: "1"
-
-metadata:
-  name: my-ml-template
-  display_name: "自定义 ML 环境"
-  description: "基于官方数据科学模板扩展的机器学习开发环境"
-  version: "1.0.0"
-  author: "yourname"
-  tags: ["ml", "pytorch", "transformers"]
-  category: "ai-ml"
-
-base:
-  from: alicloud/sandbox-templates/python-data-science@v2.0
-
-build:
-  apt_install:
-    - libgl1-mesa-glew
-  pip_install:
-    - torch>=2.0
-    - transformers
-    - accelerate
-  run:
-    - python -c "import torch; print(torch.__version__)"
-
-resources:
-  cpu: 4
-  memory: 8192
-  gpu: A10
-
-agent:
-  description: "适用于 PyTorch 模型训练、Transformers 微调、ML 实验"
-  triggers: ["训练模型", "微调", "PyTorch", "transformers"]
-  instructions: |
-    1. 模型文件放在 /app/models/
-    2. 数据集放在 /app/data/
-    3. GPU 已预配置，直接使用 torch.cuda 即可
-```
-
----
+扩展源码项目应编辑真实 Dockerfile 和严格 manifest，不能依赖远端 `base.from` 继承规则。源仓库的 [python-hello manifest](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/python-hello/template.yaml) 为同一 `app` 服务分别声明源码及已准备镜像应用工作流，portable 构建 profile 需显式选择。借鉴这一结构仍需实际提供方/调用方支持及本地凭据，不是就绪保证。
 
 ## 5. 模板版本管理
 
 ### 语义版本号
 
-```
-模板版本遵循 SemVer 规范：
-  MAJOR.MINOR.PATCH
-
-示例：
-  python-data-science:1.0.0     初始版本
-  python-data-science:1.1.0     添加新包
-  python-data-science:1.1.1     修复 bug
-  python-data-science:2.0.0     升级 Python 到 3.12（破坏性变更）
-```
+模板 `version` 是元数据。规范版本、工作流契约版本、已解析源码修订、manifest 摘要、产物摘要和调用方修订具有不同含义。SemVer 标签不能代替这些身份。
 
 ### 版本选择
 
-```python
-# 精确版本
-sb = await Sandbox.create(template="python-data-science:1.2.3")
-
-# 次版本范围（~=）
-sb = await Sandbox.create(template="python-data-science:~1.2")  # >=1.2.0, <1.3.0
-
-# 主版本范围（^）
-sb = await Sandbox.create(template="python-data-science:^1")    # >=1.0.0, <2.0.0
-
-# 最新版（默认）
-sb = await Sandbox.create(template="python-data-science")       # latest
-
-# GitHub 模板指定版本
-sb = await Sandbox.create(template="hello/world@v1.2.0")        # GitHub ref（tag/branch/sha）
-```
+显式选择源码修订及已声明工作流。已准备镜像启动需要摘要固定的镜像；managed 启动需要不可变提供方解析。Python 启动器不会展开虚构的模板 SemVer 范围，也不会自动把仓库引用翻译成云模板。
 
 ### 版本列表
 
-```bash
-$ abx template info python-data-science
-
-Template: python-data-science
-Description: 数据科学全套环境
-
-Versions:
-  TAG       DATE          SIZE     PYTHON  PANDAS
-  2.0.0     2026-08-01    2.1 GB   3.12    2.2.0    latest
-  1.3.1     2026-07-15    1.9 GB   3.11    2.1.4
-  1.3.0     2026-07-01    1.9 GB   3.11    2.1.0
-  1.2.0     2026-06-01    1.8 GB   3.11    2.0.3
-  1.0.0     2026-04-01    1.7 GB   3.11    2.0.0
-```
-
----
+从拥有目录/源码的仓库读取可用版本和 manifest。只有源码、manifest、构建、产物、提供方代码、调用方、工作流、绑定及契约身份匹配，当前验证才具备资格。即使人类可读名称不变，内容变化也会使旧证据无法复用。
 
 ## 6. 模板市场架构
 
-```mermaid
-graph TD
-    subgraph TM["模板市场 Template Market"]
-        A["官方模板 alicloud/<br/>AliCloud 团队维护，质量保证，安全审核"]
-        B["GitHub 社区模板 owner/repo<br/>GitHub tarball API 按 ref 分发，自动安全扫描"]
-        C["私有模板 enterprise/<br/>企业内部使用，ACL 权限控制，合规审计"]
-        D["搜索 and 发现<br/>关键词搜索 / 分类浏览 / 标签筛选 / 排行推荐"]
-    end
-```
+Registry 聚合源仓库元数据、计算分范围规划并展示合格证据。官网展示已接收的严格目录快照。两者构建目录页面时均不执行访客工作负载，也不获取访客云凭据。
 
 ### CLI 命令总览
 
-市场与缓存命令（`abx create`、`abx template build|push|init|info|list|search|pull|cache`、`abx config set github_token`）是 CLI 的设计笔记，与 CLI 一同保存在[模板目录 — 设计笔记：模板命令面](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/templates-catalog.md)。
+当前命令面由 [CLI 使用模板指南](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/zh/guide/using-templates.md) 维护。目录工作流启动显式指定源码及工作流 ID。提供方原生部署、应用部署拓扑和工作流启动各自遵循显式操作要求。
 
 ### 模板安全
 
-每个模板在发布前经过：
-
-1. **自动安全扫描**：CVE 漏洞检测、恶意代码扫描
-2. **依赖审计**：检查所有依赖包的安全性
-3. **资源限制验证**：确保模板不超出合理资源范围
-4. **签名验证**：官方模板带数字签名，防止篡改
-
----
+信任需要独立核实的已批准 CI 来源及匹配产物。模板可增加必需检查，不能移除验证 profile 下限。必需检查缺失、失败或跳过均不合格。作者填写的 PASS JSON、runner 名称或历史 smoke 输出不能自证。签名和安全审计必须有实际证据，不能假定每个目录条目都具备。
 
 ## 7. 备注：Session 管理与模板的关系
 
-模板定义了沙箱的 **静态环境蓝图**，而 Session 管理负责沙箱的 **运行时生命周期**（创建、连接、休眠、恢复、销毁）。模板中的 `sandbox.mode`、`resources.timeout`、`resources.idle_timeout` 等字段为 Session 管理提供默认参数，但最终行为由 Session 管理模块控制。
+工作流规划静态源码/产物的某种用法，只拥有其创建的运行资源。创建意图和返回资源 ID 必须持久记录；不确定创建不能自动重试。即使 journal 写入或连接关闭失败，清理仍尝试删除自有资源，未解决资源仍保留以便对账。关闭已有沙箱连接不会取得其所有权，也不删除它。
 
-Session 管理的完整设计（包括会话保持、状态恢复、多连接共享等）请参阅总体架构设计文档。
-
----
+应用 HTTP 绑定保留沙箱代理前缀及签名 query 值，分离网关请求头与应用 token，检查端点有效期，并拒绝重定向、authority 覆盖及编码命名空间穿越。沙箱内 HTTP 服务仍是独立协议，拥有端点策略和 token scopes；见[服务端 API 设计](server-api.md)。
 
 ## 相关：abx CLI
 
-模板体系的命令行一侧记录在 CLI 仓库：[模板目录](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/templates-catalog.md)（awesome-templates 索引客户端、缓存与降级、模板命令面）、[CLI 命令体系](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/cli-design.md)（`abx template ...`、`abx create`、GitHub token 处理）与[模板使用](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/using-templates.md)。
+参见 CLI [使用模板](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/zh/guide/using-templates.md)、当前 [Python 工作流指南](../guide/template-workflows.md)、[模板规范](../reference/template-yaml-spec.md)及[应用服务 API](../guide/template-server-api.md)。固定版本标准客户端维持独立公共契约；项目提供方适配器当前不给 Express/E2B/REST 声明统一解释器操作，CubeSandbox/container 仅实现持久默认上下文操作。
