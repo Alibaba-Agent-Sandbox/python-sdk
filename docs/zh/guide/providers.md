@@ -282,7 +282,7 @@ OpenSandbox 是 [awesome-providers/opensandbox](https://github.com/alibaba-agent
 - **按特性**：`exec.run`、`exec.start`（`exec.stream`）、`process.list|kill|signal|stdin`、`files.read|write|list|stat|mkdir|remove|move`、`ports.url`、`sandbox.set_timeout`、`sandbox.pause|resume`。只有实现了某个特性的全部方法才声明它；其余情况宿主抛出 E8004。
 - **扩展**（宿主暂不调用，插件可以提供）：`files.search`、`files.chmod`、`exec.start{detached}`、`files.read{offset,length}`、`files.write{mode,append}`。
 - `files.move` 的参数是 `{sandbox_id, source, destination, overwrite?}`（插件也可以接受 `src`/`dest`）。
-- `exec.start` 返回**字符串**类型的 `process_id`。`process.kill|signal|stdin` 的 `pid` 是不透明 id：既可以是 `process.list` 条目的整数 `pid`，也可以是该字符串；`ProcessInfo.pid` 和 `commands.kill(pid)` 两者都接受。
+- `exec.start` 返回后端原生的非空不透明字符串或正的安全整数 `process_id`。启动时先发送数据为空、携带原始 `pid` 的确认块；标识缺失或非法会失败，stdout 不作为启动确认。`process.kill|signal|stdin` 的 `pid` 是不透明 id：既可以是 `process.list` 条目的整数 `pid`，也可以是该原生启动标识；`ProcessInfo.pid` 和 `commands.kill(pid)` 两者都接受。
 - 未知的错误 `sdk_code` 会回退为该 EPP 码的默认类。可接受的值就是宿主映射的 SDK 错误码，例如 `E1001`（凭证错误）、`E2000`/`E2001`（沙箱 / 模板未找到）、`E3001`（命令超时）、`E4001`（文件未找到），见[错误码参考](../reference/error-codes.md)。缺失**文件**时单独的 `-32002` 会变成 E8005，所以请带上 `sdk_code: "E4001"`；在 `sandbox.get`/`connect`/`set_timeout`/`pause`/`resume` 上，未知沙箱的单独 `-32002` 会变成 E2009（插件也可以直接写 `sdk_code: "E2009"`）。
 - 清单里的默认值会**随** `initialize.config` 一起送达。不要给带有替代项的字段（`base_url` 与 `domain`）设置默认值：默认值总会胜出。
 - 对一个正在运行的请求发 `$/cancel {id}` 的含义是：停止工作（杀掉派生的进程），并以错误或最终结果应答。

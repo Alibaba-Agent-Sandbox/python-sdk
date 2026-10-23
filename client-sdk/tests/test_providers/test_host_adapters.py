@@ -171,7 +171,7 @@ def test_method_table_is_consistent():
     assert TABLE["sandbox.get"]["support"] == "required"
     assert TABLE["sandbox.connect"]["support"] == "optional"
     assert TABLE["process.kill"]["params"]["pid"]["type"] == "string|integer"
-    assert TABLE["exec.start"]["result"] == "{process_id: string}"
+    assert TABLE["exec.start"]["result"] == "{process_id: string|integer}"
 
 
 async def test_create_sends_secure_only_when_specified_and_filters_secret_options():

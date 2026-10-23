@@ -570,7 +570,7 @@ def epp_method_table() -> dict[str, Any]:
             "exec.start",
             "exec.stream",
             {**sb, **proc, "stdin": p(S, False), "detached": p(B, False)},
-            "{process_id: string}",
+            "{process_id: string|integer}",
             note="followed by notifications exec.output{process_id,stream,data} and exactly one exec.exit{process_id,exit_code}; detached is an optional extension (the host does not send it yet)",
         ),
         m("process.list", "process.manage", dict(sb), "{processes:[{pid,command,status,...}]}"),

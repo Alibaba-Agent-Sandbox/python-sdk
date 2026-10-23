@@ -389,7 +389,7 @@ class Provider(ABC):
 | `sandbox.set_timeout` | `{sandbox_id, timeout}` | `{}` | `sandbox.timeout` | R |
 | `sandbox.pause` / `sandbox.resume` | `{sandbox_id}` | `{}` | `sandbox.pause` | R |
 | `exec.run` | `{sandbox_id, cmd, args, env, cwd, user, timeout, stdin?}` | `{exit_code, stdout, stderr, stdout_b64?, stderr_b64?}` | `exec.run` | R |
-| `exec.start` | 同 `exec.run`，另加 `detached?` | `{process_id: string}`，随后是通知 `exec.output{process_id, stream, data}` 和恰好一个 `exec.exit{process_id, exit_code}` | `exec.stream` | R（`detached`：X） |
+| `exec.start` | 同 `exec.run`，另加 `detached?` | `{process_id: string|integer}`，随后是通知 `exec.output{process_id, stream, data}` 和恰好一个 `exec.exit{process_id, exit_code}` | `exec.stream` | R（`detached`：X） |
 | `process.list` | `{sandbox_id}` | `{processes:[{pid, command, status, …}]}` | `process.manage` | R |
 | `process.kill` / `process.signal` / `process.stdin` | `{sandbox_id, pid, signal? \| data?}` | `{}` | `process.manage` | R（`stdin` 可以回答 `-32003`） |
 | `files.read` | `{sandbox_id, path, offset?, length?}` | `{content_b64, size}` | `files.rw` | R（`offset`/`length`：X） |
@@ -404,7 +404,7 @@ class Provider(ABC):
 | `pty.open` | `{sandbox_id, cols?, rows?}` | `{process_id}`，之后是通知 `pty.output{process_id, data_b64}` 和一次 `pty.exit{process_id}` | `pty` | R |
 | `pty.write` / `pty.resize` / `pty.close` | `{sandbox_id, process_id, data_b64 \| cols, rows \| —}` | `{}` | `pty` | R |
 
-参数约定：`secure` **仅**在调用者给 `Sandbox.create` 传了 `secure=True/False` 时发送（否则缺失，由插件自己的默认值决定；内置提供方按 `secure=True` 处理）。`options` 是调用者的 `provider_options`（仅已声明的配置字段）**去掉密钥字段**，用于每次创建的设置（网络策略、平台、镜像拉取设置）；插件必须对每次创建接受的键做白名单，并且绝不能让 `options` 改变服务地址或凭证。`process_id`（来自 `exec.start`）是**字符串**；`process.*` 的 `pid` 是不透明的 `string | integer`：`process.list` 条目的整数 `pid` 或某个 `process_id`，SDK 的 `ProcessInfo.pid` 以及 `commands.kill/send_signal/send_input` 两者都接受。`sandbox.get` 是唯一必需的查询；`sandbox.connect` 用于“连接”含义更多（恢复）的插件。双方都必须忽略未知参数。
+参数约定：`secure` **仅**在调用者给 `Sandbox.create` 传了 `secure=True/False` 时发送（否则缺失，由插件自己的默认值决定；内置提供方按 `secure=True` 处理）。`options` 是调用者的 `provider_options`（仅已声明的配置字段）**去掉密钥字段**，用于每次创建的设置（网络策略、平台、镜像拉取设置）；插件必须对每次创建接受的键做白名单，并且绝不能让 `options` 改变服务地址或凭证。`process_id`（来自 `exec.start`）是**原生非空字符串或正的安全整数**；`process.*` 的 `pid` 是不透明的 `string | integer`：`process.list` 条目的整数 `pid` 或某个 `process_id`，SDK 的 `ProcessInfo.pid` 以及 `commands.kill/send_signal/send_input` 两者都接受。`sandbox.get` 是唯一必需的查询；`sandbox.connect` 用于“连接”含义更多（恢复）的插件。双方都必须忽略未知参数。
 
 `SandboxRecord` = `{sandbox_id, template, status("creating"|"running"|"paused"|"stopping"|"stopped"|"error"), region?, created_at?, expires_at?, metadata{}, envd_url?, envd_access_token?, url?}`（status 取值就是 SDK 的 `SandboxStatus`）。
 
@@ -653,7 +653,7 @@ url, headers = await sb.network.resolve(8080)                          # 声明�
 6. **EPP 客户端**对参考插件：握手、版本不匹配、特性门控、错误映射表、超时、崩溃、格式错误的行、超长的行、stderr 捕获、环境清理（插件回显它的环境）、进程组终止、取消。
 7. **Sandbox 集成**：`Sandbox.create(provider="local-process")` → `commands.run`、`files.write/read/list/exists/remove`、`kill`、`connect`；不支持的特性 → `E8004`；默认路径不受影响。
 8. **契约测试**：`providers/testing.py` 提供可复用的 `ProviderContractTests` 基类（18 个测试：声明、生命周期、幂等 kill、`set_timeout`、暂停 / 恢复、exec 退出码 / stderr / 环境变量、流顺序与单个 exit、超时强制执行、进程列表、文件文本 / 二进制 / 目录 / 移动 / 缺失 → 类型化未找到、`ports.url`、未声明特性 → E8004、密钥脱敏）。运行方式：`python -m agent_sandbox.providers test <id> [--option K=V]`（什么都没收集到时失败）、`pytest -p agent_sandbox.providers.testing --pyargs agent_sandbox.providers.contract --provider-under-test <id>`，或写子类。未声明特性的测试期望 E8004；已声明的必须可用。
-8a. **方法表**：`epp-methods.json`（见上）会与宿主适配器双向核对，并有记录型客户端测试固定参数名 / 类型（`files.move` 是 `source`/`destination`，`process_id` 是字符串，`pid` 是 `string|integer`，`secure` 仅在设置时发送，`options` 不含密钥）。
+8a. **方法表**：`epp-methods.json`（见上）会与宿主适配器双向核对，并有记录型客户端测试固定参数名 / 类型（`files.move` 是 `source`/`destination`，`process_id` 是原生字符串或整数，`pid` 是 `string|integer`，`secure` 仅在设置时发送，`options` 不含密钥）。
 9. **参考插件**（`examples/providers/`）：`e2b-compatible`（`rest` 类型，只有清单）和 `local-process`（`exec` 类型，Python 标准库，约 200 行：生命周期、exec、文件）。供测试使用，也是作者的模板。Node CLI 测试使用相同的目录。
 
 ---
