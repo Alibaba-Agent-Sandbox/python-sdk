@@ -6,7 +6,7 @@
 
 这是 **Server SDK**：`commands.py` 随镜像启动，在沙箱里面提供 HTTP 服务。在你的机器上创建并调用沙箱见 [Client SDK](client-sdk.md)。
 
-本文档介绍如何创建自定义 Agent Sandbox 模板，包括目录结构、字段参考、能力声明、注册命令和发布流程。
+本文档介绍如何创建自定义 Agent Sandbox 模板，包括目录结构、字段参考、显式工作流、注册命令和发布流程。
 
 模板是一个由纯文件组成的目录，可手写也可生成。`abx template scaffold` 命令有三种生成方式（内置脚手架、一句话描述、适配已有源码的项目）；该工作流记录在 CLI 仓库：[模板编写（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authoring-templates.md)。
 
@@ -32,25 +32,62 @@ my-template/
 
 ```yaml
 name: my-python-template
-version: "1.0.0"
-description: "Python 数据分析环境，预装 pandas 和 matplotlib"
-author: "Your Name"
-tags:
-  - python
-  - data-analysis
+version: "1.0.1"
+description: "Scaffold for a new Agent Sandbox template. Not a catalog entry."
+author: "alibaba-agent-sandbox"
+license: Apache-2.0
+spec_version: 4
+base: "fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>"
+generation: 2
+start_cmd: "agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py"
+ready_cmd: "agent-sandbox-server healthcheck --port 9000"
 
-env:
-  PYTHONUNBUFFERED: "1"
-  APP_DIR: "/app"
-
-capabilities:
-  - shell
-  - files
-  - code
-  - terminal
+resources:
+  cpu: 2
+  memory: 2048
 
 ports:
-  - 8080
+  - 9000
+
+tags:
+  - example
+  - skeleton
+
+priority: P2
+wave: other
+
+
+env:
+  ABX_SERVER_TOKEN: ""
+
+smoke:
+  - command: hello
+    args:
+      name: Express
+    expect: "Hello, Express!"
+workflow_contract_version: 1
+provides:
+  app:
+    protocol: agent-sandbox-server
+    version: 2
+    port: 9000
+    operations:
+    - commands.list
+    - commands.run
+default_workflow: application
+workflows:
+  application:
+    kind: application
+    input: source
+    service: app
+    startup: exec
+    binding:
+      transport: http
+      endpoint: provider-port
+      caller: host
+      authentication: service-token
+    operation: commands.run
+    required_operations: []
 ```
 
 ---
@@ -68,33 +105,20 @@ ports:
 | `ports` | `list[int]` | ❌ | `[]` | 暴露的端口列表 |
 | `author` | `str` | ❌ | `""` | 作者 |
 | `license` | `str` | ❌ | `""` | 许可证 |
+| `spec_version` / `workflow_contract_version` | 整数 | ✅ | — | `4` / `1` |
+| `provides` / `workflows` / `default_workflow` | 映射 / 标识符 | ✅ | — | 显式工作流契约 |
 | `tags` | `list[str]` | ❌ | `[]` | 标签 |
-| `capabilities` | `list[str]` | ❌ | `None` | 能力声明（见下文） |
 
 详细的字段定义参见 [template.yaml 规范](../reference/template-yaml-spec.md)。
 
 ---
 
-## 能力声明
+<a id="能力声明"></a>
+## 模板工作流
 
-通过 `capabilities` 字段声明模板支持的运行时能力：
+模板的 `provides` 描述软件服务，`workflows` 描述显式调用路径。默认工作流只指向一条声明，不推导其他能力。旧 `capabilities`、`tested_on` 和 Provider 兼容表均拒绝；未知远端引用不授予默认解释器。应用 HTTP 不依赖统一代码解释器。精确操作、T/F/U、上下文及验收范围见[显式模板工作流](template-workflows.md)。
 
-```yaml
-capabilities:
-  - shell      # Shell 命令执行
-  - files      # 文件系统操作
-  - code       # Code Interpreter
-  - terminal   # PTY 终端
-  - ports      # 端口网络访问
-```
-
-**标准能力集**：`shell`、`files`、`code`、`terminal`、`ports`
-
-**默认能力集**（不声明 `capabilities` 时）：`shell`、`files`、`code`
-
-`terminal` 和 `ports` 必须在模板中显式声明才能使用。能力令牌在模板解析层（`resolve_capabilities()`）使用，解析策略为 fail-closed：如果模板 YAML 格式错误或缺失，解析器会抛出 `TemplateParseError`（E2004）而非默认授予能力。所有 API 方法均可调用，不受声明能力限制；能力声明作为元数据用于模板校验和模型推断。
-
-`commands.py` 启动的进程在 9000 端口提供一套固定的 HTTP API。Dockerfile 的基础镜像随模板而变，路由不变。服务器注册九个能力组。`core` 保持开启。`dev_tools`、`browser` 和 `agents` 默认关闭。`agents` 的路由已经注册，在 `ABX_SERVER_ENABLED_GROUPS` 包含 `agents` 之前保持关闭。每个组打开哪些路由、如何调用，见[模板服务器 HTTP API](template-server-api.md)。
+服务端 HTTP 端点策略独立控制九个能力组；`core` 始终开启，`dev_tools`、`browser`、`agents` 默认关闭。`server:` 不是 Provider 操作授权，工作流也不自动打开服务端策略。详见[模板服务器 HTTP API](template-server-api.md)。
 
 ---
 
@@ -121,31 +145,15 @@ if __name__ == "__main__":
 
 ## Dockerfile 自定义
 
-目录里有 `Dockerfile` 时，镜像就是这个文件。`template.yaml` 不安装软件包。`base`、`system_packages`、`python_packages`、`node_packages`、`commands` 不是构建输入。
+目录里有 `Dockerfile` 时，镜像就是这个文件。`template.yaml` 不安装软件包。`base` 是合法来源元数据，但不会替换 Dockerfile 的 `FROM`；已移除的清单软件包安装字段被拒绝，依赖安装写入有效 Dockerfile 及原生依赖文件。
 
-默认提供者是 `alicloud-express`。它的 Dockerfile 从 FC 基础镜像开始，不写 `CMD` 或 `ENTRYPOINT`。`<region>` 默认 `cn-hangzhou`，`<tag>` 默认 `v0.0.49`。额外的包写成这个基础镜像上的 `RUN`。`FROM python:3.11-slim` 不是这张镜像。
-
-```dockerfile
-FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
-WORKDIR /home/user/app
-COPY commands.py /home/user/app/commands.py
-EXPOSE 9000
-```
-
-OpenSandbox 以及没有 `[template]` 配置的提供者使用 `FROM python:3.12-slim`、`WORKDIR /app` 和 `CMD ["python3", "commands.py"]`。可直接复制的文件（含 server wheel 安装）在 `agent-sandbox-sdk/SKILL.md`。
+源 Dockerfile 保持原样。含未解析基础镜像占位符时，应修正源输入或显式选择构建配置；不能按 Provider 静默换成另一张镜像。`base` 字段合法，但不替换 Dockerfile 的 `FROM`。
 
 ## 提供者模板配置
 
-服务端 SDK 不选择沙箱提供者，`agent_sandbox.server` 也不导入提供者。端口 9000 仍是服务端的监听默认值。FC 保留端口（49983、5000、49999）属于 `alicloud-express` 模板配置，不是 HTTP API 的属性。
+服务端不选择 Provider。9000 是应用 HTTP 默认监听端口；平台注入的 envd、解释器及保留端口属于各后端，不能据此推导应用服务不可用。`startup: exec`、`entrypoint`、`none` 是不同路径，必须和 Provider 声明一致；不要让原生入口与启动命令重复运行。非空 `ready_cmd` 必须实际检查。构建配置必须明确选择，其有效 Dockerfile 和构建参数进入输入身份。
 
-镜像契约归 CLI。CLI 用 `--provider` / `ABX_PROVIDER` / 默认的 `alicloud-express` 解析提供者，再把这一份配置写进 Dockerfile 和模板提示：
-
-- `alicloud-express`：`FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>`，不写 `CMD` 或 `ENTRYPOINT`，由平台 `start_cmd` / `ready_cmd` 启动，用户 `user`，工作目录 `/home/user/app`。
-- 其他提供者：若插件的 `abx-provider.toml` 没有 `[template]` 表，则使用通用配置（`FROM python:3.12-slim`、`CMD ["python3", "commands.py"]`、`WORKDIR /app`、用户用镜像默认值）。缺少配置会被写明，并且不会退回 FC 镜像。
-
-`template.yaml` 用 `user` 和 `workdir` 记下同一对默认值。Dockerfile 的 `WORKDIR` 与 `workdir` 一致。只有 `user` 非空时才写 `USER`，因为 `python:3.12-slim` 里没有名为 `user` 的账户。之后的单次命令可以自带工作目录；这两个字段是沙箱的默认值，和 E2B 模板里的 user / workdir 是同一件事。
-
-`commands.py` 只导入 `agent_sandbox.server`，并在 `if __name__ == "__main__"` 下调用 `start(port)`。镜像安装 `agent-sandbox-server`。
+`commands.py` 只导入 `agent_sandbox.server`，在主入口调用 `start(port)`；镜像显式安装 server SDK。Python 调用已有沙箱的应用可用 `async with await sandbox.application_client(9000, token=application_token)`，它独立解析应用端点，保留代理前缀并隔离网关/应用凭据。
 
 ---
 

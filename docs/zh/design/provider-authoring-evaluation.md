@@ -1,5 +1,7 @@
 # 提供方编写体验评估 —— 接入一个新提供方有多难？
 
+> 当前工作流契约见[显式模板工作流](../guide/template-workflows.md)。历史评估中解释器转 Shell 的建议已被否决；当前要求精确操作及显式 Shell 调用。下文评估不是当前就绪矩阵。
+
 > **历史记录。** 本页评估的是第一个 `exec` 插件。现行的 OpenSandbox 适配器是 [provider-opensandbox-mapping.md](provider-opensandbox-mapping.md) 里的 `node` 提供方。Node 提供方架构：[node-provider-architecture.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/node-provider-architecture.md)。
 
 > **状态**：评估（基于证据），已应用一轮修复（见第 10 节） · **对象**：`opensandbox` exec 提供方插件（[awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox)）。插件源码在该目录，不在本仓库。评估依据 SDK 文档，并在真实的本地 OpenSandbox 服务上驱动 · **配套文档**：[providers-and-credentials.md](providers-and-credentials.md)（规范性设计）、[provider-opensandbox-mapping.md](../../en/design/provider-opensandbox-mapping.md)（调研，仅英文）、`../guide/providers.md`（使用/编写指南） · **English**：[../../en/design/provider-authoring-evaluation.md](../../en/design/provider-authoring-evaluation.md)

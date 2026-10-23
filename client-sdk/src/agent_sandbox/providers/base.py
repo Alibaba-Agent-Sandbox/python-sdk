@@ -44,7 +44,6 @@ FEATURES: tuple[str, ...] = (
     "files.rw",
     "files.watch",
     "files.transfer",
-    "code.interpret",
     "templates.read",
     "templates.build",
     "templates.deploy",
@@ -66,7 +65,6 @@ ProviderFeature = Literal[
     "files.rw",
     "files.watch",
     "files.transfer",
-    "code.interpret",
     "templates.read",
     "templates.build",
     "templates.deploy",
@@ -140,15 +138,6 @@ def _extension_visible(ext: Extension, *, image: str, egress: bool, command_id: 
     return False
 
 
-#: Template capability token implied by a provider feature (design §7.2).
-FEATURE_TO_CAPABILITY: dict[str, str] = {
-    "exec.run": "shell",
-    "files.rw": "files",
-    "code.interpret": "code",
-    "pty": "terminal",
-    "ports.url": "ports",
-}
-
 ProviderKind = Literal["builtin", "rest", "exec", "node", "python"]
 
 
@@ -220,6 +209,10 @@ class Provider(ABC):
     version: str = "0.0.0"
     kind: ProviderKind = "python"
     features: frozenset[str] = frozenset()
+    operation_contract_version: int = 1
+    operations: frozenset[str] = frozenset()
+    workflow_inputs: frozenset[str] = frozenset()
+    startup_modes: frozenset[str] = frozenset()
     extensions: tuple[Extension, ...] = ()
     config_fields: tuple[ConfigField, ...] = ()
     #: Generic keys (``sandbox_api_key``, ``sandbox_base_url``, ``sandbox_domain``) it reads.
@@ -255,7 +248,7 @@ class Provider(ABC):
                 ("sandbox_protocol", "sandbox.lifecycle"),
                 ("process_protocol", "exec.run"),
                 ("filesystem_protocol", "files.rw"),
-                ("code_interpreter_protocol", "code.interpret"),
+                ("code_interpreter_protocol", "code.execute"),
             )
         }
 
@@ -270,6 +263,12 @@ class Provider(ABC):
         if callable(factory):
             return cast("PortAccess", factory(context))
         return UnsupportedPortAccess(self.id)
+
+    async def application_endpoint(
+        self, context: PortContext, port: int, protocol: Any = None
+    ) -> dict[str, Any]:
+        """Return an explicitly implemented application binding, never an envd fallback."""
+        raise ProviderFeatureNotSupportedError(self.id, "ports.resolve")
 
     async def prepare_session(
         self, infra: ProviderInfra, info: Any, *, operation: str, template: str
@@ -363,12 +362,74 @@ class Provider(ABC):
     async def build_infra(self, config: TransportConfig) -> ProviderInfra:
         """Build the protocol objects for *config* (already resolved for this provider)."""
 
+    def content_digest(self) -> str:
+        """Hash actual provider code and its installed source dependencies.
+
+        Plugin identities include the complete plugin tree. Native identities bind
+        shipped package source/config, not the display version or manifest alone.
+        Symlinks fail closed and credential/cache/state files are excluded.
+        """
+        import os
+        from pathlib import Path
+
+        from agent_sandbox.workflows.identity import snapshot_digest
+
+        plugin_root = getattr(self, "plugin_root", None)
+        if plugin_root is None and not type(self).__module__.startswith("agent_sandbox.providers."):
+            raise ProviderConfigError(
+                "External native providers must implement their own content_digest"
+            )
+        root = Path(plugin_root) if plugin_root is not None else Path(__file__).resolve().parents[1]
+        excluded = {
+            ".git",
+            "__pycache__",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".mypy_cache",
+            "node_modules",
+            ".venv",
+            "data",
+            ".abx-install.json",
+        }
+        files: dict[str, bytes] = {}
+        for directory, dirs, names in os.walk(root, followlinks=False):
+            dirs[:] = sorted(d for d in dirs if d not in excluded)
+            for name in dirs + sorted(names):
+                path = Path(directory) / name
+                if path.is_symlink():
+                    raise ProviderConfigError("Provider content identity refuses symlinked inputs")
+            for name in sorted(names):
+                if (
+                    name in excluded
+                    or name == ".env"
+                    or name.startswith(".env.")
+                    or name.endswith((".pem", ".key", ".pyc"))
+                ):
+                    continue
+                path = Path(directory) / name
+                if not path.is_file():
+                    raise ProviderConfigError("Provider content identity requires regular files")
+                files[path.relative_to(root).as_posix()] = path.read_bytes()
+        return snapshot_digest(files)
+
     def capabilities(self) -> frozenset[str]:
-        """Template capability tokens implied by this provider's features."""
-        return frozenset(c for f, c in FEATURE_TO_CAPABILITY.items() if f in self.features)
+        """Coarse discovery from implemented operations; never grants authorization."""
+        tokens = set()
+        if "exec.run" in self.operations:
+            tokens.add("shell")
+        if {"files.read", "files.write"} <= self.operations:
+            tokens.add("files")
+        if any(op.startswith("code.") for op in self.operations):
+            tokens.add("code")
+        if "ports.resolve" in self.operations:
+            tokens.add("ports")
+        if "pty" in self.features:
+            tokens.add("terminal")
+        return frozenset(tokens)
 
     def describe(self) -> dict[str, Any]:
         """JSON-friendly summary (``abx provider info``)."""
+        manifest = getattr(self, "manifest", None)
         return {
             "id": self.id,
             "name": self.display_name,
@@ -376,6 +437,13 @@ class Provider(ABC):
             "version": self.version,
             "kind": self.kind,
             "features": sorted(self.features),
+            "operation_contract_version": self.operation_contract_version,
+            "operations": {
+                "cli": list(manifest.operations["cli"]) if manifest else [],
+                "python": sorted(self.operations),
+            },
+            "workflow_inputs": sorted(self.workflow_inputs),
+            "startup_modes": sorted(self.startup_modes),
             "extensions": [
                 {
                     "id": ext.id,

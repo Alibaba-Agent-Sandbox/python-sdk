@@ -1,4 +1,11 @@
 manifest_version = 1
+operation_contract_version = 1
+[operations]
+cli = ["sandbox.create", "sandbox.get", "sandbox.list", "sandbox.delete", "exec.run", "files.read", "files.write", "files.list", "files.stat", "files.remove", "files.move", "ports.resolve"]
+python = ["sandbox.create", "sandbox.get", "sandbox.list", "sandbox.delete", "exec.run", "files.read", "files.write", "files.list", "files.stat", "files.remove", "files.move", "ports.resolve"]
+[workflow]
+inputs = ["managed"]
+startups = ["exec", "none"]
 
 [provider]
 id          = "e2b-compatible"
@@ -23,7 +30,7 @@ auth     = { scheme = "header", header = "X-API-Key" }
 [features]
 supported = [
   "sandbox.lifecycle", "sandbox.timeout", "sandbox.pause", "exec.run", "exec.stream",
-  "process.manage", "pty", "files.rw", "files.watch", "files.transfer", "code.interpret", "ports.url",
+  "process.manage", "pty", "files.rw", "files.watch", "files.transfer", "ports.url",
 ]
 
 [security]

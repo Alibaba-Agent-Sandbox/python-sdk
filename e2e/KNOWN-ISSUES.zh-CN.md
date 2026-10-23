@@ -1,5 +1,7 @@
 # E2E 套件记录的已知问题
 
+此前 KI-009 的平台归因已撤销：项目适配器使用了未经验证的解释器 RPC 路径。该实现和 shell 降级已删除，项目解释器调用明确返回未接入；平台原生解释器由固定标准客户端单独验证。
+
 套件把发现的每个产品缺陷固定为**严格 `xfail`**(`@pytest.mark.known_issue`)。缺陷修复后该测试会变为 XPASS 并使运行失败
 (strict),迫使修复者删除标记,从而保证本清单始终真实。标注 *platform*(平台)或 *environment*(环境)的问题不是 SDK 缺陷,
 对应测试为非严格或带原因跳过。
@@ -18,7 +20,6 @@
 | KI-006 | SDK 缺陷(**已修复**) | 平台 401 以原始 `httpx.HTTPStatusError` 暴露,而非 `AuthenticationError`(CLI 做了映射,SDK 没有) | `test_01_platform.py::test_wrong_api_key_raises_authentication_error` | `AuthenticationError` |
 | KI-007 | SDK 缺陷(**已修复**) | `files.list` 列出不存在的目录返回 `[]`(envd 返回 200 且无条目),而不是抛错 | `test_04_files_envd.py::test_list_missing_directory_raises` | `FileNotFoundError_` |
 | KI-008 | 平台/网关 | 从测试机向 envd 上传 1 MB 及以上的文件会超过默认 30 秒 HTTP 超时(受吞吐限制);400 KB 正常。因依赖网络吞吐,为非严格 xfail | `test_04_files_envd.py::test_one_megabyte_upload_within_default_timeout`(`e2e_slow`) | 在默认超时内通过,或超时随大小自适应 |
-| KI-009 | 平台 | 该云端的 Jupyter 代码解释器服务返回 HTTP 404,`run_code` 回退为 shell,末尾表达式(`21*2`)的值不会返回;stdout 正常 | `test_05_network_and_code.py::test_run_code_returns_last_expression_value` | `results[0].text == "42"` |
 | KI-010 | SDK 缺陷(**已修复**) | 对 `async def` 函数使用 `@sandbox`:生成的远程脚本调用协程函数但未 await,结果是字符串 `<coroutine object ...>` | `test_07_declarative.py::test_async_decorated_function` | 返回真实值 |
 
 说明

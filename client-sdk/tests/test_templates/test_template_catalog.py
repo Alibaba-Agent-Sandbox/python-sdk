@@ -30,8 +30,6 @@ import yaml
 from pydantic import ValidationError
 
 from agent_sandbox.models.template import (
-    DEFAULT_CAPABILITIES,
-    STANDARD_CAPABILITIES,
     SandboxTemplate,
 )
 from agent_sandbox.utils.registry import load_template_from_yaml
@@ -159,54 +157,27 @@ class TestTemplateYaml:
         assert from_lines, f"{template_dir.name}: Dockerfile has no FROM line"
 
 
-class TestCapabilities:
-    """Capability declarations stay inside the closed vocabulary."""
+class TestWorkflows:
+    """Fixture application service is distinct from a native interpreter."""
 
-    def test_capabilities_are_standard(self, template_dir: Path) -> None:
-        caps = _load(template_dir).capabilities
-        if caps is None:
-            return  # inherits DEFAULT_CAPABILITIES — legal
-        unknown = [c for c in caps if c not in STANDARD_CAPABILITIES]
-        assert not unknown, (
-            f"{template_dir.name}: unknown capability(ies) {unknown}; "
-            f"allowed: {sorted(STANDARD_CAPABILITIES)}"
-        )
-
-    def test_capabilities_declared_explicitly(self, template_dir: Path) -> None:
-        """Fixture templates must spell their capability set out."""
-        raw = _raw(template_dir)
-        assert "capabilities" in raw, (
-            f"{template_dir.name}: declare 'capabilities' explicitly instead of "
-            f"relying on DEFAULT_CAPABILITIES={sorted(DEFAULT_CAPABILITIES)}"
-        )
-        caps = _load(template_dir).capabilities
-        assert caps, f"{template_dir.name}: 'capabilities' must not be an empty list"
-
-    def test_capabilities_are_unique(self, template_dir: Path) -> None:
-        caps = _load(template_dir).capabilities or []
-        assert len(caps) == len(set(caps)), (
-            f"{template_dir.name}: duplicate capability tokens in {caps}"
-        )
-
-    def test_ports_capability_matches_declared_ports(self, template_dir: Path) -> None:
-        """``ports`` capability and the top-level ``ports:`` list go together."""
+    def test_default_workflow_is_explicit(self, template_dir: Path) -> None:
         tmpl = _load(template_dir)
-        caps = set(tmpl.capabilities or DEFAULT_CAPABILITIES)
-        if tmpl.ports:
-            assert "ports" in caps, (
-                f"{template_dir.name}: declares ports={tmpl.ports} but the "
-                f"'ports' capability is missing"
-            )
-        if "ports" in caps:
-            assert tmpl.ports, (
-                f"{template_dir.name}: declares the 'ports' capability but no "
-                f"top-level 'ports:' list"
-            )
+        assert tmpl.default_workflow in tmpl.workflows
+        assert tmpl.spec_version == 4
 
-    def test_model_rejects_unknown_capability(self) -> None:
-        """Sanity check that the validator we rely on is actually wired up."""
-        with pytest.raises(ValidationError, match="Unknown capability"):
-            SandboxTemplate.model_validate({"name": "x", "capabilities": ["not-a-capability"]})
+    def test_no_old_capability_input(self, template_dir: Path) -> None:
+        assert "capabilities" not in _raw(template_dir)
+        assert "code" not in _load(template_dir).discovery_capabilities()
+
+    def test_application_port_matches_provided_service(self, template_dir: Path) -> None:
+        tmpl = _load(template_dir)
+        for flow in tmpl.workflows.values():
+            if flow["kind"] == "application":
+                assert tmpl.provides[flow["service"]]["port"] in tmpl.ports
+
+    def test_model_rejects_retired_input(self) -> None:
+        with pytest.raises(ValidationError):
+            SandboxTemplate.model_validate({"name": "x", "capabilities": ["code"]})
 
 
 # ---------------------------------------------------------------------------

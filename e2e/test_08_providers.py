@@ -29,7 +29,13 @@ _OPEN_PASS = {
     "sandbox.kill",
     "sandbox.kill_again",
 }
-_OPEN_REFUSED = {"code.interpret", "files.watch", "files.transfer", "sessions"}
+_OPEN_REFUSED = {
+    "code.execute",
+    "code.default-context.execute",
+    "files.watch",
+    "files.transfer",
+    "sessions",
+}
 
 _EXPRESS_PASS = {
     "sandbox.lifecycle",
@@ -42,7 +48,6 @@ _EXPRESS_PASS = {
     "files.rw",
     "ports.url",
     "process.manage",
-    "code.interpret",
     "files.watch",
     "files.transfer",
     "sandbox.kill",
@@ -72,12 +77,18 @@ def test_alicloud_express_sdk_live() -> None:
     if reason:
         pytest.skip(reason)
     report = live.run(live.exercise("alicloud-express", template="base"))
-    live.assert_report(report, expect_pass=_EXPRESS_PASS, expect_refused=set())
-    # The base template has no in-sandbox command server. Pause and the envd
-    # terminal are rejected by the Express platform itself. StartRequest.stdin
+    live.assert_report(
+        report,
+        expect_pass=_EXPRESS_PASS,
+        expect_refused={"code.execute", "code.default-context.execute"},
+    )
+    # The base template has no in-sandbox command server. Pause is refused
+    # by the adapter before a platform call, while the envd
+    # terminal is not implemented by this project adapter. StartRequest.stdin
     # is false, and this envd still keeps the stdin pipe, so cat waits.
     assert live.row(report, "sessions").status == "blocked"
-    assert "400" in live.row(report, "sandbox.pause").detail
+    assert live.row(report, "sandbox.pause").status == "refused"
+    assert "E8004" in live.row(report, "sandbox.pause").detail
     assert live.row(report, "pty").status == "fail"
     assert live.row(report, "exec.stdin").status == "fail"
     assert "did not finish" in live.row(report, "exec.stdin").detail
@@ -99,6 +110,7 @@ def test_cubesandbox_live() -> None:
     live.assert_report(
         report,
         expect_pass={
+            "code.default-context.execute",
             "sandbox.lifecycle",
             "sandbox.connect",
             "sandbox.reconnect",
@@ -108,12 +120,18 @@ def test_cubesandbox_live() -> None:
             "exec.run",
             "exec.stream",
             "files.rw",
-            "code.interpret",
             "ports.url",
             "sandbox.kill",
             "sandbox.kill_again",
         },
-        expect_refused={"process.manage", "pty", "files.watch", "files.transfer", "sessions"},
+        expect_refused={
+            "code.execute",
+            "process.manage",
+            "pty",
+            "files.watch",
+            "files.transfer",
+            "sessions",
+        },
     )
 
 
@@ -136,12 +154,17 @@ def test_e2b_live() -> None:
             "process.manage",
             "files.rw",
             "files.watch",
-            "code.interpret",
             "ports.url",
             "sandbox.kill",
             "sandbox.kill_again",
         },
-        expect_refused={"files.transfer", "sessions", "pty"},
+        expect_refused={
+            "code.execute",
+            "code.default-context.execute",
+            "files.transfer",
+            "sessions",
+            "pty",
+        },
     )
 
 
@@ -153,6 +176,7 @@ def test_alicloud_container_live() -> None:
     live.assert_report(
         report,
         expect_pass={
+            "code.default-context.execute",
             "sandbox.lifecycle",
             "sandbox.connect",
             "sandbox.reconnect",
@@ -162,13 +186,12 @@ def test_alicloud_container_live() -> None:
             "exec.stream",
             "process.manage",
             "files.rw",
-            "code.interpret",
             "ports.url",
             "sandbox.pause",
             "sandbox.kill",
             "sandbox.kill_again",
         },
-        expect_refused={"pty", "files.watch", "files.transfer", "sessions"},
+        expect_refused={"code.execute", "pty", "files.watch", "files.transfer", "sessions"},
     )
 
 

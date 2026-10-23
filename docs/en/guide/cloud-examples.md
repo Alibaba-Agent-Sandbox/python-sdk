@@ -11,7 +11,7 @@ The Agents API case is not repeated here. For the request sequence, the local st
 The client reads `E2B_API_KEY`. The current client does not treat `E2B_API_KEY` as the sandbox key.
 
 ```bash
-pip install "agent-sandbox-client[declarative]"
+pip install "agent-sandbox-client"
 export E2B_API_KEY="your-api-key"
 ```
 
@@ -49,7 +49,7 @@ python examples/compat-demos/modal_data_analysis.py
 | `examples/compat-demos/modal_compute.py` | `@sandbox`: Monte Carlo π, matrix multiply, distribution fit |
 | `examples/compat-demos/modal_data_analysis.py` | `@sandbox`: sales summary, data quality, product rank |
 
-On `base`, `run_code()` in `04_data_analysis.py` can see HTTP 404 from the code-interpreter port. The client falls back to the shell, and the example still prints the table.
+The data-analysis example explicitly writes and runs Python scripts through `commands.run()`. Interpreter calls require a matching interpreter workflow and never fall back to shell.
 
 If create fails, read the error code on the exception (a missing template is `E2001`) and stop that example. Do not switch to pushing an image.
 

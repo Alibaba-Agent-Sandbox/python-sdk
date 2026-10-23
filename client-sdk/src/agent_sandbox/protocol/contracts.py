@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Literal, Protocol
 
 if TYPE_CHECKING:
     import builtins
@@ -154,6 +154,7 @@ class CodeInterpreterProtocol(Protocol):
         code: str,
         language: str = "python",
         context_id: str | None = None,
+        mode: Literal["stateless", "default-context"] = "stateless",
         timeout: int = 30,
         envs: dict[str, str] | None = None,
         on_stdout: Callable[[str], None] | None = None,

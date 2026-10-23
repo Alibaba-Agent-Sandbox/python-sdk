@@ -433,7 +433,8 @@ class ProviderFeatureNotSupportedError(ProviderError, CapabilityNotSupportedErro
         CapabilityNotSupportedError.__init__(
             self,
             feature,
-            message=message or f"Provider '{provider}' does not support '{feature}'.",
+            message=message
+            or f"Project provider adapter '{provider}' has not implemented '{feature}'.",
             suggestion=suggestion
             or f"Run 'abx provider info {provider}' to see supported features.",
             **kwargs,

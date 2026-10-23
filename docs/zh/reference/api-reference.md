@@ -318,13 +318,13 @@ sandbox.code  # CodeContextModule 实例
 
 | 方法 | 签名 | 说明 |
 |------|------|------|
-| `run()` | `async def run(code, *, language="python", timeout=30, context_id=None, envs=None, on_stdout=None, on_stderr=None, on_result=None) -> CodeResult` | 执行代码 |
+| `run()` | `async def run(code, *, language="python", timeout=30, context_id=None, mode="stateless", envs=None, on_stdout=None, on_stderr=None, on_result=None) -> CodeResult` | 执行代码 |
 | `create_context()` | `async def create_context(*, language="python") -> dict` | 创建执行上下文 |
 | `list_contexts()` | `async def list_contexts() -> list[dict]` | 列出所有上下文 |
 | `restart_context()` | `async def restart_context(context_id) -> dict` | 重启上下文 |
 | `remove_context()` | `async def remove_context(context_id) -> None` | 删除上下文 |
 
-所有方法均需 `code` 能力并在运行时强制校验——若沙箱未启用 `code` 能力，调用任何方法均抛出 `CapabilityNotSupportedError`（E3004）。每个异步方法都有 `_sync` 后缀的同步版本。
+每个方法均需精确的 Provider 操作：`run()` 默认选择 `code.execute`，`mode="default-context"` 选择 `code.default-context.execute`，非空 `context_id` 选择 `code.context.execute`。上下文创建、列出、重启、删除分别授权。实时回调另需 `code.stream`。适配器未实现时在发送负载前抛 E8004；实际 runtime 缺失或 HTTP 404 不会自动转 Shell。各异步方法提供 `_sync` 版本。当前适配器边界及独立固定标准客户端见[工作流](../guide/template-workflows.md)。
 
 ---
 
@@ -342,12 +342,13 @@ from agent_sandbox.api import ServerClient, ServerCapabilities
 
 | 成员 | 签名 | 说明 |
 |------|------|------|
-| `ServerClient()` | `(base_url, *, token=None, headers=None, pty_url=None, timeout=30.0, http_client=None)` | `token` 以 `Authorization: Bearer` 发送；`headers` 携带网关的 `X-Access-Token` |
-| `Sandbox.server` | `cached_property -> ServerClient` | 9000 端口客户端。不发送沙箱访问令牌 |
-| `Sandbox.server_at()` | `(port=9000, *, token=None, pty_port=9001, timeout=30.0) -> ServerClient` | 新客户端。不发送沙箱访问令牌；`token` 是 `ABX_SERVER_TOKEN` |
+| `ServerClient()` | `(base_url, *, token=None, headers=None, pty_url=None, timeout=30.0, http_client=None, expires_at=None)` | `token` 以 `Authorization: Bearer` 发送；`headers` 携带网关的 `X-Access-Token` |
+| `ProviderSandbox.application_client()` | `async (port=9000, *, token=None, timeout=30.0) -> ServerClient` | 解析 Provider 应用网关描述符，保留其路径前缀、查询参数及网关头，应用令牌单独传入；跨 Provider 推荐使用 |
+| `Sandbox.server` | `cached_property -> ServerClient` | 9000 端口原生本地 URL 辅助入口；跨 Provider 使用 application_client |
+| `Sandbox.server_at()` | `(port=9000, *, token=None, pty_port=9001, timeout=30.0) -> ServerClient` | 原生本地 URL 辅助入口；需 Provider 网关描述符时使用 application_client；`token` 是应用令牌 |
 | `Sandbox.start_server()` | `async (*, port=9000, commands=None, policy=None, token=None, env=None, command=None, wait=True, timeout=30.0) -> ServerClient` | 以 envd 后台命令启动 `agent-sandbox-server serve` 并轮询 `/health`；`policy` 为字典（`ABX_SERVER_POLICY`）或预设名；超时抛 `ConnectionError_` |
 | `health()` | `async -> bool` | `GET /health`，服务端不可达时返回 `False` 而不抛异常 |
-| `discover()` | `async -> ServerCapabilities` | `GET /capabilities`；结果缓存在 `client.capabilities`，并启用快速失败的预检查 |
+| `discover()` | `async -> ServerCapabilities` | `GET /capabilities`；要求精确整数 `api_version=2` 和端点映射后才允许调用，并缓存已检查文档 |
 | `forget_discovery()` | `() -> None` | 丢弃缓存（策略变更后） |
 | `check()` | `async (endpoint, path=None, op=None) -> PathDecision` | `POST /capabilities/check` |
 | `with_token()` | `(token) -> ServerClient` | 同一服务端、另一个身份 |
@@ -458,6 +459,7 @@ class SandboxStatus(str, Enum):
 | `type` | `ProcessChunkType` | `stdout` / `stderr` / `exit` |
 | `data` | `str` | 数据内容 |
 | `exit_code` | `int \| None` | 退出码（仅 `exit` 类型） |
+| `pid` | `int \| str \| None` | 原生启动确认的进程标识，保留整数或不透明字符串 |
 
 ### FileInfo
 

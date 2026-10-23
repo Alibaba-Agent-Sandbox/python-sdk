@@ -311,30 +311,23 @@ A reader accepts the variable in §3 and the matching config key. `load_config` 
 
 ### 7.2 Capability matrix (feature flags)
 
-A provider declares which **features** it implements. The SDK/CLI check the feature before calling; an unsupported feature raises `ProviderFeatureNotSupportedError` (`E8004`, subclass of the existing `CapabilityNotSupportedError`) — never an `AttributeError`/HTTP 404.
+Workflow authorization uses operation contract 1, not the retired coarse interpreter feature. A provider declares separate CLI/Python `operations`, `workflow_inputs` and `startup_modes`. See [explicit template workflows](../guide/template-workflows.md) for the current contract. The table lists representative exact operations, not a promise that every adapter implements them.
 
-| Feature id | Meaning | Python SDK surface | CLI commands (need it) |
-|---|---|---|---|
-| `sandbox.lifecycle` | create / connect / list / info / kill | `Sandbox.create/connect/list/kill_by_id`, `info` | `create`, `list`, `info`, `kill`, `connect` |
-| `sandbox.timeout` | change TTL | `set_timeout`, `refresh` | `sandbox timeout` |
-| `sandbox.pause` | pause / resume | `pause`, `resume` | `sandbox pause/resume` |
-| `exec.run` | run a command, buffered result | `commands.run` | `exec`, `run`, `shell` |
-| `exec.stream` | streamed output | `commands.stream` | `exec --stream` |
-| `process.manage` | list/kill/signal/stdin of processes | `commands.list/kill/send_*` | `sandbox process ...` |
-| `pty` | interactive terminal | `get_terminal` | `connect --pty` |
-| `files.rw` | read/write/list/stat/mkdir/remove/move | `files.*` | `files`, `upload`, `download` |
-| `files.watch` | watch directories | `files.watch` | — |
-| `files.transfer` | signed upload/download URLs | `upload_url/download_url` (this data plane raises `FileOperationError`) | — |
-| `code.interpret` | stateful code contexts | `run_code`, `code.*` | `sandbox code` |
-| `templates.read` | list/get templates | `Template*` read | `template list/info` |
-| `templates.build` | build/deploy/delete templates (image build + register) | — (CLI only) | `template build/deploy/delete`, `deploy`, `install` |
-| `ports.url` | public URL for a port | `network.get_url` | `sandbox system ports`, `url` |
-| `ports.domain` | custom domains for a sandbox/template | — (no per-sandbox API) | — |
-| `storage.mount` | mount object storage (OSS) | — (no per-sandbox API) | — |
-| `network.vpc` | attach a VPC | — (template `vpcConfig` only) | `--vpc-id` family |
-| `sessions` | sandbox identity survives the process (re-attach by id) | `Sandbox.connect` + `LocalSessionStore` | `session ...` |
+| Exact operation | Meaning | Python ProviderSandbox entry |
+| --- | --- | --- |
+| `sandbox.create`, `sandbox.connect`, `sandbox.delete` | Owned lifecycle phases | `create`, `connect`, `kill` |
+| `exec.run`, `exec.stream` | Buffered execution and separately declared streaming | `commands.run`, `commands.stream` |
+| `code.execute` | Stateless isolated interpretation | `code.run` |
+| `code.default-context.execute` | Persistent platform default context | `code.run(mode="default-context")` |
+| `code.context.execute` | Execute in the explicitly selected context | `code.run(context_id=...)` |
+| `code.context.create`, `code.context.list`, `code.context.restart`, `code.context.delete` | Independent context operations | Corresponding `code` methods |
+| `code.stream`, `code.results.structured` | Realtime callbacks and structured results | Separate requirements; buffered text does not imply either |
+| `ports.resolve` | Complete application gateway descriptor | `await application_client(port, token=...)` |
+| `template.prepare` | Explicit source preparation | CLI only when the adapter/profile implements it |
 
-A sandbox's capabilities stay the **template's capabilities** (unchanged); where the provider lacks the feature behind a capability token (`shell ← exec.run`, `files ← files.rw`, `code ← code.interpret`, `terminal ← pty`, `ports ← ports.url`) the call raises `E8004` at call time. The implementation does not intersect the two sets up front: the template is provider-independent data, and failing at the call with a precise error is simpler and cannot disagree with the provider's behaviour.
+Templates declare software/services and workflows. Unknown metadata grants no default interpreter, and a missing interpreter operation does not block an unrelated HTTP application. A static F identifies the missing adapter/client/input/startup requirement; T permits local checks and does not certify the account, network or running instance. Runtime refusal E8004 identifies the project adapter operation, not an absence in the upstream platform. An actual missing runtime remains an error; shell execution must be explicitly selected.
+
+Express/E2B/REST project adapters currently declare no interpreter operations; CubeSandbox/container declare persistent default-context execution only. The pinned standard SDK is independent. Current workflows require their exact declared operations.
 
 ### 7.3 Tradeoff analysis: how do plugins load?
 
@@ -360,7 +353,10 @@ class Provider(ABC):
     display_name: str               # "Alibaba Cloud Express Edition"
     display_name_zh: str            # "阿里云极速版"
     version: str
-    features: frozenset[ProviderFeature]
+    features: frozenset[ProviderFeature]  # management/discovery metadata
+    operations: frozenset[str]          # exact Python consumer operations
+    workflow_inputs: tuple[str, ...]
+    startup_modes: tuple[str, ...]
     config_fields: tuple[ConfigField, ...]   # provider-scoped schema
     uses_core: frozenset[str]                # core keys it consumes
     kind: Literal["builtin", "rest", "exec", "python"]
@@ -391,7 +387,7 @@ The table below is normative and is also shipped as `client-sdk/tests/fixtures/e
 | `sandbox.set_timeout` | `{sandbox_id, timeout}` | `{}` | `sandbox.timeout` | R |
 | `sandbox.pause` / `sandbox.resume` | `{sandbox_id}` | `{}` | `sandbox.pause` | R |
 | `exec.run` | `{sandbox_id, cmd, args, env, cwd, user, timeout, stdin?}` | `{exit_code, stdout, stderr, stdout_b64?, stderr_b64?}` | `exec.run` | R |
-| `exec.start` | same as `exec.run`, plus `detached?` | `{process_id: string}`, then notifications `exec.output{process_id, stream, data}` and exactly one `exec.exit{process_id, exit_code}` | `exec.stream` | R (`detached`: X) |
+| `exec.start` | same as `exec.run`, plus `detached?` | `{process_id: string|integer}`, then notifications `exec.output{process_id, stream, data}` and exactly one `exec.exit{process_id, exit_code}` | `exec.stream` | R (`detached`: X) |
 | `process.list` | `{sandbox_id}` | `{processes:[{pid, command, status, …}]}` | `process.manage` | R |
 | `process.kill` / `process.signal` / `process.stdin` | `{sandbox_id, pid, signal? \| data?}` | `{}` | `process.manage` | R (`stdin` may answer `-32003`) |
 | `files.read` | `{sandbox_id, path, offset?, length?}` | `{content_b64, size}` | `files.rw` | R (`offset`/`length`: X) |
@@ -406,7 +402,7 @@ The table below is normative and is also shipped as `client-sdk/tests/fixtures/e
 | `pty.open` | `{sandbox_id, cols?, rows?}` | `{process_id}`, then notifications `pty.output{process_id, data_b64}` and one `pty.exit{process_id}` | `pty` | R |
 | `pty.write` / `pty.resize` / `pty.close` | `{sandbox_id, process_id, data_b64 \| cols, rows \| —}` | `{}` | `pty` | R |
 
-Parameter conventions: `secure` is sent **only** when the caller passed `secure=True/False` to `Sandbox.create` (otherwise absent, so the plugin's own default applies; the built-in provider behaves as `secure=True`). `options` is the caller's `provider_options` (declared config fields only) **minus secret fields**, for per-create settings (network policy, platform, image pull settings); a plugin must whitelist the keys it accepts per create and never let `options` change the server address or credentials. `process_id` (from `exec.start`) is a **string**; the `pid` of `process.*` is an opaque `string | integer`: the integer `pid` of a `process.list` entry or a `process_id`, and the SDK's `ProcessInfo.pid` and `commands.kill/send_signal/send_input` accept both. `sandbox.get` is the only required lookup; `sandbox.connect` is for plugins whose "connect" does more (resume). Unknown parameters must be ignored by both sides.
+Parameter conventions: `secure` is sent **only** when the caller passed `secure=True/False` to `Sandbox.create` (otherwise absent, so the plugin's own default applies; the built-in provider behaves as `secure=True`). `options` is the caller's `provider_options` (declared config fields only) **minus secret fields**, for per-create settings (network policy, platform, image pull settings); a plugin must whitelist the keys it accepts per create and never let `options` change the server address or credentials. `process_id` (from `exec.start`) is a **native nonempty string or positive safe integer**; the `pid` of `process.*` is an opaque `string | integer`: the integer `pid` of a `process.list` entry or a `process_id`, and the SDK's `ProcessInfo.pid` and `commands.kill/send_signal/send_input` accept both. `sandbox.get` is the only required lookup; `sandbox.connect` is for plugins whose "connect" does more (resume). Unknown parameters must be ignored by both sides.
 
 `SandboxRecord` = `{sandbox_id, template, status("creating"|"running"|"paused"|"stopping"|"stopped"|"error"), region?, created_at?, expires_at?, metadata{}, envd_url?, envd_access_token?, url?}` (status values are the SDK's `SandboxStatus`).
 
@@ -652,7 +648,7 @@ Missing *credential* fields (`credential = true`) raise the existing `InvalidCre
 6. **EPP client** against the reference plugin: handshake, version mismatch, feature gating, error mapping table, timeouts, crash, malformed lines, oversized lines, stderr capture, env scrubbing (the plugin echoes its env), process-group kill, cancel.
 7. **Sandbox integration**: `Sandbox.create(provider="local-process")` → `commands.run`, `files.write/read/list/exists/remove`, `kill`, `connect`; unsupported feature → `E8004`; default path untouched.
 8. **Contract tests**: `providers/testing.py` ships a reusable `ProviderContractTests` base (18 tests: declaration, lifecycle, idempotent kill, `set_timeout`, pause/resume, exec exit code/stderr/env, stream order and a single exit, timeout enforcement, process list, files text/binary/directories/move/missing → typed not-found, `ports.url`, undeclared feature → E8004, secret redaction). Run it with `python -m agent_sandbox.providers test <id> [--option K=V]` (fails when nothing is collected), with `pytest -p agent_sandbox.providers.testing --pyargs agent_sandbox.providers.contract --provider-under-test <id>`, or by subclassing. Tests for undeclared features expect E8004; declared ones must work.
-8a. **Method table**: `epp-methods.json` (above) is checked against the host adapters in both directions, and a recording-client test pins parameter names/types (`files.move` is `source`/`destination`, `process_id` is a string, `pid` is `string|integer`, `secure` only when set, `options` without secrets).
+8a. **Method table**: `epp-methods.json` (above) is checked against the host adapters in both directions, and a recording-client test pins parameter names/types (`files.move` is `source`/`destination`, `process_id` is a native string or integer, `pid` is `string|integer`, `secure` only when set, `options` without secrets).
 9. **Reference plugins** (`examples/providers/`): `e2b-compatible` (kind `rest`, manifest only) and `local-process` (kind `exec`, Python stdlib, ~200 lines: lifecycle, exec, files). Used by tests and as templates for authors. The Node CLI tests use the same directories.
 
 ---

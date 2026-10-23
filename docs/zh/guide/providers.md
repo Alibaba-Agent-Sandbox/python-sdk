@@ -1,5 +1,7 @@
 # 提供方（Providers）
 
+工作流按具体消费入口的精确操作判断，见[模板工作流](template-workflows.md)。
+
 本指南描述异步 `ProviderSandbox` 扩展；根级 `Sandbox` 和 `AsyncSandbox` 遵循固定版本的标准迁移契约，详见[从 E2B 迁移](migrate-from-e2b.md)。
 
 > **说明：** 本页的 `abx provider ...` 命令由 `cli` 仓库中的 Node.js CLI 提供。只用 Python 的用户可以用 `python -m agent_sandbox.providers ...` 完成同样的操作。两者使用相同的安装目录、相同的回执和相同的目录树摘要。
@@ -150,7 +152,6 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 | `exec.run`、`exec.stream`、`process.manage` | 缓冲式命令；流式输出；列出、终止和发信号给进程 |
 | `pty` | 交互式终端 |
 | `files.rw`、`files.watch`、`files.transfer` | 读、写、列出、移动、删除；监听；带签名的上传和下载 URL |
-| `code.interpret` | 有状态的代码上下文 |
 | `templates.read`、`templates.build` | 列出和查看模板；原有镜像构建、部署和删除 |
 | `ports.url`、`ports.domain` | 端口的公网 URL；自定义域名 |
 | `storage.mount`、`network.vpc` | 对象存储挂载；VPC 接入 |
@@ -185,7 +186,6 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 | `files.rw` | `files.*` | `upload`、`download`、`sandbox files ...` |
 | `files.watch` | `files.watch` | — |
 | `files.transfer` | 带签名的上传和下载 URL | — |
-| `code.interpret` | `run_code` | `sandbox code` |
 | `templates.read` | 模板读取 API | `template list`、`template info` |
 | `templates.build` | 镜像构建和模板注册 | `template build/push/create/deploy/install/delete`、`deploy`、`install` |
 | `ports.url` | `network.get_url` | `sandbox url` |
@@ -216,7 +216,7 @@ await sb.kill()
 
 上面的 feature id 是工具的公共面。提供方在这之外的操作登记到 `Provider.extensions`。它们不进 `features`，所以 `provider list` 的一行摘要里没有，别的提供方也不会带上。
 
-`describe()["extensions"]` 始终给出该提供方的全部登记。`extensions_for(sandbox_id=...)` 只给出这个沙箱满足条件的项：`code` 只在镜像名包含 `code-interpreter` 时出现，`networkpolicy` 只在创建时要了 egress 时出现，`command.logs` 只在已经有命令 id 时出现。`implemented=False` 的项在这些条件下可见，`require_extension` 仍然返回 `E8004`。早先的 Python 版 OpenSandbox 提供方这样登记了 `code`、`session`、`command.logs`、`snapshot`、`networkpolicy`、`metadata.patch`、`diagnostics`、`metrics`。现行目录提供方是 `kind = "node"`（`EngineProvider`），它的 `extensions` 是空的。
+`describe()["extensions"]` 列出当前 Provider 登记的扩展。扩展不代表标准操作已接入；以具体消费入口的精确操作为准。
 
 ---
 
@@ -282,7 +282,7 @@ OpenSandbox 是 [awesome-providers/opensandbox](https://github.com/alibaba-agent
 - **按特性**：`exec.run`、`exec.start`（`exec.stream`）、`process.list|kill|signal|stdin`、`files.read|write|list|stat|mkdir|remove|move`、`ports.url`、`sandbox.set_timeout`、`sandbox.pause|resume`。只有实现了某个特性的全部方法才声明它；其余情况宿主抛出 E8004。
 - **扩展**（宿主暂不调用，插件可以提供）：`files.search`、`files.chmod`、`exec.start{detached}`、`files.read{offset,length}`、`files.write{mode,append}`。
 - `files.move` 的参数是 `{sandbox_id, source, destination, overwrite?}`（插件也可以接受 `src`/`dest`）。
-- `exec.start` 返回**字符串**类型的 `process_id`。`process.kill|signal|stdin` 的 `pid` 是不透明 id：既可以是 `process.list` 条目的整数 `pid`，也可以是该字符串；`ProcessInfo.pid` 和 `commands.kill(pid)` 两者都接受。
+- `exec.start` 返回后端原生的非空不透明字符串或正的安全整数 `process_id`。启动时先发送数据为空、携带原始 `pid` 的确认块；标识缺失或非法会失败，stdout 不作为启动确认。`process.kill|signal|stdin` 的 `pid` 是不透明 id：既可以是 `process.list` 条目的整数 `pid`，也可以是该原生启动标识；`ProcessInfo.pid` 和 `commands.kill(pid)` 两者都接受。
 - 未知的错误 `sdk_code` 会回退为该 EPP 码的默认类。可接受的值就是宿主映射的 SDK 错误码，例如 `E1001`（凭证错误）、`E2000`/`E2001`（沙箱 / 模板未找到）、`E3001`（命令超时）、`E4001`（文件未找到），见[错误码参考](../reference/error-codes.md)。缺失**文件**时单独的 `-32002` 会变成 E8005，所以请带上 `sdk_code: "E4001"`；在 `sandbox.get`/`connect`/`set_timeout`/`pause`/`resume` 上，未知沙箱的单独 `-32002` 会变成 E2009（插件也可以直接写 `sdk_code: "E2009"`）。
 - 清单里的默认值会**随** `initialize.config` 一起送达。不要给带有替代项的字段（`base_url` 与 `domain`）设置默认值：默认值总会胜出。
 - 对一个正在运行的请求发 `$/cancel {id}` 的含义是：停止工作（杀掉派生的进程），并以错误或最终结果应答。

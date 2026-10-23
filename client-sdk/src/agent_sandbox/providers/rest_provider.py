@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any
 from agent_sandbox.models.errors import InvalidAPIKeyError
 from agent_sandbox.providers.base import Provider, ProviderInfra, consented_inherit
 from agent_sandbox.providers.feature_gate import (
-    CODE_RULES,
     FILESYSTEM_RULES,
     PROCESS_RULES,
     SANDBOX_RULES,
@@ -52,6 +51,9 @@ class RestProvider(Provider):
         self.display_name_zh = manifest.name_zh
         self.version = manifest.version
         self.features = frozenset(manifest.features)
+        self.operations = frozenset(manifest.operations["python"])
+        self.workflow_inputs = frozenset(manifest.workflow_inputs)
+        self.startup_modes = frozenset(manifest.startup_modes)
         self.config_fields = manifest.fields
         self.auth_any_of = manifest.auth_any_of
         self.inherit = consented_inherit(manifest.inherit, receipt)
@@ -65,6 +67,34 @@ class RestProvider(Provider):
         self.derive = dict(ep.get("derive", {}))
         self._auth_cfg = dict(ep.get("auth", {"scheme": "bearer"}))
 
+    def content_digest(self) -> str:
+        from agent_sandbox.workflows.identity import snapshot_digest
+
+        return snapshot_digest(
+            {
+                "native-package": super().content_digest().encode(),
+                "manifest": self.manifest.sha256.encode(),
+            }
+        )
+
+    async def application_endpoint(
+        self, context: PortContext, port: int, protocol: Any = None
+    ) -> dict[str, Any]:
+        from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+
+        if "ports.resolve" not in self.operations:
+            raise ProviderFeatureNotSupportedError(self.id, "ports.resolve")
+        access = self.create_port_access(context, protocol)
+        return {
+            "provider_id": self.id,
+            "sandbox_id": context.sandbox_id,
+            "port": port,
+            "url": access.get_url(port),
+            "headers": access.get_server_headers(),
+            "authentication_audience": "gateway",
+            "path_mode": "prefix",
+        }
+
     async def prepare_session(
         self, infra: ProviderInfra, info: Any, *, operation: str, template: str
     ) -> dict[str, Any]:
@@ -75,7 +105,7 @@ class RestProvider(Provider):
     def session_protocols(self, http: Any) -> dict[str, Any]:
         from agent_sandbox.providers.shared.e2b.session import session_protocols
 
-        return session_protocols(http)
+        return session_protocols(http, provider_id=self.id)
 
     def create_port_access(self, context: PortContext, protocol: Any = None) -> PortAccess:
         from agent_sandbox.providers.shared.e2b.ports import WirePortAccess
@@ -96,7 +126,7 @@ class RestProvider(Provider):
         )
 
     async def build_infra(self, config: TransportConfig) -> ProviderInfra:
-        from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.providers.shared.e2b.code_interpreter import UnsupportedCodeProtocol
         from agent_sandbox.providers.shared.e2b.filesystem import FilesystemProtocol
         from agent_sandbox.providers.shared.e2b.process import ProcessProtocol
         from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
@@ -118,12 +148,18 @@ class RestProvider(Provider):
         def gate(protocol: Any, rules: dict[str, tuple[str, ...]]) -> Any:
             return gate_protocol(protocol, self.id, rules, self.features)
 
-        return ProviderInfra(
-            config=config,
-            auth=auth,
-            http_client=http,
-            sandbox_protocol=gate(SandboxProtocol(http, unknown_if_absent=True), SANDBOX_RULES),
-            process_protocol=gate(ProcessProtocol(http), PROCESS_RULES),
-            filesystem_protocol=gate(FilesystemProtocol(http), FILESYSTEM_RULES),
-            code_interpreter_protocol=gate(CodeInterpreterProtocol(http), CODE_RULES),
+        from agent_sandbox.providers.feature_gate import gate_operation_protocols
+
+        return gate_operation_protocols(
+            ProviderInfra(
+                config=config,
+                auth=auth,
+                http_client=http,
+                sandbox_protocol=gate(SandboxProtocol(http, unknown_if_absent=True), SANDBOX_RULES),
+                process_protocol=gate(ProcessProtocol(http), PROCESS_RULES),
+                filesystem_protocol=gate(FilesystemProtocol(http), FILESYSTEM_RULES),
+                code_interpreter_protocol=UnsupportedCodeProtocol(self.id),
+            ),
+            self.id,
+            self.operations,
         )

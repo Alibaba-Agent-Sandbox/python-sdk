@@ -116,39 +116,21 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 
 ### 症状
 
-```text
-[E3004] Capability 'ports' is not supported by this sandbox template.
-  Suggestion: Declare 'ports' in the template's capabilities list (template.yaml) or use a template that supports it.
-```
+目录显示所选路径未满足，或 Provider 返回 E8004 并指出 `code.execute`、`code.context.execute` 等具体操作。服务端被策略关闭的 HTTP 端点则可能返回 `endpoint_disabled` / E9003（也属于 E3004）。
 
 ### 解释
 
-Agent Sandbox 使用能力模型控制沙箱功能。每个能力需要在模板中显式声明：
-
-| 能力 | 默认包含 | 需要显式声明 |
-|------|----------|-------------|
-| `shell` | ✅ | — |
-| `files` | ✅ | — |
-| `code` | ✅ | — |
-| `terminal` | ❌ | 需在 template.yaml 中声明 |
-| `ports` | ❌ | 需在 template.yaml 中声明 |
+模板提供的软件服务、项目 Provider 适配器、具体客户端入口与实例当前环境是不同层。缺少项目适配器操作不代表平台原生 API 没有该能力；缺少统一解释器调用也不代表模板的应用 HTTP 不能用。Beta 成熟度和当前路径测试证据分别记录。
 
 ### 解决
 
-如果需要使用 `terminal` 或 `ports` 能力，使用声明了该能力的模板，或创建自定义模板：
+1. 确认具体工作流、消费入口和失败条件责任层；使用 [spec4 清单](../reference/template-yaml-spec.md)，不能补旧 `capabilities` 或 `tested_on`。
+2. 适配器不支持时实现/安装对应操作，或显式选择已支持的工作流。无状态、默认持久上下文、指定上下文和实时流不能互相冒充。
+3. 对应用服务，使用 `async with await sandbox.application_client(9000, token=application_token)` 独立解析端点，检查实际监听、协议版本、网关配置及应用令牌。
+4. HTTP 401 不做匿名重试；解释器 404 不转 shell。需要 shell 时显式调用命令 API。
+5. 服务端策略另外控制九个端点组；`core` 始终开启，`dev_tools`、`browser`、`agents` 默认关闭。检查 `server:`、实际加载的 policy 和环境配置，而不是模板的旧能力标签。
 
-```yaml
-# template.yaml
-name: my-web-template
-capabilities:
-  - shell
-  - files
-  - code
-  - terminal
-  - ports
-```
-
-> **Server 端能力组注意**：Server 端有 8 个能力组。其中 TERMINAL 默认启用，仅 DEV_TOOLS 和 BROWSER 默认禁用（`_DEFAULT_DISABLED = {DEV_TOOLS, BROWSER}`）。客户端能力（`capabilities` 字段）和 Server 端能力组是不同层面的控制。
+见[显式模板工作流](template-workflows.md)和[模板服务器 HTTP API](template-server-api.md)。
 
 ---
 
@@ -230,8 +212,8 @@ entries = await sandbox.files.list("/home/user")
 ```bash
 # 确保使用正确的包名
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
 
 # 如果遇到依赖冲突
 python -m pip check

@@ -107,3 +107,17 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Compatibility cleanup remote acceptance](evidence/verify/2026-10-22-remove-legacy-acceptance.md)
 
 - [Current compatibility-removal documentation verification](evidence/verify/2026-10-22-remove-legacy-docs.md).
+
+- [Explicit template workflows](notes/proposed/architecture/2026-10-23-template-workflow-contract.md) · [canonical vectors](evidence/verify/2026-10-23-workflow-foundation.md) · [provider operations](evidence/verify/2026-10-23-provider-workflow-operations.md) · [independent second-round review](evidence/verify/2026-10-23-workflow-round2-independent.md).
+- [Workflow runtime implementation and review](evidence/verify/2026-10-23-workflow-runtime-review.md).
+- [Workflow migration real-cloud acceptance](evidence/verify/2026-10-23-workflow-real-cloud.md).
+- [Workflow CI follow-up](evidence/verify/2026-10-23-workflow-ci-followup.md).
+- [Current workflow documentation and Python matrix](evidence/verify/2026-10-23-workflow-current-docs.md).
+- [Workflow YAML base-install correction](evidence/verify/2026-10-23-workflow-base-yaml-install.md).
+- [Immutable workflow source installation](evidence/verify/2026-10-23-workflow-source-install.md).
+
+- [Native startup acknowledgment correction](evidence/verify/2026-10-23-native-startup-acknowledgment.md).
+
+- [Native startup identifier wire table](evidence/verify/2026-10-23-native-startup-wire-table.md).
+- [Complete OpenSandbox workflow acceptance](evidence/verify/2026-10-23-workflow-opensandbox-acceptance.md).
+- [Provider error reference anchors](evidence/verify/2026-10-23-workflow-provider-error-anchors.md).

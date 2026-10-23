@@ -13,7 +13,7 @@ import os
 import socket
 import threading
 import time
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
@@ -113,9 +113,8 @@ async def sandbox_stub(local_server):
     client = ServerClient(f"http://127.0.0.1:{port}", timeout=10)
 
     sb = MagicMock(spec=Sandbox)
-    sb.server = client
+    sb.application_client = AsyncMock(return_value=client)
     sb._info = MagicMock(envd_url=f"http://127.0.0.1:{port}")
-    sb._require_data_plane = lambda feature: None
     sb.run = Sandbox.run.__get__(sb, Sandbox)
 
     yield sb

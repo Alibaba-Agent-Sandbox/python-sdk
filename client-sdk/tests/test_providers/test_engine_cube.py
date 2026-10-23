@@ -130,7 +130,9 @@ async def test_cube_data_plane(engine_env: Path, mock_backend: int) -> None:
         event = await anext(watched)
         assert event.path.endswith("a.txt")
 
-        run = await sandbox.run_code("print(42)", language="python", envs={"FOO": "bar"})
+        run = await sandbox.run_code(
+            "print(42)", mode="default-context", language="python", envs={"FOO": "bar"}
+        )
         assert "42" in (run.stdout + run.text)
         assert run.exit_code == 0
 

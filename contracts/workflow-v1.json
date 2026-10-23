@@ -1,0 +1,426 @@
+{
+  "version": 1,
+  "template_spec_version": 4,
+  "max_safe_integer": 9007199254740991,
+  "consumers": [
+    "cli",
+    "python-provider",
+    "server-client",
+    "native-sdk"
+  ],
+  "operations": {
+    "sandbox.create": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "sandbox.get": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "sandbox.list": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "sandbox.delete": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "sandbox.timeout": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "sandbox.pause": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "sandbox.resume": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "template.prepare": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "exec.run": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "exec.stream": {
+      "state": "operation-specific",
+      "streaming": true
+    },
+    "files.read": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "files.write": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "files.list": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "files.stat": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "files.remove": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "files.move": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "ports.resolve": {
+      "state": "operation-specific",
+      "streaming": false
+    },
+    "code.execute": {
+      "state": "stateless",
+      "streaming": false
+    },
+    "code.context.create": {
+      "state": "explicit-context",
+      "streaming": false
+    },
+    "code.context.execute": {
+      "state": "explicit-context",
+      "streaming": false
+    },
+    "code.context.list": {
+      "state": "explicit-context",
+      "streaming": false
+    },
+    "code.context.restart": {
+      "state": "explicit-context",
+      "streaming": false
+    },
+    "code.context.delete": {
+      "state": "explicit-context",
+      "streaming": false
+    },
+    "code.default-context.execute": {
+      "state": "persistent-default",
+      "streaming": false
+    },
+    "code.stream": {
+      "state": "operation-specific",
+      "streaming": true
+    },
+    "code.results.structured": {
+      "state": "operation-specific",
+      "streaming": false
+    }
+  },
+  "template_keys": [
+    "spec_version",
+    "workflow_contract_version",
+    "provides",
+    "default_workflow",
+    "workflows"
+  ],
+  "retired_keys": [
+    "capabilities",
+    "tested_on",
+    "providers"
+  ],
+  "workflow_keys": [
+    "kind",
+    "input",
+    "startup",
+    "binding",
+    "operation",
+    "required_operations",
+    "service",
+    "required_checks"
+  ],
+  "workflow_required": [
+    "kind",
+    "input",
+    "startup",
+    "binding",
+    "operation",
+    "required_operations"
+  ],
+  "kinds": [
+    "application",
+    "exec",
+    "interpreter"
+  ],
+  "inputs": [
+    "source",
+    "image",
+    "managed",
+    "service"
+  ],
+  "startups": [
+    "exec",
+    "entrypoint",
+    "none"
+  ],
+  "binding_keys": [
+    "transport",
+    "endpoint",
+    "caller",
+    "authentication"
+  ],
+  "binding_values": {
+    "transport": [
+      "http",
+      "exec",
+      "sse",
+      "websocket"
+    ],
+    "endpoint": [
+      "provider-port",
+      "guest-loopback",
+      "explicit-url",
+      "provider-native"
+    ],
+    "caller": [
+      "host",
+      "guest"
+    ],
+    "authentication": [
+      "none",
+      "service-token",
+      "provider"
+    ]
+  },
+  "service_keys": [
+    "protocol",
+    "version",
+    "port",
+    "operations"
+  ],
+  "clients": {
+    "cli": {
+      "agent-sandbox-server": {
+        "versions": [
+          2
+        ],
+        "operations": [
+          "commands.list",
+          "commands.run",
+          "health"
+        ]
+      }
+    },
+    "python-provider": {
+      "agent-sandbox-server": {
+        "versions": [
+          2
+        ],
+        "operations": [
+          "commands.list",
+          "commands.run",
+          "health"
+        ]
+      }
+    },
+    "server-client": {
+      "agent-sandbox-server": {
+        "versions": [
+          2
+        ],
+        "operations": [
+          "commands.list",
+          "commands.run",
+          "health"
+        ]
+      }
+    }
+  },
+  "rules": [
+    {
+      "when": {
+        "input": [
+          "source"
+        ]
+      },
+      "operations": [
+        "template.prepare"
+      ],
+      "phase": "before-prepare",
+      "owner": "provider"
+    },
+    {
+      "when": {
+        "input": [
+          "source",
+          "image",
+          "managed"
+        ]
+      },
+      "operations": [
+        "sandbox.create",
+        "sandbox.delete"
+      ],
+      "phase": "before-create",
+      "owner": "provider"
+    },
+    {
+      "when": {
+        "startup": [
+          "exec"
+        ]
+      },
+      "operations": [
+        "exec.run"
+      ],
+      "phase": "before-start",
+      "owner": "provider"
+    },
+    {
+      "when": {
+        "kind": [
+          "application"
+        ],
+        "binding.endpoint": [
+          "provider-port"
+        ]
+      },
+      "operations": [
+        "ports.resolve"
+      ],
+      "phase": "before-invoke",
+      "owner": "provider"
+    },
+    {
+      "when": {
+        "binding.caller": [
+          "guest"
+        ]
+      },
+      "operations": [
+        "exec.run"
+      ],
+      "phase": "before-invoke",
+      "owner": "provider"
+    },
+    {
+      "when": {},
+      "when_present": [
+        "manifest.ready_cmd"
+      ],
+      "operations": [
+        "exec.run"
+      ],
+      "phase": "before-invoke",
+      "owner": "provider"
+    }
+  ],
+  "truth_table": {
+    "TT": "T",
+    "TF": "F",
+    "TU": "U",
+    "FT": "F",
+    "FF": "F",
+    "FU": "F",
+    "UT": "U",
+    "UF": "F",
+    "UU": "U"
+  },
+  "phases": [
+    "before-prepare",
+    "before-create",
+    "before-start",
+    "after-create",
+    "before-invoke",
+    "cleanup"
+  ],
+  "error_kinds": [
+    "input",
+    "adapter-unimplemented",
+    "client-unimplemented",
+    "configuration",
+    "unauthorized",
+    "unreachable",
+    "not-ready",
+    "runtime-missing",
+    "protocol-mismatch",
+    "uncertain",
+    "cleanup-failed"
+  ],
+  "numeric_domain": {
+    "integers": "safe-integer-only",
+    "unknown_fields": "reject",
+    "serialization": "UTF-8 JSON, recursively lexicographically sorted object keys, no whitespace, no NaN/Infinity; integer numbers only",
+    "time_unit": "seconds"
+  },
+  "events": {
+    "terminal": "exactly one final or error",
+    "callbacks": "buffered callbacks do not imply real-time stream",
+    "context": "code.execute is stateless; code.default-context.execute is persistent; explicit context requires code.context.execute; no fallback"
+  },
+  "provider_fields": {
+    "workflow_inputs": [
+      "source",
+      "image",
+      "managed",
+      "service"
+    ],
+    "startup_modes": [
+      "exec",
+      "entrypoint",
+      "none"
+    ]
+  },
+  "constraints": [
+    {
+      "when": {
+        "input": [
+          "source",
+          "image",
+          "managed"
+        ]
+      },
+      "operation": "workflow.input",
+      "phase": "before-prepare",
+      "owner": "provider",
+      "test": "member",
+      "left": "workflow.input",
+      "right": "provider.workflow_inputs",
+      "reason": "input-unimplemented"
+    },
+    {
+      "when": {
+        "input": [
+          "source",
+          "image",
+          "managed"
+        ]
+      },
+      "operation": "workflow.startup",
+      "phase": "before-start",
+      "owner": "provider",
+      "test": "member",
+      "left": "workflow.startup",
+      "right": "provider.startup_modes",
+      "reason": "startup-unimplemented"
+    },
+    {
+      "when": {
+        "input": [
+          "managed"
+        ]
+      },
+      "operation": "reference.provider",
+      "phase": "before-create",
+      "owner": "template",
+      "test": "equal",
+      "left": "manifest.provider",
+      "right": "provider.id",
+      "reason": "reference-provider-mismatch"
+    }
+  ],
+  "identity_encoding": {
+    "contract_digest": "sha256:hex of exact workflow-v1.json bytes",
+    "manifest_digest": "sha256:hex of exact manifest bytes",
+    "profile_digest": "bare sha256 hex of canonical sorted compact UTF-8 JSON profile",
+    "binding_digest": "sha256:hex of canonical sorted compact UTF-8 string-only JSON binding",
+    "consumer_version": "consumer@40-lowercase-hex-git-revision"
+  }
+}

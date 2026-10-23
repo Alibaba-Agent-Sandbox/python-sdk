@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
+import e2e_helpers as H
 import httpx
 import pytest
-
-import e2e_helpers as H
 
 
 def test_port_url_format_is_computed_locally(base_sandbox):  # type: ignore[no-untyped-def]
@@ -44,45 +43,27 @@ def test_port_without_listener_is_not_a_success(base_sandbox):  # type: ignore[n
     assert r.status_code >= 400
 
 
-def test_run_code_python_returns_stdout(run, code_sandbox):  # type: ignore[no-untyped-def]
-    result = run(code_sandbox.run_code("print('hi')"))
-    assert result.exit_code == 0
-    assert result.stdout == "hi\n"
-    assert result.success
+@pytest.mark.parametrize("mode", ["stateless", "default-context"])
+def test_project_interpreter_is_explicitly_unimplemented(run, base_sandbox, mode):
+    """No guessed RPC or shell execution is used as an interpreter substitute."""
+    from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+
+    expected = "code.execute" if mode == "stateless" else "code.default-context.execute"
+    with pytest.raises(ProviderFeatureNotSupportedError, match=expected):
+        run(base_sandbox.run_code("raise RuntimeError('must not execute')", mode=mode))
 
 
-@pytest.mark.known_issue
-@pytest.mark.xfail(
-    strict=True,
-    reason="KI-009 (platform): the Jupyter code-interpreter service answers HTTP 404 on this cloud, so "
-    "run_code falls back to a shell and the value of a trailing expression is not returned",
-)
-def test_run_code_returns_last_expression_value(run, code_sandbox):  # type: ignore[no-untyped-def]
-    result = run(code_sandbox.run_code("21 * 2"))
-    assert result.text.strip() == "42"
+def test_project_context_not_inferred_from_platform_runtime(run, base_sandbox):
+    from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+
+    with pytest.raises(ProviderFeatureNotSupportedError, match="code.context.create"):
+        run(base_sandbox.code.create_context())
 
 
-def test_run_code_reports_exceptions(run, code_sandbox):  # type: ignore[no-untyped-def]
-    result = run(code_sandbox.run_code("1/0"))
-    assert result.exit_code != 0 or "ZeroDivisionError" in result.stderr
-    assert "ZeroDivisionError" in result.stderr
+def test_project_stream_not_inferred_from_buffered_shell(run, base_sandbox):
+    from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
 
-
-def test_run_code_state_is_not_shared_between_shell_runs(run, code_sandbox):  # type: ignore[no-untyped-def]
-    run(code_sandbox.run_code("e2e_value = 5"))
-    again = run(code_sandbox.run_code("print('e2e_value' in dir())"))
-    assert again.exit_code == 0
-
-
-def test_run_code_streams_callbacks(run, code_sandbox):  # type: ignore[no-untyped-def]
-    seen: list[str] = []
-    run(code_sandbox.run_code("print('cb-line')", on_stdout=seen.append))
-    assert any("cb-line" in s for s in seen)
-
-
-@pytest.mark.parametrize("language", ["python", "bash"])
-def test_run_code_languages(run, code_sandbox, language):  # type: ignore[no-untyped-def]
-    code = "print(1+1)" if language == "python" else "echo $((1+1))"
-    result = run(code_sandbox.run_code(code, language=language))
-    assert result.exit_code == 0
-    assert "2" in result.stdout
+    seen = []
+    with pytest.raises(ProviderFeatureNotSupportedError):
+        run(base_sandbox.run_code("print('must not execute')", on_stdout=seen.append))
+    assert seen == []

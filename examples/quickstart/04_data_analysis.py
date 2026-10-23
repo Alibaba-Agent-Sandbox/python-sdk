@@ -80,11 +80,11 @@ print(json.dumps(summary, ensure_ascii=False, indent=2))
 
 
 async def main() -> None:
-    api_key = os.environ.get("E2B_API_KEY", "")
+    api_key = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
     async with await Sandbox.create(
         template="base",
-        api_key=api_key,
+        sandbox_api_key=api_key,
         timeout=300,
     ) as sandbox:
         print(f"✓ 沙箱已创建: {sandbox.id}")
@@ -124,12 +124,12 @@ async def main() -> None:
             print(f"✗ 分析脚本执行失败 (exit={result.exit_code})")
             print(f"stderr: {result.stderr}")
 
-        # ── 4. 使用 run_code 直接执行代码片段 ────────────────────────
+        # ── 4. 显式执行第二个分析脚本 ────────────────────────
         print("\n" + "=" * 50)
-        print("使用 run_code() 直接分析 / Direct code execution")
+        print("显式脚本分析 / Explicit script execution")
         print("=" * 50)
 
-        code_result = await sandbox.run_code("""
+        await sandbox.files.write("/app/top_sales.py", """
 import pandas as pd
 df = pd.read_csv('/app/data/sales.csv')
 df['revenue'] = df['quantity'] * df['unit_price']
@@ -137,7 +137,8 @@ top3 = df.nlargest(3, 'revenue')[['date', 'product', 'region', 'revenue']]
 print("Top 3 单笔收入:")
 print(top3.to_string(index=False))
 """)
-        print(code_result.text or code_result.stdout)
+        code_result = await sandbox.commands.run("python /app/top_sales.py")
+        print(code_result.stdout)
 
     print("\n✓ 沙箱已自动销毁")
 

@@ -1,5 +1,7 @@
 # Provider authoring evaluation — how hard is it to add a provider?
 
+> Current workflow contract: [explicit template workflows](../guide/template-workflows.md). Historical suggestions to add an interpreter-to-shell fallback were rejected; exact operations and explicit shell invocation are required. The evaluation below is not a current readiness matrix.
+
 > **Historical.** This page evaluates the first `exec` plugin. The current OpenSandbox adapter is the `node` provider in [provider-opensandbox-mapping.md](provider-opensandbox-mapping.md). Node provider architecture: [node-provider-architecture.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/design/node-provider-architecture.md).
 
 > **Status**: Evaluation (evidence-based) with a resolution pass applied (see §10) · **Subject**: the `opensandbox` exec-provider plugin ([awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox)) written against the SDK docs, then driven against a real local OpenSandbox server. The plugin source is that catalog, not this repository. · **Companion docs**: [providers-and-credentials.md](providers-and-credentials.md) (normative design), [provider-opensandbox-mapping.md](provider-opensandbox-mapping.md) (research that fed the plugin), `../guide/providers.md` (user/author guide) · **中文**: [../../zh/design/provider-authoring-evaluation.md](../../zh/design/provider-authoring-evaluation.md)

@@ -39,10 +39,11 @@ dependencies = [
     "websockets>=16.1.1",
     "pydantic>=2.14.0",
     "python-dotenv>=1.0",
+    "pyyaml>=6.0.3",
     "protobuf>=5",
     "tomli>=2.0; python_version < '3.11'",
-    # Lock-step release: the container-side runtime (``agent_sandbox.server``) used to ship inside
-    # ``agent-sandbox-client`` itself, so it stays a hard dependency. Keep the pin equal to ``_version.py``.
+    # The client uses the matching local server runtime for its server/declarative helpers.
+    # Keep the required distribution version equal to ``_version.py``.
     "agent-sandbox-server==0.3.0",
 ]
 
@@ -55,17 +56,11 @@ mcp = [
 fast = [
     "orjson>=3.13.0",
 ]
-declarative = [
-    "pyyaml>=6.0.3",
-]
 session = [
     "filelock>=3.12",
 ]
-# Alias kept for ``pip install "agent-sandbox-client[server]"``: ``agent-sandbox-server`` is now a hard
-# dependency of ``agent-sandbox-client``, so this extra adds nothing.
-server = []
 all = [
-    "agent-sandbox-client[fast,session,mcp,declarative,server]",
+    "agent-sandbox-client[fast,session,mcp]",
 ]
 dev = [
     "agent-sandbox-client[all]",

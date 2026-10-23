@@ -318,13 +318,13 @@ sandbox.code  # CodeContextModule instance
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `run()` | `async def run(code, *, language="python", timeout=30, context_id=None, envs=None, on_stdout=None, on_stderr=None, on_result=None) -> CodeResult` | Execute code |
+| `run()` | `async def run(code, *, language="python", timeout=30, context_id=None, mode="stateless", envs=None, on_stdout=None, on_stderr=None, on_result=None) -> CodeResult` | Execute code |
 | `create_context()` | `async def create_context(*, language="python") -> dict` | Create an execution context |
 | `list_contexts()` | `async def list_contexts() -> list[dict]` | List all contexts |
 | `restart_context()` | `async def restart_context(context_id) -> dict` | Restart a context |
 | `remove_context()` | `async def remove_context(context_id) -> None` | Delete a context |
 
-All methods require the `code` capability and enforce it at runtime — calling any method without the `code` capability raises `CapabilityNotSupportedError` (E3004). Each async method has a `_sync` suffixed sync version.
+Each method requires its exact provider operation: `run()` defaults to `code.execute`; `mode="default-context"` selects `code.default-context.execute`, and a nonempty `context_id` selects `code.context.execute`. Context create/list/restart/delete are separate operations. Callbacks additionally require `code.stream`. Unsupported adapter operations raise E8004 before payload; missing runtime/HTTP 404 never falls back to shell. Each async method has a `_sync` suffixed version. See [workflows](../guide/template-workflows.md) for current adapter boundaries and the independent pinned standard clients.
 
 ---
 
@@ -343,12 +343,13 @@ you want policy-scoped, scope-checked access, or need endpoints envd lacks (`fil
 
 | Member | Signature | Description |
 |--------|-----------|-------------|
-| `ServerClient()` | `(base_url, *, token=None, headers=None, pty_url=None, timeout=30.0, http_client=None)` | `token` is sent as `Authorization: Bearer`; `headers` carry the gateway `X-Access-Token` |
-| `Sandbox.server` | `cached_property -> ServerClient` | Client for port 9000. Does not send the sandbox access token |
-| `Sandbox.server_at()` | `(port=9000, *, token=None, pty_port=9001, timeout=30.0) -> ServerClient` | A fresh client. Does not send the sandbox access token; `token` is `ABX_SERVER_TOKEN` |
+| `ServerClient()` | `(base_url, *, token=None, headers=None, pty_url=None, timeout=30.0, http_client=None, expires_at=None)` | `token` is sent as `Authorization: Bearer`; `headers` carry the gateway `X-Access-Token` |
+| `ProviderSandbox.application_client()` | `async (port=9000, *, token=None, timeout=30.0) -> ServerClient` | Resolves the provider application gateway descriptor, preserves its prefix/query and gateway headers, and uses a separate application token. Recommended across providers |
+| `Sandbox.server` | `cached_property -> ServerClient` | Client for port 9000. Native local URL helper; use application_client for a provider gateway descriptor |
+| `Sandbox.server_at()` | `(port=9000, *, token=None, pty_port=9001, timeout=30.0) -> ServerClient` | A fresh client. Native local URL helper; use application_client for a provider gateway descriptor; `token` is `ABX_SERVER_TOKEN` |
 | `Sandbox.start_server()` | `async (*, port=9000, commands=None, policy=None, token=None, env=None, command=None, wait=True, timeout=30.0) -> ServerClient` | Starts `agent-sandbox-server serve` as a background envd command and polls `/health`; `policy` is a dict (`ABX_SERVER_POLICY`) or a preset name; raises `ConnectionError_` on timeout |
 | `health()` | `async -> bool` | `GET /health`, never raises for an unreachable server |
-| `discover()` | `async -> ServerCapabilities` | `GET /capabilities`; caches the result in `client.capabilities` and enables fail-fast pre-checks |
+| `discover()` | `async -> ServerCapabilities` | `GET /capabilities`; requires exact integer `api_version=2` and an endpoint map before enabling calls; caches the checked document |
 | `forget_discovery()` | `() -> None` | Drop the cache (policy changed) |
 | `check()` | `async (endpoint, path=None, op=None) -> PathDecision` | `POST /capabilities/check` |
 | `with_token()` | `(token) -> ServerClient` | Same server, another identity |
@@ -461,6 +462,7 @@ class SandboxStatus(str, Enum):
 | `type` | `ProcessChunkType` | `stdout` / `stderr` / `exit` |
 | `data` | `str` | Data content |
 | `exit_code` | `int \| None` | Exit code (only for `exit` type) |
+| `pid` | `int \| str \| None` | Native startup acknowledgment identifier; preserved as an integer or opaque string |
 
 ### FileInfo
 

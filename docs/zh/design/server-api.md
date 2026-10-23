@@ -21,9 +21,7 @@
 - 每个路由归属一个 **能力组（CapabilityGroup）**，可整组启用/禁用。
 - 请求/响应对象是 stdlib `dataclass`（[`types.py`](../../../server-sdk/src/agent_sandbox/server/types.py)），不使用 Pydantic。
 
-> 注意：本文所述「能力组」是 **Server 端 RouteTable 的运行时开关**，与 SDK 模板层
-> （`models/template.py` / `api/capability.py`）的 `STANDARD_CAPABILITIES` 是两套独立机制，
-> 不要混淆。
+> 本文的组名是 **RouteTable 服务端端点策略规则**的别名，与模板规范 4 工作流、提供方操作契约 1 分开。模板声明自身提供的应用协议；所选提供方适配器及 SDK/CLI 调用方必须分别实现工作流要求的精确操作和绑定。未知元数据不授予操作。服务发现、端点策略和 token scopes 仍可拒绝端点，模板声明或历史 receipt 不会启用它。见[模板系统设计](template-system.md)和[显式模板工作流](../guide/template-workflows.md)。
 
 ### 1.2 启动方式
 

@@ -14,6 +14,7 @@ from agent_sandbox.models.template import (
     SandboxTemplate,
     validate_server_block,
 )
+from tests.workflow_fixtures import workflow_manifest
 
 VALID = {
     "preset": "transfer-only",
@@ -28,11 +29,11 @@ VALID = {
 
 
 def make(server: object) -> SandboxTemplate:
-    return SandboxTemplate.model_validate({"name": "t", "server": server})
+    return SandboxTemplate.model_validate(workflow_manifest(server=server))
 
 
 def test_default_is_none() -> None:
-    assert SandboxTemplate(name="t").server is None
+    assert SandboxTemplate.model_validate(workflow_manifest()).server is None
 
 
 def test_valid_block_round_trips() -> None:
@@ -40,7 +41,7 @@ def test_valid_block_round_trips() -> None:
 
 
 def test_existing_templates_without_server_are_unaffected() -> None:
-    t = SandboxTemplate.model_validate({"name": "t", "unknown_future_key": 1})
+    t = SandboxTemplate.model_validate(workflow_manifest(unknown_future_key=1))
     assert t.server is None
 
 

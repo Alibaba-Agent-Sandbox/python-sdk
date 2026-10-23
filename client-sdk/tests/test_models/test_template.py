@@ -6,48 +6,46 @@ from agent_sandbox.models.template import SandboxTemplate, TemplateRef
 
 
 class TestSandboxTemplate:
-    """Tests for SandboxTemplate model."""
+    """Current schema preserves application metadata and rejects old contracts."""
 
-    def test_minimal_template(self) -> None:
-        tmpl = SandboxTemplate(name="test")
-        assert tmpl.name == "test"
-        assert tmpl.version == "1.0.0"
-        assert tmpl.env == {}
-        assert tmpl.ports == []
-        assert tmpl.capabilities is None
+    def test_workflow_template(self) -> None:
+        from tests.workflow_fixtures import workflow_manifest
 
-    def test_full_template(self) -> None:
-        tmpl = SandboxTemplate(
-            name="data-science",
-            version="2.0.0",
-            description="Data science template",
-            env={"LANG": "C.UTF-8"},
-            cpu_count=2,
-            memory_mb=4096,
-            author="test-author",
-            license="MIT",
-            tags=["data", "python"],
-            capabilities=["shell", "files", "code"],
-        )
-        assert tmpl.name == "data-science"
-        assert tmpl.version == "2.0.0"
-        assert tmpl.cpu_count == 2
-        assert tmpl.memory_mb == 4096
-        assert tmpl.tags == ["data", "python"]
-        assert tmpl.capabilities == ["shell", "files", "code"]
+        tmpl = SandboxTemplate.model_validate(workflow_manifest())
+        assert tmpl.spec_version == 4
+        assert tmpl.default_workflow == "application"
+        assert tmpl.env == {} and tmpl.ports == []
+        assert "code" not in tmpl.discovery_capabilities()
 
-    def test_extra_fields_ignored(self) -> None:
-        """Legacy build fields (base, system_packages, etc.) are silently ignored."""
-        tmpl = SandboxTemplate(
-            name="test",
-            base="python:3.11",  # type: ignore[call-arg]
-            system_packages=["git"],  # type: ignore[call-arg]
-            python_packages=["flask"],  # type: ignore[call-arg]
-        )
-        assert tmpl.name == "test"
-        # extra fields are silently dropped by model_config = {"extra": "ignore"}
-        assert not hasattr(tmpl, "base")
-        assert not hasattr(tmpl, "system_packages")
+    def test_application_topology_round_trips(self) -> None:
+        from tests.workflow_fixtures import workflow_manifest
+
+        topology = {"workers": {"limits": {"cpu": 0.5}}}
+        tmpl = SandboxTemplate.model_validate(workflow_manifest(deployment=topology))
+        assert tmpl.model_dump()["deployment"] == topology
+
+    def test_retired_build_fields_are_rejected(self) -> None:
+        import pytest
+        from pydantic import ValidationError
+
+        from tests.workflow_fixtures import workflow_manifest
+
+        for field in (
+            "system_packages",
+            "python_packages",
+            "node_packages",
+            "copy_files",
+            "custom_commands",
+        ):
+            with pytest.raises(ValidationError, match="retired template fields"):
+                SandboxTemplate.model_validate(workflow_manifest(**{field: ["old"]}))
+
+    def test_old_missing_version_is_rejected(self) -> None:
+        import pytest
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            SandboxTemplate(name="old")
 
 
 class TestTemplateRef:

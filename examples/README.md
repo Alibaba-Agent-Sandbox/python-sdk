@@ -15,13 +15,13 @@ Examples are split by which package they exercise.
 ```bash
 # Full install (recommended — includes the declarative decorator, MCP server, ...)
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
 
 # Or install selectively
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[declarative] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
 
 # From source (run from the python-sdk repository root)
 pip install -e ./server-sdk -e ./client-sdk

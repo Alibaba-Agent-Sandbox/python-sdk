@@ -10,30 +10,16 @@ A short client for a server that is already running is [`examples/templates/pyth
 
 ## Reaching the sandbox
 
-Inside the container the server binds `0.0.0.0:9000` (the `serve` default). From outside, ask the SDK for the public URL of that port:
+The server defaults to `0.0.0.0:9000`. The provider must implement the required port resolution and network path, and the service must actually listen. Do not treat every endpoint as a `{port}-{sandbox_id}.{domain}` hostname. Resolve application HTTP independently from internal envd/EPP transport:
 
 ```python
-url = sandbox.network.get_url(9000)
-# https://{port}-{sandbox_id}.{domain}
-host = sandbox.network.get_host(9000)
+async with await sandbox.application_client(9000, token=application_token) as client:
+    result = await client.commands.run("hello", name="Python")
 ```
 
-`{domain}` comes from the provider that created the sandbox. The same call with `9001` is the PTY WebSocket port when the `terminal` group is on (`ABX_PTY_PORT`, default `9001`).
+This resolves the endpoint for that sandbox and port, preserving the full proxy prefix and signed query. Gateway headers and the application `ABX_SERVER_TOKEN` are separate; no control-plane API key is copied and no anonymous authentication retry occurs. Redirects (including another sandbox on the same origin), URL userinfo and authority overrides are rejected. Operation-signed endpoints require the provider's per-operation resolver, never generic prefix joining.
 
-On a machine where you started `python3 commands.py` yourself, the base URL is `http://127.0.0.1:9000`.
-
-`template.yaml` `ports` must include `9000` (and `9001` when you use the terminal) or the platform will not publish the port. `sandbox.network.get_url` only builds the host string; something in the container has to be listening.
-
-Named commands go through `sandbox.run` (or `sandbox.server`). That client does not send the sandbox access token. On Express, sending `X-Access-Token` to an `agent-sandbox-server` that has no `ABX_SERVER_TOKEN` is HTTP 401 on images built before this release.
-
-In secure mode the platform gateway has its own header. Use it for envd and for a manual request to a published port, not for `sandbox.run`:
-
-```python
-headers = sandbox.network.get_access_headers()
-# {"X-Access-Token": <sandbox access token>}
-```
-
-When the server was started with `ABX_SERVER_TOKEN`, pass that value as `sandbox.server_at(9000, token=...)`. It is sent as `Authorization: Bearer`.
+For a server you started locally, use an explicit `http://127.0.0.1:9000` application URL. Terminal WebSocket uses `ABX_PTY_PORT` (default `9001`) and requires its own declared/published port and protocol. Image port declarations, platform publication, network binding, application protocol and server policy are separate checks. See [explicit template workflows](template-workflows.md).
 
 ---
 
@@ -41,7 +27,7 @@ When the server was started with `ABX_SERVER_TOKEN`, pass that value as `sandbox
 
 `SandboxServer` reads `ABX_SERVER_TOKEN` once at startup.
 
-- Unset or empty: every route is accepted. The caller is the identity `anonymous`. A presented credential that matches no configured token stays anonymous as well (a gateway `X-Access-Token` is not a server login). Images built before this release returned `401` for that header; `sandbox.run` omits it so those images keep working.
+- Unset or empty: authentication defaults to `anonymous`; endpoint policy still applies. A presented credential that matches no configured token stays anonymous as well (a gateway `X-Access-Token` is not a server login).
 - Set: routes registered with `auth_required=True` (the default) require the token in `X-Access-Token` or `Authorization: Bearer <token>`. Both headers are accepted on every route and compared with `hmac.compare_digest`. A missing or wrong token is `401`:
 
 ```json
@@ -95,7 +81,7 @@ Ways to switch, all ending in the same per-endpoint rules:
 
 There is no environment variable that turns a group off. Write `groups: {process: false}` in `server:` or an `endpoints` rule instead. Layers, specificity and the `rule` names are in [Fine-grained capabilities](fine-grained-capabilities.md).
 
-`template.yaml` `capabilities` (`shell`, `files`, `code`, `terminal`, `ports`) are template metadata. They do not toggle these routes. Generated templates line them up as `files` ↔ `file_ops`, `shell` ↔ `process`, `code` ↔ `dev_tools`, `terminal` ↔ `terminal`, `ports` ↔ `system`.
+`provides`, explicit workflows, exact provider operations and this endpoint policy are separate contracts. Retired template `capabilities` is rejected; a workflow never enables an endpoint automatically.
 
 ---
 
@@ -581,6 +567,8 @@ Memory comes from `/proc/meminfo` when present. Disk is `shutil.disk_usage("/")`
 ```
 
 `408` on timeout. `500` if the runtime binary is missing. A policy `languages` list can reject a language.
+
+This `/code/run` is an opt-in application HTTP subprocess route, separate from the provider context-interpreter contract. Its existence does not claim persistent contexts or realtime streaming. A missing route never silently selects a different execution path.
 
 #### `GET /git/status?path=.`
 

@@ -3,7 +3,7 @@
 演示使用 @sandbox 装饰器将普通函数声明式地在远程沙箱中执行。
 Shows how to use the @sandbox decorator for declarative remote execution.
 
-需要安装: pip install agent-sandbox-client[declarative]
+需要安装: pip install agent-sandbox-client
 
 工作流程:
   1. 创建远程沙箱
@@ -16,19 +16,17 @@ Shows how to use the @sandbox decorator for declarative remote execution.
 
 import os
 
-# 确保 API Key 在装饰器生效前可用
-# @sandbox 装饰器会使用 api_key 参数或环境变量
-API_KEY = os.environ.get("E2B_API_KEY", "")
-
-# ── 从正确的路径导入装饰器 ────────────────────────────────────────────
 from agent_sandbox.declarative import sandbox
+
+# 使用项目 Provider 配置；装饰器不会创建资源直到函数实际调用。
+API_KEY = os.environ.get("ABX_SANDBOX_API_KEY")
 
 
 # ── 示例 1: 基础用法 — 蒙特卡洛法计算 π ──────────────────────────────
 @sandbox(
     template="code-interpreter-v1",
-    packages=["numpy"],           # 在沙箱中自动 pip install numpy
-    api_key=API_KEY,
+    packages=["numpy"],  # 在沙箱中自动 pip install numpy
+    sandbox_api_key=API_KEY,
 )
 def compute_pi(n: int) -> float:
     """在远程沙箱中使用蒙特卡洛方法计算 π 值。"""
@@ -44,7 +42,7 @@ def compute_pi(n: int) -> float:
 @sandbox(
     template="code-interpreter-v1",
     packages=["pandas"],
-    api_key=API_KEY,
+    sandbox_api_key=API_KEY,
 )
 def analyze_data(records: list[dict]) -> dict:
     """在远程沙箱中用 pandas 分析数据并返回摘要。"""
@@ -62,9 +60,9 @@ def analyze_data(records: list[dict]) -> dict:
 # ── 示例 3: 指定序列化方式 ───────────────────────────────────────────
 @sandbox(
     template="code-interpreter-v1",
-    serializer="json",            # 仅支持 json
-    timeout=120,                  # 沙箱超时 120 秒
-    api_key=API_KEY,
+    serializer="json",  # 仅支持 json
+    timeout=120,  # 沙箱超时 120 秒
+    sandbox_api_key=API_KEY,
 )
 def fibonacci(n: int) -> list[int]:
     """在远程沙箱中计算斐波那契数列。"""
@@ -80,11 +78,12 @@ def fibonacci(n: int) -> list[int]:
 @sandbox(
     template="code-interpreter-v1",
     envs={"APP_MODE": "sandbox-demo"},
-    api_key=API_KEY,
+    sandbox_api_key=API_KEY,
 )
 def check_env() -> dict:
     """读取沙箱中的环境变量。"""
     import os
+
     return {
         "APP_MODE": os.environ.get("APP_MODE", "unknown"),
         "HOME": os.environ.get("HOME", "unknown"),

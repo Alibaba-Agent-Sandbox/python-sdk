@@ -91,6 +91,10 @@ class Manifest:
     call_timeout_ms: int
     platforms: tuple[str, ...]
     features: tuple[str, ...]
+    operation_contract_version: int
+    operations: dict[str, tuple[str, ...]]
+    workflow_inputs: tuple[str, ...]
+    startup_modes: tuple[str, ...]
     security: dict[str, Any]
     inherit: tuple[str, ...]
     auth_any_of: tuple[tuple[str, ...], ...]
@@ -112,6 +116,10 @@ class Manifest:
             else ["rest", self.endpoint.get("base_url", "")],
             "security": self.security,
             "features": sorted(self.features),
+            "operation_contract_version": self.operation_contract_version,
+            "operations": {k: sorted(v) for k, v in self.operations.items()},
+            "workflow_inputs": sorted(self.workflow_inputs),
+            "startup_modes": sorted(self.startup_modes),
             "inherit": sorted(self.inherit),
             "fields": sorted(f.key for f in self.fields),
             "commands": [c.to_dict() for c in sorted(self.commands, key=lambda c: c.id)],
@@ -386,7 +394,7 @@ def parse_manifest(data: bytes | str) -> Manifest:
         raise _err(f"file exceeds {MANIFEST_MAX_BYTES // 1024} KiB")
     doc = _toml_loads(raw_bytes)
 
-    if doc.get("manifest_version") != 1:
+    if type(doc.get("manifest_version")) is not int or doc["manifest_version"] != 1:
         raise _err("manifest_version must be 1")
     prov = _table(doc, "provider", required=True)
     pid = _str(prov, "id", "provider", required=True)
@@ -491,6 +499,41 @@ def parse_manifest(data: bytes | str) -> Manifest:
     if unknown:
         raise _err(f"unknown feature(s): {', '.join(unknown)}")
 
+    from agent_sandbox.workflows.planner import CONTRACT
+
+    if (
+        type(doc.get("operation_contract_version")) is not int
+        or doc["operation_contract_version"] != 1
+    ):
+        raise _err("operation_contract_version must be 1")
+    operation_table = _table(doc, "operations", required=True)
+    if set(operation_table) != {"cli", "python"}:
+        raise _err("operations must declare exactly cli and python arrays")
+    operations: dict[str, tuple[str, ...]] = {}
+    known_operations = set(CONTRACT["operations"])
+    for consumer in ("cli", "python"):
+        values = _str_list(operation_table, consumer, "operations")
+        if len(values) != len(set(values)) or set(values) - known_operations:
+            raise _err(f"operations.{consumer} contains duplicate or unknown operations")
+        if consumer == "python" and "template.prepare" in values:
+            raise _err("operations.python template.prepare has no implementation")
+        if kind == "exec" and any(value.startswith("code.") for value in values):
+            raise _err("exec Python bridge does not implement interpreter operations")
+        if kind == "rest" and any(value.startswith("code.") for value in values):
+            raise _err("rest Python bridge has no verified interpreter wire mapping")
+        operations[consumer] = tuple(values)
+    workflow = _table(doc, "workflow", required=True)
+    if set(workflow) != {"inputs", "startups"}:
+        raise _err("workflow must declare exactly inputs and startups")
+    workflow_inputs = _str_list(workflow, "inputs", "workflow")
+    startup_modes = _str_list(workflow, "startups", "workflow")
+    for values, allowed_values, label in (
+        (workflow_inputs, {"source", "image", "managed", "service"}, "inputs"),
+        (startup_modes, {"exec", "entrypoint", "none"}, "startups"),
+    ):
+        if len(values) != len(set(values)) or set(values) - allowed_values:
+            raise _err(f"workflow.{label} contains duplicate or unknown values")
+
     sec = _table(doc, "security")
     security: dict[str, Any] = {
         "network": _str_list(sec, "network", "security"),
@@ -584,6 +627,10 @@ def parse_manifest(data: bytes | str) -> Manifest:
         call_timeout_ms=ms("call_timeout_ms", 60_000),
         platforms=platforms,
         features=tuple(supported),
+        operation_contract_version=1,
+        operations=operations,
+        workflow_inputs=tuple(workflow_inputs),
+        startup_modes=tuple(startup_modes),
         security=security,
         inherit=tuple(inherit),
         auth_any_of=tuple(any_of),

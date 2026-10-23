@@ -44,7 +44,7 @@ except SandboxError as e:
 | E2001 | `TemplateNotFoundError` | 模板不存在 | 运行 `abx template list` 查看可用模板 | 指定了不存在的模板名称 |
 | E2002 | `QuotaExceededError` | 配额超限 | 销毁空闲沙箱或申请提升配额 | 运行中的沙箱数量超过账户配额 |
 | E2003 | `RegionUnavailableError` | 区域不可用 | 尝试其他区域或检查服务可用性 | 请求的区域暂时不可用或不存在 |
-| E2004 | `TemplateParseError` | 模板解析失败 | 修复 template.yaml（见校验错误）；能力不会被授予直到模板解析成功 | template.yaml 格式错误或字段无效 |
+| E2004 | `TemplateParseError` | 清单解析失败 | 修正 spec4、必需工作流字段及未知/已移除字段 | 当前 YAML 不符合契约，不能以默认权限继续 |
 | E2009 | `SandboxNotFoundError` | 该 ID 的沙箱不存在 | 运行 `abx list` 查看运行中的沙箱；已销毁或已过期的沙箱无法重新连接 | 对平台返回 HTTP 404 的 ID 调用 `Sandbox.connect()` / `get_info()` / `set_timeout()` / `pause()` / `resume()`（`kill` 仍保持幂等） |
 
 ### 排查步骤
@@ -64,26 +64,17 @@ except SandboxError as e:
 | E3001 | `CommandTimeoutError` | 命令执行超时 | 增加 `timeout` 参数或检查命令是否卡死 | `commands.run()` 或 `run_code()` 超过 timeout |
 | E3002 | `ProcessError` | 进程非零退出码 | — | 命令返回非零退出码（携带 `exit_code`、`stdout`、`stderr` 属性） |
 | E3003 | `CodeExecutionError` | 代码执行失败 | 检查代码语法和运行时依赖 | Code Interpreter 执行代码失败 |
-| E3004 | `CapabilityNotSupportedError` | 能力未启用 | 在模板的 `capabilities` 列表中声明所需能力，或使用支持该能力的模板 | 调用了运行时门控能力但未声明（如在无 `code` 能力的模板上调用 `run_code()`）。也会在模板解析时由 `resolve_capabilities()` 抛出 |
+| E3004 | `CapabilityNotSupportedError` | 所选调用或端点不可用 | 检查具体操作及所选入口，不能添加旧模板能力标记绕过 | 服务端端点禁用等；Provider 精确操作不支持使用 E8004 |
 | E3005 | `CommandNotFoundError` | 命名命令未找到 | 用 `sandbox.list_commands()` 检查命令名，并确认沙箱里的 SandboxServer 在运行（`sandbox.start_server()`） | `Sandbox.run(name)` / `abx run <id> <名称>` 指定的命令在沙箱内 SandboxServer 中不存在（HTTP 404）。携带 `command_name` 属性 |
 | E3006 | `EnvdRpcError` | envd 拒绝了 RPC 调用（HTTP >= 400） | 检查命令与参数，或用 `abx -v` 查看原始错误响应 | 沙箱 envd 返回 HTTP >= 400（例如未知可执行文件触发 `process.Process/Start` 500）。携带 `status_code`、`rpc_path`、`envd_error`（解析后的 JSON 体）与 `body_text`；消息不包含完整沙箱 URL。`abx connect` 会将其映射为单条友好提示（如 `Command not found: <cmd>`） |
 
 ### E3004 详细说明
 
-> **说明（ADR 2026-09-23）**：大多数模块的运行时 `check_capability()` 门控已移除。`CommandsModule`、`FilesModule`、`NetworkModule` 不再在调用时抛出 E3004。**例外：`CodeContextModule` 保留了 `code` 能力门控**——其所有方法（`run`、`create_context`、`list_contexts`、`restart_context`、`remove_context`）在 `code` 能力缺失时仍会抛出 `CapabilityNotSupportedError`（E3004，fail-closed）。E3004 也仍在模板解析/模型校验时抛出（如 `resolve_capabilities()`）。
+异常保留 `capability` 属性，服务端 `EndpointNotAvailableError` 可用它标识被禁用的端点。Provider 解释器按精确操作门控，缺少操作返回 E8004，而不是检查模板 `code` 标记。
 
-`CapabilityNotSupportedError` 携带 `capability` 属性，指示缺少的能力名。
+`code.run()` 默认无状态（`code.execute`），由后端协议隔离每次执行；`mode="default-context"` 显式使用持久默认上下文，`context_id` 选择特定上下文。上下文创建/执行/列举/重启/删除各自需要操作支持。回调要求 `code.stream`。未知模板引用没有默认权限，不能通过添加 `capabilities` 修复。
 
-```python
-try:
-    result = await sandbox.run_code("print(1)")
-except CapabilityNotSupportedError as e:
-    print(f"缺少能力: {e.capability}")  # "code"
-```
-
-**标准能力**：`shell`、`files`、`code`、`terminal`、`ports`
-
-**默认能力集**：`{shell, files, code}`（不声明 `capabilities` 时自动获得）
+解释器 HTTP 404、缺 runtime 或未就绪不会回退 shell。需要 shell 时显式使用命令 API。应用 HTTP 服务通过独立的应用客户端调用，不因缺少解释器 API 而被阻断。详见[显式模板工作流](../guide/template-workflows.md)。
 
 ---
 
@@ -124,6 +115,8 @@ except CapabilityNotSupportedError as e:
 
 ---
 
+<a id="e8xxx--提供方错误providererror"></a>
+
 ## E8xxx — 提供方错误（ProviderError）
 
 由提供方层抛出（见[提供方指南](../guide/providers.md)）。全部继承 `SandboxError`。无论哪个提供方，CLI 退出码都相同。
@@ -134,7 +127,7 @@ except CapabilityNotSupportedError as e:
 | E8001 | `ProviderNotFoundError` | 提供方 id 未知或未安装 | `provider="x"` / `ABX_PROVIDER=x` 指向了未注册也未安装的提供方 | 4 |
 | E8002 | `ProviderConfigError` | 提供方选项无效或未知 | `provider_options` 的键不在插件 schema 里；类型错误；插件返回 `-32006` | 2 |
 | E8003 | `ProviderConflictError` | 提供方 id 重复或被保留 | 未加 `--force` 覆盖已有 id；注册保留 id | 1 |
-| E8004 | `ProviderFeatureNotSupportedError` | 提供方缺少该特性（同时是 `CapabilityNotSupportedError`） | 对未声明 `sandbox.pause` 的提供方调用 `pause()` | 1 |
+| E8004 | `ProviderFeatureNotSupportedError` | 项目 Provider 适配器/消费入口未实现所选操作（也属于 `CapabilityNotSupportedError`） | 缺少 `code.execute`、`code.context.execute`、`code.stream` 等精确操作；不表示平台原生 API 缺少能力 | 1 |
 | E8005 | `ProviderResourceNotFoundError` | 插件找不到沙箱、文件或模板 | 插件返回 `-32002` 且没有更具体的 `sdk_code` | 4 |
 | E8010 | `ProviderInstallError` | 安装无法完成 | 来源不可达；符号链接、路径或大小限制；存储被锁定 | 1 |
 | E8011 | `ProviderIntegrityError` | 摘要或固定提交不匹配 | 已安装文件在安装后被改动；`--sha256` 不匹配 | 1 |
@@ -156,6 +149,8 @@ except CapabilityNotSupportedError as e:
 4. E8021：到插件目录里手工运行插件命令查看报错；SDK 只显示 stderr 的最后 64 KiB。
 
 ---
+
+<a id="e9xxx--in-sandbox-server-api-errors-serverapierror"></a>
 
 ## E9xxx — 沙箱内服务端 API 错误（ServerAPIError）
 

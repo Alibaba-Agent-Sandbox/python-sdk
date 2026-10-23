@@ -11,7 +11,7 @@ Agents API 的完整案例不在本页。那一组请求、本地替身 CLI，�
 客户端读取 `E2B_API_KEY`。旧名字 `E2B_API_KEY` 不会被当前客户端当成沙箱密钥。
 
 ```bash
-pip install "agent-sandbox-client[declarative]"
+pip install "agent-sandbox-client"
 export E2B_API_KEY="your-api-key"
 ```
 
@@ -49,7 +49,7 @@ python examples/compat-demos/modal_data_analysis.py
 | `examples/compat-demos/modal_compute.py` | `@sandbox`：蒙特卡洛 π、矩阵乘、分布拟合 |
 | `examples/compat-demos/modal_data_analysis.py` | `@sandbox`：销售汇总、数据质量、产品排名 |
 
-`04_data_analysis.py` 在 `base` 上调用 `run_code()` 时，代码解释器端口可能返回 HTTP 404。客户端会改走 shell，示例仍打印表格。
+数据分析示例显式写入 Python 脚本并通过 `commands.run()` 执行。解释器调用要求匹配的解释器工作流，不会自动转 shell。
 
 创建失败时看异常上的错误码（例如模板不存在是 `E2001`），停掉这个示例，不要改去推镜像。
 

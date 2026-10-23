@@ -21,6 +21,7 @@ from agent_sandbox import ProviderSandbox as Sandbox
 from agent_sandbox.models.errors import (
     InvalidAPIKeyError,
     InvalidCredentialsError,
+    ProviderFeatureNotSupportedError,
     SandboxNotFoundError,
 )
 from agent_sandbox.models.filesystem import WatchEventType
@@ -152,10 +153,8 @@ async def test_e2b_lifecycle_and_data_plane(engine_env: Path, mock_backend: int)
         events = await (await sandbox.files.watch("/tmp")).collect()
         assert [(e.type, e.path) for e in events] == [(WatchEventType.MODIFIED, "/tmp/a.txt")]
 
-        code = await sandbox.run_code("print(42)", language="python")
-        assert code.stdout == "42\n"
-        assert code.text == "42"
-        assert code.exit_code == 0
+        with pytest.raises(ProviderFeatureNotSupportedError):
+            await sandbox.run_code("print(42)", language="python")
 
         await sandbox.kill()
         assert await Sandbox.list(provider="e2b", provider_options=options) == []

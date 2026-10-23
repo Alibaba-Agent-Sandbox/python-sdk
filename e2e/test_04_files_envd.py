@@ -70,7 +70,7 @@ def test_stat_via_shell_matches_written_size(run, base_sandbox, workdir):  # typ
 def test_rename_and_move(run, base_sandbox, workdir):  # type: ignore[no-untyped-def]
     d = workdir(base_sandbox)
     run(base_sandbox.files.write(f"{d}/old.txt", "content"))
-    run(base_sandbox.files.rename(f"{d}/old.txt", f"{d}/new.txt"))
+    run(base_sandbox.files.move(f"{d}/old.txt", f"{d}/new.txt"))
     assert run(base_sandbox.files.exists(f"{d}/old.txt")) is False
     run(base_sandbox.files.make_dir(f"{d}/dest"))
     run(base_sandbox.files.move(f"{d}/new.txt", f"{d}/dest/moved.txt"))

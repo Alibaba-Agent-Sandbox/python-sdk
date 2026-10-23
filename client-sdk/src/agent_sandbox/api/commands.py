@@ -6,6 +6,7 @@ import shlex
 import time
 from typing import TYPE_CHECKING
 
+from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
 from agent_sandbox.models.process import (
     ProcessChunk,
     ProcessChunkType,
@@ -17,7 +18,7 @@ from agent_sandbox.utils.async_bridge import make_sync
 from agent_sandbox.utils.logging import get_logger
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable
+    from collections.abc import AsyncIterator, Callable, Iterable
 
     from agent_sandbox.protocol.contracts import ProcessProtocol
     from agent_sandbox.transport.auth_contract import DataPlaneAuth as EnvdTokenManager
@@ -67,11 +68,29 @@ class CommandsModule:
         envd_token: EnvdTokenManager,
         process_protocol: ProcessProtocol,
         capabilities: set[str] | None = None,
+        *,
+        operations: Iterable[str] = (),
+        provider_id: str = "unknown",
     ) -> None:
+        self._operations, self._provider_id = frozenset(operations), provider_id
         self._envd_url = envd_url
         self._envd_token = envd_token
         self._process = process_protocol
         self._capabilities = capabilities if capabilities is not None else set(DEFAULT_CAPABILITIES)
+
+    def _require(self, operation: str) -> None:
+        if operation not in self._operations:
+            raise ProviderFeatureNotSupportedError(self._provider_id, operation)
+
+    async def _start_for_startup(
+        self, cmd: str, *, env: dict[str, str] | None = None, timeout: int = 86400
+    ) -> StreamReader[ProcessChunk]:
+        """Internal startup acknowledgement is not a public realtime stream claim."""
+        self._require("exec.run")
+        command, args = self._parse_cmd(cmd)
+        return await self._process.start(
+            self._envd_url, self._envd_token, cmd=command, args=args, env=env, timeout=timeout
+        )
 
     @staticmethod
     def _parse_cmd(cmd: str) -> tuple[str, list[str]]:
@@ -136,6 +155,9 @@ class CommandsModule:
                 user=user,
             )
 
+        self._require("exec.run")
+        if background or on_stdout or on_stderr:
+            self._require("exec.stream")
         if shell:
             command, args = "sh", ["-c", cmd]
         else:
@@ -203,6 +225,7 @@ class CommandsModule:
         Yields:
             ProcessChunk items (stdout, stderr, exit events).
         """
+        self._require("exec.stream")
         command, args = self._parse_cmd(cmd)
         reader = await self._process.start(
             self._envd_url,
@@ -238,6 +261,7 @@ class CommandsModule:
         Returns:
             StreamReader for consuming output asynchronously.
         """
+        self._require("exec.stream")
         command, args = self._parse_cmd(cmd)
         return await self._process.start(
             self._envd_url,

@@ -167,26 +167,15 @@ All SDK errors live in [`models/errors.py`](client-sdk/src/agent_sandbox/models/
 
 Every exception carries: `code`, `message`, `suggestion`, `docs_url` (populated when documentation is available).
 
-### Capability Model
+### Workflow and operation model
 
-Defined in [`models/template.py`](client-sdk/src/agent_sandbox/models/template.py), resolved by [`api/capability.py`](client-sdk/src/agent_sandbox/api/capability.py).
+Templates use strict specification 4 (`provides`, `workflows`, `default_workflow`). Shared contract 1 is owned in `contracts/` with byte-identical package copies and cross-language vectors. Retired template `capabilities`, `tested_on` and provider claims are rejected. `DEFAULT_CAPABILITIES` is empty: missing metadata makes no runtime claims. Coarse discovery is not authorization. Provider operations are consumer-specific; a missing interpreter operation cannot block an unrelated HTTP application.
 
-- **`STANDARD_CAPABILITIES`** = `{shell, files, code, terminal, ports}` — all recognised tokens
-- **`DEFAULT_CAPABILITIES`** = `{shell, files, code}` — applied when a template declares nothing
-- `terminal` and `ports` **must** be declared explicitly in the template's `template.yaml`
-- **Capability declaration:** capabilities are declared in `template.yaml` and resolved by `resolve_capabilities()` (fail-closed). All API methods are callable; capability tokens are used at template resolution / model validation layer only
-- **Fail-closed:** if a matched template's YAML is malformed, the resolver raises `TemplateParseError` (E2004) rather than silently falling back to defaults
-
-### Capability Resolution Priority
-
-1. Explicit `local_yaml_path` (programmatic override)
-2. Local template cache scan (`~/.abx/templates/`)
-3. *(Phase 2, TODO)* Online fallback — `GET /templates/{id}`
-4. Fall back to `DEFAULT_CAPABILITIES` + warning
+`api/workflow.py` launches prepared references or explicit services, journals ownership before creation and checks protocol before payload. Python source preparation is not implemented. `api/code.py` has exact stateless/default/context/stream gates and no shell fallback. See [workflow guide](docs/en/guide/template-workflows.md).
 
 ### Template Definition
 
-Templates use `template.yaml` (not `manifest.yaml` for capability purposes). Key fields: `name`, `capabilities`, `server`, `alias`/`aliases`. The client rejects `custom_commands`; named commands are registered in the sandbox server (`@sandbox.register`) and called with `sandbox.run(name, **kwargs)`.
+Templates use `template.yaml` (not `manifest.yaml` for capability purposes). Key fields: `name`, `spec_version`, `provides`, `workflows`, `default_workflow` and `server`. The client rejects `custom_commands`; named commands are registered in the sandbox server (`@sandbox.register`) and called with `sandbox.run(name, **kwargs)`.
 
 ---
 
@@ -243,7 +232,7 @@ See [`.agents/notes/README.md`](.agents/notes/README.md) for the full template a
 **MUST follow:**
 
 1. **Never auto-commit.** Make changes; let the human review and commit.
-2. **Respect template capability declarations.** If `resolve_capabilities()` fails or a capability is missing, the fix is to declare it in the template YAML — not to bypass the resolution.
+2. **Respect exact workflow operations.** Fix missing adapter/client support or choose an explicit supported workflow; never add a capability claim or shell fallback to bypass a failed check.
 3. **Never fabricate FC/envd API endpoints.** If you're unsure about a real backend API, flag it as a TODO rather than inventing a placeholder.
 4. **Run the full test suite** (`make test && make lint && make typecheck`) before claiming a task is done. These targets cover both `client-sdk` and `server-sdk`.
 5. **Secret scanning** is enforced via `.githooks/check-secrets.sh`. Never commit API keys, tokens, or passwords. Use `REPLACE_ME` or `placeholder` for examples.

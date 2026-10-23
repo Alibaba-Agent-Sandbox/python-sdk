@@ -1,5 +1,7 @@
 # Providers
 
+Workflow support uses exact consumer operations; see [template workflows](template-workflows.md).
+
 This guide describes asynchronous `ProviderSandbox` provider extensions. Root `Sandbox` and `AsyncSandbox` follow the pinned standard migration contract; see [Migrate from E2B](migrate-from-e2b.md).
 
 > **Note:** The `abx provider ...` commands on this page are provided by the Node.js CLI in the `cli` repository. Python-only users get the same operations from `python -m agent_sandbox.providers ...`. Both use the same install directory, the same receipts and the same tree digest.
@@ -155,7 +157,6 @@ A provider declares the features it implements. Calling something it lacks raise
 | `exec.run`, `exec.stream`, `process.manage` | buffered commands; streamed output; list, kill and signal processes |
 | `pty` | interactive terminal |
 | `files.rw`, `files.watch`, `files.transfer` | read, write, list, move, remove; watching; signed upload and download URLs |
-| `code.interpret` | stateful code contexts |
 | `templates.read`, `templates.build` | list and inspect templates; provider-owned image build, deploy and delete |
 | `ports.url`, `ports.domain` | public URL for a port; custom domains |
 | `storage.mount`, `network.vpc` | object-storage mounts; VPC attachment |
@@ -190,7 +191,6 @@ Installing a provider does not enable every SDK method or every `abx` command. T
 | `files.rw` | `files.*` | `upload`, `download`, `sandbox files ...` |
 | `files.watch` | `files.watch` | — |
 | `files.transfer` | signed upload and download URLs | — |
-| `code.interpret` | `run_code` | `sandbox code` |
 | `templates.read` | template read APIs | `template list`, `template info` |
 | `templates.build` | image build and template registration | `template build/push/create/deploy/install/delete`, `deploy`, `install` |
 | `ports.url` | `network.get_url` | `sandbox url` |
@@ -221,7 +221,7 @@ The capability table is [OpenSandbox provider](../design/provider-opensandbox-ma
 
 The feature ids above are the shared tool surface. A provider that has operations outside that list registers them on `Provider.extensions`. They do not appear in `features`, so `provider list` does not print them, and another provider does not gain them.
 
-`describe()["extensions"]` always shows the provider's full registration. `extensions_for(sandbox_id=...)` shows only the entries that match that sandbox: `code` only on a `code-interpreter` image, `networkpolicy` only when egress was requested, `command.logs` only when a command id is known. An entry with `implemented=False` is visible under those rules and still raises `E8004` from `require_extension`. An earlier Python OpenSandbox provider registered `code`, `session`, `command.logs`, `snapshot`, `networkpolicy`, `metadata.patch`, `diagnostics` and `metrics` this way. The current catalog provider is `kind = "node"` (`EngineProvider`); its `extensions` tuple is empty.
+`describe()["extensions"]` lists the provider's current extension registration. Extensions do not imply standard operation support; exact consumer operations remain authoritative.
 
 ---
 
@@ -287,7 +287,7 @@ The wire methods, their parameter names and types, and which are required are li
 - **Per feature**: `exec.run`, `exec.start` (`exec.stream`), `process.list|kill|signal|stdin`, `files.read|write|list|stat|mkdir|remove|move`, `ports.url`, `sandbox.set_timeout`, `sandbox.pause|resume`. Declare a feature only if you implement all of its methods; the host raises E8004 for the rest.
 - **Extensions** the host does not call yet but plugins may offer: `files.search`, `files.chmod`, `exec.start{detached}`, `files.read{offset,length}`, `files.write{mode,append}`.
 - `files.move` takes `{sandbox_id, source, destination, overwrite?}` (a plugin may also accept `src`/`dest`).
-- `exec.start` returns a **string** `process_id`. The `pid` of `process.kill|signal|stdin` is an opaque id: either the integer `pid` of a `process.list` entry or that string; `ProcessInfo.pid` and `commands.kill(pid)` accept both.
+- `exec.start` returns the backend-issued nonempty opaque string or positive safe integer `process_id`. Startup emits an empty output chunk carrying that exact `pid`; missing or invalid identifiers fail, and stdout is not an acknowledgment. The `pid` of `process.kill|signal|stdin` is an opaque id: either the integer `pid` of a `process.list` entry or that native startup identifier; `ProcessInfo.pid` and `commands.kill(pid)` accept both.
 - Unknown error `sdk_code` values fall back to the EPP code's default class. The accepted values are the SDK error codes the host maps, for example `E1001` (bad credentials), `E2000`/`E2001` (sandbox/template not found), `E3001` (command timeout) and `E4001` (file not found); see the [error code reference](../reference/error-codes.md). A bare `-32002` for a missing **file** becomes E8005, so send `sdk_code: "E4001"`; a bare `-32002` for an unknown sandbox on `sandbox.get`/`connect`/`set_timeout`/`pause`/`resume` becomes E2009 (a plugin may also say `sdk_code: "E2009"`).
 - Manifest defaults are **delivered** in `initialize.config`. Do not put a default on a field that has an alternative (`base_url` next to `domain`): the default would always win.
 - `$/cancel {id}` for a running request means: stop the work (kill the spawned process) and answer with an error or the final result.

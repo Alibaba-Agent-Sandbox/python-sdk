@@ -346,7 +346,6 @@ class ProviderContractTests:
         self._need(pid, "sandbox.lifecycle")
         probes: dict[str, Callable[[Sandbox], Awaitable[Any]]] = {
             "sandbox.pause": lambda sb: sb.pause(),
-            "code.interpret": lambda sb: sb.run_code("1 + 1"),
             "files.watch": lambda sb: sb.files.watch("/"),
             "exec.run": lambda sb: sb.commands.run("true"),
             "files.rw": lambda sb: sb.files.read("/x"),

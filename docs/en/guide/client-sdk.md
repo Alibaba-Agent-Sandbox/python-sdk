@@ -6,8 +6,8 @@ The Client SDK runs on **your machine**. It creates a sandbox, connects to one t
 
 ```bash
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
 ```
 
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.

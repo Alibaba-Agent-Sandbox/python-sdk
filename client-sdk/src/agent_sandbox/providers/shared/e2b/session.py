@@ -4,18 +4,18 @@ from __future__ import annotations
 
 from typing import Any
 
-from .code_interpreter import CodeInterpreterProtocol
+from .code_interpreter import UnsupportedCodeProtocol
 from .filesystem import FilesystemProtocol
 from .process import ProcessProtocol
 from .sandbox import SandboxProtocol
 
 
-def session_protocols(http: Any) -> dict[str, Any]:
+def session_protocols(http: Any, *, provider_id: str = "unknown") -> dict[str, Any]:
     return {
         "sandbox_protocol": SandboxProtocol(http),
         "process_protocol": ProcessProtocol(http),
         "filesystem_protocol": FilesystemProtocol(http),
-        "code_interpreter_protocol": CodeInterpreterProtocol(http),
+        "code_interpreter_protocol": UnsupportedCodeProtocol(provider_id),
     }
 
 

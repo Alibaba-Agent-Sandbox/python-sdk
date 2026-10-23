@@ -14,6 +14,39 @@ E2B_COMPATIBLE = EXAMPLES / "e2b-compatible"
 
 MANIFEST = """\
 manifest_version = 1
+operation_contract_version = 1
+[operations]
+cli = [
+  "sandbox.create",
+  "sandbox.get",
+  "sandbox.list",
+  "sandbox.delete",
+  "exec.run",
+  "files.read",
+  "files.write",
+  "files.list",
+  "files.stat",
+  "files.remove",
+  "files.move",
+  "ports.resolve",
+]
+python = [
+  "sandbox.create",
+  "sandbox.get",
+  "sandbox.list",
+  "sandbox.delete",
+  "exec.run",
+  "files.read",
+  "files.write",
+  "files.list",
+  "files.stat",
+  "files.remove",
+  "files.move",
+  "ports.resolve",
+]
+[workflow]
+inputs = ["managed"]
+startups = ["exec", "none"]
 
 [provider]
 id = "{id}"

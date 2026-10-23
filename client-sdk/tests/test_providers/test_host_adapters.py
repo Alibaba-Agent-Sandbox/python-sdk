@@ -171,7 +171,7 @@ def test_method_table_is_consistent():
     assert TABLE["sandbox.get"]["support"] == "required"
     assert TABLE["sandbox.connect"]["support"] == "optional"
     assert TABLE["process.kill"]["params"]["pid"]["type"] == "string|integer"
-    assert TABLE["exec.start"]["result"] == "{process_id: string}"
+    assert TABLE["exec.start"]["result"] == "{process_id: string|integer}"
 
 
 async def test_create_sends_secure_only_when_specified_and_filters_secret_options():
@@ -285,7 +285,32 @@ for line in sys.stdin:
     rid, method, p = msg["id"], msg["method"], msg.get("params") or {}
     if method == "initialize":
         res = {"protocol": "epp/1", "plugin": {"name": "echo", "version": "1"},
-               "features": ["sandbox.lifecycle", "ports.url"]}
+               "features": ["sandbox.lifecycle", "ports.url"],
+               "operation_contract_version": 1,
+               "operations": {'cli': ['sandbox.create',
+         'sandbox.get',
+         'sandbox.list',
+         'sandbox.delete',
+         'exec.run',
+         'files.read',
+         'files.write',
+         'files.list',
+         'files.stat',
+         'files.remove',
+         'files.move',
+         'ports.resolve'],
+ 'python': ['sandbox.create',
+            'sandbox.get',
+            'sandbox.list',
+            'sandbox.delete',
+            'exec.run',
+            'files.read',
+            'files.write',
+            'files.list',
+            'files.stat',
+            'files.remove',
+            'files.move',
+            'ports.resolve']}, "workflow_inputs": ["managed"], "startup_modes": ["exec", "none"]}
     elif method == "sandbox.create":
         state["create"] = p
         res = {"sandbox_id": "echo-1", "template": p.get("template", "base"), "status": "running",
@@ -308,6 +333,39 @@ for line in sys.stdin:
 
 ECHO_MANIFEST = """\
 manifest_version = 1
+operation_contract_version = 1
+[operations]
+cli = [
+  "sandbox.create",
+  "sandbox.get",
+  "sandbox.list",
+  "sandbox.delete",
+  "exec.run",
+  "files.read",
+  "files.write",
+  "files.list",
+  "files.stat",
+  "files.remove",
+  "files.move",
+  "ports.resolve",
+]
+python = [
+  "sandbox.create",
+  "sandbox.get",
+  "sandbox.list",
+  "sandbox.delete",
+  "exec.run",
+  "files.read",
+  "files.write",
+  "files.list",
+  "files.stat",
+  "files.remove",
+  "files.move",
+  "ports.resolve",
+]
+[workflow]
+inputs = ["managed"]
+startups = ["exec", "none"]
 
 [provider]
 id = "echo-prov"
