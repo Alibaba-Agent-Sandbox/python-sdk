@@ -13,6 +13,7 @@ from agent_sandbox.models.errors import (
     SandboxError,
 )
 from agent_sandbox.providers import registry, store
+from agent_sandbox.providers.engine_provider import EngineProvider
 from agent_sandbox.utils.config_keys import BUILTIN_PROVIDER_ID
 
 
@@ -70,6 +71,10 @@ async def doctor_async(provider_id: str, *, handshake: bool = True) -> dict[str,
 
     if handshake and provider_id != BUILTIN_PROVIDER_ID:
         try:
+            if isinstance(provider, EngineProvider):
+                await provider.verify_handshake(config)
+                checks.append(_check("handshake", True))
+                return finish()
             infra = await provider.build_infra(config)
         except (InvalidAPIKeyError, InvalidCredentialsError, ProviderConfigError) as exc:
             # Install must succeed before the operator has a key. Create reports this.

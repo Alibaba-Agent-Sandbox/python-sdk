@@ -1,6 +1,6 @@
 """Client of the local provider engine (``abx provider engine serve``, protocol ``abx-engine/1``).
 
-The engine is a Node process that hosts the provider layer for every SDK and the CLI.
+The engine is a Node process that hosts the provider layer for the CLI and Python ProviderSandbox.
 This module finds it through ``~/.abx/engine.json``, starts it when none is running, and
 speaks its HTTP, SSE and WebSocket routes. Which account a call belongs to travels with
 each request (the *connection*), so the engine never guesses.

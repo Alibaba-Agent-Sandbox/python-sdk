@@ -8,8 +8,8 @@ Use a virtual environment with Python 3.10 or newer. This tested immutable imple
 
 ```bash
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=client-sdk"
 python -m pip check
 python -c "import agent_sandbox, agent_sandbox.server; from importlib.metadata import version; print(version('agent-sandbox-client'), version('agent-sandbox-server'))"
 ```
@@ -24,8 +24,8 @@ For all extras, retain the same server URL and use the client extra on its direc
 
 ```bash
 python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=client-sdk"
 ```
 
 Replace `[all]` with `[mcp]`, `[session]` or `[fast]` for that subset. MCP needs its extra; Browser automation requires separately installed Playwright in the image.
@@ -33,7 +33,7 @@ Replace `[all]` with `[mcp]`, `[session]` or `[fast]` for that subset. MCP needs
 ## Server-only image installation
 
 ```bash
-python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk"
+python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=server-sdk"
 ```
 
 The in-sandbox service and the local client have different roles; installing the server does not create a sandbox.
@@ -48,3 +48,17 @@ python -m pip check
 ```
 
 This uses the checked-out revision rather than the immutable example above. Record its commit for reproducibility. Run examples only after configuring the required provider; an installation pass is not cloud/provider/model acceptance. Diagnose dependency conflicts in a fresh environment before reinstalling both matched distributions.
+
+## Maintainer publication checks
+
+Publish both distributions from a matching `v<version>` tag. The workflow first runs
+the reusable CI suite against that same tag checkout; publication depends on its success.
+The release workflow
+builds one wheel/sdist pair per package, installs the exact wheel pair in a clean
+environment, and preserves the candidate artifact. A manual run defaults to dry-run
+and still requires the version tag. Before upload, any existing PyPI file must match
+the candidate SHA-256; `skip-existing` alone is not verification. Server uploads before
+client. After upload, the workflow checks public file digests and installs both exact
+versions from the public index in a fresh environment. A failed readback means publication
+has not been verified; preserve the candidate for recovery instead of rebuilding silently.
+This workflow does not replace required CI, reviews or real-backend acceptance.

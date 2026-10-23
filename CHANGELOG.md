@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Provider catalog updates compare content rather than display versions, preserve recorded sources, and recheck SDK compatibility on load.
+- Node provider doctor awaits real engine initialization and refuses unverifiable old engines; it never creates a cloud sandbox.
+- Add a strict standalone Python-to-Node CI job and bind Python publication to matching tags, tested wheel pairs, and public artifact digests.
+- Correct provider trust/consumer guidance and use matching public Git archives in SDK Skills and standalone Dockerfile examples.
+
 ### Changed
 
 - Preserve native integer or opaque process IDs across engine startup acknowledgments so prepared-image application servers can start through EPP providers. / 引擎启动确认保留原生整数或不透明进程标识，使 EPP 提供方能够启动已准备镜像中的应用服务。

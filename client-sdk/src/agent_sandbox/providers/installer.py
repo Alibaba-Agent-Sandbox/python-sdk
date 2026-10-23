@@ -513,11 +513,20 @@ def install(
     interactive = (confirm is not None) if interactive is None else interactive
     catalog_source: dict[str, Any] | None = None
     if source.startswith("registry:"):
-        from agent_sandbox.providers.catalog import materialize, registry_url
+        from agent_sandbox.providers.catalog import (
+            fetch_index,
+            find,
+            materialize_entry,
+            registry_url,
+        )
 
         catalog_id = source.split(":", 1)[1].strip()
         catalog_source = {"type": "catalog", "id": catalog_id, "registry": registry_url()}
-        source = materialize(catalog_id)
+        index = fetch_index(url=catalog_source["registry"])
+        row = find(index, catalog_id)
+        source = materialize_entry(index, row)
+        if row.get("sha256"):
+            catalog_source["archive_sha256"] = str(row["sha256"])
     plan, entries = prepare(
         source,
         ref=ref,
@@ -527,6 +536,8 @@ def install(
         allow_insecure_transport=allow_insecure_transport,
     )
     manifest = plan.manifest
+    if catalog_source is not None and manifest.id != catalog_source["id"]:
+        raise ProviderInstallError("Catalog provider id does not match the downloaded manifest.")
     check_requires(manifest, component="sdk", host_version=__version__)
 
     if plan.trust == "link" and not yes:
@@ -641,50 +652,47 @@ def _update_catalog(
     yes: bool,
     verify: VerifyFn | None,
 ) -> dict[str, Any]:
-    """Re-fetch a ``registry:`` install. ``check`` only compares versions."""
-    from agent_sandbox.providers.catalog import fetch_index, find
+    """Compare materialized content, independently of the display version."""
+    from agent_sandbox.providers.catalog import fetch_index, find, materialize_entry, registry_url
 
-    recorded = str(src.get("registry") or "")
-    previous = os.environ.get("ABX_PROVIDER_REGISTRY")
-    if recorded:
-        os.environ["ABX_PROVIDER_REGISTRY"] = recorded
-    try:
-        index = fetch_index()
-        row = find(index, str(src.get("id") or provider_id))
-        remote = str(row.get("version") or "")
-        installed = str(receipt.get("version") or "")
-        if check or remote == installed:
-            return {
-                "id": provider_id,
-                "status": "up-to-date" if remote == installed else "available",
-                "installed": installed,
-                "available": remote,
-                "changes": [],
-            }
-        if not yes:
-            raise ProviderTrustError(
-                f"Updating '{provider_id}' to {remote} requires confirmation.",
-                suggestion=f"Re-run with --yes after reviewing version {remote}.",
-            )
-        new_receipt = install(
-            f"registry:{src.get('id') or provider_id}",
-            force=True,
-            yes=True,
-            verify=verify,
-        )
-    finally:
-        if previous is None:
-            os.environ.pop("ABX_PROVIDER_REGISTRY", None)
-        else:
-            os.environ["ABX_PROVIDER_REGISTRY"] = previous
-    return {
+    recorded = str(src.get("registry") or registry_url())
+    index = fetch_index(url=recorded)
+    row = find(index, str(src.get("id") or provider_id))
+    plan, entries = prepare(materialize_entry(index, row))
+    if plan.manifest.id != provider_id:
+        raise ProviderInstallError("Catalog provider id changed; refusing to update.")
+    plan.previous = receipt
+    plan.changes = _diff_aspects(receipt, plan.manifest)
+    result: dict[str, Any] = {
         "id": provider_id,
-        "status": "updated",
-        "installed": installed,
-        "available": remote,
-        "changes": [],
-        "receipt": new_receipt,
+        "installed": str(receipt.get("version") or ""),
+        "available": plan.manifest.version,
+        "changes": plan.changes,
     }
+    if plan.tree_sha256 == receipt.get("tree_sha256"):
+        # Repacking can change an archive without changing installed code. An explicit
+        # update acknowledges that archive; a check remains read-only.
+        if not check and row.get("sha256"):
+            refreshed = {**receipt, "source": {**src, "archive_sha256": str(row["sha256"])}}
+            with store.store_lock():
+                if store.read_receipt(provider_id) == receipt:
+                    store.write_receipt(store.provider_dir(provider_id), refreshed)
+        return {**result, "status": "up-to-date"}
+    if check:
+        return {**result, "status": "available"}
+    check_requires(plan.manifest, component="sdk", host_version=__version__)
+    if not yes:
+        raise ProviderTrustError(
+            f"Updating '{provider_id}' requires confirmation of changed content.",
+            suggestion=f"Re-run with --yes after reviewing: abx provider update {provider_id}",
+        )
+    plan.source = {"type": "catalog", "id": provider_id, "registry": recorded}
+    if row.get("sha256"):
+        plan.source["archive_sha256"] = str(row["sha256"])
+    new_receipt = _receipt(plan, receipt.get("installed_by"), plan.manifest.sha256)
+    with store.store_lock():
+        _swap_in(provider_id, entries, new_receipt, link=False, verify=verify)
+    return {**result, "status": "updated", "receipt": new_receipt}
 
 
 def update(
