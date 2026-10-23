@@ -462,6 +462,7 @@ class SandboxStatus(str, Enum):
 | `type` | `ProcessChunkType` | `stdout` / `stderr` / `exit` |
 | `data` | `str` | Data content |
 | `exit_code` | `int \| None` | Exit code (only for `exit` type) |
+| `pid` | `int \| str \| None` | Native startup acknowledgment identifier; preserved as an integer or opaque string |
 
 ### FileInfo
 

@@ -8,7 +8,11 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from agent_sandbox.models.errors import ProviderFeatureNotSupportedError, ProviderManifestError
-from agent_sandbox.providers.engine_provider import EngineCodeProtocol, EngineProvider
+from agent_sandbox.providers.engine_provider import (
+    EngineCodeProtocol,
+    EngineProcessProtocol,
+    EngineProvider,
+)
 from agent_sandbox.providers.feature_gate import OPERATION_SANDBOX_RULES, gate_protocol
 from agent_sandbox.providers.manifest import parse_manifest
 from agent_sandbox.workflows.planner import CONTRACT
@@ -165,3 +169,23 @@ def test_rest_cannot_declare_interpreter_from_an_unverified_wire_guess() -> None
     )
     with pytest.raises(ProviderManifestError, match="no verified interpreter"):
         parse_manifest(text)
+
+
+@pytest.mark.parametrize("process_id", [123, "execd-command-opaque"])
+async def test_engine_process_start_preserves_real_ack_identity(process_id: int | str) -> None:
+    async def frames(*args: Any, **kwargs: Any):
+        yield {"type": "stdout", "data": "", "pid": process_id, "timestamp": 123.5}
+        yield {"type": "stdout", "data": "ready"}
+        yield {"type": "exit", "exit_code": 0}
+
+    client = MagicMock(stream=frames)
+    # A startup acknowledgment is internal transport metadata, not a public stream grant.
+    protocol = EngineProcessProtocol(client, "sample", frozenset({"exec.run"}))
+    stream = await protocol.start("engine://sample/owned", None, cmd="server")
+    chunks = [chunk async for chunk in stream]
+    assert chunks[0].pid == process_id
+    assert type(chunks[0].pid) is type(process_id)
+    assert chunks[0].timestamp == 123.5
+    assert chunks[0].data == ""
+    assert chunks[1].data == "ready" and chunks[1].pid is None
+    assert chunks[2].exit_code == 0

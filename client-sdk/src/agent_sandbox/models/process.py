@@ -21,7 +21,7 @@ class ProcessChunk(BaseModel):
     type: ProcessChunkType
     data: str = ""
     exit_code: int | None = None
-    pid: int | None = None
+    pid: int | str | None = None
     timestamp: float | None = None
 
 

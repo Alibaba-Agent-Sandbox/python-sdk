@@ -73,7 +73,11 @@ def _chunk(frame: dict[str, Any]) -> ProcessChunk:
         ProcessChunkType(kind) if kind in ("stdout", "stderr", "exit") else ProcessChunkType.STDOUT
     )
     return ProcessChunk(
-        type=ctype, data=str(frame.get("data", "")), exit_code=frame.get("exit_code")
+        type=ctype,
+        data=str(frame.get("data", "")),
+        exit_code=frame.get("exit_code"),
+        pid=frame.get("pid"),
+        timestamp=frame.get("timestamp"),
     )
 
 

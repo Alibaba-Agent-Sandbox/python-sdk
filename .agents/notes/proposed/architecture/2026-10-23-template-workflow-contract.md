@@ -11,6 +11,8 @@ Use template specification 4 and shared operation contract 1. The canonical JSON
 ## API Design
 `validate_workflow_manifest(manifest)` validates the shared portion. `plan_workflow(manifest, provider, workflow_id, consumer)` returns deterministic per-operation requirements and T/F/U without loading plugins or contacting a platform. Content identity helpers hash exact manifest bytes, eligible immutable source snapshots and canonical string-only bindings. `launch_workflow(...)` returns an async `WorkflowSession` for an immutable prepared image or explicit external application. Source preparation belongs to CLI; unresolved managed identities are refused. It journals intent and known IDs, checks endpoint protocol before payload, does not replay uncertain create, and attempts deletion even when HTTP-client close or journal writes fail. `ProviderSandbox.application_client(port, token=...)` resolves a gateway descriptor independently from internal envd transport. Prefixes and opaque query values survive; redirects, recursive path escapes, ambiguous query keys and authority headers are rejected. Gateway and application credentials remain separate.
 
+Process startup acknowledgments preserve the native integer or opaque string identifier across the engine stream; an empty acknowledgment frame carries metadata without inventing output or granting public streaming. Missing native acknowledgments remain startup failures.
+
 ## Alternatives considered
 - Infer execution support from a broad code capability: cannot distinguish application HTTP, persistent contexts, streaming and stateless execution.
 - Accept previous schema inputs: unnecessary before first release and makes readiness ambiguous.
@@ -31,3 +33,5 @@ Python and CLI pass the same vectors. Package copies match canonical bytes. Curr
 - [Second-round independent confirmation](../../../evidence/verify/2026-10-23-workflow-round2-independent.md).
 - [Runtime implementation and adversarial corrections](../../../evidence/verify/2026-10-23-workflow-runtime-review.md).
 - [Real-cloud migration acceptance](../../../evidence/verify/2026-10-23-workflow-real-cloud.md).
+
+- [Native startup acknowledgment correction](../../../evidence/verify/2026-10-23-native-startup-acknowledgment.md).

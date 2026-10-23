@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Preserve native integer or opaque process IDs across engine startup acknowledgments so prepared-image application servers can start through EPP providers. / 引擎启动确认保留原生整数或不透明进程标识，使 EPP 提供方能够启动已准备镜像中的应用服务。
+
 - Replace current template capability defaults with strict specification 4 workflows and operation contract 1, canonical cross-language plans, identities and verification profiles. / 当前模板改用严格规范 4 工作流及操作契约 1，新增共享规划、身份与验收范围。
 - Provider interpreter execution separates stateless, persistent default, explicit contexts and realtime callbacks; interpreter 404 no longer falls back to shell. / 解释器分别检查无状态、默认持久上下文、独立上下文与实时回调，404 不再自动转 shell。
 - Application HTTP resolves independently of provider transport, preserving proxy/query bindings and isolating credentials; new workflow launch journals ownership and refuses unchecked payloads. / 应用 HTTP 独立解析入口，保留代理与 query 并隔离凭据；新增工作流启动的资源意图记录和调用前检查。

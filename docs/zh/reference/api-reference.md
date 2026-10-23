@@ -459,6 +459,7 @@ class SandboxStatus(str, Enum):
 | `type` | `ProcessChunkType` | `stdout` / `stderr` / `exit` |
 | `data` | `str` | 数据内容 |
 | `exit_code` | `int \| None` | 退出码（仅 `exit` 类型） |
+| `pid` | `int \| str \| None` | 原生启动确认的进程标识，保留整数或不透明字符串 |
 
 ### FileInfo
 
