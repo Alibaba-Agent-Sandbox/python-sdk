@@ -105,7 +105,7 @@ class RestProvider(Provider):
     def session_protocols(self, http: Any) -> dict[str, Any]:
         from agent_sandbox.providers.shared.e2b.session import session_protocols
 
-        return session_protocols(http, operations=self.operations, provider_id=self.id)
+        return session_protocols(http, provider_id=self.id)
 
     def create_port_access(self, context: PortContext, protocol: Any = None) -> PortAccess:
         from agent_sandbox.providers.shared.e2b.ports import WirePortAccess
@@ -126,7 +126,7 @@ class RestProvider(Provider):
         )
 
     async def build_infra(self, config: TransportConfig) -> ProviderInfra:
-        from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.providers.shared.e2b.code_interpreter import UnsupportedCodeProtocol
         from agent_sandbox.providers.shared.e2b.filesystem import FilesystemProtocol
         from agent_sandbox.providers.shared.e2b.process import ProcessProtocol
         from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
@@ -158,9 +158,7 @@ class RestProvider(Provider):
                 sandbox_protocol=gate(SandboxProtocol(http, unknown_if_absent=True), SANDBOX_RULES),
                 process_protocol=gate(ProcessProtocol(http), PROCESS_RULES),
                 filesystem_protocol=gate(FilesystemProtocol(http), FILESYSTEM_RULES),
-                code_interpreter_protocol=CodeInterpreterProtocol(
-                    http, operations=self.operations, provider_id=self.id
-                ),
+                code_interpreter_protocol=UnsupportedCodeProtocol(self.id),
             ),
             self.id,
             self.operations,

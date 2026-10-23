@@ -519,8 +519,8 @@ def parse_manifest(data: bytes | str) -> Manifest:
             raise _err("operations.python template.prepare has no implementation")
         if kind == "exec" and any(value.startswith("code.") for value in values):
             raise _err("exec Python bridge does not implement interpreter operations")
-        if kind == "rest" and ("code.stream" in values or "code.results.structured" in values):
-            raise _err("rest Python bridge does not implement streaming or structured code results")
+        if kind == "rest" and any(value.startswith("code.") for value in values):
+            raise _err("rest Python bridge has no verified interpreter wire mapping")
         operations[consumer] = tuple(values)
     workflow = _table(doc, "workflow", required=True)
     if set(workflow) != {"inputs", "startups"}:

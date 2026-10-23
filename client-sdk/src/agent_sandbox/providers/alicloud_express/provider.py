@@ -82,17 +82,10 @@ class AlicloudExpressProvider(Provider):
             "files.remove",
             "files.move",
             "ports.resolve",
-            "code.execute",
-            "code.context.create",
-            "code.context.execute",
-            "code.context.list",
-            "code.context.restart",
-            "code.context.delete",
-            "code.default-context.execute",
         }
     )
-    workflow_inputs = frozenset({"managed", "service"})
-    startup_modes = frozenset({"exec", "entrypoint", "none"})
+    workflow_inputs = frozenset({"managed"})
+    startup_modes = frozenset({"entrypoint", "none"})
     inherit = frozenset(GENERIC_ENDPOINT_KEYS)
 
     def __init__(self) -> None:
@@ -109,7 +102,7 @@ class AlicloudExpressProvider(Provider):
     def session_protocols(self, http: Any) -> dict[str, Any]:
         from agent_sandbox.providers.shared.e2b.session import session_protocols
 
-        return session_protocols(http, operations=self.operations, provider_id=self.id)
+        return session_protocols(http, provider_id=self.id)
 
     def create_port_access(self, context: PortContext, protocol: Any = None) -> PortAccess:
         from agent_sandbox.providers.shared.e2b.ports import WirePortAccess
@@ -167,7 +160,7 @@ class AlicloudExpressProvider(Provider):
 
     async def build_infra(self, config: TransportConfig) -> ProviderInfra:
         from agent_sandbox.providers.alicloud_express.auth import create_auth_provider
-        from agent_sandbox.providers.shared.e2b.code_interpreter import CodeInterpreterProtocol
+        from agent_sandbox.providers.shared.e2b.code_interpreter import UnsupportedCodeProtocol
         from agent_sandbox.providers.shared.e2b.filesystem import FilesystemProtocol
         from agent_sandbox.providers.shared.e2b.process import ProcessProtocol
         from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
@@ -187,9 +180,7 @@ class AlicloudExpressProvider(Provider):
                 sandbox_protocol=SandboxProtocol(http),
                 process_protocol=ProcessProtocol(http),
                 filesystem_protocol=FilesystemProtocol(http),
-                code_interpreter_protocol=CodeInterpreterProtocol(
-                    http, operations=self.operations, provider_id=self.id
-                ),
+                code_interpreter_protocol=UnsupportedCodeProtocol(self.id),
             ),
             self.id,
             self.operations,

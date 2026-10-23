@@ -8,11 +8,15 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from agent_sandbox.models.errors import ProviderFeatureNotSupportedError, ProviderManifestError
-from agent_sandbox.providers.alicloud_express.provider import AlicloudExpressProvider
 from agent_sandbox.providers.engine_provider import EngineCodeProtocol, EngineProvider
 from agent_sandbox.providers.feature_gate import OPERATION_SANDBOX_RULES, gate_protocol
 from agent_sandbox.providers.manifest import parse_manifest
+from agent_sandbox.workflows.planner import CONTRACT
 from tests.test_providers.test_manifest import BASE
+
+MOCK_INTERPRETER_OPERATIONS = frozenset(
+    op for op in CONTRACT["operations"] if op.startswith("code.")
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -54,7 +58,7 @@ async def test_engine_context_routes_preserve_sandbox_and_context_identity() -> 
             ]
         )
     )
-    protocol = EngineCodeProtocol(client, "sample", AlicloudExpressProvider.operations)
+    protocol = EngineCodeProtocol(client, "sample", MOCK_INTERPRETER_OPERATIONS)
     args = ("sb/a", "engine://sample/irrelevant", None)
     assert (await protocol.create_context(*args))["id"] == "ctx/a"
     await protocol.run_code(*args, code="x + 1", context_id="ctx/a")
@@ -151,3 +155,13 @@ async def test_engine_endpoint_descriptor_is_not_flattened_to_url_headers(tmp_pa
         await provider.application_endpoint(PortContext("owned", "", True, None), 9000, protocol)
         == endpoint
     )
+
+
+def test_rest_cannot_declare_interpreter_from_an_unverified_wire_guess() -> None:
+    text = (
+        BASE.replace('kind = "exec"', 'kind = "rest"')
+        .replace('command = ["python3", "./p.py"]', '[endpoint]\nbase_url = "https://api.invalid"')
+        .replace('"exec.run",', '"code.execute",')
+    )
+    with pytest.raises(ProviderManifestError, match="no verified interpreter"):
+        parse_manifest(text)
