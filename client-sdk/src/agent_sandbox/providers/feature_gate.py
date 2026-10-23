@@ -14,6 +14,8 @@ from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from agent_sandbox.providers.base import ProviderInfra
+
 #: Rules map a method name to the features of which at least one must be supported.
 SANDBOX_RULES: dict[str, tuple[str, ...]] = {
     "create": ("sandbox.lifecycle",),
@@ -61,17 +63,6 @@ FILESYSTEM_RULES: dict[str, tuple[str, ...]] = {
     "watch_dir": ("files.watch",),
 }
 
-CODE_RULES: dict[str, tuple[str, ...]] = {
-    m: ("code.interpret",)
-    for m in (
-        "run_code",
-        "create_context",
-        "list_contexts",
-        "restart_context",
-        "remove_context",
-    )
-}
-
 
 class _Gated:
     """Proxy over a protocol object; methods of undeclared features raise ``E8004``."""
@@ -111,9 +102,59 @@ def gate_protocol(
 
 
 __all__ = [
-    "CODE_RULES",
     "FILESYSTEM_RULES",
+    "OPERATION_SANDBOX_RULES",
+    "OPERATION_PROCESS_RULES",
+    "OPERATION_FILESYSTEM_RULES",
+    "gate_operation_protocols",
     "PROCESS_RULES",
     "SANDBOX_RULES",
     "gate_protocol",
 ]
+
+
+OPERATION_SANDBOX_RULES = {
+    "create": ("sandbox.create",),
+    "list": ("sandbox.list",),
+    "list_v2": ("sandbox.list",),
+    "get_info": ("sandbox.get",),
+    "connect": ("sandbox.get",),
+    "is_running": ("sandbox.get",),
+    "kill": ("sandbox.delete",),
+    "set_timeout": ("sandbox.timeout",),
+    "pause": ("sandbox.pause",),
+    "resume": ("sandbox.resume",),
+    "port_url": ("ports.resolve",),
+    "application_endpoint": ("ports.resolve",),
+}
+OPERATION_PROCESS_RULES = {"start": ("exec.run", "exec.stream")}
+OPERATION_FILESYSTEM_RULES = {
+    "read": ("files.read",),
+    "read_text": ("files.read",),
+    "download_file": ("files.read",),
+    "write": ("files.write",),
+    "upload_file": ("files.write",),
+    "make_dir": ("files.write",),
+    "list_dir": ("files.list",),
+    "stat": ("files.stat",),
+    "get_info": ("files.stat",),
+    "exists": ("files.stat",),
+    "remove": ("files.remove",),
+    "move": ("files.move",),
+    "rename": ("files.move",),
+}
+
+
+def gate_operation_protocols(
+    infra: ProviderInfra, provider_id: str, operations: frozenset[str]
+) -> ProviderInfra:
+    """Enforce the exact public operation boundary before transport dispatch."""
+    for field, rules in (
+        ("sandbox_protocol", OPERATION_SANDBOX_RULES),
+        ("process_protocol", OPERATION_PROCESS_RULES),
+        ("filesystem_protocol", OPERATION_FILESYSTEM_RULES),
+    ):
+        protocol = getattr(infra, field)
+        if protocol is not None:
+            setattr(infra, field, gate_protocol(protocol, provider_id, rules, operations))
+    return infra

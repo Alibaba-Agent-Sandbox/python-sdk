@@ -60,13 +60,39 @@ class AlicloudExpressProvider(Provider):
             "files.rw",
             "files.watch",
             "files.transfer",
-            "code.interpret",
             "templates.read",
             "templates.build",
             "ports.url",
             "sessions",
         }
     )
+    operations = frozenset(
+        {
+            "sandbox.create",
+            "sandbox.get",
+            "sandbox.list",
+            "sandbox.delete",
+            "sandbox.timeout",
+            "exec.run",
+            "exec.stream",
+            "files.read",
+            "files.write",
+            "files.list",
+            "files.stat",
+            "files.remove",
+            "files.move",
+            "ports.resolve",
+            "code.execute",
+            "code.context.create",
+            "code.context.execute",
+            "code.context.list",
+            "code.context.restart",
+            "code.context.delete",
+            "code.default-context.execute",
+        }
+    )
+    workflow_inputs = frozenset({"managed", "service"})
+    startup_modes = frozenset({"exec", "entrypoint", "none"})
     inherit = frozenset(GENERIC_ENDPOINT_KEYS)
 
     def __init__(self) -> None:
@@ -83,7 +109,7 @@ class AlicloudExpressProvider(Provider):
     def session_protocols(self, http: Any) -> dict[str, Any]:
         from agent_sandbox.providers.shared.e2b.session import session_protocols
 
-        return session_protocols(http)
+        return session_protocols(http, operations=self.operations, provider_id=self.id)
 
     def create_port_access(self, context: PortContext, protocol: Any = None) -> PortAccess:
         from agent_sandbox.providers.shared.e2b.ports import WirePortAccess
@@ -95,23 +121,35 @@ class AlicloudExpressProvider(Provider):
 
         return str(info.envd_url or envd_url(info.sandbox_id, config.sandbox_domain))
 
+    async def application_endpoint(
+        self, context: PortContext, port: int, protocol: Any = None
+    ) -> dict[str, Any]:
+        from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+
+        if "ports.resolve" not in self.operations:
+            raise ProviderFeatureNotSupportedError(self.id, "ports.resolve")
+        access = self.create_port_access(context, protocol)
+        return {
+            "provider_id": self.id,
+            "sandbox_id": context.sandbox_id,
+            "port": port,
+            "url": access.get_url(port),
+            "headers": access.get_server_headers(),
+            "authentication_audience": "gateway",
+            "path_mode": "prefix",
+        }
+
     async def prepare_session(
         self, infra: ProviderInfra, info: Any, *, operation: str, template: str
     ) -> dict[str, Any]:
-        from agent_sandbox.api.capability import resolve_capabilities_for
+        from agent_sandbox.api.capability import ResolvedCapabilities
         from agent_sandbox.providers.shared.e2b.auth import EnvdTokenManager
         from agent_sandbox.transport.http import stream_envelope_for_envd
 
         http = infra.http_client
         if http is not None:
             http._stream_envelope = stream_envelope_for_envd(info.envd_version)
-        resolved = await resolve_capabilities_for(
-            *(
-                (template, info.template, info.alias_name)
-                if operation == "create"
-                else (info.template, info.alias_name)
-            )
-        )
+        resolved = ResolvedCapabilities(capabilities=set(self.capabilities()), matched=False)
         binding: dict[str, Any] = {
             "envd_token": EnvdTokenManager(info.envd_access_token, sandbox_id=info.sandbox_id),
             "resolved_capabilities": resolved,
@@ -139,12 +177,20 @@ class AlicloudExpressProvider(Provider):
             api_key=config.sandbox_api_key,
         )
         http = HttpClient(config, auth)
-        return ProviderInfra(
-            config=config,
-            auth=auth,
-            http_client=http,
-            sandbox_protocol=SandboxProtocol(http),
-            process_protocol=ProcessProtocol(http),
-            filesystem_protocol=FilesystemProtocol(http),
-            code_interpreter_protocol=CodeInterpreterProtocol(http),
+        from agent_sandbox.providers.feature_gate import gate_operation_protocols
+
+        return gate_operation_protocols(
+            ProviderInfra(
+                config=config,
+                auth=auth,
+                http_client=http,
+                sandbox_protocol=SandboxProtocol(http),
+                process_protocol=ProcessProtocol(http),
+                filesystem_protocol=FilesystemProtocol(http),
+                code_interpreter_protocol=CodeInterpreterProtocol(
+                    http, operations=self.operations, provider_id=self.id
+                ),
+            ),
+            self.id,
+            self.operations,
         )

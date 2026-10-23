@@ -97,7 +97,7 @@ async def test_set_timeout_supported(local_process):
         await sb.kill()
 
 
-async def test_capabilities_follow_the_declared_features(local_process):
+async def test_capabilities_are_discovery_from_exact_operations(local_process):
     sb = await _create()
     try:
         assert sb.capabilities == frozenset({"shell", "files"})

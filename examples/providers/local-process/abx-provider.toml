@@ -1,4 +1,11 @@
 manifest_version = 1
+operation_contract_version = 1
+[operations]
+cli = ["sandbox.create", "sandbox.get", "sandbox.list", "sandbox.delete", "sandbox.timeout", "exec.run", "exec.stream", "files.read", "files.write", "files.list", "files.stat", "files.remove", "files.move"]
+python = ["sandbox.create", "sandbox.get", "sandbox.list", "sandbox.delete", "sandbox.timeout", "exec.run", "exec.stream", "files.read", "files.write", "files.list", "files.stat", "files.remove", "files.move"]
+[workflow]
+inputs = ["managed"]
+startups = ["exec", "none"]
 
 [provider]
 id          = "local-process"

@@ -7,7 +7,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
 from agent_sandbox.providers.alicloud_express.auth import EnvdTokenManager
+from agent_sandbox.providers.alicloud_express.provider import AlicloudExpressProvider
 from agent_sandbox.providers.shared.e2b.code_interpreter import (
     _HTTP_TIMEOUT_BUFFER,
     CodeInterpreterProtocol,
@@ -49,11 +51,14 @@ class TestRunCode:
                 "executionTime": 0.05,
             }
         )
-        proto = CodeInterpreterProtocol(mock_http)
+        proto = CodeInterpreterProtocol(
+            mock_http, operations=AlicloudExpressProvider.operations, provider_id="alicloud-express"
+        )
         result = await proto.run_code(
             SANDBOX_ID,
             envd_url,
             envd_token,
+            mode="default-context",
             code="print(42)",
             language="python",
         )
@@ -69,11 +74,14 @@ class TestRunCode:
 
     async def test_run_code_with_context_id(self, envd_url, envd_token):
         mock_http = _make_mock_http(envd_request_return={"stdout": "ok\n"})
-        proto = CodeInterpreterProtocol(mock_http)
+        proto = CodeInterpreterProtocol(
+            mock_http, operations=AlicloudExpressProvider.operations, provider_id="alicloud-express"
+        )
         await proto.run_code(
             SANDBOX_ID,
             envd_url,
             envd_token,
+            mode="default-context",
             code="x = 1",
             context_id="ctx-123",
         )
@@ -82,11 +90,14 @@ class TestRunCode:
 
     async def test_run_code_custom_timeout(self, envd_url, envd_token):
         mock_http = _make_mock_http(envd_request_return={})
-        proto = CodeInterpreterProtocol(mock_http)
+        proto = CodeInterpreterProtocol(
+            mock_http, operations=AlicloudExpressProvider.operations, provider_id="alicloud-express"
+        )
         await proto.run_code(
             SANDBOX_ID,
             envd_url,
             envd_token,
+            mode="default-context",
             code="x = 1",
             timeout=120,
         )
@@ -96,11 +107,14 @@ class TestRunCode:
     async def test_run_code_default_timeout_propagates_to_http(self, envd_url, envd_token):
         """run_code(timeout=30) should pass request_timeout=35.0 to envd_request."""
         mock_http = _make_mock_http(envd_request_return={})
-        proto = CodeInterpreterProtocol(mock_http)
+        proto = CodeInterpreterProtocol(
+            mock_http, operations=AlicloudExpressProvider.operations, provider_id="alicloud-express"
+        )
         await proto.run_code(
             SANDBOX_ID,
             envd_url,
             envd_token,
+            mode="default-context",
             code="print(1)",
         )
         call_kwargs = mock_http.envd_request.call_args.kwargs
@@ -109,11 +123,14 @@ class TestRunCode:
     async def test_run_code_custom_timeout_propagates_to_http(self, envd_url, envd_token):
         """run_code(timeout=300) should pass request_timeout=305.0 to envd_request."""
         mock_http = _make_mock_http(envd_request_return={})
-        proto = CodeInterpreterProtocol(mock_http)
+        proto = CodeInterpreterProtocol(
+            mock_http, operations=AlicloudExpressProvider.operations, provider_id="alicloud-express"
+        )
         await proto.run_code(
             SANDBOX_ID,
             envd_url,
             envd_token,
+            mode="default-context",
             code="import pandas",
             timeout=300,
         )
@@ -136,7 +153,9 @@ class TestCreateContext:
                 "language": "python",
             }
         )
-        proto = CodeInterpreterProtocol(mock_http)
+        proto = CodeInterpreterProtocol(
+            mock_http, operations=AlicloudExpressProvider.operations, provider_id="alicloud-express"
+        )
         result = await proto.create_context(
             SANDBOX_ID,
             envd_url,
@@ -161,7 +180,9 @@ class TestListContexts:
                 ]
             }
         )
-        proto = CodeInterpreterProtocol(mock_http)
+        proto = CodeInterpreterProtocol(
+            mock_http, operations=AlicloudExpressProvider.operations, provider_id="alicloud-express"
+        )
         result = await proto.list_contexts(SANDBOX_ID, envd_url, envd_token)
         assert len(result) == 2
         assert result[0]["contextId"] == "ctx-1"
@@ -169,7 +190,9 @@ class TestListContexts:
 
     async def test_list_contexts_empty(self, envd_url, envd_token):
         mock_http = _make_mock_http(envd_request_return={"contexts": []})
-        proto = CodeInterpreterProtocol(mock_http)
+        proto = CodeInterpreterProtocol(
+            mock_http, operations=AlicloudExpressProvider.operations, provider_id="alicloud-express"
+        )
         result = await proto.list_contexts(SANDBOX_ID, envd_url, envd_token)
         assert result == []
 
@@ -177,7 +200,9 @@ class TestListContexts:
         mock_http = _make_mock_http(
             envd_request_return={"result": {"contexts": [{"contextId": "ctx-wrapped"}]}}
         )
-        proto = CodeInterpreterProtocol(mock_http)
+        proto = CodeInterpreterProtocol(
+            mock_http, operations=AlicloudExpressProvider.operations, provider_id="alicloud-express"
+        )
         result = await proto.list_contexts(SANDBOX_ID, envd_url, envd_token)
         assert len(result) == 1
         assert result[0]["contextId"] == "ctx-wrapped"
@@ -193,7 +218,9 @@ class TestRestartContext:
                 "status": "active",
             }
         )
-        proto = CodeInterpreterProtocol(mock_http)
+        proto = CodeInterpreterProtocol(
+            mock_http, operations=AlicloudExpressProvider.operations, provider_id="alicloud-express"
+        )
         result = await proto.restart_context(
             SANDBOX_ID,
             envd_url,
@@ -211,7 +238,9 @@ class TestRemoveContext:
 
     async def test_remove_context(self, envd_url, envd_token):
         mock_http = _make_mock_http()
-        proto = CodeInterpreterProtocol(mock_http)
+        proto = CodeInterpreterProtocol(
+            mock_http, operations=AlicloudExpressProvider.operations, provider_id="alicloud-express"
+        )
         await proto.remove_context(
             SANDBOX_ID,
             envd_url,
@@ -222,3 +251,40 @@ class TestRemoveContext:
         mock_http.envd_request.assert_awaited_once()
         payload = mock_http.envd_request.call_args.kwargs["payload"]
         assert payload["contextId"] == "ctx-to-remove"
+
+
+async def test_unary_transport_refuses_callbacks_before_sending_code(envd_url, envd_token):
+    mock_http = _make_mock_http()
+    proto = CodeInterpreterProtocol(mock_http, operations=AlicloudExpressProvider.operations)
+    with pytest.raises(ProviderFeatureNotSupportedError):
+        await proto.run_code(
+            SANDBOX_ID,
+            envd_url,
+            envd_token,
+            code="raise Exception()",
+            mode="default-context",
+            on_stdout=lambda _: None,
+        )
+    mock_http.envd_request.assert_not_awaited()
+
+
+@pytest.mark.parametrize("fails", [False, True])
+async def test_stateless_wire_owns_temporary_context_without_public_context_grants(
+    envd_url, envd_token, fails
+):
+    mock_http = _make_mock_http()
+    execute = RuntimeError("execution failed") if fails else {"stdout": "42"}
+    mock_http.envd_request = AsyncMock(side_effect=[{"contextId": "owned"}, execute, {}])
+    protocol = CodeInterpreterProtocol(mock_http, operations=frozenset({"code.execute"}))
+    if fails:
+        with pytest.raises(RuntimeError, match="execution failed"):
+            await protocol.run_code(SANDBOX_ID, envd_url, envd_token, code="print(42)")
+    else:
+        assert await protocol.run_code(SANDBOX_ID, envd_url, envd_token, code="print(42)") == {
+            "stdout": "42"
+        }
+    calls = mock_http.envd_request.await_args_list
+    assert calls[0].args[1].endswith("/CreateContext")
+    assert calls[1].kwargs["payload"]["contextId"] == "owned"
+    assert calls[2].args[1].endswith("/RemoveContext")
+    assert calls[2].kwargs["payload"] == {"contextId": "owned"}

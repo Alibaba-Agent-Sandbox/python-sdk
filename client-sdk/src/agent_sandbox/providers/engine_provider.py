@@ -11,7 +11,7 @@ import asyncio
 import contextlib
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import quote
 
 from agent_sandbox.models.errors import ProviderFeatureNotSupportedError, SandboxNotFoundError
@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
     from pathlib import Path
 
+    from agent_sandbox.protocol.port_contract import PortContext
     from agent_sandbox.providers.manifest import Manifest
     from agent_sandbox.providers.shared.e2b.auth import EnvdTokenManager
     from agent_sandbox.transport.config import TransportConfig
@@ -164,6 +165,14 @@ class EngineSandboxProtocol:
     async def resume(self, sandbox_id: str) -> None:
         self._need("sandbox.pause")
         await self._c.call("POST", f"/v1/sandboxes/{_quoted(sandbox_id)}/resume", json_body={})
+
+    async def application_endpoint(self, sandbox_id: str, port: int) -> dict[str, Any]:
+        """Preserve the adapter's exact descriptor, including signed-path semantics."""
+        self._need("ports.url")
+        result: dict[str, Any] = await self._c.call(
+            "GET", f"/v1/sandboxes/{_quoted(sandbox_id)}/ports/{int(port)}/url"
+        )
+        return result
 
     async def port_url(self, sandbox_id: str, port: int) -> tuple[str, dict[str, str]]:
         self._need("ports.url")
@@ -421,12 +430,19 @@ class EngineFilesystemProtocol:
 
 
 class EngineCodeProtocol:
-    """``CodeInterpreterProtocol`` over the engine."""
+    """Exact interpreter operations over the CLI engine's real context routes."""
 
-    def __init__(self, client: EngineClient, provider_id: str, features: frozenset[str]) -> None:
+    def __init__(self, client: EngineClient, provider_id: str, operations: frozenset[str]) -> None:
         self._c = client
         self._pid = provider_id
-        self._features = features
+        self.operations = operations
+
+    def _require(self, operation: str) -> None:
+        if operation not in self.operations:
+            raise ProviderFeatureNotSupportedError(self._pid, operation)
+
+    def _path(self, sandbox_id: str) -> str:
+        return f"/v1/sandboxes/{_quoted(sandbox_id)}/code"
 
     async def run_code(
         self,
@@ -437,43 +453,73 @@ class EngineCodeProtocol:
         code: str,
         language: str = "python",
         context_id: str | None = None,
+        mode: Literal["stateless", "default-context"] = "stateless",
         timeout: int = 30,
         envs: dict[str, str] | None = None,
         on_stdout: Any = None,
         on_stderr: Any = None,
         on_result: Any = None,
     ) -> dict[str, Any]:
-        if "code.interpret" not in self._features:
-            raise ProviderFeatureNotSupportedError(self._pid, "code.interpret")
-        body = {
-            "code": code,
-            "language": language,
-            "context_id": context_id,
-            "timeout": timeout,
-            "envs": envs,
-        }
+        if mode not in {"stateless", "default-context"}:
+            raise ValueError("mode must be stateless or default-context")
+        if context_id:
+            self._require("code.context.execute")
+        elif mode == "default-context":
+            self._require("code.default-context.execute")
+        else:
+            self._require("code.execute")
+        if on_stdout or on_stderr or on_result:
+            raise ProviderFeatureNotSupportedError(self._pid, "code.stream")
         result: dict[str, Any] = await self._c.call(
             "POST",
-            f"/v1/sandboxes/{_quoted(_sandbox_id_from(envd_url))}/code/run",
-            json_body=body,
+            self._path(sandbox_id) + "/run",
+            json_body={
+                "code": code,
+                "language": language,
+                "context_id": context_id,
+                "mode": mode,
+                "timeout": timeout,
+                "envs": envs,
+            },
             timeout=float(timeout) + 15.0,
         )
-        if on_stdout and result.get("stdout"):
-            on_stdout(result["stdout"])
-        if on_stderr and result.get("stderr"):
-            on_stderr(result["stderr"])
-        if on_result:
-            on_result(result)
         return result
 
-    def __getattr__(self, name: str) -> Any:
-        if name.startswith("_"):
-            raise AttributeError(name)
+    async def create_context(
+        self,
+        sandbox_id: str,
+        envd_url: str,
+        envd_token: EnvdTokenManager,
+        *,
+        language: str = "python",
+    ) -> dict[str, Any]:
+        self._require("code.context.create")
+        result: dict[str, Any] = await self._c.call(
+            "POST", self._path(sandbox_id) + "/contexts", json_body={"language": language}
+        )
+        return result
 
-        async def _raise(*_a: Any, **_k: Any) -> Any:
-            raise ProviderFeatureNotSupportedError(self._pid, "code.interpret")
+    async def list_contexts(
+        self, sandbox_id: str, envd_url: str, envd_token: EnvdTokenManager
+    ) -> list[dict[str, Any]]:
+        self._require("code.context.list")
+        result = await self._c.call("GET", self._path(sandbox_id) + "/contexts")
+        return list(result["contexts"])
 
-        return _raise
+    async def restart_context(
+        self, sandbox_id: str, envd_url: str, envd_token: EnvdTokenManager, *, context_id: str
+    ) -> dict[str, Any]:
+        self._require("code.context.restart")
+        result: dict[str, Any] = await self._c.call(
+            "POST", self._path(sandbox_id) + "/contexts/" + _quoted(context_id) + "/restart"
+        )
+        return result
+
+    async def remove_context(
+        self, sandbox_id: str, envd_url: str, envd_token: EnvdTokenManager, *, context_id: str
+    ) -> None:
+        self._require("code.context.delete")
+        await self._c.call("DELETE", self._path(sandbox_id) + "/contexts/" + _quoted(context_id))
 
 
 class EngineProvider(Provider):
@@ -496,6 +542,9 @@ class EngineProvider(Provider):
         self.display_name_zh = manifest.name_zh
         self.version = manifest.version
         self.features = frozenset(manifest.features)
+        self.operations = frozenset(manifest.operations["python"])
+        self.workflow_inputs = frozenset(manifest.workflow_inputs)
+        self.startup_modes = frozenset(manifest.startup_modes)
         self.config_fields = manifest.fields
         self.auth_any_of = manifest.auth_any_of
         self.inherit = consented_inherit(manifest.inherit, receipt)
@@ -515,6 +564,14 @@ class EngineProvider(Provider):
             connection["domain"] = config.sandbox_domain
         return connection
 
+    async def application_endpoint(
+        self, context: PortContext, port: int, protocol: Any = None
+    ) -> dict[str, Any]:
+        if "ports.resolve" not in self.operations or protocol is None:
+            raise ProviderFeatureNotSupportedError(self.id, "ports.resolve")
+        result: dict[str, Any] = await protocol.application_endpoint(context.sandbox_id, port)
+        return result
+
     async def prepare_session(
         self, infra: ProviderInfra, info: Any, *, operation: str, template: str
     ) -> dict[str, Any]:
@@ -528,13 +585,19 @@ class EngineProvider(Provider):
             store.verify_integrity(self.id)
         client = EngineClient(self.connection(config))
         features = self.features
-        return ProviderInfra(
-            config=config,
-            auth=None,
-            http_client=None,
-            sandbox_protocol=EngineSandboxProtocol(client, self.id, features),
-            process_protocol=EngineProcessProtocol(client, self.id, features),
-            filesystem_protocol=EngineFilesystemProtocol(client, self.id, features),
-            code_interpreter_protocol=EngineCodeProtocol(client, self.id, features),
-            close=client.close,
+        from agent_sandbox.providers.feature_gate import gate_operation_protocols
+
+        return gate_operation_protocols(
+            ProviderInfra(
+                config=config,
+                auth=None,
+                http_client=None,
+                sandbox_protocol=EngineSandboxProtocol(client, self.id, features),
+                process_protocol=EngineProcessProtocol(client, self.id, features),
+                filesystem_protocol=EngineFilesystemProtocol(client, self.id, features),
+                code_interpreter_protocol=EngineCodeProtocol(client, self.id, self.operations),
+                close=client.close,
+            ),
+            self.id,
+            self.operations,
         )

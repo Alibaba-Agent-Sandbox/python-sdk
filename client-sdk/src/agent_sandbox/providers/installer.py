@@ -42,7 +42,18 @@ _SCP_URL = re.compile(r"^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+:(?!//).+$")
 _GIT_TIMEOUT = 120
 
 #: Manifest aspects whose change forces a new consent on update.
-RISK_ASPECTS = ("runtime", "security", "features", "inherit", "fields", "commands")
+RISK_ASPECTS = (
+    "runtime",
+    "security",
+    "features",
+    "inherit",
+    "fields",
+    "commands",
+    "operation_contract_version",
+    "operations",
+    "workflow_inputs",
+    "startup_modes",
+)
 
 
 @dataclass
@@ -71,6 +82,10 @@ class InstallPlan:
             else [m.kind, m.endpoint.get("base_url", "")],
             "kind": m.kind,
             "features": sorted(m.features),
+            "operation_contract_version": m.operation_contract_version,
+            "operations": {k: sorted(v) for k, v in m.operations.items()},
+            "workflow_inputs": sorted(m.workflow_inputs),
+            "startup_modes": sorted(m.startup_modes),
             "commands": m.to_summary()["commands"],
             "security": m.security,
             "fields": [{"key": f.key, "secret": f.secret} for f in m.fields],
@@ -369,6 +384,9 @@ def _diff_aspects(old: dict[str, Any], new: Manifest) -> list[str]:
         changed.append("fields")
     if consented.get("commands", []) != summary["commands"]:
         changed.append("commands")
+    for key in ("operation_contract_version", "operations", "workflow_inputs", "startup_modes"):
+        if consented.get(key) != summary[key]:
+            changed.append(key)
     return changed
 
 

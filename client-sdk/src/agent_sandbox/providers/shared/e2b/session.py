@@ -10,12 +10,16 @@ from .process import ProcessProtocol
 from .sandbox import SandboxProtocol
 
 
-def session_protocols(http: Any) -> dict[str, Any]:
+def session_protocols(
+    http: Any, *, operations: frozenset[str] = frozenset(), provider_id: str = "unknown"
+) -> dict[str, Any]:
     return {
         "sandbox_protocol": SandboxProtocol(http),
         "process_protocol": ProcessProtocol(http),
         "filesystem_protocol": FilesystemProtocol(http),
-        "code_interpreter_protocol": CodeInterpreterProtocol(http),
+        "code_interpreter_protocol": CodeInterpreterProtocol(
+            http, operations=operations, provider_id=provider_id
+        ),
     }
 
 

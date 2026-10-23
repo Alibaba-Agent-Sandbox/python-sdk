@@ -107,6 +107,10 @@ def m_initialize(p: dict) -> dict:
         "protocol": PROTOCOL,
         "plugin": {"name": "local-process", "version": "0.1.0"},
         "features": FEATURES,
+        "operation_contract_version": 1,
+        "operations": {'cli': ['sandbox.create', 'sandbox.get', 'sandbox.list', 'sandbox.delete', 'sandbox.timeout', 'exec.run', 'exec.stream', 'files.read', 'files.write', 'files.list', 'files.stat', 'files.remove', 'files.move'], 'python': ['sandbox.create', 'sandbox.get', 'sandbox.list', 'sandbox.delete', 'sandbox.timeout', 'exec.run', 'exec.stream', 'files.read', 'files.write', 'files.list', 'files.stat', 'files.remove', 'files.move']},
+        "workflow_inputs": ["managed"],
+        "startup_modes": ["exec", "none"],
     }
 
 

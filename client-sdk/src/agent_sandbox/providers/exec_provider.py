@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable
     from pathlib import Path
 
+    from agent_sandbox.protocol.port_contract import PortContext
     from agent_sandbox.providers.manifest import Manifest
     from agent_sandbox.providers.shared.e2b.auth import EnvdTokenManager
     from agent_sandbox.transport.config import TransportConfig
@@ -126,6 +127,13 @@ class ExecSandboxProtocol:
     @property
     def has_port_url(self) -> bool:
         return "ports.url" in self._features
+
+    async def application_endpoint(self, sandbox_id: str, port: int) -> dict[str, Any]:
+        self._need("ports.url")
+        result: dict[str, Any] = await self._c.call(
+            "ports.url", {"sandbox_id": sandbox_id, "port": port}
+        )
+        return result
 
     async def port_url(self, sandbox_id: str, port: int) -> tuple[str, dict[str, str]]:
         """Ask the plugin for the public URL (and access headers) of *port*."""
@@ -616,9 +624,20 @@ class ExecProvider(Provider):
         self.display_name_zh = manifest.name_zh
         self.version = manifest.version
         self.features = frozenset(manifest.features)
+        self.operations = frozenset(manifest.operations["python"])
+        self.workflow_inputs = frozenset(manifest.workflow_inputs)
+        self.startup_modes = frozenset(manifest.startup_modes)
         self.config_fields = manifest.fields
         self.auth_any_of = manifest.auth_any_of
         self.inherit = consented_inherit(manifest.inherit, receipt)
+
+    async def application_endpoint(
+        self, context: PortContext, port: int, protocol: Any = None
+    ) -> dict[str, Any]:
+        if "ports.resolve" not in self.operations or protocol is None:
+            raise ProviderFeatureNotSupportedError(self.id, "ports.resolve")
+        result: dict[str, Any] = await protocol.application_endpoint(context.sandbox_id, port)
+        return result
 
     async def prepare_session(
         self, infra: ProviderInfra, info: Any, *, operation: str, template: str
@@ -659,7 +678,7 @@ class ExecProvider(Provider):
             call_timeout=self.manifest.call_timeout_ms / 1000.0,
             secrets=secret_values,
         )
-        await client.start(
+        handshake = await client.start(
             {
                 "protocol": PROTOCOL,
                 "host": {"name": "agent-sandbox", "version": __version__},
@@ -670,6 +689,20 @@ class ExecProvider(Provider):
                 "data_dir": str(data_dir),
             }
         )
+        if (
+            type(handshake.get("operation_contract_version")) is not int
+            or handshake["operation_contract_version"] != self.operation_contract_version
+            or handshake.get("operations")
+            != {k: list(v) for k, v in self.manifest.operations.items()}
+            or handshake.get("workflow_inputs") != list(self.manifest.workflow_inputs)
+            or handshake.get("startup_modes") != list(self.manifest.startup_modes)
+        ):
+            await client.close()
+            from agent_sandbox.models.errors import ProviderVersionError
+
+            raise ProviderVersionError(
+                "Provider runtime operation contract differs from its manifest"
+            )
         advertised = client.features or self.features
         supported = self.features & advertised
         native: dict[str, Any] = {}
@@ -692,19 +725,25 @@ class ExecProvider(Provider):
             if http_client is not None:
                 await http_client.close()
 
-        return ProviderInfra(
-            config=config,
-            auth=auth,
-            http_client=http_client,
-            sandbox_protocol=ExecSandboxProtocol(
-                client,
-                supported,
-                frozenset(f.key for f in self.config_fields if f.secret),
+        from agent_sandbox.providers.feature_gate import gate_operation_protocols
+
+        return gate_operation_protocols(
+            ProviderInfra(
+                config=config,
+                auth=auth,
+                http_client=http_client,
+                sandbox_protocol=ExecSandboxProtocol(
+                    client,
+                    supported,
+                    frozenset(f.key for f in self.config_fields if f.secret),
+                ),
+                process_protocol=ExecProcessProtocol(client, supported, native.get("process")),
+                filesystem_protocol=ExecFilesystemProtocol(client, supported, native.get("files")),
+                code_interpreter_protocol=_Unsupported(self.id, "code.execute"),
+                close=_close,
             ),
-            process_protocol=ExecProcessProtocol(client, supported, native.get("process")),
-            filesystem_protocol=ExecFilesystemProtocol(client, supported, native.get("files")),
-            code_interpreter_protocol=_Unsupported(self.id, "code.interpret"),
-            close=_close,
+            self.id,
+            self.operations,
         )
 
 

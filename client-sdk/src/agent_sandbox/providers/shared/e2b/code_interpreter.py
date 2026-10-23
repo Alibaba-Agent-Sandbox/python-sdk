@@ -15,8 +15,9 @@ RPC endpoints:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
+from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
 from agent_sandbox.transport.codec import ConnectCodec
 from agent_sandbox.utils.logging import get_logger
 
@@ -50,8 +51,20 @@ class CodeInterpreterProtocol:
     均需实测验证。
     """
 
-    def __init__(self, http_client: HttpClient) -> None:
+    def __init__(
+        self,
+        http_client: HttpClient,
+        *,
+        operations: frozenset[str] = frozenset(),
+        provider_id: str = "unknown",
+    ) -> None:
         self._http = http_client
+        self.operations = operations
+        self._provider_id = provider_id
+
+    def _require(self, operation: str) -> None:
+        if operation not in self.operations:
+            raise ProviderFeatureNotSupportedError(self._provider_id, operation)
 
     async def run_code(
         self,
@@ -62,6 +75,7 @@ class CodeInterpreterProtocol:
         code: str,
         language: str = "python",
         context_id: str | None = None,
+        mode: Literal["stateless", "default-context"] = "stateless",
         timeout: int = 30,
         envs: dict[str, str] | None = None,
         on_stdout: Callable[[str], None] | None = None,
@@ -73,15 +87,31 @@ class CodeInterpreterProtocol:
         POST envd_url + /code.CodeInterpreter/Execute (Connect unary)
         # 注意：RPC 路径基于 E2B SDK 逆向推断，未经官方文档确认
 
-        Implementation note — **buffered fallback path**:
-        The CodeInterpreter/Execute endpoint is accessed as a Connect unary
-        RPC (not a server-streaming RPC), so true incremental streaming is
-        not available at the protocol level.  When ``on_stdout``,
-        ``on_stderr``, or ``on_result`` callbacks are supplied they are
-        invoked **once** after the full response is received — this keeps
-        the E2B-style callback API contract (callers can rely on the
-        callbacks firing) while the underlying transport remains unary.
+        Unary transport has no incremental event stream. Callback requests fail
+        before I/O; this wire adapter owns temporary contexts for stateless calls.
         """
+        if mode not in {"stateless", "default-context"}:
+            raise ValueError("mode must be stateless or default-context")
+        if context_id:
+            self._require("code.context.execute")
+        elif mode == "default-context":
+            self._require("code.default-context.execute")
+        else:
+            self._require("code.execute")
+        if on_stdout or on_stderr or on_result:
+            raise ProviderFeatureNotSupportedError(self._provider_id, "code.stream")
+        owned_context: str | None = None
+        if not context_id and mode == "stateless":
+            created = await self._http.envd_request(
+                envd_url,
+                _CREATE_CONTEXT,
+                payload={"language": language},
+                envd_token=envd_token,
+            )
+            owned_context = created.get("contextId", created.get("id"))
+            if not isinstance(owned_context, str) or not owned_context:
+                raise ValueError("Interpreter returned no temporary context identity")
+            context_id = owned_context
         payload: dict[str, Any] = {
             "code": code,
             "language": language,
@@ -98,30 +128,23 @@ class CodeInterpreterProtocol:
         # 30 s timeout before the server-side timeout fires.
         http_timeout = float(timeout) + _HTTP_TIMEOUT_BUFFER
 
-        response = await self._http.envd_request(
-            envd_url,
-            _EXECUTE,
-            payload=payload,
-            envd_token=envd_token,
-            request_timeout=http_timeout,
-        )
-
-        # --- Buffered callback dispatch ------------------------------------
-        # Fire callbacks with the complete response data so callers using
-        # the E2B streaming-callback style still receive notifications.
-        if on_stdout or on_stderr or on_result:
-            result = response.get("result", response)
-            stdout = result.get("stdout", "")
-            stderr = result.get("stderr", "")
-
-            if on_stdout and stdout:
-                on_stdout(stdout)
-            if on_stderr and stderr:
-                on_stderr(stderr)
-            if on_result:
-                on_result(result)
-
-        return response
+        try:
+            response = await self._http.envd_request(
+                envd_url,
+                _EXECUTE,
+                payload=payload,
+                envd_token=envd_token,
+                request_timeout=http_timeout,
+            )
+            return response
+        finally:
+            if owned_context:
+                await self._http.envd_request(
+                    envd_url,
+                    _REMOVE_CONTEXT,
+                    payload={"contextId": owned_context},
+                    envd_token=envd_token,
+                )
 
     async def create_context(
         self,
@@ -137,6 +160,7 @@ class CodeInterpreterProtocol:
         # 注意：RPC 路径基于 E2B SDK 逆向推断，未经官方文档确认
         """
         # 注意：RPC 路径基于 E2B SDK 逆向推断，未经官方文档确认
+        self._require("code.context.create")
         response = await self._http.envd_request(
             envd_url,
             _CREATE_CONTEXT,
@@ -157,6 +181,7 @@ class CodeInterpreterProtocol:
         # 注意：RPC 路径基于 E2B SDK 逆向推断，未经官方文档确认
         """
         # 注意：RPC 路径基于 E2B SDK 逆向推断，未经官方文档确认
+        self._require("code.context.list")
         response = await self._http.envd_request(
             envd_url,
             _LIST_CONTEXTS,
@@ -180,6 +205,7 @@ class CodeInterpreterProtocol:
         # 注意：RPC 路径基于 E2B SDK 逆向推断，未经官方文档确认
         """
         # 注意：RPC 路径基于 E2B SDK 逆向推断，未经官方文档确认
+        self._require("code.context.restart")
         response = await self._http.envd_request(
             envd_url,
             _RESTART_CONTEXT,
@@ -202,6 +228,7 @@ class CodeInterpreterProtocol:
         # 注意：RPC 路径基于 E2B SDK 逆向推断，未经官方文档确认
         """
         # 注意：RPC 路径基于 E2B SDK 逆向推断，未经官方文档确认
+        self._require("code.context.delete")
         await self._http.envd_request(
             envd_url,
             _REMOVE_CONTEXT,

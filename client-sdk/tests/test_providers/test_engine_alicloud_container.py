@@ -56,7 +56,6 @@ ADVERTISED = [
     "exec.stream",
     "process.manage",
     "files.rw",
-    "code.interpret",
     "ports.url",
 ]
 
@@ -268,7 +267,9 @@ async def test_private_data_plane_through_the_engine(
         entries = await sandbox.files.list("/tmp")
         assert [entry.name for entry in entries] == ["a.txt"]
 
-        run = await sandbox.run_code("print(42)", language="python", envs={"A": "b"})
+        run = await sandbox.run_code(
+            "print(42)", mode="default-context", language="python", envs={"A": "b"}
+        )
         assert "42" in (run.stdout or "") or "42" in (run.text or "")
 
         with pytest.raises(ProviderFeatureNotSupportedError):

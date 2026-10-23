@@ -15,6 +15,39 @@ from agent_sandbox.providers.manifest import (
 
 BASE = """
 manifest_version = 1
+operation_contract_version = 1
+[operations]
+cli = [
+  "sandbox.create",
+  "sandbox.get",
+  "sandbox.list",
+  "sandbox.delete",
+  "exec.run",
+  "files.read",
+  "files.write",
+  "files.list",
+  "files.stat",
+  "files.remove",
+  "files.move",
+  "ports.resolve",
+]
+python = [
+  "sandbox.create",
+  "sandbox.get",
+  "sandbox.list",
+  "sandbox.delete",
+  "exec.run",
+  "files.read",
+  "files.write",
+  "files.list",
+  "files.stat",
+  "files.remove",
+  "files.move",
+  "ports.resolve",
+]
+[workflow]
+inputs = ["managed"]
+startups = ["exec", "none"]
 [provider]
 id = "demo-prov"
 version = "1.2.3"
@@ -62,7 +95,7 @@ def test_template_features_are_independent_manifest_declarations(features):
     assert manifest.to_summary()["features"] == sorted(features)
 
 
-def test_builtin_keeps_legacy_template_build_without_image_deploy():
+def test_builtin_template_build_does_not_grant_image_deploy():
     from agent_sandbox.providers.alicloud_express.provider import AlicloudExpressProvider
 
     assert "templates.build" in AlicloudExpressProvider.features
@@ -128,6 +161,39 @@ def test_protocol_mismatch_is_version_error_code():
 def test_rest_manifest():
     text = """
 manifest_version = 1
+operation_contract_version = 1
+[operations]
+cli = [
+  "sandbox.create",
+  "sandbox.get",
+  "sandbox.list",
+  "sandbox.delete",
+  "exec.run",
+  "files.read",
+  "files.write",
+  "files.list",
+  "files.stat",
+  "files.remove",
+  "files.move",
+  "ports.resolve",
+]
+python = [
+  "sandbox.create",
+  "sandbox.get",
+  "sandbox.list",
+  "sandbox.delete",
+  "exec.run",
+  "files.read",
+  "files.write",
+  "files.list",
+  "files.stat",
+  "files.remove",
+  "files.move",
+  "ports.resolve",
+]
+[workflow]
+inputs = ["managed"]
+startups = ["exec", "none"]
 [provider]
 id = "rest-one"
 version = "0.1"
