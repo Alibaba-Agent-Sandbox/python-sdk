@@ -115,6 +115,8 @@ Interpreter HTTP 404, missing runtime and not-ready responses never fall back to
 
 ---
 
+<a id="e8xxx--provider-errors-providererror"></a>
+
 ## E8xxx — Provider Errors (ProviderError)
 
 Raised by the provider layer ([Providers guide](../guide/providers.md)). All subclass `SandboxError`. The CLI exit code is the same for every provider.

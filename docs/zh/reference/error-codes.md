@@ -115,6 +115,8 @@ except SandboxError as e:
 
 ---
 
+<a id="e8xxx--提供方错误providererror"></a>
+
 ## E8xxx — 提供方错误（ProviderError）
 
 由提供方层抛出（见[提供方指南](../guide/providers.md)）。全部继承 `SandboxError`。无论哪个提供方，CLI 退出码都相同。
