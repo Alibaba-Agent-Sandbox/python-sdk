@@ -84,10 +84,10 @@ def test_wheel_metadata_has_no_cli_dependencies(built_dists: dict[str, Path]) ->
     for dep in ("click", "questionary", "e2b", "e2b-code-interpreter"):
         assert f"Requires-Dist: {dep}" not in metadata
     assert "Provides-Extra: cli" not in metadata
-    assert "Provides-Extra: server" in metadata
+    assert "Provides-Extra: server" not in metadata
 
 
-def test_wheel_hard_depends_on_the_matching_server_and_keeps_extras(
+def test_wheel_hard_depends_on_matching_server_and_keeps_functional_extras(
     built_dists: dict[str, Path],
 ) -> None:
     import agent_sandbox
@@ -97,7 +97,7 @@ def test_wheel_hard_depends_on_the_matching_server_and_keeps_extras(
     requires = [line for line in metadata.splitlines() if line.startswith("Requires-Dist: ")]
     unconditional = [r for r in requires if "extra ==" not in r]
     assert f"Requires-Dist: agent-sandbox-server=={agent_sandbox.__version__}" in unconditional
-    assert "Provides-Extra: server" in metadata
+    assert "Provides-Extra: server" not in metadata
     mcp_deps = [r for r in requires if "extra == 'mcp'" in r]
     assert any(r.startswith("Requires-Dist: mcp>=1.0.0") for r in mcp_deps)
 

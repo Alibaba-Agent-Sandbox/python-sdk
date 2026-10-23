@@ -110,3 +110,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 
 - [Explicit template workflows](notes/proposed/architecture/2026-10-23-template-workflow-contract.md) · [canonical vectors](evidence/verify/2026-10-23-workflow-foundation.md) · [provider operations](evidence/verify/2026-10-23-provider-workflow-operations.md) · [independent second-round review](evidence/verify/2026-10-23-workflow-round2-independent.md).
 - [Workflow runtime implementation and review](evidence/verify/2026-10-23-workflow-runtime-review.md).
+- [Workflow migration real-cloud acceptance](evidence/verify/2026-10-23-workflow-real-cloud.md).
+- [Workflow CI follow-up](evidence/verify/2026-10-23-workflow-ci-followup.md).

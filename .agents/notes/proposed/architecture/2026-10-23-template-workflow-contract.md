@@ -30,3 +30,4 @@ Python and CLI pass the same vectors. Package copies match canonical bytes. Curr
 - [Removal of guessed interpreter transport](../../../evidence/verify/2026-10-23-remove-guessed-interpreter.md).
 - [Second-round independent confirmation](../../../evidence/verify/2026-10-23-workflow-round2-independent.md).
 - [Runtime implementation and adversarial corrections](../../../evidence/verify/2026-10-23-workflow-runtime-review.md).
+- [Real-cloud migration acceptance](../../../evidence/verify/2026-10-23-workflow-real-cloud.md).

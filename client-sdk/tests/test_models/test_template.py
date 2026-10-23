@@ -24,6 +24,22 @@ class TestSandboxTemplate:
         tmpl = SandboxTemplate.model_validate(workflow_manifest(deployment=topology))
         assert tmpl.model_dump()["deployment"] == topology
 
+    def test_retired_build_fields_are_rejected(self) -> None:
+        import pytest
+        from pydantic import ValidationError
+
+        from tests.workflow_fixtures import workflow_manifest
+
+        for field in (
+            "system_packages",
+            "python_packages",
+            "node_packages",
+            "copy_files",
+            "custom_commands",
+        ):
+            with pytest.raises(ValidationError, match="retired template fields"):
+                SandboxTemplate.model_validate(workflow_manifest(**{field: ["old"]}))
+
     def test_old_missing_version_is_rejected(self) -> None:
         import pytest
         from pydantic import ValidationError
