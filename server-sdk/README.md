@@ -12,7 +12,7 @@ Import path: `agent_sandbox.server` (a namespace shared with `agent-sandbox-clie
 ## Install
 
 ```bash
-python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=server-sdk"
+python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/c8882c29fd6a84fe10f9e6791aeacd1f5c0a5131.tar.gz#subdirectory=server-sdk"
 ```
 
 The opt-in browser capability group imports Playwright lazily; install `playwright` in the
