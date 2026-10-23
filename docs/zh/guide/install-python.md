@@ -14,9 +14,11 @@ python -m pip check
 python -c "import agent_sandbox, agent_sandbox.server; from importlib.metadata import version; print(version('agent-sandbox-client'), version('agent-sandbox-server'))"
 ```
 
-两个版本均为0.3.0，必须一致。为兼容已有装饰器和共享命名空间，客户端仍硬依赖同版本服务端；同时指定两个源码发行包，避免 pip 去索引寻找尚未发布的服务端。不要安装无关的 `agent-sandbox` 发行包。
+两个版本均为0.3.0，必须一致。客户端的本地服务端和声明式辅助功能需要同版本服务端，因此将它列为必需依赖；同时指定两个源码发行包，避免 pip 去索引寻找尚未发布的服务端。不要安装无关的 `agent-sandbox` 发行包。
 
 ## 可选 extras
+
+工作流 YAML 加载和声明式装饰器属于基础客户端，不再提供 declarative extra。
 
 保留同一个服务端 URL，在客户端直接引用上选择 extra；全量依赖使用：
 
@@ -26,7 +28,7 @@ python -m pip install \
   "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/08c51248bb3c1a6f1380bdb3d33126cda23bb7ec.tar.gz#subdirectory=client-sdk"
 ```
 
-可把 `[all]` 换成 `[mcp]`、`[declarative]`、`[session]` 或 `[fast]`。MCP 需要相应 extra；浏览器自动化还需在镜像内单独安装 Playwright。
+可把 `[all]` 换成 `[mcp]`、`[session]` 或 `[fast]`。MCP 需要相应 extra；浏览器自动化还需在镜像内单独安装 Playwright。
 
 ## 镜像内只安装服务端
 

@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Include the workflow YAML parser in base client installs and remove the empty declarative extra; verify clean base wheel installation. / 基础客户端直接包含工作流 YAML 解析器，删除空的 declarative extra，并验证纯基础安装。
 - Align contributor guidance and English/Chinese API, configuration and provider documentation with the removed project compatibility surface. / 同步贡献指南及中英文 API、配置和 Provider 文档，清除已删除项目兼容接口的旧说明。
 
 ### Removed

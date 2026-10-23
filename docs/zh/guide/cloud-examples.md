@@ -11,7 +11,7 @@ Agents API 的完整案例不在本页。那一组请求、本地替身 CLI，�
 客户端读取 `E2B_API_KEY`。旧名字 `E2B_API_KEY` 不会被当前客户端当成沙箱密钥。
 
 ```bash
-pip install "agent-sandbox-client[declarative]"
+pip install "agent-sandbox-client"
 export E2B_API_KEY="your-api-key"
 ```
 

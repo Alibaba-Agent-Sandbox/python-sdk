@@ -98,6 +98,8 @@ def test_wheel_hard_depends_on_matching_server_and_keeps_functional_extras(
     unconditional = [r for r in requires if "extra ==" not in r]
     assert f"Requires-Dist: agent-sandbox-server=={agent_sandbox.__version__}" in unconditional
     assert "Provides-Extra: server" not in metadata
+    assert "Provides-Extra: declarative" not in metadata
+    assert "Requires-Dist: pyyaml>=6.0.3" in unconditional
     mcp_deps = [r for r in requires if "extra == 'mcp'" in r]
     assert any(r.startswith("Requires-Dist: mcp>=1.0.0") for r in mcp_deps)
 
