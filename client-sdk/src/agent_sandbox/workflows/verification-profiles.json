@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "profiles": {
+    "application-cli": {
+      "consumer": "cli",
+      "checks": [
+        "create",
+        "start",
+        "protocol",
+        "invoke",
+        "endpoint",
+        "cleanup"
+      ],
+      "source_checks": [
+        "prepare"
+      ]
+    },
+    "application-python": {
+      "consumer": "python-provider",
+      "checks": [
+        "create",
+        "start",
+        "protocol",
+        "invoke",
+        "endpoint",
+        "cleanup"
+      ],
+      "source_checks": [
+        "prepare"
+      ]
+    },
+    "exec-cli": {
+      "consumer": "cli",
+      "checks": [
+        "create",
+        "start",
+        "invoke",
+        "cleanup"
+      ],
+      "source_checks": [
+        "prepare"
+      ]
+    },
+    "interpreter-context": {
+      "consumer": "python-provider",
+      "checks": [
+        "create",
+        "protocol",
+        "context.create",
+        "context.persist",
+        "context.isolate",
+        "context.restart",
+        "context.delete",
+        "cleanup"
+      ],
+      "source_checks": [
+        "prepare"
+      ]
+    }
+  },
+  "identity_keys": [
+    "template_source_digest",
+    "manifest_digest",
+    "build_digest",
+    "artifact_digest",
+    "provider_digest",
+    "consumer_version",
+    "workflow_id",
+    "binding_digest",
+    "contract_digest"
+  ],
+  "provenance_keys": [
+    "workflow",
+    "runner",
+    "revision",
+    "artifact_digest",
+    "run_id"
+  ],
+  "results": [
+    "PASS",
+    "FAIL",
+    "SKIP"
+  ]
+}
