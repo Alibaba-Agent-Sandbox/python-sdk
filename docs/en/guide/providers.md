@@ -23,11 +23,9 @@ The four non-default ids live in `awesome-providers`. Install with `abx provider
 | `opensandbox` | [OpenSandbox provider](../design/provider-opensandbox-mapping.md). HTTP is made from the Node host process that loads `provider.mjs`. `ABX_OPENSANDBOX_BASE_URL` defaults to `http://127.0.0.1:8080`. |
 | `alicloud-container` | [Container edition](../design/provider-alicloud-container.md). Needs `ABX_ALICLOUD_CONTAINER_DOMAIN`. Does not read `ABX_SANDBOX_API_KEY`. |
 | `cubesandbox` | [CubeSandbox provider](../design/provider-cubesandbox.md). Default origin `http://127.0.0.1:3000`. |
-| `e2b` | [E2B provider](../design/provider-e2b.md). Key is `ABX_E2B_API_KEY`. Does not read `ABX_SANDBOX_API_KEY` or `ABX_SANDBOX_API_KEY`. |
+| `e2b` | [E2B provider](../design/provider-e2b.md). Key is `ABX_E2B_API_KEY`. Does not read `ABX_SANDBOX_API_KEY`. |
 
-The logical readiness of the three providers that have no backend here is [provider readiness](../design/provider-readiness.md). A coding agent that is adding a provider loads the `agent-sandbox-provider` skill (`agent-sandbox-provider/SKILL.md`).
-
-If you never touch providers, nothing changes: every command, every output and every environment variable behaves as before. The id `alicloud-express` is stable. Only the display name may change.
+A coding agent that is adding a provider loads the `agent-sandbox-provider` skill (`agent-sandbox-provider/SKILL.md`).
 
 ---
 
@@ -72,7 +70,7 @@ Highest priority first:
 
 | Where | Example |
 |---|---|
-| SDK argument | `await Sandbox.create(provider="my-cloud")` |
+| SDK argument | `await ProviderSandbox.create(provider="my-cloud")` |
 | CLI flag | `abx create --provider my-cloud` |
 | Process environment | `export ABX_PROVIDER=my-cloud` |
 | `./.env` | `ABX_PROVIDER=my-cloud` |
@@ -81,17 +79,23 @@ Highest priority first:
 | Built-in | `alicloud-express` |
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+import asyncio
+from agent_sandbox import ProviderSandbox
 
-sb = await Sandbox.create(template="base")                          # alicloud-express
-sb = await Sandbox.create(template="base", provider="local-process")
-sb = await Sandbox.create(provider="my-cloud", provider_options={"cluster": "prod"})
-print(sb.provider)                                                  # "my-cloud"
-await sb.kill()
-await sb.close()                                                    # releases the provider process
+async def main():
+    sb = await ProviderSandbox.create(template="base", provider="alicloud-express")
+    try:
+        print(sb.provider)
+    finally:
+        try:
+            await sb.kill()
+        finally:
+            await sb.close()
+
+asyncio.run(main())
 ```
 
-`Sandbox.connect`, `Sandbox.list` and `Sandbox.kill_by_id` accept the same `provider=` argument. A sandbox id belongs to the provider that created it. Pass a qualified reference such as `my-cloud:sbx-1` to `connect` and the provider is taken from the prefix. Conflicting `provider=` and prefix raise `ProviderMismatchError` (E8030).
+`ProviderSandbox.connect`, `ProviderSandbox.list` and `ProviderSandbox.kill_by_id` accept the same `provider=` argument. A sandbox id belongs to the provider that created it. Pass a qualified reference such as `my-cloud:sbx-1` to `connect` and the provider is taken from the prefix. Conflicting `provider=` and prefix raise `ProviderMismatchError` (E8030).
 
 Default provider management:
 
@@ -128,7 +132,7 @@ python -m agent_sandbox.providers test my-cloud       # the contract suite (need
 
 ### What install does and does not do
 
-- **Nothing from the plugin is executed at install time.** There is no `setup.py`, no postinstall hook and no `git checkout`. Git sources are fetched without a checkout, every entry is validated (regular files only, no symlinks or submodules, size and count limits) and the installer writes the files itself.
+- **Before consent, only static metadata is inspected.** Git sources are fetched without checkout, entries are validated and the installer writes the files; there is no `setup.py` or postinstall hook. After consent, default verification may load and initialize the plugin to complete its handshake. Installation as a whole is not execution-free.
 - The install shows a **consent screen**: id, version, source, resolved commit, content digest, the command that will run, the declared security block, the features, and the configuration fields. A non-interactive run needs `--yes`.
 - A source is **pinned** when you give a full 40-hex commit (`--ref`) or `--sha256 <tree digest>`. A tag or branch is **unpinned**: it could move between your review and the install. An unpinned source is accepted only after a person read the consent screen in a terminal (no `--yes`), or with `--allow-unpinned`. `--yes` on its own never accepts a moving ref: the install fails with `ProviderTrustError` (E8012) and prints the commit to pin. `provider update` follows the same rule.
 - Only `https://` and `ssh` git URLs are accepted. URLs with embedded credentials are rejected; use an SSH agent or install from a directory you cloned yourself. `--allow-insecure-transport` enables `file://`, `http://` and `git://` (for tests and development).
@@ -197,42 +201,44 @@ A feature that is declared but fails inside the backend is not E8004; the backen
 
 ### What you can call after installing
 
-Installing a provider does not enable every SDK method or every `abx` command. The SDK and the CLI call **the same installed plugin**. Each method and command needs one feature from the table above. If the plugin does not declare it, the call raises `ProviderFeatureNotSupportedError` (E8004) before any request is sent. `node`, `exec` and `rest` plugins work from both hosts. A `python` provider registered in-process works from the SDK only. A manifest with `kind = "python"` cannot be installed.
+Installing a plugin does not implement every interface. Inspect `abx provider info <id>` and the exact consumer operations in the [workflow guide](template-workflows.md). Declarations, client implementations and actual backend responses each matter to a call.
 
-| Feature | Python SDK | CLI |
-|---|---|---|
-| `sandbox.lifecycle` | `Sandbox.create`, `connect`, `list`, `kill`, `info` | `create`, `list`, `info`, `kill`, `connect` |
-| `sandbox.timeout` | `set_timeout` | `sandbox timeout` |
-| `sandbox.pause` | `pause`, `resume` | `sandbox pause`, `sandbox resume` |
-| `exec.run` | `commands.run`, `sandbox.run` | `exec`, `run` |
-| `exec.stream` | `commands.stream` | `exec --stream` |
-| `process.manage` | `commands.list`, `kill`, `send_stdin` | `sandbox process ...` |
-| `pty` | `get_terminal` | PTY session |
-| `files.rw` | `files.*` | `upload`, `download`, `sandbox files ...` |
-| `files.watch` | `files.watch` | — |
-| `files.transfer` | signed upload and download URLs | — |
-| `templates.read` | template read APIs | `template list`, `template info` |
-| `templates.build` | image build and template registration | `template build/push/create/deploy/install/delete`, `deploy`, `install` |
-| `ports.url` | `network.get_url` | `sandbox url` |
-| `ports.domain` | custom domain configuration | — |
-| `storage.mount` | OSS mount | — |
-| `network.vpc` | VPC configuration | `--vpc-id` family |
-| `sessions` | `Sandbox.connect` on an existing id | `connect <provider:id>` |
+| Task | Python ProviderSandbox | CLI |
+| --- | --- | --- |
+| Create, connect and clean up | `ProviderSandbox.create/connect`, instance `kill/close` | `create`, `connect`, `kill` |
+| Execute a process | `commands.run` | `exec` |
+| Read and write files | `files.read/write` | `upload`, `download` |
+| Call a template application | `await application_client(port, token=...)`, then `client.commands.run` | Named-command entry, see the [server API](template-server-api.md) |
+| Resolve an application endpoint | `await network.resolve(port)` returns the URL and gateway headers | No dedicated URL command |
+| Prepare a source template | Prepare with the CLI, then connect to its sandbox or use a prepared reference | `template launch`, see the [workflow guide](template-workflows.md) |
+
+Process execution, named commands, interpreters and PTY are different interfaces; one working interface does not implement the others. Preserve gateway headers and provide the application token explicitly when calling an application. See the [SDK reference](../reference/api-reference.md) for the complete methods.
 
 ### OpenSandbox
 
-OpenSandbox is a catalog plugin, not part of this package. Install it, then create:
+OpenSandbox is a catalog plugin, not part of this package. Install it and configure the platform:
 
 ```bash
 python -m agent_sandbox.providers install registry:opensandbox --yes
 ```
 
+Launch a template with the CLI as described in the [workflow guide](template-workflows.md), then replace `SANDBOX_ID` below with the returned identifier. This example connects to an existing sandbox; `close()` releases the local client. Follow the launch guide to delete the sandbox and owned build artifacts when the task is finished.
+
 ```python
-sb = await Sandbox.create(template="base", provider="opensandbox")
-proc = await sb.commands.run("echo hello")
-await sb.files.write("/tmp/note.txt", "hello")
-print(await sb.files.read("/tmp/note.txt"))
-await sb.kill()
+import asyncio
+from agent_sandbox import ProviderSandbox
+
+async def main():
+    sb = await ProviderSandbox.connect("SANDBOX_ID", provider="opensandbox")
+    try:
+        proc = await sb.commands.run("echo hello")
+        print(proc.stdout)
+        await sb.files.write("/tmp/note.txt", "hello")
+        print(await sb.files.read("/tmp/note.txt"))
+    finally:
+        await sb.close()
+
+asyncio.run(main())
 ```
 
 The capability table is [OpenSandbox provider](../design/provider-opensandbox-mapping.md). The same notes are in `awesome-providers/opensandbox/docs/README.md`.
@@ -249,44 +255,14 @@ The feature ids above are the shared tool surface. A provider that has operation
 
 A plugin is a directory with `abx-provider.toml` and the program it runs.
 
-```toml
-manifest_version = 1
-
-[provider]
-id      = "local-process"
-name    = "Local Process"
-name_zh = "本地进程"
-version = "0.1.0"
-
-[compat]
-protocol = "epp/1"
-
-[runtime]
-kind    = "exec"
-command = ["python3", "./provider.py"]   # argv list, never a shell string; "./" is relative to the plugin directory
-
-[features]
-supported = ["sandbox.lifecycle", "exec.run", "files.rw"]
-
-[security]                               # shown at install and recorded; advisory, not enforced
-filesystem       = ["data_dir"]
-spawns_processes = true
-
-[core]
-inherit = []                             # generic keys the plugin wants; needs user consent
-
-[config.fields.workdir_root]             # the plugin's own settings: ABX_LOCAL_PROCESS_WORKDIR_ROOT
-type    = "path"
-required = false
-description = "Directory that holds sandbox working directories"
-```
+Use the complete [local-process manifest](../../../examples/providers/local-process/abx-provider.toml), including `operation_contract_version`, consumer-specific `[operations]` and `[workflow]`. Start from this maintained example and declare the operations you implement.
 
 Two working examples are in this repository:
 
 - `examples/providers/local-process/` — an `exec` provider in about 200 lines of Python standard library (lifecycle, commands, files).
 - `examples/providers/e2b-compatible/` — a `rest` provider that is only a manifest.
 
-OpenSandbox is a catalog `node` provider (a dependency-free ES module whose EPP/1 methods the host runs in its own process; `node provider.mjs` still serves EPP/1 on stdio) in [awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox). It talks to an [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) server from the host process (streaming exec, files, process control, a terminal, pause/resume, port URLs). Install it with `abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox --allow-unpinned --yes` (or the Python module), then `Sandbox.create(provider="opensandbox")` or `abx --provider opensandbox`. For a backend that is E2B-shaped, a `node` plugin is shorter: see `awesome-providers/e2b/provider.mjs`.
+OpenSandbox is a catalog `node` provider (a dependency-free ES module whose EPP/1 methods the host runs in its own process; `node provider.mjs` still serves EPP/1 on stdio) in [awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox). It talks to an [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) server from the host process (streaming exec, files, process control, a terminal, pause/resume, port URLs). Install it with `abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox --allow-unpinned --yes` (or the Python module), then `ProviderSandbox.create(provider="opensandbox")` or `abx --provider opensandbox`. For a backend that is E2B-shaped, a `node` plugin is shorter: see `awesome-providers/e2b/provider.mjs`.
 
 ### Authoring checklist
 
@@ -314,7 +290,7 @@ The wire methods, their parameter names and types, and which are required are li
 
 ### What reaches `sandbox.create`
 
-`Sandbox.create(..., provider="my-cloud", provider_options={...}, secure=...)` sends:
+`ProviderSandbox.create(..., provider="my-cloud", provider_options={...}, secure=...)` sends:
 
 | Param | When |
 |---|---|
