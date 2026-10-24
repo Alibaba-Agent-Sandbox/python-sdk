@@ -161,13 +161,13 @@ jobs:
         with:
           persist-credentials: false
           repository: Alibaba-Agent-Sandbox/agent-sandbox
-          ref: 475848c62ef1156718515bb5b6b45486366573f4
+          ref: 94a1f90244e7b36e06c4618feaa323c4d056e784
           path: .test-deps/cli
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
           repository: Alibaba-Agent-Sandbox/awesome-providers
-          ref: 6dbb89a256371190e7ea34dca858c9a00ebdfc2f
+          ref: 857a66b3884faeaade01411ec9561987a7aee705
           path: .test-deps/providers
       - uses: actions/setup-python@v5
         with:

@@ -56,5 +56,14 @@ python -m pip check
 在新环境安装这对实际 wheel，并保存候选产物。手动运行默认 dry-run，同样要求选择
 版本标签。上传前 PyPI 已存在的文件必须与候选 SHA-256 一致，不能只靠 `skip-existing`
 宣称验证成功。先上传 server，再上传 client；之后回读公开文件摘要，并从公开索引
-在新环境安装两个精确版本。回读失败表示发布尚未验证，应保留候选产物用于恢复，
+在新环境只安装固定版本 client，验证 server 自动依赖并运行 `pip check`。回读失败表示发布尚未验证，应保留候选产物用于恢复，
 不要静默重新构建。该工作流不能替代必需 CI、评审及真实后端验收。
+
+## 可选 alpha 预发布
+
+0.3.1a1 是需显式选择的 alpha 候选。公开发布验证完成后，可使用下面的精确版本安装；同版本 server 由依赖自动安装。发布完成前，仍可使用上面的固定源码方案。Node provider doctor 需要配套 CLI initialize 接口（计划为 CLI 0.4.11），0.4.10 不支持。测试版不代表所有能力生产就绪。
+
+```bash
+python -m pip install 'agent-sandbox-client==0.3.1a1'
+python -m pip check
+```

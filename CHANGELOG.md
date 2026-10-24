@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.3.1a1] - 2026-10-24
+
+### Changed
+
+- Prepare an opt-in PyPI alpha pair, connect publication to the repository PYPI_API_TOKEN secret, and preserve same-tag CI, artifact verification and public readback. / 准备需显式选择的 PyPI alpha 双包，通过仓库 PYPI_API_TOKEN secret 发布，并保留同标签 CI、产物校验及公开回装门禁。
+
 ### Fixed
 
 - Provider catalog updates compare content rather than display versions, preserve recorded sources, and recheck SDK compatibility on load.

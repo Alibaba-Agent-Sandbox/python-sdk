@@ -58,7 +58,15 @@ builds one wheel/sdist pair per package, installs the exact wheel pair in a clea
 environment, and preserves the candidate artifact. A manual run defaults to dry-run
 and still requires the version tag. Before upload, any existing PyPI file must match
 the candidate SHA-256; `skip-existing` alone is not verification. Server uploads before
-client. After upload, the workflow checks public file digests and installs both exact
-versions from the public index in a fresh environment. A failed readback means publication
+client. After upload, the workflow checks public file digests and installs the exact client from the public index in a fresh environment, validates the automatically installed matching server, and runs `pip check`. A failed readback means publication
 has not been verified; preserve the candidate for recovery instead of rebuilding silently.
 This workflow does not replace required CI, reviews or real-backend acceptance.
+
+## Optional alpha release
+
+The 0.3.1a1 candidate is an opt-in prerelease. Once its public release is verified, install the exact client version below; its matching server is a required dependency. Until publication completes, the immutable source recipe above remains available. Node provider doctor requires the companion CLI initialize endpoint (planned CLI 0.4.11); 0.4.10 does not support it. This is not a production-readiness claim.
+
+```bash
+python -m pip install 'agent-sandbox-client==0.3.1a1'
+python -m pip check
+```

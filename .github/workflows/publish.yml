@@ -22,9 +22,11 @@ jobs:
     name: Build & Publish (agent-sandbox-server, then agent-sandbox-client)
     runs-on: ubuntu-latest
     environment: pypi
+    concurrency:
+      group: pypi-upload-${{ github.ref }}
+      cancel-in-progress: false
     permissions:
       contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -79,10 +81,21 @@ jobs:
           echo "upload=$upload" >> "$GITHUB_OUTPUT"
           echo "event=${{ github.event_name }} dry_run=${{ inputs.dry_run }} upload=$upload"
 
+      - name: Require configured PyPI credential
+        if: steps.publish.outputs.upload == 'true'
+        env:
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -z "$PYPI_API_TOKEN" ]; then
+            echo "Configure the repository or pypi environment secret PYPI_API_TOKEN"
+            exit 1
+          fi
+
       - name: Upload agent-sandbox-server to PyPI
         if: steps.publish.outputs.upload == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: dist/server-sdk
           skip-existing: true
 
@@ -90,6 +103,7 @@ jobs:
         if: steps.publish.outputs.upload == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: dist/client-sdk
           skip-existing: true
 
@@ -104,6 +118,7 @@ jobs:
           done
           version=$(python -c 'import sys; sys.path.insert(0, "scripts"); from check_release import release_version; print(release_version())')
           python -m venv "$RUNNER_TEMP/pypi-readback"
-          "$RUNNER_TEMP/pypi-readback/bin/python" -m pip install --no-cache-dir --index-url https://pypi.org/simple "agent-sandbox-client==$version" "agent-sandbox-server==$version"
+          "$RUNNER_TEMP/pypi-readback/bin/python" -m pip install --no-cache-dir --index-url https://pypi.org/simple "agent-sandbox-client==$version"
+          "$RUNNER_TEMP/pypi-readback/bin/python" -m pip check
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/pypi-readback/bin/python" -c 'from agent_sandbox import Sandbox, AsyncSandbox, ProviderSandbox; from agent_sandbox.server import start; assert all(callable(x) for x in (Sandbox.create, AsyncSandbox.create, ProviderSandbox.create, start))'

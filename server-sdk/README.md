@@ -1,6 +1,6 @@
 # agent-sandbox-server
 
-For the current version, use the [paired source installation guide](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/install-python.md); source references below keep client and server versions matched.
+This package is the opt-in **0.3.1a1 alpha** candidate. Use its exact PyPI version after verified publication; before that, use the [tested paired source recipe](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/install-python.md). Alpha publication does not establish every provider or template as production-ready.
 
 **Server SDK.** This package runs *inside* a sandbox image. It is the HTTP service the image starts (default port 9000). It does not create the sandbox. Creating and calling the sandbox is the [client SDK](https://github.com/alibaba-agent-sandbox/python-sdk/blob/main/client-sdk/README.md) or the `abx` CLI. Guide: [Server SDK](https://github.com/alibaba-agent-sandbox/python-sdk/blob/main/docs/en/guide/server-sdk.md).
 
@@ -12,7 +12,8 @@ Import path: `agent_sandbox.server` (a namespace shared with `agent-sandbox-clie
 ## Install
 
 ```bash
-python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk"
+python -m pip install 'agent-sandbox-server==0.3.1a1'
+python -m pip check
 ```
 
 The opt-in browser capability group imports Playwright lazily; install `playwright` in the
@@ -40,7 +41,7 @@ name for the endpoints that declare it. `core` is always on, the groups through 
 `groups: [dev_tools]`, or with `ABX_SERVER_ENABLED_GROUPS=dev_tools` in the environment. See the
 [server API design](https://github.com/alibaba-agent-sandbox/python-sdk/blob/main/docs/en/design/server-api.md).
 
-Command registration supports `list[str]` with strict native JSON arrays. See the [bilingual server API guide](../docs/en/guide/template-server-api.md#string-array-command-arguments).
+Command registration supports `list[str]` with strict native JSON arrays. See the [bilingual server API guide](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/template-server-api.md#string-array-command-arguments).
 
 ## Develop
 

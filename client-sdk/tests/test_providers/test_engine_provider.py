@@ -21,7 +21,7 @@ import pytest
 
 from agent_sandbox import ProviderSandbox as Sandbox
 from agent_sandbox.models.errors import ProviderFeatureNotSupportedError, SandboxNotFoundError
-from agent_sandbox.providers import engine_client, installer, registry
+from agent_sandbox.providers import doctor, engine_client, installer, registry
 from tests.iso import iso  # noqa: F401
 
 if TYPE_CHECKING:
@@ -152,3 +152,52 @@ async def _restart_scenario(mock_backend: int) -> None:
         assert second is not None and second.pid != first.pid
     finally:
         await sandbox.close()
+
+
+@pytest.mark.parametrize("valid", [True, False])
+def test_doctor_initializes_actual_node_plugin(
+    engine_env: Path, tmp_path: Path, valid: bool
+) -> None:
+    source = tmp_path / "doctor-plugin"
+    source.mkdir()
+    (source / "abx-provider.toml").write_text(
+        """manifest_version = 1
+operation_contract_version = 1
+[operations]
+cli = []
+python = []
+[workflow]
+inputs = ["managed"]
+startups = ["none"]
+[provider]
+id = "initialize-fixture"
+name = "Initialize fixture"
+version = "1.0.0"
+[compat]
+protocol = "node/1"
+requires = { sdk = ">=0.3" }
+[runtime]
+kind = "node"
+entry = "provider.mjs"
+[features]
+supported = []
+"""
+    )
+    marker = tmp_path / "closed.txt"
+    module = (
+        "import fs from 'node:fs'; export default () => ({buildInfra: async () => ({"
+        "operation_contract_version: 1, operations: {cli: [], python: []},"
+        "sandbox_protocol: {create: () => {throw Error('must not create');},"
+        "list: () => {throw Error('must not list');}},"
+        f"close: async () => fs.writeFileSync({json.dumps(str(marker))}, 'closed')"
+        "})});"
+    )
+    (source / "provider.mjs").write_text(module if valid else "invalid JavaScript !")
+    installer.install(str(source), yes=True)
+    report = doctor.doctor("initialize-fixture")
+    assert report["ok"] is valid, report
+    assert report["checks"][-1]["name"] == "handshake"
+    if valid:
+        assert marker.read_text() == "closed"
+    else:
+        assert not marker.exists()
