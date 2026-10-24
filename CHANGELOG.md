@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Clarify provider-native application clients, published alpha installation, separate gateway/application credentials, and explicit readiness checks after cloud-steps submission in bilingual guides.
+
 ## [0.3.1a1] - 2026-10-24
 
 ### Changed

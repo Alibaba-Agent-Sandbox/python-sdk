@@ -12,10 +12,33 @@ A short client for a server that is already running is [`examples/templates/pyth
 
 The server defaults to `0.0.0.0:9000`. The provider must implement the required port resolution and network path, and the service must actually listen. Do not treat every endpoint as a `{port}-{sandbox_id}.{domain}` hostname. Resolve application HTTP independently from internal envd/EPP transport:
 
+This example uses the provider-native `ProviderSandbox` API in the published
+`agent-sandbox-client==0.3.1a1` alpha; the standard `Sandbox`/`AsyncSandbox` classes
+have a different interface. See [installation](install-python.md) for the exact
+package/source choices. Set `SANDBOX_ID` to an existing sandbox whose application
+server is running, and `ABX_SERVER_TOKEN` only if that server was started with it.
+
 ```python
-async with await sandbox.application_client(9000, token=application_token) as client:
-    result = await client.commands.run("hello", name="Python")
+import asyncio
+import os
+from agent_sandbox import ProviderSandbox
+
+async def main() -> None:
+    sandbox = await ProviderSandbox.connect(os.environ["SANDBOX_ID"])
+    try:
+        async with await sandbox.application_client(
+            9000, token=os.environ.get("ABX_SERVER_TOKEN") or None
+        ) as client:
+            print(await client.commands.run("hello", name="Python"))
+    finally:
+        await sandbox.close()
+
+asyncio.run(main())
 ```
+
+`close()` releases this client connection; it leaves the existing sandbox running.
+The creator remains responsible for `kill()` or `abx kill ID`.
+
 
 This resolves the endpoint for that sandbox and port, preserving the full proxy prefix and signed query. Gateway headers and the application `ABX_SERVER_TOKEN` are separate; no control-plane API key is copied and no anonymous authentication retry occurs. Redirects (including another sandbox on the same origin), URL userinfo and authority overrides are rejected. Operation-signed endpoints require the provider's per-operation resolver, never generic prefix joining.
 
@@ -694,29 +717,39 @@ The route does not appear in `GET /commands`. It appears in `GET /capabilities` 
 
 ## curl
 
+These curl examples target a direct local server. For a remote sandbox, resolve the
+application URL and any gateway headers through its provider. Keep the application
+token in `Authorization: Bearer`; do not replace a provider-required `X-Access-Token`
+with the application token, and do not copy control-plane API keys into requests.
+A gateway header is required only when that provider's resolved endpoint requires it.
+For an anonymous server, omit the application Authorization header.
+
 Set the base URL and, when the server was started with a token, the token. Neither value belongs in the template image.
 
 ```bash
-export ABX_TEMPLATE_URL="http://127.0.0.1:9000"   # or the https URL from get_url(9000)
-export ABX_SERVER_TOKEN=""                         # leave empty in local mode
+export ABX_TEMPLATE_URL="http://127.0.0.1:9000"
+AUTH=()
+if [ -n "${ABX_SERVER_TOKEN:-}" ]; then
+  AUTH=(-H "Authorization: Bearer $ABX_SERVER_TOKEN")
+fi
 ```
 
 Health (open even when a token is set):
 
 ```bash
-curl -sS "$ABX_TEMPLATE_URL/health"
+curl --fail-with-body -sS "$ABX_TEMPLATE_URL/health"
 ```
 
 List commands (send the header whenever `ABX_SERVER_TOKEN` is set):
 
 ```bash
-curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" "$ABX_TEMPLATE_URL/commands"
+curl --fail-with-body -sS "${AUTH[@]}" "$ABX_TEMPLATE_URL/commands"
 ```
 
 Run a command registered as `hello`:
 
 ```bash
-curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" \
+curl --fail-with-body -sS "${AUTH[@]}" \
   -H "Content-Type: application/json" \
   -d '{"name":"Ada"}' \
   "$ABX_TEMPLATE_URL/commands/hello"
@@ -726,11 +759,11 @@ Upload and download. The path must stay under `ABX_SERVER_BASE_DIR` (default `/h
 
 ```bash
 B64=$(printf 'hello' | base64)
-curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" \
+curl --fail-with-body -sS "${AUTH[@]}" \
   -H "Content-Type: application/json" \
   -d "{\"path\":\"/home/user/note.txt\",\"content_base64\":\"$B64\"}" \
   "$ABX_TEMPLATE_URL/upload"
 
-curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" \
+curl --fail-with-body -sS "${AUTH[@]}" \
   "$ABX_TEMPLATE_URL/download?path=/home/user/note.txt"
 ```

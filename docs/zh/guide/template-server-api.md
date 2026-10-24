@@ -12,10 +12,31 @@ Dockerfile 里的 `FROM` 镜像随模板而变。本 HTTP API 不变。凡是启
 
 服务器默认监听 `0.0.0.0:9000`。Provider 必须支持所需端口解析和访问路径，服务也必须实际监听；不能把所有入口都当作 `{port}-{sandbox_id}.{domain}` 主机名拼接。已有沙箱的应用调用独立于内部 envd/EPP 传输：
 
+此示例使用已发布 `agent-sandbox-client==0.3.1a1` alpha 中的 Provider 原生
+`ProviderSandbox`，标准 `Sandbox`/`AsyncSandbox` 是另一套接口。精确安装版本与源码方案见
+[安装指南](install-python.md)。将 `SANDBOX_ID` 设为应用服务已启动的现有沙箱；仅当服务
+启动时配置了令牌，才设置对应的 `ABX_SERVER_TOKEN`。
+
 ```python
-async with await sandbox.application_client(9000, token=application_token) as client:
-    result = await client.commands.run("hello", name="Python")
+import asyncio
+import os
+from agent_sandbox import ProviderSandbox
+
+async def main() -> None:
+    sandbox = await ProviderSandbox.connect(os.environ["SANDBOX_ID"])
+    try:
+        async with await sandbox.application_client(
+            9000, token=os.environ.get("ABX_SERVER_TOKEN") or None
+        ) as client:
+            print(await client.commands.run("hello", name="Python"))
+    finally:
+        await sandbox.close()
+
+asyncio.run(main())
 ```
+
+`close()` 释放本次客户端连接，不销毁这个现有沙箱；创建者仍负责调用 `kill()` 或 `abx kill ID`。
+
 
 此调用解析当前沙箱和端口的应用端点，保留完整代理前缀及签名 query。平台网关请求头和应用 `ABX_SERVER_TOKEN` 分离，不复制控制面 API key，不做匿名认证重试。重定向（包括同域另一沙箱）、URL 用户信息和寻址覆盖被拒绝；逐操作签名入口必须由 Provider 解析操作请求，不能按 URL 前缀拼接。
 
@@ -691,29 +712,37 @@ def hello_route(request: object) -> ServerResponse:
 
 ## curl
 
+下面 curl 示例直接访问本机服务。远程沙箱的应用 URL 和所需网关请求头应通过对应
+Provider 解析。应用令牌使用 `Authorization: Bearer`，不要用它覆盖 Provider 要求的
+`X-Access-Token`，也不要把控制面 API key 复制到应用请求。只有解析后的入口要求时才发送
+网关请求头；匿名应用服务省略应用 Authorization 头。
+
 设置基址；服务器以令牌启动时再设置令牌。这两个值都不应该写进模板镜像。
 
 ```bash
-export ABX_TEMPLATE_URL="http://127.0.0.1:9000"   # 或 get_url(9000) 得到的 https 地址
-export ABX_SERVER_TOKEN=""                         # 本地模式留空
+export ABX_TEMPLATE_URL="http://127.0.0.1:9000"
+AUTH=()
+if [ -n "${ABX_SERVER_TOKEN:-}" ]; then
+  AUTH=(-H "Authorization: Bearer $ABX_SERVER_TOKEN")
+fi
 ```
 
 健康检查（设置了令牌时仍然开放）：
 
 ```bash
-curl -sS "$ABX_TEMPLATE_URL/health"
+curl --fail-with-body -sS "$ABX_TEMPLATE_URL/health"
 ```
 
 列出命令（只要设置了 `ABX_SERVER_TOKEN` 就带上头）：
 
 ```bash
-curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" "$ABX_TEMPLATE_URL/commands"
+curl --fail-with-body -sS "${AUTH[@]}" "$ABX_TEMPLATE_URL/commands"
 ```
 
 运行注册名为 `hello` 的命令：
 
 ```bash
-curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" \
+curl --fail-with-body -sS "${AUTH[@]}" \
   -H "Content-Type: application/json" \
   -d '{"name":"Ada"}' \
   "$ABX_TEMPLATE_URL/commands/hello"
@@ -723,11 +752,11 @@ curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" \
 
 ```bash
 B64=$(printf 'hello' | base64)
-curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" \
+curl --fail-with-body -sS "${AUTH[@]}" \
   -H "Content-Type: application/json" \
   -d "{\"path\":\"/home/user/note.txt\",\"content_base64\":\"$B64\"}" \
   "$ABX_TEMPLATE_URL/upload"
 
-curl -sS -H "X-Access-Token: $ABX_SERVER_TOKEN" \
+curl --fail-with-body -sS "${AUTH[@]}" \
   "$ABX_TEMPLATE_URL/download?path=/home/user/note.txt"
 ```

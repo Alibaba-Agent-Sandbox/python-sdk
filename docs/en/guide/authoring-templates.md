@@ -153,7 +153,15 @@ Keep the source Dockerfile unchanged. Resolve base-image placeholders in the sou
 
 The server does not select a provider. Port 9000 is the application HTTP listen default; injected envd, interpreter services and reserved ports belong to each backend. Those differences do not imply the application is unusable. `startup: exec`, `entrypoint` and `none` are distinct paths and must match provider declarations. Do not run native startup and a start command twice; actually check a nonempty `ready_cmd`. Build configurations are explicit, and the effective Dockerfile/arguments participate in input identity.
 
-`commands.py` imports only `agent_sandbox.server` and calls `start(port)` from its main entry; the image explicitly installs the server SDK. To consume an existing sandbox application, Python uses `async with await sandbox.application_client(9000, token=application_token)`: application endpoint resolution is independent, preserves proxy prefixes and separates gateway/application credentials.
+`commands.py` imports only `agent_sandbox.server` and calls `start(port)` from its
+main entry; the image explicitly installs the server SDK. For the provider-native
+application API in the published 0.3.1a1 alpha, import `ProviderSandbox` from
+`agent_sandbox` and connect with `await ProviderSandbox.connect(ID)`. This instance
+supports `async with await sandbox.application_client(9000, token=application_token)`;
+the standard `Sandbox`/`AsyncSandbox` classes have a different interface.
+Application endpoint resolution preserves proxy prefixes and separates gateway and
+application credentials. See the [complete connection/close example](template-server-api.md#reaching-the-sandbox);
+the sandbox creator owns its final deletion.
 
 ---
 
