@@ -1,6 +1,6 @@
 # Decision: Launch managed workflows from native template IDs
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -39,3 +39,4 @@ Regression tests cover managed create, application protocol rejection, no-HTTP e
 
 - [Issue #95](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/95)
 - [Verification](../../../evidence/verify/2026-10-24-managed-native-workflows.md)
+- [Public release verification](../../../evidence/verify/2026-10-24-python-a3-public-release.md)
