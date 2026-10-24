@@ -61,7 +61,7 @@ Node.js 项目，位于 [`agent-sandbox`](https://github.com/alibaba-agent-sandb
 
 ## 安装
 
-当前0.3.0尚未上 PyPI，使用[配套源码安装指南](docs/zh/guide/install-python.md)，两个源码 URL 必须固定同一提交。
+[安装指南](docs/zh/guide/install-python.md)提供已验证的0.3.0 Git 配套源码，以及0.3.1a1 alpha 在公开发布验证完成后的显式安装方式。两个源码 URL 必须固定同一提交。
 
 ```bash
 # 仅核心客户端 SDK
