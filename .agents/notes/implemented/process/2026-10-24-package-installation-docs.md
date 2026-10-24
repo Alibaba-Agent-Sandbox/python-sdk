@@ -1,6 +1,6 @@
 # Decision: Keep packaged installation guidance accurate
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -41,3 +41,4 @@ Run package/release regressions and build/dist-check. Inspect the wheel metadata
 
 - [Issue #101](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/101)
 - [Local packaging and stopped upload](../../../evidence/verify/2026-10-24-package-installation-docs.md)
+- [Public a5 release and clean installation](../../../evidence/verify/2026-10-24-python-a5-public-release.md)
