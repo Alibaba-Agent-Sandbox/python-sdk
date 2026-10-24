@@ -1,17 +1,6 @@
-# Explicit template workflows
+# Launch and use a template
 
-Template specification 4 separates the software a template provides from the operations a provider adapter and a particular client implement. An application HTTP server does not require a unified code interpreter. A provider's Beta label describes maturity; it does not certify or reject every workflow.
-
-| Layer | Declares or checks |
-| --- | --- |
-| Template | `provides`, explicit `workflows`, exactly one `default_workflow`, input and startup mode |
-| Provider | Operation contract 1, exact operations per consumer, supported inputs and startup modes |
-| SDK/CLI | The actual protocol bridge and caller/network binding for the selected operation |
-| Verification | Current content identities, minimum profile checks, cleanup and independently approved CI provenance |
-
-The canonical contract, profiles, receipt schema and shared vectors live in [`contracts`](https://github.com/alibaba-agent-sandbox/python-sdk/tree/main/contracts). Static planning has three states: T means implemented requirements, F means an explicit mismatch or missing adapter/client operation, and U means unresolved information. Any F dominates U. T permits local checks; it is not a successful runtime test. A missing project adapter operation does not prove the platform's native API lacks it.
-
-Runtime old-schema translation is removed. `capabilities`, `tested_on` and hand-written provider compatibility claims are rejected in current manifests. Unknown remote references grant no default code capability. Historical records remain historical.
+Use the CLI to prepare a source template, then connect with Python. If the platform already provides a template ID, Python can create it directly.
 
 ## Python application consumption
 
@@ -42,7 +31,7 @@ async with await launch_workflow(
     result = await session.run_command("hello", name="Python")
 ```
 
-The selected manifest must actually declare that workflow. Python does not prepare source projects; use the CLI's explicit build profile first and select an immutable prepared `image` workflow; `managed` launch remains blocked until a provider-resolved immutable identity exists. An external application uses a `service` workflow and explicit application URL. The standalone launcher does not execute application deployment hooks or reinterpret deployment topology.
+The selected manifest must declare that workflow. Python does not build source projects. Use the CLI to prepare them first; connect to its returned sandbox ID, or use an `image` workflow with the resulting SHA256 image reference. A `managed` workflow accepts the native template ID belonging to its declared provider; it does not require a platform version number. An external application uses a `service` workflow and explicit application URL. The standalone launcher does not execute application deployment hooks or reinterpret deployment topology.
 
 The launcher freezes manifest inputs, checks the provider's actual code digest, persists intent before create, records owned resource IDs, checks application protocol version before invocation, and deletes only its owned sandbox. An uncertain create is not replayed and remains in a journal for reconciliation using its `abx_workflow_run` metadata. Cleanup failure preserves resource IDs and raises. Journals contain no API keys, application tokens, environment secrets or signed endpoint URLs. A journal alone is not a trusted verification receipt.
 
@@ -52,8 +41,23 @@ The launcher freezes manifest inputs, checks the provider's actual code digest, 
 
 A missing runtime or interpreter HTTP 404 remains an error. It never writes a temporary script and runs a shell instead. To run a Python script through a shell, explicitly use `files.write()` and `commands.run("python script.py")`. The pinned standard `Sandbox`/`AsyncSandbox` and `code_interpreter` clients keep their independent public contract.
 
-## Verification scope
+## Platform-managed templates
 
-Profiles bind consumer and workflow kind; the context profile also requires the exact context operations. A template may add `required_checks`, not remove the profile minimum. Required failures, skips, missing checks or changed inputs cannot count as verified. Source/manifest/build/artifact/provider/consumer/workflow/binding/contract identities must match. Submitted PASS JSON and a manually filled runner cannot certify themselves; registry trust requires independently checked approved CI provenance and matching artifacts. Guest HTTP, host HTTP, native SDK and unified Python/CLI are separate scopes.
+For a native template such as Express `base`, the direct SDK API is sufficient:
 
-Current project adapters: Express, E2B and REST do not implement unified interpreter operations; their guessed RPC implementation has been deleted. CubeSandbox and container edition implement only the persistent default-context operation. Platform-native and pinned standard clients are separate. Managed workflow launch also requires a provider-resolved immutable reference; unresolved native IDs are refused. Prepared image references must contain an immutable SHA256 digest.
+```python
+from agent_sandbox import ProviderSandbox
+
+sandbox = await ProviderSandbox.create(template="base", provider="alicloud-express")
+try:
+    result = await sandbox.commands.run("python3 --version")
+    print(result.stdout)
+finally:
+    await sandbox.kill()  # this code created and owns the sandbox
+```
+
+If you already have a manifest declaring `input: managed`, use `launch_workflow(manifest, provider="alicloud-express", reference="base")` instead. Its async context manager deletes the sandbox it creates. The workflow still checks the provider, required operations and startup mode. A native ID without a content digest is usable; its journal records the artifact digest as unknown and makes no immutable-content claim.
+
+Executing a shell command on `code-interpreter-v1` does not exercise the interpreter API. Express, E2B and REST project adapters currently do not implement unified interpreter operations; use the documented native SDK where applicable. CubeSandbox and container edition support the persistent default-context operation.
+
+For manifest authors and maintainers, the [shared contracts](https://github.com/Alibaba-Agent-Sandbox/python-sdk/tree/main/contracts) define the exact operation and evidence formats. Historical test results describe their recorded inputs and invocation paths; they do not prove that every provider or client path has run successfully.

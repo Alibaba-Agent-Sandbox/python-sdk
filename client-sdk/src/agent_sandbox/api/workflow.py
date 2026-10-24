@@ -232,8 +232,9 @@ async def launch_workflow(
         ):
             raise WorkflowError("immutable-image-reference-required", "before-create")
         artifact_digest = "sha256:" + (reference or "").rsplit("sha256:", 1)[1]
-    elif plan["input"] == "managed":
-        raise WorkflowError("immutable-managed-reference-unresolved", "before-create")
+    # A native template ID is a valid create input, even when the platform does
+    # not expose an immutable build identity. Keep its artifact digest unknown;
+    # evidence reuse must not become a prerequisite for executing a workflow.
     if plan["binding"]["authentication"] == "service-token" and not application_token:
         raise WorkflowError("application-token-required", "before-create")
     if plan["input"] == "service" and plan["kind"] != "application":
@@ -274,7 +275,7 @@ async def launch_workflow(
             try:
                 sandbox = await Sandbox.create(
                     template=cast("str", reference),
-                    provider=prov,
+                    provider=provider,
                     provider_options=provider_options,
                     envs={
                         **(envs or {}),

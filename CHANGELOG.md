@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Allow provider-bound managed workflows to use native template IDs without requiring invented immutable versions; preserve operation checks and owned cleanup. Simplify bilingual workflow usage guidance. / 托管工作流可直接使用所属平台的原生模板 ID，不再强制要求不可变版本；保留操作检查与自有资源清理，并简化中英文使用说明。
+
 - Native `ProviderSandbox.commands.run/start/stream(user=...)` now selects the requested envd OS account per request, preserving gateway credentials and concurrent/default identities. Prepare the matching client/server 0.3.1a2 alpha pair; publication is separate. / 原生进程调用按请求选择指定操作系统账号，保留网关凭据以及并发、默认身份；准备配套 0.3.1a2 alpha 双包，发布独立执行。
 - Clarify provider-native application clients, published alpha installation, separate gateway/application credentials, and explicit readiness checks after cloud-steps submission in bilingual guides.
 
