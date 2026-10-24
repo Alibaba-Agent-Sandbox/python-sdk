@@ -1,6 +1,6 @@
 # Decision: Preserve application tokens through filtering proxies
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
