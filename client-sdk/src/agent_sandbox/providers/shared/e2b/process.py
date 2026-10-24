@@ -162,11 +162,9 @@ class ProcessProtocol:
 
         请求格式（已实测验证）: {"process": {"cmd": "...", "args": [...]}}
 
-        Note: ``cwd`` and ``user`` are only included in the payload when
-        explicitly provided (non-empty).  Sending ``user="user"`` to
-        certain platform base images triggers ``fork/exec: no such file
-        or directory`` because the envd uses a namespace that doesn't
-        recognise that user account.
+        An explicit ``user`` selects envd's per-request Basic principal;
+        it is not a process protobuf field. An empty user preserves the
+        provider's configured principal. Shared token state is never changed.
         """
         process_obj: dict[str, Any] = {
             "cmd": cmd,
@@ -177,8 +175,12 @@ class ProcessProtocol:
             process_obj["envs"] = env
         if cwd:
             process_obj["cwd"] = cwd
+        headers: dict[str, str] | None = None
         if user:
-            process_obj["user"] = user
+            if any(char in user for char in ":\x00\r\n"):
+                raise ValueError("user must not contain a colon, NUL, or line break")
+            principal = base64.b64encode(f"{user}:".encode()).decode("ascii")
+            headers = {"Authorization": f"Basic {principal}"}
         # StartRequest.stdin sits beside process. A missing flag defaults to
         # true, so a reader waits until the HTTP timeout. Proto JSON drops an
         # unknown field nested under process.
@@ -194,6 +196,7 @@ class ProcessProtocol:
             _START,
             payload=payload,
             envd_token=envd_token,
+            headers=headers,
             request_timeout=http_timeout,
         )
 

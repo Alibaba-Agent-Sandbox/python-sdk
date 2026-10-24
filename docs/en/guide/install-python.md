@@ -1,6 +1,6 @@
 # Install the Python packages
 
-The immutable source recipe below installs the tested 0.3.0 snapshot. The current 0.3.1a1 alpha candidate is documented separately below and is usable from PyPI only after its publication and public readback succeed. Package names alone do not prove publication. The CLI is installed separately from its own repository.
+The immutable source recipe below installs the tested 0.3.0 snapshot. The current 0.3.1a2 alpha candidate is documented separately below and is usable from PyPI only after its publication and public readback succeed. Package names alone do not prove publication. The CLI is installed separately from its own repository.
 
 ## Paired immutable source
 
@@ -64,9 +64,9 @@ This workflow does not replace required CI, reviews or real-backend acceptance.
 
 ## Optional alpha release
 
-The 0.3.1a1 candidate is an opt-in prerelease. Once its public release is verified, install the exact client version below; its matching server is a required dependency. Until publication completes, the immutable source recipe above remains available. Node provider doctor requires the companion CLI initialize endpoint (planned CLI 0.4.11); 0.4.10 does not support it. This is not a production-readiness claim.
+The 0.3.1a2 candidate is an opt-in prerelease. Once its public release is verified, install the exact client version below; its matching server is a required dependency. Until publication completes, the immutable source recipe above remains available. Node provider doctor requires the companion CLI initialize endpoint (planned CLI 0.4.11); 0.4.10 does not support it. This is not a production-readiness claim.
 
 ```bash
-python -m pip install 'agent-sandbox-client==0.3.1a1'
+python -m pip install 'agent-sandbox-client==0.3.1a2'
 python -m pip check
 ```

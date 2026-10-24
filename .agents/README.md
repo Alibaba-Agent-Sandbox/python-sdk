@@ -1,5 +1,7 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+- [Native process OS user](notes/proposed/feature/2026-10-24-native-process-user.md) · [verification](evidence/verify/2026-10-24-native-process-user.md)
+
 Maintainer and AI-agent facing records of **why** the code looks the way it does. Nothing here is imported or
 shipped in a wheel. All new documents are written in English.
 

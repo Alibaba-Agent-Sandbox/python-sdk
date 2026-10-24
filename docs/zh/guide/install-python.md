@@ -1,6 +1,6 @@
 # 安装 Python 配套包
 
-下面的固定源码方案安装已验证的0.3.0快照；当前0.3.1a1 alpha 候选的说明见后文，只有发布及公开回读成功后才能从 PyPI 安装。包名存在于项目中不等于已发布。CLI 从其独立仓库安装。
+下面的固定源码方案安装已验证的0.3.0快照；当前0.3.1a2 alpha 候选的说明见后文，只有发布及公开回读成功后才能从 PyPI 安装。包名存在于项目中不等于已发布。CLI 从其独立仓库安装。
 
 ## 固定提交的配套源码
 
@@ -61,9 +61,9 @@ python -m pip check
 
 ## 可选 alpha 预发布
 
-0.3.1a1 是需显式选择的 alpha 候选。公开发布验证完成后，可使用下面的精确版本安装；同版本 server 由依赖自动安装。发布完成前，仍可使用上面的固定源码方案。Node provider doctor 需要配套 CLI initialize 接口（计划为 CLI 0.4.11），0.4.10 不支持。测试版不代表所有能力生产就绪。
+0.3.1a2 是需显式选择的 alpha 候选。公开发布验证完成后，可使用下面的精确版本安装；同版本 server 由依赖自动安装。发布完成前，仍可使用上面的固定源码方案。Node provider doctor 需要配套 CLI initialize 接口（计划为 CLI 0.4.11），0.4.10 不支持。测试版不代表所有能力生产就绪。
 
 ```bash
-python -m pip install 'agent-sandbox-client==0.3.1a1'
+python -m pip install 'agent-sandbox-client==0.3.1a2'
 python -m pip check
 ```

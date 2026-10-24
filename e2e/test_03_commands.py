@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 
 import pytest
@@ -16,6 +17,45 @@ def test_run_echo(run, base_sandbox):  # type: ignore[no-untyped-def]
     assert result.stdout == "hello-e2e\n"
     assert result.stderr == ""
     assert result.success
+
+
+def test_native_os_user_matches_standard_on_same_sandbox(run, base_sandbox):  # type: ignore[no-untyped-def]
+    from agent_sandbox import AsyncSandbox
+
+    async def scenario():  # type: ignore[no-untyped-def]
+        standard = await AsyncSandbox.connect(
+            base_sandbox.id,
+            api_key=os.environ["ABX_SANDBOX_API_KEY"],
+            api_url=os.environ.get("ABX_SANDBOX_BASE_URL"),
+            domain=os.environ.get("ABX_SANDBOX_DOMAIN"),
+        )
+        before = await base_sandbox.commands.run("id -u")
+        native_root, native_user, standard_root, standard_user = await asyncio.gather(
+            base_sandbox.commands.run("id -u", user="root"),
+            base_sandbox.commands.run("id -u", user="user"),
+            standard.commands.run("id -u", user="root"),
+            standard.commands.run("id -u", user="user"),
+        )
+        assert all(
+            result.exit_code == 0
+            for result in (before, native_root, native_user, standard_root, standard_user)
+        )
+        assert native_root.stdout.strip() == standard_root.stdout.strip() == "0"
+        assert native_user.stdout.strip() == standard_user.stdout.strip() == "1000"
+        reader = await base_sandbox.commands.start("id -u", user="root")
+        chunks = await reader.collect()
+        assert "".join(chunk.data for chunk in chunks).strip() == "0"
+        after = await base_sandbox.commands.run("id -u")
+        assert after.exit_code == 0 and after.stdout == before.stdout
+
+    run(scenario())
+
+
+def test_native_nonexistent_os_user_does_not_fall_back(run, base_sandbox):  # type: ignore[no-untyped-def]
+    from agent_sandbox.models.errors import EnvdRpcError
+
+    with pytest.raises(EnvdRpcError):
+        run(base_sandbox.commands.run("id -u", user="abx_e2e_nonexistent_os_user"))
 
 
 def test_run_reports_nonzero_exit_code_and_stderr(run, base_sandbox):  # type: ignore[no-untyped-def]
@@ -50,7 +90,9 @@ def test_unknown_executable_raises_envd_rpc_error(run, base_sandbox):  # type: i
 
 
 def test_run_with_per_call_env(run, base_sandbox):  # type: ignore[no-untyped-def]
-    result = run(base_sandbox.commands.run("printenv E2E_CALL_ENV", env={"E2E_CALL_ENV": "per-call"}))
+    result = run(
+        base_sandbox.commands.run("printenv E2E_CALL_ENV", env={"E2E_CALL_ENV": "per-call"})
+    )
     assert result.exit_code == 0
     assert result.stdout.strip() == "per-call"
 

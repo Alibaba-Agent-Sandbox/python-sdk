@@ -116,6 +116,21 @@ print(result.stdout)
 print(f"退出码: {result.exit_code}")
 ```
 
+在 Express 的 `ProviderSandbox` 上，`commands.run`、`start` 和 `stream`
+接受 `user="root"` 或其他已存在的操作系统账号。从 0.3.1a2 开始，原生 envd
+适配器会为当前请求选择该账号：
+
+```python
+result = await sandbox.commands.run("id -u", user="root")
+assert result.exit_code == 0 and result.stdout.strip() == "0"
+```
+
+省略 `user` 或传入 `""` 会保留提供方默认账号；显式选择不会影响后续或并发请求。
+账号不存在时抛出 envd 错误，不会悄悄改用默认账号。账号名不允许冒号、NUL 或换行。
+这个参数选择进程的操作系统身份，不是应用服务 token，也不增加提供方权限。
+早期原生客户端（包括 0.3.1a1 和历史固定源码方案）会忽略该参数；标准
+`AsyncSandbox` 入口此前已支持它。
+
 ## 6. 文件操作
 
 ### 上传文件到沙箱
