@@ -7,6 +7,60 @@ from agent_sandbox.api.server_client import ServerClient
 from agent_sandbox.models.errors import ConnectionError_, ServerAPIError
 
 
+@pytest.mark.parametrize("strip_bearer", [False, True])
+async def test_application_token_survives_proxy_without_breaking_bearer_services(strip_bearer):
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        accepted = (
+            request.headers.get("X-Access-Token") == "app-example"
+            if strip_bearer
+            else request.headers.get("Authorization") == "Bearer app-example"
+        )
+        return httpx.Response(200 if accepted else 401, json={"commands": []})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
+        client = ServerClient("https://gateway/owned", token="app-example", http_client=http)
+        await client.commands.list()
+        assert len(requests) == 1
+
+
+@pytest.mark.parametrize("injected", [False, True])
+@pytest.mark.parametrize("name", ["X-Access-Token", "x-aCcEsS-tOkEn"])
+async def test_application_token_never_replaces_gateway_access_token(injected, name):
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(200, json={"commands": []})
+
+    gateway = {name: "gateway-example"}
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), headers=gateway if injected else None
+    ) as http:
+        client = ServerClient(
+            "https://gateway/owned",
+            token="app-example",
+            headers=None if injected else gateway,
+            http_client=http,
+        )
+        await client.commands.list()
+        assert requests[0].headers.get_list("X-Access-Token") == ["gateway-example"]
+        assert requests[0].headers["Authorization"] == "Bearer app-example"
+        await client.aclose()
+        assert not http.is_closed
+
+
+def test_application_token_rotation_does_not_persist_generated_headers():
+    client = ServerClient("https://gateway/owned", token="first-example")
+    assert client.auth_headers()["X-Access-Token"] == "first-example"
+    rotated = client.with_token("second-example")
+    assert rotated.auth_headers()["X-Access-Token"] == "second-example"
+    assert rotated.auth_headers()["Authorization"] == "Bearer second-example"
+    assert client.with_token(None).auth_headers() == {}
+
+
 async def test_proxy_prefix_and_signature_query_are_preserved():
     requests = []
 

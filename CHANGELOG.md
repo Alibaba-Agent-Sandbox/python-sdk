@@ -13,6 +13,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Native `ProviderSandbox.commands.run/start/stream(user=...)` now selects the requested envd OS account per request, preserving gateway credentials and concurrent/default identities. Prepare the matching client/server 0.3.1a2 alpha pair; publication is separate. / 原生进程调用按请求选择指定操作系统账号，保留网关凭据以及并发、默认身份；准备配套 0.3.1a2 alpha 双包，发布独立执行。
 - Clarify provider-native application clients, published alpha installation, separate gateway/application credentials, and explicit readiness checks after cloud-steps submission in bilingual guides.
 
+## [0.3.1a4] - 2026-10-24
+
+### Fixed
+
+- Preserve application authentication through proxies that strip Authorization by also using the server's existing X-Access-Token header when it is unoccupied. Keep Bearer compatibility, gateway credentials and injected HTTP client headers unchanged. / 通过未被占用的既有 X-Access-Token 请求头传递应用令牌，兼容会过滤 Authorization 的代理；保留 Bearer 兼容性，不覆盖网关凭据或注入 HTTP 客户端的默认请求头。
+
 ## [0.3.1a3] - 2026-10-24
 
 ### Fixed
