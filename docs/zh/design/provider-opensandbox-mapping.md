@@ -26,7 +26,7 @@ Shell 执行仍是显式的 `exec.run`/`exec.stream` 路径。解释器端点缺
 
 静态 T/F/U 计划、Provider 成熟度、访问者环境与实际部署证据分别记录。T 只允许进入本地检查；账号、网络和运行应用仍需执行时检查。历史 OpenSandbox 原生 Stable 结果不证明新的 CLI/Python 工作流。作者提交的 PASS JSON 不是项目认证。
 
-Provider 仓库负责 Docker T4，覆盖插件生命周期/文件、安装后 SDK 集成和可移植应用工作流。验收记录必须绑定精确源码、清单、Provider、消费端、工作流、端点等身份，以及必要检查和清理结果。只有独立审批的 CI 来源能使目录回执获得认证。见[模板工作流](../guide/template-workflows.md#验证范围)。
+Provider 仓库负责 Docker T4，覆盖插件生命周期/文件、安装后 SDK 集成和可移植应用工作流。验收记录必须绑定精确源码、清单、Provider、消费端、工作流、端点等身份，以及必要检查和清理结果。只有独立审批的 CI 来源能使目录回执获得认证。见[模板工作流](../guide/template-workflows.md)。
 
 ## 历史调研
 

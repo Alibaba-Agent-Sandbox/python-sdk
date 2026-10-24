@@ -267,6 +267,15 @@ default = "a"
         ("1.0.0", "==1.0", True),
         ("1.0", "!=1.0", False),
         ("5", "", True),
+        ("0.3.1a2", ">=0.3.1a3", False),
+        ("0.3.1a3", ">=0.3.1a3", True),
+        ("0.3.1a10", ">0.3.1a3", True),
+        ("0.3.1b1", ">0.3.1a99", True),
+        ("0.3.1rc1", ">0.3.1b99", True),
+        ("0.3.1", ">0.3.1rc99", True),
+        ("0.3.1-alpha.3", "==0.3.1a3", True),
+        ("0.3.1a2", "!=0.3.1a3", True),
+        ("0.3.1a10", "<=0.3.1a3", False),
     ],
 )
 def test_version_satisfies(ver, spec, ok):
@@ -289,3 +298,39 @@ def test_check_requires_raises_e8013():
 
 def test_sha_is_stable_hex():
     assert re.fullmatch(r"[0-9a-f]{64}", parse_manifest(BASE).sha256)
+
+
+def placeholder_manifest(values):
+    return (
+        BASE.replace("cli = [", 'cli = ["template.prepare",', 1)
+        .replace('inputs = ["managed"]', 'inputs = ["managed", "source"]')
+        .replace("[workflow]", "[workflow]\nsource_placeholders = " + values)
+    )
+
+
+def test_cli_source_placeholder_metadata_does_not_grant_python_prepare():
+    manifest = parse_manifest(placeholder_manifest('["<region>", "<tag>"]'))
+    assert manifest.raw["workflow"]["source_placeholders"] == ["<region>", "<tag>"]
+    assert "template.prepare" not in manifest.operations["python"]
+
+
+@pytest.mark.parametrize("values", ['["<other>"]', '["<tag>", "<tag>"]', '"<tag>"', "[1]"])
+def test_invalid_source_placeholders_rejected(values):
+    with pytest.raises(ProviderManifestError, match="source_placeholders"):
+        parse_manifest(placeholder_manifest(values))
+
+
+def test_source_placeholders_require_real_prepare_declaration():
+    text = placeholder_manifest('["<tag>"]')
+    for invalid in (
+        text.replace('"template.prepare",', ""),
+        text.replace('"managed", "source"', '"managed"'),
+    ):
+        with pytest.raises(ProviderManifestError, match="source_placeholders"):
+            parse_manifest(invalid)
+
+
+def test_source_placeholder_input_type_is_a_manifest_error():
+    text = placeholder_manifest('["<tag>"]').replace('inputs = ["managed", "source"]', "inputs = 1")
+    with pytest.raises(ProviderManifestError, match="workflow.inputs"):
+        parse_manifest(text)

@@ -195,7 +195,7 @@ async def launch_workflow(
     rejected before creating resources. This standalone launcher does not execute
     application deployment hooks or silently reinterpret deployment topology.
     """
-    from agent_sandbox.providers.registry import get_provider
+    from agent_sandbox.providers.registry import builtin_provider, get_provider
 
     if isinstance(manifest, (str, Path)):
         import yaml
@@ -232,8 +232,9 @@ async def launch_workflow(
         ):
             raise WorkflowError("immutable-image-reference-required", "before-create")
         artifact_digest = "sha256:" + (reference or "").rsplit("sha256:", 1)[1]
-    elif plan["input"] == "managed":
-        raise WorkflowError("immutable-managed-reference-unresolved", "before-create")
+    # A native template ID is a valid create input, even when the platform does
+    # not expose an immutable build identity. Keep its artifact digest unknown;
+    # evidence reuse must not become a prerequisite for executing a workflow.
     if plan["binding"]["authentication"] == "service-token" and not application_token:
         raise WorkflowError("application-token-required", "before-create")
     if plan["input"] == "service" and plan["kind"] != "application":
@@ -274,7 +275,7 @@ async def launch_workflow(
             try:
                 sandbox = await Sandbox.create(
                     template=cast("str", reference),
-                    provider=prov,
+                    provider=prov.id if prov is builtin_provider() else provider,
                     provider_options=provider_options,
                     envs={
                         **(envs or {}),

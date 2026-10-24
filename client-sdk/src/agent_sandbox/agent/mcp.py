@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+from agent_sandbox._version import __version__
 from agent_sandbox.agent.tools import (
     TOOL_SCHEMA_MAP,
     TOOL_SCHEMAS,
@@ -45,7 +46,7 @@ MCP_PROTOCOL_VERSION = "2024-11-05"
 _STDIO_READ_LIMIT = 8 * 1024 * 1024
 
 SERVER_NAME = "agent-sandbox"
-SERVER_VERSION = "0.3.1a2"
+SERVER_VERSION = __version__
 
 
 # ---------------------------------------------------------------------------

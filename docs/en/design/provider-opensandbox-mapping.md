@@ -26,7 +26,7 @@ The adapter returns the actual sandbox port endpoint with provider ID, sandbox I
 
 Static T/F/U planning, provider maturity, visitor environment and actual deployment evidence are distinct. T permits local checks; the account, network and running application remain unchecked until execution. A historical native OpenSandbox Stable result does not verify a new CLI/Python workflow. Author PASS JSON is not project certification.
 
-The Provider repository owns Docker-backed T4 checks for plugin lifecycle/files, installed SDK integration and the portable application workflow. An acceptance record must name exact source/manifest/provider/consumer/workflow/binding identities, required checks and cleanup. Only independently approved CI provenance can qualify a catalog receipt. See [template workflows](../guide/template-workflows.md#verification-scope).
+The Provider repository owns Docker-backed T4 checks for plugin lifecycle/files, installed SDK integration and the portable application workflow. An acceptance record must name exact source/manifest/provider/consumer/workflow/binding identities, required checks and cleanup. Only independently approved CI provenance can qualify a catalog receipt. See [template workflows](../guide/template-workflows.md).
 
 ## Historical research
 

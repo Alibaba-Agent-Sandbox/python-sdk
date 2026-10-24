@@ -52,7 +52,13 @@ async def test_missing_operations_reject_before_any_resource_or_journal(tmp_path
     assert not journal.exists()
 
 
-async def test_intent_precedes_create_and_owned_resource_is_deleted(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    ("input_kind", "reference"),
+    [("image", "registry/image@sha256:" + "f" * 64), ("managed", "native-template")],
+)
+async def test_intent_precedes_create_and_owned_resource_is_deleted(
+    tmp_path, monkeypatch, input_kind, reference
+):
     journal = tmp_path / "run.jsonl"
     server = AsyncMock()
     server.health.return_value = True
@@ -66,21 +72,30 @@ async def test_intent_precedes_create_and_owned_resource_is_deleted(tmp_path, mo
 
     async def create(**kwargs):
         assert events(journal)[-1]["event"] == "create-intent"
+        assert kwargs["template"] == reference
         assert "abx_workflow_run" in kwargs["metadata"]
         return sandbox
 
     monkeypatch.setattr("agent_sandbox.api.workflow.Sandbox.create", create)
     p = provider(["sandbox.create", "sandbox.delete", "ports.resolve"])
     session = await launch_workflow(
-        manifest(), provider=p, reference="registry/image@sha256:" + "f" * 64, journal_path=journal
+        manifest(input_kind), provider=p, reference=reference, journal_path=journal
     )
+    if input_kind == "managed":
+        assert events(journal)[0]["artifact_digest"] == "unknown"
     await session.run_command("hello", name="test")
     await session.close()
     sandbox.kill.assert_awaited_once()
     assert events(journal)[-1]["event"] == "cleanup-complete"
 
 
-async def test_protocol_mismatch_never_sends_application_payload_and_cleans(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    ("input_kind", "reference"),
+    [("image", "registry/image@sha256:" + "f" * 64), ("managed", "native-template")],
+)
+async def test_protocol_mismatch_never_sends_application_payload_and_cleans(
+    tmp_path, monkeypatch, input_kind, reference
+):
     server = AsyncMock()
     server.health.return_value = True
     server.discover.return_value = SimpleNamespace(api_version=99)
@@ -96,13 +111,61 @@ async def test_protocol_mismatch_never_sends_application_payload_and_cleans(tmp_
     p = provider(["sandbox.create", "sandbox.delete", "ports.resolve"])
     with pytest.raises(WorkflowError, match="protocol-mismatch"):
         await launch_workflow(
-            manifest(),
+            manifest(input_kind),
             provider=p,
-            reference="registry/image@sha256:" + "f" * 64,
+            reference=reference,
             journal_path=tmp_path / "run",
         )
     sandbox.kill.assert_awaited_once()
     server.commands.run.assert_not_awaited()
+
+
+async def test_managed_exec_has_no_application_startup(tmp_path, monkeypatch):
+    body = manifest("managed")
+    body["provides"] = {}
+    body["workflows"]["application"] = {
+        "kind": "exec",
+        "input": "managed",
+        "startup": "none",
+        "operation": "exec.run",
+        "binding": {
+            "transport": "exec",
+            "endpoint": "provider-native",
+            "caller": "host",
+            "authentication": "provider",
+        },
+        "required_operations": [],
+    }
+    sandbox = SimpleNamespace(
+        id="owned",
+        provider="fixture",
+        kill=AsyncMock(),
+        start_server=AsyncMock(),
+        application_client=AsyncMock(),
+    )
+    create = AsyncMock(return_value=sandbox)
+    monkeypatch.setattr("agent_sandbox.api.workflow.Sandbox.create", create)
+    p = provider(["sandbox.create", "sandbox.delete", "exec.run"])
+    async with await launch_workflow(
+        body, provider=p, reference="base", journal_path=tmp_path / "run"
+    ) as session:
+        assert session.sandbox is sandbox
+        assert session.server is None
+    create.assert_awaited_once()
+    sandbox.start_server.assert_not_awaited()
+    sandbox.application_client.assert_not_awaited()
+    sandbox.kill.assert_awaited_once()
+
+
+async def test_managed_foreign_provider_rejects_before_create(tmp_path, monkeypatch):
+    body = manifest("managed")
+    body["provider"] = "foreign-provider"
+    create = AsyncMock()
+    monkeypatch.setattr("agent_sandbox.api.workflow.Sandbox.create", create)
+    p = provider(["sandbox.create", "sandbox.delete", "ports.resolve"])
+    with pytest.raises(WorkflowError, match="requirements-unmet"):
+        await launch_workflow(body, provider=p, reference="base", journal_path=tmp_path / "run")
+    create.assert_not_awaited()
 
 
 async def test_uncertain_create_is_not_replayed_or_marked_clean(tmp_path, monkeypatch):
@@ -234,3 +297,36 @@ async def test_journal_failure_never_blocks_owned_cleanup(tmp_path):
     sandbox.kill.assert_awaited_once()
     server.aclose.assert_awaited_once()
     assert events(tmp_path / "run")[-1]["sandbox_id"] == "owned"
+
+
+@pytest.mark.parametrize("as_object", [False, True])
+async def test_named_builtin_provider_is_not_reregistered(tmp_path, monkeypatch, as_object):
+    from agent_sandbox.providers.registry import builtin_provider
+
+    sandbox = SimpleNamespace(id="owned", provider="alicloud-express", kill=AsyncMock())
+    create = AsyncMock(return_value=sandbox)
+    monkeypatch.setattr("agent_sandbox.api.workflow.Sandbox.create", create)
+    spec = manifest("managed")
+    spec["provider"] = "alicloud-express"
+    spec["provides"] = {}
+    spec["workflows"]["application"].update(
+        kind="exec",
+        operation="exec.run",
+        startup="none",
+        binding={
+            "transport": "exec",
+            "endpoint": "provider-native",
+            "caller": "host",
+            "authentication": "provider",
+        },
+    )
+    spec["workflows"]["application"].pop("service")
+    async with await launch_workflow(
+        spec,
+        provider=builtin_provider() if as_object else "alicloud-express",
+        reference="base",
+        journal_path=tmp_path / "run",
+    ):
+        pass
+    assert create.call_args.kwargs["provider"] == "alicloud-express"
+    assert builtin_provider().id == "alicloud-express"

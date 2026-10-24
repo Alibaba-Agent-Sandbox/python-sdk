@@ -1,17 +1,6 @@
-# 显式模板工作流
+# 启动和使用模板
 
-模板规范 4 把模板提供的软件服务、Provider 适配器操作和具体客户端的调用能力分开。应用 HTTP 服务不依赖统一代码解释器。Provider 的 Beta 表示成熟度，不代表所有工作流都可用或不可用。
-
-| 层次 | 声明或检查的内容 |
-| --- | --- |
-| 模板 | `provides`、显式 `workflows`、唯一 `default_workflow`、输入和启动方式 |
-| Provider | 操作契约 1、各消费入口的精确操作、支持的输入和启动方式 |
-| SDK/CLI | 所选操作的实际协议桥接、调用位置和网络绑定 |
-| 验证 | 当前内容身份、最低检查集、清理结果和独立认可的 CI 来源 |
-
-权威契约、验收范围、收据 schema 和共享用例位于 [`contracts`](https://github.com/alibaba-agent-sandbox/python-sdk/tree/main/contracts)。静态规划的 T 表示所需实现已接入，F 表示明确不匹配或项目适配器/客户端未接入，U 表示信息未确定。任意 F 优先于 U。T 只允许进入本地检查，不表示运行测试通过。“项目适配器未实现”不能推断为平台原生 API 不具备该能力。
-
-当前运行时不翻译旧 schema。模板中的 `capabilities`、`tested_on` 和手填 Provider 兼容声明被拒绝。未知远端引用不再默认获得解释器能力。历史记录保留为历史。
+源码模板先用 CLI 准备并启动，再用 Python 连接。平台已经提供模板 ID 时，可以直接用 Python 创建。
 
 ## Python 应用调用
 
@@ -42,7 +31,7 @@ async with await launch_workflow(
     result = await session.run_command("hello", name="Python")
 ```
 
-模板必须实际声明所选工作流。Python 不准备源码项目；先使用 CLI 显式构建配置，再选择不可变的 `image` 工作流；`managed` 启动在 Provider 能解析不可变身份前明确拒绝。外部应用使用 `service` 工作流及显式应用 URL。这个独立启动器不执行 application 部署 hooks，也不重新解释应用部署拓扑。
+模板必须声明所选工作流。Python 不构建源码项目；先用 CLI 准备，再连接返回的沙箱 ID，或用构建产物的 SHA256 镜像引用启动 `image` 工作流。`managed` 工作流直接接受所声明平台的原生模板 ID，不要求平台提供版本号。外部应用使用 `service` 工作流及显式应用 URL。这个独立启动器不执行 application 部署 hooks，也不重新解释应用部署拓扑。
 
 启动器固化 manifest 输入，核对 Provider 实际代码摘要，在创建前持久化意图并记录自有资源 ID，在调用前检查应用协议版本，只删除自己创建的沙箱。创建结果不确定时不重试创建，保留 journal，可按 `abx_workflow_run` metadata 核对资源。清理失败会保留资源 ID 并抛错。journal 不写 API key、应用令牌、环境秘密或带签名的端点 URL，也不等于可信验证收据。
 
@@ -52,8 +41,25 @@ async with await launch_workflow(
 
 缺少 runtime 或解释器返回 HTTP 404 时直接报错，不再自动写脚本转 shell。需要 shell 执行 Python 脚本时，显式调用 `files.write()` 和 `commands.run("python script.py")`。固定标准契约的 `Sandbox`、`AsyncSandbox`、`code_interpreter` 客户端保持独立。
 
-## 验证范围
+## 平台托管模板
 
-规范 profile 绑定消费入口及工作流类型；上下文 profile 还要求完整的精确上下文操作。模板可以增加 `required_checks`，不能删减最低检查项。必需项失败、跳过、缺失或输入变化都不能算已验证。源码、manifest、构建、产物、Provider、消费入口、工作流、绑定和契约身份均需匹配。作者填写 PASS 或 runner 不能自证通过；Registry 必须独立核对认可的 CI 来源和匹配产物。guest HTTP、host HTTP、原生 SDK、统一 Python/CLI 分别记录。
+使用极速版 `base` 等原生模板时，直接调用 SDK 即可：
 
-当前项目适配器：Express、E2B 和 REST 尚未接入统一解释器，猜测 RPC 实现已删除；CubeSandbox 和容器版仅接入持久的默认上下文操作。平台原生和固定标准客户端独立。托管工作流还需要 Provider 解析不可变引用，无法解析的原生 ID 会被拒绝；已准备镜像必须包含不可变 SHA256 摘要。
+```python
+from agent_sandbox import ProviderSandbox
+
+sandbox = await ProviderSandbox.create(template="base", provider="alicloud-express")
+try:
+    result = await sandbox.commands.run("python3 --version")
+    print(result.stdout)
+finally:
+    await sandbox.kill()  # 本段代码创建并负责删除这个沙箱
+```
+
+已有声明 `input: managed` 的 manifest 时，也可以调用 `launch_workflow(manifest, provider="alicloud-express", reference="base")`；它的异步上下文管理器会删除自己创建的沙箱。启动前仍检查所属平台、所需操作及启动方式。原生 ID 没有内容摘要也可以使用，journal 会如实记录产物摘要未知，不承诺内容不可变。
+
+在 `code-interpreter-v1` 上运行 shell 命令，并不代表调用了解释器 API。极速版、E2B 和 REST 的项目适配器尚未接入统一解释器操作，需要时使用已记录的平台原生 SDK；CubeSandbox 和容器版接入了持久默认上下文操作。
+
+模板作者和维护者可在[共享契约](https://github.com/Alibaba-Agent-Sandbox/python-sdk/tree/main/contracts)中查阅操作及验证记录格式。历史测试只说明记录中的输入和调用路径通过，不能推导所有平台、所有客户端入口都已测过。
+
+Provider 作者仅在 CLI 适配器实现源码 `template.prepare` 时，才能声明 `workflow.source_placeholders = ["<region>", "<tag>"]`。这个可选字段描述官方基础镜像的替换能力；Python 只校验它，不因此获得源码构建能力，其他占位符名称会被拒绝。
