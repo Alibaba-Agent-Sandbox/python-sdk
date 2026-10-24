@@ -2,7 +2,7 @@
 
 - Date: 2026-10-24
 - Change: [Issue #95](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/95)
-- Result: PARTIAL — live managed scenarios passed; remote CI pending.
+- Result: PASS for the managed workflow and manifest changes. Local environment limitations and untested scopes are recorded below.
 - Packages: initial managed live run used matching client/server 0.3.1a2 editable sources on this branch; final candidate is 0.3.1a3, Python 3.12.13.
 - Backend: real Alibaba Cloud Express; credentials supplied through environment variables, values excluded.
 
@@ -29,11 +29,11 @@ make ci
 | Local lint/typecheck | PASS | Server 56 and client 98 source files |
 | Local full server tests | FAIL | 877 passed; two malformed raw HTTP cases returned 501/502 (also reproduced on untouched baseline), plus package-list case failed because the uv environment lacked pip |
 | Clean baseline raw HTTP comparison | FAIL | Same two failures, 24 passes; unrelated to modified workflow/parser code |
-| Build/distribution checks | PASS | Both wheels/sdists, twine, py.typed and fresh combined installation at initial version |
+| Build/distribution checks | PASS | Repeated for final 0.3.1a3: both wheels/sdists, twine, py.typed and fresh combined installation |
 | Repository health | PASS | 106 PASS, 1 existing warning, 0 FAIL |
 | First 0.3.1a3 remote CI | FAIL | Only client MCP version lockstep failed; replaced the duplicated MCP version literal with the canonical package version. Server matrix, pinned public contract and Python-to-Node integration passed |
 | Local full client run before final MCP correction | FAIL | 2219 passed, 20 skipped, 10 deselected; MCP version mismatch and two loopback RPC cases rejected by this environment with HTTP 501 |
-| Final remote CI | PENDING | Required before merge |
+| Final runtime remote CI | PASS | [40106360868](https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/40106360868), commit `b2b9757be40df340bc8275386f5c23dbb55fa955`: Python 3.10/3.11/3.12 client/server, distributions, pinned contract and Python-to-Node integration |
 
 ## Cleanup
 
@@ -50,3 +50,5 @@ These tests do not exercise the code interpreter API, all source-template applic
 The companion plugin's optional source-placeholder field exposed a compatibility parser bug: alpha sequence numbers had been discarded. The existing `packaging` dependency now performs version comparison. CLI and Python regression vectors include alpha/beta/RC/release ordering. No template-registry version mechanism was introduced.
 
 Second-round independent review also caught malformed placeholder input raising `TypeError` and the real built-in Provider object being registered again. Both now have regressions; the latter was rerun against the real cloud. No arbitrary object is normalized merely because it claims the built-in ID.
+
+Final runtime documentation-link run [40106360855](https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/40106360855) passed. Local raw-socket RPC failures were not ignored or relabeled as passes; the unrestricted remote provider-engine job passed unchanged. This record-only update does not modify package source.
