@@ -118,6 +118,23 @@ print(result.stdout)
 print(f"Exit code: {result.exit_code}")
 ```
 
+With `ProviderSandbox` on Express, `commands.run`, `start`, and `stream` accept
+`user="root"` or another existing OS account. Starting with 0.3.1a2, the native
+envd adapter selects that account for the individual request:
+
+```python
+result = await sandbox.commands.run("id -u", user="root")
+assert result.exit_code == 0 and result.stdout.strip() == "0"
+```
+
+Omitting `user` (or passing `""`) preserves the provider's default account; an
+explicit user does not change later or concurrent requests. A missing account
+raises an envd error rather than silently using the default. Colons, NUL and line
+breaks are rejected as invalid account names. This selects an OS process identity,
+not an application-server token or a new provider permission. Earlier native
+clients, including 0.3.1a1 and the historical source recipe, silently ignored this
+argument; the standard `AsyncSandbox` entry already supports it.
+
 ## 6. File Operations
 
 ### Upload files to the sandbox

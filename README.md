@@ -63,7 +63,7 @@ Provider management operations are available through `agent_sandbox.providers.co
 
 ## Installation
 
-The [installation guide](docs/en/guide/install-python.md) provides a tested 0.3.0 Git source pair and explicit opt-in instructions for the 0.3.1a1 alpha once its publication is verified. Both source URLs must use the same commit.
+The [installation guide](docs/en/guide/install-python.md) provides a tested 0.3.0 Git source pair and explicit opt-in instructions for the 0.3.1a2 alpha once its publication is verified. Both source URLs must use the same commit.
 
 ```bash
 # Client and matching runtime

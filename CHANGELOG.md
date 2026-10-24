@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Native `ProviderSandbox.commands.run/start/stream(user=...)` now selects the requested envd OS account per request, preserving gateway credentials and concurrent/default identities. Prepare the matching client/server 0.3.1a2 alpha pair; publication is separate. / 原生进程调用按请求选择指定操作系统账号，保留网关凭据以及并发、默认身份；准备配套 0.3.1a2 alpha 双包，发布独立执行。
 - Clarify provider-native application clients, published alpha installation, separate gateway/application credentials, and explicit readiness checks after cloud-steps submission in bilingual guides.
 
 ## [0.3.1a1] - 2026-10-24
