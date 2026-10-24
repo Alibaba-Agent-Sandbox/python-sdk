@@ -21,3 +21,8 @@ docs/en/design/repository-layout.md
 
 # This note describes the patterns the guard rejects.
 .agents/notes/implemented/process/*-open-source-hygiene.md
+
+# The bilingual install guide creates this virtualenv immediately before activation;
+# this is a reproducible user command, not an assumed developer-machine interpreter.
+docs/en/guide/install-python.md|^source [.]venv/bin/activate$
+docs/zh/guide/install-python.md|^source [.]venv/bin/activate$

@@ -13,6 +13,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Native `ProviderSandbox.commands.run/start/stream(user=...)` now selects the requested envd OS account per request, preserving gateway credentials and concurrent/default identities. Prepare the matching client/server 0.3.1a2 alpha pair; publication is separate. / 原生进程调用按请求选择指定操作系统账号，保留网关凭据以及并发、默认身份；准备配套 0.3.1a2 alpha 双包，发布独立执行。
 - Clarify provider-native application clients, published alpha installation, separate gateway/application credentials, and explicit readiness checks after cloud-steps submission in bilingual guides.
 
+## [0.3.1a5] - 2026-10-24
+
+### Fixed
+
+- Correct package README installation commands and simplify bilingual installation guides. Both distributions include the application proxy fix from the a4 source candidate; its PyPI upload was stopped before publication to correct stale package metadata. / 修正随包发布的安装说明，简化中英文安装指南。双包包含 a4 源码候选的应用代理修复；a4 在上传前停止，以修正陈旧的包说明。
+
 ## [0.3.1a4] - 2026-10-24
 
 ### Fixed
