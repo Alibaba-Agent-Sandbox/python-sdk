@@ -61,3 +61,5 @@ finally:
 在 `code-interpreter-v1` 上运行 shell 命令，并不代表调用了解释器 API。极速版、E2B 和 REST 的项目适配器尚未接入统一解释器操作，需要时使用已记录的平台原生 SDK；CubeSandbox 和容器版接入了持久默认上下文操作。
 
 模板作者和维护者可在[共享契约](https://github.com/Alibaba-Agent-Sandbox/python-sdk/tree/main/contracts)中查阅操作及验证记录格式。历史测试只说明记录中的输入和调用路径通过，不能推导所有平台、所有客户端入口都已测过。
+
+Provider 作者仅在 CLI 适配器实现源码 `template.prepare` 时，才能声明 `workflow.source_placeholders = ["<region>", "<tag>"]`。这个可选字段描述官方基础镜像的替换能力；Python 只校验它，不因此获得源码构建能力，其他占位符名称会被拒绝。

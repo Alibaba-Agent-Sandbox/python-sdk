@@ -22,7 +22,7 @@ No new arguments or state types. `launch_workflow(..., reference="base", provide
 
 ## Dependencies
 
-Existing provider registry, workflow planner and resource journal. No package or platform dependency added.
+Existing provider registry, workflow planner and resource journal. No package or platform dependency added. The existing packaging dependency supplies prerelease ordering; alpha requirements must distinguish a2 from a3. The CLI adapter's optional source-placeholder metadata is validated and retained in raw manifest data without granting Python preparation operations.
 
 ## Test Strategy
 

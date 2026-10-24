@@ -2,8 +2,8 @@
 
 - Date: 2026-10-24
 - Change: [Issue #95](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/95)
-- Result: PARTIAL — local CI still running; live managed scenarios passed.
-- Packages: matching client/server 0.3.1a2 editable sources on this branch, Python 3.12.13.
+- Result: PARTIAL — live managed scenarios passed; remote CI pending.
+- Packages: initial managed live run used matching client/server 0.3.1a2 editable sources on this branch; final candidate is 0.3.1a3, Python 3.12.13.
 - Backend: real Alibaba Cloud Express; credentials supplied through environment variables, values excluded.
 
 ## What was verified
@@ -22,10 +22,15 @@ make ci
 
 | Scenario | Result | Details |
 | --- | --- | --- |
-| Focused regression | PASS | 15 tests |
+| Focused regression | PASS | 85 workflow/manifest tests, including alpha ordering and source metadata |
 | First live attempt | FAIL | Both native IDs hit reserved provider registration before create; no sandboxes created |
 | Live rerun after fix | PASS | 2 tests in 10.25s: `base` and `code-interpreter-v1`, shell output and exit code checked |
-| Full local CI | RUNNING | Final result will be recorded before merge |
+| Local lint/typecheck | PASS | Server 56 and client 98 source files |
+| Local full server tests | FAIL | 877 passed; two malformed raw HTTP cases returned 501/502 (also reproduced on untouched baseline), plus package-list case failed because the uv environment lacked pip |
+| Clean baseline raw HTTP comparison | FAIL | Same two failures, 24 passes; unrelated to modified workflow/parser code |
+| Build/distribution checks | PASS | Both wheels/sdists, twine, py.typed and fresh combined installation at initial version |
+| Repository health | PASS | 106 PASS, 1 existing warning, 0 FAIL |
+| Remote CI | PENDING | Required before merge |
 
 ## Cleanup
 
@@ -38,3 +43,5 @@ Real testing caught built-in provider re-registration, which mocks did not revea
 ## Not verified
 
 These tests do not exercise the code interpreter API, all source-template applications, or platform-managed app entrypoints. They do not establish immutable artifact identities. OpenSandbox source launch belongs to the coordinated CLI/provider/template work.
+
+The companion plugin's optional source-placeholder field exposed a compatibility parser bug: alpha sequence numbers had been discarded. The existing `packaging` dependency now performs version comparison. CLI and Python regression vectors include alpha/beta/RC/release ordering. No template-registry version mechanism was introduced.

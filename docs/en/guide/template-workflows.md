@@ -61,3 +61,5 @@ If you already have a manifest declaring `input: managed`, use `launch_workflow(
 Executing a shell command on `code-interpreter-v1` does not exercise the interpreter API. Express, E2B and REST project adapters currently do not implement unified interpreter operations; use the documented native SDK where applicable. CubeSandbox and container edition support the persistent default-context operation.
 
 For manifest authors and maintainers, the [shared contracts](https://github.com/Alibaba-Agent-Sandbox/python-sdk/tree/main/contracts) define the exact operation and evidence formats. Historical test results describe their recorded inputs and invocation paths; they do not prove that every provider or client path has run successfully.
+
+Provider authors may declare `workflow.source_placeholders = ["<region>", "<tag>"]` only when their CLI adapter implements `template.prepare` for source inputs. This optional metadata describes the official base-image substitution; Python validates it but does not gain source preparation support. Other placeholder names are rejected.

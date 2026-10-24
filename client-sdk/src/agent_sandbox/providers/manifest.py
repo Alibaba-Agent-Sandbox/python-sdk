@@ -10,6 +10,8 @@ import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
+from packaging.version import Version
+
 from agent_sandbox.models.errors import ProviderManifestError, ProviderVersionError
 from agent_sandbox.providers.base import FEATURES, ConfigField
 from agent_sandbox.utils.config_keys import (
@@ -129,31 +131,12 @@ class Manifest:
 # ---------------------------------------------------------------- versions
 
 
-def _parse_version(text: str) -> tuple[tuple[int, ...], int]:
-    """(numeric parts, 1 for release / 0 for pre-release) so ``1.0rc1 < 1.0``."""
-    m = re.match(r"^\s*v?(\d+(?:\.\d+)*)(.*)$", text)
-    if not m:
-        raise ValueError(f"invalid version '{text}'")
-    nums = tuple(int(p) for p in m.group(1).split("."))
-    rest = m.group(2).strip()
-    return nums, 0 if rest else 1
-
-
-def _cmp(a: tuple[tuple[int, ...], int], b: tuple[tuple[int, ...], int]) -> int:
-    n = max(len(a[0]), len(b[0]))
-    pa = a[0] + (0,) * (n - len(a[0]))
-    pb = b[0] + (0,) * (n - len(b[0]))
-    if pa != pb:
-        return -1 if pa < pb else 1
-    return (a[1] > b[1]) - (a[1] < b[1])
-
-
 def version_satisfies(version: str, spec: str) -> bool:
     """Whether *version* satisfies a comma-separated AND list of comparators.
 
     Operators: ``>= <= > < == != ~=``. An empty spec matches everything.
     """
-    have = _parse_version(version)
+    have = Version(version)
     for raw in spec.split(","):
         part = raw.strip()
         if not part:
@@ -162,8 +145,8 @@ def version_satisfies(version: str, spec: str) -> bool:
         if not m:
             raise ValueError(f"invalid version comparator '{part}'")
         op, rhs_text = m.group(1), m.group(2)
-        rhs = _parse_version(rhs_text)
-        c = _cmp(have, rhs)
+        rhs = Version(rhs_text)
+        c = (have > rhs) - (have < rhs)
         if op == ">=" and c < 0:
             return False
         if op == "<=" and c > 0:
@@ -177,14 +160,10 @@ def version_satisfies(version: str, spec: str) -> bool:
         if op == "!=" and c == 0:
             return False
         if op == "~=":
-            nums = rhs[0]
-            upper_nums = nums[:-1] if len(nums) > 1 else nums
-            upper = (
-                (upper_nums[:-1] + (upper_nums[-1] + 1,), 1)
-                if len(nums) > 1
-                else ((nums[0] + 1,), 1)
-            )
-            if c < 0 or _cmp(have, upper) >= 0:
+            nums = rhs.release
+            head = nums[:-1] if len(nums) > 1 else nums
+            upper = Version(".".join(str(p) for p in (*head[:-1], head[-1] + 1)))
+            if c < 0 or have >= upper:
                 return False
     return True
 
@@ -403,7 +382,7 @@ def parse_manifest(data: bytes | str) -> Manifest:
         raise _err(problem)
     version = _str(prov, "version", "provider", required=True)
     try:
-        _parse_version(version)
+        Version(version)
     except ValueError as exc:
         raise _err(f"provider.version: {exc}") from exc
 
@@ -523,8 +502,21 @@ def parse_manifest(data: bytes | str) -> Manifest:
             raise _err("rest Python bridge has no verified interpreter wire mapping")
         operations[consumer] = tuple(values)
     workflow = _table(doc, "workflow", required=True)
-    if set(workflow) != {"inputs", "startups"}:
-        raise _err("workflow must declare exactly inputs and startups")
+    if not {"inputs", "startups"}.issubset(workflow) or set(workflow) - {
+        "inputs",
+        "startups",
+        "source_placeholders",
+    }:
+        raise _err(
+            "workflow must declare inputs and startups; only source_placeholders is optional"
+        )
+    placeholders = _str_list(workflow, "source_placeholders", "workflow")
+    if len(placeholders) != len(set(placeholders)) or set(placeholders) - {"<region>", "<tag>"}:
+        raise _err("workflow.source_placeholders contains duplicate or unknown values")
+    if placeholders and (
+        "template.prepare" not in operations["cli"] or "source" not in workflow.get("inputs", [])
+    ):
+        raise _err("workflow.source_placeholders requires CLI template.prepare and source input")
     workflow_inputs = _str_list(workflow, "inputs", "workflow")
     startup_modes = _str_list(workflow, "startups", "workflow")
     for values, allowed_values, label in (
