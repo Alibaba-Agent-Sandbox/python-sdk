@@ -1,6 +1,6 @@
 # Decision: Publish an explicitly verified Python alpha pair
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -41,3 +41,7 @@ Run full client/server tests, lint/type/format, lockstep checks, actual Python-t
 ## Evidence
 
 See [verification](../../../evidence/verify/2026-10-24-python-alpha-release.md). Remote CI, PR review and publication status are recorded on the linked owner Issue and PR; local build alone is not a published release.
+
+## Implementation
+
+Delivered in [PR #91](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/91); actual merged state was checked on 2026-10-24. Later acceptance and current limitations are indexed in the [current synchronization record](../../../evidence/verify/2026-10-24-current-docs-and-records.md). Earlier verification files remain unchanged and retain their original pending or failed observations.

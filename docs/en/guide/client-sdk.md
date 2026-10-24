@@ -1,13 +1,12 @@
 # Client SDK
 
-For current SDK installation, use the [paired source installation guide](install-python.md).
+For current SDK installation, use the [installation guide](install-python.md).
 
 The Client SDK runs on **your machine**. It creates a sandbox, connects to one that already exists, and then runs commands, reads and writes files, and calls the code interpreter. The package is `agent-sandbox-client`. Import `agent_sandbox`.
 
 ```bash
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
+python -m pip install 'agent-sandbox-client==0.3.1a5'
+python -m pip check
 ```
 
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
@@ -15,7 +14,7 @@ Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated projec
 ```python
 from agent_sandbox import ProviderSandbox as Sandbox
 
-async with await Sandbox.create(template="python-base") as sandbox:
+async with await Sandbox.create(template="base") as sandbox:
     result = await sandbox.commands.run("echo hello")
     print(result.stdout)
 ```

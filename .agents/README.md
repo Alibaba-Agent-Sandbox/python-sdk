@@ -1,5 +1,18 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+## Current delivery — 2026-10-24
+
+- Published client/server pair: **0.3.1a5**, with [immutable public artifacts, fresh installation and retained propagation failure](evidence/verify/2026-10-24-python-a5-public-release.md). This is an alpha release; host installation does not update in-image runtimes.
+- Standard `Sandbox`/`AsyncSandbox` and `code_interpreter` clients retain their migration contract. Asynchronous `ProviderSandbox` owns provider/server extensions; [SDK usage](../docs/en/guide/sdk-usage.md) now keeps process execution, interpreter calls, application HTTP and resource cleanup separate.
+- Python consumes installed Node providers through the CLI engine; exec/rest providers run directly. [Provider guidance](../docs/en/guide/providers.md) owns the language boundary and content-based Git catalog updates.
+- [Managed workflow acceptance](evidence/verify/2026-10-24-managed-native-workflows.md) and [proxy application authentication](evidence/verify/2026-10-24-application-proxy-token.md) record their exact operations. Unified interpreter support is not implied by shell execution on an interpreter image.
+- The [92-case matrix](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/78c30fbbd186cb59c3a0f0abd9fdf85b10c84b35/.agents/evidence/verify/2026-10-24-public-template-matrix.md) used public client/server host installation 0.3.1a5 and CLI 0.4.16. Dockerfile runtime pins remained their own inputs; real-model, PTY and desktop claims remain outside that matrix.
+
+[Documentation synchronization decision](notes/implemented/process/2026-10-24-current-docs-and-records.md) · [verification and acceptance reconciliation](evidence/verify/2026-10-24-current-docs-and-records.md).
+
+Earlier entries below are a decision history. A remaining proposal is not a current product guarantee; read the linked acceptance scope before treating its full criteria as complete.
+
+
 - [Native process OS user](notes/implemented/feature/2026-10-24-native-process-user.md) · [verification](evidence/verify/2026-10-24-native-process-user.md)
 
 Maintainer and AI-agent facing records of **why** the code looks the way it does. Nothing here is imported or
@@ -110,7 +123,7 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 
 - [Current compatibility-removal documentation verification](evidence/verify/2026-10-22-remove-legacy-docs.md).
 
-- [Explicit template workflows](notes/proposed/architecture/2026-10-23-template-workflow-contract.md) · [canonical vectors](evidence/verify/2026-10-23-workflow-foundation.md) · [provider operations](evidence/verify/2026-10-23-provider-workflow-operations.md) · [independent second-round review](evidence/verify/2026-10-23-workflow-round2-independent.md).
+- [Explicit template workflows](notes/implemented/architecture/2026-10-23-template-workflow-contract.md) · [canonical vectors](evidence/verify/2026-10-23-workflow-foundation.md) · [provider operations](evidence/verify/2026-10-23-provider-workflow-operations.md) · [independent second-round review](evidence/verify/2026-10-23-workflow-round2-independent.md).
 - [Workflow runtime implementation and review](evidence/verify/2026-10-23-workflow-runtime-review.md).
 - [Workflow migration real-cloud acceptance](evidence/verify/2026-10-23-workflow-real-cloud.md).
 - [Workflow CI follow-up](evidence/verify/2026-10-23-workflow-ci-followup.md).
@@ -124,7 +137,7 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Complete OpenSandbox workflow acceptance](evidence/verify/2026-10-23-workflow-opensandbox-acceptance.md).
 - [Provider error reference anchors](evidence/verify/2026-10-23-workflow-provider-error-anchors.md).
 
-- [Python alpha release](notes/proposed/process/2026-10-24-python-alpha-release.md) · [verification](evidence/verify/2026-10-24-python-alpha-release.md)
+- [Python alpha release](notes/implemented/process/2026-10-24-python-alpha-release.md) · [verification](evidence/verify/2026-10-24-python-alpha-release.md)
 
 - [Python alpha real-component acceptance](evidence/verify/2026-10-24-python-alpha-cloud.md).
 

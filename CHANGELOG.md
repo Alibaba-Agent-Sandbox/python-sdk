@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Documentation synchronization
+
+- Correct current SDK examples, reconnect semantics and installation guidance; index accepted release/workflow records without rewriting historical verification. / 修正当前 SDK 示例、重连语义与安装说明，索引已交付发布和工作流记录，保留历史验证。
+
+
 ### Documentation
 
 - Simplify the bilingual Provider guide to actual entry points, correct installation verification guarantees and link complete authoring manifests. / 将中英文 Provider 指南收敛到实际调用入口，修正安装验证承诺，并引用完整的编写示例。

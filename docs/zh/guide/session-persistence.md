@@ -1,6 +1,8 @@
 # 会话持久化
 
-当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+本页的 SDK `LocalSessionStore` 和 `SessionManager` 仍存在；已移除的是 CLI 的 `abx session` 命令组。持久化内容是本地名称与沙箱 ID 等连接信息，不是远端内存或文件快照，不能恢复已删除或到期的实例。`SessionManager.stop()` 会尝试删除实例，但会记录并吞掉删除异常；需要确认资源清理时必须额外核对实际实例状态。
+
+当前 SDK 安装使用[安装指南](install-python.md)。
 
 > **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（[CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
@@ -61,7 +63,7 @@
 ### SDK 替代方案
 
 ```python
-from agent_sandbox.session import SessionManager
+from agent_sandbox.api.session_manager import SessionManager
 
 manager = SessionManager()
 
@@ -72,7 +74,7 @@ await manager.start("my-project", template="base", timeout=600)
 sb = await manager.connect("my-project")
 
 # 列出会话
-sessions = await manager.list()
+sessions = await manager.list_sessions()
 
 # 停止会话
 await manager.stop("my-project")

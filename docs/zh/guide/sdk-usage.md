@@ -7,7 +7,7 @@
 
 ## 安装
 
-请按[配套源码安装指南](install-python.md)安装。客户端/服务端0.3.0尚未发布到 PyPI；应从同一已验证提交安装两个发行包。
+请按[安装指南](install-python.md)安装。公开客户端/服务端 alpha 版本为 0.3.1a5；安装客户端会安装匹配的服务端依赖。宿主机安装不会更新已有沙箱镜像。
 
 不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。
 
@@ -18,6 +18,10 @@ from agent_sandbox import ProviderSandbox as Sandbox
 ```
 
 ---
+
+## 当前应用连接
+
+下面的模板作者示例保留其明确部署前提。连接 CLI 返回的已有实例时，优先通过 `await sandbox.application_client(9000, token=application_token, timeout=330)` 获取应用客户端，再调用 `client.commands.run(...)`；见[模板工作流](template-workflows.md)。它保留 Provider 网关头、URL 前缀与签名查询参数。`close()` 只释放连接，`kill()` 删除实例；不要销毁借用的实例。HTTP 等待超时不保证取消远端执行，也不会自动重试命令。
 
 ## 模板作者快速路径
 
@@ -85,8 +89,8 @@ sandbox = Sandbox.create_sync(template="base")
 
 ```python
 async with await Sandbox.create(template="base") as sandbox:
-    result = await sandbox.run_code("print(1+1)")
-    print(result.text)  # "2"
+    result = await sandbox.commands.run("python3 -c 'print(1+1)'")
+    print(result.stdout)  # "2"
 # 自动销毁
 ```
 
@@ -124,35 +128,9 @@ for sb in sandboxes:
 
 ## 执行代码 — run_code
 
-通过 Code Interpreter 执行代码：
+Provider 解释器要求精确操作，如 `code.execute`、`code.default-context.execute`；详见[模板工作流](template-workflows.md#解释器操作)。极速版项目适配器未实现统一解释器，调用会返回 `E8004`，不会自动回退到执行脚本。`base` 上运行 Python 进程不代表支持持久代码上下文。
 
-```python
-result = await sandbox.run_code(
-    "print('hello')",
-    language="python",   # 默认 "python"
-    timeout=30,          # 超时秒数（默认 30）
-    envs={"KEY": "val"}, # 本次执行的临时环境变量（envd 作用域）
-)
-
-print(result.text)           # 输出文本（stdout 去除尾部空白）
-print(result.stdout)         # 原始 stdout
-print(result.stderr)         # 原始 stderr
-print(result.exit_code)      # 退出码
-print(result.execution_time) # 执行耗时（秒）
-print(result.output_files)   # 输出文件列表 [OutputFile]
-```
-
-支持回调：
-
-```python
-result = await sandbox.run_code(
-    "for i in range(3): print(i)",
-    on_stdout=lambda s: print(f"[OUT] {s}"),
-    on_stderr=lambda s: print(f"[ERR] {s}"),
-)
-```
-
-> **能力要求**：需要 `code` 能力（包含在默认能力集 `{shell, files, code}` 中）。
+若需极速版原生解释器，请使用独立标准 `agent_sandbox.code_interpreter` 客户端和 `code-interpreter-v1`，按[迁移指南](migrate-from-e2b.md)选择同步或异步入口及返回模型。流式回调同样需要对应的实际操作，不能从缓存结果推断实时流支持。
 
 ---
 

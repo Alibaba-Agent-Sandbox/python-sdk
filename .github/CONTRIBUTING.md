@@ -174,23 +174,7 @@ logged or committed. The full rule, the evidence-file and ADR templates are in
 
 Sandbox templates — content, the machine-readable index (`awesome-templates.yaml`), releases and CI — live in the dedicated repository **[alibaba-agent-sandbox/awesome-templates](https://github.com/alibaba-agent-sandbox/awesome-templates)**. It is the single source of truth for official & community templates; this repository no longer bundles a template collection (it keeps only a minimal `python-hello` offline fixture for tests).
 
-### Contributing a Template
-
-1. **Read** the catalog repository's [CONTRIBUTING.md](https://github.com/alibaba-agent-sandbox/awesome-templates/blob/main/CONTRIBUTING.md) — it defines the template anatomy, capability-group rules, and local dev workflow.
-2. **Open a PR** against [alibaba-agent-sandbox/awesome-templates](https://github.com/alibaba-agent-sandbox/awesome-templates) that adds your template folder and updates `awesome-templates.yaml` (plus the README template table) in the same PR.
-3. **Required index fields**: `name`, `description`, `repo`, `tags`, `author`, `status` (optional: `path` for subdirectory templates, `ref` to pin a version).
-4. **Status values**:
-   - `official` — maintained by the alibaba-agent-sandbox team (do not use for community PRs)
-   - `community` — community-contributed and maintained
-   - `experimental` — early-stage or proof-of-concept
-5. **Ensure** your repo contains a valid `template.yaml` at the specified path. The catalog CI validates every folder and the index offline.
-
-### Template Repository Requirements
-
-Your template repository should include:
-- A `template.yaml` declaring specification 4, `provides`, explicit `workflows` and `default_workflow`
-- A `Dockerfile` and a `README.md` with usage instructions
-- Example code or scripts that demonstrate the template's purpose
+Read the owning repository's [contributor guide](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/CONTRIBUTING.md) and [template specification](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/template-spec.md) before submitting there. Those files own the current manifest, catalog fields and required validation. Maintenance labels do not certify runtime behavior. Do not duplicate their schema or a template-status checklist in this SDK repository.
 
 ### Searching Templates
 

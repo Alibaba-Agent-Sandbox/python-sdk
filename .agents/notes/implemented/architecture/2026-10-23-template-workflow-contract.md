@@ -1,6 +1,6 @@
 # Decision: Explicit template workflows and operation contracts
 
-Status: proposed
+Status: implemented
 
 ## Problem
 Template application services, provider interpreter APIs and consuming clients were conflated. A code feature could incorrectly block an otherwise executable application, while shell fallback could conceal a missing interpreter.
@@ -36,3 +36,7 @@ Python and CLI pass the same vectors. Package copies match canonical bytes. Curr
 
 - [Native startup acknowledgment correction](../../../evidence/verify/2026-10-23-native-startup-acknowledgment.md).
 - [Complete OpenSandbox application workflow](../../../evidence/verify/2026-10-23-workflow-opensandbox-acceptance.md).
+
+## Implementation
+
+Delivered in [PR #89](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/89); actual merged state was checked on 2026-10-24. Later acceptance and current limitations are indexed in the [current synchronization record](../../../evidence/verify/2026-10-24-current-docs-and-records.md). Earlier verification files remain unchanged and retain their original pending or failed observations.
