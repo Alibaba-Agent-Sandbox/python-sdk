@@ -15,7 +15,8 @@ The actual wheel METADATA and source-archive README for both distributions conta
 - `python -m pytest server-sdk/tests/test_packaging.py -q`: 5 passed in 0.74 seconds.
 - `make build dist-check`: passed; both wheel/sdist pairs, twine, py.typed and combined clean installation/imports.
 - Inspected each wheel's METADATA with `zipfile` and `email`, and each sdist README with `tarfile`: matching a5 versions and dependency, corrected descriptions in all four artifacts.
-- `git diff --check`: passed. Full current-head CI and document links are required before merge.
+- `git diff --check` and repository health passed (106 PASS, 1 existing warning, 0 failures).
+- Initial [CI 40112322302](https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/40112322302) failed hygiene because the new guide creates and activates `.venv`, which matched the broad virtualenv assumption guard. Added narrowly anchored allowlist entries for that exact activation command in the two installation guides; the environment is explicitly created immediately above. The guard itself and credential rules are unchanged. Corrected `make hygiene` passed; current-head full CI and links remain required before merge.
 
 ## Preserved publication history
 
