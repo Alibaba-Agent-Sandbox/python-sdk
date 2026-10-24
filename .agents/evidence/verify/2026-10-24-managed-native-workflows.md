@@ -22,15 +22,18 @@ make ci
 
 | Scenario | Result | Details |
 | --- | --- | --- |
-| Focused regression | PASS | 85 workflow/manifest tests, including alpha ordering and source metadata |
+| Focused regression | PASS | 90 workflow/manifest/version tests, including alpha ordering, source metadata and both built-in provider selector forms |
 | First live attempt | FAIL | Both native IDs hit reserved provider registration before create; no sandboxes created |
-| Live rerun after fix | PASS | 2 tests in 10.25s: `base` and `code-interpreter-v1`, shell output and exit code checked |
+| Live rerun after first fix | PASS | 2 tests in 10.25s: `base` and `code-interpreter-v1`, shell output and exit code checked |
+| Final managed live rerun | PASS | 4 tests in 17.63s on 0.3.1a3 source: both templates via string and real built-in Provider object; independent deletion queries |
 | Local lint/typecheck | PASS | Server 56 and client 98 source files |
 | Local full server tests | FAIL | 877 passed; two malformed raw HTTP cases returned 501/502 (also reproduced on untouched baseline), plus package-list case failed because the uv environment lacked pip |
 | Clean baseline raw HTTP comparison | FAIL | Same two failures, 24 passes; unrelated to modified workflow/parser code |
 | Build/distribution checks | PASS | Both wheels/sdists, twine, py.typed and fresh combined installation at initial version |
 | Repository health | PASS | 106 PASS, 1 existing warning, 0 FAIL |
-| Remote CI | PENDING | Required before merge |
+| First 0.3.1a3 remote CI | FAIL | Only client MCP version lockstep failed; replaced the duplicated MCP version literal with the canonical package version. Server matrix, pinned public contract and Python-to-Node integration passed |
+| Local full client run before final MCP correction | FAIL | 2219 passed, 20 skipped, 10 deselected; MCP version mismatch and two loopback RPC cases rejected by this environment with HTTP 501 |
+| Final remote CI | PENDING | Required before merge |
 
 ## Cleanup
 
@@ -45,3 +48,5 @@ Real testing caught built-in provider re-registration, which mocks did not revea
 These tests do not exercise the code interpreter API, all source-template applications, or platform-managed app entrypoints. They do not establish immutable artifact identities. OpenSandbox source launch belongs to the coordinated CLI/provider/template work.
 
 The companion plugin's optional source-placeholder field exposed a compatibility parser bug: alpha sequence numbers had been discarded. The existing `packaging` dependency now performs version comparison. CLI and Python regression vectors include alpha/beta/RC/release ordering. No template-registry version mechanism was introduced.
+
+Second-round independent review also caught malformed placeholder input raising `TypeError` and the real built-in Provider object being registered again. Both now have regressions; the latter was rerun against the real cloud. No arbitrary object is normalized merely because it claims the built-in ID.

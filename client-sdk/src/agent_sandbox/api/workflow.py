@@ -195,7 +195,7 @@ async def launch_workflow(
     rejected before creating resources. This standalone launcher does not execute
     application deployment hooks or silently reinterpret deployment topology.
     """
-    from agent_sandbox.providers.registry import get_provider
+    from agent_sandbox.providers.registry import builtin_provider, get_provider
 
     if isinstance(manifest, (str, Path)):
         import yaml
@@ -275,7 +275,7 @@ async def launch_workflow(
             try:
                 sandbox = await Sandbox.create(
                     template=cast("str", reference),
-                    provider=provider,
+                    provider=prov.id if prov is builtin_provider() else provider,
                     provider_options=provider_options,
                     envs={
                         **(envs or {}),

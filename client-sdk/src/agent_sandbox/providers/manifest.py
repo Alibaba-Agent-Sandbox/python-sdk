@@ -510,14 +510,14 @@ def parse_manifest(data: bytes | str) -> Manifest:
         raise _err(
             "workflow must declare inputs and startups; only source_placeholders is optional"
         )
+    workflow_inputs = _str_list(workflow, "inputs", "workflow")
     placeholders = _str_list(workflow, "source_placeholders", "workflow")
     if len(placeholders) != len(set(placeholders)) or set(placeholders) - {"<region>", "<tag>"}:
         raise _err("workflow.source_placeholders contains duplicate or unknown values")
     if placeholders and (
-        "template.prepare" not in operations["cli"] or "source" not in workflow.get("inputs", [])
+        "template.prepare" not in operations["cli"] or "source" not in workflow_inputs
     ):
         raise _err("workflow.source_placeholders requires CLI template.prepare and source input")
-    workflow_inputs = _str_list(workflow, "inputs", "workflow")
     startup_modes = _str_list(workflow, "startups", "workflow")
     for values, allowed_values, label in (
         (workflow_inputs, {"source", "image", "managed", "service"}, "inputs"),

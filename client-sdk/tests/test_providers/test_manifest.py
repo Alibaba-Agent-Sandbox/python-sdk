@@ -328,3 +328,9 @@ def test_source_placeholders_require_real_prepare_declaration():
     ):
         with pytest.raises(ProviderManifestError, match="source_placeholders"):
             parse_manifest(invalid)
+
+
+def test_source_placeholder_input_type_is_a_manifest_error():
+    text = placeholder_manifest('["<tag>"]').replace('inputs = ["managed", "source"]', "inputs = 1")
+    with pytest.raises(ProviderManifestError, match="workflow.inputs"):
+        parse_manifest(text)

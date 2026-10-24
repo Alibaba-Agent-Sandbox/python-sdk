@@ -299,7 +299,8 @@ async def test_journal_failure_never_blocks_owned_cleanup(tmp_path):
     assert events(tmp_path / "run")[-1]["sandbox_id"] == "owned"
 
 
-async def test_named_builtin_provider_is_not_reregistered(tmp_path, monkeypatch):
+@pytest.mark.parametrize("as_object", [False, True])
+async def test_named_builtin_provider_is_not_reregistered(tmp_path, monkeypatch, as_object):
     from agent_sandbox.providers.registry import builtin_provider
 
     sandbox = SimpleNamespace(id="owned", provider="alicloud-express", kill=AsyncMock())
@@ -321,7 +322,10 @@ async def test_named_builtin_provider_is_not_reregistered(tmp_path, monkeypatch)
     )
     spec["workflows"]["application"].pop("service")
     async with await launch_workflow(
-        spec, provider="alicloud-express", reference="base", journal_path=tmp_path / "run"
+        spec,
+        provider=builtin_provider() if as_object else "alicloud-express",
+        reference="base",
+        journal_path=tmp_path / "run",
     ):
         pass
     assert create.call_args.kwargs["provider"] == "alicloud-express"

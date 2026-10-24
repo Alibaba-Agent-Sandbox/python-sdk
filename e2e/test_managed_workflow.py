@@ -8,11 +8,13 @@ import pytest
 from agent_sandbox import ProviderSandbox
 from agent_sandbox.api import launch_workflow
 from agent_sandbox.models.errors import SandboxNotFoundError
+from agent_sandbox.providers.registry import builtin_provider
 from conftest import wait_envd_ready
 
 
+@pytest.mark.parametrize("as_object", [False, True])
 @pytest.mark.parametrize("template", ["base", "code-interpreter-v1"])
-def test_native_id_launch_exec_and_owned_cleanup(run, tracker, tmp_path, template):
+def test_native_id_launch_exec_and_owned_cleanup(run, tracker, tmp_path, template, as_object):
     manifest = {
         "name": template,
         "provider": "alicloud-express",
@@ -41,7 +43,7 @@ def test_native_id_launch_exec_and_owned_cleanup(run, tracker, tmp_path, templat
     async def scenario():
         async with await launch_workflow(
             manifest,
-            provider="alicloud-express",
+            provider=builtin_provider() if as_object else "alicloud-express",
             reference=template,
             journal_path=journal,
             timeout=180,

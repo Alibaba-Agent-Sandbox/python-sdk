@@ -8,7 +8,7 @@ The workflow launcher rejected every managed template unless the provider expose
 
 ## Decision
 
-Accept the selected provider's native template reference. Preserve provider matching, required operations, startup checks, protocol validation and owned-resource cleanup. Keep unknown artifact digests unknown. Pass the caller's provider selection to sandbox creation rather than re-registering the resolved built-in object. Replace the introductory planning-state discussion in both workflow guides with usage examples.
+Accept the selected provider's native template reference. Preserve provider matching, required operations, startup checks, protocol validation and owned-resource cleanup. Keep unknown artifact digests unknown. Preserve the caller's provider selection and normalize only the actual built-in singleton to its ID, rather than registering it again. Replace the introductory planning-state discussion in both workflow guides with usage examples.
 
 ## API Design
 
