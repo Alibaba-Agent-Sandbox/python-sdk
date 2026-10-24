@@ -241,3 +241,9 @@ requirements still apply.
 须确认最新提交的运行、类型、测试和构建任务实际完成；仅 Markdown 检查通过
 不能证明产品验证完成。直接推送仍仅在 `main` 触发；真实组件证据和其余完成
 标准继续适用。
+
+## Publishing the Python pair
+
+Publish both distributions from a matching `v<version>` tag. The publication workflow runs the full reusable CI suite at that tag, builds and preserves one wheel/sdist pair per distribution, and verifies a combined clean installation. Manual runs default to dry-run. Before upload, existing PyPI files must match the candidate SHA-256; `skip-existing` is not sufficient verification. Upload server before client, then verify public digests and a fresh exact-version client installation with its automatic server dependency and `pip check`. Inspect the README embedded in both packages: it must not send users to an obsolete version. Preserve tags and artifacts; a content change uses a new version.
+
+两个发行包从匹配的 `v<version>` 标签发布，先执行完整 CI，再构建、保存并检查配套产物。手动运行默认 dry-run。上传前核对 PyPI 已有文件的 SHA-256，不能只依赖 `skip-existing`。先上传服务端，再上传客户端；随后检查公开摘要、新环境精确版本安装、自动服务端依赖和 `pip check`。检查双包内的 README，避免把用户导向旧版本。保留既有标签与产物，内容变更使用新版本号。

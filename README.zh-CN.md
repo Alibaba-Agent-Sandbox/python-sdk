@@ -61,33 +61,16 @@ Node.js 项目，位于 [`agent-sandbox`](https://github.com/alibaba-agent-sandb
 
 ## 安装
 
-[安装指南](docs/zh/guide/install-python.md)提供已验证的0.3.0 Git 配套源码，以及0.3.1a2 alpha 在公开发布验证完成后的显式安装方式。两个源码 URL 必须固定同一提交。
+使用 Python 3.10 或更高版本及虚拟环境。客户端会自动安装同版本的服务端依赖。固定版本、可选依赖及开发安装见[安装指南](docs/zh/guide/install-python.md)。
 
 ```bash
-# 仅核心客户端 SDK
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=client-sdk"
-
-# 完整安装（MCP + 快速 JSON + 会话 + 声明式 + server）
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=client-sdk"
-
-# 容器侧运行时（安装到你的沙箱镜像内）
-python -m pip install "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=server-sdk"
-pip install playwright                       # 仅在启用 browser 能力组时需要
-
-# 开发环境（在仓库根目录执行；含两个包的测试与 lint 工具）
-pip install -e ./server-sdk -e "./client-sdk[dev]"
+python -m pip install --upgrade --pre agent-sandbox-client
+python -m pip check
 ```
 
-不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。安装本客户端请使用 [配套源码安装指南](docs/zh/guide/install-python.md)。
+`--pre` 表示选择 alpha 预发布版本。命令行工具独立安装，见 [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox)。
 
-`agent-sandbox-client` 依赖同版本的 `agent-sandbox-server`，因此 [配套源码安装指南](docs/zh/guide/install-python.md) 同样会提供 `agent_sandbox.server`（`@sandbox` 装饰器的 server 代理在本地需要它）。
-
-`abx` CLI 不再属于 Python 包（不再有 `[cli]` extra，也没有 `abx` 控制台脚本），由
-[`agent-sandbox`](https://github.com/alibaba-agent-sandbox/agent-sandbox) 仓库分发（见[相关：abx CLI](#相关abx-cli)）。
+不要执行 `pip install agent-sandbox`；该 PyPI 名称属于另一个无关项目。
 
 ## 快速开始
 
