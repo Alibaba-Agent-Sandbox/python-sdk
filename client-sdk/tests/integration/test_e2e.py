@@ -20,6 +20,7 @@ import pytest
 from agent_sandbox.api.sandbox import Sandbox
 from agent_sandbox.models.errors import (
     CommandTimeoutError,
+    ProviderFeatureNotSupportedError,
     QuotaExceededError,
     TemplateNotFoundError,
 )
@@ -185,18 +186,16 @@ async def test_sandbox_context_manager():
         ) as sb:
             assert sb.id == SANDBOX_ID
 
-            # code.run() now calls CodeInterpreterProtocol.run_code()
-            # which uses envd_request (not envd_stream)
+            # The native Express adapter has no verified interpreter operation.
             mock_envd.return_value = {
                 "stdout": "hello\n",
                 "stderr": "",
                 "exitCode": 0,
                 "executionTime": 0.01,
             }
-            result = await sb.run_code("print('hello')")
-            assert result.text == "hello"
-            assert result.stdout == "hello\n"
-            assert result.exit_code == 0
+            with pytest.raises(ProviderFeatureNotSupportedError, match="code.execute"):
+                await sb.run_code("print('hello')")
+            mock_envd.assert_not_awaited()
 
         # Verify kill was called (platform DELETE + close)
         delete_calls = [c for c in mock_platform.call_args_list if c.args[0] == "DELETE"]
@@ -533,8 +532,7 @@ async def test_code_execution_languages():
             sandbox_base_url=PLATFORM_BASE,
         )
 
-        # Code execution now goes through CodeInterpreterProtocol.run_code()
-        # which calls envd_request (not envd_stream)
+        # Native Express refuses unsupported interpreter semantics before transport.
 
         # Python code
         mock_envd.return_value = {
@@ -543,9 +541,8 @@ async def test_code_execution_languages():
             "exitCode": 0,
             "executionTime": 0.01,
         }
-        result = await sb.run_code("print(42)", language="python")
-        assert result.text == "42"
-        assert result.exit_code == 0
+        with pytest.raises(ProviderFeatureNotSupportedError, match="code.execute"):
+            await sb.run_code("print(42)", language="python")
 
         # JavaScript code
         mock_envd.return_value = {
@@ -554,9 +551,10 @@ async def test_code_execution_languages():
             "exitCode": 0,
             "executionTime": 0.01,
         }
-        result = await sb.run_code("console.log('hello from js')", language="javascript")
-        assert result.text == "hello from js"
-        assert result.exit_code == 0
+        with pytest.raises(ProviderFeatureNotSupportedError, match="code.execute"):
+            await sb.run_code("console.log('hello from js')", language="javascript")
+        mock_envd.assert_not_awaited()
+        await sb.close()
 
 
 # ---------------------------------------------------------------------------

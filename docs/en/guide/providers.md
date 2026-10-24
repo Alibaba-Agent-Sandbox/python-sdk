@@ -6,30 +6,50 @@ This guide describes asynchronous `ProviderSandbox` provider extensions. Root `S
 
 > **Note:** The `abx provider ...` commands on this page are provided by the Node.js CLI in the `cli` repository. Python-only users get the same operations from `python -m agent_sandbox.providers ...`. Both use the same install directory, the same receipts and the same tree digest.
 
-A **provider** is a sandbox backend. The SDK and the CLI ship only `alicloud-express`. The others install with `python -m agent_sandbox.providers install registry:<id> --yes` from `https://registry.agent-sandbox.cn/providers/index.json`. A background check writes newer versions to `~/.abx/providers/updates.json`. `ABX_PROVIDER_UPDATE_CHECK=0` turns the check off. `ABX_PROVIDER_REGISTRY` changes the index URL. The official site is <https://www.agent-sandbox.cn>. The registry website is <https://registry.agent-sandbox.cn>.
+A **provider** is a sandbox backend. The SDK and the CLI ship only `alicloud-express`. The others install with `python -m agent_sandbox.providers install registry:<id> --yes` from `https://registry.agent-sandbox.cn/providers/index.json`. A background check compares recorded archive digests and writes content-change notices to `~/.abx/providers/updates.json`. `ABX_PROVIDER_UPDATE_CHECK=0` turns the check off. `ABX_PROVIDER_REGISTRY` changes the index URL. The official site is <https://www.agent-sandbox.cn>. The registry website is <https://registry.agent-sandbox.cn>.
 
 | Id | Name | Kind | Default |
 |---|---|---|---|
 | `alicloud-express` | Alibaba Cloud Express Edition (阿里云极速版) | built-in | yes |
-| `alicloud-container` | Alibaba Cloud Agent Sandbox, container edition | catalog plugin, `node`; CLI and every SDK after install | no |
-| `cubesandbox` | CubeSandbox | catalog plugin, `node`; CLI and every SDK after install | no |
-| `e2b` | E2B | catalog plugin, `node`; CLI and every SDK after install | no |
-| `opensandbox` | OpenSandbox | catalog plugin, `node` (ES module, EPP methods run in the host process); CLI and every SDK after install | no |
+| `alicloud-container` | Alibaba Cloud Agent Sandbox, container edition | catalog plugin, `node`; CLI and Python ProviderSandbox after install | no |
+| `cubesandbox` | CubeSandbox | catalog plugin, `node`; CLI and Python ProviderSandbox after install | no |
+| `e2b` | E2B | catalog plugin, `node`; CLI and Python ProviderSandbox after install | no |
+| `opensandbox` | OpenSandbox | catalog plugin, `node` (ES module, EPP methods run in the host process); CLI and Python ProviderSandbox after install | no |
 
-The four non-default ids live in `awesome-providers`. Install with `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` or, once the public index is published, `python -m agent_sandbox.providers install registry:<id> --yes` (the `abx` CLI has no `registry:` form), then select with `Sandbox.create(provider="…")` or `abx --provider <id>`. All four are `runtime.kind = "node"` (an ES module, `provider.mjs`), written once in Node.js. The CLI loads them in-process. The Python SDK reaches them through the local Node engine (`abx provider engine serve`, started on demand, so `abx` must be on `PATH` or in `ABX_BIN`) using `EngineProvider` (`engine://<provider>/<sandbox-id>`). A third-party `exec` or `rest` manifest still runs in the Python process. The built-in `alicloud-express` is the Python builtin provider. There is no installable `python` kind. See the CLI's [Engine HTTP API](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md).
+The four non-default ids live in `awesome-providers`. Install with `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` or `python -m agent_sandbox.providers install registry:<id> --yes` (the `abx` CLI has no `registry:` form), then select with `ProviderSandbox.create(provider="…")` or `abx --provider <id>`. All four are `runtime.kind = "node"` (an ES module, `provider.mjs`), written once in Node.js. The CLI loads them in-process. The Python SDK reaches them through the local Node engine (`abx provider engine serve`, started on demand, so `abx` must be on `PATH` or in `ABX_BIN`) using `EngineProvider` (`engine://<provider>/<sandbox-id>`). A third-party `exec` or `rest` manifest still runs in the Python process. The built-in `alicloud-express` is the Python builtin provider. There is no installable `python` kind. See the CLI's [Engine HTTP API](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md).
 
 | Id | How to use it |
 |---|---|
 | `opensandbox` | [OpenSandbox provider](../design/provider-opensandbox-mapping.md). HTTP is made from the Node host process that loads `provider.mjs`. `ABX_OPENSANDBOX_BASE_URL` defaults to `http://127.0.0.1:8080`. |
 | `alicloud-container` | [Container edition](../design/provider-alicloud-container.md). Needs `ABX_ALICLOUD_CONTAINER_DOMAIN`. Does not read `ABX_SANDBOX_API_KEY`. |
 | `cubesandbox` | [CubeSandbox provider](../design/provider-cubesandbox.md). Default origin `http://127.0.0.1:3000`. |
-| `e2b` | [E2B provider](../design/provider-e2b.md). Key is `ABX_ABX_SANDBOX_API_KEY`. Does not read `ABX_SANDBOX_API_KEY` or `ABX_SANDBOX_API_KEY`. |
+| `e2b` | [E2B provider](../design/provider-e2b.md). Key is `ABX_E2B_API_KEY`. Does not read `ABX_SANDBOX_API_KEY` or `ABX_SANDBOX_API_KEY`. |
 
 The logical readiness of the three providers that have no backend here is [provider readiness](../design/provider-readiness.md). A coding agent that is adding a provider loads the `agent-sandbox-provider` skill (`agent-sandbox-provider/SKILL.md`).
 
 If you never touch providers, nothing changes: every command, every output and every environment variable behaves as before. The id `alicloud-express` is stable. Only the display name may change.
 
 ---
+
+## Content updates and local verification
+
+The registry is a static catalog of Git-sourced providers, not a version server.
+Explicit update materializes the recorded source and compares its tree digest,
+so changed code is detected even if the manifest display version is unchanged.
+`--check` never replaces installed files. Changed content requires confirmation;
+failed verification restores the previous installation. Archive digest changes
+only provide background notices; identical repacked content is not a code update.
+The SDK checks `compat.requires.sdk` again when loading installed providers;
+the engine separately checks its CLI requirements before loading Node plugins.
+
+Default install verification and doctor may run trusted plugin code. Node doctor
+now awaits `POST /v1/providers/:provider/initialize`, which loads the plugin and
+closes its local infrastructure without creating a sandbox. This endpoint is new;
+CLI 0.4.10 does not implement it. Upgrade to a CLI build containing this endpoint
+and restart the engine. Older engines return a clear unverified error rather than
+success. Configuration-only `doctor --no-handshake` does not validate plugin code.
+Initialization success is not a cloud credential or backend readiness claim.
+The Node.js SDK is currently an in-sandbox HTTP ServerClient, not a lifecycle client.
 
 ## Engine recovery and uncertain results
 

@@ -6,19 +6,27 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: Build and twine-check only. Do not upload to PyPI.
+        description: Validate and build the selected version tag without uploading.
         type: boolean
         required: false
-        default: false
+        default: true
 
 jobs:
+  validate:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
   publish:
+    needs: validate
     name: Build & Publish (agent-sandbox-server, then agent-sandbox-client)
     runs-on: ubuntu-latest
     environment: pypi
+    concurrency:
+      group: pypi-upload-${{ github.ref }}
+      cancel-in-progress: false
     permissions:
       contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -34,26 +42,13 @@ jobs:
       - name: Install build tools
         run: pip install build twine
 
-      - name: Verify both distributions share one version
+      - name: Bind candidate tag and enforce version lockstep
+        env:
+          RELEASE_REF: ${{ github.ref }}
         run: |
-          python - <<'PY'
-          import re
-          import sys
-          from pathlib import Path
-
-          versions = {}
-          for name, path in {
-              "agent-sandbox-client": "client-sdk/src/agent_sandbox/_version.py",
-              "agent-sandbox-server": "server-sdk/src/agent_sandbox/server/_version.py",
-          }.items():
-              match = re.search(r'__version__\s*=\s*"([^"]+)"', Path(path).read_text(encoding="utf-8"))
-              if match is None:
-                  sys.exit(f"cannot find __version__ in {path}")
-              versions[name] = match.group(1)
-          print(versions)
-          if len(set(versions.values())) != 1:
-              sys.exit(f"client and server versions must be released in lockstep: {versions}")
-          PY
+          case "$RELEASE_REF" in refs/tags/*) ;; *) echo 'Select a version tag, not a branch'; exit 1 ;; esac
+          python scripts/check_release.py candidate --tag "${RELEASE_REF#refs/tags/}"
+          git rev-parse HEAD
 
       - name: Build sdist and wheel (server-sdk)
         run: python -m build --outdir dist/server-sdk server-sdk
@@ -62,7 +57,19 @@ jobs:
         run: python -m build --outdir dist/client-sdk client-sdk
 
       - name: Verify distributions
-        run: twine check dist/*/*
+        run: |
+          twine check dist/*/*
+          python scripts/check_dists.py all
+
+      - name: Preserve the exact release candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-release-candidate
+          path: dist/
+          if-no-files-found: error
+
+      - name: Check any existing public artifacts against this candidate
+        run: python scripts/check_release.py preflight
 
       - name: Record upload decision
         id: publish
@@ -74,10 +81,21 @@ jobs:
           echo "upload=$upload" >> "$GITHUB_OUTPUT"
           echo "event=${{ github.event_name }} dry_run=${{ inputs.dry_run }} upload=$upload"
 
+      - name: Require configured PyPI credential
+        if: steps.publish.outputs.upload == 'true'
+        env:
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -z "$PYPI_API_TOKEN" ]; then
+            echo "Configure the repository or pypi environment secret PYPI_API_TOKEN"
+            exit 1
+          fi
+
       - name: Upload agent-sandbox-server to PyPI
         if: steps.publish.outputs.upload == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: dist/server-sdk
           skip-existing: true
 
@@ -85,5 +103,22 @@ jobs:
         if: steps.publish.outputs.upload == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: dist/client-sdk
           skip-existing: true
+
+      - name: Verify public PyPI files and fresh installation
+        if: steps.publish.outputs.upload == 'true'
+        run: |
+          # PyPI metadata and index propagation can lag a successful upload.
+          for attempt in 1 2 3 4 5 6; do
+            if python scripts/check_release.py published; then break; fi
+            if [ "$attempt" = 6 ]; then exit 1; fi
+            sleep 10
+          done
+          version=$(python -c 'import sys; sys.path.insert(0, "scripts"); from check_release import release_version; print(release_version())')
+          python -m venv "$RUNNER_TEMP/pypi-readback"
+          "$RUNNER_TEMP/pypi-readback/bin/python" -m pip install --no-cache-dir --index-url https://pypi.org/simple "agent-sandbox-client==$version"
+          "$RUNNER_TEMP/pypi-readback/bin/python" -m pip check
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/pypi-readback/bin/python" -c 'from agent_sandbox import Sandbox, AsyncSandbox, ProviderSandbox; from agent_sandbox.server import start; assert all(callable(x) for x in (Sandbox.create, AsyncSandbox.create, ProviderSandbox.create, start))'

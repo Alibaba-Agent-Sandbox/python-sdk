@@ -1,98 +1,62 @@
-# Releasing `agent-sandbox-server` and `agent-sandbox-client`
+# Releasing the Python package pair
 
-This repository (`Alibaba-Agent-Sandbox/python-sdk`) publishes two lock-step PyPI distributions:
+Publish `agent-sandbox-server` first, then `agent-sandbox-client`, from the same source tag. The client pins the matching server dependency. The unrelated PyPI project `agent-sandbox` is never a publication target.
 
-| Directory | PyPI project | Import |
-| --- | --- | --- |
-| `server-sdk/` | `agent-sandbox-server` | `agent_sandbox.server` |
-| `client-sdk/` | `agent-sandbox-client` | `agent_sandbox` |
+## Candidate and versions
 
-`agent-sandbox` on PyPI is an unrelated project. Do not publish the client under that name, and do not tell users to `pip install agent-sandbox`.
+The current candidate is **0.3.1a1**, an opt-in alpha, not a production-readiness claim. It is not published until the workflow and public readback succeed. This alpha follows the existing source version 0.3.0; unlike 0.3.0a1, it satisfies the catalog providers' `sdk >=0.3` requirement without weakening the compatibility check. The Node provider doctor requires the companion CLI initialize endpoint (planned CLI 0.4.11); public CLI 0.4.10 does not implement it.
 
-Upload the server first. The client depends on `agent-sandbox-server==<same version>`.
+Keep four locations equal; existing version-lockstep tests enforce them:
 
-## Version
+- `client-sdk/src/agent_sandbox/_version.py`
+- `server-sdk/src/agent_sandbox/server/_version.py`
+- `client-sdk/pyproject.toml`: `agent-sandbox-server==<version>`
+- `client-sdk/src/agent_sandbox/agent/mcp.py`: `SERVER_VERSION`
 
-These four must stay equal (`client-sdk/tests/test_version_lockstep.py` and the version step in `.github/workflows/publish.yml`):
+Update CHANGELOG and run the repository CI and real-component acceptance gates before tagging the reviewed commit. A blocked gate remains blocked for the release review.
 
-| Location | What |
-| --- | --- |
-| `server-sdk/src/agent_sandbox/server/_version.py` | server `__version__` |
-| `client-sdk/src/agent_sandbox/_version.py` | client `__version__` |
-| `client-sdk/pyproject.toml` | `agent-sandbox-server==<version>` pin |
-| `client-sdk/src/agent_sandbox/agent/mcp.py` | `SERVER_VERSION` |
-
-The version to publish is **0.3.0**. Neither project name is on PyPI yet. Do not upload a version PyPI already has.
-
-For a later release, change all four together and move `CHANGELOG.md` `[Unreleased]` to `## [x.y.z] - YYYY-MM-DD`.
-
-## Build and check
-
-From the repository root, Python 3.10 or newer. This is the same build `publish.yml` runs:
+## Build and inspect
 
 ```bash
-python -m pip install build twine
-python -m build --outdir dist/server-sdk server-sdk
-python -m build --outdir dist/client-sdk client-sdk
-python -m twine check dist/*/*
+make build dist-check
+python scripts/check_release.py candidate --tag v0.3.1a1
+python scripts/check_release.py preflight
 ```
 
-`twine check` must print `PASSED` for every wheel and sdist.
+Both wheels and sdists must pass metadata checks; a fresh wheel install must expose the standard clients, ProviderSandbox, workflow YAML parser and server imports. `dist/` is generated and must not be committed. The server owns only `agent_sandbox/server/`; the client owns the root namespace. A different file already published under a candidate filename fails preflight rather than being silently skipped.
 
-Server wheel:
+## Authentication and execution
 
-- `Name: agent-sandbox-server`
-- `Version: 0.3.0`
-- `Requires-Python: >=3.10`
-- `Requires-Dist: websockets>=12.0`
-- Markdown description from `server-sdk/README.md`
-- no `agent_sandbox/__init__.py`
+Store a PyPI API token authorized for both distributions as GitHub repository secret `PYPI_API_TOKEN` (or the same secret in the `pypi` environment). The two upload steps pass it directly to the PyPA action; no local export, token in source or OIDC publisher is required. Token mode does not create OIDC attestations. The job targets PyPI, not the separate TestPyPI service.
 
-Client wheel:
+The publish job depends on the complete reusable CI for the same tag, then builds and verifies the candidate, preserves it as a workflow artifact, runs public-file preflight, uploads server then client, verifies every public SHA-256 and installs only the pinned client in a fresh environment. Automatic installation of the matching server, public imports and `pip check` must pass.
 
-- `Name: agent-sandbox-client`
-- `Version: 0.3.0`
-- `Requires-Dist: agent-sandbox-server==0.3.0`
-- Markdown description from `client-sdk/README.md`
-- owns `agent_sandbox/__init__.py` and does not ship `agent_sandbox/server/`
-
-`dist/` is build output. Do not commit it.
-
-A clean install of both wheels, then `import agent_sandbox` and `import agent_sandbox.server`, is what `python scripts/check_dists.py combined-install` checks.
-
-## Pending publishers
-
-Publishing uses PyPI trusted publishing (OIDC). No `PYPI_API_TOKEN` and no other PyPI token is required. The workflow does not read a password.
-
-`.github/workflows/publish.yml` requests `id-token: write` and runs in the GitHub environment `pypi`. Each upload step is `pypa/gh-action-pypi-publish@release/v1` with `skip-existing: true`. The server directory is uploaded first, then the client.
-
-Create one pending publisher on PyPI for each project name **before** the first upload. For **both** `agent-sandbox-server` and `agent-sandbox-client`:
-
-| Field | Value |
-| --- | --- |
-| PyPI project name | `agent-sandbox-server` or `agent-sandbox-client` |
-| Owner | `Alibaba-Agent-Sandbox` |
-| Repository name | `python-sdk` |
-| Workflow filename | `publish.yml` |
-| Environment name | `pypi` |
-
-The GitHub environment `pypi` must exist on `Alibaba-Agent-Sandbox/python-sdk` (it does). Do not create a tag or a GitHub Release until both pending publishers are in place. Publishing a GitHub Release runs this workflow and uploads to PyPI.
-
-## Dry run and re-run
-
-`workflow_dispatch` input `dry_run` (default false) builds both distributions and runs `twine check` only. The upload steps are skipped. Use it to check the workflow on GitHub without publishing:
-
-```bash
-# Actions → Publish to PyPI → Run workflow, on main, with dry_run checked.
-```
-
-Or the API, after this workflow is on `main`:
+Manual dispatch **defaults to dry_run=true** and accepts a version tag, not a branch:
 
 ```http
 POST /repos/Alibaba-Agent-Sandbox/python-sdk/actions/workflows/publish.yml/dispatches
-{"ref":"main","inputs":{"dry_run":"true"}}
+{"ref":"v0.3.1a1","inputs":{"dry_run":"true"}}
 ```
 
-A real upload is a GitHub Release (`release: published`), or **Run workflow** with `dry_run` left unchecked. Unchecked `dry_run` publishes. Do not use it until both pending publishers exist.
+After dry-run validation, publish a GitHub **prerelease** for that reviewed tag, or dispatch the same tag with `dry_run=false`. Publishing a GitHub Release triggers upload. Merely creating a draft release does not. Do not publish a stable release for an alpha version.
 
-`skip-existing: true` makes a re-run safe after a partial upload. If the server package is already on PyPI and the client step failed, re-run the failed jobs on that same workflow run (or dispatch again with `dry_run` unchecked). PyPI keeps the existing files and the missing distribution is uploaded. Server is still first.
+## Recovery and public verification
+
+If one upload fails, preserve and reuse the exact candidate artifact from that run. Preflight compares existing filenames and SHA-256 before `skip-existing` can resume the missing files. Rebuilding is not proof of identical bytes; if hashes differ, stop and investigate instead of overwriting or silently accepting them. Only call the release published after both projects' public metadata, downloads and fresh installation pass.
+
+After verified publication, consumers can explicitly opt in:
+
+```bash
+python -m pip install 'agent-sandbox-client==0.3.1a1'
+python -m pip check
+```
+
+## 中文发布说明
+
+client/server 必须同版本发布，先上传 server。当前候选为 `0.3.1a1` alpha；它满足现有 provider 的 `sdk >=0.3` 要求，不需要放宽 gate。它不是生产就绪承诺，公开回读成功前不得称为已发布。Node provider doctor 需要配套的新 CLI initialize 接口，0.4.10 不具备此接口。
+
+四处版本（两个 `_version.py`、client 的 server 精确依赖、MCP `SERVER_VERSION`）一起更新。先通过同一标签的完整 CI、产物检查和真实组件验收。将 token 保存在 GitHub repository 或 `pypi` environment 的 `PYPI_API_TOKEN` secret 中，由上传步骤直接引用；不要复制到源码或日志。此流程发布到正式 PyPI 的预发布版本，不是 TestPyPI，也不声明 OIDC 证明。
+
+手动执行默认 `dry_run=true`，必须选择 `v0.3.1a1` 这样的版本标签，选择 main 会失败。验证后创建该标签的 GitHub prerelease，或显式设置 `dry_run=false`。工作流保存本次产物，先检查已有公开文件摘要，再按顺序上传；最后仅安装固定版本 client，验证 server 自动依赖、导入与 `pip check`。
+
+部分上传失败时保留并使用同一批候选文件。重新构建后如摘要不同，应停止调查，不得依赖 skip-existing 掩盖差异。全部公开包下载与安装验证通过后，才更新对外的发布状态。

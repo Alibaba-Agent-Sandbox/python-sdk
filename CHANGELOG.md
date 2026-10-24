@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.3.1a1] - 2026-10-24
+
+### Changed
+
+- Prepare an opt-in PyPI alpha pair, connect publication to the repository PYPI_API_TOKEN secret, and preserve same-tag CI, artifact verification and public readback. / 准备需显式选择的 PyPI alpha 双包，通过仓库 PYPI_API_TOKEN secret 发布，并保留同标签 CI、产物校验及公开回装门禁。
+
+### Fixed
+
+- Provider catalog updates compare content rather than display versions, preserve recorded sources, and recheck SDK compatibility on load.
+- Node provider doctor awaits real engine initialization and refuses unverifiable old engines; it never creates a cloud sandbox.
+- Add a strict standalone Python-to-Node CI job and bind Python publication to matching tags, tested wheel pairs, and public artifact digests.
+- Correct provider trust/consumer guidance and use matching public Git archives in SDK Skills and standalone Dockerfile examples.
+
 ### Changed
 
 - Preserve native integer or opaque process IDs across engine startup acknowledgments so prepared-image application servers can start through EPP providers. / 引擎启动确认保留原生整数或不透明进程标识，使 EPP 提供方能够启动已准备镜像中的应用服务。

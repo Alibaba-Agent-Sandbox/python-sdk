@@ -45,7 +45,7 @@ MCP_PROTOCOL_VERSION = "2024-11-05"
 _STDIO_READ_LIMIT = 8 * 1024 * 1024
 
 SERVER_NAME = "agent-sandbox"
-SERVER_VERSION = "0.3.0"
+SERVER_VERSION = "0.3.1a1"
 
 
 # ---------------------------------------------------------------------------

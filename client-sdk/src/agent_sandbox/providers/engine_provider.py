@@ -1,6 +1,6 @@
 """``node`` providers: the provider code is an ES module that the local engine loads.
 
-The same module serves the CLI and every other SDK, so a backend is written once. The SDK
+The same module serves the CLI and Python ProviderSandbox, so a backend is written once. The SDK
 resolves the configuration (environment, ``.env``, ``config.toml``) and sends it with every
 call; the engine runs the provider.
 """
@@ -14,7 +14,13 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import quote
 
-from agent_sandbox.models.errors import ProviderFeatureNotSupportedError, SandboxNotFoundError
+import httpx
+
+from agent_sandbox.models.errors import (
+    ProviderFeatureNotSupportedError,
+    ProviderProtocolError,
+    SandboxNotFoundError,
+)
 from agent_sandbox.models.filesystem import FileInfo, WatchEvent
 from agent_sandbox.models.process import ProcessChunk, ProcessChunkType, ProcessInfo
 from agent_sandbox.models.sandbox import SandboxConfig, SandboxInfo, SandboxStatus
@@ -582,6 +588,38 @@ class EngineProvider(Provider):
         from agent_sandbox.providers.shared.e2b.session import prepare_session
 
         return await prepare_session(self, info)
+
+    async def verify_handshake(self, config: TransportConfig) -> None:
+        """Initialize the installed plugin in the real engine without creating a sandbox."""
+        self.validate_config(config)
+        if self.receipt is not None and self.receipt.get("trust") != "link":
+            store.verify_integrity(self.id)
+        client = EngineClient(self.connection(config))
+        try:
+            response = await client.request(
+                "POST",
+                f"/v1/providers/{quote(self.id, safe='')}/initialize",
+                timeout=30,
+                retry=False,
+            )
+            if response.status_code == 404:
+                raise ProviderProtocolError(
+                    "The installed abx engine cannot verify provider initialization.",
+                    suggestion="Upgrade abx, restart the engine, then run provider doctor again.",
+                )
+            if response.status_code >= 400:
+                raise_engine_error(response.json(), response.status_code)
+            result = response.json()
+            if (
+                not isinstance(result, dict)
+                or result.get("provider") != self.id
+                or result.get("initialized") is not True
+            ):
+                raise ProviderProtocolError("The engine did not confirm provider initialization.")
+        except (httpx.HTTPError, ValueError) as exc:
+            raise ProviderProtocolError("Provider initialization could not be verified.") from exc
+        finally:
+            await client.close()
 
     async def build_infra(self, config: TransportConfig) -> ProviderInfra:
         self.validate_config(config)

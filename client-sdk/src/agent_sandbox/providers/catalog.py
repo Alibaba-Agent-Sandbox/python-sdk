@@ -4,7 +4,7 @@ The human registry site is https://registry.agent-sandbox.cn. The official
 site is https://www.agent-sandbox.cn. The installer fetches ``REGISTRY_INDEX``
 on registry.agent-sandbox.cn. The SDK ships only ``alicloud-express``. Every
 other provider is installed from this index. A background check compares
-installed versions and writes ``~/.abx/providers/updates.json``. It never
+installed archive digests and writes ``~/.abx/providers/updates.json``. It never
 blocks the caller and ignores network errors.
 """
 
@@ -88,6 +88,11 @@ def materialize(provider_id: str, *, timeout: float = 30, registry: str | None =
     """Return a local directory for *provider_id*, downloading a tarball when needed."""
     index = fetch_index(timeout=timeout, url=registry)
     row = find(index, provider_id)
+    return materialize_entry(index, row, timeout=timeout)
+
+
+def materialize_entry(index: dict[str, Any], row: dict[str, Any], *, timeout: float = 30) -> str:
+    """Materialize the exact catalog entry already selected by the caller."""
     url = resolve_url(index, row)
     local = _local_path(url)
     if local is not None and local.is_dir():
@@ -121,7 +126,7 @@ def _download(url: str, digest: str, *, timeout: float) -> str:
 
 
 def pending_updates() -> list[dict[str, str]]:
-    """Versions in the catalog that are newer than what is installed. Empty on failure."""
+    """Changed catalog archives for receipts with an archive digest. Empty on failure."""
     try:
         index = fetch_index(timeout=3)
     except Exception:
@@ -136,30 +141,17 @@ def pending_updates() -> list[dict[str, str]]:
         if receipt is None:
             continue
         installed = str(receipt.get("version") or "")
-        if remote and _version_older(installed, remote):
+        source = receipt.get("source") or {}
+        if source.get("type") != "catalog" or source.get("registry") != registry_url():
+            continue
+        previous = source.get("archive_sha256")
+        current = row.get("sha256")
+        if previous and current and previous != current:
             notes.append({"id": provider_id, "installed": installed, "version": remote})
     path = store.providers_dir() / "updates.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"updates": notes}, indent=2) + "\n", encoding="utf-8")
     return notes
-
-
-def _version_older(installed: str, remote: str) -> bool:
-    """True when *remote* is a newer dotted version than *installed*."""
-
-    def parts(text: str) -> tuple[int, ...]:
-        nums: list[int] = []
-        for piece in text.split("."):
-            digits = ""
-            for char in piece:
-                if char.isdigit():
-                    digits += char
-                else:
-                    break
-            nums.append(int(digits or "0"))
-        return tuple(nums)
-
-    return parts(installed) < parts(remote)
 
 
 def schedule_update_check() -> None:

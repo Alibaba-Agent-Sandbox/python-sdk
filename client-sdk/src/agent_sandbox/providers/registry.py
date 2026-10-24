@@ -101,9 +101,10 @@ def plugin_root(provider_id: str, receipt: dict[str, Any]) -> Path:
 
 def load_installed(provider_id: str) -> Provider:
     """Build a provider object from the store (verifies the receipt, not the tree digest)."""
+    from agent_sandbox._version import __version__
     from agent_sandbox.providers.engine_provider import EngineProvider
     from agent_sandbox.providers.exec_provider import ExecProvider
-    from agent_sandbox.providers.manifest import load_manifest
+    from agent_sandbox.providers.manifest import check_requires, load_manifest
     from agent_sandbox.providers.rest_provider import RestProvider
 
     receipt = store.read_receipt(provider_id)
@@ -111,6 +112,7 @@ def load_installed(provider_id: str) -> Provider:
         raise ProviderNotFoundError(f"Provider '{provider_id}' is not installed.")
     root = plugin_root(provider_id, receipt)
     manifest = load_manifest(root)
+    check_requires(manifest, component="sdk", host_version=__version__)
     if manifest.id != provider_id:
         raise ProviderNotFoundError(f"Provider '{provider_id}' is not installed.")
     if manifest.kind == "rest":

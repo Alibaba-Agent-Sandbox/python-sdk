@@ -16,8 +16,16 @@ Two packages share one version:
 | `agent-sandbox-client` | `agent_sandbox` | The caller's machine |
 | `agent-sandbox-server` | `agent_sandbox.server` | Inside the image, port 9000 |
 
-`pip install agent-sandbox-client` installs the client and depends on
-`agent-sandbox-server`. The image installs only `agent-sandbox-server`.
+Until the first verified PyPI release, install both packages from the same public commit:
+
+```bash
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=client-sdk"
+```
+
+The image needs only `agent-sandbox-server`. After a verified PyPI release,
+`pip install agent-sandbox-client==<version>` also installs the matching server dependency.
 Do not run `pip install agent-sandbox`. That PyPI name is an unrelated project.
 
 ## Credentials
@@ -78,7 +86,7 @@ asyncio.run(main())
 - `timeout` on `create` is how long the sandbox lives, not the HTTP timeout. `request_timeout` bounds the create HTTP call.
 - A shell command is `sb.commands.run`. A function registered in `commands.py` is `sb.run(name, **kwargs)`, which returns the unwrapped `result`.
 - `sb.commands.run` wraps an unquoted pipe, redirect, or `&&` in `sh -c`. A variable, backtick, or glob still needs an explicit `sh -c '...'`. Its `timeout` defaults to 60 seconds. `send_signal` accepts only 15 (SIGTERM) and 9 (SIGKILL).
-- `sb.run_code(...)` checks capability `code` and raises when the template does not declare it. An omitted `capabilities` list means `shell`, `files`, and `code`.
+- `sb.run_code(...)` requires the exact provider operation: `code.execute` for stateless mode, `code.default-context.execute` for explicit `mode="default-context"`, or `code.context.execute` for a context ID. A template `code` declaration does not implement these operations. Native `alicloud-express` currently refuses interpreter calls; use the supported standard `agent_sandbox.code_interpreter` client for its separate backend contract.
 - Files on `sb.files`: `write`, `read`, `read_bytes`, `list`, `exists`, `remove`, `make_dir`, `upload`, `download`. On Express, `sb.files.upload_url` and `sb.files.download_url` return an envd URL that still needs header `X-Access-Token`. A provider that does not declare `files.transfer` raises `E8004`. `sb.upload_url` and `sb.download_url` always refuse. Do not invent a signature-only URL.
 - The context manager kills the sandbox. Otherwise call `await sb.kill()`.
 - ProviderSandbox defaults to alicloud-express. Use its configured provider transport; do not hardcode a local engine socket or spawn a separate provider implementation.
@@ -166,12 +174,8 @@ starts the server with
 
 ```dockerfile
 FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
-COPY *.whl /tmp/
-RUN if ls /tmp/*.whl 1>/dev/null 2>&1; then \
-        pip install --no-cache-dir /tmp/*.whl && rm -f /tmp/*.whl; \
-    else \
-        pip install --no-cache-dir agent-sandbox-server; \
-    fi
+RUN pip install --no-cache-dir \
+    "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=server-sdk"
 WORKDIR /home/user/app
 COPY commands.py /home/user/app/commands.py
 EXPOSE 9000
@@ -183,21 +187,18 @@ OpenSandbox and a provider with no `[template]` profile use this image, not the 
 
 ```dockerfile
 FROM python:3.12-slim
-COPY *.whl /tmp/
-RUN if ls /tmp/*.whl 1>/dev/null 2>&1; then \
-        pip install --no-cache-dir /tmp/*.whl && rm -f /tmp/*.whl; \
-    else \
-        pip install --no-cache-dir agent-sandbox-server; \
-    fi
+RUN pip install --no-cache-dir \
+    "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=server-sdk"
 WORKDIR /app
 COPY commands.py .
 EXPOSE 9000
 CMD ["python3", "commands.py"]
 ```
 
-`abx template scaffold` writes this same `commands.py` shape. `abx template deploy`
-injects the server wheel into the build context. Without a wheel, the image
-installs `agent-sandbox-server` from PyPI. Generation, reserved ports, group
+`abx template scaffold` writes this same `commands.py` shape. These Dockerfiles
+use a pinned public source archive and do not require a local wheel. CLI build
+may inject an explicitly selected server wheel or resolve its own pinned archive;
+that preprocessing does not apply to a direct `docker build`. Generation, reserved ports, group
 policy, and platform steps are in `references/templates.md` next to this file.
 Copy this directory whole. `references/templates.md` and `references/providers.md` stay beside `SKILL.md`.
 

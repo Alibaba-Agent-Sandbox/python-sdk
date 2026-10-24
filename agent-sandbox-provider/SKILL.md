@@ -8,8 +8,18 @@ description: Write an Agent Sandbox provider plugin so ProviderSandbox.create(pr
 This file is instructions for a coding agent. It is not executed by the SDK.
 Calling `Sandbox.create` against a backend that already exists is
 `agent-sandbox-sdk`. This skill only covers the provider you add.
-The client distribution is `agent-sandbox-client` (`pip install agent-sandbox-client`,
-import `agent_sandbox`). Do not install `agent-sandbox`; that PyPI project is unrelated.
+The client distribution is `agent-sandbox-client` (import `agent_sandbox`).
+Until the first verified PyPI release, install both packages from the same public commit:
+
+```bash
+python -m pip install \
+  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=server-sdk" \
+  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=client-sdk"
+```
+
+The image needs only `agent-sandbox-server`. After a verified PyPI release,
+`pip install agent-sandbox-client==<version>` also installs the matching server dependency.
+Do not install `agent-sandbox`; that PyPI project is unrelated.
 
 Only `alicloud-express` is built in. Do not reinstall it and do not reuse
 its id. `opensandbox`, `cubesandbox`, `e2b`, and `alicloud-container` are
@@ -40,8 +50,15 @@ https://registry.agent-sandbox.com. The installer index is
 | Kind | Write | Use when |
 |---|---|---|
 | `rest` | only `abx-provider.toml` | The backend speaks the E2B HTTP shape: `POST /sandboxes` with `templateID`, header `X-API-Key` or bearer, envd on `https://{port}-{id}.{domain}` |
-| `exec` | the manifest plus a process that speaks EPP/1 on stdin/stdout | The API is not E2B-shaped. Any language. No code runs at install time |
-| `node` | `provider.mjs` with `export default create(kit)` | The backend is E2B-shaped but needs a tweak (proxy dial, optional token, other paths). Loaded in the host process; one implementation serves the CLI and every SDK |
+| `exec` | the manifest plus a process that speaks EPP/1 on stdin/stdout | The API is not E2B-shaped. Any language. Default installation verification starts the process after trust confirmation |
+| `node` | `provider.mjs` with `export default create(kit)` | The backend is E2B-shaped but needs a tweak (proxy dial, optional token, other paths). Loaded in the host process; one implementation serves the CLI and Python ProviderSandbox through the local engine |
+
+Installation verification and doctor may execute trusted plugin code (`exec` starts a process;
+`node` imports the module and calls its factory). Download/extraction alone does not execute it.
+Node doctor requires an engine with the initialization route; upgrade and restart an older
+CLI if it reports that initialization cannot be verified. Doctor never creates a sandbox,
+and a successful initialization does not prove cloud credentials or backend availability.
+The Node.js SDK currently provides the in-sandbox HTTP `ServerClient`, not provider lifecycle.
 
 Do not start from the Express engine. Do not copy the Express `ABX_SANDBOX_API_KEY` or its standard-entry `E2B_API_KEY` setting into the new provider. Credentials belong to their selected backend.
 

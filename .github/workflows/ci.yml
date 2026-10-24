@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -147,3 +148,43 @@ jobs:
           "$RUNNER_TEMP/e2b-reference/bin/python" -m pip install 'e2b==2.31.0' 'e2b-code-interpreter==2.8.1'
       - name: Compare public callable signatures and sync/async shapes
         run: python scripts/check_standard_contract.py --reference-python "$RUNNER_TEMP/e2b-reference/bin/python"
+
+  provider-engine:
+    name: Python to Node provider engine
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          repository: Alibaba-Agent-Sandbox/agent-sandbox
+          ref: 94a1f90244e7b36e06c4618feaa323c4d056e784
+          path: .test-deps/cli
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          repository: Alibaba-Agent-Sandbox/awesome-providers
+          ref: 857a66b3884faeaade01411ec9561987a7aee705
+          path: .test-deps/providers
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: .test-deps/cli/package-lock.json
+      - name: Install SDK and CLI dependencies
+        run: |
+          pip install -e ./server-sdk -e './client-sdk[dev]'
+          npm ci --prefix .test-deps/cli
+          npm run build --prefix .test-deps/cli
+      - name: Run required cross-language scenarios
+        env:
+          ABX_TEST_ENGINE_REQUIRED: "1"
+          ABX_TEST_CLI_DIR: ${{ github.workspace }}/.test-deps/cli
+          ABX_TEST_PROVIDERS_DIR: ${{ github.workspace }}/.test-deps/providers
+        run: python -m pytest -c client-sdk/pyproject.toml client-sdk/tests/test_providers/test_engine_provider.py -v

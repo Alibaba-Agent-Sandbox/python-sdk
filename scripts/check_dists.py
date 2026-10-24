@@ -37,9 +37,10 @@ import agent_sandbox
 import agent_sandbox.server
 import yaml
 from agent_sandbox.api import launch_workflow
-from agent_sandbox import Sandbox
+from agent_sandbox import Sandbox, AsyncSandbox, ProviderSandbox
 from agent_sandbox.server import default_registry, start
 
+assert all(callable(cls.create) for cls in (Sandbox, AsyncSandbox, ProviderSandbox))
 assert callable(launch_workflow)
 assert yaml.safe_load("spec_version: 4") == {"spec_version": 4}
 print("workflow YAML parser: available in the base install")
