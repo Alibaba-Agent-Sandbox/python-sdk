@@ -1087,8 +1087,9 @@ class ServerClient:
 
     Args:
         base_url: Server HTTP base URL (``http://host:9000``, or a gateway port URL).
-        token: Server token; sent as ``Authorization: Bearer`` (matches ``ABX_SERVER_TOKEN`` or
-            a ``auth.tokens`` identity).
+        token: Server token; sent as ``Authorization: Bearer`` and, when not occupied by
+            gateway headers, ``X-Access-Token`` (matches ``ABX_SERVER_TOKEN`` or an
+            ``auth.tokens`` identity).
         headers: Extra headers on every request, e.g. the gateway's ``X-Access-Token`` from
             ``Sandbox.network.get_access_headers()``.
         pty_url: Base URL of the PTY WebSocket server (default: *base_url* with port 9001, or
@@ -1246,10 +1247,13 @@ class ServerClient:
         return urlunsplit((parts.scheme, f"{netloc}:{DEFAULT_PTY_PORT}", "", "", ""))
 
     def auth_headers(self) -> dict[str, str]:
-        """Headers sent on every request (gateway headers plus the server bearer token)."""
+        """Gateway headers plus the explicit token in existing server auth headers."""
         headers = dict(self._headers)
         if self._token:
             headers["Authorization"] = f"Bearer {self._token}"
+            inherited = self._http.headers if self._http is not None and not self._owns_http else {}
+            if not any(k.lower() == "x-access-token" for k in (*headers, *inherited)):
+                headers["X-Access-Token"] = self._token
         return headers
 
     def with_token(self, token: str | None) -> ServerClient:

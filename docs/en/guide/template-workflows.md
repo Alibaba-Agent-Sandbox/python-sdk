@@ -19,6 +19,8 @@ finally:
 
 `application_client` asks the selected provider for this sandbox's port endpoint. Gateway headers and the explicit application bearer token have separate audiences. Control-plane API keys are never copied into an application request. Proxy prefixes and signed base-query bytes are preserved; redirects, URL user information, authority overrides and encoded namespace traversal are refused. Operation-signed endpoint types require a provider operation resolver and must not be treated as a prefix URL.
 
+The client also sends the explicit application token in the server's existing `X-Access-Token` header when that header is unused. This keeps authentication working through proxies that strip `Authorization`, including OpenSandbox 1.1.1. Existing gateway headers, including defaults on an injected HTTP client, are never replaced. Bearer authentication remains available for services that require it.
+
 For a new prepared-image workflow:
 
 ```python
