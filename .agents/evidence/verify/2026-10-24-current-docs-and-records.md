@@ -25,7 +25,7 @@ No new cloud resources or task credentials were created. Existing real-component
 
 ## Packaged skill follow-up
 
-Independent review found the two current skills still instructed pre-release source-only installation, and their sample manifest/feature table contradicted the delivered workflow contract. Both now install public alpha 0.3.1a5, preserve standard versus Provider credentials, use an explicitly borrowed application binding, retain valid feature IDs and declare exact consumer operations. The SDK skill's source template uses spec 4; no unsupported host-kit interpreter is invented. Skill references were scanned for the same obsolete installation claims.
+Independent review found the two current skills still instructed pre-release source-only installation, and their sample manifest/feature table contradicted the delivered workflow contract. Both now install public alpha 0.3.1a5, preserve standard versus Provider credentials, use an explicitly borrowed application binding, retain valid feature IDs and declare exact consumer operations. The SDK skill's source template uses spec 4 and aligns generation 2, readiness, port and runtime token input with the owning template skeleton; no unsupported host-kit interpreter is invented. Skill references were scanned for the same obsolete installation claims.
 
 - PASS: the actual public-a5 `parse_manifest` accepts the complete REST example; `SandboxTemplate.model_validate` accepts the skill's source template. All skill Python blocks parse with `ast.parse`.
 - Skill changes are instructions only. No image build, new cloud run, first Node package release or new Python package publication is claimed.

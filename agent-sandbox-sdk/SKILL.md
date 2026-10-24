@@ -126,12 +126,16 @@ to turn groups on. Without a Dockerfile, `base.image` and `build:` are platform
 steps; that path is in `references/templates.md`. For `alicloud-express`, write
 the FC Dockerfile below.
 
-Use strict specification 4. `capabilities` and `tested_on` are retired; installed software does not grant provider operations. This minimal source application follows the current offline fixture:
+Use strict specification 4. `capabilities` and `tested_on` are retired; installed software does not grant provider operations. This minimal source application follows the current [author skeleton](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/_skeleton/template.yaml), including its native generation, readiness probe and runtime token input:
 
 ```yaml
 name: my-template
 version: "1.0.0"
 description: "A hello application"
+generation: 2
+ports: [9000]
+env:
+  ABX_SERVER_TOKEN: ""
 spec_version: 4
 workflow_contract_version: 1
 provides:
@@ -142,6 +146,7 @@ provides:
     operations: [commands.list, commands.run]
 default_workflow: application
 start_cmd: agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py
+ready_cmd: agent-sandbox-server healthcheck --port 9000
 workflows:
   application:
     kind: application
@@ -155,8 +160,9 @@ workflows:
       authentication: service-token
     operation: commands.run
     required_operations: []
-
 ```
+
+Set `ABX_SERVER_TOKEN` in the launch environment before creating this service-token workflow; the empty manifest value declares runtime input, not a usable secret. Keep credentials out of the manifest and image.
 
 `commands.py` — module-level `@command`, then `start()` only under
 `if __name__ == "__main__"`. A `start()` call at import time breaks the
