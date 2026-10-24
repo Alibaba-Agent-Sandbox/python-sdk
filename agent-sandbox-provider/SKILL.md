@@ -9,16 +9,14 @@ This file is instructions for a coding agent. It is not executed by the SDK.
 Calling `Sandbox.create` against a backend that already exists is
 `agent-sandbox-sdk`. This skill only covers the provider you add.
 The client distribution is `agent-sandbox-client` (import `agent_sandbox`).
-Until the first verified PyPI release, install both packages from the same public commit:
+Install the verified public alpha pair; the client installs its matching server dependency:
 
 ```bash
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=client-sdk"
+python -m pip install 'agent-sandbox-client==0.3.1a5'
+python -m pip check
 ```
 
-The image needs only `agent-sandbox-server`. After a verified PyPI release,
-`pip install agent-sandbox-client==<version>` also installs the matching server dependency.
+The image needs only `agent-sandbox-server==0.3.1a5`. Installing that package on the host does not update an existing image. Development source installations must use a matching client/server revision.
 Do not install `agent-sandbox`; that PyPI project is unrelated.
 
 Only `alicloud-express` is built in. Do not reinstall it and do not reuse
@@ -41,8 +39,8 @@ started on demand; `abx` must be on `PATH` or in `ABX_BIN`) using
 `EngineProvider`. Python `exec` and `rest` manifests still run in the Python
 process. The catalog guide is
 `awesome-providers/docs/zh/principle.md`. The official site is
-https://www.agent-sandbox.com. The registry website is
-https://registry.agent-sandbox.com. The installer index is
+https://www.agent-sandbox.cn. The registry website is
+https://registry.agent-sandbox.cn. The installer index is
 `https://registry.agent-sandbox.cn/providers/index.json`.
 
 ## Pick a kind
@@ -92,7 +90,6 @@ pty                 get_terminal
 files.rw            read, write, list, move, remove
 files.watch         files.watch
 files.transfer      upload_url / download_url
-code.interpret      run_code
 templates.read      template list
 templates.build     legacy template build
 templates.deploy    opt-in image deployment via a provider template factory (CLI owned)
@@ -102,6 +99,8 @@ storage.mount       volume mount
 network.vpc         VPC
 sessions            named commands on the in-sandbox server
 ```
+
+Interpreter and workflow calls use the separate exact `[operations]` contract, with `operation_contract_version = 1` and explicit `cli`/`python` arrays. `code.interpret` is not an accepted feature id. Declare `code.execute`, `code.default-context.execute` or context/stream operations only for implemented consumer paths. Python exec/rest bridges do not implement interpreter operations. `[workflow]` declares supported input/startup kinds; declarations do not implement the transport. See the [shared contract](https://github.com/Alibaba-Agent-Sandbox/python-sdk/tree/main/contracts).
 
 Declare a feature only when the backend actually implements that call. A
 declared feature that 404s is worse than `E8004`, because the caller thinks
@@ -121,6 +120,15 @@ URL, and feature list. Drop `[core] inherit` unless the user asked for it.
 
 ```toml
 manifest_version = 1
+operation_contract_version = 1
+
+[operations]
+cli = ["sandbox.create", "sandbox.get", "sandbox.list", "sandbox.delete", "exec.run", "files.read", "files.write", "files.list", "files.stat", "files.remove", "files.move", "ports.resolve"]
+python = ["sandbox.create", "sandbox.get", "sandbox.list", "sandbox.delete", "exec.run", "files.read", "files.write", "files.list", "files.stat", "files.remove", "files.move", "ports.resolve"]
+
+[workflow]
+inputs = ["managed"]
+startups = ["exec", "none"]
 
 [provider]
 id = "my-cloud"
@@ -219,7 +227,6 @@ export default function create(kit) {
         sandbox_protocol: new kit.SandboxProtocol(http),
         process_protocol: new kit.ProcessProtocol(http),
         filesystem_protocol: new kit.FilesystemProtocol(http),
-        code_interpreter_protocol: new kit.CodeInterpreterProtocol(http),
       };
     },
   };
@@ -229,7 +236,7 @@ export default function create(kit) {
 The manifest sets `[compat] protocol = "node/1"` and `[runtime] kind = "node"`,
 `entry = "provider.mjs"`. The host gates every protocol by the declared
 features, so undeclared methods raise `E8004` before I/O. See
-`awesome-providers/e2b/provider.mjs` and `cubesandbox/provider.mjs`.
+`awesome-providers/e2b/provider.mjs` and `cubesandbox/provider.mjs`. The host kit does not supply an interpreter implementation; provide one explicitly only when declaring its exact operations.
 
 ## Before you say it works
 

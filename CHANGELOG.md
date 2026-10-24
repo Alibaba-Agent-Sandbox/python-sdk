@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Documentation synchronization
 
-- Correct current SDK examples, reconnect semantics and installation guidance; index accepted release/workflow records without rewriting historical verification. / 修正当前 SDK 示例、重连语义与安装说明，索引已交付发布和工作流记录，保留历史验证。
+- Correct current SDK examples, reconnect semantics, packaged skills and installation guidance; index accepted release/workflow records without rewriting historical verification. / 修正当前 SDK 示例、重连语义、配套技能与安装说明，索引已交付发布和工作流记录，保留历史验证。
 
 
 ### Documentation
