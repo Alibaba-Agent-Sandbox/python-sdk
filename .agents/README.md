@@ -127,3 +127,7 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Python alpha release](notes/proposed/process/2026-10-24-python-alpha-release.md) · [verification](evidence/verify/2026-10-24-python-alpha-release.md)
 
 - [Python alpha real-component acceptance](evidence/verify/2026-10-24-python-alpha-cloud.md).
+
+- [Managed native workflows](notes/implemented/feature/2026-10-24-managed-native-workflows.md) · [public a3 verification](evidence/verify/2026-10-24-python-a3-public-release.md).
+- [Application proxy token](notes/implemented/feature/2026-10-24-application-proxy-token.md) · [runtime verification](evidence/verify/2026-10-24-application-proxy-token.md).
+- [Accurate packaged installation guidance](notes/implemented/process/2026-10-24-package-installation-docs.md) · [public a5 release](evidence/verify/2026-10-24-python-a5-public-release.md).

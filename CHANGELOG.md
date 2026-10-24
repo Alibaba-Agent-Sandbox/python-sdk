@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Documentation
+
+- Record the public 0.3.1a5 pair, artifact digests, clean installation and preserved propagation failure; link the current installation decision and proxy runtime evidence. / 记录公开的 0.3.1a5 配套双包、产物摘要、新环境安装及保留的索引传播失败，补齐安装决策和代理运行验证索引。
+
 ### Fixed
 
 - Native `ProviderSandbox.commands.run/start/stream(user=...)` now selects the requested envd OS account per request, preserving gateway credentials and concurrent/default identities. Prepare the matching client/server 0.3.1a2 alpha pair; publication is separate. / 原生进程调用按请求选择指定操作系统账号，保留网关凭据以及并发、默认身份；准备配套 0.3.1a2 alpha 双包，发布独立执行。
