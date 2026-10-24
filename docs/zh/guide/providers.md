@@ -64,7 +64,7 @@ Node.js SDK 当前是沙箱内 HTTP ServerClient，不提供 provider 生命周�
 
 | 位置 | 示例 |
 |---|---|
-| SDK 参数 | `await Sandbox.create(provider="my-cloud")` |
+| SDK 参数 | `await ProviderSandbox.create(provider="my-cloud")` |
 | CLI 选项 | `abx create --provider my-cloud` |
 | 进程环境变量 | `export ABX_PROVIDER=my-cloud` |
 | `./.env` | `ABX_PROVIDER=my-cloud` |
@@ -73,17 +73,23 @@ Node.js SDK 当前是沙箱内 HTTP ServerClient，不提供 provider 生命周�
 | 内置 | `alicloud-express` |
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+import asyncio
+from agent_sandbox import ProviderSandbox
 
-sb = await Sandbox.create(template="base")                          # alicloud-express
-sb = await Sandbox.create(template="base", provider="local-process")
-sb = await Sandbox.create(provider="my-cloud", provider_options={"cluster": "prod"})
-print(sb.provider)                                                  # "my-cloud"
-await sb.kill()
-await sb.close()                                                    # 释放提供方进程
+async def main():
+    sb = await ProviderSandbox.create(template="base", provider="alicloud-express")
+    try:
+        print(sb.provider)
+    finally:
+        try:
+            await sb.kill()
+        finally:
+            await sb.close()
+
+asyncio.run(main())
 ```
 
-`Sandbox.connect`、`Sandbox.list` 和 `Sandbox.kill_by_id` 接受同样的 `provider=` 参数。沙箱 id 属于创建它的提供方。给 `connect` 传限定引用（如 `my-cloud:sbx-1`），提供方就取自前缀。`provider=` 与前缀冲突会抛出 `ProviderMismatchError`（E8030）。
+`ProviderSandbox.connect`、`ProviderSandbox.list` 和 `ProviderSandbox.kill_by_id` 接受同样的 `provider=` 参数。沙箱 id 属于创建它的提供方。给 `connect` 传限定引用（如 `my-cloud:sbx-1`），提供方就取自前缀。`provider=` 与前缀冲突会抛出 `ProviderMismatchError`（E8030）。
 
 默认提供方管理：
 
@@ -120,7 +126,7 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 
 ### 安装会做什么、不会做什么
 
-- **安装时不会执行插件里的任何东西。** 没有 `setup.py`，没有 postinstall 钩子，也没有 `git checkout`。Git 来源以不检出的方式获取，每个条目都会被校验（只允许普通文件，不允许符号链接和子模块，并有大小和数量限制），文件由安装器自己写入。
+- **同意前只读取静态元数据。** Git 源不检出工作树，安装器校验并写入文件；没有 `setup.py` 或 postinstall 钩子。同意后，默认验证可能加载并初始化插件以完成握手。安装全过程并非不执行插件代码。
 - 安装会显示**同意界面**：id、版本、来源、解析出的提交、内容摘要、将要运行的命令、声明的安全块、特性和配置字段。非交互运行需要 `--yes`。
 - 给出完整的 40 位十六进制提交（`--ref`）或 `--sha256 <目录树摘要>` 时，来源是**已固定（pinned）**的。标签或分支是**未固定（unpinned）**的：它可能在你审查之后、安装之前移动。只有在终端里有人读过同意界面（不加 `--yes`）之后才会接受未固定的来源，或者显式加 `--allow-unpinned`。单独的 `--yes` 永远不会接受会移动的 ref：安装以 `ProviderTrustError`（E8012）失败，并打印应当固定的提交。`provider update` 适用同一规则。
 - 只接受 `https://` 和 `ssh` 的 git URL。带内嵌凭证的 URL 会被拒绝；请使用 SSH agent，或者安装你自己克隆的目录。`--allow-insecure-transport` 会启用 `file://`、`http://` 和 `git://`（用于测试和开发）。
@@ -187,42 +193,44 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 
 ### 安装之后能调用什么
 
-安装一个提供商，并不会打开全部 SDK 方法或全部 `abx` 命令。SDK 和 CLI 调用的是**同一份已安装插件**。每个方法和命令都对应上表里的一项能力。插件没有声明时，调用会在发出请求之前抛出 `ProviderFeatureNotSupportedError`（E8004）。`node`、`exec` 和 `rest` 插件两边都能用。进程内注册的 `python` 提供商只给 SDK 用。`kind = "python"` 的清单不能安装。
+安装插件不会自动实现全部接口。查看 `abx provider info <id>` 的声明，并按[工作流指南](template-workflows.md)检查当前客户端需要的具体操作。功能声明、客户端实现和实际后端响应分别决定一次调用能否成功。
 
-| 能力 | Python SDK | CLI |
-|---|---|---|
-| `sandbox.lifecycle` | `Sandbox.create`、`connect`、`list`、`kill`、`info` | `create`、`list`、`info`、`kill`、`connect` |
-| `sandbox.timeout` | `set_timeout` | `sandbox timeout` |
-| `sandbox.pause` | `pause`、`resume` | `sandbox pause`、`sandbox resume` |
-| `exec.run` | `commands.run`、`sandbox.run` | `exec`、`run` |
-| `exec.stream` | `commands.stream` | `exec --stream` |
-| `process.manage` | `commands.list`、`kill`、`send_stdin` | `sandbox process ...` |
-| `pty` | `get_terminal` | PTY 会话 |
-| `files.rw` | `files.*` | `upload`、`download`、`sandbox files ...` |
-| `files.watch` | `files.watch` | — |
-| `files.transfer` | 带签名的上传和下载 URL | — |
-| `templates.read` | 模板读取 API | `template list`、`template info` |
-| `templates.build` | 镜像构建和模板注册 | `template build/push/create/deploy/install/delete`、`deploy`、`install` |
-| `ports.url` | `network.get_url` | `sandbox url` |
-| `ports.domain` | 自定义域名 | — |
-| `storage.mount` | OSS 挂载 | — |
-| `network.vpc` | VPC 配置 | `--vpc-id` 及相关参数 |
-| `sessions` | 对已有 id 调用 `Sandbox.connect` | `connect <provider:id>` |
+| 要做的事 | Python ProviderSandbox | CLI |
+| --- | --- | --- |
+| 创建、连接与清理 | `ProviderSandbox.create/connect`、实例 `kill/close` | `create`、`connect`、`kill` |
+| 执行进程 | `commands.run` | `exec` |
+| 读写文件 | `files.read/write` | `upload`、`download` |
+| 调用模板应用 | `await application_client(port, token=...)` 后调用 `client.commands.run` | 模板的命名命令入口，见[服务 API](template-server-api.md) |
+| 获取应用端点 | `await network.resolve(port)` 返回 URL 和网关头 | 无独立 URL 命令 |
+| 准备源码模板 | 使用 CLI 准备，再连接返回的沙箱或使用已准备好的引用 | `template launch`，见[工作流指南](template-workflows.md) |
+
+进程执行、命名命令、解释器和 PTY 是不同接口；一种接口通过不代表其他接口已实现。网关头与应用令牌用途不同，调用应用时保留网关头并显式提供应用令牌。完整方法见 [SDK 参考](../reference/api-reference.md)。
 
 ### OpenSandbox
 
-OpenSandbox 是目录插件，不在这个包里。先安装再创建：
+OpenSandbox 是目录插件，不在这个包里。先安装并完成平台配置：
 
 ```bash
 python -m agent_sandbox.providers install registry:opensandbox --yes
 ```
 
+按照[工作流指南](template-workflows.md)用 CLI 启动模板，将下面的 `SANDBOX_ID` 替换为返回的标识。本例连接已有沙箱；`close()` 释放本地客户端，任务结束后按启动指南销毁沙箱及本次构建产物。
+
 ```python
-sb = await Sandbox.create(template="base", provider="opensandbox")
-proc = await sb.commands.run("echo hello")
-await sb.files.write("/tmp/note.txt", "hello")
-print(await sb.files.read("/tmp/note.txt"))
-await sb.kill()
+import asyncio
+from agent_sandbox import ProviderSandbox
+
+async def main():
+    sb = await ProviderSandbox.connect("SANDBOX_ID", provider="opensandbox")
+    try:
+        proc = await sb.commands.run("echo hello")
+        print(proc.stdout)
+        await sb.files.write("/tmp/note.txt", "hello")
+        print(await sb.files.read("/tmp/note.txt"))
+    finally:
+        await sb.close()
+
+asyncio.run(main())
 ```
 
 能力对照在 [OpenSandbox 提供方](../design/provider-opensandbox-mapping.md)。同一份说明在 `awesome-providers/opensandbox/docs/README.md`。
@@ -239,44 +247,14 @@ await sb.kill()
 
 插件是一个目录，里面有 `abx-provider.toml` 和它要运行的程序。
 
-```toml
-manifest_version = 1
-
-[provider]
-id      = "local-process"
-name    = "Local Process"
-name_zh = "本地进程"
-version = "0.1.0"
-
-[compat]
-protocol = "epp/1"
-
-[runtime]
-kind    = "exec"
-command = ["python3", "./provider.py"]   # argv 数组，不是 shell 字符串；"./" 相对于插件目录
-
-[features]
-supported = ["sandbox.lifecycle", "exec.run", "files.rw"]
-
-[security]                               # 安装时显示并记录；仅作声明，不强制执行
-filesystem       = ["data_dir"]
-spawns_processes = true
-
-[core]
-inherit = []                             # 插件想要的通用键；需要用户同意
-
-[config.fields.workdir_root]             # 插件自己的设置：ABX_LOCAL_PROCESS_WORKDIR_ROOT
-type    = "path"
-required = false
-description = "Directory that holds sandbox working directories"
-```
+完整清单见 [local-process 示例](../../../examples/providers/local-process/abx-provider.toml)，包含 `operation_contract_version`、按客户端区分的 `[operations]` 和 `[workflow]`。从该实际示例开始，按实现声明操作。
 
 仓库里有两个可运行的示例：
 
 - `examples/providers/local-process/` —— 约 200 行 Python 标准库写成的 `exec` 提供方（生命周期、命令、文件）。
 - `examples/providers/e2b-compatible/` —— 只有清单的 `rest` 提供方。
 
-OpenSandbox 是 [awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox) 里的目录 `node` 提供方（一个无依赖的 ES 模块，宿主进程内运行它的 EPP/1 方法；直接 `node provider.mjs` 仍可在 stdio 上提供 EPP/1）。它在宿主进程里访问 [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) 服务：流式 exec、文件、进程控制、终端、暂停 / 恢复和端口 URL。安装命令是 `abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox --allow-unpinned --yes`（或 Python 模块），然后 `Sandbox.create(provider="opensandbox")` 或 `abx --provider opensandbox`。后端是 E2B 形状时，写 `node` 插件更短：见 `awesome-providers/e2b/provider.mjs`。
+OpenSandbox 是 [awesome-providers/opensandbox](https://github.com/alibaba-agent-sandbox/awesome-providers/tree/main/opensandbox) 里的目录 `node` 提供方（一个无依赖的 ES 模块，宿主进程内运行它的 EPP/1 方法；直接 `node provider.mjs` 仍可在 stdio 上提供 EPP/1）。它在宿主进程里访问 [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) 服务：流式 exec、文件、进程控制、终端、暂停 / 恢复和端口 URL。安装命令是 `abx provider install alibaba-agent-sandbox/awesome-providers//opensandbox --allow-unpinned --yes`（或 Python 模块），然后 `ProviderSandbox.create(provider="opensandbox")` 或 `abx --provider opensandbox`。后端是 E2B 形状时，写 `node` 插件更短：见 `awesome-providers/e2b/provider.mjs`。
 
 ### 编写检查清单
 
@@ -304,7 +282,7 @@ OpenSandbox 是 [awesome-providers/opensandbox](https://github.com/alibaba-agent
 
 ### `sandbox.create` 会收到什么
 
-`Sandbox.create(..., provider="my-cloud", provider_options={...}, secure=...)` 发送：
+`ProviderSandbox.create(..., provider="my-cloud", provider_options={...}, secure=...)` 发送：
 
 | 参数 | 何时 |
 |---|---|

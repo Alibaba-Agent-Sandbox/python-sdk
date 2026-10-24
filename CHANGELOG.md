@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Documentation
 
+- Simplify the bilingual Provider guide to actual entry points, correct installation verification guarantees and link complete authoring manifests. / 将中英文 Provider 指南收敛到实际调用入口，修正安装验证承诺，并引用完整的编写示例。
+
 - Record the public 0.3.1a5 pair, artifact digests, clean installation and preserved propagation failure; link the current installation decision and proxy runtime evidence. / 记录公开的 0.3.1a5 配套双包、产物摘要、新环境安装及保留的索引传播失败，补齐安装决策和代理运行验证索引。
 
 ### Fixed
