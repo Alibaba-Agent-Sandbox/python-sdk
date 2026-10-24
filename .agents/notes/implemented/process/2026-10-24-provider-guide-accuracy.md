@@ -1,6 +1,6 @@
 # Decision: Keep Provider usage guidance aligned with actual entry points
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -8,7 +8,7 @@ The active bilingual guide contradicts its own handshake section with an executi
 
 ## Decision
 
-Describe pre-consent static inspection and default post-consent verification accurately. Use the public ProviderSandbox name. Replace the speculative capability-to-command table with six actual task entries and existing reference links. Link the maintained complete example manifest instead of duplicating an incomplete one. Show one owned sandbox with independent kill/close cleanup, and a complete OpenSandbox connection example after CLI preparation.
+Describe pre-consent static inspection and default post-consent verification accurately. Use the public ProviderSandbox name. Replace the speculative capability-to-command table with six actual task entries and existing reference links. Remove the environment-specific historical readiness shortcut and the unverifiable promise that every output stays unchanged. Link the maintained complete example manifest instead of duplicating an incomplete one. Show one owned sandbox with independent kill/close cleanup, and a complete OpenSandbox connection example after CLI preparation.
 
 ## API Design
 

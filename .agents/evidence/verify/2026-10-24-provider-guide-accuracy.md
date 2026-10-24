@@ -1,7 +1,7 @@
 # Verification: active Provider guide accuracy
 
 - Date: 2026-10-24
-- Result: PASS for the scoped local documentation checks; current-head repository CI and review remain merge gates.
+- Result: PASS for the scoped local documentation checks; full content-head CI and independent review passed; final record-head CI remains a merge gate.
 - Change: [Issue #104](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/104), based on `7fe329b422c59c9b9854dad4f8399f6c7572eb22`.
 - Scope: bilingual `docs/*/guide/providers.md`, records and changelog. No runtime/package-version changes.
 
@@ -26,3 +26,7 @@ This change deletes inaccurate mappings and links existing detailed guides. It d
 ## Cleanup and limitations
 
 These document, parser and SDK introspection checks created no cloud resources. The illustrative creation example now cleans up its single owned sandbox; the connect example closes its client and directs the user to the launch guide for sandbox/build-artifact cleanup. Full cloud execution of every prose example is not claimed.
+
+## Final review and checks
+
+[Full CI 40117213161](https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/40117213161) and [Docs links 40117213042](https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/40117213042) passed on content head `6388ca05161b0d47c71d3cf3057c54e047ef8d34`. Final prose cleanup removes the environment-specific readiness shortcut and the untestable promise that every old output stays unchanged; it does not alter an entry point. Both complete example manifests also parsed successfully with the installed public a5 package. Python block parsing and relative targets were rechecked after the final deletions. The final commit must pass the same full CI before merge.
