@@ -1,6 +1,6 @@
 # Decision: Honor the native envd process OS user
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
