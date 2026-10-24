@@ -123,3 +123,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Provider error reference anchors](evidence/verify/2026-10-23-workflow-provider-error-anchors.md).
 
 - [Python alpha release](notes/proposed/process/2026-10-24-python-alpha-release.md) · [verification](evidence/verify/2026-10-24-python-alpha-release.md)
+
+- [Python alpha real-component acceptance](evidence/verify/2026-10-24-python-alpha-cloud.md).
