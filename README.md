@@ -48,10 +48,9 @@ Provider management operations are available through `agent_sandbox.providers.co
 ## Client SDK
 
 - **Sync and async standard clients** — `Sandbox.create()` and `AsyncSandbox.create()`, shell execution, code interpretation, file I/O, port forwarding, and WebSocket streaming.
-- **Three execution primitives** — `sandbox.commands.run()` (bare shell), `sandbox.run_code()` (code interpreter), `sandbox.run("name", **kwargs)` (a command the Server SDK registered).
+- **Explicit execution entry points** — process execution, the standard interpreter client, and template application commands have separate runtime requirements (see Execution API below).
 - **MCP server** — expose sandbox operations as MCP tools for LLM agents.
 - **Declarative decorator** — `@sandbox` turns a plain function into a remote sandbox execution with automatic serialisation.
-- **Session persistence** — save and restore sandbox state across runs.
 - **Standard sync/async clients** — `agent_sandbox` exports the standard Sandbox and AsyncSandbox; see [Migrate from E2B](docs/en/guide/migrate-from-e2b.md).
 
 ## Server SDK
@@ -91,57 +90,37 @@ finally:
 
 ## Provider and server extensions
 
-
-Set `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and `ABX_SANDBOX_DOMAIN` before creating a sandbox. This snippet uses `python-base` because that image registers `hello`. `Sandbox.create()` with no template uses `base`.
+Set `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and `ABX_SANDBOX_DOMAIN`, then create a native instance and execute a process with `ProviderSandbox`:
 
 ```python
 import asyncio
-from agent_sandbox import ProviderSandbox as Sandbox
+from agent_sandbox import ProviderSandbox
 
 async def main():
-    async with await Sandbox.create(template="python-base") as sandbox:
-
-        # 1. Bare shell — sandbox.commands.run(cmd)
-        proc = await sandbox.commands.run("echo 'Hello from sandbox!'")
-        print(proc.stdout)          # Hello from sandbox!
-        print(proc.exit_code)       # 0
-
-        # 2. Code interpreter — sandbox.run_code(code)
-        result = await sandbox.run_code("print(2 ** 10)")
-        print(result.text)          # 1024
-
-        # 3. Named command — sandbox.run(name, **kwargs)
-        #    POST /commands/hello on the in-sandbox SandboxServer
-        greeting = await sandbox.run("hello", name="Alice")
-        print(greeting)             # the registered function's return value
-
-        # 4. File operations
-        await sandbox.files.write("/tmp/data.txt", "content")
-        content = await sandbox.files.read("/tmp/data.txt")
-
-        # 5. Port access
-        url = sandbox.network.get_url(3000)
+    sandbox = await ProviderSandbox.create(template="base", provider="alicloud-express")
+    try:
+        result = await sandbox.commands.run("python3 -c 'print(2 ** 10)'")
+        print(result.stdout)  # 1024
+    finally:
+        try:
+            await sandbox.kill()
+        finally:
+            await sandbox.close()
 
 asyncio.run(main())
 ```
 
+This `python3` invocation is a process, not a persistent interpreter. Interpreter operations absent from a provider return `E8004`; the standard `code_interpreter.Sandbox` above is a separate entry point. `close()` releases client connections; `kill()` deletes the instance.
+
 ## Execution API
 
-Three execution methods, each for a distinct use case:
+| Entry point | Purpose | Requirement |
+|---|---|---|
+| `ProviderSandbox.commands.run()` | Execute a process and read stdout, stderr and exit code | Provider implements process operations |
+| Standard `code_interpreter.Sandbox.run_code()` | Execute interpreter code | A matching native runtime such as `code-interpreter-v1` |
+| `ProviderSandbox.application_client()` | Call application commands registered by a template HTTP service | Start the template service and supply the correct port and application token |
 
-| Method | Purpose | Returns |
-|--------|---------|---------|
-| `sandbox.commands.run(cmd)` | Execute a bare shell command (raw exec) | `ProcessResult` — `.stdout`, `.stderr`, `.exit_code` |
-| `sandbox.run_code(code)` | Execute code via the code interpreter | `CodeResult` — `.text`, `.stdout`, `.stderr` |
-| `sandbox.run(name, **kw)` | Call a command registered in the sandbox server | the registered function's JSON return value |
-
-**Named commands** have one mechanism: server-side registered commands. A command is registered with
-`@sandbox.register` (or `CommandRegistry`) inside the template, and `sandbox.run("name", **kwargs)` sends
-`POST /commands/name` to the in-sandbox SandboxServer. An unknown name raises `CommandNotFoundError`;
-`await sandbox.list_commands()` lists what the server has registered. See
-[Declarative Usage](docs/en/guide/declarative-usage.md).
-
-> **Environment variables:** envd uses direct exec — shell features (`$VAR`, pipes, redirects) require `sh -c '...'`. Use `printenv VAR` to read a variable. See the [Environment Variables guide (EN)](docs/en/guide/environment-variables.md) | [环境变量指南 (中文)](docs/zh/guide/environment-variables.md) for details.
+Named application commands are registered by the in-sandbox server. Follow [template workflows](docs/en/guide/template-workflows.md) to create or connect to that application, preserving provider gateway headers, URL prefixes and query parameters; do not assume `base` registers `hello`. See [Providers](docs/en/guide/providers.md) for cross-language plugin execution.
 
 ## Templates
 

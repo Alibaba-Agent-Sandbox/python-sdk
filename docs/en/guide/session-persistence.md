@@ -1,6 +1,8 @@
 # Session Persistence
 
-For current SDK installation, use the [paired source installation guide](install-python.md).
+The SDK still provides `LocalSessionStore` and `SessionManager`; the removed surface is the CLI `abx session` group. Persistence stores local names, sandbox IDs and connection metadata, not remote memory or file snapshots, and cannot restore deleted or expired instances. `SessionManager.stop()` attempts deletion but logs and suppresses deletion errors; independently check the actual instance when confirmed cleanup is required.
+
+For current SDK installation, use the [installation guide](install-python.md).
 
 > **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository ([CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
@@ -61,7 +63,7 @@ File reads and writes are protected by file locks:
 ### SDK Alternative
 
 ```python
-from agent_sandbox.session import SessionManager
+from agent_sandbox.api.session_manager import SessionManager
 
 manager = SessionManager()
 
@@ -72,7 +74,7 @@ await manager.start("my-project", template="base", timeout=600)
 sb = await manager.connect("my-project")
 
 # List sessions
-sessions = await manager.list()
+sessions = await manager.list_sessions()
 
 # Stop a session
 await manager.stop("my-project")

@@ -16,22 +16,19 @@ Two packages share one version:
 | `agent-sandbox-client` | `agent_sandbox` | The caller's machine |
 | `agent-sandbox-server` | `agent_sandbox.server` | Inside the image, port 9000 |
 
-Until the first verified PyPI release, install both packages from the same public commit:
+Install the verified public alpha pair; the client installs its matching server dependency:
 
 ```bash
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=client-sdk"
+python -m pip install 'agent-sandbox-client==0.3.1a5'
+python -m pip check
 ```
 
-The image needs only `agent-sandbox-server`. After a verified PyPI release,
-`pip install agent-sandbox-client==<version>` also installs the matching server dependency.
+The image needs only `agent-sandbox-server==0.3.1a5`. Installing that package on the host does not update an existing image. Development source installations must use a matching client/server revision.
 Do not run `pip install agent-sandbox`. That PyPI name is an unrelated project.
 
 ## Credentials
 
-The client reads `E2B_API_KEY` from the process environment, `./.env`,
-or `~/.abx/.env`. The canonical connection settings are E2B_API_KEY, E2B_API_URL and E2B_DOMAIN; project/home configuration supplies their fallback. Explicit standard SDK keywords take precedence.
+ProviderSandbox reads `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and `ABX_SANDBOX_DOMAIN`. Standard clients also map the E2B environment names according to the [migration contract](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/migrate-from-e2b.md). Preserve the selected entry's configuration; never forward a control-plane key as an application token.
 
 AK/SK, when a call needs them, are `ALICLOUD_ACCESS_KEY_ID` and
 `ALICLOUD_ACCESS_KEY_SECRET`. Never print a key, never commit one, and never
@@ -70,25 +67,36 @@ for custom providers, named server commands, sessions and declarative execution.
 Do not import the root standard Sandbox for these examples.
 
 
+First launch the application template through the CLI. Set `SANDBOX_ID` to its returned instance ID, `ABX_PROVIDER` to its owning provider and `ABX_SERVER_TOKEN` to the application token configured before launch. `base` does not imply a registered `hello` command.
+
 ```python
 import asyncio
-from agent_sandbox import ProviderSandbox as Sandbox
+import os
+from agent_sandbox import ProviderSandbox
 
 async def main() -> None:
-    async with await Sandbox.create(template="python-hello", timeout=300) as sb:
-        result = await sb.commands.run("python3 --version", timeout=30)
-        print(result.stdout)
-        print(await sb.run("hello", name="Ada"))
+    sb = await ProviderSandbox.connect(
+        os.environ["SANDBOX_ID"], provider=os.environ["ABX_PROVIDER"]
+    )
+    try:
+        async with await sb.application_client(
+            9000, token=os.environ["ABX_SERVER_TOKEN"], timeout=330
+        ) as client:
+            print(await client.commands.run("hello", name="Ada"))
+    finally:
+        await sb.close()  # borrowed instance; its owner deletes it
 
 asyncio.run(main())
 ```
 
+This binding preserves the provider gateway's headers and full URL/query. Explicit application tokens also use `X-Access-Token` only when that header is free; gateway credentials are never overwritten. Request timeout does not cancel remote work or replay the command.
+
 - `timeout` on `create` is how long the sandbox lives, not the HTTP timeout. `request_timeout` bounds the create HTTP call.
 - A shell command is `sb.commands.run`. A function registered in `commands.py` is `sb.run(name, **kwargs)`, which returns the unwrapped `result`.
 - `sb.commands.run` wraps an unquoted pipe, redirect, or `&&` in `sh -c`. A variable, backtick, or glob still needs an explicit `sh -c '...'`. Its `timeout` defaults to 60 seconds. `send_signal` accepts only 15 (SIGTERM) and 9 (SIGKILL).
-- `sb.run_code(...)` requires the exact provider operation: `code.execute` for stateless mode, `code.default-context.execute` for explicit `mode="default-context"`, or `code.context.execute` for a context ID. A template `code` declaration does not implement these operations. Native `alicloud-express` currently refuses interpreter calls; use the supported standard `agent_sandbox.code_interpreter` client for its separate backend contract.
+- `sb.run_code(...)` requires the exact provider operation: `code.execute` for stateless mode, `code.default-context.execute` for explicit `mode="default-context"`, or `code.context.execute` for a context ID. An installed interpreter package does not implement these operations. Native `alicloud-express` currently refuses interpreter calls; use the supported standard `agent_sandbox.code_interpreter` client for its separate backend contract.
 - Files on `sb.files`: `write`, `read`, `read_bytes`, `list`, `exists`, `remove`, `make_dir`, `upload`, `download`. On Express, `sb.files.upload_url` and `sb.files.download_url` return an envd URL that still needs header `X-Access-Token`. A provider that does not declare `files.transfer` raises `E8004`. `sb.upload_url` and `sb.download_url` always refuse. Do not invent a signature-only URL.
-- The context manager kills the sandbox. Otherwise call `await sb.kill()`.
+- A ProviderSandbox context manager kills the sandbox. For a newly created instance use `kill()` and `close()` in cleanup; for a borrowed connection use only `close()` unless deletion was authorized.
 - ProviderSandbox defaults to alicloud-express. Use its configured provider transport; do not hardcode a local engine socket or spawn a separate provider implementation.
 - The only built-in provider is `alicloud-express`. `opensandbox`, `alicloud-container`, `cubesandbox`, and `e2b` are not part of this package. Install them from the catalog with `python -m agent_sandbox.providers install registry:<id> --yes`, then pass that id to `Sandbox.create`. Their notes are in `awesome-providers/<id>/docs/README.md`. Native ProviderSandbox reads canonical `ABX_SANDBOX_API_KEY`; only the standard entry maps `E2B_*` settings.
 
@@ -118,19 +126,43 @@ to turn groups on. Without a Dockerfile, `base.image` and `build:` are platform
 steps; that path is in `references/templates.md`. For `alicloud-express`, write
 the FC Dockerfile below.
 
+Use strict specification 4. `capabilities` and `tested_on` are retired; installed software does not grant provider operations. This minimal source application follows the current [author skeleton](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/_skeleton/template.yaml), including its native generation, readiness probe and runtime token input:
+
 ```yaml
 name: my-template
 version: "1.0.0"
-description: "What this sandbox is for"
-user: user
-workdir: /home/user/app
-capabilities:
-  - shell
-  - files
-  - code
-ports:
-  - 9000
+description: "A hello application"
+generation: 2
+ports: [9000]
+env:
+  ABX_SERVER_TOKEN: ""
+spec_version: 4
+workflow_contract_version: 1
+provides:
+  app:
+    protocol: agent-sandbox-server
+    version: 2
+    port: 9000
+    operations: [commands.list, commands.run]
+default_workflow: application
+start_cmd: agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py
+ready_cmd: agent-sandbox-server healthcheck --port 9000
+workflows:
+  application:
+    kind: application
+    input: source
+    startup: exec
+    service: app
+    binding:
+      transport: http
+      endpoint: provider-port
+      caller: host
+      authentication: service-token
+    operation: commands.run
+    required_operations: []
 ```
+
+Set `ABX_SERVER_TOKEN` in the launch environment before creating this service-token workflow; the empty manifest value declares runtime input, not a usable secret. Keep credentials out of the manifest and image.
 
 `commands.py` — module-level `@command`, then `start()` only under
 `if __name__ == "__main__"`. A `start()` call at import time breaks the
@@ -168,35 +200,32 @@ if __name__ == "__main__":
 
 `alicloud-express` uses the FC base image. Do not add `CMD` or `ENTRYPOINT`.
 Do not listen on 49983, 5000, or 49999. `<region>` defaults to `cn-hangzhou`.
-`<tag>` defaults to `v0.0.49` (`ABX_BASE_IMAGE_TAG` overrides it). The platform
-starts the server with
+`<tag>` defaults to `v0.0.49` (`ABX_BASE_IMAGE_TAG` overrides it). Native deploy profiles use the following start command; unified source launch starts the selected application once after creation with its runtime environment:
 `agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py`.
 
 ```dockerfile
 FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
-RUN pip install --no-cache-dir \
-    "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=server-sdk"
+RUN pip install --no-cache-dir 'agent-sandbox-server==0.3.1a5'
 WORKDIR /home/user/app
 COPY commands.py /home/user/app/commands.py
 EXPOSE 9000
 ```
 
-### Dockerfile for any other provider
+### Portable Dockerfile for an author-selected build profile
 
-OpenSandbox and a provider with no `[template]` profile use this image, not the FC image.
+The CLI can prepare the supported official native base recipe for both Express and OpenSandbox. Do not automatically substitute this portable recipe: declare a `build_profiles.portable` profile and select it explicitly when appropriate.
 
 ```dockerfile
 FROM python:3.12-slim
-RUN pip install --no-cache-dir \
-    "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/fee74e631d9cfc3488fd41f853ca6dafc1277784.tar.gz#subdirectory=server-sdk"
-WORKDIR /app
-COPY commands.py .
+RUN pip install --no-cache-dir 'agent-sandbox-server==0.3.1a5'
+WORKDIR /home/user/app
+COPY commands.py /home/user/app/commands.py
 EXPOSE 9000
 CMD ["python3", "commands.py"]
 ```
 
 `abx template scaffold` writes this same `commands.py` shape. These Dockerfiles
-use a pinned public source archive and do not require a local wheel. CLI build
+use the pinned public server package and do not require a local wheel. CLI build
 may inject an explicitly selected server wheel or resolve its own pinned archive;
 that preprocessing does not apply to a direct `docker build`. Generation, reserved ports, group
 policy, and platform steps are in `references/templates.md` next to this file.
@@ -237,6 +266,6 @@ Do not upload from a laptop. Do not put a PyPI token in the repo or in chat.
 
 1. Client code imports `agent_sandbox`. `commands.py` imports `agent_sandbox.server` only.
 2. Named commands are `@command` and `start()` under `if __name__ == "__main__"`.
-3. The default provider's Dockerfile is the FC base image, with no `CMD`.
+3. Follow the selected provider/build profile. Do not silently replace an author's Dockerfile; official native placeholders are resolved by the CLI preparation path.
 4. Keep native provider configuration on `ABX_*`; standard entry configuration may read `E2B_*`. Never substitute Express credentials for another backend.
 5. Do not leak credentials. Do not leave sandboxes running.

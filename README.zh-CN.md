@@ -46,10 +46,9 @@ Node.js 项目，位于 [`agent-sandbox`](https://github.com/alibaba-agent-sandb
 ## Client SDK
 
 - **同步与异步标准客户端** —— `Sandbox.create()` 与 `AsyncSandbox.create()`，Shell 执行、代码解释、文件读写、端口转发与 WebSocket 流；Provider／Server 扩展使用异步 `ProviderSandbox`。
-- **三种执行原语** —— `sandbox.commands.run()`（裸 Shell）、`sandbox.run_code()`（代码解释器）、`sandbox.run("name", **kwargs)`（调用 Server SDK 注册的命令）。
+- **明确的执行入口** —— 进程执行、标准解释器客户端、模板应用命令各有对应的运行时要求（见下方执行 API）。
 - **MCP Server** —— 将沙箱操作暴露为 MCP 工具，供 LLM Agent 调用。
 - **声明式装饰器** —— `@sandbox` 将普通函数变为远程沙箱执行，自动序列化。
-- **会话持久化** —— 跨运行保存和恢复沙箱状态。
 - **标准同步与异步客户端** —— `agent_sandbox` 导出标准 Sandbox 与 AsyncSandbox，见[从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md)。
 
 ## Server SDK
@@ -89,55 +88,37 @@ finally:
 
 ## Provider 与 Server 扩展
 
-
-第一次创建之前先设置 `ABX_SANDBOX_API_KEY`。SDK 读取这三个标准连接变量。下面的例子用 `python-base`，因为这张镜像注册了 `hello`。不传 template 的 `Sandbox.create()` 使用 `base`。
+设置 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL` 和 `ABX_SANDBOX_DOMAIN` 后，使用 `ProviderSandbox` 创建原生实例并执行进程：
 
 ```python
 import asyncio
-from agent_sandbox import ProviderSandbox as Sandbox
+from agent_sandbox import ProviderSandbox
 
 async def main():
-    async with await Sandbox.create(template="python-base") as sandbox:
-
-        # 1. 裸 Shell —— sandbox.commands.run(cmd)
-        proc = await sandbox.commands.run("echo 'Hello from sandbox!'")
-        print(proc.stdout)          # Hello from sandbox!
-        print(proc.exit_code)       # 0
-
-        # 2. 代码解释器 —— sandbox.run_code(code)
-        result = await sandbox.run_code("print(2 ** 10)")
-        print(result.text)          # 1024
-
-        # 3. 命名命令 —— sandbox.run(name, **kwargs)
-        #    向沙箱内 SandboxServer 发送 POST /commands/hello
-        greeting = await sandbox.run("hello", name="Alice")
-        print(greeting)             # 注册函数的返回值
-
-        # 4. 文件操作
-        await sandbox.files.write("/tmp/data.txt", "content")
-        content = await sandbox.files.read("/tmp/data.txt")
-
-        # 5. 端口访问
-        url = sandbox.network.get_url(3000)
+    sandbox = await ProviderSandbox.create(template="base", provider="alicloud-express")
+    try:
+        result = await sandbox.commands.run("python3 -c 'print(2 ** 10)'")
+        print(result.stdout)  # 1024
+    finally:
+        try:
+            await sandbox.kill()
+        finally:
+            await sandbox.close()
 
 asyncio.run(main())
 ```
 
+这里的 `python3` 是一次进程执行，不是持久代码解释器。Provider 未实现的解释器操作会返回 `E8004`；上方标准 `code_interpreter.Sandbox` 是独立入口。`close()` 只关闭客户端连接，删除实例使用 `kill()`。
+
 ## 执行 API
 
-三种执行方法，分别对应不同场景：
+| 入口 | 用途 | 前提 |
+|---|---|---|
+| `ProviderSandbox.commands.run()` | 执行进程，读取 stdout、stderr 和退出码 | Provider 实现进程操作 |
+| 标准 `code_interpreter.Sandbox.run_code()` | 执行解释器代码 | 使用 `code-interpreter-v1` 等对应原生运行时 |
+| `ProviderSandbox.application_client()` | 调用模板 HTTP 服务注册的应用命令 | 先启动模板服务，传入正确端口与应用令牌 |
 
-| 方法 | 用途 | 返回类型 |
-|------|------|----------|
-| `sandbox.commands.run(cmd)` | 执行裸 Shell 命令（原始 exec） | `ProcessResult` —— `.stdout`, `.stderr`, `.exit_code` |
-| `sandbox.run_code(code)` | 通过代码解释器执行代码 | `CodeResult` —— `.text`, `.stdout`, `.stderr` |
-| `sandbox.run(name, **kw)` | 调用注册在沙箱 server 里的命令 | 注册函数的 JSON 返回值 |
-
-**命名命令**只有一种机制：服务端注册命令。在模板里用 `@sandbox.register`（或 `CommandRegistry`）注册，
-`sandbox.run("name", **kwargs)` 向沙箱内 SandboxServer 发送 `POST /commands/name`。名字不存在抛
-`CommandNotFoundError`；`await sandbox.list_commands()` 列出 server 已注册的命令。见[声明式用法](docs/zh/guide/declarative-usage.md)。
-
-> **环境变量：** envd 使用直接执行（direct exec）—— Shell 特性（`$VAR` 展开、管道、重定向）需要 `sh -c '...'`。用 `printenv VAR` 读取变量值。详见[环境变量指南（中文）](docs/zh/guide/environment-variables.md) | [Environment Variables (EN)](docs/en/guide/environment-variables.md)。
+命名应用命令由沙箱内服务端注册。通过 [模板工作流](docs/zh/guide/template-workflows.md) 创建或连接对应应用，保留 Provider 返回的网关请求头、URL 前缀和查询参数；不要假定 `base` 注册了 `hello`。Provider 插件的跨语言执行方式见 [Provider 指南](docs/zh/guide/providers.md)。
 
 ## 模板
 

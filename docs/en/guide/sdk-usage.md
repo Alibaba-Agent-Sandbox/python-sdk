@@ -6,7 +6,7 @@ This page documents the asynchronous **ProviderSandbox** provider/server extensi
 
 ## Installation
 
-Follow the [paired source installation guide](install-python.md). The client/server0.3.0 packages are not yet published on PyPI; install both from the same tested revision.
+Follow the [installation guide](install-python.md). The public client/server alpha pair is 0.3.1a5; installing the client installs the matching server dependency. Host package installation does not change existing sandbox images.
 
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
 
@@ -17,6 +17,10 @@ from agent_sandbox import ProviderSandbox as Sandbox
 ```
 
 ---
+
+## Current application binding
+
+The template-author example below retains its explicit deployment prerequisite. When connecting to an existing instance returned by the CLI, obtain an application client with `await sandbox.application_client(9000, token=application_token, timeout=330)` and call `client.commands.run(...)`; see [template workflows](template-workflows.md). This preserves provider gateway headers, URL prefixes and signed query parameters. `close()` releases a connection; `kill()` deletes an instance. Do not delete a borrowed instance. An HTTP wait timeout does not guarantee remote cancellation and does not automatically replay a command.
 
 ## Template author quick path
 
@@ -84,8 +88,8 @@ Automatically calls `kill()` to destroy the sandbox when exiting the `with` bloc
 
 ```python
 async with await Sandbox.create(template="base") as sandbox:
-    result = await sandbox.run_code("print(1+1)")
-    print(result.text)  # "2"
+    result = await sandbox.commands.run("python3 -c 'print(1+1)'")
+    print(result.stdout)  # "2"
 # Automatically destroyed
 ```
 
@@ -123,35 +127,9 @@ for sb in sandboxes:
 
 ## Execute Code — run_code
 
-Execute code via the Code Interpreter:
+Provider interpretation requires exact operations such as `code.execute` or `code.default-context.execute`; see [template workflows](template-workflows.md#interpreter-operations). The Express project adapter does not implement unified interpretation and returns `E8004`, without falling back to script execution. Running a Python process on `base` does not establish persistent code contexts.
 
-```python
-result = await sandbox.run_code(
-    "print('hello')",
-    language="python",   # Default "python"
-    timeout=30,          # Timeout in seconds (default 30)
-    envs={"KEY": "val"}, # Temporary env vars for this execution (envd scope)
-)
-
-print(result.text)           # Output text (stdout with trailing whitespace stripped)
-print(result.stdout)         # Raw stdout
-print(result.stderr)         # Raw stderr
-print(result.exit_code)      # Exit code
-print(result.execution_time) # Execution time (seconds)
-print(result.output_files)   # Output file list [OutputFile]
-```
-
-Callback support:
-
-```python
-result = await sandbox.run_code(
-    "for i in range(3): print(i)",
-    on_stdout=lambda s: print(f"[OUT] {s}"),
-    on_stderr=lambda s: print(f"[ERR] {s}"),
-)
-```
-
-> **Capability requirement**: Requires the `code` capability (included in the default capability set `{shell, files, code}`).
+For the native Express interpreter, use the separate standard `agent_sandbox.code_interpreter` client and `code-interpreter-v1`, following [migration](migrate-from-e2b.md) for sync/async calls and result models. Streaming callbacks also require their actual operation; a buffered result does not establish realtime streaming.
 
 ---
 
