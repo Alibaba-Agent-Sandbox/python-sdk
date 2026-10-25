@@ -57,6 +57,8 @@ failure of a later service. Journals exclude tokens, environment values and sign
 they do not constitute verified cloud receipts. One effective `ABX_SERVER_TOKEN` value
 is used both for the sandbox environment and the application clients.
 
+After process-start acknowledgement, the launcher polls a nonzero `ready_cmd` result within one `readiness_timeout` budget. Each probe uses the remaining budget; a successful exit completes readiness. Expiration raises `readiness-command-failed` and removes the owned sandbox. Cancellation also retains owned cleanup. This waits for application readiness, which is separate from acknowledging that its process started.
+
 ## Migrating specification 4
 
 Use `spec_version: 5`; remove `workflow_contract_version`, `default_workflow`, and
