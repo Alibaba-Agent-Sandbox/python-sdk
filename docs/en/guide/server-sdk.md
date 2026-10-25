@@ -5,12 +5,12 @@ For current SDK installation, use the [installation guide](install-python.md).
 The Server SDK runs **inside the sandbox**. It is the HTTP service the image keeps listening on, port 9000 by default. The package is `agent-sandbox-server`. Import `agent_sandbox.server`. A template's `commands.py` uses it to register commands, turn capabilities on, and call `start(9000)`.
 
 The following explicitly opts into the published alpha. The matching client version
-is 0.4.0a2. The explicit official index makes this example independent of a locally
+is 0.4.0a3. The explicit official index makes this example independent of a locally
 configured mirror; it does not imply that mirrors are generally unavailable.
 Development from a checkout is covered in the installation guide.
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple "agent-sandbox-server==0.4.0a2"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-server==0.4.0a3"
 ```
 
 ```python

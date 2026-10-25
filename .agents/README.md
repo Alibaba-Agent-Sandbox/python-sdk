@@ -1,5 +1,18 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+## Current public pair — 2026-10-25
+
+Client/server **0.4.0a3** are public. [Release and fresh-install verification](evidence/verify/2026-10-25-public-a3-docs.md)
+links the immutable tag/merge, successful publication workflow and four preserved
+artifact hashes matched to actual PyPI downloads. The public package passed real
+prepared-reference delayed readiness, bounded failure and cancellation; all three
+owned sandboxes were independently confirmed absent. This covers `ready_cmd`
+polling, not a new whole-launch deadline or whole-catalog certification.
+Maintained installation and skill examples use this exact public pair. The
+[earlier example run](evidence/verify/2026-10-25-public-sdk-documentation.md)
+retains its actual a2 scope; the browser cold-install failure remains Issue 111.
+
+
 ## Published specification 5 alpha — 2026-10-25
 
 Client/server **0.4.0a1** are public. [Release verification](evidence/verify/2026-10-25-python-040a1-public-release.md) records immutable tag identity, required CI, four public artifact hashes matched to the preserved candidate, and fresh exact-version installation. The [public catalog integration](evidence/verify/2026-10-25-python-public-catalog-base.md) verifies the released SDK against the live specification 5 base manifest. This host release does not update existing sandbox images or imply whole-catalog production certification.
@@ -174,3 +187,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Public runtime fixture images](notes/proposed/process/2026-10-25-public-runtime-fixture-images.md) · [verification](evidence/verify/2026-10-25-public-runtime-fixture-images.md)
 
 - [Prepared-template readiness](notes/proposed/feature/2026-10-25-prepared-template-readiness.md) · [verification](evidence/verify/2026-10-25-prepared-template-readiness.md).
+
+- [Current public a3 guidance](notes/proposed/process/2026-10-25-current-public-a3.md) · [verification](evidence/verify/2026-10-25-public-a3-docs.md).

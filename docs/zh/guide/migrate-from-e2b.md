@@ -4,7 +4,7 @@
 
 ## 安装与导入
 
-使用已发布客户端：`python -m pip install --index-url https://pypi.org/simple agent-sandbox-client==0.4.0a2`。通过 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL` 和 `ABX_SANDBOX_DOMAIN` 配置极速版账号；本项目标准 `Sandbox` / `AsyncSandbox`、`code_interpreter` 和 `ProviderSandbox` 均支持这些项目配置。也可使用 `abx config` 与项目/用户配置文件。标准客户端公开 `api_key=` 参数仍属于其固定契约。仍使用第三方 E2B SDK 的独立应用按该 SDK 的原生配置操作，不要混用不同提供商账号的凭据。
+使用已发布客户端：`python -m pip install --index-url https://pypi.org/simple agent-sandbox-client==0.4.0a3`。通过 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL` 和 `ABX_SANDBOX_DOMAIN` 配置极速版账号；本项目标准 `Sandbox` / `AsyncSandbox`、`code_interpreter` 和 `ProviderSandbox` 均支持这些项目配置。也可使用 `abx config` 与项目/用户配置文件。标准客户端公开 `api_key=` 参数仍属于其固定契约。仍使用第三方 E2B SDK 的独立应用按该 SDK 的原生配置操作，不要混用不同提供商账号的凭据。
 
 
 | 原导入 | 新导入 |

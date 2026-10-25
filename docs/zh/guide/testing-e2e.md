@@ -65,6 +65,6 @@ make e2e-cleanup         # 清理遗留资源的 dry-run janitor;ARGS=--yes 才�
 ## SDK 夹具镜像
 
 SDK 仓库保留独立于模板目录的 python-hello 和 agents-cli 离线夹具。两个
-Dockerfile 均从官方 PyPI 安装公开 server 0.4.0a2，不需要本地 wheel。CI 构建
+Dockerfile 均从官方 PyPI 安装公开 server 0.4.0a3，不需要本地 wheel。CI 构建
 两个镜像，检查实际客体包与 HTTP 应用，并确认自有容器清理。Agents 运行时
 列表不代表已安装 Agent 或完成真实模型调用。
