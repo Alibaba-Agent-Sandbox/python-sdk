@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [0.4.0a1] - 2026-10-25
 
-Candidate: not yet published.
+Published alpha pair: [v0.4.0a1](https://github.com/Alibaba-Agent-Sandbox/python-sdk/releases/tag/v0.4.0a1). Both distributions use the same version; see [publication verification](.agents/evidence/verify/2026-10-25-python-040a1-public-release.md).
 
 ### Changed
 
