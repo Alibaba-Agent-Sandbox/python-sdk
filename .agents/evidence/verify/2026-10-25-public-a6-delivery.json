@@ -1,0 +1,317 @@
+{
+  "publication": {
+    "version": "0.4.0a6",
+    "run_id": 40225846586,
+    "run_attempt": 1,
+    "publisher": "SUCCESS",
+    "source_commit": "8e610a3658040d8d6973e7951f9590ea50a4d70a",
+    "artifact_id": 12611362808,
+    "files": [
+      {
+        "package": "agent-sandbox-client",
+        "filename": "agent_sandbox_client-0.4.0a6-py3-none-any.whl",
+        "sha256": "0a4d9c4b322b1e28b4dc4bc9c4a36b867232afc61fa87b483cae65f4eebb9222",
+        "candidate_metadata_download_equal": true,
+        "metadata_http": 200,
+        "download_http": 200
+      },
+      {
+        "package": "agent-sandbox-client",
+        "filename": "agent_sandbox_client-0.4.0a6.tar.gz",
+        "sha256": "bf57cae0eb81dc1a95a9e7ed4862ec3af15e7b5dba2d6283b9be2bced4616aa6",
+        "candidate_metadata_download_equal": true,
+        "metadata_http": 200,
+        "download_http": 200
+      },
+      {
+        "package": "agent-sandbox-server",
+        "filename": "agent_sandbox_server-0.4.0a6-py3-none-any.whl",
+        "sha256": "85b937438acf943b3d92736dd6a07c4829cd80416336da35c0b25f2e5679850d",
+        "candidate_metadata_download_equal": true,
+        "metadata_http": 200,
+        "download_http": 200
+      },
+      {
+        "package": "agent-sandbox-server",
+        "filename": "agent_sandbox_server-0.4.0a6.tar.gz",
+        "sha256": "812388ba126973e7ab5911214eaacdd7b352a6ef81356a2ce099e2af3341e6c3",
+        "candidate_metadata_download_equal": true,
+        "metadata_http": 200,
+        "download_http": 200
+      }
+    ],
+    "result": "PASS"
+  },
+  "installation": {
+    "packages": {
+      "agent-sandbox-client": "0.4.0a6",
+      "agent-sandbox-server": "0.4.0a6"
+    },
+    "python": "3.13.13",
+    "standard_sync_async_provider_server_imports": true,
+    "installed_package_location": "site-packages",
+    "reviewed_source_file_bytes_equal": true,
+    "old_provider_kwargs_bind_rejections": 24,
+    "source_injection": false,
+    "install_extra": "none",
+    "result": "PASS"
+  },
+  "help": {
+    "packages": {
+      "agent-sandbox-client": "0.4.0a6",
+      "agent-sandbox-server": "0.4.0a6"
+    },
+    "e2b_installed": false,
+    "e2b_code_interpreter_installed": false,
+    "installed_python_files_audited": 390,
+    "installed_docstrings_audited": 2358,
+    "upstream_import_residue": 0,
+    "template_help": [
+      {
+        "entry": "Template.build",
+        "imports_resolve": true
+      },
+      {
+        "entry": "Template.build_in_background",
+        "imports_resolve": true
+      },
+      {
+        "entry": "Template.get_build_status",
+        "imports_resolve": true
+      },
+      {
+        "entry": "Template.exists",
+        "imports_resolve": true
+      },
+      {
+        "entry": "Template.alias_exists",
+        "imports_resolve": true
+      },
+      {
+        "entry": "Template.assign_tags",
+        "imports_resolve": true
+      },
+      {
+        "entry": "Template.remove_tags",
+        "imports_resolve": true
+      },
+      {
+        "entry": "Template.get_tags",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.build",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.build_in_background",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.get_build_status",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.exists",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.alias_exists",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.assign_tags",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.remove_tags",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.get_tags",
+        "imports_resolve": true
+      },
+      {
+        "entry": "TemplateBuilder.set_start_cmd",
+        "imports_resolve": true
+      },
+      {
+        "entry": "TemplateBuilder.set_ready_cmd",
+        "imports_resolve": true
+      },
+      {
+        "entry": "default_build_logger",
+        "imports_resolve": true
+      },
+      {
+        "entry": "wait_for_port",
+        "imports_resolve": true
+      },
+      {
+        "entry": "wait_for_url",
+        "imports_resolve": true
+      },
+      {
+        "entry": "wait_for_process",
+        "imports_resolve": true
+      },
+      {
+        "entry": "wait_for_file",
+        "imports_resolve": true
+      },
+      {
+        "entry": "wait_for_timeout",
+        "imports_resolve": true
+      },
+      {
+        "entry": "agent_sandbox.Sandbox",
+        "imports_resolve": true,
+        "correct_class_identity": true
+      },
+      {
+        "entry": "agent_sandbox.AsyncSandbox",
+        "imports_resolve": true,
+        "correct_class_identity": true
+      },
+      {
+        "entry": "agent_sandbox.code_interpreter.Sandbox",
+        "imports_resolve": true,
+        "correct_class_identity": true
+      },
+      {
+        "entry": "agent_sandbox.code_interpreter.AsyncSandbox",
+        "imports_resolve": true,
+        "correct_class_identity": true
+      }
+    ],
+    "provider_help": [
+      {
+        "method": "create",
+        "documented_names_valid": true
+      },
+      {
+        "method": "create_sync",
+        "documented_names_valid": true
+      },
+      {
+        "method": "connect",
+        "documented_names_valid": true
+      },
+      {
+        "method": "connect_sync",
+        "documented_names_valid": true
+      },
+      {
+        "method": "list",
+        "documented_names_valid": true
+      },
+      {
+        "method": "list_sync",
+        "documented_names_valid": true
+      },
+      {
+        "method": "kill_by_id",
+        "documented_names_valid": true
+      },
+      {
+        "method": "kill_by_id_sync",
+        "documented_names_valid": true
+      },
+      {
+        "method": "get_info_by_id",
+        "documented_names_valid": true
+      },
+      {
+        "method": "get_info_by_id_sync",
+        "documented_names_valid": true
+      },
+      {
+        "method": "set_timeout_by_id",
+        "documented_names_valid": true
+      },
+      {
+        "method": "set_timeout_by_id_sync",
+        "documented_names_valid": true
+      }
+    ],
+    "network_operations": 0,
+    "source_injection": false,
+    "script_sha256": "ffb956785685ea33ae7b2f7ae91115aa741ad621e0a19700dee988bb59ac72e9",
+    "result": "PASS"
+  },
+  "multiline_supplement": {
+    "actual_client": "0.4.0a6",
+    "actual_server": "0.4.0a6",
+    "unique_statements": [
+      "from agent_sandbox.models.errors import EndpointNotAvailableError, FilePolicyDeniedError, PayloadTooLargeError, RateLimitedError, ServerAPIError",
+      "from agent_sandbox.models.errors import SandboxError, AuthenticationError, InvalidAPIKeyError, TokenExpiredError, InvalidCredentialsError, SandboxCreationError, TemplateNotFoundError, QuotaExceededError, RegionUnavailableError, TemplateParseError, ExecutionError, CommandTimeoutError, ProcessError, CodeExecutionError, CapabilityNotSupportedError, FileOperationError, FileSizeLimitError, FileNotFoundError_, PermissionDeniedError, NetworkError, ConnectionError_, GitHubRateLimitError, SessionError, SessionNotFoundError, SessionAlreadyExistsError, ProviderError, ProviderNotFoundError, ProviderConfigError, ProviderConflictError, ProviderFeatureNotSupportedError, ProviderResourceNotFoundError, ProviderInstallError, ProviderIntegrityError, ProviderTrustError, ProviderVersionError, ProviderManifestError, ProviderProtocolError, ProviderProcessError, ProviderTimeoutError, ProviderMismatchError",
+      "from agent_sandbox.models.errors import SandboxError, InvalidAPIKeyError, TemplateNotFoundError, SandboxNotFoundError, CapabilityNotSupportedError, FileNotFoundError_, ConnectionError_"
+    ],
+    "successful": 3,
+    "source_occurrences": 6,
+    "scope": "actual public non-all a6; independent supplement to original frozen audits",
+    "result": "PASS"
+  },
+  "http": {
+    "packages": {
+      "agent-sandbox-client": "0.4.0a6",
+      "agent-sandbox-server": "0.4.0a6"
+    },
+    "source_install": false,
+    "scope": "official public non-all PyPI a6; real local HTTP; no cloud/model call",
+    "health": true,
+    "shell_exit": 0,
+    "shell_stdout": "4\n",
+    "file_roundtrip": true,
+    "owned_process_exit": -15,
+    "owned_pid_independently_absent": true,
+    "script_sha256": "0e8d281c713235803c76f4f8edcbff2263db7b9088356a793458d293bb2175a8",
+    "result": "PASS",
+    "candidate_harness_reused": true
+  },
+  "current_design_programs": {
+    "source_commit": "8e610a3658040d8d6973e7951f9590ea50a4d70a",
+    "scope": "actual public non-all a6, whole unchanged EN/ZH current design-page programs, canonical ABX, isolated batch HOME/outside checkout, no source injection/model call",
+    "results": [
+      {
+        "block": "imperative",
+        "source_sha256": "173cc6ddad063cd124a21ae4a880cfd15332901c0e7d033f0a7a1a5118bde918",
+        "english_chinese_identical": true,
+        "public_packages": {
+          "agent-sandbox-client": "0.4.0a6",
+          "agent-sandbox-server": "0.4.0a6"
+        },
+        "exit": 0,
+        "seconds": 2.73,
+        "expected_stdout": "Hello, Agent Sandbox!",
+        "created": 1,
+        "typed_not_found_before_observer_cleanup": true,
+        "observer_recovery_used": false,
+        "result": "PASS"
+      },
+      {
+        "block": "errors",
+        "source_sha256": "8b634238e05cee863332480a7070bb9d36f6e90e8519a713513a666cddb6e0ac",
+        "english_chinese_identical": true,
+        "public_packages": {
+          "agent-sandbox-client": "0.4.0a6",
+          "agent-sandbox-server": "0.4.0a6"
+        },
+        "exit": 0,
+        "seconds": 7.35,
+        "expected_stdout": "E3001",
+        "created": 1,
+        "typed_not_found_before_observer_cleanup": true,
+        "observer_recovery_used": false,
+        "result": "PASS"
+      }
+    ],
+    "cleanup": {
+      "unique_owned": 2,
+      "independent_typed_not_found": 2,
+      "recovery_used": false,
+      "result": "PASS"
+    },
+    "result": "PASS"
+  }
+}

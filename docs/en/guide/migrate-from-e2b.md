@@ -4,7 +4,7 @@ The standard Python API targets `e2b==2.31.0` and `e2b-code-interpreter==2.8.1`,
 
 ## Installation and imports
 
-Install the published client with `python -m pip install --index-url https://pypi.org/simple agent-sandbox-client==0.4.0a4`. Configure the Express account with `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and `ABX_SANDBOX_DOMAIN`; these project settings work for standard `Sandbox` / `AsyncSandbox`, `code_interpreter` and `ProviderSandbox`. `abx config` and project/home configuration files also feed these settings. The standard client's public `api_key=` parameter remains part of its pinned contract. A separate application still using the third-party E2B SDK uses that SDK's native configuration names; do not send credentials from another provider account.
+Install the published client with `python -m pip install --index-url https://pypi.org/simple agent-sandbox-client==0.4.0a6`. Configure the Express account with `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and `ABX_SANDBOX_DOMAIN`; these project settings work for standard `Sandbox` / `AsyncSandbox`, `code_interpreter` and `ProviderSandbox`. `abx config` and project/home configuration files also feed these settings. The standard client's public `api_key=` parameter remains part of its pinned contract. A separate application still using the third-party E2B SDK uses that SDK's native configuration names; do not send credentials from another provider account.
 
 
 | Previous import | New import |

@@ -6,7 +6,7 @@ This page documents the asynchronous **ProviderSandbox** provider/server extensi
 
 ## Installation
 
-Follow the [installation guide](install-python.md). The public client/server alpha pair is 0.4.0a4; installing the client installs the matching server dependency. Host package installation does not change existing sandbox images.
+Follow the [installation guide](install-python.md). The public client/server alpha pair is 0.4.0a6; installing the client installs the matching server dependency. Host package installation does not change existing sandbox images.
 
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
 

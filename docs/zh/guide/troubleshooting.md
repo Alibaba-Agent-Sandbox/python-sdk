@@ -211,7 +211,7 @@ entries = await sandbox.files.list("/home/user")
 
 ```bash
 # 确保使用正确的包名
-python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a4"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a6"
 
 # 如果遇到依赖冲突
 python -m pip check

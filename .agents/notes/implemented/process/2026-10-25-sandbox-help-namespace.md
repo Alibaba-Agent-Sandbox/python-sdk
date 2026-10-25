@@ -1,6 +1,6 @@
 # Decision: finish owned namespaces in public Sandbox help
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -66,3 +66,11 @@ independent review and merge precede the existing paired publisher and official
 readback. No new runtime feature, API, alias, dependency or release framework.
 
 [Verification](../../../evidence/verify/2026-10-25-sandbox-help-namespace.md).
+
+## Implementation
+
+PR131 was normally merged as 8e610a3658040d8d6973e7951f9590ea50a4d70a after exact4c45 passed all 13 checks and independent review. Immutable tag v0.4.0a6 publisher40225846586 succeeded on attempt1. Fresh official non-all a6 verified all 28 imports, 390 installed source files/2358 docstrings, 12 Provider help signatures, multiline imports, four public artifact hashes, real local HTTP and independently absent owned process. The current design programs also passed on public a6 with both owned resources independently typed-not-found.
+
+[Subsequent public-a6 delivery](../../../evidence/verify/2026-10-25-public-a6-delivery.md)
+records the actual public results. This installation-guidance follow-up has its
+own pending CI/review/merge; no later tag or package is created for it.

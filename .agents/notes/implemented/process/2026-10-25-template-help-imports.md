@@ -1,6 +1,6 @@
 # Decision: use installed public imports in template help
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -52,3 +52,11 @@ Publication and public readback must complete before recommending a5. No runtime
 feature, alias, new framework or additional publication retry mechanism is added.
 
 [Candidate verification](../../../evidence/verify/2026-10-25-template-help-imports.md).
+
+## Implementation
+
+PR129 was normally merged as c7b4a55ff930753eb35866b161184f946b04d46c; immutable public a5 publisher40222172993 succeeded on attempt1. All 24 Template help imports passed actual public installation. Four remaining class-help errors were separately found and fixed by PR131/public a6; this does not expand the original a5 evidence.
+
+[Subsequent public-a6 delivery](../../../evidence/verify/2026-10-25-public-a6-delivery.md)
+records the actual public results. This installation-guidance follow-up has its
+own pending CI/review/merge; no later tag or package is created for it.

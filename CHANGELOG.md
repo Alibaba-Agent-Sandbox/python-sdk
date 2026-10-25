@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- Select verified public client/server a6 in maintained bilingual installs, Skills and runtime fixtures. Preserve immutable publication hashes, exhaustive help checks and real current-design cleanup separately from earlier a4/a5 receipts. No runtime/API change or new package publication. / 维护中的双语安装、技能与运行夹具统一使用已验证公开 a6；另存不可变产物摘要、完整帮助检查与真实设计示例清理结果，不改旧 a4/a5 证据，不改运行接口或另发包。
+
 ### Fixed
 
 - Correct current bilingual API/lifecycle examples to use actual base commands/files, canonical Provider parameters and typed timeout cleanup; remove unimplemented global cleanup and speculative persistence/billing guarantees. / 修正当前双语 API/生命周期示例，使用真实 base 命令/文件、规范 Provider 参数与类型化超时清理；删除未实现全局策略及推测的持久化/计费承诺。

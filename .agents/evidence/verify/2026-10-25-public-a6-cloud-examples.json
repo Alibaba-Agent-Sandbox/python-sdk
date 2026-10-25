@@ -1,0 +1,336 @@
+{
+  "source_commit": "8e610a3658040d8d6973e7951f9590ea50a4d70a",
+  "public_packages": {
+    "agent-sandbox-client": "0.4.0a6",
+    "agent-sandbox-server": "0.4.0a6"
+  },
+  "home_scope": "one new isolated HOME shared by all children in this batch",
+  "results": [
+    {
+      "example": "examples/quickstart/01_hello.py",
+      "result": "PASS",
+      "returncode": 0,
+      "seconds": 4.42,
+      "audit": {
+        "created": 1,
+        "cleanup": [
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          }
+        ],
+        "example_exit": 0
+      },
+      "source_sha256": "fb61b2783d376cc2df55db41bfeb955ce9daee0c2612400a9f11b538b53c24f2",
+      "output_sha256": "2fb32aaa0d385d960b52be152f5b9f98c21e0454f329aaba50900c220c3a1324",
+      "log": "examples__quickstart__01_hello.py.log"
+    },
+    {
+      "example": "examples/quickstart/02_file_ops.py",
+      "result": "PASS",
+      "returncode": 0,
+      "seconds": 4.73,
+      "audit": {
+        "created": 1,
+        "cleanup": [
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          }
+        ],
+        "example_exit": 0
+      },
+      "source_sha256": "2d7492bdc6839f4c168d6507ee0ba70abc2edddedb3b43dafb78c20676cc62c1",
+      "output_sha256": "102d56e6decb160d68123e58f2c0ecb737b521a08abf9a8b0b5f1d22f37cbb98",
+      "log": "examples__quickstart__02_file_ops.py.log"
+    },
+    {
+      "example": "examples/quickstart/03_web_service.py",
+      "result": "PASS",
+      "returncode": 0,
+      "seconds": 4.31,
+      "audit": {
+        "created": 1,
+        "cleanup": [
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          }
+        ],
+        "example_exit": 0
+      },
+      "source_sha256": "c714d2f120562e6e13340586f0c4c71198be3e42d1d6ccd4477527de234ab545",
+      "output_sha256": "f77f631e25f09deed69b27f63e9b299bb9aec1c3c5a126e0e699f29a152167e0",
+      "log": "examples__quickstart__03_web_service.py.log"
+    },
+    {
+      "example": "examples/quickstart/04_data_analysis.py",
+      "result": "PASS",
+      "returncode": 0,
+      "seconds": 37.29,
+      "audit": {
+        "created": 1,
+        "cleanup": [
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          }
+        ],
+        "example_exit": 0
+      },
+      "source_sha256": "2b1fb005f03bb38f109fbcc68c85b318c98d1d04340f2f1e59e01cd0bd5adb96",
+      "output_sha256": "10dc7da179c1ed1e39e83b3dfb8ed16a28ced483370bc947f685b5dfa7485c8f",
+      "log": "examples__quickstart__04_data_analysis.py.log"
+    },
+    {
+      "example": "examples/quickstart/05_decorator_usage.py",
+      "result": "PASS",
+      "returncode": 0,
+      "seconds": 16.56,
+      "audit": {
+        "created": 4,
+        "cleanup": [
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          }
+        ],
+        "example_exit": 0
+      },
+      "source_sha256": "d0a5468573952f34fb7c3d0201115c8d3c62a0801aa08d0ac4eee48b1e49386f",
+      "output_sha256": "53a24cfb52a0862053b5e5dd07b77c12418bcdb6a68019dfc518a679f101260e",
+      "log": "examples__quickstart__05_decorator_usage.py.log"
+    },
+    {
+      "example": "examples/compat-demos/e2e_capability_validation.py",
+      "result": "PASS",
+      "returncode": 0,
+      "seconds": 7.67,
+      "audit": {
+        "created": 2,
+        "cleanup": [
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          }
+        ],
+        "example_exit": 0
+      },
+      "source_sha256": "dfcd33f3e6acacfa0ef1fd78cab077d21ea69cdc82c5e556e6db525ac425fada",
+      "output_sha256": "93cc5d5ee6ef1dc89831a9ef96488ac9dbf006c3186f2b25f7c66f33bc29ccb9",
+      "log": "examples__compat-demos__e2e_capability_validation.py.log"
+    },
+    {
+      "example": "examples/compat-demos/comparison.py",
+      "result": "PASS",
+      "returncode": 0,
+      "seconds": 26.32,
+      "audit": {
+        "created": 4,
+        "cleanup": [
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          }
+        ],
+        "example_exit": 0
+      },
+      "source_sha256": "03171c7dc45944242c21693e6370e3abd82f3ea193f9260dbd1073799a66f019",
+      "output_sha256": "3f0f430804892d7eede65d589cba7a8459c2e91ad8660bd172dd1ccd4a0dff27",
+      "log": "examples__compat-demos__comparison.py.log"
+    },
+    {
+      "example": "examples/compat-demos/e2b_data_analysis.py",
+      "result": "PASS",
+      "returncode": 0,
+      "seconds": 22.97,
+      "audit": {
+        "created": 1,
+        "cleanup": [
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          }
+        ],
+        "example_exit": 0
+      },
+      "source_sha256": "410f0afc639a15bdb1e20e153c4829f2944aaf06a48753b34d81dd86e410cd95",
+      "output_sha256": "dbc7e02a0f544de683fdda7341fe505cd88ce35c6cc50df256a5532e826a4086",
+      "log": "examples__compat-demos__e2b_data_analysis.py.log"
+    },
+    {
+      "example": "examples/compat-demos/e2b_web_scraper.py",
+      "result": "PASS",
+      "returncode": 0,
+      "seconds": 7.62,
+      "audit": {
+        "created": 1,
+        "cleanup": [
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          }
+        ],
+        "example_exit": 0
+      },
+      "source_sha256": "066967779380f6a7006b1dcdfe28a00b912998a56b87223b72a2cd59acdc4854",
+      "output_sha256": "84df3c7b54c7d397cb0454204a1f5edba53a68a0e5973947bee9410a102b20dc",
+      "log": "examples__compat-demos__e2b_web_scraper.py.log"
+    },
+    {
+      "example": "examples/compat-demos/modal_compute.py",
+      "result": "PASS",
+      "returncode": 0,
+      "seconds": 32.28,
+      "audit": {
+        "created": 6,
+        "cleanup": [
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          }
+        ],
+        "example_exit": 0
+      },
+      "source_sha256": "645bed63aec27865b7849f203158deca263def56b56a68f682716cde7c6f5882",
+      "output_sha256": "8780d11b18767782c13f2a52101720957716183e9bd64e55b82ab9d3df9fddb1",
+      "log": "examples__compat-demos__modal_compute.py.log"
+    },
+    {
+      "example": "examples/compat-demos/modal_data_analysis.py",
+      "result": "PASS",
+      "returncode": 0,
+      "seconds": 21.43,
+      "audit": {
+        "created": 4,
+        "cleanup": [
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          },
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          }
+        ],
+        "example_exit": 0
+      },
+      "source_sha256": "cd6453302208672c1192b634f0e3ca3c00d8722ea35858b13c2d6d92082167df",
+      "output_sha256": "fd9a4f5f2cf26cf69b66aa9905aa80af2c069335349b4345170d1b8af5ff4eb7",
+      "log": "examples__compat-demos__modal_data_analysis.py.log"
+    },
+    {
+      "example": "examples/compat-demos/e2b_import_migration.py",
+      "result": "PASS",
+      "returncode": 0,
+      "seconds": 3.21,
+      "audit": {
+        "created": 1,
+        "cleanup": [
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          }
+        ],
+        "example_exit": 0
+      },
+      "source_sha256": "73850fb33989c4b412ce5399f2303df1ca642ad5d15fe6cbd8088e7ef0819415",
+      "output_sha256": "dbf100372e8f85b1c33c8c6048e670c1ea9d18b2e6b5373ba78b3e17cd4a7c6c",
+      "log": "examples__compat-demos__e2b_import_migration.py.log"
+    },
+    {
+      "example": "examples/agents/browser_automation.py",
+      "result": "PASS",
+      "returncode": 0,
+      "seconds": 84.44,
+      "audit": {
+        "created": 1,
+        "cleanup": [
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          }
+        ],
+        "example_exit": 0
+      },
+      "source_sha256": "83956ce58c50c60290663b661dec0dff616837f2fc1a089212b795fa478539f6",
+      "output_sha256": "dbb3027ac415e89c4456c85e987e8562382c32db41a38ac500aa1833a21f01a9",
+      "log": "examples__agents__browser_automation.py.log"
+    },
+    {
+      "example": "examples/agents/codex_agent.py",
+      "result": "PASS",
+      "returncode": 0,
+      "seconds": 10.34,
+      "audit": {
+        "created": 1,
+        "cleanup": [
+          {
+            "absent_before_cleanup": true,
+            "absent_after_cleanup": true
+          }
+        ],
+        "example_exit": 0
+      },
+      "source_sha256": "0e4392725fb84998c25ac6ceddc98ecfb467a715f33066d13541560421587da0",
+      "output_sha256": "4ca62a613ca80694fa58695e4c55aca013d29a1073a1844b0a39c49ca6cfff84",
+      "log": "examples__agents__codex_agent.py.log"
+    }
+  ]
+}

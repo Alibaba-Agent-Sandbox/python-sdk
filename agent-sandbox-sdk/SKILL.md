@@ -5,7 +5,7 @@ description: Write a Python client or a sandbox template for Agent Sandbox. Use 
 
 # Write an Agent Sandbox client or template
 
-Specification 5 is implemented in the published 0.4.0a4 client/server alpha pair.
+Specification 5 is implemented in the published 0.4.0a6 client/server alpha pair.
 
 This file is instructions for a coding agent. It is not executed by the SDK.
 Operating a sandbox with `abx` or MCP is the `agent-sandbox` skill. This skill
@@ -21,11 +21,11 @@ Two packages share one version:
 Install the published alpha client; it installs its matching server dependency:
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a4'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a6'
 python -m pip check
 ```
 
-The image needs only `agent-sandbox-server==0.4.0a4`. Installing that package on the host does not update an existing image. Development source installations must use a matching client/server revision.
+The image needs only `agent-sandbox-server==0.4.0a6`. Installing that package on the host does not update an existing image. Development source installations must use a matching client/server revision.
 Do not run `pip install agent-sandbox`. That PyPI name is an unrelated project.
 
 ## Credentials
@@ -195,7 +195,7 @@ Do not listen on 49983, 5000, or 49999. `<region>` defaults to `cn-hangzhou`.
 
 ```dockerfile
 FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
-RUN pip install --index-url https://pypi.org/simple --no-cache-dir 'agent-sandbox-server==0.4.0a4'
+RUN pip install --index-url https://pypi.org/simple --no-cache-dir 'agent-sandbox-server==0.4.0a6'
 WORKDIR /home/user/app
 COPY commands.py /home/user/app/commands.py
 EXPOSE 9000
@@ -207,7 +207,7 @@ The CLI can prepare the supported official native base recipe for both Express a
 
 ```dockerfile
 FROM python:3.12-slim
-RUN pip install --index-url https://pypi.org/simple --no-cache-dir 'agent-sandbox-server==0.4.0a4'
+RUN pip install --index-url https://pypi.org/simple --no-cache-dir 'agent-sandbox-server==0.4.0a6'
 WORKDIR /home/user/app
 COPY commands.py /home/user/app/commands.py
 EXPOSE 9000
