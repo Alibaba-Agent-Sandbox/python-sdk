@@ -1,5 +1,9 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+## Published specification 5 alpha — 2026-10-25
+
+Client/server **0.4.0a1** are public. [Release verification](evidence/verify/2026-10-25-python-040a1-public-release.md) records immutable tag identity, required CI, four public artifact hashes matched to the preserved candidate, and fresh exact-version installation. This host release does not update existing sandbox images or imply whole-catalog production certification.
+
 ## Specification 5 migration — 2026-10-25
 
 The [unified startup proposal](notes/proposed/architecture/2026-10-25-unified-template-launch.md)
