@@ -12,7 +12,7 @@ Dockerfile 里的 `FROM` 镜像随模板而变。本 HTTP API 不变。凡是启
 
 服务器默认监听 `0.0.0.0:9000`。Provider 必须支持所需端口解析和访问路径，服务也必须实际监听；不能把所有入口都当作 `{port}-{sandbox_id}.{domain}` 主机名拼接。已有沙箱的应用调用独立于内部 envd/EPP 传输：
 
-此示例使用已发布 `agent-sandbox-client==0.4.0a3` alpha 中的 Provider 原生
+此示例使用已发布 `agent-sandbox-client==0.4.0a4` alpha 中的 Provider 原生
 `ProviderSandbox`，标准 `Sandbox`/`AsyncSandbox` 是另一套接口。精确安装版本与源码方案见
 [安装指南](install-python.md)。将 `SANDBOX_ID` 设为应用服务已启动的现有沙箱；仅当服务
 启动时配置了令牌，才设置对应的 `ABX_SERVER_TOKEN`。

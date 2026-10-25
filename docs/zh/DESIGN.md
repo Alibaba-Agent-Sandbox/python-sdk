@@ -21,7 +21,7 @@
 ### 快速上手
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple agent-sandbox-client==0.4.0a3
+python -m pip install --index-url https://pypi.org/simple agent-sandbox-client==0.4.0a4
 export ABX_SANDBOX_API_KEY=your-api-key
 ```
 

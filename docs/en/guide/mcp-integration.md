@@ -13,7 +13,7 @@ MCP (Model Context Protocol) is an open protocol that allows AI models to intera
 ### Requirements
 
 ```bash
-pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a3"            # the SDK's own MCP STDIO server: python -m agent_sandbox.agent.mcp
+pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a4"            # the SDK's own MCP STDIO server: python -m agent_sandbox.agent.mcp
 export ABX_SANDBOX_API_KEY=your-api-key
 ```
 
@@ -97,7 +97,7 @@ For team sharing or remote access, run the MCP Server as a Streamable HTTP servi
 ### Run Locally with uvicorn
 
 ```bash
-pip install --index-url https://pypi.org/simple "agent-sandbox-client[mcp]==0.4.0a3"
+pip install --index-url https://pypi.org/simple "agent-sandbox-client[mcp]==0.4.0a4"
 
 export ABX_MCP_AUTH_TOKEN=replace_me   # Bearer token (omit to disable auth)
 export ABX_SANDBOX_API_KEY=your-api-key

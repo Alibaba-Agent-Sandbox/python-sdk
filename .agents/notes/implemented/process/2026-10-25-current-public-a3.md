@@ -1,6 +1,6 @@
 # Decision: Synchronize maintained guidance with verified public a3
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -48,3 +48,7 @@ latest-head CI, independent review and verified merge complete. The broader brow
 example Issue 111 is not closed by this documentation follow-up.
 
 [Verification](../../../evidence/verify/2026-10-25-public-a3-docs.md).
+
+## Implementation
+
+PR 123 merged at 53956043008d0658340448c97fcb453387da62d1 after all 13 checks and independent review. Its public-a3 install/fixture criteria were delivered. Current guidance subsequently advances to public a4; the a3 evidence retains its original version scope.

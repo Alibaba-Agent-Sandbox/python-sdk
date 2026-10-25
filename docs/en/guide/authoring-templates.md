@@ -136,7 +136,7 @@ The server does not select a provider. Port 9000 is the application HTTP listen 
 
 `commands.py` imports only `agent_sandbox.server` and calls `start(port)` from its
 main entry; the image explicitly installs the server SDK. For the provider-native
-application API in the published 0.4.0a3 alpha, import `ProviderSandbox` from
+application API in the published 0.4.0a4 alpha, import `ProviderSandbox` from
 `agent_sandbox` and connect with `await ProviderSandbox.connect(ID)`. This instance
 supports `async with await sandbox.application_client(9000, token=application_token)`;
 the standard `Sandbox`/`AsyncSandbox` classes have a different interface.

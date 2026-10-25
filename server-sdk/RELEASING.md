@@ -4,7 +4,7 @@ Publish `agent-sandbox-server` first, then `agent-sandbox-client`, from the same
 
 ## Candidate and versions
 
-The current published pair is **0.4.0a3**, an opt-in alpha. The public release
+The current published pair is **0.4.0a4**, an opt-in alpha. The public release
 workflow, artifact hashes and fresh-install readback passed; this does not certify
 all templates, cloud account features or production workloads. Use a new lockstep
 version and reviewed tag for the next release; never replace published files.
@@ -49,20 +49,23 @@ After dry-run validation, publish a GitHub **prerelease** for that reviewed tag,
 ## Recovery and public verification
 
 If one upload fails, preserve and reuse the exact candidate artifact from that run. Preflight compares existing filenames and SHA-256 before `skip-existing` can resume the missing files. Rebuilding is not proof of identical bytes; if hashes differ, stop and investigate instead of overwriting or silently accepting them. Only call the release published after both projects' public metadata, downloads and fresh installation pass.
-The workflow retries missing public metadata and fresh official-index installation
-at most six times, ten seconds apart. Artifact digest mismatches fail immediately;
-pip check and import failures are not retried.
+The current workflow retries missing public metadata at most 18 times, ten seconds
+apart (170 seconds of intervals). Fresh official-index installation retains its
+six-attempt bound. Artifact digest mismatches and non-404 metadata errors fail
+immediately; pip check and import failures are not retried. The immutable a4 tag
+used the previous six-metadata-probe window; its first failure and normal retry
+remain recorded.
 
 After verified publication, consumers can explicitly opt in:
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a3'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a4'
 python -m pip check
 ```
 
 ## 中文发布说明
 
-client/server 必须同版本发布，先上传 server。当前已公开配套版本为 `0.4.0a3`
+client/server 必须同版本发布，先上传 server。当前已公开配套版本为 `0.4.0a4`
 alpha，发布流程、产物摘要及全新公开安装验证均已通过；这不代表所有模板、账号能力
 或生产负载已完成验证。下一次发布须选择新的同版本双包和已审查标签，不得替换任何已公开文件。Provider 插件还需兼容的独立 CLI 和所选提供方配置。
 
@@ -71,3 +74,5 @@ alpha，发布流程、产物摘要及全新公开安装验证均已通过；这
 手动执行默认 `dry_run=true`，必须选择实际已审查的 `v<next-version>` 版本标签，选择 main 会失败。验证后创建该标签的 GitHub prerelease，或显式设置 `dry_run=false`。工作流保存本次产物，先检查已有公开文件摘要，再按顺序上传；最后仅安装固定版本 client，验证 server 自动依赖、导入与 `pip check`。
 
 部分上传失败时保留并使用同一批候选文件。重新构建后如摘要不同，应停止调查，不得依赖 skip-existing 掩盖差异。全部公开包下载与安装验证通过后，才更新对外的发布状态。
+
+当前源码仅对元数据 HTTP404 最多探测 18 次，间隔 10 秒（共 170 秒间隔）；公开安装仍最多 6 次。摘要不符、非 404 元数据错误以及 pip check/导入失败不会重试。不可变 a4 标签仍保留原来的 6 次元数据探测，其首次失败与正常重跑记录不变。
