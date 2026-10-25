@@ -5,7 +5,11 @@ Shows how to upload CSV data and run pandas analysis inside a sandbox.
 """
 
 import asyncio
+import csv
+import io
+import json
 import os
+from decimal import Decimal
 
 from agent_sandbox import ProviderSandbox as Sandbox
 
@@ -97,7 +101,7 @@ async def main() -> None:
         )
         if not result.success:
             print(f"✗ pip install 失败: {result.stderr}")
-            return
+            raise RuntimeError("Sandbox setup or execution failed")
         print("✓ pandas 安装完成")
 
         # ── 2. 上传 CSV 数据 ─────────────────────────────────────────
@@ -123,21 +127,35 @@ async def main() -> None:
         else:
             print(f"✗ 分析脚本执行失败 (exit={result.exit_code})")
             print(f"stderr: {result.stderr}")
+            raise RuntimeError("Data analysis failed")
+
+        summary = json.loads(result.stdout.split("JSON 摘要:", 1)[1])
+        records = list(csv.DictReader(io.StringIO(SAMPLE_CSV)))
+        expected_revenue = sum(Decimal(row["unit_price"]) * int(row["quantity"]) for row in records)
+        assert summary["total_rows"] == len(records)
+        assert Decimal(str(summary["total_revenue"])) == expected_revenue
+        assert summary["top_product"] == "Widget A"
+        assert summary["top_region"] == "North"
 
         # ── 4. 显式执行第二个分析脚本 ────────────────────────
         print("\n" + "=" * 50)
         print("显式脚本分析 / Explicit script execution")
         print("=" * 50)
 
-        await sandbox.files.write("/app/top_sales.py", """
+        await sandbox.files.write(
+            "/app/top_sales.py",
+            """
 import pandas as pd
 df = pd.read_csv('/app/data/sales.csv')
 df['revenue'] = df['quantity'] * df['unit_price']
 top3 = df.nlargest(3, 'revenue')[['date', 'product', 'region', 'revenue']]
 print("Top 3 单笔收入:")
 print(top3.to_string(index=False))
-""")
+""",
+        )
         code_result = await sandbox.commands.run("python /app/top_sales.py")
+        assert code_result.exit_code == 0, code_result.stderr
+        assert "Top 3" in code_result.stdout
         print(code_result.stdout)
 
     print("\n✓ 沙箱已自动销毁")

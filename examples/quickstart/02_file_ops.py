@@ -11,11 +11,11 @@ from agent_sandbox import ProviderSandbox as Sandbox
 
 
 async def main() -> None:
-    api_key = os.environ.get("E2B_API_KEY", "")
+    api_key = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
     async with await Sandbox.create(
         template="base",
-        api_key=api_key,
+        sandbox_api_key=api_key,
     ) as sandbox:
         print(f"✓ 沙箱已创建: {sandbox.id}")
 
@@ -25,6 +25,7 @@ async def main() -> None:
 
         # ── 2. 读取文本文件 ──────────────────────────────────────────
         content = await sandbox.files.read("/app/hello.txt")
+        assert content == "你好，Sandbox！\nHello, Sandbox!\n"
         print(f"读取内容:\n{content}")
 
         # ── 3. 创建目录结构 ──────────────────────────────────────────
@@ -45,7 +46,7 @@ async def main() -> None:
         entries = await sandbox.files.list("/app/data")
         print("\n/app/data 目录内容:")
         for entry in entries:
-            icon = '📁' if entry.type.value == 'directory' else '📄'
+            icon = "📁" if entry.type.value == "directory" else "📄"
             print(f"  {icon} {entry.name}  ({entry.size} bytes)")
 
         # ── 6. 检查文件是否存在 ──────────────────────────────────────
@@ -53,6 +54,7 @@ async def main() -> None:
         print(f"\nconfig.json 存在: {exists}")
 
         missing = await sandbox.files.exists("/app/data/missing.txt")
+        assert exists and not missing
         print(f"missing.txt 存在: {missing}")
 
         # ── 7. 写入二进制文件 ─────────────────────────────────────────
@@ -62,6 +64,7 @@ async def main() -> None:
 
         # 读取二进制文件
         raw = await sandbox.files.read_bytes("/app/data/sample.bin")
+        assert raw == binary_data
         print(f"  读回 {len(raw)} 字节, 前 8 字节: {raw[:8].hex()}")
 
         # ── 8. 文件重命名 / 移动 ─────────────────────────────────────
@@ -70,6 +73,8 @@ async def main() -> None:
 
         # ── 9. 删除文件 ──────────────────────────────────────────────
         await sandbox.files.remove("/app/data/sample.bin")
+        assert not await sandbox.files.exists("/app/data/sample.bin")
+        assert await sandbox.files.exists("/app/data/notes_backup.txt")
         print("✓ 已删除 sample.bin")
 
         # ── 10. 获取文件详细信息 ─────────────────────────────────────

@@ -12,20 +12,21 @@ from agent_sandbox import ProviderSandbox as Sandbox
 
 async def main() -> None:
     # 从环境变量读取 API Key（不要硬编码）
-    api_key = os.environ.get("E2B_API_KEY", "")
+    api_key = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
     # ── 1. 使用 async with 自动管理沙箱生命周期 ──────────────────────
     async with await Sandbox.create(
         template="base",
-        api_key=api_key,
-        timeout=300,                                     # 沙箱 300 秒后自动销毁
-        metadata={"purpose": "basic-demo"},              # 附加元数据
-        envs={"MY_VAR": "hello-sandbox"},                # 注入环境变量
+        sandbox_api_key=api_key,
+        timeout=300,  # 沙箱 300 秒后自动销毁
+        metadata={"purpose": "basic-demo"},  # 附加元数据
+        envs={"MY_VAR": "hello-sandbox"},  # 注入环境变量
     ) as sandbox:
         print(f"✓ 沙箱已创建  id={sandbox.id}  status={sandbox.status.value}")
 
         # ── 2. 执行简单命令 ──────────────────────────────────────────
         result = await sandbox.commands.run("echo 'Hello from Sandbox!'")
+        assert result.exit_code == 0 and result.stdout.strip() == "Hello from Sandbox!"
         print(f"stdout : {result.stdout.strip()}")
         print(f"exit   : {result.exit_code}")
 
@@ -39,6 +40,7 @@ async def main() -> None:
         # 注意: envd 直接 exec，不经过 shell 展开，"echo $MY_VAR" 无法
         # 解析变量。改用 printenv 直接读取环境变量。
         result = await sandbox.commands.run("printenv MY_VAR")
+        assert result.stdout.strip() == "hello-sandbox"
         print(f"MY_VAR = {result.stdout.strip()}")
 
         # ── 5. 演示管道和 shell 语法 ──────────────────────────────────
@@ -49,11 +51,13 @@ async def main() -> None:
 
         # ── 6. 带错误处理的命令 ─────────────────────────────────────
         result = await sandbox.commands.run("ls /nonexistent", timeout=10)
+        assert result.exit_code != 0
         if not result.success:
             print(f"命令失败 (exit={result.exit_code}): {result.stderr.strip()}")
 
         # ── 7. 查看沙箱运行状态 ─────────────────────────────────────
         running = await sandbox.is_running()
+        assert running
         print(f"沙箱运行中: {running}")
 
     # async with 退出后沙箱自动 kill

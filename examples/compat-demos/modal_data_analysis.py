@@ -16,10 +16,13 @@ Style: Modal (declarative)
     - Modal: 一个装饰器 + 一次函数调用，一切自动完成
 """
 
+import csv
+import io
 import os
+from decimal import Decimal
 
 # 确保 API Key 可用 / Ensure API key is available
-API_KEY = os.environ.get("E2B_API_KEY", "")
+API_KEY = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
 from agent_sandbox.declarative import sandbox
 
@@ -48,7 +51,7 @@ date,product,quantity,amount
 @sandbox(
     template="code-interpreter-v1",
     packages=["pandas"],
-    api_key=API_KEY,
+    sandbox_api_key=API_KEY,
     timeout=120,
 )
 def analyze_sales(csv_data: str) -> dict:
@@ -57,8 +60,9 @@ def analyze_sales(csv_data: str) -> dict:
     注意: 函数体内的代码在远程沙箱中执行，import 必须在函数内部。
     Note: Code inside runs remotely; imports must be inside the function.
     """
-    import pandas as pd
     from io import StringIO
+
+    import pandas as pd
 
     df = pd.read_csv(StringIO(csv_data))
 
@@ -66,17 +70,19 @@ def analyze_sales(csv_data: str) -> dict:
     total_revenue = float(df["amount"].sum())
 
     # 按产品汇总 / Group by product
-    product_summary = df.groupby("product").agg(
-        total_qty=("quantity", "sum"),
-        total_revenue=("amount", "sum"),
-        avg_amount=("amount", "mean"),
-        order_count=("product", "count"),
-    ).reset_index()
+    product_summary = (
+        df.groupby("product")
+        .agg(
+            total_qty=("quantity", "sum"),
+            total_revenue=("amount", "sum"),
+            avg_amount=("amount", "mean"),
+            order_count=("product", "count"),
+        )
+        .reset_index()
+    )
 
     # 最畅销产品 / Best-selling product
-    top_product = product_summary.loc[
-        product_summary["total_revenue"].idxmax()
-    ]
+    top_product = product_summary.loc[product_summary["total_revenue"].idxmax()]
 
     # 按日期汇总趋势 / Daily trend
     daily_revenue = df.groupby("date")["amount"].sum()
@@ -98,13 +104,14 @@ def analyze_sales(csv_data: str) -> dict:
 @sandbox(
     template="code-interpreter-v1",
     packages=["pandas"],
-    api_key=API_KEY,
+    sandbox_api_key=API_KEY,
     timeout=60,
 )
 def check_data_quality(csv_data: str) -> dict:
     """在远程沙箱中检查数据质量 / Check data quality in remote sandbox."""
-    import pandas as pd
     from io import StringIO
+
+    import pandas as pd
 
     df = pd.read_csv(StringIO(csv_data))
 
@@ -135,21 +142,17 @@ def check_data_quality(csv_data: str) -> dict:
 @sandbox(
     template="code-interpreter-v1",
     packages=["pandas"],
-    api_key=API_KEY,
+    sandbox_api_key=API_KEY,
     timeout=60,
 )
 def rank_products(csv_data: str, metric: str = "amount") -> list:
     """在远程沙箱中按指标对产品排名 / Rank products by metric in sandbox."""
-    import pandas as pd
     from io import StringIO
 
+    import pandas as pd
+
     df = pd.read_csv(StringIO(csv_data))
-    ranking = (
-        df.groupby("product")[metric]
-        .sum()
-        .sort_values(ascending=False)
-        .reset_index()
-    )
+    ranking = df.groupby("product")[metric].sum().sort_values(ascending=False).reset_index()
     ranking["rank"] = range(1, len(ranking) + 1)
     return ranking.to_dict(orient="records")
 
@@ -164,46 +167,71 @@ def main() -> None:
 
     # ── 示例 1: 完整数据分析 ──────────────────────────────────────────
     print("\n── 示例 1: 完整销售分析 / Full Sales Analysis ──")
+    rows = list(csv.DictReader(io.StringIO(SALES_CSV)))
+    revenue = sum(Decimal(row["amount"]) for row in rows)
+    products: dict[str, Decimal] = {}
+    for row in rows:
+        products[row["product"]] = products.get(row["product"], Decimal(0)) + Decimal(row["amount"])
     try:
         result = analyze_sales(SALES_CSV)
+        assert result["total_records"] == len(rows)
+        assert Decimal(str(result["total_revenue"])) == revenue
+        assert result["top_product"] == max(products, key=products.get)
         print(f"  总记录数 / Total records : {result['total_records']}")
         print(f"  总收入 / Total revenue   : ¥{result['total_revenue']:,.2f}")
         print(f"  平均订单 / Avg order     : ¥{result['avg_order_value']:,.2f}")
         print(f"  日均收入 / Daily avg     : ¥{result['daily_avg_revenue']:,.2f}")
-        print(f"  🏆 最畅销 / Top product  : {result['top_product']} "
-              f"(¥{result['top_product_revenue']:,.2f})")
-        print(f"  📈 峰值日 / Peak day     : {result['peak_day']} "
-              f"(¥{result['peak_day_revenue']:,.2f})")
+        print(
+            f"  🏆 最畅销 / Top product  : {result['top_product']} "
+            f"(¥{result['top_product_revenue']:,.2f})"
+        )
+        print(
+            f"  📈 峰值日 / Peak day     : {result['peak_day']} "
+            f"(¥{result['peak_day_revenue']:,.2f})"
+        )
         print()
         print("  产品明细 / Product breakdown:")
         for p in result["product_breakdown"]:
-            print(f"    {p['product']:<12s} 数量={p['total_qty']:>5.0f}  "
-                  f"收入=¥{p['total_revenue']:>10,.2f}")
+            print(
+                f"    {p['product']:<12s} 数量={p['total_qty']:>5.0f}  "
+                f"收入=¥{p['total_revenue']:>10,.2f}"
+            )
     except Exception as e:
         print(f"  ✗ 执行失败 / Failed: {e}")
+        raise
 
     # ── 示例 2: 数据质量检查 ──────────────────────────────────────────
     print("\n── 示例 2: 数据质量检查 / Data Quality Check ──")
     try:
         quality = check_data_quality(SALES_CSV)
+        assert quality["total_rows"] == len(rows) and quality["total_columns"] == 4
+        assert quality["has_nulls"] is False and quality["duplicate_rows"] == 0
         print(f"  行数 / Rows        : {quality['total_rows']}")
         print(f"  列数 / Columns     : {quality['total_columns']}")
         print(f"  空值 / Has nulls   : {'是' if quality['has_nulls'] else '否'}")
         print(f"  重复行 / Duplicates : {quality['duplicate_rows']}")
         print(f"  产品种类 / Products: {quality['unique_products']}")
-        print(f"  日期范围 / Date range: "
-              f"{quality['date_range']['min']} ~ {quality['date_range']['max']}")
+        print(
+            f"  日期范围 / Date range: "
+            f"{quality['date_range']['min']} ~ {quality['date_range']['max']}"
+        )
         stats = quality["amount_stats"]
-        print(f"  金额统计 / Amount  : min=¥{stats['min']}, max=¥{stats['max']}, "
-              f"avg=¥{stats['mean']}, median=¥{stats['median']}")
+        print(
+            f"  金额统计 / Amount  : min=¥{stats['min']}, max=¥{stats['max']}, "
+            f"avg=¥{stats['mean']}, median=¥{stats['median']}"
+        )
     except Exception as e:
         print(f"  ✗ 执行失败 / Failed: {e}")
+        raise
 
     # ── 示例 3: 产品排名 ─────────────────────────────────────────────
     print("\n── 示例 3: 产品排名 / Product Ranking ──")
     try:
         # 按销售额排名 / Rank by revenue
         ranking = rank_products(SALES_CSV, metric="amount")
+        assert [item["product"] for item in ranking] == sorted(
+            products, key=products.get, reverse=True
+        )
         print("  按销售额排名 / By revenue:")
         for item in ranking:
             print(f"    #{item['rank']} {item['product']:<12s} ¥{item['amount']:,.2f}")
@@ -215,6 +243,7 @@ def main() -> None:
             print(f"    #{item['rank']} {item['product']:<12s} {item['quantity']} 件")
     except Exception as e:
         print(f"  ✗ 执行失败 / Failed: {e}")
+        raise
 
     print("\n✓ 所有分析示例完成 / All analysis demos completed")
 

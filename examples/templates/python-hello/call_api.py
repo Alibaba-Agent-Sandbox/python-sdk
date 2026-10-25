@@ -79,13 +79,13 @@ def main() -> int:
     status, payload = call(
         origin,
         "POST",
-        "/upload",
+        "/files/upload-stream",
         {
             "path": f"{base_dir}/call-api.txt",
             "content_base64": base64.b64encode(b"hello\n").decode("ascii"),
         },
     )
-    ok = show("POST /upload", status, payload) and ok
+    ok = show("POST /files/upload-stream", status, payload) and ok
 
     # process. shlex.split + shell=False, so this is a single argv, not a pipeline.
     status, payload = call(origin, "POST", "/shell", {"command": "echo hello-from-template"})

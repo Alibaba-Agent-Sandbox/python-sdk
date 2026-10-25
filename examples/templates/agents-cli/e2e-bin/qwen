@@ -1,4 +1,7 @@
-#!/bin/sh
-printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"text","text":"hello-from-fake-qwen"}]}}'
-printf '%s\n' '{"type":"result","subtype":"success"}'
-exit 0
+#!/usr/bin/env python3
+import json, sys
+if "--version" in sys.argv:
+    print("0.23.0")
+else:
+    print(json.dumps({"type": "assistant", "message": {"id": "m1", "content": [{"type": "text", "text": "hello-from-fake-qwen"}]}}))
+    print(json.dumps({"type": "result", "subtype": "success"}))

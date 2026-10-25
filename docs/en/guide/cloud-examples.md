@@ -1,33 +1,18 @@
-# Cloud end-to-end practice
+# Run the cloud examples
 
-Run the repository's cloud examples against a real sandbox on the default provider, **Alibaba Cloud Express** (`alicloud-express`). Do not push an image to ACR.
-
-> 中文版: [../../zh/guide/cloud-examples.md](../../zh/guide/cloud-examples.md)
-
-The Agents API case is not repeated here. For the request sequence, the local stand-in CLIs, and a run that does not read a model key, see [Agents API](agents-api.md). The Chinese page is [Agents API（中文）](../../zh/guide/agents-api.md).
-
-## Setup
-
-The client reads `E2B_API_KEY`. The current client does not treat `E2B_API_KEY` as the sandbox key.
+Install the public Python pair through the client dependency:
 
 ```bash
-pip install "agent-sandbox-client"
-export E2B_API_KEY="your-api-key"
+python -m pip install "agent-sandbox-client[all]==0.4.0a2"
+export ABX_SANDBOX_API_KEY="your-express-sandbox-api-key"
+# Configure ABX_SANDBOX_BASE_URL and ABX_SANDBOX_DOMAIN for your region if needed.
 ```
 
-When `ABX_PROVIDER` is unset, `Sandbox.create` uses `alicloud-express`. The scripts below pass `timeout` to `Sandbox.create` (sandbox TTL, in seconds, from 60 to 900) and destroy the sandbox when the `async with` block or the `@sandbox` decorator finishes.
-
-From this repo, before `pip install`:
+Run these commands from the cloned `python-sdk` repository. They import the installed packages; no source-path injection is needed. Each script creates and cleans up its own sandboxes, asserts business results and exits nonzero on failure.
 
 ```bash
-export PYTHONPATH=client-sdk/src:server-sdk/src
-```
-
-## Run these
-
-From the `python-sdk` directory:
-
-```bash
+python examples/quickstart/01_hello.py
+python examples/quickstart/02_file_ops.py
 python examples/quickstart/03_web_service.py
 python examples/quickstart/04_data_analysis.py
 python examples/quickstart/05_decorator_usage.py
@@ -36,28 +21,18 @@ python examples/compat-demos/e2b_data_analysis.py
 python examples/compat-demos/e2b_web_scraper.py
 python examples/compat-demos/modal_compute.py
 python examples/compat-demos/modal_data_analysis.py
+python examples/compat-demos/e2e_capability_validation.py
+python examples/agents/browser_automation.py
+# Requires a real model key / 需要真实模型密钥
+python examples/agents/codex_agent.py
 ```
 
-| Script | What it does in the cloud |
-|---|---|
-| `examples/quickstart/03_web_service.py` | Template `node-web`. Writes an Express app, runs `npm install`, curls `localhost:3000` inside the sandbox |
-| `examples/quickstart/04_data_analysis.py` | Template `base`. Installs pandas, analyzes a CSV, then `run_code()` for the top three rows |
-| `examples/quickstart/05_decorator_usage.py` | `@sandbox` on `code-interpreter-v1`: π, a pandas summary, Fibonacci, environment variables |
-| `examples/compat-demos/comparison.py` | The same tasks with imperative `Sandbox.create` and with `@sandbox` |
-| `examples/compat-demos/e2b_data_analysis.py` | Imperative: upload a CSV, write a pandas report, read the report back |
-| `examples/compat-demos/e2b_web_scraper.py` | Imperative: request `https://example.com` from inside the sandbox |
-| `examples/compat-demos/modal_compute.py` | `@sandbox`: Monte Carlo π, matrix multiply, distribution fit |
-| `examples/compat-demos/modal_data_analysis.py` | `@sandbox`: sales summary, data quality, product rank |
+The Node HTTP quickstart uses Node already present in `base`; it does not require deploying a separate web template. The data examples use `code-interpreter-v1` and compare actual results. The capability example has no local-registry or simulated-cloud fallback.
 
-The data-analysis example explicitly writes and runs Python scripts through `commands.run()`. Interpreter calls require a matching interpreter workflow and never fall back to shell.
+For `codex_agent.py`, set `OPENAI_API_KEY`; optionally set `OPENAI_BASE_URL` and `OPENAI_MODEL`. It generates and executes real Python code inside `base`, with an independent local sorting oracle. Despite the historical filename, it is not a Codex CLI session. Missing model credentials fail immediately.
 
-If create fails, read the error code on the exception (a missing template is `E2001`) and stop that example. Do not switch to pushing an image.
+The browser example installs Playwright and real headless Chromium. Its default HTTP page runs inside the owned sandbox, providing deterministic title/link/screenshot checks. Set `BROWSER_URL` for an external site; non-success HTTP responses and absent expected content fail visibly. Installation still needs outbound access to package/browser repositories.
 
-## Two agent examples
+The standard-client import migration example uses `E2B_API_KEY`, `E2B_API_URL`, and `E2B_DOMAIN` configured for your Express account, then runs `python examples/compat-demos/e2b_import_migration.py`. These names belong to the standard E2B-compatible client. Do not reuse credentials from a different provider account. `ProviderSandbox` and decorator examples above use `ABX_SANDBOX_API_KEY`.
 
-Both can start without a paid model key. Set a model key only when you want a real model call.
-
-- `examples/agents/codex_agent.py` uses template `codex`. If that template is not on the account, `Sandbox.create` fails with `E2001` and the script's simulation branch never runs. `OPENAI_API_KEY` is required only for the live model branch.
-- `examples/agents/browser_automation.py` does not read a model key. It `pip install`s Playwright on `base`, then runs `playwright install chromium`. If `playwright` is not on `PATH`, `commands.run` raises `E3006` (`exec: "playwright": executable file not found in $PATH`). The `async with` block still destroys the sandbox.
-
-For Codex and Qwen Code HTTP sessions inside a sandbox, use `examples/agents/complete_case.py` from [Agents API](agents-api.md).
+For local HTTP/session examples run `python examples/run_examples_e2e.py`. That runner uses real local server processes and controlled Codex/Qwen protocol executables, not model calls. Cloud scripts are explicitly listed as `needs-provider` there. See the [example catalog](../../../examples/README.md) and [template HTTP API](template-server-api.md).

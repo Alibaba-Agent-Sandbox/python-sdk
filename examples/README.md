@@ -14,14 +14,10 @@ Examples are split by which package they exercise.
 
 ```bash
 # Full install (recommended — includes the declarative decorator, MCP server, ...)
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
+python -m pip install "agent-sandbox-client[all]==0.4.0a2"
 
 # Or install selectively
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
+python -m pip install "agent-sandbox-client==0.4.0a2"
 
 # From source (run from the python-sdk repository root)
 pip install -e ./server-sdk -e ./client-sdk
@@ -34,7 +30,7 @@ curl -fsSL https://raw.githubusercontent.com/Alibaba-Agent-Sandbox/agent-sandbox
 
 ```bash
 # Option 1: Environment variable
-export E2B_API_KEY="your-api-key"
+export ABX_SANDBOX_API_KEY="your-api-key"
 
 # Option 2: CLI config (persisted to ~/.abx/config.toml; requires the abx CLI)
 abx config set sandbox_api_key your-api-key
@@ -65,7 +61,7 @@ examples/
 tests.  Official & community templates — content, index (`awesome-templates.yaml`),
 releases and CI — live in the single-source-of-truth repository
 [`alibaba-agent-sandbox/awesome-templates`](https://github.com/alibaba-agent-sandbox/awesome-templates);
-discover and install them with `abx template search` / `abx template install <name>`.
+discover and install them with `abx template search` / `abx template launch <name> --yes`.
 
 ## Server SDK examples
 
@@ -91,7 +87,7 @@ discover and install them with `abx template search` / `abx template install <na
 
 | File | Description | Use Case |
 |------|-------------|----------|
-| [`codex_agent.py`](agents/codex_agent.py) | **Codex Agent** — AI code generation & execution | AI programming |
+| [`codex_agent.py`](agents/codex_agent.py) | **Model code generation** — a real OpenAI-compatible model on `base` | AI programming |
 | [`browser_automation.py`](agents/browser_automation.py) | **Browser automation** — Playwright scraping & screenshots | Web scraping |
 | [`complete_case.py`](agents/complete_case.py) | **Complete Agents API case** — local server, Codex and Qwen Code, no model key | Agents API |
 | [`hosted_codex.py`](agents/hosted_codex.py) | **Hosted Codex client** — one session against a server you already started | Agents API |
@@ -131,7 +127,7 @@ python examples/compat-demos/e2b_data_analysis.py
 ```python
 from agent_sandbox import ProviderSandbox as Sandbox
 
-async with await Sandbox.create(template="base", api_key="...") as sandbox:
+async with await Sandbox.create(template="base", sandbox_api_key="...") as sandbox:
 
     # 1. Bare shell — sandbox.commands.run(cmd)
     proc = await sandbox.commands.run("echo hello")
@@ -176,3 +172,11 @@ def compute(n: int) -> float:
 
 result = compute(1000)  # runs in a remote sandbox automatically
 ```
+
+## Reproduce the examples
+
+Run `python examples/run_examples_e2e.py` for local real-server/file/process examples. Codex/Qwen executables in that local run are explicitly controlled protocol fixtures; this does not test a model service. Run the cloud scripts individually with your provider credentials; the local runner lists these as `needs-provider`, never passes.
+
+`agents/codex_agent.py` requires a real `OPENAI_API_KEY`; optional `OPENAI_BASE_URL` and `OPENAI_MODEL` select a compatible model. It does not substitute simulated responses. `agents/browser_automation.py` installs real Chromium and defaults to an owned HTTP page; set `BROWSER_URL` to exercise your external page.
+
+`compat-demos/e2b_import_migration.py` uses the standard synchronous interpreter client and the E2B configuration names described in its docstring. The other cloud examples use `ProviderSandbox` or `@sandbox` and `ABX_SANDBOX_API_KEY`. See [cloud examples](../docs/en/guide/cloud-examples.md) for the complete commands.

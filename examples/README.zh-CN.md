@@ -14,14 +14,10 @@
 
 ```bash
 # 完整安装（推荐，包含声明式装饰器、MCP 服务等）
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
+python -m pip install "agent-sandbox-client[all]==0.4.0a2"
 
 # 或按需安装
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
+python -m pip install "agent-sandbox-client==0.4.0a2"
 
 # 从源码安装（在 python-sdk 仓库根目录执行）
 pip install -e ./server-sdk -e ./client-sdk
@@ -34,7 +30,7 @@ curl -fsSL https://raw.githubusercontent.com/Alibaba-Agent-Sandbox/agent-sandbox
 
 ```bash
 # 方式一：环境变量
-export E2B_API_KEY="your-api-key"
+export ABX_SANDBOX_API_KEY="your-api-key"
 
 # 方式二：CLI 配置（持久化到 ~/.abx/config.toml；需安装 abx CLI）
 abx config set sandbox_api_key your-api-key
@@ -85,7 +81,7 @@ examples/
 
 | 文件 | 说明 | 适用场景 |
 |------|------|----------|
-| [`codex_agent.py`](agents/codex_agent.py) | **Codex Agent** —— AI 代码生成与执行 | AI 编程 |
+| [`codex_agent.py`](agents/codex_agent.py) | **模型代码生成** —— 在 `base` 中调用真实兼容模型 | AI 编程 |
 | [`browser_automation.py`](agents/browser_automation.py) | **浏览器自动化** —— Playwright 爬取与截图 | 网页爬取 |
 | [`complete_case.py`](agents/complete_case.py) | **Agents API 完整案例** —— 本地服务，Codex 与 Qwen Code，不需要模型密钥 | Agents API |
 | [`hosted_codex.py`](agents/hosted_codex.py) | **托管 Codex 客户端** —— 对着已经启动的服务开一个会话 | Agents API |
@@ -125,7 +121,7 @@ python examples/compat-demos/e2b_data_analysis.py
 ```python
 from agent_sandbox import ProviderSandbox as Sandbox
 
-async with await Sandbox.create(template="base", api_key="...") as sandbox:
+async with await Sandbox.create(template="base", sandbox_api_key="...") as sandbox:
 
     # 1. 裸 Shell —— sandbox.commands.run(cmd)
     proc = await sandbox.commands.run("echo hello")
@@ -170,3 +166,11 @@ def compute(n: int) -> float:
 
 result = compute(1000)  # 自动在远程沙箱中执行
 ```
+
+## 复现示例
+
+运行 `python examples/run_examples_e2e.py` 验证本地真实服务、文件和进程。该本地运行中的 Codex/Qwen 可执行程序是明确的协议测试替身，不证明模型服务可用。云端脚本需配置平台凭证并逐个运行；本地脚本将它们列为 `needs-provider`，不会算作通过。
+
+`agents/codex_agent.py` 必须提供真实 `OPENAI_API_KEY`；可选 `OPENAI_BASE_URL`、`OPENAI_MODEL` 指定兼容模型，不会使用模拟回答。`agents/browser_automation.py` 安装真实 Chromium，默认访问沙箱内自建 HTTP 页面；设置 `BROWSER_URL` 可测试外部页面。
+
+`compat-demos/e2b_import_migration.py` 使用标准同步解释器客户端及其文档中的 E2B 配置名；其他云端示例使用 `ProviderSandbox` 或 `@sandbox` 和 `ABX_SANDBOX_API_KEY`。完整命令见[云端示例](../docs/zh/guide/cloud-examples.md)。

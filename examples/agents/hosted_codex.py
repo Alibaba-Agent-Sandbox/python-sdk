@@ -78,7 +78,14 @@ def main() -> None:
         base,
         "POST",
         "/v1/agents/sessions",
-        {"agent": {"model": "codex", "instructions": "Be brief."}},
+        {
+            "adapter": "codex",
+            "agent": {"instructions": "Be brief."},
+            "environment": {
+                "type": "self_hosted",
+                "workspace_directory": os.environ.get("ABX_AGENT_WORKDIR", "/workspace"),
+            },
+        },
     )
     print(f"--- POST /v1/agents/sessions ({status})")
     print(json.dumps(created, indent=2))

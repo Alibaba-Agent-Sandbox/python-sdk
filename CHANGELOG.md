@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Use current SDK keywords, public installations, HTTP file routes and explicit
+  agent adapters/workspaces in examples; propagate failures instead of reporting
+  successful exits. Remove obsolete installation fallbacks and simulated models.
+- Simplify the Node HTTP and cloud capability examples; verify actual data results
+  and browser artifacts. Correct the E2B provider verifier credential name.
+
+### Changed
+
+- Prepare paired client/server 0.4.0a2 with synchronized current example guides.
+
 ## [0.4.0a1] - 2026-10-25
 
 Published alpha pair: [v0.4.0a1](https://github.com/Alibaba-Agent-Sandbox/python-sdk/releases/tag/v0.4.0a1). Both distributions use the same version; see [publication verification](.agents/evidence/verify/2026-10-25-python-040a1-public-release.md).

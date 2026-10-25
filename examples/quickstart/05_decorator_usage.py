@@ -104,10 +104,12 @@ def main() -> None:
     print("\n── 示例 1: 蒙特卡洛法计算 π ──")
     try:
         pi_value = compute_pi(1_000_000)
+        assert abs(pi_value - 3.141592653589793) < 0.01
         print(f"π ≈ {pi_value}")
         print(f"误差: {abs(pi_value - 3.141592653589793):.6f}")
     except Exception as e:
         print(f"执行失败: {e}")
+        raise
 
     # 示例 2: 数据分析
     print("\n── 示例 2: 数据分析 ──")
@@ -119,27 +121,33 @@ def main() -> None:
             {"name": "Diana", "age": 28, "score": 88},
         ]
         result = analyze_data(records)
+        assert result["count"] == 4 and result["columns"] == ["name", "age", "score"]
         print(f"  行数: {result['count']}")
         print(f"  列名: {result['columns']}")
     except Exception as e:
         print(f"执行失败: {e}")
+        raise
 
     # 示例 3: 斐波那契数列
     print("\n── 示例 3: 斐波那契数列 ──")
     try:
         seq = fibonacci(15)
+        assert seq == [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377]
         print(f"  前 15 项: {seq}")
     except Exception as e:
         print(f"执行失败: {e}")
+        raise
 
     # 示例 4: 环境变量
     print("\n── 示例 4: 环境变量 ──")
     try:
         env_info = check_env()
+        assert env_info["APP_MODE"] == "sandbox-demo"
         for k, v in env_info.items():
             print(f"  {k} = {v}")
     except Exception as e:
         print(f"执行失败: {e}")
+        raise
 
     print("\n✓ 所有示例完成")
 
