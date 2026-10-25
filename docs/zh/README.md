@@ -91,7 +91,7 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 |---|------|------|
 | 1 | [系统架构设计](design/architecture.md) | 六层分层架构总览、各层职责、目录结构 |
 | 2 | [SDK API 设计](design/sdk-api-design.md) | 两种使用范式、命令与错误模型、SDK 边界 |
-| 3 | [沙箱类型体系](design/sandbox-types.md) | 临时/持久/休眠三种模式、生命周期状态机、计费模型 |
+| 3 | [沙箱生命周期与资源归属](design/sandbox-types.md) | 自有资源清理、借用连接与 Provider 条件能力 |
 | 4 | [MCP Server](design/mcp-server.md) | 7 个 P0 工具定义、会话绑定、STDIO 与 Streamable HTTP 传输、IDE 配置 |
 | 5 | [模板体系](design/template-system.md) | 官方模板、自定义模板、sandbox.yaml 规范、版本管理、模板市场 |
 | 6 | [Server API](design/server-api.md) | 容器内 HTTP Server 端点定义 |

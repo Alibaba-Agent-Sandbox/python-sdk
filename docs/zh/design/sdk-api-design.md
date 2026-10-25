@@ -1,14 +1,14 @@
 # SDK API 设计
 
 本页描述当前异步 `ProviderSandbox` 的 Provider/server 扩展。根入口
-`Sandbox` / `AsyncSandbox` 和 `agent_sandbox.code_interpreter` 是独立的标准合同，
+`Sandbox` / `AsyncSandbox` 和 `agent_sandbox.code_interpreter` 是独立的标准接口约定，
 见[从 E2B 迁移](../guide/migrate-from-e2b.md)。本页是当前能力概览，不是新增 API 提案。
 
 ## 设计原则
 
 - ProviderSandbox 创建、操作沙箱。源码镜像准备属于 CLI：通常使用
   `abx template launch <reference>`；build/deploy 是高级操作。标准 Template 构建器
-  保留其独立合同。
+  保留其独立接口约定。
 - Shell 命令、解释器执行和模板应用命令有不同入口与前提。创建 `base` 不会启动应用。
 - Provider 声明和真实账号决定可用操作；有同名方法不代表所有平台都实现了它。
 - 公开签名、类型化错误和明确的资源归属约束接口。
@@ -74,7 +74,7 @@ SandboxServer 可通过已有 `@sandbox.register` 或 server 命令注册机制�
 
 项目平台配置使用 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL`、`ABX_SANDBOX_DOMAIN`。
 ProviderSandbox 单次覆盖使用 `sandbox_api_key`、`sandbox_base_url`、`sandbox_domain`。
-标准客户端保留独立有效的 `api_key` 合同。优先级和 Provider 专有配置见
+标准客户端保留独立有效的 `api_key` 接口约定。优先级和 Provider 专有配置见
 [配置参考](../reference/configuration.md)，不能仅凭可选字段名推断平台能力。
 
 ## Sandbox 核心 API
@@ -87,7 +87,7 @@ PTY 等条件能力需要对应 Provider 和真实平台支持。`close()` 释�
 ## 错误
 
 Provider 错误派生自 `SandboxError`，携带 `code`、`message`、`suggestion`、`docs_url`；
-标准客户端保留独立的异常合同。以下完整程序捕获真实进程超时
+标准客户端保留独立的异常约定。以下完整程序捕获真实进程超时
 `CommandTimeoutError`（E3001），在 `finally` 删除自有沙箱，即使删除报错也会关闭连接。
 
 ```python

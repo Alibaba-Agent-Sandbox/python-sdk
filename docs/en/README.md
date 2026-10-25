@@ -91,7 +91,7 @@ Start here only when you are changing the product. Day-to-day use is in the guid
 |---|----------|-------------|
 | 1 | [Architecture Design](design/architecture.md) | Layered architecture overview |
 | 2 | [SDK API Design](design/sdk-api-design.md) | SDK public API specification |
-| 3 | [Sandbox Types](design/sandbox-types.md) | Sandbox type taxonomy |
+| 3 | [Sandbox Lifecycle and Ownership](design/sandbox-types.md) | Owned cleanup, borrowed connections and provider-dependent operations |
 | 4 | [MCP Server](design/mcp-server.md) | MCP tool server design (Python server, HTTP app, FC artifact) |
 | 5 | [Template System](design/template-system.md) | Template resolution, versioning and registry |
 | 6 | [Server API](design/server-api.md) | In-sandbox HTTP server endpoints |

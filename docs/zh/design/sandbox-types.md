@@ -1,7 +1,7 @@
 # 沙箱生命周期与资源归属
 
 本页说明当前 ProviderSandbox 生命周期，不定义额外的持久化/休眠 SDK 类型或全局清理服务。
-标准 `Sandbox` / `AsyncSandbox` 保留独立的[标准合同](../guide/migrate-from-e2b.md)。
+标准 `Sandbox` / `AsyncSandbox` 保留独立的[标准接口约定](../guide/migrate-from-e2b.md)。
 
 ## 创建自己负责的沙箱
 
@@ -48,5 +48,5 @@ asyncio.run(main())
 ## 条件平台能力
 
 暂停/恢复、快照和持久化存储取决于具体 Provider、平台和账号，以当前平台文档及精确操作
-合同为准。SDK 不承诺跨平台通用的持久化/休眠模式、免费存储、固定启动时间或保留期，
+约定为准。SDK 不承诺跨平台通用的持久化/休眠模式、免费存储、固定启动时间或保留期，
 也没有公开的 `Config.set(...)` 全局清理策略。本页不提供未来模式参数或推测的生命周期 API。
