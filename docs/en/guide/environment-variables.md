@@ -4,69 +4,60 @@ This guide describes asynchronous `ProviderSandbox` provider extensions. Root `S
 
 For current SDK installation, use the [installation guide](install-python.md).
 
-> **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository ([CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
+> **Note:** The `abx` commands shown on this page are provided by the CLI in the `agent-sandbox` repository ([CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
-This guide explains how environment variables work inside Agent Sandbox, covering the two distinct process scopes, injection methods, the direct-exec execution model, and recommended patterns.
+This guide distinguishes creation-time environment input, per-process overrides and the environment of an already running application. The examples use the asynchronous `ProviderSandbox`; snippets after the first example assume a live `sandbox` inside an async function.
 
-> **Design decision:** There is no `sandbox.set_env()` API. The envd process tree and the SandboxServer `os.environ` are two separate, non-unifiable scopes. Attempting to provide a single "set env" abstraction would be misleading. Use the scope-specific injection methods described below instead.
+## Where Values Apply
 
----
+| Input | Applies to |
+|-------|------------|
+| `ProviderSandbox.create(envs=...)` | Creation input interpreted by the selected provider and runtime. Ordinary variables can reach subsequent processes, but the runtime may retain the platform `PATH`. |
+| `sandbox.commands.run(..., env=...)` | That process and its children. It does not update other running processes. |
+| Application `POST /env` | The running application's `os.environ` and subsequently created children. It does not update its parent or sibling processes. |
 
-## Two Process Scopes
-
-Inside every sandbox there are **two independent process trees**, each with its own environment:
-
-```text
-┌─────────────────────────────────────────────────────┐
-│                   Sandbox Container                  │
-│                                                      │
-│  ┌────────────────────┐   ┌───────────────────────┐  │
-│  │  envd (PID 1)      │   │  SandboxServer        │  │
-│  │  ├─ commands.run()  │   │  (optional, port 9000)│  │
-│  │  ├─ run_code()      │   │  ├─ GET/POST /env     │  │
-│  │  └─ terminal PTY    │   │  ├─ POST /commands/*  │  │
-│  │                     │   │  └─ child processes    │  │
-│  └────────────────────┘   └───────────────────────┘  │
-└─────────────────────────────────────────────────────┘
-```
-
-| Scope | Process owner | How env vars propagate |
-|-------|--------------|----------------------|
-| **envd scope** | The `envd` daemon (PID 1) | Variables are set at sandbox creation or passed per-call; every process started via `commands.run()`, `run_code()`, or a PTY terminal inherits from envd. |
-| **Server scope** | The `SandboxServer` Python process | `POST /env` modifies `os.environ` of the Server process; only child processes spawned by the Server (e.g. `POST /commands/{name}` handlers) inherit those changes. |
-
-**Key boundary:** `POST /env` on the SandboxServer **does not** affect processes started through the SDK's `commands.run()` or `run_code()` — those go through envd, which has its own environment. The two scopes are completely independent.
+An application can be a child process started through envd. Each process has its own environment; later changes do not rewrite existing parent or sibling processes. There is no global `sandbox.set_env()` API. For a required process `PATH`, pass an explicit per-call `env` rather than assuming creation-time replacement.
 
 ---
 
-## envd Scope — SDK & CLI Injection
+## Creation and Per-Process Environment
 
 ### At Creation Time
 
-Variables passed at creation are injected into the envd root process and inherited by **all** subsequent commands:
+Use creation-time `envs` for ordinary application variables.
 
 **SDK:**
 
 ```python
-sandbox = await Sandbox.create(
-    template="base",
-    envs={"DATABASE_URL": "postgres://...", "APP_ENV": "staging"},
-)
+import asyncio
+from agent_sandbox import ProviderSandbox
+
+async def main():
+    sandbox = await ProviderSandbox.create(
+        template="base", envs={"APP_ENV": "staging"}, timeout=300,
+    )
+    try:
+        result = await sandbox.commands.run("printenv APP_ENV")
+        print(result.stdout.strip())
+    finally:
+        await sandbox.kill()  # This function owns the instance.
+
+asyncio.run(main())
 ```
 
-**CLI:**
+On the default Express CLI path, `abx create base --env KEY=value` sets the new interactive terminal's environment; it is not a sandbox-lifetime creation-env API and has no terminal to configure with `--detach`. Use `ProviderSandbox.create(envs=...)` for the creation input above. For template applications, declare runtime defaults in the template and configure required values before `abx template launch`. See the [CLI guide](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/cli-tutorial.md).
 
-```bash
-abx create --template base --env DATABASE_URL=postgres://... --env APP_ENV=staging
-```
+When attaching to an instance you do not own, release the local connection with `await sandbox.close()` instead of deleting the instance.
 
 **`@sandbox` decorator:**
 
 ```python
-@sandbox(template="base", envs={"DATABASE_URL": "postgres://..."})
+from agent_sandbox import sandbox as sandboxed
+
+@sandboxed(template="base", envs={"APP_ENV": "staging"})
 def my_task():
     import os
-    return os.environ["DATABASE_URL"]
+    return os.environ["APP_ENV"]
 ```
 
 ### Per-Execution Override
@@ -86,6 +77,8 @@ result = await sandbox.run_code(
     envs={"MY_VAR": "hello"},
 )
 ```
+
+`run_code()` is a real interpreter API and requires the selected provider to declare `code.execute` for this mode; an ordinary Express `base` instance does not establish that support. Interpreter environment behavior belongs to that provider, rather than universally to envd.
 
 > **Note the parameter naming difference:** `commands.run()` uses `env=` (singular); `run_code()` uses `envs=` (plural). This follows the E2B naming convention.
 
@@ -124,11 +117,11 @@ result = await sandbox.commands.run("echo $HOME")
 
 # ✅ CORRECT — use sh -c for variable expansion
 result = await sandbox.commands.run("sh -c 'echo $HOME'")
-# stdout: "/root"
+# stdout: the selected process user's home directory
 
 # ✅ CORRECT — use printenv to read a single variable
 result = await sandbox.commands.run("printenv HOME")
-# stdout: "/root"
+# stdout: the selected process user's home directory
 ```
 
 ### Glob Expansion Still Requires Manual Wrapping
@@ -164,36 +157,24 @@ If you only need to **read** a single environment variable's value, prefer `prin
 
 When a `SandboxServer` is running inside the sandbox (typically on port 9000), the `/env` endpoints manage the **Server process's** `os.environ`:
 
-### Read Variables
+### Read and Set Variables
+
+The application must enable and authorize the environment endpoints in its policy. Bind the application with its explicit token; provider gateway access and the application token are distinct credentials.
 
 ```python
-import httpx
+import os
 
-url = sandbox.network.get_url(9000)
-headers = sandbox.network.get_access_headers()
-
-resp = httpx.get(f"{url}/env", headers=headers)
-print(resp.json()["variables"])
-# Only non-sensitive variables are returned (names containing
-# TOKEN, SECRET, KEY, PASSWORD, CREDENTIAL are redacted)
+async with await sandbox.application_client(
+    9000, token=os.environ["ABX_SERVER_TOKEN"]
+) as application:
+    print(await application.system.env(["APP_ENV"]))
+    print(await application.system.set_env({"FEATURE_FLAG_X": "enabled"}))
+    print(await application.system.env(["FEATURE_FLAG_X"]))
 ```
 
-### Set Variables
+These existing typed methods call `GET /env` and `POST /env`, preserving provider URL prefixes, signed query parameters and authentication. Direct HTTP callers can use `application.auth_headers()`; `network.get_url()` and `get_access_headers()` are real provider APIs, but gateway headers alone do not supply an application token. See the [application binding guide](template-workflows.md).
 
-```python
-resp = httpx.post(
-    f"{url}/env",
-    headers={**headers, "Content-Type": "application/json"},
-    json={"vars": {"MY_CONFIG": "new_value"}},
-)
-print(resp.json()["updated"])  # ["MY_CONFIG"]
-```
-
-### Server Scope Boundaries
-
-- `POST /env` modifies **only** `os.environ` of the SandboxServer process.
-- Child processes spawned by the Server (e.g. custom command handlers via `POST /commands/{name}`) inherit these changes.
-- Processes started via `commands.run()`, `run_code()`, or PTY terminals are **not affected** — they run under envd, which has a separate environment.
+The changes affect the application process and future children; they do not modify envd or sibling processes. Settings already read and cached at startup, including model configuration, are not automatically reinitialized by `POST /env`.
 
 ### Protected Variables
 
@@ -211,17 +192,11 @@ The Server rejects attempts to overwrite:
 Best for variables that should be available throughout the sandbox's lifetime:
 
 ```python
-sandbox = await Sandbox.create(
+async with await ProviderSandbox.create(
     template="base",
-    envs={
-        "DATABASE_URL": db_url,
-        "API_KEY": api_key,
-        "APP_ENV": "production",
-    },
-)
-
-# All subsequent commands see these variables
-result = await sandbox.commands.run("printenv DATABASE_URL")
+    envs={"DATABASE_URL": db_url, "APP_ENV": "production"},
+) as sandbox:
+    result = await sandbox.commands.run("printenv APP_ENV")
 ```
 
 ### Pattern 2: Per-Call env Dict (Scoped Overrides)
@@ -246,36 +221,20 @@ await sandbox.commands.run("sh -c 'python seed.py'", env=shared_env)
 await sandbox.run_code("import os; print(os.environ['LOG_LEVEL'])", envs=shared_env)
 ```
 
-### Pattern 4: Server-Scoped Config (SandboxServer Only)
+### Pattern 4: Application-Scoped Configuration
 
-When using a SandboxServer with custom commands, use `POST /env` for runtime config that only the Server needs:
-
-```python
-import httpx
-
-url = sandbox.network.get_url(9000)
-headers = sandbox.network.get_access_headers()
-
-httpx.post(
-    f"{url}/env",
-    headers={**headers, "Content-Type": "application/json"},
-    json={"vars": {"FEATURE_FLAG_X": "enabled"}},
-)
-
-# This variable is now visible to Server command handlers:
-result = await sandbox.run("my_handler")
-```
+Use the authenticated application binding above for values read by a running application. Set startup-only values before launching that application.
 
 ---
 
 ## Client Configuration Variables Are Not Sandbox Variables
 
-The variables that configure the SDK and CLI on **your** machine (`ABX_SANDBOX_API_KEY`, `ABX_PROVIDER`, `ALIBABA_CLOUD_REGION_ID`, ...) are read by the client and are never copied into a sandbox. To make a value visible inside a sandbox, pass it explicitly with `envs=` / `--env`. Each client setting has one variable. Names and precedence are in the [Configuration Reference](../reference/configuration.md#environment-variables).
+The variables that configure the SDK and CLI on **your** machine (`ABX_SANDBOX_API_KEY`, `ABX_PROVIDER`, `ALIBABA_CLOUD_REGION_ID`, ...) are read by the client and are not automatically copied into a sandbox. To make a value visible inside a sandbox, pass it explicitly through the applicable creation or per-process API. Each client setting has one variable. Names and precedence are in the [Configuration Reference](../reference/configuration.md#environment-variables).
 
 Two consequences:
 
 - Inside the Server, every name starting with `ABX_` is protected (see above). Do not use `ABX_*` for your own sandbox variables.
-- [Provider plugins](providers.md) do not inherit your shell environment either. An `exec` plugin process starts with a scrubbed environment; the configuration values it needs are sent in its `initialize` request. A `node` provider is not that process: the Python SDK sends the resolved options on each call to the local engine.
+- An [`exec` provider plugin](providers.md) starts with an allowlisted environment plus any explicitly declared `env_passthrough` names. Its resolved configuration is sent through the existing `initialize` request. A `node` provider uses the CLI local engine; the SDK sends resolved options with its requests.
 
 ---
 
@@ -287,7 +246,7 @@ Two consequences:
 
 3. **Protected Server variables**: `POST /env` blocks writes to `PATH`, `HOME`, `USER`, `SHELL`, and all `ABX_*` variables to prevent accidental breakage.
 
-4. **No cross-scope leakage**: Variables set via `POST /env` on the Server are invisible to envd processes, and vice versa. This is a security feature, not a bug.
+4. **Process inheritance**: `POST /env` does not rewrite parent or sibling environments. Do not treat this ordinary process boundary as a security-isolation guarantee.
 
 5. **Prefer `printenv`** over `echo $VAR`: Since envd uses direct exec, `echo $VAR` prints the literal string `$VAR`. Use `printenv VAR` or `sh -c 'echo $VAR'` instead.
 
@@ -297,11 +256,10 @@ Two consequences:
 
 | Method | Parameter | Scope | Lifetime |
 |--------|-----------|-------|----------|
-| `Sandbox.create(envs=)` | `envs` | envd | Sandbox lifetime |
+| `ProviderSandbox.create(envs=)` | `envs` | Instance creation input | Sandbox lifetime |
 | `commands.run(env=)` | `env` | envd | Single command |
-| `run_code(envs=)` | `envs` | envd | Single execution |
-| `@sandbox(envs=)` | `envs` | envd | Decorator call |
-| CLI `--env KEY=VAL` | `--env` | envd | Sandbox lifetime |
+| `run_code(envs=)` | `envs` | Provider interpreter, when supported | Single execution |
+| `@sandbox(envs=)` | `envs` | Provider creation input | Decorator-owned sandbox |
 | `POST /env` | `vars` | Server | Server process lifetime |
 
 ---
@@ -310,6 +268,6 @@ Two consequences:
 
 - [SDK Usage Guide](sdk-usage.md) — `commands.run()` and `run_code()` usage
 - [Declarative Usage](declarative-usage.md) — `@sandbox(envs=)` decorator
-- [CLI Tutorial](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/cli-tutorial.md) — `abx create --env`
+- [CLI Tutorial](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/cli-tutorial.md) — CLI terminal environment
 - [Configuration Reference](../reference/configuration.md) — SDK/CLI environment variables (one name per key)
 - [Providers](providers.md) — selecting and installing sandbox providers

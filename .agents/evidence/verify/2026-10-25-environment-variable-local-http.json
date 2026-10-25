@@ -1,0 +1,25 @@
+{
+  "readiness_connection_errors": 0,
+  "readiness_protocol_errors": 2,
+  "scope": "Actual published SDK6 imports and local real HTTP environment APIs; no cloud, no provider lifecycle claim",
+  "client": "0.4.0a6",
+  "server": "0.4.0a6",
+  "en_python_blocks_compile": 10,
+  "zh_python_blocks_compile": 10,
+  "actual_public_interfaces": {
+    "ProviderSandbox_create_async": true,
+    "root_Sandbox_create_sync": true,
+    "run_code_envs": true,
+    "named_run_exists": true,
+    "network_get_url_exists": true,
+    "network_get_access_headers_exists": true,
+    "system_env_names": true,
+    "system_set_env_variables": true
+  },
+  "wrong_application_token_rejected": true,
+  "real_local_http_typed_get_set": true,
+  "secret_name_filtered": true,
+  "parent_environment_unchanged": true,
+  "owned_local_pid_absent": true,
+  "passed": true
+}

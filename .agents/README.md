@@ -23,6 +23,8 @@ receipts and variable browser cold-install observations remain unchanged.
 
 [Template startup ownership documentation](notes/proposed/process/2026-10-25-template-startup-ownership.md) clarifies preparation versus connection; [verification](evidence/verify/2026-10-25-template-startup-ownership.md) records the bounded public-a6 startup/auth observation separately from full catalog acceptance.
 
+[Environment-variable guidance](notes/proposed/process/2026-10-25-environment-variable-guidance.md) corrects process inheritance, terminal-only flags and authenticated application examples without changing SDK6; [verification](evidence/verify/2026-10-25-environment-variable-guidance.md) retains scoped passes and the initial local startup failure.
+
 ## Previous public a4 delivery — 2026-10-25
 
 [Public-a4 example acceptance](evidence/verify/2026-10-25-public-a4-examples.md)
