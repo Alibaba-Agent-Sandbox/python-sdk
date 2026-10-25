@@ -23,7 +23,7 @@ from agent_sandbox.models.template import (
     DEFAULT_CAPABILITIES,
     SandboxTemplate,
 )
-from tests.workflow_fixtures import workflow_manifest
+from tests.template_fixtures import template_manifest
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -63,7 +63,7 @@ class TestCapabilityResolution:
 
     async def test_resolve_from_local_yaml(self, tmp_path):
         yaml_file = tmp_path / "template.yaml"
-        yaml_file.write_text(yaml.safe_dump(workflow_manifest()))
+        yaml_file.write_text(yaml.safe_dump(template_manifest()))
         result = await resolve_capabilities("test", local_yaml_path=str(yaml_file))
         assert isinstance(result, ResolvedCapabilities)
         assert result.capabilities == {"ports"}
@@ -71,7 +71,7 @@ class TestCapabilityResolution:
     async def test_resolve_from_local_cache(self, tmp_path):
         cache_dir = tmp_path / "templates" / "test"
         cache_dir.mkdir(parents=True)
-        (cache_dir / "template.yaml").write_text(yaml.safe_dump(workflow_manifest()))
+        (cache_dir / "template.yaml").write_text(yaml.safe_dump(template_manifest()))
         with patch("agent_sandbox.api.capability.TEMPLATE_CACHE_DIR", tmp_path / "templates"):
             result = await resolve_capabilities("test")
         assert result.capabilities == {"ports"}

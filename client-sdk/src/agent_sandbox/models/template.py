@@ -1,4 +1,4 @@
-"""Strict workflow template, server policy and source reference models."""
+"""Whole-template launch, server policy and source reference models."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ STANDARD_CAPABILITIES: frozenset[str] = frozenset(
 """All recognised capability tokens.  Extensible in future phases."""
 
 DEFAULT_CAPABILITIES: frozenset[str] = frozenset()
-"""No runtime operation is inferred when no workflow or provider is known."""
+"""No runtime operation is inferred when no template or provider is known."""
 
 
 SERVER_POLICY_TOP_KEYS: frozenset[str] = frozenset(
@@ -162,10 +162,7 @@ class SandboxTemplate(BaseModel):
     tags: list[str] = Field(default_factory=list)
 
     spec_version: int
-    workflow_contract_version: int
     provides: dict[str, Any]
-    default_workflow: str
-    workflows: dict[str, Any]
     start_cmd: str | None = None
     ready_cmd: str | None = None
 
@@ -178,7 +175,7 @@ class SandboxTemplate(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def _reject_removed_keys(cls, data: Any) -> Any:
-        from agent_sandbox.workflows import validate_workflow_manifest
+        from agent_sandbox.workflows.launch import validate_template_manifest
 
         if isinstance(data, dict) and any(
             k in data
@@ -191,9 +188,9 @@ class SandboxTemplate(BaseModel):
             )
         ):
             raise ValueError(
-                "retired template fields are not accepted; use Dockerfile and workflows"
+                "retired template fields are not accepted; use Dockerfile and template startup"
             )
-        validate_workflow_manifest(data)
+        validate_template_manifest(data)
         return data
 
     @field_validator("server")
@@ -202,20 +199,8 @@ class SandboxTemplate(BaseModel):
         return None if v is None else validate_server_block(v)
 
     def discovery_capabilities(self) -> set[str]:
-        """Coarse discovery only, derived from workflows rather than permission claims."""
-        result: set[str] = set()
-        for flow in self.workflows.values():
-            operation = flow["operation"]
-            if operation.startswith("code."):
-                result.add("code")
-            elif operation.startswith("exec."):
-                result.add("shell")
-            for op in flow["required_operations"]:
-                if op.startswith("files."):
-                    result.add("files")
-            if flow["binding"]["endpoint"] == "provider-port":
-                result.add("ports")
-        return result
+        """Describe exposed ports without claiming platform execution capabilities."""
+        return {"ports"} if self.provides else set()
 
 
 class TemplateRef(BaseModel):

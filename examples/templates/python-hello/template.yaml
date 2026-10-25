@@ -1,41 +1,24 @@
-# FIXTURE — offline test sample only, do NOT publish from this repository.
-# The single source of truth for this template (content, index, release) is:
-#   https://github.com/alibaba-agent-sandbox/awesome-templates/tree/main/python-hello
+# FIXTURE — offline only; publishable templates live in
+# https://github.com/alibaba-agent-sandbox/awesome-templates
 name: python-hello
-version: "1.0.0"
-description: "A minimal Python hello world template for testing"
-author: "alibaba-agent-sandbox"
+version: 1.0.0
+description: A minimal Python hello world template for testing
+author: alibaba-agent-sandbox
 tags:
-  - python
-  - hello-world
-  - example
-
-spec_version: 4
-workflow_contract_version: 1
+- python
+- hello-world
+- example
+spec_version: 5
 provides:
   app:
     protocol: agent-sandbox-server
     version: 2
     port: 9000
-    operations: [commands.list, commands.run]
-default_workflow: application
+    operations:
+    - commands.list
+    - commands.run
 start_cmd: agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py
-workflows:
-  application:
-    kind: application
-    input: source
-    startup: exec
-    service: app
-    binding:
-      transport: http
-      endpoint: provider-port
-      caller: host
-      authentication: service-token
-    operation: commands.run
-    required_operations: []
-
 ports:
-  - 9000
-
+- 9000
 env:
   LANG: C.UTF-8

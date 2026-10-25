@@ -1,6 +1,6 @@
 # agent-sandbox-client
 
-Provider extensions use [explicit template workflows](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/template-workflows.md) ([中文](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/zh/guide/template-workflows.md)); application HTTP, stateless execution and context operations are independent.
+Provider extensions use [whole-template startup](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/template-workflows.md) ([中文](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/zh/guide/template-workflows.md)); application HTTP, stateless execution and context operations are independent.
 
 Install the current alpha with `--pre`; use the [installation guide](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/install-python.md) for a pinned version and environment setup.
 

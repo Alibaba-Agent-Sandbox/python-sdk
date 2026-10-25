@@ -1,4 +1,4 @@
-"""Strict local workflow discovery. Coarse tokens never authorize provider operations."""
+"""Strict local template discovery. Coarse tokens never authorize provider operations."""
 
 from __future__ import annotations
 
@@ -14,14 +14,14 @@ TEMPLATE_CACHE_DIR = Path.home() / ".abx" / "templates"
 
 
 class ResolvedCapabilities(BaseModel):
-    """Discovery derived from an explicitly validated workflow, empty when unknown."""
+    """Discovery derived from an explicitly validated template, empty when unknown."""
 
     capabilities: set[str] = Field(default_factory=set)
     matched: bool = False
 
 
 def parse_template_data(data: dict[str, Any]) -> SandboxTemplate:
-    """Validate specification 4, preserving unrelated application topology metadata."""
+    """Validate specification 5, preserving unrelated application topology metadata."""
     normalized = dict(data)
     resources = normalized.get("resources", {}) or {}
     if "application" not in normalized and "cpu" in resources and "cpu_count" not in normalized:

@@ -1,0 +1,1082 @@
+{
+  "cases": [
+    {
+      "id": "source-cli",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "name": "test",
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": [
+                "commands.run",
+                "health"
+              ]
+            }
+          },
+          "start_cmd": "python app.py"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "expected": {
+        "supported": true,
+        "required_operations": [
+          "exec.run",
+          "ports.resolve",
+          "sandbox.create",
+          "sandbox.delete",
+          "template.prepare"
+        ],
+        "missing_operations": [],
+        "services": {
+          "app": {
+            "protocol": "agent-sandbox-server",
+            "version": 2,
+            "port": 9000,
+            "operations": [
+              "commands.run",
+              "health"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "source-python-unprepared",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "name": "test",
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": [
+                "commands.run",
+                "health"
+              ]
+            }
+          },
+          "start_cmd": "python app.py"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "python-provider",
+        "prepared": false
+      },
+      "expected": {
+        "supported": false,
+        "required_operations": [
+          "exec.run",
+          "ports.resolve",
+          "sandbox.create",
+          "sandbox.delete",
+          "template.prepare"
+        ],
+        "missing_operations": [
+          "template.prepare"
+        ],
+        "services": {
+          "app": {
+            "protocol": "agent-sandbox-server",
+            "version": 2,
+            "port": 9000,
+            "operations": [
+              "commands.run",
+              "health"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "source-python-prepared",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "name": "test",
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": [
+                "commands.run",
+                "health"
+              ]
+            }
+          },
+          "start_cmd": "python app.py"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "python-provider",
+        "prepared": true
+      },
+      "expected": {
+        "supported": true,
+        "required_operations": [
+          "exec.run",
+          "ports.resolve",
+          "sandbox.create",
+          "sandbox.delete"
+        ],
+        "missing_operations": [],
+        "services": {
+          "app": {
+            "protocol": "agent-sandbox-server",
+            "version": 2,
+            "port": 9000,
+            "operations": [
+              "commands.run",
+              "health"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "multiple-services",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "name": "test",
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": [
+                "commands.run",
+                "health"
+              ]
+            },
+            "api": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9001,
+              "operations": [
+                "commands.run",
+                "health"
+              ]
+            }
+          },
+          "start_cmd": "python app.py"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "expected": {
+        "supported": true,
+        "required_operations": [
+          "exec.run",
+          "ports.resolve",
+          "sandbox.create",
+          "sandbox.delete",
+          "template.prepare"
+        ],
+        "missing_operations": [],
+        "services": {
+          "app": {
+            "protocol": "agent-sandbox-server",
+            "version": 2,
+            "port": 9000,
+            "operations": [
+              "commands.run",
+              "health"
+            ]
+          },
+          "api": {
+            "protocol": "agent-sandbox-server",
+            "version": 2,
+            "port": 9001,
+            "operations": [
+              "commands.run",
+              "health"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "no-services",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "name": "test",
+          "provides": {},
+          "start_cmd": "python app.py"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "expected": {
+        "supported": true,
+        "required_operations": [
+          "exec.run",
+          "sandbox.create",
+          "sandbox.delete",
+          "template.prepare"
+        ],
+        "missing_operations": [],
+        "services": {}
+      }
+    },
+    {
+      "id": "managed-no-start",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "provides": {},
+          "provider": "fixture",
+          "template_id": "base"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "expected": {
+        "supported": true,
+        "required_operations": [
+          "sandbox.create",
+          "sandbox.delete"
+        ],
+        "missing_operations": [],
+        "services": {}
+      }
+    },
+    {
+      "id": "managed-foreign-provider",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "provides": {},
+          "provider": "other",
+          "template_id": "base"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "expected": {
+        "supported": false,
+        "required_operations": [
+          "sandbox.create",
+          "sandbox.delete"
+        ],
+        "missing_operations": [],
+        "services": {},
+        "reason": "provider-mismatch"
+      }
+    },
+    {
+      "id": "image-entrypoint",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": [
+                "commands.run",
+                "health"
+              ]
+            }
+          },
+          "image": "registry/image@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "expected": {
+        "supported": true,
+        "required_operations": [
+          "ports.resolve",
+          "sandbox.create",
+          "sandbox.delete"
+        ],
+        "missing_operations": [],
+        "services": {
+          "app": {
+            "protocol": "agent-sandbox-server",
+            "version": 2,
+            "port": 9000,
+            "operations": [
+              "commands.run",
+              "health"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "ready-command",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "provides": {},
+          "image": "image",
+          "ready_cmd": "test -f /tmp/ready"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "expected": {
+        "supported": true,
+        "required_operations": [
+          "exec.run",
+          "sandbox.create",
+          "sandbox.delete"
+        ],
+        "missing_operations": [],
+        "services": {}
+      }
+    },
+    {
+      "id": "unsupported-input",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "name": "test",
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": [
+                "commands.run",
+                "health"
+              ]
+            }
+          },
+          "start_cmd": "python app.py"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "expected": {
+        "supported": false,
+        "required_operations": [
+          "exec.run",
+          "ports.resolve",
+          "sandbox.create",
+          "sandbox.delete",
+          "template.prepare"
+        ],
+        "missing_operations": [],
+        "services": {
+          "app": {
+            "protocol": "agent-sandbox-server",
+            "version": 2,
+            "port": 9000,
+            "operations": [
+              "commands.run",
+              "health"
+            ]
+          }
+        },
+        "reason": "input-unimplemented"
+      }
+    },
+    {
+      "id": "unsupported-startup",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "name": "test",
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": [
+                "commands.run",
+                "health"
+              ]
+            }
+          },
+          "start_cmd": "python app.py"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "entrypoint"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "expected": {
+        "supported": false,
+        "required_operations": [
+          "exec.run",
+          "ports.resolve",
+          "sandbox.create",
+          "sandbox.delete",
+          "template.prepare"
+        ],
+        "missing_operations": [],
+        "services": {
+          "app": {
+            "protocol": "agent-sandbox-server",
+            "version": 2,
+            "port": 9000,
+            "operations": [
+              "commands.run",
+              "health"
+            ]
+          }
+        },
+        "reason": "startup-unimplemented"
+      }
+    },
+    {
+      "id": "missing-port",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "name": "test",
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": [
+                "commands.run",
+                "health"
+              ]
+            }
+          },
+          "start_cmd": "python app.py"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run"
+            ],
+            "python": []
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "expected": {
+        "supported": false,
+        "required_operations": [
+          "exec.run",
+          "ports.resolve",
+          "sandbox.create",
+          "sandbox.delete",
+          "template.prepare"
+        ],
+        "missing_operations": [
+          "ports.resolve"
+        ],
+        "services": {
+          "app": {
+            "protocol": "agent-sandbox-server",
+            "version": 2,
+            "port": 9000,
+            "operations": [
+              "commands.run",
+              "health"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "retired-v4",
+      "input": {
+        "manifest": {
+          "spec_version": 4,
+          "name": "test",
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": [
+                "commands.run",
+                "health"
+              ]
+            }
+          },
+          "start_cmd": "python app.py"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "error": true
+    },
+    {
+      "id": "retired-workflows",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "name": "test",
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": [
+                "commands.run",
+                "health"
+              ]
+            }
+          },
+          "start_cmd": "python app.py",
+          "workflows": {}
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "error": true
+    },
+    {
+      "id": "unknown-service-field",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "name": "test",
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": [
+                "commands.run",
+                "health"
+              ],
+              "binding": {}
+            }
+          },
+          "start_cmd": "python app.py"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "error": true
+    },
+    {
+      "id": "bad-provider-binding",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "name": "test",
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": [
+                "commands.run",
+                "health"
+              ]
+            }
+          },
+          "start_cmd": "python app.py",
+          "provider": "fixture"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "error": true
+    },
+    {
+      "id": "bad-port-bool",
+      "input": {
+        "manifest": {
+          "spec_version": 5,
+          "name": "test",
+          "provides": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": true,
+              "operations": [
+                "commands.run",
+                "health"
+              ]
+            }
+          },
+          "start_cmd": "python app.py"
+        },
+        "provider": {
+          "id": "fixture",
+          "operation_contract_version": 1,
+          "operations": {
+            "cli": [
+              "sandbox.create",
+              "sandbox.delete",
+              "template.prepare",
+              "exec.run",
+              "ports.resolve"
+            ],
+            "python": [
+              "sandbox.create",
+              "sandbox.delete",
+              "exec.run",
+              "ports.resolve"
+            ]
+          },
+          "workflow_inputs": [
+            "source",
+            "image",
+            "managed"
+          ],
+          "startup_modes": [
+            "exec",
+            "entrypoint",
+            "none"
+          ]
+        },
+        "consumer": "cli",
+        "prepared": false
+      },
+      "error": true
+    }
+  ]
+}

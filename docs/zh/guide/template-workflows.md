@@ -21,21 +21,43 @@ finally:
 
 如果 `X-Access-Token` 请求头未被占用，客户端还会通过服务端已有的这个请求头发送同一个显式应用令牌，使认证能通过 OpenSandbox 1.1.1 等会过滤 `Authorization` 的代理。已有网关请求头（包括注入 HTTP 客户端的默认请求头）不会被覆盖；需要 Bearer 的服务仍可使用原认证方式。
 
-使用已准备的镜像工作流创建独立沙箱：
+通过已准备好的 Provider 引用启动完整模板：
 
 ```python
-from agent_sandbox.api import launch_workflow
+from agent_sandbox.api import launch_template
 
-async with await launch_workflow(
-    "template.yaml", provider="opensandbox", workflow_id="application-image",
-    reference=immutable_image_reference, application_token=application_token,
+async with await launch_template(
+    "template.yaml", provider="opensandbox",
+    reference=prepared_reference, application_token=application_token,
 ) as session:
     result = await session.run_command("hello", name="Python")
 ```
 
-模板必须声明所选工作流。Python 不构建源码项目；先用 CLI 准备，再连接返回的沙箱 ID，或用构建产物的 SHA256 镜像引用启动 `image` 工作流。`managed` 工作流直接接受所声明平台的原生模板 ID，不要求平台提供版本号。外部应用使用 `service` 工作流及显式应用 URL。这个独立启动器不执行 application 部署 hooks，也不重新解释应用部署拓扑。
+不再选择工作流。Python 创建一个沙箱，执行一次 `start_cmd`，检查 `ready_cmd`，
+并解析 `provides` 中所有服务。SandboxServer 协议 v2 服务执行 health/discovery 检查；
+其他协议由模板的就绪命令检查，返回对应客户端但不猜测其协议路由。
+`session.services` 包含全部服务客户端，`session.servers` 包含 SandboxServer 客户端。
+只有一个 SandboxServer 时可以使用 `session.server` 和 `session.run_command`；
+多个时使用 `session.servers["服务名"].commands.run(...)` 选择调用目标。
+这不会改变已经整体启动的模板内容。
 
-启动器固化 manifest 输入，核对 Provider 实际代码摘要，在创建前持久化意图并记录自有资源 ID，在调用前检查应用协议版本，只删除自己创建的沙箱。创建结果不确定时不重试创建，保留 journal，可按 `abx_workflow_run` metadata 核对资源。清理失败会保留资源 ID 并抛错。journal 不写 API key、应用令牌、环境秘密或带签名的端点 URL，也不等于可信验证收据。
+Python 不构建源码。先使用 CLI 准备并传入生成的 Provider 引用，或连接 CLI 返回的沙箱。
+模板也可声明固定摘要的 `image`，或者 `provider` 与 `template_id` 原生模板标识。
+引用由 Provider 解释，原生 ID 不需要虚构版本。已有外部 HTTP 服务直接使用
+`ServerClient`；应用部署 hook 仍由部署编排器处理。
+
+启动器冻结 manifest、记录创建意图和所拥有的资源 ID，仅删除自己创建的沙箱。
+创建结果不确定时不自动重试，可使用 `abx_template_run` 元数据核对资源。
+后续服务失败也会关闭之前解析的所有客户端。日志不记录令牌、环境变量值和签名 URL，
+也不等于云端验证证据。同一个最终 `ABX_SERVER_TOKEN` 同时用于沙箱环境和客户端。
+
+## 从规范 4 迁移
+
+改为 `spec_version: 5`，删除 `workflow_contract_version`、`default_workflow`、
+`workflows`，保留完整的 `provides`、实际 `start_cmd` 和 `ready_cmd`。
+CLI 命令删除 `--workflow`；Python 改用 `launch_template`，不传 `workflow_id`。
+旧清单明确报告迁移错误，不自动挑选以前的默认工作流。
+历史规范 4 证据保留，但不能证明规范 5 的启动链路已验证。
 
 ## 解释器操作
 
@@ -58,7 +80,9 @@ finally:
     await sandbox.kill()  # 本段代码创建并负责删除这个沙箱
 ```
 
-已有声明 `input: managed` 的 manifest 时，也可以调用 `launch_workflow(manifest, provider="alicloud-express", reference="base")`；它的异步上下文管理器会删除自己创建的沙箱。启动前仍检查所属平台、所需操作及启动方式。原生 ID 没有内容摘要也可以使用，journal 会如实记录产物摘要未知，不承诺内容不可变。
+规范 5 清单声明 `provider: alicloud-express`、`template_id: base` 和
+`provides: {}` 后，可以调用 `launch_template(manifest, provider="alicloud-express")`，
+通过异步上下文管理器自动删除自己创建的沙箱。不再声明或选择工作流。
 
 在 `code-interpreter-v1` 上运行 shell 命令，并不代表调用了解释器 API。极速版、E2B 和 REST 的项目适配器尚未接入统一解释器操作，需要时使用已记录的平台原生 SDK；CubeSandbox 和容器版接入了持久默认上下文操作。
 

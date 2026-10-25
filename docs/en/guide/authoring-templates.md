@@ -6,7 +6,7 @@ For current SDK installation, use the [paired source installation guide](install
 
 This is the **Server SDK**: `commands.py` starts with the image and serves HTTP inside the sandbox. Creating and calling a sandbox from your machine is the [Client SDK](client-sdk.md).
 
-This document explains how to create custom Agent Sandbox templates, including directory structure, field reference, explicit workflows, registered commands, and publishing.
+This document explains how to create custom Agent Sandbox templates, including directory structure, field reference, whole-template startup, registered commands, and publishing.
 
 A template is a directory of plain files, written by hand or generated. The `abx template scaffold` command generates one three ways (built-in scaffold, a one-sentence description, or adopting a project that already has source code); that workflow is documented in the CLI repository: [Authoring Templates (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authoring-templates.md).
 
@@ -32,40 +32,32 @@ my-template/
 
 ```yaml
 name: my-python-template
-version: "1.0.1"
-description: "Scaffold for a new Agent Sandbox template. Not a catalog entry."
-author: "alibaba-agent-sandbox"
+version: 1.0.1
+description: Scaffold for a new Agent Sandbox template. Not a catalog entry.
+author: alibaba-agent-sandbox
 license: Apache-2.0
-spec_version: 4
-base: "fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>"
+spec_version: 5
+base: fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
 generation: 2
-start_cmd: "agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py"
-ready_cmd: "agent-sandbox-server healthcheck --port 9000"
-
+start_cmd: agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py
+ready_cmd: agent-sandbox-server healthcheck --port 9000
 resources:
   cpu: 2
   memory: 2048
-
 ports:
-  - 9000
-
+- 9000
 tags:
-  - example
-  - skeleton
-
+- example
+- skeleton
 priority: P2
 wave: other
-
-
 env:
-  ABX_SERVER_TOKEN: ""
-
+  ABX_SERVER_TOKEN: ''
 smoke:
-  - command: hello
-    args:
-      name: Express
-    expect: "Hello, Express!"
-workflow_contract_version: 1
+- command: hello
+  args:
+    name: Express
+  expect: Hello, Express!
 provides:
   app:
     protocol: agent-sandbox-server
@@ -74,20 +66,6 @@ provides:
     operations:
     - commands.list
     - commands.run
-default_workflow: application
-workflows:
-  application:
-    kind: application
-    input: source
-    service: app
-    startup: exec
-    binding:
-      transport: http
-      endpoint: provider-port
-      caller: host
-      authentication: service-token
-    operation: commands.run
-    required_operations: []
 ```
 
 ---
@@ -105,8 +83,6 @@ workflows:
 | `ports` | `list[int]` | ❌ | `[]` | Exposed port list |
 | `author` | `str` | ❌ | `""` | Author |
 | `license` | `str` | ❌ | `""` | License |
-| `spec_version` / `workflow_contract_version` | integer | ✅ | — | `4` / `1` |
-| `provides` / `workflows` / `default_workflow` | mapping / identifier | ✅ | — | Explicit workflow contract |
 | `tags` | `list[str]` | ❌ | `[]` | Tags |
 
 For detailed field definitions, see [template.yaml Spec](../reference/template-yaml-spec.md).
@@ -114,11 +90,16 @@ For detailed field definitions, see [template.yaml Spec](../reference/template-y
 ---
 
 <a id="capability-declarations"></a>
-## Template Workflows
+## Template startup
 
-`provides` describes software/services and `workflows` declares explicit invocation paths. The default names one workflow and grants no inferred operations. Retired `capabilities`, `tested_on` and provider compatibility tables are rejected; unknown remote references grant no default interpreter. Application HTTP does not depend on a unified code interpreter. See [explicit template workflows](template-workflows.md) for exact operations, T/F/U, contexts and verification scope.
+Use `spec_version: 5` and declare every service in `provides`. `start_cmd` and
+`ready_cmd` apply to the complete template, without named workflow selections.
+The Provider supplies platform operations; service policy controls application APIs.
+Neither layer implies interpreter support. See [launching templates](template-workflows.md).
 
-The HTTP server independently applies endpoint policy across nine groups. `core` stays on; `dev_tools`, `browser` and `agents` start off. `server:` does not authorize provider operations, and a workflow does not automatically enable server endpoints. See [Template server HTTP API](template-server-api.md).
+Server endpoint policies remain independent. The `core` group stays enabled;
+`dev_tools`, `browser`, and `agents` require explicit configuration. Declaring an
+API in template metadata does not enable its server policy.
 
 ---
 
@@ -151,7 +132,7 @@ Keep the source Dockerfile unchanged. Resolve base-image placeholders in the sou
 
 ## Provider template profile
 
-The server does not select a provider. Port 9000 is the application HTTP listen default; injected envd, interpreter services and reserved ports belong to each backend. Those differences do not imply the application is unusable. `startup: exec`, `entrypoint` and `none` are distinct paths and must match provider declarations. Do not run native startup and a start command twice; actually check a nonempty `ready_cmd`. Build configurations are explicit, and the effective Dockerfile/arguments participate in input identity.
+The server does not select a provider. Port 9000 is the application HTTP listen default; injected envd, interpreter services and reserved ports belong to each backend. Those differences do not imply the application is unusable. A declared `start_cmd` runs once; without it, the image or managed template owns startup. Do not run native startup and a start command twice; actually check a nonempty `ready_cmd`. Build configurations are explicit, and the effective Dockerfile/arguments participate in input identity.
 
 `commands.py` imports only `agent_sandbox.server` and calls `start(port)` from its
 main entry; the image explicitly installs the server SDK. For the provider-native

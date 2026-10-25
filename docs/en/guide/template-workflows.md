@@ -21,21 +21,50 @@ finally:
 
 The client also sends the explicit application token in the server's existing `X-Access-Token` header when that header is unused. This keeps authentication working through proxies that strip `Authorization`, including OpenSandbox 1.1.1. Existing gateway headers, including defaults on an injected HTTP client, are never replaced. Bearer authentication remains available for services that require it.
 
-For a new prepared-image workflow:
+To start the complete template from a prepared provider reference:
 
 ```python
-from agent_sandbox.api import launch_workflow
+from agent_sandbox.api import launch_template
 
-async with await launch_workflow(
-    "template.yaml", provider="opensandbox", workflow_id="application-image",
-    reference=immutable_image_reference, application_token=application_token,
+async with await launch_template(
+    "template.yaml", provider="opensandbox",
+    reference=prepared_reference, application_token=application_token,
 ) as session:
     result = await session.run_command("hello", name="Python")
 ```
 
-The selected manifest must declare that workflow. Python does not build source projects. Use the CLI to prepare them first; connect to its returned sandbox ID, or use an `image` workflow with the resulting SHA256 image reference. A `managed` workflow accepts the native template ID belonging to its declared provider; it does not require a platform version number. An external application uses a `service` workflow and explicit application URL. The standalone launcher does not execute application deployment hooks or reinterpret deployment topology.
+There is no workflow selection. Python creates one sandbox, runs `start_cmd` once,
+checks `ready_cmd`, and resolves every service in `provides`. SandboxServer protocol v2 services
+receive health/discovery checks before use. Other service protocols use the template's
+readiness command; their endpoints are returned without guessing protocol routes.
+`session.services` contains every service client, while `session.servers` contains
+SandboxServer clients. `session.server` and `session.run_command` are conveniences
+only when there is exactly one SandboxServer. With several, call
+`session.servers["service-name"].commands.run(...)` to choose the invocation target.
+Choosing a client never changes which template services were started.
 
-The launcher freezes manifest inputs, checks the provider's actual code digest, persists intent before create, records owned resource IDs, checks application protocol version before invocation, and deletes only its owned sandbox. An uncertain create is not replayed and remains in a journal for reconciliation using its `abx_workflow_run` metadata. Cleanup failure preserves resource IDs and raises. Journals contain no API keys, application tokens, environment secrets or signed endpoint URLs. A journal alone is not a trusted verification receipt.
+Python does not build sources. Prepare them with the CLI and pass the resulting
+provider reference, or connect to the sandbox returned by the CLI. A manifest may
+also declare a fixed digest-pinned `image`, or `provider` plus `template_id` for a
+platform-managed template. References are interpreted by that Provider; native IDs
+need no artificial version. For an existing external HTTP service, use `ServerClient`
+directly. Application deployment hooks still belong to the deployment orchestrator.
+
+The launcher freezes the manifest, records intent and owned IDs, and deletes only its
+own sandbox. Uncertain creation is not retried and remains recorded for reconciliation
+using `abx_template_run` metadata. Every resolved client is closed on failure, including
+failure of a later service. Journals exclude tokens, environment values and signed URLs;
+they do not constitute verified cloud receipts. One effective `ABX_SERVER_TOKEN` value
+is used both for the sandbox environment and the application clients.
+
+## Migrating specification 4
+
+Use `spec_version: 5`; remove `workflow_contract_version`, `default_workflow`, and
+`workflows`. Retain the full `provides` map and the template's actual `start_cmd` and
+`ready_cmd`. Remove CLI `--workflow` and replace Python `launch_workflow` with
+`launch_template` without `workflow_id`. Old manifests fail with a migration error;
+they are not silently reduced to their former default. Historical specification 4
+receipts remain history and do not prove the specification 5 startup path.
 
 ## Interpreter operations
 
@@ -58,7 +87,10 @@ finally:
     await sandbox.kill()  # this code created and owns the sandbox
 ```
 
-If you already have a manifest declaring `input: managed`, use `launch_workflow(manifest, provider="alicloud-express", reference="base")` instead. Its async context manager deletes the sandbox it creates. The workflow still checks the provider, required operations and startup mode. A native ID without a content digest is usable; its journal records the artifact digest as unknown and makes no immutable-content claim.
+With a specification 5 manifest containing `provider: alicloud-express`,
+`template_id: base` and `provides: {}`, `launch_template(manifest,
+provider="alicloud-express")` offers the same owned cleanup through its async context
+manager. No workflow declaration or selector is required.
 
 Executing a shell command on `code-interpreter-v1` does not exercise the interpreter API. Express, E2B and REST project adapters currently do not implement unified interpreter operations; use the documented native SDK where applicable. CubeSandbox and container edition support the persistent default-context operation.
 

@@ -85,7 +85,7 @@ class AlicloudExpressProvider(Provider):
         }
     )
     workflow_inputs = frozenset({"managed"})
-    startup_modes = frozenset({"entrypoint", "none"})
+    startup_modes = frozenset({"exec", "entrypoint", "none"})
     inherit = frozenset(GENERIC_ENDPOINT_KEYS)
 
     def __init__(self) -> None:

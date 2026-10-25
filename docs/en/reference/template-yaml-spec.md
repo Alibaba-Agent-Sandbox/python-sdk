@@ -1,6 +1,6 @@
 # template.yaml Specification
 
-Current templates use `spec_version: 4` and `workflow_contract_version: 1`. The complete publishing authority is [awesome-templates/template-v4.schema.json](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/spec/template-v4.schema.json); the shared workflow contract lives in [contracts](https://github.com/Alibaba-Agent-Sandbox/python-sdk/tree/main/contracts). The full schema retains application deployment topology, hooks and durable state.
+Current templates use `spec_version: 5`. The complete publishing authority is [awesome-templates/template-v5.schema.json](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/spec/template-v5.schema.json); the shared launch contract lives in [contracts](https://github.com/Alibaba-Agent-Sandbox/python-sdk/tree/main/contracts). The full schema retains application deployment topology, hooks and durable state.
 
 ## File Location
 
@@ -25,21 +25,20 @@ Published source manifests use `resources.cpu` and `resources.memory`; the SDK r
 `generation` belongs to the selected template/provider startup configuration; the catalog source schema currently requires `2`. Creation still requires the provider to implement the declared input and startup mode.
 
 <a id="capability-declarations"></a>
-### Workflow Declarations
+### Template startup
 
-| Field | Meaning |
-| --- | --- |
-| `spec_version` | Required integer `4` |
-| `workflow_contract_version` | Required integer `1` |
-| `provides` | Services, each with `protocol`, `version`, `port`, `operations` |
-| `default_workflow` | Required identifier of one declared workflow |
-| `workflows` | Named `application`, `exec` or `interpreter` paths |
+`spec_version` is integer `5`. `provides` describes every service through `protocol`,
+`version`, `port` and `operations`, and may be empty. `start_cmd` starts the complete
+template once; when absent, the image or platform template supplies its own startup.
+`ready_cmd`, when present, is executed before service clients are returned. A fixed
+`image` or `provider` plus `template_id` can identify a prepared template; otherwise
+the CLI prepares its source. Python requires a prepared reference.
 
-Every workflow explicitly supplies `kind`, `input` (`source/image/managed/service`), `startup` (`exec/entrypoint/none`), `binding`, `operation` and `required_operations`. An application also names a `service` from `provides`. Binding fields are `transport`, `endpoint`, `caller`, `authentication`. Unknown workflow fields are rejected.
-
-`startup: exec` requires a nonempty `start_cmd` and `exec.run`. Native startup uses `entrypoint` without running the start command again. A `service` input requires `startup: none`. A declared nonempty `ready_cmd` requires execution support and must actually be checked, regardless of startup mode. Managed references belong to one provider. Templates may add `required_operations` and `required_checks`, never remove derived requirements or minimum profile checks.
-
-Template `capabilities`, `tested_on` and handwritten `providers` compatibility tables are rejected. There is no default `{shell, files, code}` grant. Providing Python or HTTP does not imply provider interpreter operations. See [explicit template workflows](../guide/template-workflows.md).
+Remove `workflow_contract_version`, `default_workflow` and `workflows` when migrating
+from specification 4. No application/exec/interpreter type or operation is selected
+at launch. Retired `capabilities`, `tested_on` and provider compatibility tables are
+still rejected. Actual Provider and server capabilities are checked at invocation.
+See [launching templates](../guide/template-workflows.md).
 
 ### Removed key: `custom_commands`
 
@@ -82,40 +81,32 @@ This source-publishing example includes required metadata. Resolve its base-imag
 
 ```yaml
 name: my-python-template
-version: "1.0.1"
-description: "Scaffold for a new Agent Sandbox template. Not a catalog entry."
-author: "alibaba-agent-sandbox"
+version: 1.0.1
+description: Scaffold for a new Agent Sandbox template. Not a catalog entry.
+author: alibaba-agent-sandbox
 license: Apache-2.0
-spec_version: 4
-base: "fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>"
+spec_version: 5
+base: fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
 generation: 2
-start_cmd: "agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py"
-ready_cmd: "agent-sandbox-server healthcheck --port 9000"
-
+start_cmd: agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py
+ready_cmd: agent-sandbox-server healthcheck --port 9000
 resources:
   cpu: 2
   memory: 2048
-
 ports:
-  - 9000
-
+- 9000
 tags:
-  - example
-  - skeleton
-
+- example
+- skeleton
 priority: P2
 wave: other
-
-
 env:
-  ABX_SERVER_TOKEN: ""
-
+  ABX_SERVER_TOKEN: ''
 smoke:
-  - command: hello
-    args:
-      name: Express
-    expect: "Hello, Express!"
-workflow_contract_version: 1
+- command: hello
+  args:
+    name: Express
+  expect: Hello, Express!
 provides:
   app:
     protocol: agent-sandbox-server
@@ -124,22 +115,8 @@ provides:
     operations:
     - commands.list
     - commands.run
-default_workflow: application
-workflows:
-  application:
-    kind: application
-    input: source
-    service: app
-    startup: exec
-    binding:
-      transport: http
-      endpoint: provider-port
-      caller: host
-      authentication: service-token
-    operation: commands.run
-    required_operations: []
 ```
 
 ## Build Notes
 
-`base` is valid source/template metadata. Builds use the selected effective Dockerfile and explicit build configuration; they never silently replace `FROM`, users, copy paths or entrypoints. Install dependencies through native files in the image. The Python launcher does not prepare source; select a prepared `image`/`managed` reference or explicit `service` path.
+`base` is valid source/template metadata. Builds use the selected effective Dockerfile and explicit build configuration; they never silently replace `FROM`, users, copy paths or entrypoints. Install dependencies through native files in the image. The Python launcher does not prepare source; pass a prepared Provider reference or connect an existing ServerClient.

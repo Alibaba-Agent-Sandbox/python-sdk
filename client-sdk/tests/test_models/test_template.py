@@ -8,27 +8,27 @@ from agent_sandbox.models.template import SandboxTemplate, TemplateRef
 class TestSandboxTemplate:
     """Current schema preserves application metadata and rejects old contracts."""
 
-    def test_workflow_template(self) -> None:
-        from tests.workflow_fixtures import workflow_manifest
+    def test_complete_template(self) -> None:
+        from tests.template_fixtures import template_manifest
 
-        tmpl = SandboxTemplate.model_validate(workflow_manifest())
-        assert tmpl.spec_version == 4
-        assert tmpl.default_workflow == "application"
+        tmpl = SandboxTemplate.model_validate(template_manifest())
+        assert tmpl.spec_version == 5
+        assert "workflows" not in SandboxTemplate.model_fields
         assert tmpl.env == {} and tmpl.ports == []
         assert "code" not in tmpl.discovery_capabilities()
 
     def test_application_topology_round_trips(self) -> None:
-        from tests.workflow_fixtures import workflow_manifest
+        from tests.template_fixtures import template_manifest
 
         topology = {"workers": {"limits": {"cpu": 0.5}}}
-        tmpl = SandboxTemplate.model_validate(workflow_manifest(deployment=topology))
+        tmpl = SandboxTemplate.model_validate(template_manifest(deployment=topology))
         assert tmpl.model_dump()["deployment"] == topology
 
     def test_retired_build_fields_are_rejected(self) -> None:
         import pytest
         from pydantic import ValidationError
 
-        from tests.workflow_fixtures import workflow_manifest
+        from tests.template_fixtures import template_manifest
 
         for field in (
             "system_packages",
@@ -38,7 +38,7 @@ class TestSandboxTemplate:
             "custom_commands",
         ):
             with pytest.raises(ValidationError, match="retired template fields"):
-                SandboxTemplate.model_validate(workflow_manifest(**{field: ["old"]}))
+                SandboxTemplate.model_validate(template_manifest(**{field: ["old"]}))
 
     def test_old_missing_version_is_rejected(self) -> None:
         import pytest
