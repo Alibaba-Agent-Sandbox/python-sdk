@@ -42,4 +42,5 @@ This was a post-upload verification failure, not a rejected upload.
   and 502 (chunked framing). Repeating with loopback NO_PROXY made framing
   pass; missing-key upgrade still returned 501. No server implementation is
   changed by this patch. The original a2 same-tag official CI/release rerun passed.
-- Client full suite and this head's remote CI: pending before merge.
+- PASS: client full suite: 2261 passed / 27 skipped (124.73 seconds).
+- This head's remote CI and independent review: pending before merge.
