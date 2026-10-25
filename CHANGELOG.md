@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.4.0a1] - 2026-10-25
+
+Candidate: not yet published.
+
+### Changed
+
+- Specification 5 starts complete templates without workflow selection. Python now
+  exposes `launch_template`, `TemplateSession` and `TemplateLaunchError`, preserving
+  all declared services and cleanup ownership. Source preparation remains CLI-owned.
+- Migrate specification 4 by removing workflow declarations and using the existing
+  startup/readiness fields. `launch_workflow` and `workflow_id` are removed; historical
+  receipts remain unchanged and do not certify the new launch path.
+
+
 ### Documentation synchronization
 
 - Correct current SDK examples, reconnect semantics, packaged skills and installation guidance; index accepted release/workflow records without rewriting historical verification. / 修正当前 SDK 示例、重连语义、配套技能与安装说明，索引已交付发布和工作流记录，保留历史验证。

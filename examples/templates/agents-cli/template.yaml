@@ -1,50 +1,29 @@
-# FIXTURE — offline example kept in this repository so the Agents API case can be
-# tested without a publish. Publishable templates live in
+# FIXTURE — offline only; publishable templates live in
 # https://github.com/alibaba-agent-sandbox/awesome-templates
 name: agents-cli
-version: "1.0.0"
-description: "Agents API for Codex and Qwen Code. The image does not preinstall either CLI."
-author: "alibaba-agent-sandbox"
+version: 1.0.0
+description: Agents API for Codex and Qwen Code. The image does not preinstall either
+  CLI.
+author: alibaba-agent-sandbox
 tags:
-  - agents-api
-  - codex
-  - qwen-code
-  - self-hosted
-
+- agents-api
+- codex
+- qwen-code
+- self-hosted
 base: python:3.12-slim
-
-spec_version: 4
-workflow_contract_version: 1
+spec_version: 5
 provides:
   app:
     protocol: agent-sandbox-server
     version: 2
     port: 9000
-    operations: [agents.sessions.create]
-default_workflow: agents
-workflows:
-  agents:
-    kind: application
-    input: source
-    startup: entrypoint
-    service: app
-    binding:
-      transport: http
-      endpoint: provider-port
-      caller: host
-      authentication: service-token
-    operation: agents.sessions.create
-    required_operations: []
-
+    operations:
+    - agents.sessions.create
 ports:
-  - 9000
-
-# Endpoint rules are the only switch. `"*"` closes every endpoint (shell, files, and
-# the rest of the Agents API) and the exact rules below open the six routes this
-# template serves. An exact endpoint rule also opens an endpoint of an opt-in group.
+- 9000
 server:
   endpoints:
-    "*":
+    '*':
       enabled: false
     agents_sessions_create:
       enabled: true
@@ -58,7 +37,6 @@ server:
       enabled: true
     agents_runtimes_list:
       enabled: true
-
 resources:
   cpu: 1
   memory: 1024

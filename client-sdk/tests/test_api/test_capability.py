@@ -11,7 +11,7 @@ from agent_sandbox.api.capability import (
 )
 from agent_sandbox.models.errors import TemplateParseError
 from agent_sandbox.models.template import DEFAULT_CAPABILITIES
-from tests.workflow_fixtures import workflow_manifest
+from tests.template_fixtures import template_manifest
 
 
 def test_no_default_interpreter_claim():
@@ -19,7 +19,7 @@ def test_no_default_interpreter_claim():
 
 
 def test_application_service_does_not_imply_code_interpreter():
-    template = parse_template_data(workflow_manifest())
+    template = parse_template_data(template_manifest())
     assert template.discovery_capabilities() == {"ports"}
 
 
@@ -36,7 +36,7 @@ def test_application_service_does_not_imply_code_interpreter():
 )
 def test_retired_inputs_rejected(retired):
     with pytest.raises(ValidationError):
-        parse_template_data(workflow_manifest(**{retired: []}))
+        parse_template_data(template_manifest(**{retired: []}))
 
 
 async def test_unknown_remote_reference_is_unknown_not_default():
@@ -46,7 +46,7 @@ async def test_unknown_remote_reference_is_unknown_not_default():
 
 async def test_explicit_manifest_is_strict_and_resources_do_not_mutate_input(tmp_path):
     path = tmp_path / "template.yaml"
-    data = workflow_manifest(resources={"cpu": 2, "memory": 512})
+    data = template_manifest(resources={"cpu": 2, "memory": 512})
     path.write_text(yaml.safe_dump(data))
     result = await resolve_capabilities("fixture", local_yaml_path=str(path))
     assert result.matched and result.capabilities == {"ports"}
@@ -72,7 +72,7 @@ async def test_cached_alias_matches_only_valid_manifest(tmp_path, monkeypatch):
     monkeypatch.setattr("agent_sandbox.api.capability.TEMPLATE_CACHE_DIR", tmp_path)
     path = tmp_path / "cache" / "template.yaml"
     path.parent.mkdir()
-    path.write_text(yaml.safe_dump(workflow_manifest(aliases=["alias"])))
+    path.write_text(yaml.safe_dump(template_manifest(aliases=["alias"])))
     result = await resolve_capabilities_for("not-matching", "alias")
     assert result.matched and "code" not in result.capabilities
     path.write_text("name: old\nalias: alias\ncapabilities: [code]")
@@ -83,7 +83,7 @@ async def test_cached_alias_matches_only_valid_manifest(tmp_path, monkeypatch):
 def test_application_resources_are_preserved_as_topology_metadata(tmp_path):
     from agent_sandbox.utils.registry import load_template_from_yaml
 
-    data = workflow_manifest(
+    data = template_manifest(
         application={"name": "service"}, resources={"cpu": 0.5, "memory": "1Gi"}
     )
     path = tmp_path / "template.yaml"

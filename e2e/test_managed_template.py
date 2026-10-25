@@ -1,4 +1,4 @@
-"""Real Express native IDs through the public workflow launcher."""
+"""Real Express native IDs through the public template launcher."""
 
 import json
 
@@ -6,7 +6,7 @@ import e2e_helpers
 import pytest
 
 from agent_sandbox import ProviderSandbox
-from agent_sandbox.api import launch_workflow
+from agent_sandbox.api import launch_template
 from agent_sandbox.models.errors import SandboxNotFoundError
 from agent_sandbox.providers.registry import builtin_provider
 from conftest import wait_envd_ready
@@ -18,30 +18,15 @@ def test_native_id_launch_exec_and_owned_cleanup(run, tracker, tmp_path, templat
     manifest = {
         "name": template,
         "provider": "alicloud-express",
-        "spec_version": 4,
-        "workflow_contract_version": 1,
+        "spec_version": 5,
+        "template_id": template,
         "provides": {},
-        "default_workflow": "exec",
-        "workflows": {
-            "exec": {
-                "kind": "exec",
-                "input": "managed",
-                "startup": "none",
-                "operation": "exec.run",
-                "required_operations": [],
-                "binding": {
-                    "transport": "exec",
-                    "endpoint": "provider-native",
-                    "caller": "host",
-                    "authentication": "provider",
-                },
-            },
-        },
     }
-    journal = tmp_path / "workflow.jsonl"
+
+    journal = tmp_path / "template.jsonl"
 
     async def scenario():
-        async with await launch_workflow(
+        async with await launch_template(
             manifest,
             provider=builtin_provider() if as_object else "alicloud-express",
             reference=template,
@@ -52,9 +37,9 @@ def test_native_id_launch_exec_and_owned_cleanup(run, tracker, tmp_path, templat
             assert sandbox is not None
             tracker.sandbox(sandbox.id)
             await wait_envd_ready(sandbox)
-            result = await sandbox.commands.run("printf managed-workflow-ok")
+            result = await sandbox.commands.run("printf managed-template-ok")
             assert result.exit_code == 0
-            assert result.stdout == "managed-workflow-ok"
+            assert result.stdout == "managed-template-ok"
             sandbox_id = sandbox.id
 
         async def absent():
@@ -68,7 +53,6 @@ def test_native_id_launch_exec_and_owned_cleanup(run, tracker, tmp_path, templat
             absent, timeout=30, interval=1, what="owned sandbox deletion"
         )
         events = [json.loads(line) for line in journal.read_text().splitlines()]
-        assert events[0]["artifact_digest"] == "unknown"
         assert events[-1]["event"] == "cleanup-complete"
 
     run(scenario())

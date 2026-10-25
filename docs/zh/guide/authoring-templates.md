@@ -6,7 +6,7 @@
 
 这是 **Server SDK**：`commands.py` 随镜像启动，在沙箱里面提供 HTTP 服务。在你的机器上创建并调用沙箱见 [Client SDK](client-sdk.md)。
 
-本文档介绍如何创建自定义 Agent Sandbox 模板，包括目录结构、字段参考、显式工作流、注册命令和发布流程。
+本文档介绍如何创建自定义 Agent Sandbox 模板，包括目录结构、字段参考、整体启动、注册命令和发布流程。
 
 模板是一个由纯文件组成的目录，可手写也可生成。`abx template scaffold` 命令有三种生成方式（内置脚手架、一句话描述、适配已有源码的项目）；该工作流记录在 CLI 仓库：[模板编写（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authoring-templates.md)。
 
@@ -32,40 +32,32 @@ my-template/
 
 ```yaml
 name: my-python-template
-version: "1.0.1"
-description: "Scaffold for a new Agent Sandbox template. Not a catalog entry."
-author: "alibaba-agent-sandbox"
+version: 1.0.1
+description: Scaffold for a new Agent Sandbox template. Not a catalog entry.
+author: alibaba-agent-sandbox
 license: Apache-2.0
-spec_version: 4
-base: "fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>"
+spec_version: 5
+base: fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
 generation: 2
-start_cmd: "agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py"
-ready_cmd: "agent-sandbox-server healthcheck --port 9000"
-
+start_cmd: agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py
+ready_cmd: agent-sandbox-server healthcheck --port 9000
 resources:
   cpu: 2
   memory: 2048
-
 ports:
-  - 9000
-
+- 9000
 tags:
-  - example
-  - skeleton
-
+- example
+- skeleton
 priority: P2
 wave: other
-
-
 env:
-  ABX_SERVER_TOKEN: ""
-
+  ABX_SERVER_TOKEN: ''
 smoke:
-  - command: hello
-    args:
-      name: Express
-    expect: "Hello, Express!"
-workflow_contract_version: 1
+- command: hello
+  args:
+    name: Express
+  expect: Hello, Express!
 provides:
   app:
     protocol: agent-sandbox-server
@@ -74,20 +66,6 @@ provides:
     operations:
     - commands.list
     - commands.run
-default_workflow: application
-workflows:
-  application:
-    kind: application
-    input: source
-    service: app
-    startup: exec
-    binding:
-      transport: http
-      endpoint: provider-port
-      caller: host
-      authentication: service-token
-    operation: commands.run
-    required_operations: []
 ```
 
 ---
@@ -105,8 +83,6 @@ workflows:
 | `ports` | `list[int]` | ❌ | `[]` | 暴露的端口列表 |
 | `author` | `str` | ❌ | `""` | 作者 |
 | `license` | `str` | ❌ | `""` | 许可证 |
-| `spec_version` / `workflow_contract_version` | 整数 | ✅ | — | `4` / `1` |
-| `provides` / `workflows` / `default_workflow` | 映射 / 标识符 | ✅ | — | 显式工作流契约 |
 | `tags` | `list[str]` | ❌ | `[]` | 标签 |
 
 详细的字段定义参见 [template.yaml 规范](../reference/template-yaml-spec.md)。
@@ -114,11 +90,14 @@ workflows:
 ---
 
 <a id="能力声明"></a>
-## 模板工作流
+## 模板启动
 
-模板的 `provides` 描述软件服务，`workflows` 描述显式调用路径。默认工作流只指向一条声明，不推导其他能力。旧 `capabilities`、`tested_on` 和 Provider 兼容表均拒绝；未知远端引用不授予默认解释器。应用 HTTP 不依赖统一代码解释器。精确操作、T/F/U、上下文及验收范围见[显式模板工作流](template-workflows.md)。
+使用 `spec_version: 5`，在 `provides` 声明全部服务。`start_cmd` 和 `ready_cmd`
+作用于完整模板，不再声明或选择工作流。Provider 提供平台操作，服务端策略控制应用 API，
+二者都不推导解释器支持。见[模板启动指南](template-workflows.md)。
 
-服务端 HTTP 端点策略独立控制九个能力组；`core` 始终开启，`dev_tools`、`browser`、`agents` 默认关闭。`server:` 不是 Provider 操作授权，工作流也不自动打开服务端策略。详见[模板服务器 HTTP API](template-server-api.md)。
+服务端端点策略保持独立：`core` 始终开启，`dev_tools`、`browser`、`agents`
+需要显式配置。模板元数据声明 API 不代表打开对应服务端策略。
 
 ---
 
@@ -151,7 +130,7 @@ if __name__ == "__main__":
 
 ## 提供者模板配置
 
-服务端不选择 Provider。9000 是应用 HTTP 默认监听端口；平台注入的 envd、解释器及保留端口属于各后端，不能据此推导应用服务不可用。`startup: exec`、`entrypoint`、`none` 是不同路径，必须和 Provider 声明一致；不要让原生入口与启动命令重复运行。非空 `ready_cmd` 必须实际检查。构建配置必须明确选择，其有效 Dockerfile 和构建参数进入输入身份。
+服务端不选择 Provider。9000 是应用 HTTP 默认监听端口；平台注入的 envd、解释器及保留端口属于各后端，不能据此推导应用服务不可用。声明的 `start_cmd` 只运行一次，没有该字段时使用镜像或平台模板入口；不要让原生入口与启动命令重复运行。非空 `ready_cmd` 必须实际检查。构建配置必须明确选择，其有效 Dockerfile 和构建参数进入输入身份。
 
 `commands.py` 只导入 `agent_sandbox.server`，在主入口调用 `start(port)`；镜像显式安装 server SDK。
 已发布 0.3.1a1 alpha 中的 Provider 原生应用 API 使用 `from agent_sandbox import ProviderSandbox`，

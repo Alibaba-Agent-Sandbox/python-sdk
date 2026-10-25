@@ -1,6 +1,6 @@
 # Agent Sandbox
 
-[Template workflows](docs/en/guide/template-workflows.md): explicit services, exact provider operations and independently verified consumer paths.
+[Launch templates](docs/en/guide/template-workflows.md): start the complete template and access all declared services.
 
 **English** | [中文](README.zh-CN.md)
 
@@ -13,7 +13,7 @@
 > Cloud sandboxes for AI agents — create, execute, and manage isolated environments in seconds.
 
 **Agent Sandbox** is a Python SDK for sandboxes. The default provider is Alibaba Cloud Express (`alicloud-express`, Function Compute). OpenSandbox, the container edition, CubeSandbox, and E2B are catalog `node` plugins in `awesome-providers` (`provider.mjs`). Install one with `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` (or `python -m agent_sandbox.providers install registry:<id> --yes`). After that, both `abx --provider <id>` and `ProviderSandbox.create(provider="<id>")` use it. The Python SDK reaches a `node` provider through the local engine (`abx provider engine serve`; `abx` on `PATH` or `ABX_BIN`). The CLI loads Express plus installed `node`, `exec` and `rest` plugins. It is the
-standard sync/async runtime and Template client. Project provider/server template workflows use
+standard sync/async runtime and Template client. Project provider/server template launches use
 `abx template build|deploy` from the CLI. The SDK uses E2B-shaped method names so that E2B code
 ports with few changes; the standard API follows Alibaba-supported E2B behavior (see [Migrate from E2B](docs/en/guide/migrate-from-e2b.md)).
 
@@ -120,7 +120,7 @@ This `python3` invocation is a process, not a persistent interpreter. Interprete
 | Standard `code_interpreter.Sandbox.run_code()` | Execute interpreter code | A matching native runtime such as `code-interpreter-v1` |
 | `ProviderSandbox.application_client()` | Call application commands registered by a template HTTP service | Start the template service and supply the correct port and application token |
 
-Named application commands are registered by the in-sandbox server. Follow [template workflows](docs/en/guide/template-workflows.md) to create or connect to that application, preserving provider gateway headers, URL prefixes and query parameters; do not assume `base` registers `hello`. See [Providers](docs/en/guide/providers.md) for cross-language plugin execution.
+Named application commands are registered by the in-sandbox server. Follow [template startup](docs/en/guide/template-workflows.md) to create or connect to that application, preserving provider gateway headers, URL prefixes and query parameters; do not assume `base` registers `hello`. See [Providers](docs/en/guide/providers.md) for cross-language plugin execution.
 
 ## Templates
 

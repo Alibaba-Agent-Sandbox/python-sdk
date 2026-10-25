@@ -1,6 +1,15 @@
 # `.agents/` — engineering record of the python-sdk repository
 
-## Current delivery — 2026-10-24
+## Specification 5 migration — 2026-10-25
+
+The [unified startup proposal](notes/proposed/architecture/2026-10-25-unified-template-launch.md)
+removes workflow selection and preserves all template services. The
+[contract foundation](evidence/verify/2026-10-25-unified-template-contract.md) records
+local shared-vector checks only. [Runtime checkpoint](evidence/verify/2026-10-25-unified-template-runtime.md) records
+real native-template acceptance and retained environment failures; full gates are in progress;
+the previous 92-case matrix below remains specification 4 history, not v5 evidence.
+
+## Previous delivery — 2026-10-24
 
 - Published client/server pair: **0.3.1a5**, with [immutable public artifacts, fresh installation and retained propagation failure](evidence/verify/2026-10-24-python-a5-public-release.md). This is an alpha release; host installation does not update in-image runtimes.
 - Standard `Sandbox`/`AsyncSandbox` and `code_interpreter` clients retain their migration contract. Asynchronous `ProviderSandbox` owns provider/server extensions; [SDK usage](../docs/en/guide/sdk-usage.md) now keeps process execution, interpreter calls, application HTTP and resource cleanup separate.

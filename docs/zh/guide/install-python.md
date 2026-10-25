@@ -1,5 +1,7 @@
 # 安装 Python 配套包
 
+> 候选版本文档：0.4.0a1 尚未发布。发布前请按下文从检出源码安装验证；旧 0.3.x 包不支持规范 5 启动。
+
 使用 Python 3.10 或更高版本及虚拟环境：
 
 ```bash
@@ -7,7 +9,7 @@ python -m venv .venv
 # Linux 或 macOS：
 source .venv/bin/activate
 # Windows PowerShell：.venv\Scripts\Activate.ps1
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.3.1a5'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a1'
 python -m pip check
 ```
 
@@ -24,7 +26,7 @@ python -c "from importlib.metadata import version; print(version('agent-sandbox-
 ## 可选依赖
 
 ```bash
-python -m pip install 'agent-sandbox-client[all]==0.3.1a5'
+python -m pip install 'agent-sandbox-client[all]==0.4.0a1'
 ```
 
 可把 `[all]` 换成 `[mcp]`、`[session]` 或 `[fast]`。工作流 YAML 和声明式装饰器属于基础客户端，无需 extra。浏览器自动化需要在沙箱镜像内安装 Playwright。
@@ -32,7 +34,7 @@ python -m pip install 'agent-sandbox-client[all]==0.3.1a5'
 ## 镜像内只安装服务端
 
 ```bash
-python -m pip install 'agent-sandbox-server==0.3.1a5'
+python -m pip install 'agent-sandbox-server==0.4.0a1'
 ```
 
 服务端负责在镜像内运行应用，安装它不会创建沙箱。注册命令与启动服务见[服务端指南](server-sdk.md)。

@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "template_spec_version": 5,
+  "max_safe_integer": 9007199254740991,
+  "template_keys": [
+    "spec_version",
+    "provides"
+  ],
+  "retired_keys": [
+    "workflow_contract_version",
+    "default_workflow",
+    "workflows",
+    "capabilities",
+    "tested_on",
+    "providers"
+  ],
+  "service_keys": [
+    "protocol",
+    "version",
+    "port",
+    "operations"
+  ],
+  "consumers": {
+    "cli": "cli",
+    "python-provider": "python"
+  },
+  "required_operations": {
+    "create": [
+      "sandbox.create",
+      "sandbox.delete"
+    ],
+    "prepare": [
+      "template.prepare"
+    ],
+    "start": [
+      "exec.run"
+    ],
+    "services": [
+      "ports.resolve"
+    ]
+  },
+  "description": "Start the complete template once. Services describe its endpoints, not selectable execution flows.",
+  "unsupported_reasons": [
+    "provider-mismatch",
+    "input-unimplemented",
+    "startup-unimplemented"
+  ]
+}

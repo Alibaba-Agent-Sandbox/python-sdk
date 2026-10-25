@@ -1,6 +1,6 @@
 # Agent Sandbox
 
-[模板工作流](docs/zh/guide/template-workflows.md)：显式服务、Provider 精确操作与独立验证的消费入口。
+[模板启动](docs/zh/guide/template-workflows.md)：整体启动模板并访问全部声明服务。
 
 [English](README.md) | **中文**
 
@@ -118,7 +118,7 @@ asyncio.run(main())
 | 标准 `code_interpreter.Sandbox.run_code()` | 执行解释器代码 | 使用 `code-interpreter-v1` 等对应原生运行时 |
 | `ProviderSandbox.application_client()` | 调用模板 HTTP 服务注册的应用命令 | 先启动模板服务，传入正确端口与应用令牌 |
 
-命名应用命令由沙箱内服务端注册。通过 [模板工作流](docs/zh/guide/template-workflows.md) 创建或连接对应应用，保留 Provider 返回的网关请求头、URL 前缀和查询参数；不要假定 `base` 注册了 `hello`。Provider 插件的跨语言执行方式见 [Provider 指南](docs/zh/guide/providers.md)。
+命名应用命令由沙箱内服务端注册。通过 [模板启动](docs/zh/guide/template-workflows.md) 创建或连接对应应用，保留 Provider 返回的网关请求头、URL 前缀和查询参数；不要假定 `base` 注册了 `hello`。Provider 插件的跨语言执行方式见 [Provider 指南](docs/zh/guide/providers.md)。
 
 ## 模板
 

@@ -1,6 +1,6 @@
 # template.yaml 规范
 
-当前模板使用 `spec_version: 4` 和 `workflow_contract_version: 1`。发布清单的完整权威 schema 是 [awesome-templates/template-v4.schema.json](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/spec/template-v4.schema.json)；共享工作流契约见 [contracts](https://github.com/Alibaba-Agent-Sandbox/python-sdk/tree/main/contracts)。应用部署拓扑、hooks 和持久状态字段仍由完整 schema 定义。
+当前模板使用 `spec_version: 5`。发布清单的完整权威 schema 是 [awesome-templates/template-v5.schema.json](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/spec/template-v5.schema.json)；共享启动契约见 [contracts](https://github.com/Alibaba-Agent-Sandbox/python-sdk/tree/main/contracts)。应用部署拓扑、hooks 和持久状态字段仍由完整 schema 定义。
 
 ## 文件位置
 
@@ -25,21 +25,18 @@
 `generation` 属于具体模板和提供方启动配置，目录源码模板 schema 当前要求 `2`。是否可以创建，还要检查提供方实际支持的输入和启动方式。
 
 <a id="能力声明"></a>
-### 工作流声明
+### 模板启动
 
-| 字段 | 含义 |
-| --- | --- |
-| `spec_version` | 必须为整数 `4` |
-| `workflow_contract_version` | 必须为整数 `1` |
-| `provides` | 服务映射；每项声明 `protocol`、`version`、`port`、`operations` |
-| `default_workflow` | 必须指向一个已声明工作流 |
-| `workflows` | 具名 `application`、`exec` 或 `interpreter` 路径 |
+`spec_version` 为整数 `5`。`provides` 通过 `protocol`、`version`、`port`、`operations`
+描述全部服务，也可以为空。`start_cmd` 整体启动模板一次；没有它时使用镜像或平台模板
+自身入口。`ready_cmd` 如有声明，在返回服务客户端前执行。固定 `image` 或
+`provider` 与 `template_id` 可以定位已准备模板；其他情况由 CLI 准备源码。
+Python 要求已准备好的引用。
 
-每个工作流显式提供 `kind`、`input`（`source/image/managed/service`）、`startup`（`exec/entrypoint/none`）、`binding`、`operation` 和 `required_operations`；应用工作流另需 `service` 指向 `provides`。绑定包含 `transport`、`endpoint`、`caller`、`authentication`。未知工作流字段直接拒绝。
-
-`startup: exec` 需要非空 `start_cmd` 和 `exec.run`。已有入口使用 `entrypoint`，不能再次执行启动命令。`service` 输入只能配 `startup: none`。非空 `ready_cmd` 需要执行能力并实际检查，不能因为启动方式不同而忽略。托管引用必须属于所选 Provider。模板可增加 `required_operations` 和 `required_checks`，不能删减派生要求或最低验收检查。
-
-不再接受模板 `capabilities`、`tested_on` 或手填 `providers` 兼容表，也没有默认 `{shell, files, code}` 授权。应用提供 Python/HTTP 服务，不表示 Provider 实现了代码解释器操作。详见[显式模板工作流](../guide/template-workflows.md)。
+从规范 4 迁移时删除 `workflow_contract_version`、`default_workflow`、`workflows`。
+启动时不再选择 application/exec/interpreter 类型或某个操作。旧 `capabilities`、
+`tested_on` 和手填 Provider 兼容表仍拒绝。具体调用能力由 Provider 和服务端实际检查。
+见[模板启动指南](../guide/template-workflows.md)。
 
 ### 已移除的键：`custom_commands`
 
@@ -81,40 +78,32 @@ server:
 
 ```yaml
 name: my-python-template
-version: "1.0.1"
-description: "Scaffold for a new Agent Sandbox template. Not a catalog entry."
-author: "alibaba-agent-sandbox"
+version: 1.0.1
+description: Scaffold for a new Agent Sandbox template. Not a catalog entry.
+author: alibaba-agent-sandbox
 license: Apache-2.0
-spec_version: 4
-base: "fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>"
+spec_version: 5
+base: fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
 generation: 2
-start_cmd: "agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py"
-ready_cmd: "agent-sandbox-server healthcheck --port 9000"
-
+start_cmd: agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py
+ready_cmd: agent-sandbox-server healthcheck --port 9000
 resources:
   cpu: 2
   memory: 2048
-
 ports:
-  - 9000
-
+- 9000
 tags:
-  - example
-  - skeleton
-
+- example
+- skeleton
 priority: P2
 wave: other
-
-
 env:
-  ABX_SERVER_TOKEN: ""
-
+  ABX_SERVER_TOKEN: ''
 smoke:
-  - command: hello
-    args:
-      name: Express
-    expect: "Hello, Express!"
-workflow_contract_version: 1
+- command: hello
+  args:
+    name: Express
+  expect: Hello, Express!
 provides:
   app:
     protocol: agent-sandbox-server
@@ -123,20 +112,6 @@ provides:
     operations:
     - commands.list
     - commands.run
-default_workflow: application
-workflows:
-  application:
-    kind: application
-    input: source
-    service: app
-    startup: exec
-    binding:
-      transport: http
-      endpoint: provider-port
-      caller: host
-      authentication: service-token
-    operation: commands.run
-    required_operations: []
 ```
 
 ## 构建说明

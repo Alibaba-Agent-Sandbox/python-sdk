@@ -160,10 +160,9 @@ class TestTemplateYaml:
 class TestWorkflows:
     """Fixture application service is distinct from a native interpreter."""
 
-    def test_default_workflow_is_explicit(self, template_dir: Path) -> None:
+    def test_template_has_single_startup(self, template_dir: Path) -> None:
         tmpl = _load(template_dir)
-        assert tmpl.default_workflow in tmpl.workflows
-        assert tmpl.spec_version == 4
+        assert tmpl.spec_version == 5
 
     def test_no_old_capability_input(self, template_dir: Path) -> None:
         assert "capabilities" not in _raw(template_dir)
@@ -171,9 +170,8 @@ class TestWorkflows:
 
     def test_application_port_matches_provided_service(self, template_dir: Path) -> None:
         tmpl = _load(template_dir)
-        for flow in tmpl.workflows.values():
-            if flow["kind"] == "application":
-                assert tmpl.provides[flow["service"]]["port"] in tmpl.ports
+        for service in tmpl.provides.values():
+            assert service["port"] in tmpl.ports
 
     def test_model_rejects_retired_input(self) -> None:
         with pytest.raises(ValidationError):

@@ -167,15 +167,26 @@ All SDK errors live in [`models/errors.py`](client-sdk/src/agent_sandbox/models/
 
 Every exception carries: `code`, `message`, `suggestion`, `docs_url` (populated when documentation is available).
 
-### Workflow and operation model
+### Template startup and operation model
 
-Templates use strict specification 4 (`provides`, `workflows`, `default_workflow`). Shared contract 1 is owned in `contracts/` with byte-identical package copies and cross-language vectors. Retired template `capabilities`, `tested_on` and provider claims are rejected. `DEFAULT_CAPABILITIES` is empty: missing metadata makes no runtime claims. Coarse discovery is not authorization. Provider operations are consumer-specific; a missing interpreter operation cannot block an unrelated HTTP application.
+Templates use strict specification 5 with the complete `provides` service map,
+`start_cmd` and `ready_cmd`. There is no workflow selector or named startup type.
+Canonical `contracts/launch-v1.json` and `launch-vectors.json` have byte-identical
+package copies. Historical workflow/receipt files remain for old evidence only;
+they do not certify the new launcher. Provider operation declarations remain exact.
 
-`api/workflow.py` launches prepared references or explicit services, journals ownership before creation and checks protocol before payload. Python source preparation is not implemented. `api/code.py` has exact stateless/default/context/stream gates and no shell fallback. See [workflow guide](docs/en/guide/template-workflows.md).
+`api/template.py` exposes `launch_template` for prepared references, journals owned
+resources, starts the template once and checks all SandboxServer services. Python
+does not build source. Use `session.services` for all resolved clients and
+`session.servers` for SandboxServer clients. Do not block startup on an unrelated
+interpreter operation. See [the launch guide](docs/en/guide/template-workflows.md).
 
 ### Template Definition
 
-Templates use `template.yaml` (not `manifest.yaml` for capability purposes). Key fields: `name`, `spec_version`, `provides`, `workflows`, `default_workflow` and `server`. The client rejects `custom_commands`; named commands are registered in the sandbox server (`@sandbox.register`) and called with `sandbox.run(name, **kwargs)`.
+Use `template.yaml`, `spec_version: 5`, `provides`, startup/readiness, and the existing
+server policy. Reject workflow_contract_version/workflows/default_workflow with
+migration guidance. Named application commands are registered by the server, never
+created from YAML. Template discovery grants no default runtime operations.
 
 ---
 
@@ -232,7 +243,7 @@ See [`.agents/notes/README.md`](.agents/notes/README.md) for the full template a
 **MUST follow:**
 
 1. **Never auto-commit.** Make changes; let the human review and commit.
-2. **Respect exact workflow operations.** Fix missing adapter/client support or choose an explicit supported workflow; never add a capability claim or shell fallback to bypass a failed check.
+2. **Respect exact Provider operations.** Fix missing adapter/client support; never add a capability claim or shell fallback to bypass a failed check.
 3. **Never fabricate FC/envd API endpoints.** If you're unsure about a real backend API, flag it as a TODO rather than inventing a placeholder.
 4. **Run the full test suite** (`make test && make lint && make typecheck`) before claiming a task is done. These targets cover both `client-sdk` and `server-sdk`.
 5. **Secret scanning** is enforced via `.githooks/check-secrets.sh`. Never commit API keys, tokens, or passwords. Use `REPLACE_ME` or `placeholder` for examples.
