@@ -4,12 +4,12 @@
 
 Server SDK 跑在**沙箱里面**。它是镜像启动后一直听着的 HTTP 服务，默认端口 9000。包名是 `agent-sandbox-server`，导入 `agent_sandbox.server`。模板的 `commands.py` 用它注册命令、打开能力，然后 `start(9000)`。
 
-下面显式选择已发布的 alpha 测试版，配套 client 版本同为 0.4.0a4。
+下面显式选择已发布的 alpha 测试版，配套 client 版本同为 0.4.0a6。
 指定官方索引使示例不依赖本机配置的镜像源，不表示镜像源普遍不可用。
 开发源码安装请按上方安装指南操作。
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple "agent-sandbox-server==0.4.0a4"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-server==0.4.0a6"
 ```
 
 ```python

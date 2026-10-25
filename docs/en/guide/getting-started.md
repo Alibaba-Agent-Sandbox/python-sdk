@@ -12,7 +12,7 @@ Use Python 3.10 or later. Create and activate a virtual environment following th
 [installation guide](install-python.md), then install:
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a4'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a6'
 python -m pip check
 export ABX_SANDBOX_API_KEY='your-api-key'
 ```

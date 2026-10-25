@@ -13,7 +13,7 @@ A short client for a server that is already running is [`examples/templates/pyth
 The server defaults to `0.0.0.0:9000`. The provider must implement the required port resolution and network path, and the service must actually listen. Do not treat every endpoint as a `{port}-{sandbox_id}.{domain}` hostname. Resolve application HTTP independently from internal envd/EPP transport:
 
 This example uses the provider-native `ProviderSandbox` API in the published
-`agent-sandbox-client==0.4.0a4` alpha; the standard `Sandbox`/`AsyncSandbox` classes
+`agent-sandbox-client==0.4.0a6` alpha; the standard `Sandbox`/`AsyncSandbox` classes
 have a different interface. See [installation](install-python.md) for the exact
 package/source choices. Set `SANDBOX_ID` to an existing sandbox whose application
 server is running, and `ABX_SERVER_TOKEN` only if that server was started with it.

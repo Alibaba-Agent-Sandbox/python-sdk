@@ -2,18 +2,30 @@
 
 ## Current public pair — 2026-10-25
 
-[Exhaustive Sandbox help follow-up](notes/proposed/process/2026-10-25-sandbox-help-namespace.md)
-records four remaining class-help namespace errors in public a5 and the bounded
-a6 candidate. Its [audit](evidence/verify/2026-10-25-sandbox-help-namespace.md)
-distinguishes ordinary help from intentional migration/third-party examples;
-the same candidate corrects current bilingual API/lifecycle examples and removes
-unimplemented design menus. Candidate publication is not yet established.
+Client/server **0.4.0a6** are public. [Public delivery verification](evidence/verify/2026-10-25-public-a6-delivery.md)
+records exact source/tag/publisher, four original/metadata/download hashes, fresh
+official non-all installation, all 28 actual first-party help imports, exhaustive
+installed-source namespace audit, 12 Provider help signatures and real HTTP/files
+with owned-process absence. Current design examples were also rerun unchanged
+on public a6 with independent owned-resource cleanup.
 
-[Subsequent public-a4 example acceptance](evidence/verify/2026-10-25-public-a4-examples.md)
+The [implemented namespace correction](notes/implemented/process/2026-10-25-sandbox-help-namespace.md)
+keeps root standard and interpreter entries distinct and removes inaccurate
+current lifecycle/API design examples. The earlier [Template correction](notes/implemented/process/2026-10-25-template-help-imports.md)
+retains its exact a5 scope. Maintained guidance, Skills and fixture recipes in this
+follow-up select actual public a6; their own current-head CI/merge is separate.
+Host installation does not update existing sandbox images or certify a catalog.
+
+[Subsequent public-a6 example acceptance](evidence/verify/2026-10-25-public-a6-examples.md)
 records 14 actual cloud examples, 29 independent typed-not-found checks and the
-separate local runner/timeout controls. It preserves earlier browser failures and
-does not certify later candidates. The [Template help correction](notes/proposed/process/2026-10-25-template-help-imports.md)
-prepares a5 only; publication and final CI remain separate gates.
+separate 10-check local runner with real timeout controls. Earlier version
+receipts and variable browser cold-install observations remain unchanged.
+
+## Previous public a4 delivery — 2026-10-25
+
+[Public-a4 example acceptance](evidence/verify/2026-10-25-public-a4-examples.md)
+retains its actual 14-cloud/local runner results as a4 observations, not later
+version passes. Historical failures and receipts are unchanged.
 
 Client/server **0.4.0a4** are public. [Current delivery verification](evidence/verify/2026-10-25-public-a4-delivery.md)
 records the reviewed immutable tag, original metadata-404 failure, successful
@@ -22,7 +34,7 @@ hashes and fresh official installation. The 12 lifecycle async/sync docstrings
 match actual signatures; retired Provider keyword calls still reject. Real local
 HTTP health/shell/files and owned-process cleanup passed with public packages.
 This documentation correction does not certify new cloud/catalog/model coverage.
-Maintained installation/skill examples and SDK fixture recipes select public a4.
+At that delivery checkpoint, installation/skill examples and SDK fixtures selected a4.
 
 The [earlier public-a3 readiness delivery](evidence/verify/2026-10-25-public-a3-docs.md)
 retains its exact real-cloud delayed-readiness/failure/cancellation scope. The

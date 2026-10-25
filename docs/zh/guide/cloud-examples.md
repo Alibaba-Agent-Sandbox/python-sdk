@@ -3,7 +3,7 @@
 安装客户端时自动安装同版本服务端：
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client[all]==0.4.0a4"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client[all]==0.4.0a6"
 export ABX_SANDBOX_API_KEY="your-express-sandbox-api-key"
 # 非默认地域按需配置 ABX_SANDBOX_BASE_URL、ABX_SANDBOX_DOMAIN。
 ```
