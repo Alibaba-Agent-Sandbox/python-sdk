@@ -1,0 +1,10 @@
+{
+  "result": "FAIL",
+  "scope": "First no-cloud local HTTP attempt, before readiness; not a typed-environment API result",
+  "phase": "initial health readiness probe",
+  "error_type": "httpx.RemoteProtocolError",
+  "safe_error": "server disconnected without sending a response",
+  "cleanup": "finally invoked owned subprocess terminate and wait; this attempt did not persist an independent absence receipt",
+  "cause": "not established",
+  "source_or_product_fix_claimed": false
+}
