@@ -14,7 +14,7 @@ The client distribution is `agent-sandbox-client` (import `agent_sandbox`).
 Install the published alpha client; it installs its matching server dependency:
 
 ```bash
-python -m pip install 'agent-sandbox-client==0.4.0a2'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a2'
 python -m pip check
 ```
 

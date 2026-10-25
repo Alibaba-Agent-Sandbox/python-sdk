@@ -63,7 +63,7 @@ Node.js 项目，位于 [`agent-sandbox`](https://github.com/alibaba-agent-sandb
 使用 Python 3.10 或更高版本及虚拟环境。客户端会自动安装同版本的服务端依赖。固定版本、可选依赖及开发安装见[安装指南](docs/zh/guide/install-python.md)。
 
 ```bash
-python -m pip install --upgrade --pre agent-sandbox-client
+python -m pip install --index-url https://pypi.org/simple --upgrade --pre agent-sandbox-client
 python -m pip check
 ```
 

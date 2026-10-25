@@ -66,7 +66,7 @@ Provider management operations are available through `agent_sandbox.providers.co
 Use Python 3.10 or newer in a virtual environment. The client installs its matching server dependency automatically. See the [installation guide](docs/en/guide/install-python.md) for a pinned version, optional extras and development setup.
 
 ```bash
-python -m pip install --upgrade --pre agent-sandbox-client
+python -m pip install --index-url https://pypi.org/simple --upgrade --pre agent-sandbox-client
 python -m pip check
 ```
 

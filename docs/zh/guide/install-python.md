@@ -30,7 +30,7 @@ python -c "from importlib.metadata import version; print(version('agent-sandbox-
 ## 可选依赖
 
 ```bash
-python -m pip install 'agent-sandbox-client[all]==0.4.0a2'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[all]==0.4.0a2'
 ```
 
 可把 `[all]` 换成 `[mcp]`、`[session]` 或 `[fast]`。模板 YAML 和声明式装饰器属于基础客户端，无需 extra。浏览器自动化需要在沙箱镜像内安装 Playwright。
@@ -38,7 +38,7 @@ python -m pip install 'agent-sandbox-client[all]==0.4.0a2'
 ## 镜像内只安装服务端
 
 ```bash
-python -m pip install 'agent-sandbox-server==0.4.0a2'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-server==0.4.0a2'
 ```
 
 服务端负责在镜像内运行应用，安装它不会创建沙箱。注册命令与启动服务见[服务端指南](server-sdk.md)。

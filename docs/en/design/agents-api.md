@@ -617,7 +617,7 @@ Already have a URL? `AgentHost.connect(url, token=…)` skips the bootstrap
 ### Bootstrap (`AgentHost` via `sandbox.agents.host(agent)`)
 
 1. `commands.run("python3 -c 'import agent_sandbox.server'")`; if missing and
-   `install=True` (default) → `pip install agent-sandbox-server==<client version>`
+   `install=True` (default) → `pip install --index-url https://pypi.org/simple agent-sandbox-server==<client version>`
    (lockstep releases; configurable `server_package=`/`index_url`).
 2. Ensure the runtime CLI: `GET /agents/runtimes` after the server is up; if not
    installed and `install=True` → `POST …/install`.

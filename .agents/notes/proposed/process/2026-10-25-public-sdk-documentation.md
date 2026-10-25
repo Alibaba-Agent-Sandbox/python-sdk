@@ -6,13 +6,18 @@ Status: proposed
 Maintained guides still installed a retired Git archive or older alpha packages,
 published decorator/MCP keyword names absent from current signatures, mixed MCP
 credentials with the standard E2B entry, and described the removed local Python
-gRPC engine. The Express quickstart bypassed the current template launcher.
+gRPC engine. The Express quickstart bypassed the current template launcher. The maintained
+creation benchmark silently ignored old configuration names and could skip
+cleanup after a later failure.
 
 ## Decision
 
 Use public paired 0.4.0a2 installations, canonical sandbox_* configuration and
 explicit root ProviderSandbox imports for provider-extension examples. Preserve
 valid native synchronous wrappers and genuine third-party provider options.
+Use the official PyPI index explicitly for public installs. The maintained
+benchmark uses the installed public ProviderSandbox API, exactly three samples
+and explicit per-sandbox cleanup; it adds no product runtime or compatibility API.
 Use the single template launcher for application startup, with application tokens
 separate from platform credentials. Keep standard-client migration documentation
 separate and preserve historical design/evidence files that are labeled retired.

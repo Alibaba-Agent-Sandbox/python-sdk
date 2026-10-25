@@ -1,0 +1,36 @@
+{
+  "source": "examples/compat-demos/e2b_import_migration.py",
+  "source_sha256": "73850fb33989c4b412ce5399f2303df1ca642ad5d15fe6cbd8088e7ef0819415",
+  "source_commit": "c8f5d48dc015b6bdcb65455285c651edf8c1eafd",
+  "installed_packages": {
+    "agent-sandbox-client": "0.4.0a2",
+    "agent-sandbox-server": "0.4.0a2"
+  },
+  "credential_names": [
+    "ABX_SANDBOX_API_KEY",
+    "ABX_SANDBOX_BASE_URL",
+    "ABX_SANDBOX_DOMAIN"
+  ],
+  "E2B_environment_set": false,
+  "result": "PASS",
+  "seconds": 4.27,
+  "checks": [
+    "standard sync create",
+    "file write/read",
+    "shell exit/output",
+    "persistent interpreter 41 to 42",
+    "owned context kill",
+    "independent get_info typed404"
+  ],
+  "audit": {
+    "created": 1,
+    "cleanup": [
+      {
+        "absent_before_cleanup": true,
+        "absent_after_cleanup": true
+      }
+    ],
+    "example_exit": 0
+  },
+  "owned_cleanup": "PASS"
+}

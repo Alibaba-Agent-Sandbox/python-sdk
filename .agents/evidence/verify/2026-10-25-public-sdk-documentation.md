@@ -94,3 +94,45 @@ replace or require rebuilding the immutable published a2 artifacts.
   Full package CI remains enforced by the PR; unrelated cloud matrix is not rerun
   merely for prose. CLI source preparation and new application images are being
   separately verified by their owning repositories; no new success claim is made here.
+
+## Final official-index and benchmark follow-up
+
+A real template build found the Alibaba base-image pip mirror still listing only
+a1. All maintained first-party public install instructions now explicitly select
+`https://pypi.org/simple`, including skill Dockerfiles and package READMEs. No
+source fallback or retry is added. A real pip download with an intentionally
+different configured index succeeded through the explicit official index and
+matched the original public a2 server wheel digest.
+
+The maintained release guide now states actual published a2 facts and requires a
+new reviewed lockstep tag for a future release, rather than calling a1 unreleased.
+
+The creation benchmark used obsolete TransportConfig api_key/api_url/domain
+arguments. Actual public a2 construction silently ignored all three sentinel
+values. The benchmark now uses the explicit public ProviderSandbox entry and
+canonical parameters with the normally installed package. It creates three fixed
+samples, deletes and closes each owned sandbox before the next iteration,
+propagates cleanup failures, prints no IDs, and reports only this run's samples.
+No product runtime configuration behavior is changed.
+
+- PASS: 3 benchmark regressions cover a failing second create, a failing kill
+  with close still executed, and exactly three successful owned lifecycles.
+- PASS: execute the actual benchmark with public a2: three creates, three
+  independent get_info_by_id typed NotFound results, no leaked resources.
+- PASS: rerun the updated import-migration script from its documented path using
+  only ABX configuration, no E2B environment or source injection: files, shell,
+  persistent interpreter 41-to-42, owned kill and independent typed absence.
+- PASS: full client suite 2264 passed / 27 skipped; lint, typecheck, format checks.
+- PARTIAL: full local server suite 873 passed / 1 skipped / 2 raw-loopback
+  failures: missing-key WebSocket expected400/actual501 and chunked framing
+  expected400/actual502. The earlier original-tag official CI passed; this PR's
+  latest-head official matrix remains required, not inferred from that earlier run.
+- PASS: repository health106 / warning1 / failure0, hygiene and diff checks.
+
+New receipts preserve the separate executed sources:
+[benchmark](2026-10-25-public-sdk-documentation-benchmark.json),
+[migration](2026-10-25-public-sdk-documentation-migration.json),
+[official index](2026-10-25-public-sdk-documentation-index.json).
+The broader old example results remain unchanged; the browser case in Issue111
+still has its own unresolved acceptance scope. Docker fixture repair/build
+acceptance is tracked separately and is not claimed by this PR.

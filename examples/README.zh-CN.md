@@ -14,10 +14,10 @@
 
 ```bash
 # 完整安装（推荐，包含声明式装饰器、MCP 服务等）
-python -m pip install "agent-sandbox-client[all]==0.4.0a2"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client[all]==0.4.0a2"
 
 # 或按需安装
-python -m pip install "agent-sandbox-client==0.4.0a2"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a2"
 
 # 从源码安装（在 python-sdk 仓库根目录执行）
 pip install -e ./server-sdk -e ./client-sdk

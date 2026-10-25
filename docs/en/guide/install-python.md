@@ -31,7 +31,7 @@ entry's documented contract; the standard `api_key=` parameter remains valid.
 ## Optional dependencies
 
 ```bash
-python -m pip install 'agent-sandbox-client[all]==0.4.0a2'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[all]==0.4.0a2'
 ```
 
 Replace `[all]` with `[mcp]`, `[session]` or `[fast]` for that subset. Template YAML and the declarative decorator belong to the base client; they need no extra. Browser automation requires Playwright installed inside the sandbox image.
@@ -39,7 +39,7 @@ Replace `[all]` with `[mcp]`, `[session]` or `[fast]` for that subset. Template 
 ## Server-only installation inside an image
 
 ```bash
-python -m pip install 'agent-sandbox-server==0.4.0a2'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-server==0.4.0a2'
 ```
 
 The server runs the application inside an image. Installing it does not create a sandbox. See the [server guide](server-sdk.md) to register commands and start the service.

@@ -3,7 +3,7 @@
 Install the public Python pair through the client dependency:
 
 ```bash
-python -m pip install "agent-sandbox-client[all]==0.4.0a2"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client[all]==0.4.0a2"
 export ABX_SANDBOX_API_KEY="your-express-sandbox-api-key"
 # Configure ABX_SANDBOX_BASE_URL and ABX_SANDBOX_DOMAIN for your region if needed.
 ```

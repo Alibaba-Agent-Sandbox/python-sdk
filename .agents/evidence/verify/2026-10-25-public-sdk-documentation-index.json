@@ -1,0 +1,7 @@
+{
+  "package": "agent-sandbox-server==0.4.0a2",
+  "configured_index": "https://example.invalid/simple",
+  "explicit_index": "https://pypi.org/simple",
+  "download": "PASS",
+  "original_public_wheel_sha256_equal": true
+}

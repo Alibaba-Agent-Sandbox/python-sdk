@@ -21,7 +21,7 @@ Two packages share one version:
 Install the published alpha client; it installs its matching server dependency:
 
 ```bash
-python -m pip install 'agent-sandbox-client==0.4.0a2'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a2'
 python -m pip check
 ```
 
@@ -195,7 +195,7 @@ Do not listen on 49983, 5000, or 49999. `<region>` defaults to `cn-hangzhou`.
 
 ```dockerfile
 FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
-RUN pip install --no-cache-dir 'agent-sandbox-server==0.4.0a2'
+RUN pip install --index-url https://pypi.org/simple --no-cache-dir 'agent-sandbox-server==0.4.0a2'
 WORKDIR /home/user/app
 COPY commands.py /home/user/app/commands.py
 EXPOSE 9000
@@ -207,7 +207,7 @@ The CLI can prepare the supported official native base recipe for both Express a
 
 ```dockerfile
 FROM python:3.12-slim
-RUN pip install --no-cache-dir 'agent-sandbox-server==0.4.0a2'
+RUN pip install --index-url https://pypi.org/simple --no-cache-dir 'agent-sandbox-server==0.4.0a2'
 WORKDIR /home/user/app
 COPY commands.py /home/user/app/commands.py
 EXPOSE 9000
