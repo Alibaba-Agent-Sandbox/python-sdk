@@ -1,0 +1,100 @@
+[
+  {
+    "name": "Public runtime fixture (python-hello)",
+    "head_sha": "ca65d37801bea99ed988ad40c3665d2b80ac664c",
+    "html_url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/40205183614/job/121204482025",
+    "status": "completed",
+    "conclusion": "success",
+    "steps": [
+      {
+        "name": "Set up job",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Run actions/checkout@v4",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Build the unmodified fixture Dockerfile",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Verify the published guest runtime",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Start the fixture and check its real HTTP application",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Remove the owned fixture container and verify absence",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Post Run actions/checkout@v4",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Complete job",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  {
+    "name": "Public runtime fixture (agents-cli)",
+    "head_sha": "ca65d37801bea99ed988ad40c3665d2b80ac664c",
+    "html_url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/40205183614/job/121204481973",
+    "status": "completed",
+    "conclusion": "success",
+    "steps": [
+      {
+        "name": "Set up job",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Run actions/checkout@v4",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Build the unmodified fixture Dockerfile",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Verify the published guest runtime",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Start the fixture and check its real HTTP application",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Remove the owned fixture container and verify absence",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Post Run actions/checkout@v4",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Complete job",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  }
+]

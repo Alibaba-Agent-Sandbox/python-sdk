@@ -80,10 +80,17 @@ E2E_RUN_LLM=0 ABX_SERVER_PORT=9000 python3 commands.py
 E2E_BASE_URL=http://127.0.0.1:9000 python3 e2e_test.py
 ```
 
-测试会检查：健康检查、未指定适配器时 400、`claude-code` 为 404、名为 `codex` 与 `qwen` 的本地程序各完成一轮并带回文本。
+测试会检查：健康检查、未指定适配器时使用默认运行时并返回 200、`claude-code` 为 404、名为 `codex` 与 `qwen` 的本地程序各完成一轮并带回文本。
 
 ## English
 
 This template turns on the sandbox Agents API for **Codex** and **Qwen Code**. The image does not install either CLI. Add the `npm install -g` line for the one you call, or install it inside a running sandbox. Other adapter names, including Claude Code, Cursor, and Qoder, are HTTP 404.
 
-The server listens on port **9000**. Point `examples/agents/hosted_codex.py` or `hosted_qwen.py` at it. When `E2E_RUN_LLM=0`, `e2e_test.py` puts the local programs in `e2e-bin/` on `PATH`. Those programs are named `codex` and `qwen`.
+The server listens on port **9000**. Point `examples/agents/hosted_codex.py` or `hosted_qwen.py` at it. When `E2E_RUN_LLM=0`, `commands.py` puts the local programs in `e2e-bin/` on `PATH`. Those programs are named `codex` and `qwen`.
+
+Both offline fixture Dockerfiles install `agent-sandbox-server==0.4.0a2` from the
+official PyPI index. No local wheel is required. The image does not include real
+Codex/Qwen CLIs; model execution still requires the selected CLI and credentials.
+
+两个离线夹具 Dockerfile 均从官方 PyPI 安装 `agent-sandbox-server==0.4.0a2`，
+不需要本地 wheel。镜像不预装真实 Codex/Qwen CLI；模型执行仍需相应工具和凭据。

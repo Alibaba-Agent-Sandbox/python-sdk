@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Build both SDK offline fixtures from the exact public a2 server on official PyPI, remove unreachable local-wheel fallback, and verify actual guest HTTP behavior and cleanup in CI. / SDK 两个离线夹具统一从官方 PyPI 安装精确 a2 服务端，删除不可达的本地 wheel 回退，并通过 CI 验证真实镜像 HTTP 行为及清理。
+
+### Fixed
+
 - Use the installed public provider API in the creation benchmark, clean each owned sandbox before continuing, propagate cleanup failures, and remove unsupported performance targets. / 创建基准改用已安装公开 Provider API，逐轮清理自有沙箱，透传清理错误并删除无依据性能目标。
 
 - Align maintained bilingual SDK guides with public 0.4.0a2, canonical decorator/MCP arguments, current ProviderSandbox imports and unified template launch. Remove stale source-install recipes and retired Python-engine instructions. / 将维护中的双语 SDK 指南统一为公开 0.4.0a2、规范装饰器/MCP 参数、ProviderSandbox 公开导入及统一模板启动；删除旧源码安装方案和已退役 Python 引擎说明。

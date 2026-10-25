@@ -12,12 +12,8 @@ ENV ABX_SERVER_ENABLED_GROUPS=agents
 #   RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm ca-certificates \
 #       && npm install -g @qwen-code/qwen-code && rm -rf /var/lib/apt/lists/*
 
-COPY *.whl /tmp/
-RUN if ls /tmp/*.whl 1>/dev/null 2>&1; then \
-        pip install --no-cache-dir /tmp/*.whl && rm -f /tmp/*.whl; \
-    else \
-        pip install --no-cache-dir agent-sandbox-server; \
-    fi
+# Install the published runtime; no local wheel or source fallback is required.
+RUN python3 -m pip install --index-url https://pypi.org/simple --no-cache-dir "agent-sandbox-server==0.4.0a2"
 
 WORKDIR /app
 COPY commands.py .
