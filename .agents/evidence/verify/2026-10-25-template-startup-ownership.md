@@ -3,7 +3,7 @@
 - Date: 2026-10-25
 - Result: PARTIAL — existing public-package observation passed; local documentation checks passed; exact-head required CI and merge are pending.
 - Base: ec3bcf1eb788acb42fea32dec06537ef915e9ba2.
-- Change: bilingual template consumption/authoring prose, SDK Skill specification number and owner records only. Client/server remain public 0.4.0a6; no source implementation or package version change.
+- Change: bilingual template consumption/authoring/design overview prose, SDK Skill specification number and owner records only. Client/server remain public 0.4.0a6; no source implementation or package version change.
 
 ## Real public-package observation
 
