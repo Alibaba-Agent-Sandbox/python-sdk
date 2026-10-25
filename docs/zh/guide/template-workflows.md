@@ -1,6 +1,6 @@
 # 启动和使用模板
 
-源码模板先用 CLI 准备并启动，再用 Python 连接。平台已经提供模板 ID 时，可以直接用 Python 创建。
+源码模板使用 `abx --provider PROVIDER template launch SOURCE --yes` 准备并启动，再用 Python 通过返回的沙箱 ID 和同一个 Provider 连接。平台已经提供模板 ID 时，可以直接用 Python 创建。
 
 ## Python 应用调用
 
@@ -21,7 +21,9 @@ finally:
 
 如果 `X-Access-Token` 请求头未被占用，客户端还会通过服务端已有的这个请求头发送同一个显式应用令牌，使认证能通过 OpenSandbox 1.1.1 等会过滤 `Authorization` 的代理。已有网关请求头（包括注入 HTTP 客户端的默认请求头）不会被覆盖；需要 Bearer 的服务仍可使用原认证方式。
 
-通过已准备好的 Provider 引用启动完整模板：
+高级准备场景中，`launch_template` 根据已准备好的 Provider 引用创建新沙箱，并执行清单的 `start_cmd`。该引用的原生启动命令或镜像入口不能同时启动同一个服务。普通 `abx template deploy` 可能保留原生启动行为，返回的引用不自动代表应用尚未启动。如果 CLI 已启动应用，按上文连接它返回的沙箱即可。
+
+确认准备阶段没有重复启动后，让 Python 负责启动和清理：
 
 ```python
 from agent_sandbox.api import launch_template
@@ -41,7 +43,7 @@ async with await launch_template(
 多个时使用 `session.servers["服务名"].commands.run(...)` 选择调用目标。
 这不会改变已经整体启动的模板内容。
 
-Python 不构建源码。先使用 CLI 准备并传入生成的 Provider 引用，或连接 CLI 返回的沙箱。
+Python 不构建源码；源码准备由 CLI 负责，按上文选择一个启动方。
 模板也可声明固定摘要的 `image`，或者 `provider` 与 `template_id` 原生模板标识。
 引用由 Provider 解释，原生 ID 不需要虚构版本。已有外部 HTTP 服务直接使用
 `ServerClient`；应用部署 hook 仍由部署编排器处理。

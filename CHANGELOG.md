@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Clarify CLI-started application connection versus Python-owned prepared-reference startup in both template guides; correct the SDK Skill's specification number to 5. No runtime, API or package version change. / 双语模板指南区分 CLI 启动后连接与 Python 根据已准备引用启动，避免重复启动同一个服务；SDK 技能的规范编号更正为 5，不改运行行为、接口或版本。
+
 - Select verified public client/server a6 in maintained bilingual installs, Skills and runtime fixtures. Preserve immutable publication hashes, exhaustive help checks and real current-design cleanup separately from earlier a4/a5 receipts. No runtime/API change or new package publication. / 维护中的双语安装、技能与运行夹具统一使用已验证公开 a6；另存不可变产物摘要、完整帮助检查与真实设计示例清理结果，不改旧 a4/a5 证据，不改运行接口或另发包。
 
 ### Fixed

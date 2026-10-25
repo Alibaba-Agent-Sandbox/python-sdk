@@ -1,6 +1,6 @@
 # Launch and use a template
 
-Use the CLI to prepare a source template, then connect with Python. If the platform already provides a template ID, Python can create it directly.
+Use `abx --provider PROVIDER template launch SOURCE --yes` to prepare and start a source template, then connect with Python using the returned sandbox ID and the same provider. If the platform already provides a template ID, Python can create it directly.
 
 ## Python application consumption
 
@@ -21,7 +21,9 @@ finally:
 
 The client also sends the explicit application token in the server's existing `X-Access-Token` header when that header is unused. This keeps authentication working through proxies that strip `Authorization`, including OpenSandbox 1.1.1. Existing gateway headers, including defaults on an injected HTTP client, are never replaced. Bearer authentication remains available for services that require it.
 
-To start the complete template from a prepared provider reference:
+For advanced preparation, `launch_template` creates a new sandbox from a prepared provider reference and runs the manifest's `start_cmd`. The reference must not also start the same service through its native startup command or image entrypoint. An ordinary `abx template deploy` can retain native startup behavior; its returned reference is not automatically idle. If the CLI has already started the application, connect to its sandbox as above.
+
+To let Python own startup and cleanup after checking that preparation boundary:
 
 ```python
 from agent_sandbox.api import launch_template
@@ -43,8 +45,8 @@ only when there is exactly one SandboxServer. With several, call
 `session.servers["service-name"].commands.run(...)` to choose the invocation target.
 Choosing a client never changes which template services were started.
 
-Python does not build sources. Prepare them with the CLI and pass the resulting
-provider reference, or connect to the sandbox returned by the CLI. A manifest may
+Python does not build sources. Source preparation belongs to the CLI; choose one
+startup owner as described above. A manifest may
 also declare a fixed digest-pinned `image`, or `provider` plus `template_id` for a
 platform-managed template. References are interpreted by that Provider; native IDs
 need no artificial version. For an existing external HTTP service, use `ServerClient`

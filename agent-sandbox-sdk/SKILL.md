@@ -128,7 +128,7 @@ to turn groups on. Without a Dockerfile, `base.image` and `build:` are platform
 steps; that path is in `references/templates.md`. For `alicloud-express`, write
 the FC Dockerfile below.
 
-Use strict specification 4. `capabilities` and `tested_on` are retired; installed software does not grant provider operations. This minimal source application follows the current [author skeleton](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/_skeleton/template.yaml), including its native generation, readiness probe and runtime token input:
+Use strict specification 5. `capabilities` and `tested_on` are retired; installed software does not grant provider operations. This minimal source application follows the current [author skeleton](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/_skeleton/template.yaml), including its native generation, readiness probe and runtime token input:
 
 ```yaml
 name: my-template

@@ -8,7 +8,7 @@
 
 ## 项目概述
 
-**Agent Sandbox**（PyPI 包名 `agent-sandbox-client`）是面向阿里云 FC Agent 沙箱服务的 Python SDK。它是运行时客户端：创建、使用、销毁沙箱；模板用 `abx template build|deploy` 构建和部署。方法名参考了 E2B，方便迁移，标准公开接口遵循阿里云支持的 E2B 行为契约（见[从 E2B 迁移](guide/migrate-from-e2b.md)）。
+**Agent Sandbox**（PyPI 包名 `agent-sandbox-client`）是面向阿里云 FC Agent 沙箱服务的 Python SDK。它是运行时客户端：创建、使用、销毁沙箱；源码模板通常用 `abx template launch` 启动，再由 Python 连接返回的沙箱；高级镜像准备使用 `abx template build` 与 `abx template deploy`。方法名参考了 E2B，方便迁移，标准公开接口遵循阿里云支持的 E2B 行为契约（见[从 E2B 迁移](guide/migrate-from-e2b.md)）。
 
 本仓库包含 Python SDK，以两个版本同步发布的 PyPI 分发包提供——`agent-sandbox-client`（`client-sdk/`，导入 `agent_sandbox`）与 `agent-sandbox-server`（`server-sdk/`，导入 `agent_sandbox.server`，容器侧运行时）。`abx` CLI 是 `cli` 仓库中的 Node.js/TypeScript 项目，CLI 自己的设计与指南文档也在该仓库（见[相关：abx CLI](#相关abx-cli)）。
 
@@ -127,7 +127,7 @@ graph TB
 | MCP Server（STDIO） | **已实现** | 7 个 P0 工具 |
 | MCP Server（Streamable HTTP） | **已实现** | `mcp_http.py` |
 | FC 部署产物应用 | **已实现** | `agent_sandbox.agent.mcp_http:asgi_app`；产物由 CLI 的 `abx mcp deploy` 生成。见 [mcp-server.md](design/mcp-server.md#7-fc-部署) |
-| 模板 build/push/deploy | **在 CLI 中** | `abx template build` 与 `abx template deploy`；SDK 不构建模板 |
+| 模板启动与镜像准备 | **在 CLI 中** | 使用 `abx template launch` 启动源码，再由 SDK 连接；高级镜像准备使用 `abx template build` 与 `abx template deploy` |
 | 每个配置键一个环境变量（SDK） | **已实现** | 见[配置参考](reference/configuration.md)；CLI 规格见 `cli/docs/zh/design/providers-and-credentials-cli.md` |
 | 提供方插件（SDK，`python -m agent_sandbox.providers`） | **已实现** | 见[提供方](guide/providers.md)。CLI 加载已安装的 `node`、`exec` 和 `rest` 插件（`abx provider`、`abx --provider`） |
 | 持久沙箱 | **远期** | 需底层平台支持 |
