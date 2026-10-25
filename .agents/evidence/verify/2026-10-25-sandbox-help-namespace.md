@@ -86,3 +86,38 @@ owned-process checks passed as recorded above. Required current-head CI,
 independent review, normal merge, immutable a6 tag and official publisher/readback
 remain pending. Maintained installation guidance still selects public a4 until
 a6 publication is verified; no unpublished package recommendation is introduced.
+
+## Current bilingual API/lifecycle documents
+
+A later independent public-a5 audit found a nonexistent TimeoutError import and
+an unimplemented Config policy. The current sdk-api-design page also mixed
+ProviderSandbox with interpreter operations, retired Provider keywords and spec4
+capability claims. sandbox-types presented future APIs and unsupported general
+pricing/startup/retention promises. Correct both EN/ZH current pages in this
+candidate; do not add these speculative APIs or rewrite historical evidence.
+
+The four pages now contain six executable Python blocks corresponding to two
+byte-identical programs. Both were extracted unchanged and run using official
+non-all public a5, canonical ABX configuration, one new isolated batch HOME
+outside checkout and no source injection or model call:
+
+- Command/file/context cleanup: PASS, 2.876s, expected greeting and file readback.
+- base + commands.run("sleep 100", timeout=5): actual typed CommandTimeoutError
+  E3001 with finally deletion and transport closure: PASS, 7.298s.
+- Both resources were already absent when observed; no recovery deletion was
+  counted passing. A second independent process returned typed SandboxNotFoundError
+  for both exact owned identifiers (2/2).
+
+[Execution/import receipt](2026-10-25-current-design-examples.json) records hashes,
+all six block locations, outcomes and cleanup. A further scan enumerated 206
+Markdown/RST files, explicitly excluding archives and labeled historical/
+unimplemented design pages. It found 155 current owned-SDK import occurrences /
+34 unique statements: 33 executed successfully in public a5; the developer
+ProviderContractTests import requires pytest and is explicitly excluded. Partial
+snippets use individually parsed import-line fallback. This does not claim all
+optional-dependency examples or proposals ran. Migration/third-party tables stay
+unchanged. The original independent negative findings are preserved.
+
+Earlier head01a1 CI is history only. The new docs delta needs fresh exact-head
+checks, required CI and independent review before merge. Executable-AST equality
+remains limited to the four Python modules; Markdown behavior is verified here.

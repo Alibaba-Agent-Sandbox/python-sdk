@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Correct current bilingual API/lifecycle examples to use actual base commands/files, canonical Provider parameters and typed timeout cleanup; remove unimplemented global cleanup and speculative persistence/billing guarantees. / 修正当前双语 API/生命周期示例，使用真实 base 命令/文件、规范 Provider 参数与类型化超时清理；删除未实现全局策略及推测的持久化/计费承诺。
+
 - Correct four remaining public Sandbox class-help imports, preserving the distinct standard and interpreter entries. Audit all shipped Python docstrings and maintained Markdown/Skills; retain explicit third-party and migration examples. Prepare lockstep client/server 0.4.0a6 without runtime/API changes. / 修正四处剩余沙箱类帮助导入，区分标准入口与解释器入口；全量审查源码文档及维护中的 Markdown/技能，保留明确的第三方与迁移示例；准备同版本双包 0.4.0a6，运行行为与 API 不变。
 
 ### Fixed

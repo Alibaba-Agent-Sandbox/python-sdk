@@ -1,0 +1,254 @@
+{
+  "scope": "two entire unchanged current-page executable blocks; EN/ZH identical; actual public a5 packages, canonical ABX, new isolated batch HOME, outside checkout, no source injection/model call",
+  "results": [
+    {
+      "block": "imperative",
+      "source_sha256": "173cc6ddad063cd124a21ae4a880cfd15332901c0e7d033f0a7a1a5118bde918",
+      "english_chinese_identical": true,
+      "public_packages": {
+        "client": "0.4.0a5",
+        "server": "0.4.0a5"
+      },
+      "exit": 0,
+      "seconds": 2.876,
+      "expected_stdout": "Hello, Agent Sandbox!",
+      "created": 1,
+      "typed_not_found_before_observer_cleanup": true,
+      "observer_recovery_used": false,
+      "result": "PASS"
+    },
+    {
+      "block": "errors",
+      "source_sha256": "8b634238e05cee863332480a7070bb9d36f6e90e8519a713513a666cddb6e0ac",
+      "english_chinese_identical": true,
+      "public_packages": {
+        "client": "0.4.0a5",
+        "server": "0.4.0a5"
+      },
+      "exit": 0,
+      "seconds": 7.298,
+      "expected_stdout": "E3001",
+      "created": 1,
+      "typed_not_found_before_observer_cleanup": true,
+      "observer_recovery_used": false,
+      "result": "PASS"
+    }
+  ],
+  "created": 2,
+  "independent_absent": 2,
+  "result": "PASS",
+  "current_executable_block_occurrences": 6,
+  "exact_block_hash_to_documents": {
+    "173cc6ddad063cd124a21ae4a880cfd15332901c0e7d033f0a7a1a5118bde918": [
+      "docs/en/design/sdk-api-design.md",
+      "docs/zh/design/sdk-api-design.md",
+      "docs/en/design/sandbox-types.md",
+      "docs/zh/design/sandbox-types.md"
+    ],
+    "8b634238e05cee863332480a7070bb9d36f6e90e8519a713513a666cddb6e0ac": [
+      "docs/en/design/sdk-api-design.md",
+      "docs/zh/design/sdk-api-design.md"
+    ]
+  },
+  "independent_second_readback": {
+    "unique_owned": 2,
+    "independent_typed_not_found": 2,
+    "recovery_used": false,
+    "result": "PASS"
+  },
+  "document_import_validation": {
+    "public_client": "0.4.0a5",
+    "public_server": "0.4.0a5",
+    "documents_scanned": 206,
+    "owned_import_occurrences": 155,
+    "unique_actual_imports": 34,
+    "successful": 33,
+    "exclusions": [
+      "docs/en/archive/agents-api-review.md",
+      "docs/en/archive/cli-followups.md",
+      "docs/en/archive/fine-grained-capabilities-review.md",
+      "docs/en/archive/opensandbox-e2e-adversarial.md",
+      "docs/en/archive/provider-opensandbox-research.md",
+      "docs/en/archive/providers-and-credentials-review.md",
+      "docs/en/archive/server-sdk-v2/01-principles.md",
+      "docs/en/archive/server-sdk-v2/02-operation-model.md",
+      "docs/en/archive/server-sdk-v2/03-policy-and-permissions.md",
+      "docs/en/archive/server-sdk-v2/04-builtin-modules.md",
+      "docs/en/archive/server-sdk-v2/05-agents-api.md",
+      "docs/en/archive/server-sdk-v2/06-lazy-install.md",
+      "docs/en/archive/server-sdk-v2/07-client-mirror.md",
+      "docs/en/archive/server-sdk-v2/08-template-building-ux.md",
+      "docs/en/archive/server-sdk-v2/09-ai-codegen-usability.md",
+      "docs/en/archive/server-sdk-v2/README.md",
+      "docs/en/design/agents-api.md",
+      "docs/en/design/provider-engine.md",
+      "docs/zh/archive/agents-api-review.md",
+      "docs/zh/archive/cli-followups.md",
+      "docs/zh/archive/fine-grained-capabilities-review.md",
+      "docs/zh/archive/opensandbox-e2e-adversarial.md",
+      "docs/zh/archive/provider-opensandbox-research.md",
+      "docs/zh/archive/providers-and-credentials-review.md",
+      "docs/zh/archive/server-sdk-v2/01-principles.md",
+      "docs/zh/archive/server-sdk-v2/02-operation-model.md",
+      "docs/zh/archive/server-sdk-v2/03-policy-and-permissions.md",
+      "docs/zh/archive/server-sdk-v2/04-builtin-modules.md",
+      "docs/zh/archive/server-sdk-v2/05-agents-api.md",
+      "docs/zh/archive/server-sdk-v2/06-lazy-install.md",
+      "docs/zh/archive/server-sdk-v2/07-client-mirror.md",
+      "docs/zh/archive/server-sdk-v2/08-template-building-ux.md",
+      "docs/zh/archive/server-sdk-v2/09-ai-codegen-usability.md",
+      "docs/zh/archive/server-sdk-v2/README.md",
+      "docs/zh/design/agents-api.md",
+      "docs/zh/design/provider-engine.md"
+    ],
+    "developer_dependency_exclusions": [
+      {
+        "statement": "from agent_sandbox.providers.testing import ProviderContractTests",
+        "result": "EXCLUDED",
+        "reason": "explicit developer test helper requires pytest"
+      }
+    ],
+    "results": [
+      {
+        "statement": "from agent_sandbox import AsyncSandbox",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox import ProviderSandbox",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox import ProviderSandbox as Sandbox",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox import Sandbox",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.agent.mcp_http import create_mcp_app",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.api import ServerClient, ServerCapabilities",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.api import launch_template",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.api.session_manager import SessionManager",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.code_interpreter import Sandbox",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.declarative import sandbox",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.models import FileSizeLimitError",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.models.errors import CommandTimeoutError",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.models.errors import EndpointNotAvailableError, FilePolicyDeniedError, PayloadTooLargeError, RateLimitedError, ServerAPIError",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.models.errors import SandboxError",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.models.errors import SandboxError, AuthenticationError, InvalidAPIKeyError, TokenExpiredError, InvalidCredentialsError, SandboxCreationError, TemplateNotFoundError, QuotaExceededError, RegionUnavailableError, TemplateParseError, ExecutionError, CommandTimeoutError, ProcessError, CodeExecutionError, CapabilityNotSupportedError, FileOperationError, FileSizeLimitError, FileNotFoundError_, PermissionDeniedError, NetworkError, ConnectionError_, GitHubRateLimitError, SessionError, SessionNotFoundError, SessionAlreadyExistsError, ProviderError, ProviderNotFoundError, ProviderConfigError, ProviderConflictError, ProviderFeatureNotSupportedError, ProviderResourceNotFoundError, ProviderInstallError, ProviderIntegrityError, ProviderTrustError, ProviderVersionError, ProviderManifestError, ProviderProtocolError, ProviderProcessError, ProviderTimeoutError, ProviderMismatchError",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.models.errors import SandboxError, InvalidAPIKeyError, TemplateNotFoundError, SandboxNotFoundError, CapabilityNotSupportedError, FileNotFoundError_, ConnectionError_",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.models.sandbox import SandboxStatus",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.models.session import SessionInfo",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.providers import Provider, register_provider",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.providers import commands",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.providers.testing import ProviderContractTests",
+        "result": "EXCLUDED",
+        "reason": "explicit developer test helper requires pytest"
+      },
+      {
+        "statement": "from agent_sandbox.server import CapabilityGroup, ServerPolicy, default_table, start",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.server import CapabilityGroup, ServerResponse, default_table",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.server import CapabilityGroup, command, default_table, start",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.server import CapabilityGroup, default_table",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.server import SandboxServer",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.server import SandboxServer, CommandRegistry",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.server import SandboxServer, ServerPolicy",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.server import SandboxServer, ServerPolicy, default_table",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.server import command, start",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.server import start",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.server.types import SSEResponse, ServerResponse",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.session.local import LocalSessionStore",
+        "result": "PASS"
+      },
+      {
+        "statement": "from agent_sandbox.transport.config import explain_config",
+        "result": "PASS"
+      }
+    ],
+    "network_business_calls": 0,
+    "result": "PASS",
+    "limitations": "Only owned SDK import statements are executed, not arbitrary whole historical/proposal/optional-dependency examples. Partial snippets use individually parsed import lines; source audit is separate."
+  }
+}

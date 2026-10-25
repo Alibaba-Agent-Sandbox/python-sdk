@@ -8,10 +8,17 @@ Public a5 fixed 24 Template help imports but four ordinary Sandbox class example
 still import unavailable e2b/e2b_code_interpreter packages. The interpreter classes
 have a distinct public entry and must not be replaced by root Sandbox classes.
 
+Current bilingual API/lifecycle pages also mix unsupported Provider interpreter
+calls, retired configuration names and an unimplemented global cleanup policy.
+Their examples must describe actual APIs rather than a speculative type menu.
+
 ## Decision
 
 Correct only the four class-help imports and prepare minimum lockstep a6.
-Keep immutable a5 and all its scoped results. Audit every shipped Python source
+Keep immutable a5 and all its scoped results. Correct the two bilingual current
+API/lifecycle pages and delete unimplemented persistent/hibernated/global-cleanup
+examples and unsupported pricing/startup claims. Do not implement those proposals.
+Keep interpreter/application prerequisites separate. Audit every shipped Python source
 docstring and every maintained Markdown/Skill import context, preserving explicit
 migration inputs, third-party comparisons, valid standard parameters and notices.
 Retain public-a4 installation recommendations until a6 is actually public, then
@@ -45,6 +52,11 @@ AST changes excluding docs. Run owner checks and required exact-head CI. After
 normal merge/tag/publication compare four public artifact hashes, fresh-install
 non-all a6 and verify all 28 help imports, Provider help, real HTTP/files and
 independent owned-process absence.
+
+Run all six Python block occurrences in the four current design documents as
+two byte-identical unique programs using official public packages. Require actual
+typed E3001 and independent owned-resource absence. Execute current documented
+owned-SDK imports with explicit history/proposal/development exclusions.
 
 ## Acceptance criteria
 
