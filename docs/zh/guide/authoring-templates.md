@@ -143,7 +143,7 @@ if __name__ == "__main__":
 
 ## 发布与部署模板
 
-Python SDK 是运行时客户端，不构建也不部署模板。构建、推送并注册模板用 CLI：`abx template build` 和 `abx template deploy`（或 `abx deploy`）。见[构建与部署](build-and-deploy.md)。
+Python SDK 是运行时客户端，不构建源码模板。通常使用 `abx --provider PROVIDER template launch SOURCE --yes`，再用 Python 连接返回的沙箱。高级镜像准备使用 `abx template build` 和 `abx template deploy`；将准备好的引用传给 `launch_template` 前，确认原生启动路径不会同时启动同一个服务。见[启动方说明](template-workflows.md)和[构建与部署](build-and-deploy.md)。
 
 将模板发布到 GitHub、从本地或 registry 安装模板、适配已有项目（`abx template scaffold --adopt`），或通过命令行构建并注册模板（`abx deploy`、`abx template deploy|create`），请使用 `abx` CLI；见[相关：abx CLI](#相关abx-cli)。
 

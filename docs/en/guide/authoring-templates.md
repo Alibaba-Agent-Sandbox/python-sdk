@@ -148,7 +148,7 @@ the sandbox creator owns its final deletion.
 
 ## Publishing and Deploying Templates
 
-The Python SDK is the runtime client and does not build or deploy templates. Build, push and register a template with the CLI: `abx template build` and `abx template deploy` (or `abx deploy`). See [Build & Deploy](build-and-deploy.md).
+The Python SDK is the runtime client and does not build source templates. Normally use `abx --provider PROVIDER template launch SOURCE --yes`, then connect Python to the returned sandbox. Advanced image preparation uses `abx template build` and `abx template deploy`; before passing a prepared reference to `launch_template`, ensure its native startup does not also start the same service. See [startup ownership](template-workflows.md) and [Build & Deploy](build-and-deploy.md).
 
 To publish a template to GitHub, install one locally or from a registry, adopt an existing project (`abx template scaffold --adopt`), or build and register one from the command line (`abx deploy`, `abx template deploy|create`), use the `abx` CLI; see [Related: the abx CLI](#related-the-abx-cli).
 

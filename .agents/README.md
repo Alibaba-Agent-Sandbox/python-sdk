@@ -21,6 +21,8 @@ records 14 actual cloud examples, 29 independent typed-not-found checks and the
 separate 10-check local runner with real timeout controls. Earlier version
 receipts and variable browser cold-install observations remain unchanged.
 
+[Template startup ownership documentation](notes/proposed/process/2026-10-25-template-startup-ownership.md) clarifies preparation versus connection; [verification](evidence/verify/2026-10-25-template-startup-ownership.md) records the bounded public-a6 startup/auth observation separately from full catalog acceptance.
+
 ## Previous public a4 delivery — 2026-10-25
 
 [Public-a4 example acceptance](evidence/verify/2026-10-25-public-a4-examples.md)
