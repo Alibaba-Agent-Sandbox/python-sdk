@@ -68,7 +68,7 @@ run once after installation succeeds; their failures stop the release.
 ## SDK fixture images
 
 The SDK repository keeps offline python-hello and agents-cli fixtures, separate
-from the template catalog. Their Dockerfiles install public server0.4.0a2 from
+from the template catalog. Their Dockerfiles install public server 0.4.0a2 from
 the official PyPI index without local wheels. CI builds both, checks the actual
 guest package and HTTP application, and confirms owned container cleanup.
 Agents runtime listing does not prove an installed agent or a real model call.
