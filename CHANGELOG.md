@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Fixed
 
 - Align maintained bilingual SDK guides with public 0.4.0a2, canonical decorator/MCP arguments, current ProviderSandbox imports and unified template launch. Remove stale source-install recipes and retired Python-engine instructions. / 将维护中的双语 SDK 指南统一为公开 0.4.0a2、规范装饰器/MCP 参数、ProviderSandbox 公开导入及统一模板启动；删除旧源码安装方案和已退役 Python 引擎说明。
+- Bound public PyPI metadata and fresh-install propagation retries while keeping artifact digest mismatches and dependency/import failures fatal. / 为公开 PyPI 元数据及全新安装增加有限传播重试，保持产物哈希、依赖与导入检查失败即中止。
 
 ### Fixed
 
