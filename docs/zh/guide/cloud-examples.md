@@ -33,7 +33,7 @@ Node HTTP 入门示例直接使用 `base` 自带的 Node，无需先部署另一
 
 浏览器示例安装 Playwright 和真实无头 Chromium。默认页面由自有沙箱内的 HTTP 服务提供，可稳定验证标题、链接和截图。设置 `BROWSER_URL` 可访问外部站点，HTTP 失败或缺少预期内容会明确报错。安装仍需连接包和浏览器下载源。
 
-标准客户端导入迁移示例使用配置为极速版账号的 `E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN`，然后执行 `python examples/compat-demos/e2b_import_migration.py`。这些配置名属于标准 E2B 兼容客户端；不要使用其他平台账号的密钥。上述 `ProviderSandbox` 和装饰器示例使用 `ABX_SANDBOX_API_KEY`。
+标准客户端导入迁移示例与其他示例统一使用项目配置 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL` 和 `ABX_SANDBOX_DOMAIN`，执行 `python examples/compat-demos/e2b_import_migration.py`。这些值必须属于极速版账号，不要混用不同提供商的凭据。
 
 本地 HTTP、会话示例执行 `python examples/run_examples_e2e.py`。它运行真实本地服务进程及受控 Codex/Qwen 协议程序，不调用模型；云端脚本会明确列为 `needs-provider`。另见[示例目录](../../../examples/README.zh-CN.md)和[模板 HTTP API](template-server-api.md)。
 

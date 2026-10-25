@@ -23,6 +23,10 @@ python -c "from importlib.metadata import version; print(version('agent-sandbox-
 
 [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) 需要独立安装。本指南中的模板启动使用 CLI 0.5.0 或更高版本；创建沙箱前先配置所选平台。
 
+本项目配置统一使用 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL` 和
+`ABX_SANDBOX_DOMAIN`，标准 Sandbox / AsyncSandbox 与 ProviderSandbox 均支持。
+公开关键字参数仍遵循各入口的文档契约；标准入口的 `api_key=` 仍然有效。
+
 ## 可选依赖
 
 ```bash

@@ -59,6 +59,11 @@ separately from the unfinished browser scope in Issue 111.
 - PASS: scan maintained docs/READMEs for retired Git-archive install pins and old
   decorator/MCP keywords. Historical explicitly retired provider-engine design and
   merged evidence remain history; actual third-party api_key/domain options remain.
+- Follow-up review: canonical ABX configuration is supported by all project
+  entries, including standard sync/async/interpreter; it is not ProviderSandbox-only.
+  Corrected this wording in the installation, beginner, migration and example guides.
+  Standard public api_key parameters and real third-party E2B configuration remain valid.
+  The import-migration example changes only its configuration docstring, not code.
 - Documentation-only change: no product runtime or test implementation changed.
   Full package CI remains enforced by the PR; unrelated cloud matrix is not rerun
   merely for prose. CLI source preparation and new application images are being

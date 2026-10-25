@@ -19,10 +19,11 @@ export ABX_SANDBOX_API_KEY='your-api-key'
 
 Obtain the Express sandbox API key using the
 [Agent Sandbox product documentation](https://help.aliyun.com/zh/functioncompute/product-overview-of-fc-agent-sandbox).
-The default provider is `alicloud-express`, region `cn-hangzhou`. Provider extensions
-use `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and `ABX_SANDBOX_DOMAIN`; the standard
-entries use their documented E2B configuration. See [authentication](authentication.md)
-for explicit `sandbox_api_key=` overrides and configuration precedence.
+The default provider is `alicloud-express`, region `cn-hangzhou`. All project entries, including standard `Sandbox` / `AsyncSandbox` and
+`ProviderSandbox`, support `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and
+`ABX_SANDBOX_DOMAIN`. Use these names for project configuration. See
+[authentication](authentication.md) for provider-extension `sandbox_api_key=` overrides;
+standard entries retain their documented public `api_key=` parameter.
 
 Installing the client installs the matching server distribution. This does not
 update a server already inside an existing image. The distribution named

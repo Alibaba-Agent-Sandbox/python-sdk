@@ -23,6 +23,11 @@ python -c "from importlib.metadata import version; print(version('agent-sandbox-
 
 Install the [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) separately. For template launch in this guide, use CLI 0.5.0 or newer and configure the selected provider before creating a sandbox.
 
+Project configuration uses `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and
+`ABX_SANDBOX_DOMAIN` for all project entries, including standard Sandbox /
+AsyncSandbox and ProviderSandbox. Public keyword parameters still follow each
+entry's documented contract; the standard `api_key=` parameter remains valid.
+
 ## Optional dependencies
 
 ```bash

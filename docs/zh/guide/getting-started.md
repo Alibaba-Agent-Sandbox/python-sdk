@@ -17,9 +17,10 @@ export ABX_SANDBOX_API_KEY='your-api-key'
 
 按[智能体沙箱产品文档](https://help.aliyun.com/zh/functioncompute/product-overview-of-fc-agent-sandbox)
 获取极速版沙箱 API Key。默认提供方为 `alicloud-express`，地域为 `cn-hangzhou`。
-Provider 扩展读取 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL` 和
-`ABX_SANDBOX_DOMAIN`；标准入口使用其文档中的 E2B 配置。
-代码中的 `sandbox_api_key=` 覆盖及配置优先级见[认证指南](authentication.md)。
+本项目各入口，包括标准 `Sandbox` / `AsyncSandbox` 和 `ProviderSandbox`，
+均支持 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL` 和 `ABX_SANDBOX_DOMAIN`，
+项目配置统一推荐这些名称。Provider 扩展的 `sandbox_api_key=` 覆盖见
+[认证指南](authentication.md)；标准入口保留其文档中的公开 `api_key=` 参数。
 
 安装客户端会安装同版本的服务端发行包，但不会更新已有镜像内的服务端。
 PyPI 上名为 `agent-sandbox` 的发行包是其他项目。可选依赖及源码开发安装见
