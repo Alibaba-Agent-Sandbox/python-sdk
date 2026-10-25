@@ -1,5 +1,8 @@
-#!/bin/sh
-cat >/dev/null
-printf '%s\n' '{"type":"item.completed","item":{"id":"m1","type":"agent_message","text":"hello-from-fake-codex"}}'
-printf '%s\n' '{"type":"turn.completed","usage":{"input_tokens":1,"output_tokens":1}}'
-exit 0
+#!/usr/bin/env python3
+import json, sys
+if "--version" in sys.argv:
+    print("codex 0.162.1")
+else:
+    sys.stdin.read()
+    print(json.dumps({"type": "item.completed", "item": {"id": "m1", "type": "agent_message", "text": "hello-from-fake-codex"}}))
+    print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 1, "output_tokens": 1}}))

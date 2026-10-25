@@ -20,13 +20,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "examples"
 PY = sys.executable
-SRC = os.pathsep.join(
-    [
-        str(ROOT / "server-sdk" / "src"),
-        str(ROOT / "client-sdk" / "src"),
-    ]
-)
-
 # These call a real provider or install packages. Compiling them is the check
 # this runner can do without a cloud account.
 NEEDS_PROVIDER = [
@@ -44,34 +37,36 @@ NEEDS_PROVIDER = [
 ]
 
 
-def _base_env(home: Path | None = None) -> dict[str, str]:
+def _base_env() -> dict[str, str]:
     env = os.environ.copy()
     for name in (
         "ABX_SERVER_TOKEN",
+        "ABX_SANDBOX_API_KEY",
         "E2B_API_KEY",
-        "E2B_API_KEY",
+        "GH_TOKEN",
+        "GITHUB_TOKEN",
         "OPENAI_API_KEY",
         "CODEX_API_KEY",
     ):
         env.pop(name, None)
-    env["PYTHONPATH"] = SRC + os.pathsep + env.get("PYTHONPATH", "")
     env["PYTHONUNBUFFERED"] = "1"
-    if home is not None:
-        env["HOME"] = str(home)
     return env
 
 
 def _run(args: list[str], *, cwd: Path, env: dict[str, str], timeout: int) -> tuple[int, str]:
-    proc = subprocess.run(
-        args,
-        cwd=cwd,
-        env=env,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        timeout=timeout,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            args,
+            cwd=cwd,
+            env=env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return 124, f"Example exceeded its {timeout}s deadline"
     return proc.returncode, proc.stdout
 
 
@@ -101,30 +96,34 @@ def run_script(rows: list[tuple[str, str, str]], rel: str, *args: str, timeout: 
 
 
 def run_local_process_examples(rows: list[tuple[str, str, str]]) -> None:
-    # Keep HOME. The provider store is ~/.abx, and a fake HOME hides the
-    # interpreter's user site packages (pydantic).
-    env = _base_env()
-    code, out = _run(
-        [
-            PY,
-            "-m",
-            "agent_sandbox.providers",
-            "install",
-            str(EXAMPLES / "providers" / "local-process"),
-            "--force",
-            "--yes",
-        ],
-        cwd=ROOT,
-        env=env,
-        timeout=60,
-    )
-    if code != 0:
-        _record(rows, "fail", "install local-process provider", out.strip() or f"exit {code}")
-        return
-    env["ABX_PROVIDER"] = "local-process"
-    for rel in ("examples/quickstart/01_hello.py", "examples/quickstart/02_file_ops.py"):
-        code, out = _run([PY, str(ROOT / rel)], cwd=ROOT, env=env, timeout=60)
-        _record(rows, "ok" if code == 0 else "fail", rel + " via local-process", out.strip() or f"exit {code}")
+    with tempfile.TemporaryDirectory(prefix="abx-local-provider-home-") as home:
+        env = _base_env()
+        env["HOME"] = home
+        code, out = _run(
+            [
+                PY,
+                "-m",
+                "agent_sandbox.providers",
+                "install",
+                str(EXAMPLES / "providers" / "local-process"),
+                "--yes",
+            ],
+            cwd=ROOT,
+            env=env,
+            timeout=60,
+        )
+        if code != 0:
+            _record(rows, "fail", "install local-process provider", out.strip() or f"exit {code}")
+            return
+        env["ABX_PROVIDER"] = "local-process"
+        for rel in ("examples/quickstart/01_hello.py", "examples/quickstart/02_file_ops.py"):
+            code, out = _run([PY, str(ROOT / rel)], cwd=ROOT, env=env, timeout=60)
+            _record(
+                rows,
+                "ok" if code == 0 else "fail",
+                rel + " via local-process",
+                out.strip() or f"exit {code}",
+            )
 
 
 def run_python_hello(rows: list[tuple[str, str, str]]) -> None:
@@ -160,7 +159,9 @@ runpy.run_path("commands.py", run_name="__main__")
                 break
             if proc.poll() is not None:
                 log = proc.stdout.read() if proc.stdout else ""
-                _record(rows, "fail", "examples/templates/python-hello", log.strip() or "server exited")
+                _record(
+                    rows, "fail", "examples/templates/python-hello", log.strip() or "server exited"
+                )
                 return
             import time
 
@@ -186,7 +187,12 @@ runpy.run_path("commands.py", run_name="__main__")
             env=env,
             timeout=30,
         )
-        _record(rows, "ok" if code == 0 else "fail", "examples/templates/python-hello/call_api.py", out.strip() or f"exit {code}")
+        _record(
+            rows,
+            "ok" if code == 0 else "fail",
+            "examples/templates/python-hello/call_api.py",
+            out.strip() or f"exit {code}",
+        )
     finally:
         proc.terminate()
         try:
@@ -200,6 +206,7 @@ def run_agents_cli(rows: list[tuple[str, str, str]]) -> None:
     directory = EXAMPLES / "templates" / "agents-cli"
     env = _base_env()
     env["E2E_RUN_LLM"] = "0"
+    env["ABX_SERVER_BASE_DIR"] = tempfile.mkdtemp(prefix="abx-agents-base-")
     env["ABX_AGENTS_PERSIST"] = "0"
     launcher = r"""
 import os, socket, runpy, time
@@ -229,13 +236,17 @@ runpy.run_path("commands.py", run_name="__main__")
         while time.time() < deadline:
             if proc.poll() is not None:
                 log = proc.stdout.read() if proc.stdout else ""
-                _record(rows, "fail", "examples/templates/agents-cli", log.strip() or "server exited")
+                _record(
+                    rows, "fail", "examples/templates/agents-cli", log.strip() or "server exited"
+                )
                 return
             text = port_file.read_text().strip() if port_file.exists() else ""
             if text:
                 port = text
                 try:
-                    with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=1) as resp:
+                    with urllib.request.urlopen(
+                        f"http://127.0.0.1:{port}/health", timeout=1
+                    ) as resp:
                         if resp.status == 200:
                             break
                 except OSError:
@@ -250,8 +261,14 @@ runpy.run_path("commands.py", run_name="__main__")
             return
         child = env.copy()
         child["E2E_BASE_URL"] = f"http://127.0.0.1:{port}"
+        child["ABX_AGENT_WORKDIR"] = env["ABX_SERVER_BASE_DIR"]
         code, out = _run([PY, str(directory / "e2e_test.py")], cwd=directory, env=child, timeout=40)
-        _record(rows, "ok" if code == 0 else "fail", "examples/templates/agents-cli/e2e_test.py", out.strip() or f"exit {code}")
+        _record(
+            rows,
+            "ok" if code == 0 else "fail",
+            "examples/templates/agents-cli/e2e_test.py",
+            out.strip() or f"exit {code}",
+        )
         for script in ("hosted_codex.py", "hosted_qwen.py"):
             code, out = _run(
                 [PY, str(EXAMPLES / "agents" / script), f"http://127.0.0.1:{port}"],
@@ -259,7 +276,12 @@ runpy.run_path("commands.py", run_name="__main__")
                 env=child,
                 timeout=40,
             )
-            _record(rows, "ok" if code == 0 else "fail", f"examples/agents/{script}", out.strip() or f"exit {code}")
+            _record(
+                rows,
+                "ok" if code == 0 else "fail",
+                f"examples/agents/{script}",
+                out.strip() or f"exit {code}",
+            )
     finally:
         proc.terminate()
         try:
@@ -279,7 +301,12 @@ def main() -> int:
     run_agents_cli(rows)
     run_local_process_examples(rows)
     for rel in NEEDS_PROVIDER:
-        _record(rows, "needs-provider", rel, "not started here; it needs a sandbox provider or a live third-party API")
+        _record(
+            rows,
+            "needs-provider",
+            rel,
+            "not started here; it needs a sandbox provider or a live third-party API",
+        )
 
     print("\n# example e2e")
     print("| status | example | detail |")

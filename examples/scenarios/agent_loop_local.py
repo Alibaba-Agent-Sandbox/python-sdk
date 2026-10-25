@@ -14,10 +14,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT / "server-sdk" / "src"), str(ROOT / "client-sdk" / "src")]
-
-from agent_sandbox.api.server_client import ServerClient  # noqa: E402
+from agent_sandbox.api.server_client import ServerClient
 
 
 def _port() -> int:
@@ -36,16 +33,24 @@ def main() -> int:
         "ABX_SERVER_TOKEN",
         "ABX_SERVER_POLICY",
         "ABX_SERVER_POLICY_FILE",
+        "ABX_SANDBOX_API_KEY",
         "E2B_API_KEY",
-        "E2B_API_KEY",
+        "GH_TOKEN",
+        "GITHUB_TOKEN",
     ):
         env.pop(name, None)
     env["ABX_SERVER_BASE_DIR"] = str(base)
-    env["PYTHONPATH"] = os.pathsep.join(
-        [str(ROOT / "server-sdk" / "src"), str(ROOT / "client-sdk" / "src"), env.get("PYTHONPATH", "")]
-    )
     proc = subprocess.Popen(
-        [sys.executable, "-m", "agent_sandbox.server", "serve", "--host", "127.0.0.1", "--port", str(port)],
+        [
+            sys.executable,
+            "-m",
+            "agent_sandbox.server",
+            "serve",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(port),
+        ],
         cwd=str(work),
         env=env,
         stdout=subprocess.PIPE,

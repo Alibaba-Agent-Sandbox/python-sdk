@@ -11,13 +11,9 @@ Quickstart demos showing core **Agent Sandbox** SDK capabilities — sandbox lif
 - Environment variables:
 
 ```bash
-# Load from .env file
-export $(grep -v '^#' ../../.env | xargs)
-
-# Or set manually
-export E2B_API_KEY=your-api-key
-export E2B_API_URL=https://api.cn-hangzhou.e2b.fc.aliyuncs.com
-export E2B_DOMAIN=e2b.fc.aliyuncs.com
+python -m pip install "agent-sandbox-client[all]==0.4.0a2"
+export ABX_SANDBOX_API_KEY="your-express-sandbox-api-key"
+# Set ABX_SANDBOX_BASE_URL and ABX_SANDBOX_DOMAIN for your region if needed.
 ```
 
 ## Demo List
@@ -26,7 +22,7 @@ export E2B_DOMAIN=e2b.fc.aliyuncs.com
 |------|-------------|----------|
 | `01_hello.py` | Basic sandbox creation, command execution, env vars, lifecycle | `base` (built-in) |
 | `02_file_ops.py` | File read/write, directories, binary files, move/delete | `base` (built-in) |
-| `03_web_service.py` | Node.js web service running inside a sandbox | `node-web` (custom, must deploy first) |
+| `03_web_service.py` | Node.js web service running inside a sandbox | `base` (built-in Node.js) |
 | `04_data_analysis.py` | pandas data analysis, CSV processing | `base` (built-in) |
 | `05_decorator_usage.py` | `@sandbox` decorator for declarative execution | `code-interpreter-v1` (built-in) |
 
@@ -36,6 +32,12 @@ export E2B_DOMAIN=e2b.fc.aliyuncs.com
 cd examples/quickstart
 python 01_hello.py
 ```
+
+## Current behavior
+
+The web service example starts Node's built-in HTTP server on `base` and checks the actual greeting, health and echo endpoints from your machine. No custom web template or npm dependencies are required. All five scripts assert their results and propagate failures. The following dated results are preserved historical captures; they describe the older scripts, not current acceptance.
+
+当前 Web 服务示例直接使用 `base` 自带的 Node HTTP 服务，从本机检查问候、健康和查询接口，不需要另建模板或 npm 依赖。五个脚本都会断言结果并传播失败。下面的历史记录描述旧脚本，不代表当前验收。
 
 ## Test Results (2026-09-28)
 

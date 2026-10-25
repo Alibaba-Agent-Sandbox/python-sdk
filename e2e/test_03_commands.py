@@ -220,3 +220,26 @@ def test_run_in_background_returns_a_stream_reader(run, base_sandbox):  # type: 
     assert isinstance(reader, StreamReader)
     chunks = run(reader.collect())
     assert "bg" in "".join(c.data for c in chunks)
+
+
+def test_timeout_bounds_continuous_output_and_stops_owned_pid(run, base_sandbox, workdir):
+    """Periodic stdout cannot turn a one-second execution limit into an idle timeout."""
+    import shlex
+
+    from agent_sandbox.models.errors import CommandTimeoutError
+
+    directory = workdir(base_sandbox)
+    pidfile = f"{directory}/continuous-timeout.pid"
+    source = (
+        f"import os,time; from pathlib import Path; Path({pidfile!r}).write_text(str(os.getpid())); "
+        "[(print('tick',flush=True),time.sleep(0.2)) for _ in range(60)]"
+    )
+    began = time.monotonic()
+    with pytest.raises(CommandTimeoutError):
+        run(base_sandbox.commands.run("python -u -c " + shlex.quote(source), timeout=1))
+    assert time.monotonic() - began < 8
+    pid = int(run(base_sandbox.files.read(pidfile)))
+    H.eventually(lambda: all(p.pid != pid for p in run(base_sandbox.commands.list())), timeout=5)
+    assert (
+        run(base_sandbox.commands.run("echo deadline-recovered")).stdout == "deadline-recovered\n"
+    )

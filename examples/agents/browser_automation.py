@@ -1,9 +1,9 @@
-"""浏览器自动化示例 / Browser Automation in Sandbox
+"""Run real headless Chromium in a cloud sandbox / 云沙箱中的真实浏览器。
 
-演示在沙箱中安装 Playwright，执行网页爬取，获取截图。
-Shows how to install Playwright in a sandbox, scrape a web page, and capture screenshots.
-
-注意: Playwright 安装较大（~200MB+），需要足够的沙箱超时时间。
+The default page is served by an owned HTTP server inside the sandbox, so this
+example does not depend on a third-party website. Set BROWSER_URL to scrape your
+own external site instead. Browser installation requires outbound network access.
+默认访问沙箱内自建页面；可用 BROWSER_URL 指定外部站点。安装浏览器需要网络。
 """
 
 import asyncio
@@ -11,138 +11,99 @@ import os
 
 from agent_sandbox import ProviderSandbox as Sandbox
 
-# Playwright 爬取脚本
-SCRAPER_SCRIPT = """\
-import asyncio
+SCRAPER_SCRIPT = r"""import asyncio
+import json
+import os
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from playwright.async_api import async_playwright
 
+PAGE = (b"<!doctype html><title>Sandbox browser example</title><h1>Browser works</h1>"
+        b"<p>Rendered in Chromium.</p><a href='/details'>Details</a>")
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(PAGE)
+
+    def log_message(self, *_args):
+        pass
+
 async def scrape():
-    async with async_playwright() as p:
-        # 启动 Chromium（无头模式）
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page(viewport={"width": 1280, "height": 720})
-
-        # ── 访问目标页面 ──────────────────────────────────────────
-        url = "https://example.com"
-        print(f"正在访问: {url}")
-        await page.goto(url, wait_until="networkidle")
-
-        # ── 获取页面标题 ──────────────────────────────────────────
-        title = await page.title()
-        print(f"页面标题: {title}")
-
-        # ── 提取页面文本 ──────────────────────────────────────────
-        heading = await page.text_content("h1")
-        print(f"H1 内容: {heading}")
-
-        paragraphs = await page.query_selector_all("p")
-        print(f"段落数量: {len(paragraphs)}")
-        for i, p_el in enumerate(paragraphs[:3]):
-            text = await p_el.text_content()
-            print(f"  段落 {i+1}: {text[:80]}...")
-
-        # ── 获取所有链接 ──────────────────────────────────────────
-        links = await page.query_selector_all("a")
-        print(f"\\n链接数量: {len(links)}")
-        for link in links:
-            href = await link.get_attribute("href")
-            text = await link.text_content()
-            print(f"  [{text.strip()}] -> {href}")
-
-        # ── 截图保存 ──────────────────────────────────────────────
-        screenshot_path = "/tmp/screenshot.png"
-        await page.screenshot(path=screenshot_path, full_page=True)
-        print(f"\\n截图已保存: {screenshot_path}")
-
-        # ── 获取页面 HTML ─────────────────────────────────────────
-        html = await page.content()
-        with open("/tmp/page.html", "w") as f:
-            f.write(html)
-        print(f"HTML 已保存: /tmp/page.html ({len(html)} 字符)")
-
-        await browser.close()
-        print("\\n浏览器已关闭")
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    worker = threading.Thread(target=server.serve_forever, daemon=True)
+    worker.start()
+    target = os.environ.get("BROWSER_URL") or f"http://127.0.0.1:{server.server_port}"
+    try:
+        async with async_playwright() as playwright:
+            browser = await playwright.chromium.launch(headless=True)
+            try:
+                page = await browser.new_page(viewport={"width": 1280, "height": 720})
+                response = await page.goto(target, wait_until="domcontentloaded", timeout=30000)
+                if response is None or not response.ok:
+                    status = response.status if response else None
+                    raise RuntimeError(f"Page request failed: status={status}")
+                title = await page.title()
+                heading = await page.locator("h1").first.text_content(timeout=10000)
+                links = await page.locator("a").evaluate_all(
+                    "nodes => nodes.map(node => ({text: node.textContent, "
+                    "href: node.getAttribute('href')}))"
+                )
+                if not os.environ.get("BROWSER_URL"):
+                    assert title == "Sandbox browser example" and heading == "Browser works"
+                    assert links == [{"text": "Details", "href": "/details"}]
+                await page.screenshot(path="/tmp/screenshot.png", full_page=True)
+                html = await page.content()
+                Path("/tmp/page.html").write_text(html, encoding="utf-8")
+                print(json.dumps({"title": title, "heading": heading, "links": links}))
+            finally:
+                await browser.close()
+    finally:
+        server.shutdown()
+        server.server_close()
+        worker.join(timeout=5)
 
 asyncio.run(scrape())
 """
 
 
 async def main() -> None:
-    api_key = os.environ.get("E2B_API_KEY", "")
-
-    # 使用 base 模板，因为需要手动安装 Playwright 和 Chromium。
-    # 如果已部署了 browser-automation 模板，可直接使用 template="browser-automation"
-    # 就无需手动安装步骤。
+    envs = {"BROWSER_URL": os.environ["BROWSER_URL"]} if os.environ.get("BROWSER_URL") else {}
     async with await Sandbox.create(
         template="base",
-        api_key=api_key,
-        timeout=900,  # Playwright 安装较慢，给足时间
+        timeout=900,
+        envs=envs,
+        sandbox_api_key=os.environ.get("ABX_SANDBOX_API_KEY", ""),
     ) as sandbox:
-        print(f"✓ 沙箱已创建: {sandbox.id}")
-
-        # ── 1. 安装 Playwright ───────────────────────────────────────
-        print("⏳ 正在安装 Playwright（这可能需要几分钟）...")
-
-        # 安装 Python 包
-        result = await sandbox.commands.run(
-            "pip install playwright --quiet",
-            timeout=120,
-        )
-        if not result.success:
-            print(f"✗ pip install 失败: {result.stderr}")
-            return
-        print("  ✓ playwright Python 包安装完成")
-
-        # 安装浏览器二进制（只安装 chromium 以节省时间）
-        result = await sandbox.commands.run(
-            "python -m playwright install chromium --with-deps",
-            timeout=300,
-        )
-        if not result.success:
-            print(f"✗ 浏览器安装失败: {result.stderr}")
-            return
-        print("  ✓ Chromium 浏览器安装完成")
-
-        # ── 2. 上传并执行爬取脚本 ────────────────────────────────────
+        for command, timeout in [
+            ("pip install playwright --quiet", 120),
+            ("python -m playwright install --with-deps --only-shell chromium", 300),
+        ]:
+            print(f"Installing browser dependency: {command}", flush=True)
+            result = await sandbox.commands.run(
+                command,
+                timeout=timeout,
+                on_stdout=lambda text: print(text, end="", flush=True),
+                on_stderr=lambda text: print(text, end="", flush=True),
+            )
+            if not result.success:
+                raise RuntimeError(f"Browser installation failed: {result.stderr}")
+        print("Running Chromium against the selected HTTP page", flush=True)
         await sandbox.files.write("/tmp/scraper.py", SCRAPER_SCRIPT)
-        print("\n⏳ 正在执行网页爬取...\n")
-
-        result = await sandbox.commands.run(
-            "python /tmp/scraper.py",
-            timeout=60,
-        )
-
-        if result.success:
-            print(result.stdout)
-        else:
-            print(f"✗ 爬取失败 (exit={result.exit_code})")
-            if result.stderr:
-                print(f"stderr: {result.stderr[:500]}")
-
-        # ── 3. 验证截图文件 ──────────────────────────────────────────
-        screenshot_exists = await sandbox.files.exists("/tmp/screenshot.png")
-        if screenshot_exists:
-            info = await sandbox.files.get_info("/tmp/screenshot.png")
-            print(f"\n截图文件大小: {info.size:,} bytes")
-
-            # 下载截图到本地（可选）
-            # await sandbox.files.download("/tmp/screenshot.png", "./screenshot.png")
-            # print("✓ 截图已下载到本地")
-
-        # ── 4. 查看保存的 HTML ───────────────────────────────────────
-        html_exists = await sandbox.files.exists("/tmp/page.html")
-        if html_exists:
-            html_content = await sandbox.files.read("/tmp/page.html")
-            print(f"HTML 内容前 200 字符:\n{html_content[:200]}...")
-
-        # ── 5. 列出生成的文件 ────────────────────────────────────────
-        print("\n/app 目录文件:")
-        entries = await sandbox.files.list("/app")
-        for entry in entries:
-            icon = '📁' if entry.type.value == 'directory' else '📄'
-            print(f"  {icon} {entry.name}")
-
-    print("\n✓ 沙箱已自动销毁")
+        result = await sandbox.commands.run("python /tmp/scraper.py", timeout=60)
+        if not result.success:
+            raise RuntimeError(f"Browser execution failed: {result.stderr}")
+        print(result.stdout)
+        png = await sandbox.files.read_bytes("/tmp/screenshot.png")
+        assert png.startswith(b"\x89PNG\r\n\x1a\n") and len(png) > 1000
+        html = await sandbox.files.read("/tmp/page.html")
+        if not envs:
+            assert "Browser works" in html and "Rendered in Chromium." in html
+        print(f"Screenshot: {len(png)} bytes; HTML: {len(html)} characters")
+    print("Sandbox destroyed")
 
 
 if __name__ == "__main__":

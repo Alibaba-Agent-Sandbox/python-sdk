@@ -2,7 +2,7 @@
 """Upload one file and run one Codex session against a local sandbox server.
 
 The Codex binary is a local program, described in ``examples/agents/README.md``:
-a shell script named ``codex`` on ``PATH`` that discards stdin and prints one
+a Python executable named ``codex`` on ``PATH`` that consumes stdin and prints one
 JSONL agent message plus ``turn.completed``. This file does not read or send
 a model API key.
 
@@ -30,20 +30,15 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-_FAKE_CODEX = """#!/bin/sh
-cat >/dev/null
-printf '%s\\n' '{"type":"item.completed","item":{"id":"m1","type":"agent_message","text":"hello-from-fake-codex"}}'
-printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":1,"output_tokens":1}}'
-exit 0
+_FAKE_CODEX = """#!/usr/bin/env python3
+import json, sys
+if "--version" in sys.argv:
+    print("codex 0.162.1")
+else:
+    sys.stdin.read()
+    print(json.dumps({"type": "item.completed", "item": {"id": "m1", "type": "agent_message", "text": "hello-from-fake-codex"}}))
+    print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 1, "output_tokens": 1}}))
 """
-
-
-def _server_src() -> None:
-    """Import ``agent_sandbox.server`` from this repo when it is not installed."""
-    root = Path(__file__).resolve().parents[2]
-    src = root / "server-sdk" / "src"
-    if src.is_dir() and str(src) not in sys.path:
-        sys.path.insert(0, str(src))
 
 
 def install_fake_codex(directory: Path) -> None:
@@ -65,10 +60,9 @@ def start_local(base_dir: Path, bin_dir: Path) -> str:
     """Start a local server. Returns ``http://127.0.0.1:<port>``."""
     install_fake_codex(bin_dir)
     os.environ["ABX_SERVER_BASE_DIR"] = str(base_dir)
-    os.environ["ABX_SERVER_ENABLED_GROUPS"] = "agents"
+    os.environ["ABX_SERVER_ENABLED_GROUPS"] = "agents,file_ops"
     os.environ["ABX_AGENTS_PERSIST"] = "0"
     os.environ.pop("ABX_SERVER_TOKEN", None)
-    _server_src()
     from agent_sandbox.server.app import SandboxServer
     from agent_sandbox.server.router import CapabilityGroup
 
@@ -127,7 +121,11 @@ def show(title: str, status: int, payload: object) -> bool:
     if payload == "" or payload == b"":
         print("(empty body)")
     else:
-        print(json.dumps(payload, ensure_ascii=False, indent=2) if not isinstance(payload, str) else payload)
+        print(
+            json.dumps(payload, ensure_ascii=False, indent=2)
+            if not isinstance(payload, str)
+            else payload
+        )
     return 200 <= status < 300
 
 
@@ -162,23 +160,26 @@ def main() -> int:
     status, body, _headers = call(
         base,
         "POST",
-        "/upload",
+        "/files/upload-stream",
         {"path": upload_path, "content_base64": payload},
     )
-    ok = show("POST /upload", status, body)
+    ok = show("POST /files/upload-stream", status, body)
     if not ok:
         return 1
 
     query = urllib.parse.urlencode({"path": upload_path})
-    status, body, _headers = call(base, "GET", f"/download?{query}")
-    ok = show("GET /download", status, body) and ok
+    status, body, _headers = call(base, "GET", f"/files/download-stream?{query}")
+    ok = show("GET /files/download-stream", status, body) and ok
+    assert isinstance(body, dict)
+    assert base64.b64decode(body["content_base64"], validate=True) == b"hello-from-files\n"
 
     status, created, headers = call(
         base,
         "POST",
         "/v1/agents/sessions",
         {
-            "agent": {"model": "codex"},
+            "adapter": "codex",
+            "agent": {},
             "environment": {
                 "type": "self_hosted",
                 "workspace_directory": str(workspace),

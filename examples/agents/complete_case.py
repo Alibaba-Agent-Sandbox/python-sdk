@@ -30,25 +30,24 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-_FAKE_CODEX = """#!/bin/sh
-cat >/dev/null
-printf '%s\\n' '{"type":"item.completed","item":{"id":"m1","type":"agent_message","text":"hello-from-fake-codex"}}'
-printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":1,"output_tokens":1}}'
-exit 0
+_FAKE_CODEX = """#!/usr/bin/env python3
+import json, sys
+if "--version" in sys.argv:
+    print("codex 0.162.1")
+else:
+    sys.stdin.read()
+    print(json.dumps({"type": "item.completed", "item": {"id": "m1", "type": "agent_message", "text": "hello-from-fake-codex"}}))
+    print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 1, "output_tokens": 1}}))
 """
 
-_FAKE_QWEN = """#!/bin/sh
-printf '%s\\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"text","text":"hello-from-fake-qwen"}]}}'
-printf '%s\\n' '{"type":"result","subtype":"success"}'
-exit 0
+_FAKE_QWEN = """#!/usr/bin/env python3
+import json, sys
+if "--version" in sys.argv:
+    print("0.23.0")
+else:
+    print(json.dumps({"type": "assistant", "message": {"id": "m1", "content": [{"type": "text", "text": "hello-from-fake-qwen"}]}}))
+    print(json.dumps({"type": "result", "subtype": "success"}))
 """
-
-
-def _server_src() -> None:
-    root = Path(__file__).resolve().parents[2]
-    src = root / "server-sdk" / "src"
-    if src.is_dir() and str(src) not in sys.path:
-        sys.path.insert(0, str(src))
 
 
 def _write_cli(directory: Path, name: str, body: str) -> None:
@@ -58,7 +57,9 @@ def _write_cli(directory: Path, name: str, body: str) -> None:
     script.chmod(0o755)
 
 
-def call(base: str, method: str, path: str, body: dict | None = None) -> tuple[int, object, dict[str, str]]:
+def call(
+    base: str, method: str, path: str, body: dict | None = None
+) -> tuple[int, object, dict[str, str]]:
     data = None if body is None else json.dumps(body).encode("utf-8")
     request = urllib.request.Request(base + path, data=data, method=method)
     request.add_header("Accept", "application/json")
@@ -107,7 +108,18 @@ def _expect(status: int, want: int, title: str) -> None:
 
 
 def _turn(base: str, adapter: str, needle: str) -> None:
-    status, created, headers = call(base, "POST", "/v1/agents/sessions", {"agent": {"model": adapter}})
+    status, created, headers = call(
+        base,
+        "POST",
+        "/v1/agents/sessions",
+        {
+            "adapter": adapter,
+            "environment": {
+                "type": "self_hosted",
+                "workspace_directory": os.environ["ABX_SERVER_BASE_DIR"],
+            },
+        },
+    )
     _show(f"POST /v1/agents/sessions model={adapter}", status, created, headers)
     _expect(status, 200, "create session")
     if headers.get("x-agent-sandbox-local") != "1":
@@ -126,7 +138,9 @@ def _turn(base: str, adapter: str, needle: str) -> None:
                     "input": [
                         {
                             "role": "user",
-                            "content": [{"type": "input_text", "text": f"Say hello from {adapter}."}],
+                            "content": [
+                                {"type": "input_text", "text": f"Say hello from {adapter}."}
+                            ],
                         }
                     ],
                 }
@@ -163,7 +177,6 @@ def main() -> int:
     os.environ["ABX_AGENTS_PERSIST"] = "0"
     os.environ.pop("ABX_SERVER_TOKEN", None)
     os.environ.pop("ABX_AGENTS_DEFAULT", None)
-    _server_src()
     from agent_sandbox.server.app import SandboxServer
     from agent_sandbox.server.router import CapabilityGroup
 

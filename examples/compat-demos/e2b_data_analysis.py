@@ -12,9 +12,14 @@ Style: E2B (imperative)
 """
 
 import asyncio
+import csv
+import io
+import json
 import os
+from decimal import Decimal
 
-from agent_sandbox import ProviderSandbox as Sandbox, SandboxError
+from agent_sandbox import ProviderSandbox as Sandbox
+from agent_sandbox import SandboxError
 
 # ── 内嵌销售数据 / Embedded sales CSV data ────────────────────────────────
 SALES_CSV = """\
@@ -118,7 +123,7 @@ print("✓ 摘要已保存 / Summary saved to /app/summary.json")
 async def main() -> None:
     """E2B 风格: 命令式沙箱操作演示 / E2B style: imperative sandbox demo."""
     # 从环境变量获取 API Key / Get API key from environment
-    api_key = os.environ.get("E2B_API_KEY", "")
+    api_key = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
     print("=" * 55)
     print("  E2B 风格数据分析 Demo / E2B-Style Data Analysis")
@@ -129,7 +134,7 @@ async def main() -> None:
         print("\n[1/6] 创建沙箱 / Creating sandbox...")
         async with await Sandbox.create(
             template="base",
-            api_key=api_key,
+            sandbox_api_key=api_key,
             timeout=300,
             metadata={"demo": "e2b-data-analysis"},
         ) as sandbox:
@@ -143,7 +148,7 @@ async def main() -> None:
             )
             if not result.success:
                 print(f"  ✗ 安装失败: {result.stderr}")
-                return
+                raise RuntimeError("Sandbox setup or execution failed")
             print("  ✓ pandas 已安装")
 
             # ── Step 3: 上传数据 / Upload data ────────────────────────
@@ -172,12 +177,23 @@ async def main() -> None:
             else:
                 print(f"  ✗ 分析失败 (exit={result.exit_code})")
                 print(f"  stderr: {result.stderr}")
-                return
+                raise RuntimeError("Sandbox setup or execution failed")
 
             # ── Step 6: 下载结果 / Download results ───────────────────
             print("\n[6/6] 读取分析结果 / Reading results...")
             report = await sandbox.files.read("/app/report.txt")
             summary_json = await sandbox.files.read("/app/summary.json")
+            summary = json.loads(summary_json)
+            rows = list(csv.DictReader(io.StringIO(SALES_CSV)))
+            expected = sum(Decimal(row["amount"]) for row in rows)
+            assert summary["total_records"] == len(rows)
+            assert Decimal(str(summary["total_revenue"])) == expected
+            by_product: dict[str, Decimal] = {}
+            for row in rows:
+                product = row["product"]
+                by_product[product] = by_product.get(product, Decimal(0)) + Decimal(row["amount"])
+            assert summary["best_product"] == max(by_product, key=by_product.get)
+            assert "Sales Analysis Report" in report
             print(f"  ✓ 报告长度: {len(report)} 字符")
             print(f"  ✓ JSON 摘要: {summary_json[:100]}...")
 
@@ -186,8 +202,10 @@ async def main() -> None:
 
     except SandboxError as e:
         print(f"\n✗ 沙箱错误 / Sandbox error: {e}")
+        raise
     except Exception as e:
         print(f"\n✗ 未知错误 / Unexpected error: {e}")
+        raise
 
 
 if __name__ == "__main__":

@@ -15,11 +15,10 @@ import asyncio
 import os
 import time
 
-API_KEY = os.environ.get("E2B_API_KEY", "")
+API_KEY = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
-from agent_sandbox import ProviderSandbox as Sandbox, SandboxError
+from agent_sandbox import ProviderSandbox as Sandbox
 from agent_sandbox.declarative import sandbox
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  任务 1: 斐波那契数列 / Task 1: Fibonacci Sequence
@@ -33,7 +32,7 @@ async def e2b_fibonacci(n: int) -> list[int]:
     """
     async with await Sandbox.create(
         template="base",
-        api_key=API_KEY,
+        sandbox_api_key=API_KEY,
         timeout=60,
     ) as sandbox:
         # 需要手动编写代码字符串、上传、执行、解析
@@ -56,13 +55,14 @@ print(json.dumps(fib({n})))
             raise RuntimeError(f"执行失败: {result.stderr}")
 
         import json
+
         return json.loads(result.stdout.strip())
 
 
 # ── Modal 风格 / Modal Style ─────────────────────────────────────────────
 @sandbox(
     template="code-interpreter-v1",
-    api_key=API_KEY,
+    sandbox_api_key=API_KEY,
     timeout=60,
 )
 def modal_fibonacci(n: int) -> list:
@@ -91,7 +91,7 @@ async def e2b_sort_and_stats(numbers: list[float]) -> dict:
 
     async with await Sandbox.create(
         template="base",
-        api_key=API_KEY,
+        sandbox_api_key=API_KEY,
         timeout=120,
     ) as sandbox:
         # 1. 安装 numpy
@@ -131,7 +131,7 @@ print(json.dumps(result))
 @sandbox(
     template="code-interpreter-v1",
     packages=["numpy"],
-    api_key=API_KEY,
+    sandbox_api_key=API_KEY,
     timeout=120,
 )
 def modal_sort_and_stats(numbers: list) -> dict:
@@ -184,6 +184,7 @@ async def main() -> None:
         print(f"  ✗ 失败: {e}")
         e2b_result = None
         e2b_time = 0
+        raise
 
     # Modal 风格
     print("\n  【Modal 风格 / Modal Style】")
@@ -198,10 +199,12 @@ async def main() -> None:
         print(f"  ✗ 失败: {e}")
         modal_result = None
         modal_time = 0
+        raise
 
     # 对比结果
     if e2b_result and modal_result:
         match = e2b_result == modal_result
+        assert match and len(e2b_result) == 20 and e2b_result[-1] == 4181
         print(f"\n  ✓ 结果一致: {match}")
 
     # ── 对比 2: 排序与统计 ────────────────────────────────────────────
@@ -220,12 +223,15 @@ async def main() -> None:
         e2b_stats = await e2b_sort_and_stats(test_data)
         e2b_time = time.perf_counter() - start
         print(f"  排序: {e2b_stats['sorted']}")
-        print(f"  均值={e2b_stats['mean']:.2f}, 中位={e2b_stats['median']:.2f}, "
-              f"标准差={e2b_stats['std']:.2f}")
+        print(
+            f"  均值={e2b_stats['mean']:.2f}, 中位={e2b_stats['median']:.2f}, "
+            f"标准差={e2b_stats['std']:.2f}"
+        )
         print(f"  耗时: {e2b_time:.2f}s")
     except Exception as e:
         print(f"  ✗ 失败: {e}")
         e2b_stats = None
+        raise
 
     # Modal 风格
     print("\n  【Modal 风格 / Modal Style】")
@@ -235,12 +241,25 @@ async def main() -> None:
         modal_stats = modal_sort_and_stats(test_data)
         modal_time = time.perf_counter() - start
         print(f"  排序: {modal_stats['sorted']}")
-        print(f"  均值={modal_stats['mean']:.2f}, 中位={modal_stats['median']:.2f}, "
-              f"标准差={modal_stats['std']:.2f}")
+        print(
+            f"  均值={modal_stats['mean']:.2f}, 中位={modal_stats['median']:.2f}, "
+            f"标准差={modal_stats['std']:.2f}"
+        )
         print(f"  耗时: {modal_time:.2f}s")
     except Exception as e:
         print(f"  ✗ 失败: {e}")
         modal_stats = None
+        raise
+
+    import math
+    import statistics
+
+    assert e2b_stats is not None and modal_stats is not None
+    for stats in [e2b_stats, modal_stats]:
+        assert stats["sorted"] == sorted(test_data)
+        assert math.isclose(stats["mean"], statistics.mean(test_data), abs_tol=1e-8)
+        assert math.isclose(stats["median"], statistics.median(test_data), abs_tol=1e-8)
+        assert math.isclose(stats["std"], statistics.pstdev(test_data), abs_tol=1e-8)
 
     # ── 总结对比 / Summary ────────────────────────────────────────────
     print("\n" + "=" * 65)

@@ -1,144 +1,71 @@
-"""Web 服务示例 / Web Service in Sandbox
-
-演示在沙箱中启动 Node.js Express 服务并获取访问地址。
-Shows how to start a Node.js Express server in a sandbox and get its public URL.
-"""
+"""Start a Node.js HTTP service and call it through the sandbox's public URL."""
 
 import asyncio
-import os
+import contextlib
+import json
 
-from agent_sandbox import ProviderSandbox as Sandbox
+import httpx
 
-# Express 应用代码
-EXPRESS_APP = """\
-const express = require('express');
-const app = express();
-const PORT = 3000;
+from agent_sandbox import ProviderSandbox
 
-app.get('/', (req, res) => {
-    res.json({
-        message: 'Hello from Sandbox!',
-        timestamp: new Date().toISOString(),
-        node_version: process.version,
-    });
-});
-
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', uptime: process.uptime() });
-});
-
-app.get('/api/echo', (req, res) => {
-    res.json({ query: req.query, headers: req.headers });
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-});
-"""
-
-PACKAGE_JSON = """\
-{
-  "name": "sandbox-express-demo",
-  "version": "1.0.0",
-  "dependencies": {
-    "express": "^4.18.0"
+APP = r"""
+const http = require('node:http');
+http.createServer((req, res) => {
+  const url = new URL(req.url, 'http://localhost');
+  res.setHeader('content-type', 'application/json');
+  if (url.pathname === '/health') res.end(JSON.stringify({status: 'ok'}));
+  else if (url.pathname === '/api/echo') {
+    res.end(JSON.stringify({query: Object.fromEntries(url.searchParams)}));
   }
-}
+  else res.end(JSON.stringify({message: 'Hello from Sandbox!', node_version: process.version}));
+}).listen(3000, '0.0.0.0');
 """
 
 
 async def main() -> None:
-    api_key = os.environ.get("E2B_API_KEY", "")
+    async with await ProviderSandbox.create(template="base", timeout=300) as sandbox:
+        await sandbox.files.write("/tmp/example-server.js", APP)
+        reader = await sandbox.commands.start("node /tmp/example-server.js", timeout=240)
 
-    # 注意：本示例需要 network.get_url()/get_host() 计算公网访问地址，
-    # 而这依赖模板声明 "ports" 能力。默认的 "base" 模板只回落
-    # DEFAULT_CAPABILITIES（shell/files/code，不含 ports），调用 network.*
-    # 会抛 CapabilityNotSupportedError(E3004)。这里使用已声明 ports 能力的
-    # node-web 模板（来自模板真源仓库 alibaba-agent-sandbox/awesome-templates，
-    # 先 `abx template install node-web` 安装），语义上也更契合 Node.js 服务。
-    async with await Sandbox.create(
-        template="node-web",
-        api_key=api_key,
-        timeout=600,
-    ) as sandbox:
-        print(f"✓ 沙箱已创建: {sandbox.id}")
+        async def drain() -> None:
+            async for _ in reader:
+                pass
 
-        # ── 1. 写入项目文件 ──────────────────────────────────────────
-        await sandbox.files.write("/app/package.json", PACKAGE_JSON)
-        await sandbox.files.write("/app/server.js", EXPRESS_APP)
-        print("✓ 已写入 server.js 和 package.json")
+        task = asyncio.create_task(drain())
+        try:
+            for _ in range(40):
+                ready = await sandbox.commands.run(
+                    "curl -fsS http://127.0.0.1:3000/health", timeout=5
+                )
+                if ready.exit_code == 0:
+                    assert json.loads(ready.stdout) == {"status": "ok"}
+                    break
+                await asyncio.sleep(0.25)
+            else:
+                raise RuntimeError("The Node.js service did not become ready")
 
-        # ── 2. 安装依赖 ─────────────────────────────────────────────
-        print("⏳ 正在安装 npm 依赖...")
-        result = await sandbox.commands.run(
-            "npm install --production",
-            cwd="/app",
-            timeout=120,
-        )
-        if not result.success:
-            print(f"✗ npm install 失败:\n{result.stderr}")
-            return
-        print("✓ 依赖安装完成")
-
-        # ── 3. 后台启动服务 ──────────────────────────────────────────
-        # 使用 start() 方法启动后台进程（不阻塞等待）。
-        # 重要：envd 进程生命周期与 WebSocket 流绑定——必须持续消费
-        # StreamReader，否则连接关闭后进程会被终止。这里用一个后台
-        # 任务异步消费输出，保持进程存活。
-        reader = await sandbox.commands.start(
-            "node server.js",
-            cwd="/app",
-            timeout=300,
-        )
-
-        async def _keep_alive() -> None:
-            """Drain the reader to keep the WS connection (and process) alive."""
-            async for chunk in reader:
-                # 可选：打印服务端日志便于调试
-                if chunk.data.strip():
-                    print(f"   [node] {chunk.data.strip()}")
-
-        server_task = asyncio.create_task(_keep_alive())
-        print("✓ Express 服务启动中...")
-
-        # 等待服务就绪（冷启动可能较慢）
-        await asyncio.sleep(5)
-
-        # ── 4. 计算公网访问地址 ──────────────────────────────────────
-        url = sandbox.network.get_url(3000)
-        host = sandbox.network.get_host(3000)
-        print(f"\n🌐 服务地址:")
-        print(f"   URL  : {url}")
-        print(f"   Host : {host}")
-
-        # secure 模式需要 access token
-        headers = sandbox.network.get_access_headers()
-        if headers:
-            print(f"   需要 Header: {headers}")
-
-        # ── 5. 在沙箱内请求验证 ──────────────────────────────────────
-        result = await sandbox.commands.run(
-            "curl -s http://localhost:3000/",
-            timeout=10,
-        )
-        print(f"\n📥 GET / 响应:\n   {result.stdout.strip()}")
-
-        result = await sandbox.commands.run(
-            "curl -s http://localhost:3000/health",
-            timeout=10,
-        )
-        print(f"\n📥 GET /health 响应:\n   {result.stdout.strip()}")
-
-        result = await sandbox.commands.run(
-            'curl -s "http://localhost:3000/api/echo?foo=bar&lang=zh"',
-            timeout=10,
-        )
-        print(f"\n📥 GET /api/echo 响应:\n   {result.stdout.strip()}")
-
-        # 取消后台任务，避免编辑时告警
-        server_task.cancel()
-
-    print("\n✓ 沙箱已自动销毁，服务已停止")
+            # Gateway credentials remain in request headers, never in printed URLs/logs.
+            origin = sandbox.network.get_url(3000)
+            async with httpx.AsyncClient(
+                headers=sandbox.network.get_access_headers(), timeout=30
+            ) as client:
+                response = await client.get(origin + "/")
+                response.raise_for_status()
+                assert response.json()["message"] == "Hello from Sandbox!"
+                response = await client.get(origin + "/health")
+                response.raise_for_status()
+                assert response.json() == {"status": "ok"}
+                response = await client.get(
+                    origin + "/api/echo", params={"foo": "bar", "lang": "zh"}
+                )
+                response.raise_for_status()
+                assert response.json() == {"query": {"foo": "bar", "lang": "zh"}}
+            print("PASS: public HTTP greeting, health and query echo")
+        finally:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+    print("Sandbox destroyed")
 
 
 if __name__ == "__main__":

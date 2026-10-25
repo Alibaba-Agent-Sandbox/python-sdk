@@ -14,7 +14,9 @@ RPC endpoints（已实测验证）:
 
 from __future__ import annotations
 
+import asyncio
 import base64
+import time
 from typing import TYPE_CHECKING, Any
 
 import httpx
@@ -38,10 +40,8 @@ if TYPE_CHECKING:
 
 logger = get_logger("protocol.process")
 
-# Extra seconds added to the process-level timeout to derive the HTTP read
-# timeout.  This avoids the HTTP layer timing out *before* the server-side
-# process timeout fires, which would produce a misleading ReadTimeout
-# instead of a clean process-timeout error.
+# The execution deadline below is independent of HTTP read inactivity.
+# Leave a small transport buffer for the typed deadline and owned-process cleanup.
 _HTTP_TIMEOUT_BUFFER: float = 5.0
 
 _codec = ConnectCodec()
@@ -214,20 +214,23 @@ class ProcessProtocol:
         timeout: int,
         http_timeout: float,
     ) -> AsyncIterator[dict[str, Any]]:
-        """Re-raise the HTTP read timeout of a command stream as :class:`CommandTimeoutError`.
-
-        The HTTP read timeout is derived from the command timeout, so a silent command that
-        outlives it surfaces from httpx as ``ReadTimeout``.  The process is killed on a
-        best-effort basis (closing the HTTP stream does not stop it) and the SDK error is raised.
-        """
+        """Bound total execution even while output continues, then stop the owned PID."""
         pid: int | None = None
+        deadline = time.monotonic() + timeout
         try:
-            async for frame in raw_stream:
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise asyncio.TimeoutError
+                try:
+                    frame = await asyncio.wait_for(anext(raw_stream), timeout=remaining)
+                except StopAsyncIteration:
+                    break
                 started = (frame.get("event") or {}).get("start")
                 if isinstance(started, dict) and isinstance(started.get("pid"), int):
                     pid = started["pid"]
                 yield frame
-        except httpx.ReadTimeout as exc:
+        except (asyncio.TimeoutError, httpx.ReadTimeout) as exc:
             if pid is not None:
                 try:
                     await self.send_signal(
@@ -235,12 +238,23 @@ class ProcessProtocol:
                     )
                 except Exception:  # best effort: the timeout is what the caller must see
                     logger.debug("could not kill timed-out process %s", pid)
-            detail = f"no output for {http_timeout:g}s"
+            detail = (
+                f"no output for {http_timeout:g}s"
+                if isinstance(exc, httpx.ReadTimeout)
+                else "execution deadline exceeded"
+            )
             if pid is not None:
                 detail += f"; pid {pid} was asked to stop"
             raise CommandTimeoutError(
                 f"Command did not finish within {timeout}s ({detail})."
             ) from exc
+        finally:
+            close = getattr(raw_stream, "aclose", None)
+            if close is not None:
+                try:
+                    await close()
+                except Exception:
+                    logger.debug("could not close command stream after completion")
 
     async def _unary(
         self,

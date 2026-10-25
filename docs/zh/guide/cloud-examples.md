@@ -1,33 +1,18 @@
-# 云上端到端练习
+# 运行云端示例
 
-在默认提供方 **阿里云极速版**（`alicloud-express`）上，用真实沙箱把仓库里的云端示例跑一遍。不需要把镜像推到 ACR。
-
-> English: [../../en/guide/cloud-examples.md](../../en/guide/cloud-examples.md)
-
-Agents API 的完整案例不在本页。那一组请求、本地替身 CLI，以及不读取模型密钥的跑法，见 [Agents API](agents-api.md)。
-
-## 准备
-
-客户端读取 `E2B_API_KEY`。旧名字 `E2B_API_KEY` 不会被当前客户端当成沙箱密钥。
+安装客户端时自动安装同版本服务端：
 
 ```bash
-pip install "agent-sandbox-client"
-export E2B_API_KEY="your-api-key"
+python -m pip install "agent-sandbox-client[all]==0.4.0a2"
+export ABX_SANDBOX_API_KEY="your-express-sandbox-api-key"
+# 非默认地域按需配置 ABX_SANDBOX_BASE_URL、ABX_SANDBOX_DOMAIN。
 ```
 
-未设置 `ABX_PROVIDER` 时，`Sandbox.create` 使用 `alicloud-express`。下面的脚本自己把 `timeout` 传给 `Sandbox.create`（这是沙箱 TTL，单位秒，从 60 到 900），并在 `async with` 或 `@sandbox` 结束时销毁沙箱。
-
-在本仓库里、尚未 `pip install` 时，把源码放到 `PYTHONPATH`：
+在克隆的 `python-sdk` 仓库中执行下列命令。示例导入已安装的公开包，无需注入源码目录。每个脚本创建并清理自己的沙箱，断言业务结果；失败时非零退出。
 
 ```bash
-export PYTHONPATH=client-sdk/src:server-sdk/src
-```
-
-## 照着跑
-
-在 `python-sdk` 目录：
-
-```bash
+python examples/quickstart/01_hello.py
+python examples/quickstart/02_file_ops.py
 python examples/quickstart/03_web_service.py
 python examples/quickstart/04_data_analysis.py
 python examples/quickstart/05_decorator_usage.py
@@ -36,28 +21,20 @@ python examples/compat-demos/e2b_data_analysis.py
 python examples/compat-demos/e2b_web_scraper.py
 python examples/compat-demos/modal_compute.py
 python examples/compat-demos/modal_data_analysis.py
+python examples/compat-demos/e2e_capability_validation.py
+python examples/agents/browser_automation.py
+# Requires a real model key / 需要真实模型密钥
+python examples/agents/codex_agent.py
 ```
 
-| 脚本 | 它在云上做什么 |
-|---|---|
-| `examples/quickstart/03_web_service.py` | 模板 `node-web`。写入 Express 应用，`npm install`，在沙箱内请求 `localhost:3000` |
-| `examples/quickstart/04_data_analysis.py` | 模板 `base`。安装 pandas，分析 CSV，再用 `run_code()` 取前三名 |
-| `examples/quickstart/05_decorator_usage.py` | `@sandbox`，模板 `code-interpreter-v1`。π、pandas 摘要、斐波那契、环境变量 |
-| `examples/compat-demos/comparison.py` | 同一任务的命令式 `Sandbox.create` 与 `@sandbox` |
-| `examples/compat-demos/e2b_data_analysis.py` | 命令式：上传 CSV，pandas 出报告，再把报告读回来 |
-| `examples/compat-demos/e2b_web_scraper.py` | 命令式：在沙箱里请求 `https://example.com` |
-| `examples/compat-demos/modal_compute.py` | `@sandbox`：蒙特卡洛 π、矩阵乘、分布拟合 |
-| `examples/compat-demos/modal_data_analysis.py` | `@sandbox`：销售汇总、数据质量、产品排名 |
+Node HTTP 入门示例直接使用 `base` 自带的 Node，无需先部署另一个 Web 模板。数据示例使用 `code-interpreter-v1` 并核对实际结果。能力示例没有本地 registry 或模拟云端回退。
 
-数据分析示例显式写入 Python 脚本并通过 `commands.run()` 执行。解释器调用要求匹配的解释器工作流，不会自动转 shell。
+`codex_agent.py` 需要 `OPENAI_API_KEY`，可用 `OPENAI_BASE_URL`、`OPENAI_MODEL` 指定兼容模型。它在 `base` 中真实生成并执行 Python 代码，由本地独立排序结果校验。历史文件名不代表它运行 Codex CLI；缺少模型凭证会立即失败。
 
-创建失败时看异常上的错误码（例如模板不存在是 `E2001`），停掉这个示例，不要改去推镜像。
+浏览器示例安装 Playwright 和真实无头 Chromium。默认页面由自有沙箱内的 HTTP 服务提供，可稳定验证标题、链接和截图。设置 `BROWSER_URL` 可访问外部站点，HTTP 失败或缺少预期内容会明确报错。安装仍需连接包和浏览器下载源。
 
-## 两个 Agent 示例
+标准客户端导入迁移示例使用配置为极速版账号的 `E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN`，然后执行 `python examples/compat-demos/e2b_import_migration.py`。这些配置名属于标准 E2B 兼容客户端；不要使用其他平台账号的密钥。上述 `ProviderSandbox` 和装饰器示例使用 `ABX_SANDBOX_API_KEY`。
 
-它们不需要付费模型密钥也能启动。模型密钥只在你要调用真实模型时才设置。
+本地 HTTP、会话示例执行 `python examples/run_examples_e2e.py`。它运行真实本地服务进程及受控 Codex/Qwen 协议程序，不调用模型；云端脚本会明确列为 `needs-provider`。另见[示例目录](../../../examples/README.zh-CN.md)和[模板 HTTP API](template-server-api.md)。
 
-- `examples/agents/codex_agent.py` 使用模板 `codex`。账户上没有这个模板时，`Sandbox.create` 以 `E2001` 失败，走不到脚本里的模拟分支。真实模型调用才需要 `OPENAI_API_KEY`。
-- `examples/agents/browser_automation.py` 不读取模型密钥。它在 `base` 里 `pip install playwright`，再执行 `playwright install chromium`。若 `playwright` 不在 `PATH` 上，`commands.run` 抛出 `E3006`（`exec: "playwright": executable file not found in $PATH`）。`async with` 仍会销毁沙箱。
-
-沙箱里的 Codex / Qwen Code HTTP 会话，用 [Agents API](agents-api.md) 的 `examples/agents/complete_case.py`。
+命令的 `timeout` 限制执行总时长，持续输出也不会重置计时。到期后客户端关闭流、尝试停止该自有进程并抛出 `CommandTimeoutError`；清理请求可能增加少量返回延迟。这与沙箱存活时长、HTTP 读空闲超时分别定义。

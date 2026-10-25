@@ -16,7 +16,7 @@ import os
 import time
 
 # 确保 API Key 可用 / Ensure API key is available
-API_KEY = os.environ.get("E2B_API_KEY", "")
+API_KEY = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
 from agent_sandbox.declarative import sandbox
 
@@ -25,7 +25,7 @@ from agent_sandbox.declarative import sandbox
 @sandbox(
     template="code-interpreter-v1",
     packages=["numpy", "scipy"],
-    api_key=API_KEY,
+    sandbox_api_key=API_KEY,
     timeout=120,
 )
 def monte_carlo_pi(n_samples: int) -> dict:
@@ -51,13 +51,14 @@ def monte_carlo_pi(n_samples: int) -> dict:
 @sandbox(
     template="code-interpreter-v1",
     packages=["numpy"],
-    api_key=API_KEY,
+    sandbox_api_key=API_KEY,
     timeout=120,
 )
 def matrix_multiply(size: int) -> dict:
     """在远程沙箱中测试矩阵乘法性能 / Benchmark matrix multiplication in sandbox."""
-    import numpy as np
     import time as _time
+
+    import numpy as np
 
     rng = np.random.default_rng(123)
     A = rng.random((size, size))
@@ -80,7 +81,7 @@ def matrix_multiply(size: int) -> dict:
 @sandbox(
     template="code-interpreter-v1",
     packages=["numpy", "scipy"],
-    api_key=API_KEY,
+    sandbox_api_key=API_KEY,
     timeout=120,
 )
 def fit_distribution(n_samples: int, distribution: str) -> dict:
@@ -115,7 +116,7 @@ def fit_distribution(n_samples: int, distribution: str) -> dict:
         "data_max": round(float(np.max(data)), 4),
         "ks_statistic": round(float(ks_stat), 6),
         "ks_pvalue": round(float(ks_pvalue), 6),
-        "normality_pass": ks_pvalue > 0.05,
+        "normality_pass": bool(ks_pvalue > 0.05),
     }
 
 
@@ -134,6 +135,7 @@ def main() -> None:
         result = monte_carlo_pi(10_000_000)
         elapsed = time.perf_counter() - start
 
+        assert result["absolute_error"] < 0.01
         print(f"  π ≈ {result['pi_estimate']}")
         print(f"  采样点数 / Samples     : {result['samples']:,}")
         print(f"  圆内点数 / Inside circle: {result['points_inside']:,}")
@@ -142,6 +144,7 @@ def main() -> None:
         print(f"  总耗时 / Total time    : {elapsed:.2f}s (含沙箱创建)")
     except Exception as e:
         print(f"  ✗ 执行失败 / Failed: {e}")
+        raise
 
     # ── 示例 2: 矩阵乘法 ─────────────────────────────────────────────
     print("\n── 示例 2: 矩阵乘法性能 / Matrix Multiplication ──")
@@ -151,13 +154,17 @@ def main() -> None:
             start = time.perf_counter()
             result = matrix_multiply(size)
             elapsed = time.perf_counter() - start
+            assert result["matrix_size"] == size and result["result_trace"] > 0
 
-            print(f"  [{size}x{size}] 计算耗时={result['computation_time_sec']}s, "
-                  f"GFLOPS={result['gflops']}, "
-                  f"trace={result['result_trace']:.2f}, "
-                  f"总耗时={elapsed:.2f}s")
+            print(
+                f"  [{size}x{size}] 计算耗时={result['computation_time_sec']}s, "
+                f"GFLOPS={result['gflops']}, "
+                f"trace={result['result_trace']:.2f}, "
+                f"总耗时={elapsed:.2f}s"
+            )
         except Exception as e:
             print(f"  [{size}x{size}] ✗ 失败: {e}")
+            raise
 
     # ── 示例 3: 分布拟合 ─────────────────────────────────────────────
     print("\n── 示例 3: 统计分布拟合 / Distribution Fitting ──")
@@ -165,13 +172,19 @@ def main() -> None:
     for dist_name in distributions:
         try:
             result = fit_distribution(50_000, dist_name)
-            normality = "✓ 通过" if result["normality_pass"] else "✗ 不通过"
-            print(f"  [{dist_name:>12s}] μ={result['fit_mean']:>8.4f}, "
-                  f"σ={result['fit_std']:>8.4f}, "
-                  f"KS={result['ks_statistic']:.6f}, "
-                  f"正态检验: {normality}")
+            expected_mean = {"normal": 50, "exponential": 5, "uniform": 50}[dist_name]
+            assert abs(result["fit_mean"] - expected_mean) < 0.5
+            assert result["fit_std"] > 0
+            normality = "✓ 通过" if result["normality_pass"] else "非正态 / non-normal"
+            print(
+                f"  [{dist_name:>12s}] μ={result['fit_mean']:>8.4f}, "
+                f"σ={result['fit_std']:>8.4f}, "
+                f"KS={result['ks_statistic']:.6f}, "
+                f"正态检验: {normality}"
+            )
         except Exception as e:
             print(f"  [{dist_name:>12s}] ✗ 失败: {e}")
+            raise
 
     print("\n✓ 所有计算示例完成 / All compute demos completed")
 

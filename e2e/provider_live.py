@@ -557,10 +557,10 @@ def e2b_ready() -> str:
     missing = _installed("e2b")
     if missing:
         return missing
-    if (os.environ.get("ABX_ABX_SANDBOX_API_KEY") or "").strip():
+    if (os.environ.get("ABX_E2B_API_KEY") or "").strip():
         return ""
     return (
-        "ABX_ABX_SANDBOX_API_KEY is not set. "
+        "ABX_E2B_API_KEY is not set. "
         "The Express key is a different credential and is not sent to api.e2b.dev."
     )
 

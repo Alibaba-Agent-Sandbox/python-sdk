@@ -15,7 +15,8 @@ Style: E2B (imperative)
 import asyncio
 import os
 
-from agent_sandbox import ProviderSandbox as Sandbox, SandboxError
+from agent_sandbox import ProviderSandbox as Sandbox
+from agent_sandbox import SandboxError
 
 # ── 爬虫脚本（将在沙箱中执行）/ Scraper script (runs inside sandbox) ───────
 SCRAPER_SCRIPT = """\
@@ -111,7 +112,7 @@ def scrape_example():
 
     except requests.RequestException as e:
         print(f"✗ 请求失败 / Request failed: {e}")
-        return None
+        raise
 
 if __name__ == "__main__":
     scrape_example()
@@ -120,7 +121,7 @@ if __name__ == "__main__":
 
 async def main() -> None:
     """E2B 风格: 命令式网页爬取演示 / E2B style: imperative web scraping demo."""
-    api_key = os.environ.get("E2B_API_KEY", "")
+    api_key = os.environ.get("ABX_SANDBOX_API_KEY", "")
 
     print("=" * 55)
     print("  E2B 风格网页爬取 Demo / E2B-Style Web Scraper")
@@ -131,7 +132,7 @@ async def main() -> None:
         print("\n[1/5] 创建沙箱 / Creating sandbox...")
         async with await Sandbox.create(
             template="base",
-            api_key=api_key,
+            sandbox_api_key=api_key,
             timeout=300,
             metadata={"demo": "e2b-web-scraper"},
         ) as sandbox:
@@ -145,13 +146,13 @@ async def main() -> None:
             )
             if not result.success:
                 print(f"  ✗ 安装失败: {result.stderr}")
-                return
+                raise RuntimeError("Sandbox setup or execution failed")
             print("  ✓ requests + beautifulsoup4 已安装")
 
             # 验证安装 / Verify installation
             result = await sandbox.commands.run(
                 'python3 -c "import requests, bs4; '
-                'print(f\'requests={requests.__version__}, bs4={bs4.__version__}\')"'
+                "print(f'requests={requests.__version__}, bs4={bs4.__version__}')\""
             )
             if result.success:
                 print(f"  ✓ 版本: {result.stdout.strip()}")
@@ -187,13 +188,16 @@ async def main() -> None:
                 print(f"  {preview}")
             except Exception as e:
                 print(f"  ⚠ 无法读取结果文件: {e}")
+                raise
 
         print("\n✓ 沙箱已自动销毁 / Sandbox auto-destroyed")
 
     except SandboxError as e:
         print(f"\n✗ 沙箱错误 / Sandbox error: {e}")
+        raise
     except Exception as e:
         print(f"\n✗ 未知错误 / Unexpected error: {e}")
+        raise
 
 
 if __name__ == "__main__":
