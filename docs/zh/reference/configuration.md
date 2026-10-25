@@ -202,6 +202,8 @@ explain_config()   # {"sandbox_api_key": {"value": "****3dc1", "source": "enviro
 
 ## SDK 参数覆盖
 
+`ProviderSandbox.create`、`connect` 和 `list` 的这些覆盖参数仅为 `sandbox_api_key`、`sandbox_base_url` 和 `sandbox_domain`。控制面方法 `kill_by_id`、`get_info_by_id` 和 `set_timeout_by_id` 接受前两个参数，不需要数据面域名；其 `_sync` 版本使用相同参数。标准 `Sandbox` / `AsyncSandbox` 保留各自的 `ApiParams` 契约。
+
 在代码中直接传参（最高优先级）：
 
 ```python
