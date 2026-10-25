@@ -1,0 +1,16 @@
+{
+  "packages": {
+    "agent-sandbox-client": "0.4.0a6",
+    "agent-sandbox-server": "0.4.0a6"
+  },
+  "source_install": false,
+  "scope": "candidate wheels, real local HTTP; no cloud or model call",
+  "health": true,
+  "shell_exit": 0,
+  "shell_stdout": "4\n",
+  "file_roundtrip": true,
+  "owned_process_exit": -15,
+  "owned_pid_independently_absent": true,
+  "script_sha256": "0e8d281c713235803c76f4f8edcbff2263db7b9088356a793458d293bb2175a8",
+  "result": "PASS"
+}

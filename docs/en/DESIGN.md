@@ -77,7 +77,7 @@ Each topic below has its own dedicated design document with complete specificati
 |-------|----------|---------|
 | **System Architecture** | [architecture.md](design/architecture.md) | Standard client source port, native provider extension layers, and their separate protocol paths |
 | **SDK API Design** | [sdk-api-design.md](design/sdk-api-design.md) | Sandbox class, file operations, code execution, commands, network, session management |
-| **Sandbox Type System** | [sandbox-types.md](design/sandbox-types.md) | Ephemeral sandboxes (implemented), persistent sandboxes (future), sandbox lifecycle |
+| **Sandbox Lifecycle and Ownership** | [sandbox-types.md](design/sandbox-types.md) | Owned cleanup, borrowed connections and provider-dependent operations |
 | **Providers and Credentials** | [providers-and-credentials.md](design/providers-and-credentials.md) | One environment variable per configuration key, precedence, provider plugins (`abx provider ...`), install/trust model, EPP/1 protocol, E8xxx errors; review log in [providers-and-credentials-review.md](archive/providers-and-credentials-review.md) |
 
 ### Templates

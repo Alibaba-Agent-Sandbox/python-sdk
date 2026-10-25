@@ -1,0 +1,236 @@
+{
+  "publication": {
+    "version": "0.4.0a5",
+    "run_id": 40222172993,
+    "run_attempt": 1,
+    "publisher": "SUCCESS",
+    "source_commit": "c7b4a55ff930753eb35866b161184f946b04d46c",
+    "artifact_id": 12610066901,
+    "files": [
+      {
+        "package": "agent-sandbox-client",
+        "filename": "agent_sandbox_client-0.4.0a5-py3-none-any.whl",
+        "sha256": "5792e54bf5bd93f9ed04aa810979414276039810bea03f284f621f6fb86bb970",
+        "candidate_metadata_download_equal": true,
+        "metadata_http": 200,
+        "download_http": 200
+      },
+      {
+        "package": "agent-sandbox-client",
+        "filename": "agent_sandbox_client-0.4.0a5.tar.gz",
+        "sha256": "7df303c2f6abfc786b7d2b5b33bf4f4ce1663150615ca2ac979737a2fcfb6e5b",
+        "candidate_metadata_download_equal": true,
+        "metadata_http": 200,
+        "download_http": 200
+      },
+      {
+        "package": "agent-sandbox-server",
+        "filename": "agent_sandbox_server-0.4.0a5-py3-none-any.whl",
+        "sha256": "9ec4fcf26abb4741c969eca825f290f0efc0ac687429568b9518530b0f53c6be",
+        "candidate_metadata_download_equal": true,
+        "metadata_http": 200,
+        "download_http": 200
+      },
+      {
+        "package": "agent-sandbox-server",
+        "filename": "agent_sandbox_server-0.4.0a5.tar.gz",
+        "sha256": "552c005fe11643f99bcf364683bfdb28d76e57bf13117a1e82277cf1b3cbed6e",
+        "candidate_metadata_download_equal": true,
+        "metadata_http": 200,
+        "download_http": 200
+      }
+    ],
+    "result": "PASS"
+  },
+  "installation": {
+    "packages": {
+      "agent-sandbox-client": "0.4.0a5",
+      "agent-sandbox-server": "0.4.0a5"
+    },
+    "python": "3.13.13",
+    "standard_sync_async_provider_server_imports": true,
+    "installed_package_location": "site-packages",
+    "reviewed_template_source_bytes_match": true,
+    "old_provider_kwargs_bind_rejections": 24,
+    "source_injection": false,
+    "install_extra": "none",
+    "result": "PASS"
+  },
+  "scoped_help": {
+    "packages": {
+      "agent-sandbox-client": "0.4.0a5",
+      "agent-sandbox-server": "0.4.0a5"
+    },
+    "e2b_installed": false,
+    "template_help": [
+      {
+        "entry": "Template.build",
+        "imports_resolve": true
+      },
+      {
+        "entry": "Template.build_in_background",
+        "imports_resolve": true
+      },
+      {
+        "entry": "Template.get_build_status",
+        "imports_resolve": true
+      },
+      {
+        "entry": "Template.exists",
+        "imports_resolve": true
+      },
+      {
+        "entry": "Template.alias_exists",
+        "imports_resolve": true
+      },
+      {
+        "entry": "Template.assign_tags",
+        "imports_resolve": true
+      },
+      {
+        "entry": "Template.remove_tags",
+        "imports_resolve": true
+      },
+      {
+        "entry": "Template.get_tags",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.build",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.build_in_background",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.get_build_status",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.exists",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.alias_exists",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.assign_tags",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.remove_tags",
+        "imports_resolve": true
+      },
+      {
+        "entry": "AsyncTemplate.get_tags",
+        "imports_resolve": true
+      },
+      {
+        "entry": "TemplateBuilder.set_start_cmd",
+        "imports_resolve": true
+      },
+      {
+        "entry": "TemplateBuilder.set_ready_cmd",
+        "imports_resolve": true
+      },
+      {
+        "entry": "default_build_logger",
+        "imports_resolve": true
+      },
+      {
+        "entry": "wait_for_port",
+        "imports_resolve": true
+      },
+      {
+        "entry": "wait_for_url",
+        "imports_resolve": true
+      },
+      {
+        "entry": "wait_for_process",
+        "imports_resolve": true
+      },
+      {
+        "entry": "wait_for_file",
+        "imports_resolve": true
+      },
+      {
+        "entry": "wait_for_timeout",
+        "imports_resolve": true
+      }
+    ],
+    "provider_help": [
+      {
+        "method": "create",
+        "documented_names_valid": true
+      },
+      {
+        "method": "create_sync",
+        "documented_names_valid": true
+      },
+      {
+        "method": "connect",
+        "documented_names_valid": true
+      },
+      {
+        "method": "connect_sync",
+        "documented_names_valid": true
+      },
+      {
+        "method": "list",
+        "documented_names_valid": true
+      },
+      {
+        "method": "list_sync",
+        "documented_names_valid": true
+      },
+      {
+        "method": "kill_by_id",
+        "documented_names_valid": true
+      },
+      {
+        "method": "kill_by_id_sync",
+        "documented_names_valid": true
+      },
+      {
+        "method": "get_info_by_id",
+        "documented_names_valid": true
+      },
+      {
+        "method": "get_info_by_id_sync",
+        "documented_names_valid": true
+      },
+      {
+        "method": "set_timeout_by_id",
+        "documented_names_valid": true
+      },
+      {
+        "method": "set_timeout_by_id_sync",
+        "documented_names_valid": true
+      }
+    ],
+    "network_operations": 0,
+    "source_injection": false,
+    "script_sha256": "7d8e83d923e5c4f627e0fe66a272e4e8dcf8dfcf81fdf9c4dda22634d5e40216",
+    "result": "PASS"
+  },
+  "http": {
+    "packages": {
+      "agent-sandbox-client": "0.4.0a5",
+      "agent-sandbox-server": "0.4.0a5"
+    },
+    "source_install": false,
+    "scope": "official public non-all PyPI a5 install; real local HTTP, no cloud/model call",
+    "health": true,
+    "shell_exit": 0,
+    "shell_stdout": "4\n",
+    "file_roundtrip": true,
+    "owned_process_exit": -15,
+    "owned_pid_independently_absent": true,
+    "script_sha256": "ebedcbbaa6e75e58f351b4a0c3c49316893d1064ffb86394f26386ecf808963d",
+    "result": "PASS",
+    "candidate_harness_reused": true
+  },
+  "known_limit": "24 Template help + 12 Provider help passed; four Sandbox class help errors confirmed later, corrected by a6 candidate"
+}

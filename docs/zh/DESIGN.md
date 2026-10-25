@@ -77,7 +77,7 @@ graph TB
 |------|------|------|
 | **系统架构** | [architecture.md](design/architecture.md) | 标准客户端源码移植、原生 Provider 扩展分层及各自协议路径 |
 | **SDK API 设计** | [sdk-api-design.md](design/sdk-api-design.md) | Sandbox 类、文件操作、代码执行、命令、网络、会话管理 |
-| **沙箱类型体系** | [sandbox-types.md](design/sandbox-types.md) | 临时沙箱（已实现）、持久沙箱（远期）、沙箱生命周期 |
+| **沙箱生命周期与资源归属** | [sandbox-types.md](design/sandbox-types.md) | 自有资源清理、借用连接与 Provider 条件能力 |
 | **提供方与凭证** | [providers-and-credentials.md](design/providers-and-credentials.md) | 每个配置键一个环境变量、优先级、提供方插件（`abx provider ...`）、安装与信任模型、EPP/1 协议、E8xxx 错误；评审记录见 [providers-and-credentials-review.md](archive/providers-and-credentials-review.md) |
 
 ### 模板

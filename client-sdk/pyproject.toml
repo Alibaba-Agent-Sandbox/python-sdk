@@ -44,7 +44,7 @@ dependencies = [
     "tomli>=2.0; python_version < '3.11'",
     # The client uses the matching local server runtime for its server/declarative helpers.
     # Keep the required distribution version equal to ``_version.py``.
-    "agent-sandbox-server==0.4.0a5",
+    "agent-sandbox-server==0.4.0a6",
 ]
 
 [project.optional-dependencies]

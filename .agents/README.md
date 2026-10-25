@@ -2,6 +2,13 @@
 
 ## Current public pair — 2026-10-25
 
+[Exhaustive Sandbox help follow-up](notes/proposed/process/2026-10-25-sandbox-help-namespace.md)
+records four remaining class-help namespace errors in public a5 and the bounded
+a6 candidate. Its [audit](evidence/verify/2026-10-25-sandbox-help-namespace.md)
+distinguishes ordinary help from intentional migration/third-party examples;
+the same candidate corrects current bilingual API/lifecycle examples and removes
+unimplemented design menus. Candidate publication is not yet established.
+
 [Subsequent public-a4 example acceptance](evidence/verify/2026-10-25-public-a4-examples.md)
 records 14 actual cloud examples, 29 independent typed-not-found checks and the
 separate local runner/timeout controls. It preserves earlier browser failures and
