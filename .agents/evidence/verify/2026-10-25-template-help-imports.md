@@ -52,6 +52,12 @@ independently pass on the actual candidate head. Repository health passed with 1
 release-runbook WARN and zero FAIL; hygiene and diff checks passed. No a5 package
 has been published.
 
+The first PR head `743c585c` failed the hygiene gate because this new reproduction
+document used a disallowed virtualenv interpreter spelling. Use the named relative
+`public-sdk` environment in the recipe instead; no allowlist or gate was weakened.
+The original failed check remains in CI history. Repeat hygiene on the corrected
+head before treating it as passing.
+
 Installed candidate wheels also passed 24 actual Template help imports and 12
 Provider help/signature checks without e2b, plus pip check. Real local HTTP
 health, shell output `4`, file roundtrip and independent absence of the owned

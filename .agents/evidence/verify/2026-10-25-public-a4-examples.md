@@ -50,8 +50,8 @@ installation or PYTHONPATH is used. Cloud examples used the all extra; the local
 runner used ordinary `agent-sandbox-client==0.4.0a4` without extras.
 
 ```bash
-python3 -m venv .venv
-. .venv/bin/activate
+python3 -m venv public-sdk
+. public-sdk/bin/activate
 python -m pip install --index-url https://pypi.org/simple --no-cache-dir 'agent-sandbox-client[all]==0.4.0a4'
 python -m pip check
 git clone https://github.com/Alibaba-Agent-Sandbox/python-sdk.git source
