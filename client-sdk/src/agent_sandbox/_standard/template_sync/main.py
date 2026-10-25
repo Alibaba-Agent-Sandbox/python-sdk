@@ -215,7 +215,7 @@ class Template(TemplateBase):
 
         Example
         ```python
-        from e2b import Template
+        from agent_sandbox import Template
 
         template = (
             Template()
@@ -316,7 +316,7 @@ class Template(TemplateBase):
 
         Example
         ```python
-        from e2b import Template
+        from agent_sandbox import Template
 
         template = (
             Template()
@@ -368,7 +368,7 @@ class Template(TemplateBase):
 
         Example
         ```python
-        from e2b import Template
+        from agent_sandbox import Template
 
         build_info = Template.build_in_background(template, alias='my-template')
         status = Template.get_build_status(build_info, logs_offset=0)
@@ -399,7 +399,7 @@ class Template(TemplateBase):
 
         Example
         ```python
-        from e2b import Template
+        from agent_sandbox import Template
 
         exists = Template.exists('my-python-env')
         if exists:
@@ -424,7 +424,7 @@ class Template(TemplateBase):
 
         Example
         ```python
-        from e2b import Template
+        from agent_sandbox import Template
 
         exists = Template.alias_exists('my-python-env')
         if exists:
@@ -453,7 +453,7 @@ class Template(TemplateBase):
 
         Example
         ```python
-        from e2b import Template
+        from agent_sandbox import Template
 
         # Assign a single tag
         result = Template.assign_tags('my-template:v1.0', 'production')
@@ -484,7 +484,7 @@ class Template(TemplateBase):
 
         Example
         ```python
-        from e2b import Template
+        from agent_sandbox import Template
 
         # Remove a single tag
         Template.remove_tags('my-template', 'production')
@@ -514,7 +514,7 @@ class Template(TemplateBase):
 
         Example
         ```python
-        from e2b import Template
+        from agent_sandbox import Template
 
         tags = Template.get_tags('my-template')
         for tag in tags:

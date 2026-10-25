@@ -85,6 +85,14 @@ assert result.exit_code == 0 and result.stdout.strip() == "2"
 
 ## 下一步
 
+模板构建辅助函数直接从已安装的本项目公开入口导入：
+`from agent_sandbox import Template, AsyncTemplate, wait_for_port, default_build_logger`。
+这些名称不需要另装 `e2b`；标准模板 API 仍有其文档规定的平台、账号前提和公开参数。
+
+[2026-10-25 公开 a4 示例记录](../../../.agents/evidence/verify/2026-10-25-public-a4-examples.md)
+区分了 14 个真实云端示例、本地协议夹具、超时控制和独立清理检查。
+示例通过不代表整个模板目录都已验证。
+
 - [SDK 用法](sdk-usage.md)：Provider 扩展及其同步封装。
 - [声明式函数](declarative-usage.md)：将 Python 函数放到远程执行。
 - [MCP 集成](mcp-integration.md)：连接 IDE 或 Agent。

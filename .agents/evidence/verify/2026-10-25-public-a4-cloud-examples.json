@@ -1,0 +1,314 @@
+[
+  {
+    "installation_channel": "published-pypi-a4-canonical",
+    "example": "examples/quickstart/01_hello.py",
+    "result": "PASS",
+    "returncode": 0,
+    "seconds": 4.08,
+    "audit": {
+      "created": 1,
+      "cleanup": [
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        }
+      ],
+      "example_exit": 0
+    },
+    "source_sha256": "fb61b2783d376cc2df55db41bfeb955ce9daee0c2612400a9f11b538b53c24f2"
+  },
+  {
+    "installation_channel": "published-pypi-a4-canonical",
+    "example": "examples/quickstart/02_file_ops.py",
+    "result": "PASS",
+    "returncode": 0,
+    "seconds": 4.96,
+    "audit": {
+      "created": 1,
+      "cleanup": [
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        }
+      ],
+      "example_exit": 0
+    },
+    "source_sha256": "2d7492bdc6839f4c168d6507ee0ba70abc2edddedb3b43dafb78c20676cc62c1"
+  },
+  {
+    "installation_channel": "published-pypi-a4-canonical",
+    "example": "examples/quickstart/03_web_service.py",
+    "result": "PASS",
+    "returncode": 0,
+    "seconds": 4.03,
+    "audit": {
+      "created": 1,
+      "cleanup": [
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        }
+      ],
+      "example_exit": 0
+    },
+    "source_sha256": "c714d2f120562e6e13340586f0c4c71198be3e42d1d6ccd4477527de234ab545"
+  },
+  {
+    "installation_channel": "published-pypi-a4-canonical",
+    "example": "examples/quickstart/04_data_analysis.py",
+    "result": "PASS",
+    "returncode": 0,
+    "seconds": 24.28,
+    "audit": {
+      "created": 1,
+      "cleanup": [
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        }
+      ],
+      "example_exit": 0
+    },
+    "source_sha256": "2b1fb005f03bb38f109fbcc68c85b318c98d1d04340f2f1e59e01cd0bd5adb96"
+  },
+  {
+    "installation_channel": "published-pypi-a4-canonical",
+    "example": "examples/quickstart/05_decorator_usage.py",
+    "result": "PASS",
+    "returncode": 0,
+    "seconds": 16.55,
+    "audit": {
+      "created": 4,
+      "cleanup": [
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        }
+      ],
+      "example_exit": 0
+    },
+    "source_sha256": "d0a5468573952f34fb7c3d0201115c8d3c62a0801aa08d0ac4eee48b1e49386f"
+  },
+  {
+    "installation_channel": "published-pypi-a4-canonical",
+    "example": "examples/compat-demos/e2e_capability_validation.py",
+    "result": "PASS",
+    "returncode": 0,
+    "seconds": 7.76,
+    "audit": {
+      "created": 2,
+      "cleanup": [
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        }
+      ],
+      "example_exit": 0
+    },
+    "source_sha256": "dfcd33f3e6acacfa0ef1fd78cab077d21ea69cdc82c5e556e6db525ac425fada"
+  },
+  {
+    "installation_channel": "published-pypi-a4-canonical",
+    "example": "examples/compat-demos/comparison.py",
+    "result": "PASS",
+    "returncode": 0,
+    "seconds": 42.33,
+    "audit": {
+      "created": 4,
+      "cleanup": [
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        }
+      ],
+      "example_exit": 0
+    },
+    "source_sha256": "03171c7dc45944242c21693e6370e3abd82f3ea193f9260dbd1073799a66f019"
+  },
+  {
+    "installation_channel": "published-pypi-a4-canonical",
+    "example": "examples/compat-demos/e2b_data_analysis.py",
+    "result": "PASS",
+    "returncode": 0,
+    "seconds": 65.56,
+    "audit": {
+      "created": 1,
+      "cleanup": [
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        }
+      ],
+      "example_exit": 0
+    },
+    "source_sha256": "410f0afc639a15bdb1e20e153c4829f2944aaf06a48753b34d81dd86e410cd95"
+  },
+  {
+    "installation_channel": "published-pypi-a4-canonical",
+    "example": "examples/compat-demos/e2b_web_scraper.py",
+    "result": "PASS",
+    "returncode": 0,
+    "seconds": 7.98,
+    "audit": {
+      "created": 1,
+      "cleanup": [
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        }
+      ],
+      "example_exit": 0
+    },
+    "source_sha256": "066967779380f6a7006b1dcdfe28a00b912998a56b87223b72a2cd59acdc4854"
+  },
+  {
+    "installation_channel": "published-pypi-a4-canonical",
+    "example": "examples/compat-demos/modal_compute.py",
+    "result": "PASS",
+    "returncode": 0,
+    "seconds": 33.0,
+    "audit": {
+      "created": 6,
+      "cleanup": [
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        }
+      ],
+      "example_exit": 0
+    },
+    "source_sha256": "645bed63aec27865b7849f203158deca263def56b56a68f682716cde7c6f5882"
+  },
+  {
+    "installation_channel": "published-pypi-a4-canonical",
+    "example": "examples/compat-demos/modal_data_analysis.py",
+    "result": "PASS",
+    "returncode": 0,
+    "seconds": 22.94,
+    "audit": {
+      "created": 4,
+      "cleanup": [
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        },
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        }
+      ],
+      "example_exit": 0
+    },
+    "source_sha256": "cd6453302208672c1192b634f0e3ca3c00d8722ea35858b13c2d6d92082167df"
+  },
+  {
+    "installation_channel": "published-pypi-a4-canonical",
+    "example": "examples/compat-demos/e2b_import_migration.py",
+    "result": "PASS",
+    "returncode": 0,
+    "seconds": 2.98,
+    "audit": {
+      "created": 1,
+      "cleanup": [
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        }
+      ],
+      "example_exit": 0
+    },
+    "source_sha256": "73850fb33989c4b412ce5399f2303df1ca642ad5d15fe6cbd8088e7ef0819415"
+  },
+  {
+    "installation_channel": "published-pypi-a4-canonical",
+    "example": "examples/agents/browser_automation.py",
+    "result": "PASS",
+    "returncode": 0,
+    "seconds": 236.28,
+    "audit": {
+      "created": 1,
+      "cleanup": [
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        }
+      ],
+      "example_exit": 0
+    },
+    "source_sha256": "83956ce58c50c60290663b661dec0dff616837f2fc1a089212b795fa478539f6"
+  },
+  {
+    "installation_channel": "published-pypi-a4-canonical",
+    "example": "examples/agents/codex_agent.py",
+    "result": "PASS",
+    "returncode": 0,
+    "seconds": 17.63,
+    "audit": {
+      "created": 1,
+      "cleanup": [
+        {
+          "absent_before_cleanup": true,
+          "absent_after_cleanup": true
+        }
+      ],
+      "example_exit": 0
+    },
+    "source_sha256": "0e4392725fb84998c25ac6ceddc98ecfb467a715f33066d13541560421587da0"
+  }
+]

@@ -25,7 +25,7 @@ def wait_for_port(port: int):
 
     Example
     ```python
-    from e2b import Template, wait_for_port
+    from agent_sandbox import Template, wait_for_port
 
     template = (
         Template()
@@ -54,7 +54,7 @@ def wait_for_url(url: str, status_code: int = 200):
 
     Example
     ```python
-    from e2b import Template, wait_for_url
+    from agent_sandbox import Template, wait_for_url
 
     template = (
         Template()
@@ -79,7 +79,7 @@ def wait_for_process(process_name: str):
 
     Example
     ```python
-    from e2b import Template, wait_for_process
+    from agent_sandbox import Template, wait_for_process
 
     template = (
         Template()
@@ -104,7 +104,7 @@ def wait_for_file(filename: str):
 
     Example
     ```python
-    from e2b import Template, wait_for_file
+    from agent_sandbox import Template, wait_for_file
 
     template = (
         Template()
@@ -129,7 +129,7 @@ def wait_for_timeout(timeout: int):
 
     Example
     ```python
-    from e2b import Template, wait_for_timeout
+    from agent_sandbox import Template, wait_for_timeout
 
     template = (
         Template()

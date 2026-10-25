@@ -215,7 +215,7 @@ class AsyncTemplate(TemplateBase):
 
         Example
         ```python
-        from e2b import AsyncTemplate
+        from agent_sandbox import AsyncTemplate
 
         template = (
             AsyncTemplate()
@@ -316,7 +316,7 @@ class AsyncTemplate(TemplateBase):
 
         Example
         ```python
-        from e2b import AsyncTemplate
+        from agent_sandbox import AsyncTemplate
 
         template = (
             AsyncTemplate()
@@ -368,7 +368,7 @@ class AsyncTemplate(TemplateBase):
 
         Example
         ```python
-        from e2b import AsyncTemplate
+        from agent_sandbox import AsyncTemplate
 
         build_info = await AsyncTemplate.build_in_background(template, alias='my-template')
         status = await AsyncTemplate.get_build_status(build_info, logs_offset=0)
@@ -398,7 +398,7 @@ class AsyncTemplate(TemplateBase):
 
         Example
         ```python
-        from e2b import AsyncTemplate
+        from agent_sandbox import AsyncTemplate
 
         exists = await AsyncTemplate.exists('my-python-env')
         if exists:
@@ -423,7 +423,7 @@ class AsyncTemplate(TemplateBase):
 
         Example
         ```python
-        from e2b import AsyncTemplate
+        from agent_sandbox import AsyncTemplate
 
         exists = await AsyncTemplate.alias_exists('my-python-env')
         if exists:
@@ -452,7 +452,7 @@ class AsyncTemplate(TemplateBase):
 
         Example
         ```python
-        from e2b import AsyncTemplate
+        from agent_sandbox import AsyncTemplate
 
         # Assign a single tag
         result = await AsyncTemplate.assign_tags('my-template:v1.0', 'production')
@@ -483,7 +483,7 @@ class AsyncTemplate(TemplateBase):
 
         Example
         ```python
-        from e2b import AsyncTemplate
+        from agent_sandbox import AsyncTemplate
 
         # Remove a single tag
         await AsyncTemplate.remove_tags('my-template', 'production')
@@ -513,7 +513,7 @@ class AsyncTemplate(TemplateBase):
 
         Example
         ```python
-        from e2b import AsyncTemplate
+        from agent_sandbox import AsyncTemplate
 
         tags = await AsyncTemplate.get_tags('my-template')
         for tag in tags:

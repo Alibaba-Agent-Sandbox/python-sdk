@@ -2,6 +2,12 @@
 
 ## Current public pair — 2026-10-25
 
+[Subsequent public-a4 example acceptance](evidence/verify/2026-10-25-public-a4-examples.md)
+records 14 actual cloud examples, 29 independent typed-not-found checks and the
+separate local runner/timeout controls. It preserves earlier browser failures and
+does not certify later candidates. The [Template help correction](notes/proposed/process/2026-10-25-template-help-imports.md)
+prepares a5 only; publication and final CI remain separate gates.
+
 Client/server **0.4.0a4** are public. [Current delivery verification](evidence/verify/2026-10-25-public-a4-delivery.md)
 records the reviewed immutable tag, original metadata-404 failure, successful
 same-tag recovery, both identical preserved artifact sets, four official download
@@ -196,4 +202,4 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 
 - [Provider parameter documentation correction](notes/implemented/process/2026-10-25-provider-parameter-docstrings.md) · [candidate verification](evidence/verify/2026-10-25-provider-parameter-docstrings.md) · [published follow-up](evidence/verify/2026-10-25-public-a4-delivery.md).
 
-- [Current public a4 guidance and bounded metadata propagation](notes/proposed/process/2026-10-25-current-public-a4.md) · [verification](evidence/verify/2026-10-25-public-a4-delivery.md).
+- [Current public a4 guidance and bounded metadata propagation](notes/implemented/process/2026-10-25-current-public-a4.md) · [verification](evidence/verify/2026-10-25-public-a4-delivery.md).

@@ -1,0 +1,253 @@
+{
+  "package_version": "0.4.0a4",
+  "e2b_installed": false,
+  "public_Template_export": "agent_sandbox._standard.template_sync.main",
+  "public_AsyncTemplate_export": "agent_sandbox._standard.template_async.main",
+  "old_import_actually_fails": true,
+  "affected_docstrings": [
+    {
+      "file": "template/main.py",
+      "line": 694,
+      "definition": "set_start_cmd",
+      "upstream_imports": [
+        "from e2b import wait_for_port, wait_for_url"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template/main.py",
+      "line": 736,
+      "definition": "set_ready_cmd",
+      "upstream_imports": [
+        "from e2b import wait_for_port, wait_for_file, wait_for_process"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template/readycmd.py",
+      "line": 16,
+      "definition": "wait_for_port",
+      "upstream_imports": [
+        "from e2b import Template, wait_for_port"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template/readycmd.py",
+      "line": 44,
+      "definition": "wait_for_url",
+      "upstream_imports": [
+        "from e2b import Template, wait_for_url"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template/readycmd.py",
+      "line": 70,
+      "definition": "wait_for_process",
+      "upstream_imports": [
+        "from e2b import Template, wait_for_process"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template/readycmd.py",
+      "line": 95,
+      "definition": "wait_for_file",
+      "upstream_imports": [
+        "from e2b import Template, wait_for_file"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template/readycmd.py",
+      "line": 120,
+      "definition": "wait_for_timeout",
+      "upstream_imports": [
+        "from e2b import Template, wait_for_timeout"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template/logger.py",
+      "line": 207,
+      "definition": "default_build_logger",
+      "upstream_imports": [
+        "from e2b import Template, default_build_logger"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_sync/main.py",
+      "line": 192,
+      "definition": "build",
+      "upstream_imports": [
+        "from e2b import Template"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_sync/main.py",
+      "line": 293,
+      "definition": "build_in_background",
+      "upstream_imports": [
+        "from e2b import Template"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_sync/main.py",
+      "line": 357,
+      "definition": "get_build_status",
+      "upstream_imports": [
+        "from e2b import Template"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_sync/main.py",
+      "line": 390,
+      "definition": "exists",
+      "upstream_imports": [
+        "from e2b import Template"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_sync/main.py",
+      "line": 413,
+      "definition": "alias_exists",
+      "upstream_imports": [
+        "from e2b import Template"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_sync/main.py",
+      "line": 442,
+      "definition": "assign_tags",
+      "upstream_imports": [
+        "from e2b import Template"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_sync/main.py",
+      "line": 474,
+      "definition": "remove_tags",
+      "upstream_imports": [
+        "from e2b import Template"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_sync/main.py",
+      "line": 505,
+      "definition": "get_tags",
+      "upstream_imports": [
+        "from e2b import Template"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_async/main.py",
+      "line": 192,
+      "definition": "build",
+      "upstream_imports": [
+        "from e2b import AsyncTemplate"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_async/main.py",
+      "line": 293,
+      "definition": "build_in_background",
+      "upstream_imports": [
+        "from e2b import AsyncTemplate"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_async/main.py",
+      "line": 357,
+      "definition": "get_build_status",
+      "upstream_imports": [
+        "from e2b import AsyncTemplate"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_async/main.py",
+      "line": 389,
+      "definition": "exists",
+      "upstream_imports": [
+        "from e2b import AsyncTemplate"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_async/main.py",
+      "line": 412,
+      "definition": "alias_exists",
+      "upstream_imports": [
+        "from e2b import AsyncTemplate"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_async/main.py",
+      "line": 441,
+      "definition": "assign_tags",
+      "upstream_imports": [
+        "from e2b import AsyncTemplate"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_async/main.py",
+      "line": 473,
+      "definition": "remove_tags",
+      "upstream_imports": [
+        "from e2b import AsyncTemplate"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    },
+    {
+      "file": "template_async/main.py",
+      "line": 504,
+      "definition": "get_tags",
+      "upstream_imports": [
+        "from e2b import AsyncTemplate"
+      ],
+      "first_party_replacement_imports_resolve": true,
+      "example_explicitly_labels_external_e2b_context": false
+    }
+  ],
+  "count": 24,
+  "classification": "real public-help namespace relocation residue; documentation-only, no evidence of runtime API failure",
+  "attribution": "client-sdk/NOTICE and _standard/LICENSE retained; SOURCES.json records upstream original hashes and namespace rewrite",
+  "mutation": "NONE; no SDK version or source changed"
+}
