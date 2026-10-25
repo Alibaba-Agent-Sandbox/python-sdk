@@ -1,0 +1,106 @@
+{
+  "run_url": "https://github.com/Alibaba-Agent-Sandbox/awesome-providers/actions/runs/40208641347",
+  "run_id": 40208641347,
+  "provider_head": "b78ea200ba7ccb30cd868ae609cad9c7b5031e31",
+  "job_id": 121214919187,
+  "conclusion": "success",
+  "steps": [
+    {
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/checkout@v4",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/setup-node@v4",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/setup-python@v5",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Fetch reviewed host sources",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Install locked CLI and matching SDK packages",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Project parser with actual host staging and pinned official SDK",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Verify SDK fixture and CLI share an isolated home",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Start real Docker-backed OpenSandbox",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run direct plugin, installed contract kit and environment tests",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run Python SDK scenarios with streamed diagnostics",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run CLI lifecycle, commands and files",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run native project build, registry push and automatic launch",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Cleanup and verify no sandbox containers remain",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/setup-python@v5",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/setup-node@v4",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/checkout@v4",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Complete job",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "candidate_sdk_source": "2ad2a482571bc030a7be298217cf7956bd164da4",
+  "template_source": "26d6e24e8b29b6c73b364d954dc0279d22a6f9d5",
+  "cli_source": "6dfdf9897ad76bf2fdb7eb1ccf455252b2dcb9fb",
+  "node_source": "63d7cd8ece221b9f968eef51eeb932ea334c90d3",
+  "host_install": "exact candidate source pair 0.4.0a3, not public PyPI",
+  "guest_server_version": "0.4.0a2",
+  "scope": "full existing OpenSandbox T4 default/portable/proxy, CLI/Python/Node application calls and final no-owned-container check"
+}

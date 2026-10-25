@@ -1,0 +1,70 @@
+{
+  "public_a2": {
+    "packages": {
+      "agent-sandbox-client": "0.4.0a2",
+      "agent-sandbox-server": "0.4.0a2"
+    },
+    "created": 1,
+    "cleanup_confirmed": 1,
+    "first_ready_exit": 1,
+    "first_ready_seconds": 0.524,
+    "first_ready_connection_refused": true,
+    "acknowledged_process_running_at_first_probe": true,
+    "same_owned_port_later_ready": true,
+    "later_health_seconds_after_first_probe": 5.364,
+    "diagnostic_probe_count": 7,
+    "same_pid_running_after_health": true,
+    "unchanged_failed_result_returned_to_launcher": true,
+    "launch_error_reason": "readiness-command-failed",
+    "launch_error_phase": "before-invoke",
+    "result": "CONFIRMED_BUG",
+    "script_sha256": "d9e7a27d76e953210f0f7fda27fded8592e1ff9e3fc40984f405fb8533708bf4"
+  },
+  "candidate": {
+    "packages": {
+      "agent-sandbox-client": "0.4.0a3",
+      "agent-sandbox-server": "0.4.0a3"
+    },
+    "runtime_source_sha256": "ddf984968e5f2dcdf280616196e4a4c62e2175b0e524e0cfb79b73b1b88efcb3",
+    "cases": [
+      {
+        "mode": "delayed-ready",
+        "ready_exits": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ],
+        "same_owned_server_pid_alive": true,
+        "independent_typed_absence": true,
+        "result": "PASS"
+      },
+      {
+        "mode": "deadline",
+        "ready_exits": [
+          1
+        ],
+        "typed_deadline_failure": true,
+        "probe_to_failure_seconds": 1.174,
+        "independent_typed_absence": true,
+        "result": "PASS"
+      },
+      {
+        "mode": "cancel",
+        "ready_exits": [
+          1
+        ],
+        "cancelled": true,
+        "independent_typed_absence": true,
+        "result": "PASS"
+      }
+    ],
+    "created": 3,
+    "cleanup_confirmed": 3,
+    "result": "PASS",
+    "script_sha256": "e59c64622435cc7cdd5e28dc8ce37b0fe809145188c16db6d8bcf4923bcf3ccc"
+  },
+  "limits": "Public a2 causal reproduction and candidate editable installation are separate. This is not whole-catalog or public a3 acceptance."
+}

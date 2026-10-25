@@ -172,3 +172,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Bounded public PyPI readback](notes/proposed/process/2026-10-25-pypi-public-readback.md) · [verification](evidence/verify/2026-10-25-pypi-public-readback.md)
 
 - [Public runtime fixture images](notes/proposed/process/2026-10-25-public-runtime-fixture-images.md) · [verification](evidence/verify/2026-10-25-public-runtime-fixture-images.md)
+
+- [Prepared-template readiness](notes/proposed/feature/2026-10-25-prepared-template-readiness.md) · [verification](evidence/verify/2026-10-25-prepared-template-readiness.md).

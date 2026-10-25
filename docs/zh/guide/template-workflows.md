@@ -51,6 +51,8 @@ Python 不构建源码。先使用 CLI 准备并传入生成的 Provider 引用�
 后续服务失败也会关闭之前解析的所有客户端。日志不记录令牌、环境变量值和签名 URL，
 也不等于云端验证证据。同一个最终 `ABX_SERVER_TOKEN` 同时用于沙箱环境和客户端。
 
+收到进程启动确认后，启动器会在一个 `readiness_timeout` 预算内重复执行尚未成功的 `ready_cmd`。每次探测受剩余预算约束，退出码为 0 时才完成就绪检查；预算耗尽会抛出 `readiness-command-failed` 并删除本次创建的沙箱，取消启动同样保留资源清理。进程已经启动与应用已经就绪是两个独立条件。
+
 ## 从规范 4 迁移
 
 改为 `spec_version: 5`，删除 `workflow_contract_version`、`default_workflow`、

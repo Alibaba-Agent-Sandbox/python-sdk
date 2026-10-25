@@ -425,3 +425,89 @@ async def test_other_protocol_is_exposed_without_guessing_http_routes(
         server.health.assert_not_awaited()
         server.discover.assert_not_awaited()
     server.aclose.assert_awaited_once()
+
+
+@pytest.fixture
+def readiness_launch(tmp_path, monkeypatch):
+    """Keep startup acknowledgement distinct from application readiness."""
+    body = manifest("managed")
+    body.update(start_cmd="start application", ready_cmd="check application", provides={})
+    sandbox = SimpleNamespace(
+        id="owned",
+        provider="fixture",
+        kill=AsyncMock(),
+        commands=SimpleNamespace(run=AsyncMock()),
+    )
+    monkeypatch.setattr(
+        "agent_sandbox.api.template.Sandbox.create", AsyncMock(return_value=sandbox)
+    )
+    startup = AsyncMock()
+    monkeypatch.setattr("agent_sandbox.api.template._dispatch_start", startup)
+    options = dict(
+        provider=provider(["sandbox.create", "sandbox.delete", "exec.run"]),
+        reference="prepared-reference",
+        journal_path=tmp_path / "run",
+    )
+    return body, sandbox, startup, options
+
+
+async def test_readiness_retries_early_failure_after_start_acknowledgement(readiness_launch):
+    from agent_sandbox.models.process import ProcessResult
+
+    body, sandbox, startup, options = readiness_launch
+    sandbox.commands.run.side_effect = [ProcessResult(exit_code=1), ProcessResult(exit_code=0)]
+    async with await launch_template(body, readiness_timeout=2, **options):
+        startup.assert_awaited_once()
+        assert sandbox.commands.run.await_count == 2
+        assert all(
+            call.args == (body["ready_cmd"],) for call in sandbox.commands.run.await_args_list
+        )
+    sandbox.kill.assert_awaited_once()
+
+
+@pytest.mark.parametrize("probe", ["nonzero", "hang"])
+async def test_readiness_failure_respects_one_deadline_and_cleans_owned(readiness_launch, probe):
+    import asyncio
+
+    from agent_sandbox.models.process import ProcessResult
+
+    body, sandbox, _, options = readiness_launch
+    entered = asyncio.Event()
+
+    async def run(*args, **kwargs):
+        entered.set()
+        if probe == "hang":
+            await asyncio.Event().wait()
+        return ProcessResult(exit_code=1)
+
+    sandbox.commands.run.side_effect = run
+    started = asyncio.get_running_loop().time()
+    with pytest.raises(TemplateLaunchError, match="readiness-command-failed"):
+        await asyncio.wait_for(launch_template(body, readiness_timeout=0.08, **options), 2)
+    elapsed = asyncio.get_running_loop().time() - started
+    assert entered.is_set() and 0.04 <= elapsed < 1
+    assert all(call.kwargs["timeout"] == 1 for call in sandbox.commands.run.await_args_list)
+    sandbox.kill.assert_awaited_once()
+
+
+async def test_readiness_cancellation_cleans_owned_sandbox(readiness_launch):
+    import asyncio
+
+    body, sandbox, _, options = readiness_launch
+    entered, cancelled = asyncio.Event(), asyncio.Event()
+
+    async def run(*args, **kwargs):
+        entered.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            cancelled.set()
+
+    sandbox.commands.run.side_effect = run
+    launch = asyncio.create_task(launch_template(body, readiness_timeout=30, **options))
+    await asyncio.wait_for(entered.wait(), 2)
+    launch.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await launch
+    assert cancelled.is_set()
+    sandbox.kill.assert_awaited_once()

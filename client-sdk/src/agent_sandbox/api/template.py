@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import copy
 import json
+import math
 import os
 import re
 from pathlib import Path
@@ -297,11 +298,26 @@ async def launch_template(
             await _dispatch_start(sandbox, snapshot["start_cmd"], readiness_timeout)
             journal.append("started", sandbox_id=sandbox.id)
         if snapshot.get("ready_cmd"):
-            result = await sandbox.commands.run(
-                snapshot["ready_cmd"], timeout=int(readiness_timeout)
-            )
-            if not isinstance(result, ProcessResult) or result.exit_code != 0:
-                raise TemplateLaunchError("readiness-command-failed", "before-invoke")
+            loop = asyncio.get_running_loop()
+            deadline = loop.time() + readiness_timeout
+            while True:
+                remaining = deadline - loop.time()
+                if remaining <= 0:
+                    raise TemplateLaunchError("readiness-command-failed", "before-invoke")
+                try:
+                    result = await asyncio.wait_for(
+                        sandbox.commands.run(
+                            snapshot["ready_cmd"], timeout=max(1, math.ceil(remaining))
+                        ),
+                        timeout=remaining,
+                    )
+                except asyncio.TimeoutError:
+                    raise TemplateLaunchError("readiness-command-failed", "before-invoke") from None
+                if not isinstance(result, ProcessResult):
+                    raise TemplateLaunchError("readiness-command-failed", "before-invoke")
+                if result.exit_code == 0:
+                    break
+                await asyncio.sleep(min(0.25, max(0, deadline - loop.time())))
         for name, service in plan["services"].items():
             client = await sandbox.application_client(service["port"], token=token)
             clients[name] = client
