@@ -1,6 +1,6 @@
 # 安装 Python 配套包
 
-> 候选版本文档：0.4.0a1 尚未发布。发布前请按下文从检出源码安装验证；旧 0.3.x 包不支持规范 5 启动。
+> 规范 5 的模板启动需要本指南使用的配套 alpha 包：`agent-sandbox-client==0.4.0a1` 和 `agent-sandbox-server==0.4.0a1`。旧 0.3.x 包不实现此入口。验证源码修订时，请按下文从同一份检出同时安装两个发行包。
 
 使用 Python 3.10 或更高版本及虚拟环境：
 
@@ -21,7 +21,7 @@ python -m pip check
 python -c "from importlib.metadata import version; print(version('agent-sandbox-client'), version('agent-sandbox-server'))"
 ```
 
-[abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) 需要独立安装。本指南中的模板工作流使用 CLI 0.4.16 或更高版本；创建沙箱前先配置所选平台。
+[abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) 需要独立安装。本指南中的模板启动使用 CLI 0.5.0 或更高版本；创建沙箱前先配置所选平台。
 
 ## 可选依赖
 

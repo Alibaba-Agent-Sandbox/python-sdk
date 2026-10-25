@@ -1,6 +1,6 @@
 # Install the Python packages
 
-> Candidate documentation: 0.4.0a1 is not yet published. Validate this revision with the editable checkout installation below until publication. The previous 0.3.x package does not implement specification 5 launch.
+> Specification 5 template launch requires the matching `agent-sandbox-client==0.4.0a1` and `agent-sandbox-server==0.4.0a1` alpha packages used in this guide. The previous 0.3.x packages do not implement this entry point. To validate a source revision, install both distributions from the same checkout as described below.
 
 Use Python 3.10 or newer and a virtual environment:
 
@@ -21,7 +21,7 @@ Check the installed pair:
 python -c "from importlib.metadata import version; print(version('agent-sandbox-client'), version('agent-sandbox-server'))"
 ```
 
-Install the [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) separately. For the template workflows in this guide, use CLI 0.5.0 or newer and configure the selected provider before creating a sandbox.
+Install the [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) separately. For template launch in this guide, use CLI 0.5.0 or newer and configure the selected provider before creating a sandbox.
 
 ## Optional dependencies
 

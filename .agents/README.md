@@ -10,6 +10,8 @@ real native-template acceptance and retained environment failures. The
 [cloud follow-up](evidence/verify/2026-10-25-unified-template-cloud.md) verifies all five
 startup scenarios including two HTTP services. The [CLI diagnostic follow-up](evidence/verify/2026-10-25-unified-template-cli-diagnostic.md) keeps the separate passing and failing CLI runs, final implementation CI and focused file-transfer results explicit;
 the previous 92-case matrix below remains specification 4 history, not v5 evidence.
+The [publication preflight](evidence/verify/2026-10-25-python-a1-publication-preflight.md)
+records candidate checks and stable installation requirements without claiming publication.
 
 ## Previous delivery — 2026-10-24
 
