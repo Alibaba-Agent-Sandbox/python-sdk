@@ -4,7 +4,8 @@
 - Change: [Issue 114](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/114)
 - Tested base: dab0e3194e3f790fab28307d9fd126b8239bcbd7, plus scoped workflow/checker/tests changes.
 - Package under test: client/server 0.4.0a2, official PyPI; tag/version unchanged.
-- Environment: Linux, Python 3.11; no cloud credentials or resources needed.
+- Environment: Linux; owner tests Python 3.11.15, fresh public-install check
+  Python 3.13.13. No cloud credentials or resources needed.
 
 ## Original failure and real public verification
 
