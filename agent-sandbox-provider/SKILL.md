@@ -5,7 +5,7 @@ description: Write an Agent Sandbox provider plugin so ProviderSandbox.create(pr
 
 # Write an Agent Sandbox provider
 
-Specification 5 is implemented in the published 0.4.0a2 client/server alpha pair.
+Specification 5 is implemented in the published 0.4.0a3 client/server alpha pair.
 
 This file is instructions for a coding agent. It is not executed by the SDK.
 Calling `Sandbox.create` against a backend that already exists is
@@ -14,11 +14,11 @@ The client distribution is `agent-sandbox-client` (import `agent_sandbox`).
 Install the published alpha client; it installs its matching server dependency:
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a2'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a3'
 python -m pip check
 ```
 
-The image needs only `agent-sandbox-server==0.4.0a2`. Installing that package on the host does not update an existing image. Development source installations must use a matching client/server revision.
+The image needs only `agent-sandbox-server==0.4.0a3`. Installing that package on the host does not update an existing image. Development source installations must use a matching client/server revision.
 Do not install `agent-sandbox`; that PyPI project is unrelated.
 
 Only `alicloud-express` is built in. Do not reinstall it and do not reuse

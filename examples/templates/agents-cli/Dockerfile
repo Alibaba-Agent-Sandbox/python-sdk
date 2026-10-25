@@ -13,7 +13,7 @@ ENV ABX_SERVER_ENABLED_GROUPS=agents
 #       && npm install -g @qwen-code/qwen-code && rm -rf /var/lib/apt/lists/*
 
 # Install the published runtime; no local wheel or source fallback is required.
-RUN python3 -m pip install --index-url https://pypi.org/simple --no-cache-dir "agent-sandbox-server==0.4.0a2"
+RUN python3 -m pip install --index-url https://pypi.org/simple --no-cache-dir "agent-sandbox-server==0.4.0a3"
 
 WORKDIR /app
 COPY commands.py .

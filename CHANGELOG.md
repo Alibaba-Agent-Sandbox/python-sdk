@@ -59,6 +59,8 @@ Published alpha pair: [v0.4.0a1](https://github.com/Alibaba-Agent-Sandbox/python
 
 ### Documentation
 
+- Align maintained installation, both coding-agent skills and offline fixture images with the verified public 0.4.0a3 pair and official PyPI index; preserve earlier receipts. / 将当前安装文档、两个编码智能体技能和离线夹具镜像同步为已验证公开的 0.4.0a3 双包与官方 PyPI 源，保留历史收据。
+
 - Simplify the bilingual Provider guide to actual entry points, correct installation verification guarantees and link complete authoring manifests. / 将中英文 Provider 指南收敛到实际调用入口，修正安装验证承诺，并引用完整的编写示例。
 
 - Record the public 0.3.1a5 pair, artifact digests, clean installation and preserved propagation failure; link the current installation decision and proxy runtime evidence. / 记录公开的 0.3.1a5 配套双包、产物摘要、新环境安装及保留的索引传播失败，补齐安装决策和代理运行验证索引。

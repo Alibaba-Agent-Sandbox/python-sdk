@@ -13,7 +13,7 @@ MCP（Model Context Protocol）是一个开放协议，允许 AI 模型与外部
 ### 环境要求
 
 ```bash
-pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a2"            # SDK 自带的 MCP STDIO server：python -m agent_sandbox.agent.mcp
+pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a3"            # SDK 自带的 MCP STDIO server：python -m agent_sandbox.agent.mcp
 export ABX_SANDBOX_API_KEY=your-api-key
 ```
 
@@ -96,7 +96,7 @@ printf '%s\n' \
 ### 本地以 uvicorn 运行
 
 ```bash
-pip install --index-url https://pypi.org/simple "agent-sandbox-client[mcp]==0.4.0a2"
+pip install --index-url https://pypi.org/simple "agent-sandbox-client[mcp]==0.4.0a3"
 
 export ABX_MCP_AUTH_TOKEN=replace_me   # Bearer token（省略则关闭认证）
 export ABX_SANDBOX_API_KEY=your-api-key

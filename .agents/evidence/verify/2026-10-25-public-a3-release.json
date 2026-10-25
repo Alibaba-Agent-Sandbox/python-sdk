@@ -1,0 +1,101 @@
+{
+  "version": "0.4.0a3",
+  "run_id": 40209677091,
+  "run_url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/40209677091",
+  "source_commit": "a7d6aa3e5e16fcf8cde1d91465f4a5fc53f5a030",
+  "release_artifact_id": 12605089634,
+  "result": "PASS",
+  "files": [
+    {
+      "package": "agent-sandbox-client",
+      "filename": "agent_sandbox_client-0.4.0a3-py3-none-any.whl",
+      "sha256": "4f057f52c6b3e0c0341f00a2eac9a33e1ce7badf661867c2f38f4a6a0755e12b",
+      "release_artifact_matches_metadata_and_download": true
+    },
+    {
+      "package": "agent-sandbox-client",
+      "filename": "agent_sandbox_client-0.4.0a3.tar.gz",
+      "sha256": "bc71694ddcef9bf69f0b969262431a4b3599a331a59a9c68caea8192d53a8d40",
+      "release_artifact_matches_metadata_and_download": true
+    },
+    {
+      "package": "agent-sandbox-server",
+      "filename": "agent_sandbox_server-0.4.0a3-py3-none-any.whl",
+      "sha256": "c4c4125e16e50579c986feca38774981ccdba2515617c0bf8020d727c5f58e10",
+      "release_artifact_matches_metadata_and_download": true
+    },
+    {
+      "package": "agent-sandbox-server",
+      "filename": "agent_sandbox_server-0.4.0a3.tar.gz",
+      "sha256": "fd7a81c3bad3bdd61e20198895663e45308f92a03756222f2cd9799dbbf70be3",
+      "release_artifact_matches_metadata_and_download": true
+    }
+  ],
+  "installation": {
+    "packages": {
+      "agent-sandbox-client": "0.4.0a3",
+      "agent-sandbox-server": "0.4.0a3"
+    },
+    "actual_imports_from_fresh_venv": true,
+    "imports": [
+      "Sandbox",
+      "AsyncSandbox",
+      "ProviderSandbox",
+      "server.start"
+    ],
+    "pip_check": "PASS",
+    "fresh_official_install": "PASS",
+    "no_cache": true,
+    "index": "https://pypi.org/simple",
+    "no_source_injection": true,
+    "outside_checkout_cwd": true
+  },
+  "cloud": {
+    "packages": {
+      "agent-sandbox-client": "0.4.0a3",
+      "agent-sandbox-server": "0.4.0a3"
+    },
+    "runtime_source_sha256": "ddf984968e5f2dcdf280616196e4a4c62e2175b0e524e0cfb79b73b1b88efcb3",
+    "cases": [
+      {
+        "mode": "delayed-ready",
+        "ready_exits": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ],
+        "same_owned_server_pid_alive": true,
+        "independent_typed_absence": true,
+        "result": "PASS"
+      },
+      {
+        "mode": "deadline",
+        "ready_exits": [
+          1
+        ],
+        "typed_deadline_failure": true,
+        "probe_to_failure_seconds": 1.195,
+        "independent_typed_absence": true,
+        "result": "PASS"
+      },
+      {
+        "mode": "cancel",
+        "ready_exits": [
+          1
+        ],
+        "cancelled": true,
+        "independent_typed_absence": true,
+        "result": "PASS"
+      }
+    ],
+    "created": 3,
+    "cleanup_confirmed": 3,
+    "result": "PASS",
+    "script_sha256": "e59c64622435cc7cdd5e28dc8ce37b0fe809145188c16db6d8bcf4923bcf3ccc"
+  },
+  "tag": "v0.4.0a3",
+  "annotated_tag_object": "1721a0080787737034629d9d10ab2222f7efba57"
+}

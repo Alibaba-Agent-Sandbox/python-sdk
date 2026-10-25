@@ -203,7 +203,7 @@ jobs:
         run: docker build --tag abx-sdk-fixture:current "examples/templates/${{ matrix.fixture }}"
       - name: Verify the published guest runtime
         run: |
-          docker run --rm --entrypoint python3 abx-sdk-fixture:current -c 'from importlib.metadata import version; from agent_sandbox.server import start; assert version("agent-sandbox-server") == "0.4.0a2" and callable(start)'
+          docker run --rm --entrypoint python3 abx-sdk-fixture:current -c 'from importlib.metadata import version; from agent_sandbox.server import start; assert version("agent-sandbox-server") == "0.4.0a3" and callable(start)'
       - name: Start the fixture and check its real HTTP application
         env:
           FIXTURE_NAME: ${{ matrix.fixture }}

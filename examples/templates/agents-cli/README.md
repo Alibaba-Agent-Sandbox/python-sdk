@@ -88,9 +88,9 @@ This template turns on the sandbox Agents API for **Codex** and **Qwen Code**. T
 
 The server listens on port **9000**. Point `examples/agents/hosted_codex.py` or `hosted_qwen.py` at it. When `E2E_RUN_LLM=0`, `commands.py` puts the local programs in `e2e-bin/` on `PATH`. Those programs are named `codex` and `qwen`.
 
-Both offline fixture Dockerfiles install `agent-sandbox-server==0.4.0a2` from the
+Both offline fixture Dockerfiles install `agent-sandbox-server==0.4.0a3` from the
 official PyPI index. No local wheel is required. The image does not include real
 Codex/Qwen CLIs; model execution still requires the selected CLI and credentials.
 
-两个离线夹具 Dockerfile 均从官方 PyPI 安装 `agent-sandbox-server==0.4.0a2`，
+两个离线夹具 Dockerfile 均从官方 PyPI 安装 `agent-sandbox-server==0.4.0a3`，
 不需要本地 wheel。镜像不预装真实 Codex/Qwen CLI；模型执行仍需相应工具和凭据。

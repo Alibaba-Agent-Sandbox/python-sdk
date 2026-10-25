@@ -211,7 +211,7 @@ Check file permissions. The default user in the sandbox is `user`; you can speci
 
 ```bash
 # Ensure the correct package name
-python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a2"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a3"
 
 # If dependency conflicts occur
 python -m pip check
