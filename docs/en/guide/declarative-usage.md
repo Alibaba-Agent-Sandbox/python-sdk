@@ -56,7 +56,7 @@ def my_func():
 | `keep_alive` | `bool` | `False` | Do not destroy the sandbox after execution |
 | `sandbox_api_key` | `str` | `None` | API Key override |
 | `sandbox_base_url` | `str` | `None` | Platform URL override |
-| `sandbox_domain` | `str` | `None` | Platform sandbox_domain |
+| `sandbox_domain` | `str` | `None` | Platform domain |
 | `cpu` | `int` | `None` | CPU cores |
 | `memory` | `int` | `None` | Memory in MB |
 

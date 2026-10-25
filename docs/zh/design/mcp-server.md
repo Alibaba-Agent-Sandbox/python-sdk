@@ -292,7 +292,7 @@ graph LR
 - **会话**：进程内 `SessionStore`；空闲 TTL 默认 3600 秒、并发会话上限默认 100；容量满时返回 503 与 JSON-RPC 错误 `-32000`
 - **版本协商**：`initialize` 在请求版本受支持时原样回显；本传输仅支持 `2025-06-18`，与 `GET /health` 一致。请求缺失或不支持的版本时协商到 `2025-06-18` —— 按 MCP 规范，服务器回复自己支持的版本，无法接受的客户端可自行断开。STDIO 传输独立保持 `2024-11-05`
 - **适用场景**：远程服务、团队共享、多客户端；用 CLI 的 `abx mcp deploy` 生成的产物部署到阿里云 FC，或本地以 uvicorn 运行
-- **可选依赖**：Starlette + uvicorn（`pip install 'agent-sandbox-client[mcp]'`）
+- **可选依赖**：Starlette + uvicorn（`pip install 'agent-sandbox-client[mcp]==0.4.0a2'`）
 
 ### 认证
 
