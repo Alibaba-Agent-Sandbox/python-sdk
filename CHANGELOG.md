@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Build both SDK offline fixtures from the exact public a2 server on official PyPI, remove unreachable local-wheel fallback, and verify actual guest HTTP behavior and cleanup in CI. / SDK 两个离线夹具统一从官方 PyPI 安装精确 a2 服务端，删除不可达的本地 wheel 回退，并通过 CI 验证真实镜像 HTTP 行为及清理。
+
+### Fixed
+
 - Bound public PyPI metadata and fresh-install propagation retries while keeping artifact digest mismatches and dependency/import failures fatal. / 为公开 PyPI 元数据及全新安装增加有限传播重试，保持产物哈希、依赖与导入检查失败即中止。
 
 ### Fixed

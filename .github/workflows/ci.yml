@@ -188,3 +188,48 @@ jobs:
           ABX_TEST_CLI_DIR: ${{ github.workspace }}/.test-deps/cli
           ABX_TEST_PROVIDERS_DIR: ${{ github.workspace }}/.test-deps/providers
         run: python -m pytest -c client-sdk/pyproject.toml client-sdk/tests/test_providers/test_engine_provider.py -v
+
+  fixture-images:
+    name: Public runtime fixture (${{ matrix.fixture }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        fixture: [python-hello, agents-cli]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the unmodified fixture Dockerfile
+        run: docker build --tag abx-sdk-fixture:current "examples/templates/${{ matrix.fixture }}"
+      - name: Verify the published guest runtime
+        run: |
+          docker run --rm --entrypoint python3 abx-sdk-fixture:current -c 'from importlib.metadata import version; from agent_sandbox.server import start; assert version("agent-sandbox-server") == "0.4.0a2" and callable(start)'
+      - name: Start the fixture and check its real HTTP application
+        env:
+          FIXTURE_NAME: ${{ matrix.fixture }}
+        run: |
+          docker run -d --name abx-sdk-fixture-server abx-sdk-fixture:current
+          for attempt in 1 2 3 4 5 6; do
+            if docker exec abx-sdk-fixture-server agent-sandbox-server healthcheck --port 9000; then break; fi
+            if [ "$attempt" = 6 ]; then exit 1; fi
+            sleep 1
+          done
+          docker exec -i -e FIXTURE_NAME="$FIXTURE_NAME" abx-sdk-fixture-server python3 - <<'PYTHON'
+          import json, os, urllib.request
+          base = "http://127.0.0.1:9000"
+          if os.environ["FIXTURE_NAME"] == "python-hello":
+              request = urllib.request.Request(base + "/commands/hello", data=b'{"name":"Fixture"}', headers={"Content-Type":"application/json"})
+              with urllib.request.urlopen(request, timeout=10) as response:
+                  assert json.load(response)["result"] == "Hello, Fixture!"
+          else:
+              with urllib.request.urlopen(base + "/v1/agents/runtimes", timeout=10) as response:
+                  assert isinstance(json.load(response)["data"], list)
+          PYTHON
+      - name: Remove the owned fixture container and verify absence
+        if: always()
+        run: |
+          if docker container inspect abx-sdk-fixture-server >/dev/null 2>&1; then
+            docker rm -f abx-sdk-fixture-server
+          fi
+          docker info >/dev/null
+          test -z "$(docker ps -aq --filter 'name=^abx-sdk-fixture-server$')"
