@@ -53,6 +53,15 @@ the owned sandbox was independently absent with typed 404. This closes the runti
 deadline acceptance scope of [Issue 113](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/113),
 separately from the unfinished browser scope in Issue 111.
 
+## Example README correction
+
+The EN/ZH core API overview previously put interpreter and hello named-command
+calls inside a base ProviderSandbox context. Split this confirmed misleading
+example into base shell execution, the actual standard interpreter entry, and
+a separately launched python-hello application bound with application_client(token).
+No runtime helper or fallback is added. Correct the example table, decorator
+template ID, writable file path and canonical configuration wording together.
+
 ## Repository skills
 
 The current SDK/provider SKILL.md files now use published a2 instead of claiming
