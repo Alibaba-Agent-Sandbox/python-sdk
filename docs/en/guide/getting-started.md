@@ -92,6 +92,15 @@ template's application.
 
 ## Next steps
 
+Template builder helpers are public imports from this installed package:
+`from agent_sandbox import Template, AsyncTemplate, wait_for_port, default_build_logger`.
+No separate `e2b` installation is needed for these names. Standard template APIs
+retain their documented platform/account prerequisites and public parameters.
+
+The [2026-10-25 public-a4 example record](../../../.agents/evidence/verify/2026-10-25-public-a4-examples.md)
+separates 14 real cloud examples from local protocol fixtures, timeout controls
+and independent cleanup checks. A passing example is not whole-catalog coverage.
+
 - [SDK usage](sdk-usage.md): provider extensions and their synchronous wrappers.
 - [Declarative functions](declarative-usage.md): execute a Python function remotely.
 - [MCP integration](mcp-integration.md): connect an IDE or agent.

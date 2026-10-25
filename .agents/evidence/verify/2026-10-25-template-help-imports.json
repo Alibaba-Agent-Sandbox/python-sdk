@@ -1,0 +1,54 @@
+{
+  "base_commit": "b1dbc5698ed42b9a87ab0ac6df452d5d187dd0a0",
+  "candidate_version": "0.4.0a5",
+  "scope": "source candidate, not published",
+  "files": [
+    {
+      "file": "client-sdk/src/agent_sandbox/_standard/template/main.py",
+      "old_sha256": "af4c10e64c3f059488d6e6faa73e56eaf6253a09dbfce4b673a8ad80f4d9de15",
+      "candidate_sha256": "df9280ef99ce113c8ab9c3b0be9e32d3d5a54b4da0d51e50bb3b628b81f888ff",
+      "executable_ast_unchanged": true,
+      "help_import_replacements": 2
+    },
+    {
+      "file": "client-sdk/src/agent_sandbox/_standard/template_sync/main.py",
+      "old_sha256": "ae60bbdaba02fe602646ddc583065266cc3ded4d448264421621264076348864",
+      "candidate_sha256": "7726bb4d98dc08e82dad506ac0e9cd3de87092038c97339308a2e0f11724f7ca",
+      "executable_ast_unchanged": true,
+      "help_import_replacements": 8
+    },
+    {
+      "file": "client-sdk/src/agent_sandbox/_standard/template_async/main.py",
+      "old_sha256": "96d9d0245a6e113144907f7089d81d9a20c6d0248e9eae9f63ed9effadb17ab8",
+      "candidate_sha256": "3f61c4580eee90ec97175adaf0b0853bacc19fce5715e145840dade49daff5ef",
+      "executable_ast_unchanged": true,
+      "help_import_replacements": 8
+    },
+    {
+      "file": "client-sdk/src/agent_sandbox/_standard/template/logger.py",
+      "old_sha256": "4c95e31aecc2daeecc11f23205f91285aa3482a35091d9852596a4e9ad506974",
+      "candidate_sha256": "1ee05c47057ff26c54b7e090d015596a6c92fae2536606c5595f626a9791a3b7",
+      "executable_ast_unchanged": true,
+      "help_import_replacements": 1
+    },
+    {
+      "file": "client-sdk/src/agent_sandbox/_standard/template/readycmd.py",
+      "old_sha256": "6585d27f11c18444f91bc1b8b8bcc1f5ddc50bb9a8695133a11540ab0f80d620",
+      "candidate_sha256": "4365f97c560638d21b619c44bd5dca910aea7450beddc111463e69281d889332",
+      "executable_ast_unchanged": true,
+      "help_import_replacements": 5
+    }
+  ],
+  "preserved_notices": [
+    "client-sdk/NOTICE",
+    "client-sdk/src/agent_sandbox/_standard/LICENSE",
+    "client-sdk/src/agent_sandbox/_standard/SOURCES.json"
+  ],
+  "regression_before": {
+    "failed": 24
+  },
+  "regression_after": {
+    "passed": 49,
+    "scope": "24 help snippets, existing standard contract and 12 Provider docstrings"
+  }
+}

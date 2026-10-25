@@ -711,7 +711,7 @@ class TemplateBuilder:
         )
 
         # Using ReadyCmd helpers
-        from e2b import wait_for_port, wait_for_url
+        from agent_sandbox import wait_for_port, wait_for_url
 
         template.set_start_cmd(
             'python -m http.server 8000',
@@ -747,7 +747,7 @@ class TemplateBuilder:
         template.set_ready_cmd('curl http://localhost:8000/health')
 
         # Using ReadyCmd helpers
-        from e2b import wait_for_port, wait_for_file, wait_for_process
+        from agent_sandbox import wait_for_port, wait_for_file, wait_for_process
 
         template.set_ready_cmd(wait_for_port(3000))
 

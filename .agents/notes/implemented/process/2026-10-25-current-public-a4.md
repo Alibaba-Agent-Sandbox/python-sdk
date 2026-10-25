@@ -1,6 +1,6 @@
 # Decision: Use verified public a4 and bound metadata visibility waits
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -59,3 +59,13 @@ only retries the existing HTTP404-derived exit75. Required exact-head CI, indepe
 review and normal merge pass; no new SDK publication is performed for this follow-up.
 
 [Verification](../../../evidence/verify/2026-10-25-public-a4-delivery.md).
+
+## Implementation
+
+[PR127](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/127) was normally
+merged as `b1dbc5698ed42b9a87ab0ac6df452d5d187dd0a0` after all 13 exact-head checks
+succeeded, including both actual public-a4 Docker fixtures. The immutable a4
+publisher recovered successfully on the same tag and artifact bytes. Later
+[public-a4 example acceptance](../../../evidence/verify/2026-10-25-public-a4-examples.md)
+records additional cloud/local scope separately. This acceptance concerns the
+already merged delivery, not the publication or merge of a later candidate.

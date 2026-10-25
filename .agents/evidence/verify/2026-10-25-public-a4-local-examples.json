@@ -1,0 +1,227 @@
+{
+  "source_commit": "b1dbc5698ed42b9a87ab0ac6df452d5d187dd0a0",
+  "runner_sha256": "642e2abbbb8a9ba6c43bef04ed4fc4c7ae3977c942ca6e48d7764dad5b1ea63e",
+  "public_packages": {
+    "agent-sandbox-client": "0.4.0a4",
+    "agent-sandbox-server": "0.4.0a4"
+  },
+  "model_scope": "controlled local Codex/Qwen protocol fixtures, no real model call",
+  "cases": [
+    {
+      "mode": "forced-hosted-timeout",
+      "exit_code": 1,
+      "seconds": 3.814,
+      "rows": [
+        {
+          "status": "ok",
+          "example": "py_compile examples"
+        },
+        {
+          "status": "ok",
+          "example": "examples/scenarios/agent_loop_local.py"
+        },
+        {
+          "status": "ok",
+          "example": "examples/agents/local_files_and_session.py"
+        },
+        {
+          "status": "ok",
+          "example": "examples/agents/complete_case.py"
+        },
+        {
+          "status": "ok",
+          "example": "examples/templates/python-hello/call_api.py"
+        },
+        {
+          "status": "ok",
+          "example": "examples/templates/agents-cli/e2e_test.py"
+        },
+        {
+          "status": "fail",
+          "example": "examples/agents/hosted_codex.py"
+        },
+        {
+          "status": "ok",
+          "example": "examples/agents/hosted_qwen.py"
+        },
+        {
+          "status": "ok",
+          "example": "examples/quickstart/01_hello.py via local-process"
+        },
+        {
+          "status": "ok",
+          "example": "examples/quickstart/02_file_ops.py via local-process"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/quickstart/03_web_service.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/quickstart/04_data_analysis.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/quickstart/05_decorator_usage.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/agents/codex_agent.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/agents/browser_automation.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/compat-demos/comparison.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/compat-demos/e2b_data_analysis.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/compat-demos/e2b_web_scraper.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/compat-demos/modal_compute.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/compat-demos/modal_data_analysis.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/compat-demos/e2e_capability_validation.py"
+        }
+      ],
+      "counts": {
+        "ok": 9,
+        "fail": 1,
+        "needs-provider": 11
+      },
+      "tagged_owned_processes_absent": true,
+      "result": "PASS"
+    },
+    {
+      "mode": "normal",
+      "exit_code": 0,
+      "seconds": 4.083,
+      "rows": [
+        {
+          "status": "ok",
+          "example": "py_compile examples"
+        },
+        {
+          "status": "ok",
+          "example": "examples/scenarios/agent_loop_local.py"
+        },
+        {
+          "status": "ok",
+          "example": "examples/agents/local_files_and_session.py"
+        },
+        {
+          "status": "ok",
+          "example": "examples/agents/complete_case.py"
+        },
+        {
+          "status": "ok",
+          "example": "examples/templates/python-hello/call_api.py"
+        },
+        {
+          "status": "ok",
+          "example": "examples/templates/agents-cli/e2e_test.py"
+        },
+        {
+          "status": "ok",
+          "example": "examples/agents/hosted_codex.py"
+        },
+        {
+          "status": "ok",
+          "example": "examples/agents/hosted_qwen.py"
+        },
+        {
+          "status": "ok",
+          "example": "examples/quickstart/01_hello.py via local-process"
+        },
+        {
+          "status": "ok",
+          "example": "examples/quickstart/02_file_ops.py via local-process"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/quickstart/03_web_service.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/quickstart/04_data_analysis.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/quickstart/05_decorator_usage.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/agents/codex_agent.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/agents/browser_automation.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/compat-demos/comparison.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/compat-demos/e2b_data_analysis.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/compat-demos/e2b_web_scraper.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/compat-demos/modal_compute.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/compat-demos/modal_data_analysis.py"
+        },
+        {
+          "status": "needs-provider",
+          "example": "examples/compat-demos/e2e_capability_validation.py"
+        }
+      ],
+      "counts": {
+        "ok": 10,
+        "fail": 0,
+        "needs-provider": 11
+      },
+      "tagged_owned_processes_absent": true,
+      "result": "PASS"
+    }
+  ],
+  "timeout_control": {
+    "return_codes": [
+      7,
+      124,
+      0
+    ],
+    "row_statuses": [
+      "fail",
+      "fail",
+      "ok"
+    ],
+    "earlier_failure_retained": true,
+    "continued_after_timeout": true,
+    "exact_owned_timeout_child_absent": true,
+    "result": "PASS"
+  },
+  "tracked_direct_processes": 27,
+  "all_tracked_owned_pids_independently_absent": true,
+  "result": "PASS",
+  "script_sha256": "40ebba3b34eceb1e2a0de442248dae61d23fc375fa2bd6caf798553417f52e77"
+}
