@@ -3,7 +3,7 @@
 - Date: 2026-10-25
 - Result: PASS for the stated examples; not whole-catalog or production certification.
 - Source: `b1dbc5698ed42b9a87ab0ac6df452d5d187dd0a0`, merged [PR127](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/127).
-- Runtime: official PyPI client/server `0.4.0a4`; Linux, Python 3.13.13. Separate fresh HOME per cloud example; canonical ABX configuration, no E2B overrides or source injection.
+- Runtime: official PyPI client/server `0.4.0a4`; Linux, Python 3.13.13. One new isolated HOME shared by the 14 example child processes for this batch, outside checkout configuration; canonical ABX settings, no E2B overrides or source injection.
 
 ## What was verified
 
@@ -62,7 +62,8 @@ python source/examples/quickstart/01_hello.py
 Repeat the final command with each exact table path. Supply your own documented
 `ABX_PROVIDER=alicloud-express`, `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and
 `ABX_SANDBOX_DOMAIN` through private environment configuration. Remove conflicting
-E2B overrides and use a fresh HOME outside checkout configuration for each run.
+E2B overrides and use one new isolated HOME outside checkout configuration for
+the batch, shared by its example child processes.
 For the real model example additionally supply `OPENAI_API_KEY`, `OPENAI_BASE_URL`
 and `OPENAI_MODEL=qwen3-coder-flash` for an endpoint that supports this model.
 Never print credentials or publish ownership journals. Local checks require no
