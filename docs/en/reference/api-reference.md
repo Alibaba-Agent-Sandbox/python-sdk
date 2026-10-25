@@ -1,13 +1,13 @@
 # API Reference
 
-This document lists all public API signatures, parameters, return values, and exceptions of the Agent Sandbox Python SDK.
+This reference describes the ProviderSandbox extension API. Root Sandbox / AsyncSandbox follow the independent standard contract described in [E2B migration](../guide/migrate-from-e2b.md).
 
 ---
 
 ## Sandbox Class
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 ```
 
 ### Class Methods
@@ -29,7 +29,7 @@ async def create(
     memory: int | None = None,
     disk: int | None = None,
     gpu: str | None = None,
-    secure: bool = True,
+    secure: bool | None = None,
     sandbox_api_key: str | None = None,
     sandbox_base_url: str | None = None,
     sandbox_domain: str | None = None,
@@ -44,7 +44,7 @@ Create a new sandbox.
 |-----------|------|---------|-------------|
 | `template` | `str` | `"base"` | Sandbox template name |
 | `timeout` | `int` | `300` | Sandbox lifetime (TTL) in seconds (1–86400); not an HTTP timeout |
-| `request_timeout` | `float` | `None` | Per-request HTTP timeout (seconds) for the create call only. When `None`, uses `SANDBOX_HTTP_TIMEOUT` / `http_timeout`. Aligns with the E2B SDK. Raising it does not work around platform-side create stalls. |
+| `request_timeout` | `float` | `None` | Per-request HTTP timeout (seconds) for the create call only. When `None`, uses `ABX_HTTP_TIMEOUT` / `http_timeout`. Aligns with the E2B SDK. Raising it does not work around platform-side create stalls. |
 | `metadata` | `dict` | `None` | Arbitrary metadata key-value pairs |
 | `envs` | `dict` | `None` | Injected environment variables |
 | `volume_mounts` | `dict[str, str]` | `None` | Built-in provider only: normalized absolute sandbox path → existing Volume name. Omitted/empty means no mounts. Other providers reject nonempty hints with E8004. See [mount requirements and wire schema](../guide/provider-commands.md#mount-an-existing-volume-when-creating-a-sandbox). |
@@ -52,7 +52,7 @@ Create a new sandbox.
 | `memory` | `int` | `None` | Memory in MB |
 | `disk` | `int` | `None` | Disk in MB |
 | `gpu` | `str` | `None` | GPU specification (e.g., `"A10"`) |
-| `secure` | `bool` | `True` | Secure mode (port access requires token) |
+| `secure` | `bool` | `None` | Secure mode (port access requires token) |
 | `sandbox_api_key` | `str` | `None` | API Key override |
 | `sandbox_base_url` | `str` | `None` | Platform API URL override |
 | `sandbox_domain` | `str` | `None` | Domain override |

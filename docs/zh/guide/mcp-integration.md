@@ -13,8 +13,8 @@ MCP（Model Context Protocol）是一个开放协议，允许 AI 模型与外部
 ### 环境要求
 
 ```bash
-pip install agent-sandbox-client            # SDK 自带的 MCP STDIO server：python -m agent_sandbox.agent.mcp
-export E2B_API_KEY=your-api-key
+pip install "agent-sandbox-client==0.4.0a2"            # SDK 自带的 MCP STDIO server：python -m agent_sandbox.agent.mcp
+export ABX_SANDBOX_API_KEY=your-api-key
 ```
 
 Node.js `abx` CLI 提供同一服务器的另一套实现（`abx mcp ...`，用 `npm install -g @agent-sandbox/cli` 安装）；见[相关：abx CLI](#相关abx-cli)。
@@ -29,13 +29,13 @@ Node.js `abx` CLI 提供同一服务器的另一套实现（`abx mcp ...`，用 
     "agent-sandbox": {
       "command": "python",
       "args": ["-m", "agent_sandbox.agent.mcp"],
-      "env": { "E2B_API_KEY": "your-api-key" }
+      "env": { "ABX_SANDBOX_API_KEY": "your-api-key" }
     }
   }
 }
 ```
 
-`python -m agent_sandbox.agent.mcp` 读取 `E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN`，默认模板取自 `ABX_DEFAULT_TEMPLATE`（默认 `base`）。修改 IDE 配置后重启 IDE。该 server 通过 STDIO 提供同一组工具，因此下文的[可用工具](#可用工具)完全适用。
+`python -m agent_sandbox.agent.mcp` 读取 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL`、`ABX_SANDBOX_DOMAIN`，默认模板取自 `ABX_DEFAULT_TEMPLATE`（默认 `base`）。修改 IDE 配置后重启 IDE。该 server 通过 STDIO 提供同一组工具，因此下文的[可用工具](#可用工具)完全适用。
 
 `abx mcp install --target cursor|claude|vscode` 与 `abx mcp status` 命令会替你写入并检查这些文件；见[相关：abx CLI](#相关abx-cli)。
 
@@ -96,10 +96,10 @@ printf '%s\n' \
 ### 本地以 uvicorn 运行
 
 ```bash
-pip install "agent-sandbox-client[mcp]"
+pip install "agent-sandbox-client[mcp]==0.4.0a2"
 
 export ABX_MCP_AUTH_TOKEN=replace_me   # Bearer token（省略则关闭认证）
-export E2B_API_KEY=your-api-key
+export ABX_SANDBOX_API_KEY=your-api-key
 
 uvicorn agent_sandbox.agent.mcp_http:asgi_app --host 0.0.0.0 --port 9000
 ```
@@ -113,7 +113,7 @@ from agent_sandbox.agent.mcp_http import create_mcp_app
 
 app = create_mcp_app(
     auth_token="replace_me",   # None 关闭客户端认证
-    api_key="your-api-key",
+    sandbox_api_key="your-api-key",
     template="base",
 )
 ```
@@ -124,7 +124,7 @@ app = create_mcp_app(
 
 | 入口 | 客户端认证 | 如何配置 |
 |------|-----------|----------|
-| `python -m agent_sandbox.agent.mcp`（STDIO） | 没有 Bearer。进程由本机 IDE 拉起，不对外监听 | 沙箱调用用 `E2B_API_KEY` |
+| `python -m agent_sandbox.agent.mcp`（STDIO） | 没有 Bearer。进程由本机 IDE 拉起，不对外监听 | 沙箱调用用 `ABX_SANDBOX_API_KEY` |
 | `uvicorn agent_sandbox.agent.mcp_http:asgi_app` / `create_mcp_app()` | Bearer。回环地址可以不配 token（启动时会警告） | `ABX_MCP_AUTH_TOKEN` 或 `auth_token=` |
 | 阿里云 FC 上的远程函数 | Bearer 必填。产物里的 `app.py` 在 token 为空时拒绝启动，不会变成“免认证” | token 作为函数环境变量 `ABX_MCP_AUTH_TOKEN` 写入。FC HTTP 触发器使用 `anonymous`，MCP 客户端不需要阿里云签名；真正的校验是应用层 Bearer。`GET /health` 只返回状态与协议，不校验 token，也不含任何密钥 |
 
@@ -166,7 +166,7 @@ token 比较使用常量时间算法。可用 `openssl rand -base64 32` 生成�
 | 文件 | 内容 |
 |------|------|
 | `requirements.txt` | `agent-sandbox-client[mcp]`、`uvicorn>=0.29` |
-| `app.py` | ASGI 入口，读取 FC 环境变量（`ABX_MCP_AUTH_TOKEN`、`E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN`、`ABX_DEFAULT_TEMPLATE`） |
+| `app.py` | ASGI 入口，读取 FC 环境变量（`ABX_MCP_AUTH_TOKEN`、`ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL`、`ABX_SANDBOX_DOMAIN`、`ABX_DEFAULT_TEMPLATE`） |
 | `config.yaml` | YAML 清单：函数名、地域、运行时 `python3.10`、handler `app.app`、内存/超时、环境变量、HTTP 触发器（POST/GET/DELETE）、会话亲和 |
 
 部署步骤：打包 → 创建函数 → 创建 HTTP 触发器 → 若支持则启用 `Mcp-Session-Id` 亲和。
@@ -246,8 +246,8 @@ curl -s -X DELETE http://localhost:9000/mcp \
 | 症状 | 可能原因 | 解决方法 |
 |------|----------|----------|
 | IDE 显示 server 失败 / 无工具 | IDE `PATH` 中的 `python` 不是安装了 `agent-sandbox` 的解释器 | 在 IDE 配置的 `command` 中使用解释器的绝对路径 |
-| 工具列表正常但每次调用报错 | API key 缺失或无效 | 在 server 的 `env` 块中设置 `E2B_API_KEY` |
-| IDE 重启后 `create_sandbox` 失败 | 后端 API URL/地域不匹配 | 在 server 的 `env` 块中设置 `E2B_API_URL` |
+| 工具列表正常但每次调用报错 | API key 缺失或无效 | 在 server 的 `env` 块中设置 `ABX_SANDBOX_API_KEY` |
+| IDE 重启后 `create_sandbox` 失败 | 后端 API URL/地域不匹配 | 在 server 的 `env` 块中设置 `ABX_SANDBOX_BASE_URL` |
 | HTTP 每个请求都 401 | `ABX_MCP_AUTH_TOKEN` 为空（fail-closed） | 设置非空 token。本机回环可以删掉该变量来关闭认证。FC 产物没有 token 时不会启动 |
 | HTTP 404 Unknown session | `Mcp-Session-Id` 已过期（空闲 TTL 3600 秒）或实例重启 | 重新发送 `initialize` 创建新会话 |
 | HTTP 503 会话上限 | 进程内并发会话超过 100 | 关闭空闲会话（`DELETE /mcp`）或经 `create_mcp_app()` 调高 `max_sessions` |

@@ -1,6 +1,6 @@
 # Comparison with Other Sandbox Tools
 
-For current SDK installation, use the [paired source installation guide](install-python.md).
+For current SDK installation, use the [installation guide](install-python.md).
 
 > **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository ([CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
@@ -21,10 +21,15 @@ This document provides an objective comparison of Agent Sandbox (abx) with other
 
 ## SDK Comparison
 
+The Agent Sandbox column uses the ProviderSandbox extension, imported as Sandbox
+in the examples. Root Sandbox / AsyncSandbox and code_interpreter expose the
+separate standard contract; interpreter availability depends on that selected entry
+and provider. See [E2B migration](migrate-from-e2b.md).
+
 | Dimension | Agent Sandbox | E2B | Modal |
 |-----------|-------------|-----|-------|
 | **Language** | Python | Python, JS/TS, Kotlin, Go | Python |
-| **Install** | [paired source installation guide](install-python.md) | `pip install e2b` | `pip install modal` |
+| **Install** | [installation guide](install-python.md) | `pip install e2b` | `pip install modal` |
 | **Sandbox creation** | `await Sandbox.create()`, or the Modal-style `@sandbox` decorator | `await Sandbox.create()` | `@app.function()` decorator |
 | **Sync support** | `Sandbox.create_sync()` | `Sandbox()` (sync class) | N/A (async-native) |
 | **Command execution** | `sandbox.commands.run()` | `sandbox.commands.run()` | Remote function call |
@@ -34,18 +39,18 @@ This document provides an objective comparison of Agent Sandbox (abx) with other
 | **Network access** | `sandbox.network.get_host()` | `sandbox.get_host()` | Built-in URL routing |
 | **Terminal (PTY)** | `sandbox.get_terminal()` | `sandbox.terminal.start()` | `modal shell` |
 | **E2B migration helper** | `from agent_sandbox import Sandbox` (partial) | Native | N/A |
-| **Auth methods** | Depends on the provider. The default uses `E2B_API_KEY`; Alibaba Cloud Express also uses the official AK/SK names | API Key | Token-based |
+| **Auth methods** | Depends on the provider. ProviderSandbox uses `ABX_SANDBOX_API_KEY`; Alibaba Cloud Express also uses the official AK/SK names | API Key | Token-based |
 
 ### Code Examples
 
 **Agent Sandbox:**
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
-async with await Sandbox.create(template="python-hello") as sb:
-    result = await sb.run_code("print('hello')")
-    print(result.text)
+async with await Sandbox.create(template="base") as sb:
+    result = await sb.commands.run("python3 -c 'print(\"hello\")'")
+    print(result.stdout)
 ```
 
 **E2B:**
@@ -87,7 +92,7 @@ Agent Sandbox supports both **imperative** (E2B style) and **declarative** (Moda
 **E2B Style (Imperative) — fine-grained control:**
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async with await Sandbox.create() as sb:
     await sb.commands.run("pip install pandas")
@@ -193,7 +198,7 @@ Provides 7 tools: `create_sandbox`, `run_code`, `run_command`, `read_file`, `wri
 ```python
 from agent_sandbox import sandbox
 
-@sandbox(template="python-hello", timeout=60)
+@sandbox(template="base", timeout=60)
 async def my_task():
     ...
 ```

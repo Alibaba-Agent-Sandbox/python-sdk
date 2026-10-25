@@ -1,6 +1,6 @@
 # Install the Python packages
 
-> Specification 5 template launch requires the matching `agent-sandbox-client==0.4.0a1` and `agent-sandbox-server==0.4.0a1` alpha packages used in this guide. The previous 0.3.x packages do not implement this entry point. To validate a source revision, install both distributions from the same checkout as described below.
+> Specification 5 template launch requires the matching `agent-sandbox-client==0.4.0a2` and `agent-sandbox-server==0.4.0a2` alpha packages used in this guide. The previous 0.3.x packages do not implement this entry point. To validate a source revision, install both distributions from the same checkout as described below.
 
 Use Python 3.10 or newer and a virtual environment:
 
@@ -9,7 +9,7 @@ python -m venv .venv
 # Linux or macOS:
 source .venv/bin/activate
 # Windows PowerShell: .venv\Scripts\Activate.ps1
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a1'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a2'
 python -m pip check
 ```
 
@@ -26,15 +26,15 @@ Install the [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) se
 ## Optional dependencies
 
 ```bash
-python -m pip install 'agent-sandbox-client[all]==0.4.0a1'
+python -m pip install 'agent-sandbox-client[all]==0.4.0a2'
 ```
 
-Replace `[all]` with `[mcp]`, `[session]` or `[fast]` for that subset. Workflow YAML and the declarative decorator belong to the base client; they need no extra. Browser automation requires Playwright installed inside the sandbox image.
+Replace `[all]` with `[mcp]`, `[session]` or `[fast]` for that subset. Template YAML and the declarative decorator belong to the base client; they need no extra. Browser automation requires Playwright installed inside the sandbox image.
 
 ## Server-only installation inside an image
 
 ```bash
-python -m pip install 'agent-sandbox-server==0.4.0a1'
+python -m pip install 'agent-sandbox-server==0.4.0a2'
 ```
 
 The server runs the application inside an image. Installing it does not create a sandbox. See the [server guide](server-sdk.md) to register commands and start the service.

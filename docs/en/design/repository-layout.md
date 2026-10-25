@@ -154,7 +154,7 @@ links with an absolute URL; byte-identical copies are forbidden (checked by the 
 | Page (en + zh) | Owner | Other repo |
 |----------------|-------|------------|
 | `reference/template-yaml-spec`, `reference/error-codes` (E1xxx-E6xxx taxonomy), `reference/server-http-api`, `design/server-api`, `design/template-system` (schema half) | **python-sdk** | CLI links (CLI keeps only CLI-specific codes such as `E2007` and the exit-code map) |
-| `guide/getting-started`, `guide/authentication`, `guide/environment-variables`, `guide/troubleshooting`, `reference/configuration`, `guide/mcp-integration` | **each repo owns its own, trimmed version** (SDK: Python API, `api_key=`, `Sandbox`; CLI: `abx config`, flags, exit codes). The shared credential precedence table is authored once in python-sdk `reference/configuration` and linked from the CLI page | no duplicated sections |
+| `guide/getting-started`, `guide/authentication`, `guide/environment-variables`, `guide/troubleshooting`, `reference/configuration`, `guide/mcp-integration` | **each repo owns its own, trimmed version** (SDK: Python API, `sandbox_api_key=`, `ProviderSandbox`; CLI: `abx config`, flags, exit codes). The shared credential precedence table is authored once in python-sdk `reference/configuration` and linked from the CLI page | no duplicated sections |
 | `guide/authoring-templates` | **cli** (workflow: `abx template scaffold/deploy`) with a link to python-sdk `guide/server-sdk` for the `commands.py` API | link |
 | `design/mcp-server` | **python-sdk** (`agent_sandbox.agent.mcp`) | CLI documents `abx mcp install` and links |
 | `DESIGN.md`, `README.md` indexes | each repo, listing only its own pages plus a "Related documentation" section | link |

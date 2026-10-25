@@ -1,62 +1,49 @@
 # Express 快速开始
 
-2026-10-15 在阿里云 Express（`alicloud-express`）上用 `agent-sandbox-client` 0.3.0 验证。模板是 generation 2，启动命令运行 `agent-sandbox-server`。
+安装[当前 Python 双包](install-python.md)和独立的
+[abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/zh/guide/binary-installation.md)。
+按 CLI 的[模板启动指南](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/zh/guide/using-templates.md)
+配置极速版提供方；源码构建还需文档要求的 Docker 和镜像仓库配置。
 
-## 部署
+## 启动应用
 
 ```bash
-abx template scaffold --template python --name hello-x
-cd hello-x
-abx template deploy . -y --generation 2 \
-  --start-cmd 'agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py' \
-  --ready-cmd 'agent-sandbox-server healthcheck --port 9000'
+export ABX_SERVER_TOKEN='replace_me'
+abx --provider alicloud-express template launch 'alibaba-agent-sandbox/awesome-templates//python-hello'
 ```
 
-python 脚手架注册了 `hello(name="World")`，返回 `Hello, {name}!`。从部署输出里复制模板 id。
+启动器准备提供方引用、创建沙箱、执行模板启动命令并检查声明的服务，不需要选择
+workflow。保留返回的沙箱 ID 和清理说明。
 
-`--start-cmd` 和 `--ready-cmd` 需要 `--generation 2`。如果已有同名的 generation-1 模板，先删掉（`abx template delete <id> -y`）。如果部署报 `base must be a mapping`，把 `template.yaml` 改成：
+## 从 Python 调用
 
-```yaml
-base:
-  image: "fc-e2b-registry.cn-hangzhou.cr.aliyuncs.com/runtime/base:v0.0.49"
-```
-
-把地域和当前运行时基础镜像标签换成你自己的。
-
-## 调用
+将返回的标识写入 `SANDBOX_ID`，并保持相同的 `ABX_SERVER_TOKEN`。
+`ABX_SANDBOX_API_KEY` 配置平台访问，与应用令牌分开。
 
 ```python
 import asyncio
+import os
 
-from agent_sandbox import ProviderSandbox as Sandbox
-
-TEMPLATE = "<template-id>"
+from agent_sandbox import ProviderSandbox
 
 
-async def main() -> None:
-    sb = await Sandbox.create(template=TEMPLATE, timeout=300)
+async def main():
+    sandbox = await ProviderSandbox.connect(
+        os.environ["SANDBOX_ID"], provider="alicloud-express"
+    )
     try:
-        echoed = await sb.commands.run("echo hi")
-        assert echoed.stdout == "hi\n" and echoed.exit_code == 0
-        assert await sb.run("hello", name="Bob") == "Hello, Bob!"
-        url = sb.network.get_url(9000)
-        headers = sb.network.get_access_headers()
-        # 用 headers 对 {url}/health 发 GET。/health 返回 200。
+        async with await sandbox.application_client(
+            9000, token=os.environ["ABX_SERVER_TOKEN"]
+        ) as client:
+            result = await client.commands.run("hello", name="Python")
+            print(result)
     finally:
-        await sb.kill()
+        await sandbox.close()
 
 
 asyncio.run(main())
 ```
 
-`sandbox.run` 不发送沙箱访问令牌。`get_access_headers()` 是给平台网关的 `X-Access-Token`。
-
-Generation 1 仍然支持 `commands.run` 和 `files`（同一天在平台模板 `base`、envd 0.5.2 上验证）。镜像入口点是固定的，所以 generation-1 模板不能自己启动 `agent-sandbox-server`。命名命令需要上面的 generation-2 启动命令和就绪命令。
-
-## 清理
-
-`sb.kill()` 会删掉沙箱。用完后删除模板：
-
-```bash
-abx template delete <template-id> -y
-```
+这段代码借用 CLI 创建的沙箱并关闭连接。使用完毕后，按启动器的清理说明删除沙箱
+及自己创建的构建资源。等价的 Python 预备引用启动方式及生命周期归属见
+[模板启动指南](template-workflows.md)。

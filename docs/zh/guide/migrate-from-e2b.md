@@ -4,7 +4,7 @@
 
 ## 安装与导入
 
-新版本发布前，在当前检出目录执行 `pip install ./server-sdk ./client-sdk`。保留原有阿里云 `E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN` 配置，也可使用 `abx config` 与项目/用户配置文件。SDK 显式参数优先。不保留旧 `ABX_SANDBOX_*` 别名。
+使用已发布客户端：`python -m pip install --index-url https://pypi.org/simple agent-sandbox-client==0.4.0a2`。保留原有阿里云 `E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN` 配置，也可使用 `abx config` 与项目/用户配置文件。SDK 显式参数优先。标准入口读取 `E2B_*` 配置；原生 `ProviderSandbox` 保持规范的 `ABX_SANDBOX_*` 配置。
 
 | 原导入 | 新导入 |
 |---|---|

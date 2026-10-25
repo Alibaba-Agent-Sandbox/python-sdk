@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Align maintained bilingual SDK guides with public 0.4.0a2, canonical decorator/MCP arguments, current ProviderSandbox imports and unified template launch. Remove stale source-install recipes and retired Python-engine instructions. / 将维护中的双语 SDK 指南统一为公开 0.4.0a2、规范装饰器/MCP 参数、ProviderSandbox 公开导入及统一模板启动；删除旧源码安装方案和已退役 Python 引擎说明。
+
+### Fixed
+
 - Enforce the documented total command timeout even while stdout/stderr continues;
   close the stream and attempt to stop the owned PID on expiry (#113).
 

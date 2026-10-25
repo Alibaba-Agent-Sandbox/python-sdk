@@ -1,6 +1,6 @@
 # 安装 Python 配套包
 
-> 规范 5 的模板启动需要本指南使用的配套 alpha 包：`agent-sandbox-client==0.4.0a1` 和 `agent-sandbox-server==0.4.0a1`。旧 0.3.x 包不实现此入口。验证源码修订时，请按下文从同一份检出同时安装两个发行包。
+> 规范 5 的模板启动需要本指南使用的配套 alpha 包：`agent-sandbox-client==0.4.0a2` 和 `agent-sandbox-server==0.4.0a2`。旧 0.3.x 包不实现此入口。验证源码修订时，请按下文从同一份检出同时安装两个发行包。
 
 使用 Python 3.10 或更高版本及虚拟环境：
 
@@ -9,7 +9,7 @@ python -m venv .venv
 # Linux 或 macOS：
 source .venv/bin/activate
 # Windows PowerShell：.venv\Scripts\Activate.ps1
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a1'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a2'
 python -m pip check
 ```
 
@@ -26,15 +26,15 @@ python -c "from importlib.metadata import version; print(version('agent-sandbox-
 ## 可选依赖
 
 ```bash
-python -m pip install 'agent-sandbox-client[all]==0.4.0a1'
+python -m pip install 'agent-sandbox-client[all]==0.4.0a2'
 ```
 
-可把 `[all]` 换成 `[mcp]`、`[session]` 或 `[fast]`。工作流 YAML 和声明式装饰器属于基础客户端，无需 extra。浏览器自动化需要在沙箱镜像内安装 Playwright。
+可把 `[all]` 换成 `[mcp]`、`[session]` 或 `[fast]`。模板 YAML 和声明式装饰器属于基础客户端，无需 extra。浏览器自动化需要在沙箱镜像内安装 Playwright。
 
 ## 镜像内只安装服务端
 
 ```bash
-python -m pip install 'agent-sandbox-server==0.4.0a1'
+python -m pip install 'agent-sandbox-server==0.4.0a2'
 ```
 
 服务端负责在镜像内运行应用，安装它不会创建沙箱。注册命令与启动服务见[服务端指南](server-sdk.md)。

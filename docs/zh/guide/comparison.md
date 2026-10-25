@@ -1,6 +1,6 @@
 # 与其他沙箱工具的对比
 
-当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+当前 SDK 安装使用[安装指南](install-python.md)。
 
 > **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（[CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
@@ -21,10 +21,14 @@
 
 ## SDK 对比
 
+下表 Agent Sandbox 列使用 ProviderSandbox 扩展，示例将其导入为 Sandbox。
+根入口 Sandbox / AsyncSandbox 与 code_interpreter 使用独立标准契约；解释器
+可用性取决于所选入口和提供方，见 [E2B 迁移](migrate-from-e2b.md)。
+
 | 维度 | Agent Sandbox | E2B | Modal |
 |------|-------------|-----|-------|
 | **语言** | Python | Python, JS/TS, Kotlin, Go | Python |
-| **安装** | [配套源码安装指南](install-python.md) | `pip install e2b` | `pip install modal` |
+| **安装** | [安装指南](install-python.md) | `pip install e2b` | `pip install modal` |
 | **沙箱创建** | `await Sandbox.create()`，或 Modal 风格的 `@sandbox` | `await Sandbox.create()` | `@app.function()` 装饰器 |
 | **同步支持** | `Sandbox.create_sync()` | `Sandbox()`（同步类） | N/A（原生异步） |
 | **命令执行** | `sandbox.commands.run()` | `sandbox.commands.run()` | 远程函数调用 |
@@ -34,18 +38,18 @@
 | **网络访问** | `sandbox.network.get_host()` | `sandbox.get_host()` | 内置 URL 路由 |
 | **终端 (PTY)** | `sandbox.get_terminal()` | `sandbox.terminal.start()` | `modal shell` |
 | **E2B 迁移辅助** | `from agent_sandbox import Sandbox`（部分对应） | 原生 | N/A |
-| **认证方式** | 随提供方变化。默认提供方用 `E2B_API_KEY`，阿里云极速版另用官方 AK/SK | API Key | Token |
+| **认证方式** | 随提供方变化。ProviderSandbox 用 `ABX_SANDBOX_API_KEY`，阿里云极速版另用官方 AK/SK | API Key | Token |
 
 ### 代码示例
 
 **Agent Sandbox：**
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
-async with await Sandbox.create(template="python-hello") as sb:
-    result = await sb.run_code("print('hello')")
-    print(result.text)
+async with await Sandbox.create(template="base") as sb:
+    result = await sb.commands.run("python3 -c 'print(\"hello\")'")
+    print(result.stdout)
 ```
 
 **E2B：**
@@ -87,7 +91,7 @@ Agent Sandbox 同时支持 **命令式**（E2B 风格）和 **声明式**（Moda
 **E2B 风格（命令式）— 细粒度控制：**
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 async with await Sandbox.create() as sb:
     await sb.commands.run("pip install pandas")
@@ -193,7 +197,7 @@ abx mcp install --target cursor
 ```python
 from agent_sandbox import sandbox
 
-@sandbox(template="python-hello", timeout=60)
+@sandbox(template="base", timeout=60)
 async def my_task():
     ...
 ```
