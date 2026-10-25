@@ -1,7 +1,7 @@
 # Public a3 release and maintained guidance verification
 
 Date: 2026-10-25
-Result: PARTIAL (public release/cloud PASS; follow-up source delivery pending)
+Result: PASS (public release/cloud and source verification; merge pending)
 
 Scope: current English/Chinese installation pages, two coding-agent skills, two
 SDK fixture Dockerfiles and their existing version assertion, current engineering
@@ -44,7 +44,11 @@ only after this actual public-package verification; Issue 111 remains separate.
   maintained install. The explicitly dated repository-layout review retains its
   historical 0.3.0 measurements; it is not a current installation recipe.
 - Decorator example executable AST: unchanged; only its install docstring changed.
-- Existing Docker fixture and full latest-head owner CI: pending; no local Docker.
+- Exact source head `1259967dcfe8069111096f0d8ac9899ac66d2b12`: all 13
+  owner checks completed SUCCESS, including both actual Docker fixture jobs.
+  [CI receipt](2026-10-25-public-a3-docs-ci.json) preserves check identities and links.
+  No local Docker was used. This record-only follow-up requires its own head CI
+  and normal review before merge.
 
 This is not a new 50-template matrix, real-model test or production certification.
 The earlier a2/raw-HTTP failures and candidate T4 keep their exact recorded scope.
