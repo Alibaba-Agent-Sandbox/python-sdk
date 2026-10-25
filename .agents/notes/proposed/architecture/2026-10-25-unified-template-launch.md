@@ -17,7 +17,7 @@ remain immutable historical inputs and do not certify specification 5 launches.
 ## API Design
 
 `launch_template(manifest, provider=..., reference=...)` starts a previously prepared
-reference, checks all SandboxServer services and returns their clients. Python does
+reference, checks SandboxServer protocol v2 services and returns all declared endpoints. Python does
 not acquire source building. The static planner returns `supported`, required/missing
 operations, all services and an optional unsupported-combination reason.
 
@@ -36,7 +36,10 @@ operations, all services and an optional unsupported-combination reason.
 ## Test Strategy
 
 Shared cross-language vectors, SDK model and launcher regressions, full package CI,
-and real provider startup/cleanup. Current runtime verification is pending.
+and real provider startup/cleanup. Five new startup scenarios passed; all 11 checks
+for implementation head `66c86f2` passed. The separate CLI acceptance rerun has an
+unconfirmed file-transfer failure tracked in
+https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/109.
 
 ## Acceptance criteria
 
