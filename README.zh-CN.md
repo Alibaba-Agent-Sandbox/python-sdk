@@ -12,7 +12,7 @@
 
 > 为 AI Agent 打造的云沙箱 —— 秒级创建、执行、管理隔离环境。
 
-**Agent Sandbox** 是沙箱的 Python SDK。默认提供方是阿里云极速版（`alicloud-express`，函数计算）。OpenSandbox、容器版、CubeSandbox 和 E2B 都是 `awesome-providers` 里的目录 `node` 插件（`provider.mjs`）。用 `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes`（或 `python -m agent_sandbox.providers install registry:<id> --yes`）安装。装好之后，`abx --provider <id>` 和 `ProviderSandbox.create(provider="<id>")` 都能用。Python SDK 通过本机引擎（`abx provider engine serve`；`abx` 在 `PATH` 里或由 `ABX_BIN` 指定）使用 `node` 提供方。CLI 加载极速版，以及已安装的 `node`、`exec` 和 `rest` 插件。标准接口包含同步／异步运行时和 Template 客户端；项目 Provider／Server 模板流程通过 CLI 的 `abx template build|deploy` 完成。SDK 的方法名参考了 E2B，
+**Agent Sandbox** 是沙箱的 Python SDK。默认提供方是阿里云极速版（`alicloud-express`，函数计算）。OpenSandbox、容器版、CubeSandbox 和 E2B 都是 `awesome-providers` 里的目录 `node` 插件（`provider.mjs`）。用 `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes`（或 `python -m agent_sandbox.providers install registry:<id> --yes`）安装。装好之后，`abx --provider <id>` 和 `ProviderSandbox.create(provider="<id>")` 都能用。Python SDK 通过本机引擎（`abx provider engine serve`；`abx` 在 `PATH` 里或由 `ABX_BIN` 指定）使用 `node` 提供方。CLI 加载极速版，以及已安装的 `node`、`exec` 和 `rest` 插件。标准接口包含同步／异步运行时和 Template 客户端；项目 Provider／Server 模板通过 CLI 的 `abx template launch <reference>` 统一启动，高级镜像准备使用 `abx template build|deploy`。SDK 的方法名参考了 E2B，
 方便 E2B 代码迁移，标准接口遵循阿里云支持版本的行为契约（见[从 E2B 迁移](docs/zh/guide/migrate-from-e2b.md)）。
 
 本仓库（`python-sdk`）包含 **Python SDK**，以两个版本同步的分发包提供。命令行工具 `abx` 是独立的
@@ -56,7 +56,7 @@ Node.js 项目，位于 [`agent-sandbox`](https://github.com/alibaba-agent-sandb
 - **镜像内 HTTP 服务** —— `commands.py` 导入 `agent_sandbox.server` 并调用 `start(9000)`。
 - **注册命令** —— `@command` 函数变成路由，Client SDK 用 `sandbox.run` 调用。
 - **Agents API** —— 沙箱里的 Codex 与 Qwen Code HTTP 会话。CLI 按需安装。说明见 [Agents API](docs/zh/guide/agents-api.md)。
-- **模板** —— 镜像和 `template.yaml` 用 `abx template build|deploy` 构建和部署。
+- **模板** —— 使用 `abx template launch <reference>` 启动完整模板；高级镜像准备使用 `template build` / `template deploy`。
 
 ## 安装
 

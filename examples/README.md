@@ -79,7 +79,7 @@ discover and install them with `abx template search` / `abx template launch <nam
 |------|-------------|----------|
 | [`01_hello.py`](quickstart/01_hello.py) | **Basic sandbox ops** — create, execute commands, lifecycle | SDK onboarding |
 | [`02_file_ops.py`](quickstart/02_file_ops.py) | **File operations** — read/write, directories, binary files | Data exchange |
-| [`03_web_service.py`](quickstart/03_web_service.py) | **Web service** — start Express server, get public URL | Web dev, API testing |
+| [`03_web_service.py`](quickstart/03_web_service.py) | **Web service** — start a Node.js built-in HTTP server, call its public URL | Web dev, API testing |
 | [`04_data_analysis.py`](quickstart/04_data_analysis.py) | **Data analysis** — upload CSV, pandas analysis via Python commands | Data science |
 | [`05_decorator_usage.py`](quickstart/05_decorator_usage.py) | **@sandbox decorator** — declarative remote execution | Simplified calls |
 

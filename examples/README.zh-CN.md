@@ -73,7 +73,7 @@ examples/
 |------|------|----------|
 | [`01_hello.py`](quickstart/01_hello.py) | **基础沙箱操作** —— 创建、执行命令、生命周期管理 | SDK 入门 |
 | [`02_file_ops.py`](quickstart/02_file_ops.py) | **文件操作** —— 读写文件、目录管理、二进制文件 | 数据交换 |
-| [`03_web_service.py`](quickstart/03_web_service.py) | **Web 服务** —— 启动 Express 服务、获取公网 URL | Web 开发、API 测试 |
+| [`03_web_service.py`](quickstart/03_web_service.py) | **Web 服务** —— 启动 Node.js 内置 HTTP 服务并调用公网 URL | Web 开发、API 测试 |
 | [`04_data_analysis.py`](quickstart/04_data_analysis.py) | **数据分析** —— 上传 CSV、通过 Python 命令进行 pandas 分析 | 数据科学 |
 | [`05_decorator_usage.py`](quickstart/05_decorator_usage.py) | **@sandbox 装饰器** —— 声明式远程执行 | 简化调用 |
 

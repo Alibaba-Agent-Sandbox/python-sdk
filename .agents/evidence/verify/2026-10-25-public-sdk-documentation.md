@@ -53,6 +53,15 @@ the owned sandbox was independently absent with typed 404. This closes the runti
 deadline acceptance scope of [Issue 113](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/113),
 separately from the unfinished browser scope in Issue 111.
 
+## Unverified comparison claims removed
+
+Replace the comparison page's unsupported startup-time, GPU, lifetime, competitor
+infrastructure/pricing and stale tool-count assertions with actual project entry
+contracts and prerequisites. Keep standard interpreter, base command/file and
+launched application examples distinct. No competitor capability claim or new
+benchmark is introduced. Main README and contributor entry points recommend
+unified launch; image build/deploy remain advanced preparation steps.
+
 ## Example README correction
 
 The EN/ZH core API overview previously put interpreter and hello named-command
