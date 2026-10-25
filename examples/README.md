@@ -14,10 +14,10 @@ Examples are split by which package they exercise.
 
 ```bash
 # Full install (recommended — includes the declarative decorator, MCP server, ...)
-python -m pip install "agent-sandbox-client[all]==0.4.0a2"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client[all]==0.4.0a2"
 
 # Or install selectively
-python -m pip install "agent-sandbox-client==0.4.0a2"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a2"
 
 # From source (run from the python-sdk repository root)
 pip install -e ./server-sdk -e ./client-sdk
@@ -79,8 +79,8 @@ discover and install them with `abx template search` / `abx template launch <nam
 |------|-------------|----------|
 | [`01_hello.py`](quickstart/01_hello.py) | **Basic sandbox ops** — create, execute commands, lifecycle | SDK onboarding |
 | [`02_file_ops.py`](quickstart/02_file_ops.py) | **File operations** — read/write, directories, binary files | Data exchange |
-| [`03_web_service.py`](quickstart/03_web_service.py) | **Web service** — start Express server, get public URL | Web dev, API testing |
-| [`04_data_analysis.py`](quickstart/04_data_analysis.py) | **Data analysis** — upload CSV, pandas analysis, run_code | Data science |
+| [`03_web_service.py`](quickstart/03_web_service.py) | **Web service** — start a Node.js built-in HTTP server, call its public URL | Web dev, API testing |
+| [`04_data_analysis.py`](quickstart/04_data_analysis.py) | **Data analysis** — upload CSV, pandas analysis via Python commands | Data science |
 | [`05_decorator_usage.py`](quickstart/05_decorator_usage.py) | **@sandbox decorator** — declarative remote execution | Simplified calls |
 
 ### agents/ — Client SDK
@@ -122,35 +122,69 @@ python examples/compat-demos/e2b_data_analysis.py
 
 ## Core API Reference
 
-### Execution Methods
+### Shell execution on base
 
 ```python
-from agent_sandbox import ProviderSandbox as Sandbox
+from agent_sandbox import ProviderSandbox
 
-async with await Sandbox.create(template="base", sandbox_api_key="...") as sandbox:
-
-    # 1. Bare shell — sandbox.commands.run(cmd)
+async with await ProviderSandbox.create(template="base") as sandbox:
     proc = await sandbox.commands.run("echo hello")
     print(proc.stdout, proc.exit_code)
-
-    # 2. Code interpreter — sandbox.run_code(code)
-    code_result = await sandbox.run_code("print(1 + 1)")
-    print(code_result.text)   # "2"
-
-    # 3. Named command — sandbox.run(name, **kwargs)
-    #    POST /commands/hello on the template's SandboxServer
-    value = await sandbox.run("hello", name="Alice")
-    print(value)              # command return value
 ```
 
-> **Note:** `sandbox.run(name, **kwargs)` calls a command registered in the template's server; it never runs a shell string. Use `sandbox.commands.run(cmd)` for that.
+### Structured interpreter results
+
+Use the standard interpreter entry and an interpreter-enabled template.
+The Express ProviderSandbox adapter does not implement interpreter operations.
+
+```python
+from agent_sandbox.code_interpreter import Sandbox
+
+with Sandbox.create(template="code-interpreter-v1") as sandbox:
+    result = sandbox.run_code("print(1 + 1)")
+    assert result.error is None
+    print(result.text)
+```
+
+See [the import migration example](compat-demos/e2b_import_migration.py) and
+[decorator example](quickstart/05_decorator_usage.py) for complete scripts.
+
+### Registered application commands
+
+First configure the selected provider and launch python-hello using the
+[template guide](../docs/en/guide/template-workflows.md). Source preparation
+requires the CLI's documented Docker/registry configuration.
+
+```bash
+export ABX_SERVER_TOKEN='replace_me'
+abx --provider alicloud-express template launch 'alibaba-agent-sandbox/awesome-templates//python-hello'
+```
+
+Use the returned ID as `SANDBOX_ID` and the same application token:
+
+```python
+import os
+from agent_sandbox import ProviderSandbox
+
+sandbox = await ProviderSandbox.connect(os.environ["SANDBOX_ID"])
+try:
+    async with await sandbox.application_client(
+        9000, token=os.environ["ABX_SERVER_TOKEN"]
+    ) as client:
+        print(await client.commands.run("hello", name="Alice"))
+finally:
+    await sandbox.close()
+```
+
+This releases a borrowed connection; follow the launch cleanup instructions
+to delete owned resources after use. A plain base sandbox has no hello server.
 
 ### File Operations
 
 ```python
     # Write and read files
-    await sandbox.files.write("/app/data.txt", "content")
-    content = await sandbox.files.read("/app/data.txt")
+    await sandbox.files.write("/home/user/data.txt", "content")
+    content = await sandbox.files.read("/home/user/data.txt")
 ```
 
 ### Network
@@ -165,7 +199,7 @@ async with await Sandbox.create(template="base", sandbox_api_key="...") as sandb
 ```python
 from agent_sandbox.declarative import sandbox
 
-@sandbox(template="code-interpreter", packages=["numpy"])
+@sandbox(template="code-interpreter-v1", packages=["numpy"])
 def compute(n: int) -> float:
     import numpy as np
     return float(np.random.random(n).mean())
@@ -179,4 +213,4 @@ Run `python examples/run_examples_e2e.py` for local real-server/file/process exa
 
 `agents/codex_agent.py` requires a real `OPENAI_API_KEY`; optional `OPENAI_BASE_URL` and `OPENAI_MODEL` select a compatible model. It does not substitute simulated responses. `agents/browser_automation.py` installs real Chromium and defaults to an owned HTTP page; set `BROWSER_URL` to exercise your external page.
 
-`compat-demos/e2b_import_migration.py` uses the standard synchronous interpreter client and the E2B configuration names described in its docstring. The other cloud examples use `ProviderSandbox` or `@sandbox` and `ABX_SANDBOX_API_KEY`. See [cloud examples](../docs/en/guide/cloud-examples.md) for the complete commands.
+`compat-demos/e2b_import_migration.py` uses the standard synchronous interpreter client. All project examples use the shared ABX sandbox configuration; the other cloud examples use `ProviderSandbox` or `@sandbox`. See [cloud examples](../docs/en/guide/cloud-examples.md) for the complete commands.

@@ -33,9 +33,9 @@ print(result)
     serializer="json",                # Serialization method (default "json")
     sandbox_id=None,                  # Reuse an existing sandbox ID (skips creation when not None)
     keep_alive=False,                 # When True, the sandbox is not destroyed after execution
-    api_key=None,                     # API Key override
-    api_url=None,                     # Platform API URL override
-    domain=None,                      # Domain override
+    sandbox_api_key=None,             # API Key override
+    sandbox_base_url=None,            # Platform API URL override
+    sandbox_domain=None,              # Domain override
     cpu=None,                         # CPU cores
     memory=None,                      # Memory in MB
 )
@@ -54,9 +54,9 @@ def my_func():
 | `serializer` | `str` | `"json"` | Serialization mode (only `json` is supported) |
 | `sandbox_id` | `str` | `None` | Reuse an existing sandbox ID |
 | `keep_alive` | `bool` | `False` | Do not destroy the sandbox after execution |
-| `api_key` | `str` | `None` | API Key override |
-| `api_url` | `str` | `None` | Platform URL override |
-| `domain` | `str` | `None` | Platform domain |
+| `sandbox_api_key` | `str` | `None` | API Key override |
+| `sandbox_base_url` | `str` | `None` | Platform URL override |
+| `sandbox_domain` | `str` | `None` | Platform domain |
 | `cpu` | `int` | `None` | CPU cores |
 | `memory` | `int` | `None` | Memory in MB |
 

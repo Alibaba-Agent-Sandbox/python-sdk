@@ -5,7 +5,7 @@
 
 ## Project Overview
 
-**Agent Sandbox** (distribution name `agent-sandbox-client`, import `agent_sandbox`) provides standard synchronous/asynchronous Express clients and the explicit asynchronous `ProviderSandbox` for provider/server extensions. Standard entries follow the pinned Alibaba-supported E2B contract; conditional capabilities still depend on the actual account/function. Templates are built and deployed with `abx template build|deploy`; read `docs/en/guide/migrate-from-e2b.md` before changing either surface.
+**Agent Sandbox** (distribution name `agent-sandbox-client`, import `agent_sandbox`) provides standard synchronous/asynchronous Express clients and the explicit asynchronous `ProviderSandbox` for provider/server extensions. Standard entries follow the pinned Alibaba-supported E2B contract; conditional capabilities still depend on the actual account/function. Launch templates with `abx template launch <reference>`; advanced image preparation uses `abx template build|deploy`. Read `docs/en/guide/migrate-from-e2b.md` before changing either surface.
 
 This repository (`python-sdk`) holds the **Python SDK only**, split into two distributions that share the `agent_sandbox` namespace and are **versioned in lockstep** (same version number):
 

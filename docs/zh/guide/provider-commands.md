@@ -37,15 +37,11 @@ Volume 目前要求提交阿里云工单申请邀测，准备存储前应确认�
 其他提供方的非空挂载参数会在加载插件实现前返回 E8004。省略参数或传空字典不改变原请求。
 
 这是创建参数，与资源管理命令独立，不增加可移植的 `storage.mount` 协议或运行时追加挂载 API。
-Python 内置生命周期仍通过本地 gRPC 引擎：新增的 `CreateRequest.volume_mounts` 传递字典，
-由现有 Python 协议序列化为 `POST /sandboxes` 的
+客户端先检查所选提供方的 `create_options`，再创建沙箱。内置提供方通过直接 HTTP 传输，
+在 `POST /sandboxes` 中发送
 `"volumeMounts": [{"name": "existing-volume-name", "path": "/mnt/data"}]`。
-非空参数会先检查 `Health.supported_create_options` 是否包含 `volume_mounts`；旧的运行中引擎
-会在 `Create` 前返回 E8004 和升级、重启提示，不会自动替换引擎，避免旧 protobuf 实现静默
-忽略挂载参数。未请求挂载的调用保留原行为。
-提供方管理命令继续使用共享 Node HTTP 引擎。本地 gRPC/HTTP 回归覆盖参数链路，且已在
-杭州地域的 base 模板完成真实 OSS 挂载、读写和清理验收。显式启用的 Volume E2E 套件还会检查
-销毁并重建沙箱后数据是否保留。
+提供方资源管理命令使用独立的共享 Node HTTP 引擎。显式启用的 Volume E2E 套件检查
+挂载、读写、清理及重建后的数据保留；实际可用性仍取决于上文的账号及镜像前提。
 
 ## Python API
 

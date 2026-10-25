@@ -1,228 +1,104 @@
 # Getting Started
 
-For current SDK installation, use the [paired source installation guide](install-python.md).
+Install the Client SDK on your machine to create and use sandboxes. The
+[Server SDK](server-sdk.md) runs applications inside sandbox images.
+This tutorial uses the provider extension `ProviderSandbox`. Standard synchronous
+`Sandbox` and asynchronous `AsyncSandbox` entries are documented in
+[Migrate from E2B](migrate-from-e2b.md).
 
-This is the **Client SDK**: install it on your machine, create a sandbox, and use it. The service that starts inside the image is the [Server SDK](server-sdk.md).
+## 1. Install and configure
 
-This tutorial covers the lifecycle from install through teardown.
-
----
-
-## Prerequisites
-
-- Python 3.10 or later
-- For the default provider (`alicloud-express`): an API key from the [Agent Sandbox product docs](https://help.aliyun.com/zh/functioncompute/product-overview-of-fc-agent-sandbox). The variable is `E2B_API_KEY`. The standard SDK reads `E2B_API_KEY`, `E2B_API_URL` and `E2B_DOMAIN`.
-- Network access to the Alibaba Cloud Hangzhou region (default `cn-hangzhou`)
-
-## 1. Installation
+Use Python 3.10 or later. Create and activate a virtual environment following the
+[installation guide](install-python.md), then install:
 
 ```bash
-# Install the SDK
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
-
-# Install with all extras (recommended)
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client[all] @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a2'
+python -m pip check
+export ABX_SANDBOX_API_KEY='your-api-key'
 ```
 
-Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
+Obtain the Express sandbox API key using the
+[Agent Sandbox product documentation](https://help.aliyun.com/zh/functioncompute/product-overview-of-fc-agent-sandbox).
+The default provider is `alicloud-express`, region `cn-hangzhou`. All project entries, including standard `Sandbox` / `AsyncSandbox` and
+`ProviderSandbox`, support `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and
+`ABX_SANDBOX_DOMAIN`. Use these names for project configuration. See
+[authentication](authentication.md) for provider-extension `sandbox_api_key=` overrides;
+standard entries retain their documented public `api_key=` parameter.
 
-The `abx` CLI is not part of the Python package (there is no `[cli]` extra); it is a separate Node.js project, see [Related: the abx CLI](#related-the-abx-cli). The container-side runtime
-(`agent_sandbox.server`) is the separate `agent-sandbox-server` package ([paired source installation guide](install-python.md)); `agent-sandbox-client`
-depends on it, so installing the client provides it too.
+Installing the client installs the matching server distribution. This does not
+update a server already inside an existing image. The distribution named
+`agent-sandbox` on PyPI is an unrelated project. Optional dependencies and source
+development are covered in the [installation guide](install-python.md).
 
-### Working from a source checkout
+## 2. Create, execute and transfer files
 
-From the repository root, with a virtual environment activated, install both
-local distributions and the development tools:
-
-```bash
-uv pip install -e ./server-sdk -e "./client-sdk[dev]"
-```
-
-The root uv workspace resolves the client's runtime dependency to `server-sdk/`.
-No `--no-sources` workaround is needed. Regular `pip install` accepts the same
-editable arguments; published packages retain the matching server version pin.
-
-## 2. Configure the API Key
-
-There are three ways to configure credentials. When a call actually needs the key, this is the order (highest first). The full table is in [Configuration — Credential resolution](../reference/configuration.md#credential-resolution).
-
-### Option 1: Code parameter (this call only)
-
-```python
-from agent_sandbox.api.sandbox import Sandbox
-
-sandbox = await Sandbox.create(sandbox_api_key="your-api-key-here")
-```
-
-### Option 2: Environment variable (recommended for CI/CD)
-
-```bash
-export E2B_API_KEY="your-api-key-here"
-```
-
-### Option 3: Persisted file (`~/.abx/.env`)
-
-Used when neither the environment nor the project `.env` sets the key. The file is written by the `abx` CLI (`abx config set sandbox_api_key your-api-key`, permissions 600; see [Related: the abx CLI](#related-the-abx-cli)) or edited by hand: `E2B_API_KEY=your-api-key`.
-
-## 3. Create Your First Sandbox
-
-### Using the SDK (async)
+Save this as `quickstart.py`, then run `python quickstart.py`:
 
 ```python
 import asyncio
-from agent_sandbox.api.sandbox import Sandbox
+
+from agent_sandbox import ProviderSandbox
+
 
 async def main():
-    # Create a sandbox (default template: base, timeout: 300 seconds)
-    sandbox = await Sandbox.create(template="base", timeout=300)
-    print(f"Sandbox created: {sandbox.id}")
-    print(f"Status: {sandbox.status.value}")
+    async with await ProviderSandbox.create(template="base", timeout=300) as sandbox:
+        print(f"Sandbox ID: {sandbox.id}")
+        result = await sandbox.commands.run("printf 'Hello, Agent Sandbox!'")
+        assert result.exit_code == 0
+        print(result.stdout)
+
+        path = "/home/user/note.txt"
+        await sandbox.files.write(path, "Hello from Python!")
+        assert await sandbox.files.read(path) == "Hello from Python!"
+        await sandbox.files.download(path, "note.txt")
+        await sandbox.files.upload("note.txt", "/home/user/copied-note.txt")
+        assert await sandbox.files.read("/home/user/copied-note.txt") == "Hello from Python!"
+
+    # The context manager destroys this owned sandbox, including on an exception.
+
 
 asyncio.run(main())
 ```
 
-`base` is the default template (`Sandbox.create()` with no template argument). The repository README uses `python-base` because that image registers the `hello` command shown there.
+`base` provides command and file operations. It does not imply a code interpreter
+or application server. Native process calls accept `user="root"` or another
+existing OS account; this selects the account for that request only.
 
-### Using the SDK (sync)
+For an existing sandbox, `await ProviderSandbox.connect(sandbox_id)` attaches a
+client. Call `await sandbox.close()` when finished; delete it with
+`await sandbox.kill()` only when you own its lifecycle.
 
-```python
-from agent_sandbox.api.sandbox import Sandbox
+## 3. Run a Python script
 
-sandbox = Sandbox.create_sync(template="base")
-print(f"Sandbox ID: {sandbox.id}")
-```
-
-## 4. Execute Code
-
-### SDK
+Use command execution when you want to run a Python program on `base`:
 
 ```python
-result = await sandbox.run_code("print('Hello, Agent Sandbox!')")
-print(result.text)     # "Hello, Agent Sandbox!"
-print(result.stdout)   # "Hello, Agent Sandbox!\n"
-print(result.exit_code)  # 0
+result = await sandbox.commands.run("python3 -c 'print(1 + 1)'")
+assert result.exit_code == 0 and result.stdout.strip() == "2"
 ```
 
-## 5. Run Shell Commands
+Run this inside the context from step 2. This exercises a shell process, not an
+interpreter API. For structured interpreter results on Express, use the standard
+`agent_sandbox.code_interpreter` entry described in [E2B migration](migrate-from-e2b.md);
+the Express `ProviderSandbox` adapter does not implement interpreter operations.
 
-### SDK
+## 4. Run a template application
 
-```python
-result = await sandbox.commands.run("ls -la /home/user")
-print(result.stdout)
-print(f"Exit code: {result.exit_code}")
-```
+Use the separately installed [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox)
+to launch a catalog template with its declared startup and readiness checks.
+Follow [template launch](template-workflows.md) to call its application API and clean
+up the owned resources. Creating a plain sandbox with `base` does not start a
+template's application.
 
-With `ProviderSandbox` on Express, `commands.run`, `start`, and `stream` accept
-`user="root"` or another existing OS account. Starting with 0.3.1a2, the native
-envd adapter selects that account for the individual request:
+## Next steps
 
-```python
-result = await sandbox.commands.run("id -u", user="root")
-assert result.exit_code == 0 and result.stdout.strip() == "0"
-```
-
-Omitting `user` (or passing `""`) preserves the provider's default account; an
-explicit user does not change later or concurrent requests. A missing account
-raises an envd error rather than silently using the default. Colons, NUL and line
-breaks are rejected as invalid account names. This selects an OS process identity,
-not an application-server token or a new provider permission. Earlier native
-clients, including 0.3.1a1 and the historical source recipe, silently ignored this
-argument; the standard `AsyncSandbox` entry already supports it.
-
-## 6. File Operations
-
-### Upload files to the sandbox
-
-```python
-# Write a text file
-await sandbox.files.write("/home/user/hello.py", "print('hello world')")
-
-# Upload a local file
-await sandbox.files.upload("./local_script.py", "/home/user/script.py")
-```
-
-### Download files from the sandbox
-
-```python
-# Read text
-content = await sandbox.files.read("/home/user/hello.py")
-print(content)
-
-# Download to local
-await sandbox.files.download("/home/user/output.csv", "./output.csv")
-```
-
-## 7. List Directory Contents
-
-```python
-files = await sandbox.files.list("/home/user")
-for f in files:
-    print(f"{f.name} ({f.type.value}, {f.size} bytes)")
-```
-
-## 8. Destroy a Sandbox
-
-### SDK
-
-```python
-await sandbox.kill()
-```
-
-### Using a Context Manager (recommended)
-
-```python
-async with await Sandbox.create(template="base") as sandbox:
-    result = await sandbox.run_code("print('auto cleanup')")
-    print(result.text)
-# Automatically destroyed after exiting the with block
-```
-
-## 9. Complete Example
-
-```python
-import asyncio
-from agent_sandbox.api.sandbox import Sandbox
-
-async def main():
-    async with await Sandbox.create(template="base") as sandbox:
-        # Install dependencies
-        await sandbox.commands.run("pip install requests")
-
-        # Execute code
-        result = await sandbox.run_code("""
-import requests
-resp = requests.get('https://httpbin.org/get')
-print(resp.status_code)
-""")
-        print(f"Status code: {result.text}")
-
-        # Write and read files
-        await sandbox.files.write("/home/user/note.txt", "Hello!")
-        content = await sandbox.files.read("/home/user/note.txt")
-        print(f"File content: {content}")
-
-asyncio.run(main())
-```
-
----
-
-The sandbox server can also host coding-agent CLIs. Codex (`codex`, npm package `@openai/codex`) and Qwen Code (`qwen`, npm package `@qwen-code/qwen-code`) are supported today, on `/v1/agents/sessions`, after `ABX_SERVER_ENABLED_GROUPS` includes `agents`. See [Hosted agents](hosted-agents.md).
-
-## Next Steps
-
-- [Authentication](authentication.md) — Authentication methods and configuration priority
-- [SDK Usage Guide](sdk-usage.md) — Complete API usage
-- [Error Codes Reference](../reference/error-codes.md) — Error troubleshooting
-- [Troubleshooting](troubleshooting.md) — Common issues and solutions
-
----
+- [SDK usage](sdk-usage.md): provider extensions and their synchronous wrappers.
+- [Declarative functions](declarative-usage.md): execute a Python function remotely.
+- [MCP integration](mcp-integration.md): connect an IDE or agent.
+- [Troubleshooting](troubleshooting.md): installation and runtime errors.
 
 ## Related: the abx CLI
 
-The command-line equivalents of the steps above (installing `abx` with npm or as a standalone binary, `abx config set`, `abx create`, `abx exec`, `abx upload` / `download`, `abx kill`) are in the CLI repository: [Getting Started (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/getting-started.md), [Binary Installation](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md), [CLI Tutorial](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/cli-tutorial.md) and [Using Templates](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/using-templates.md).
+The CLI is a separate Node.js package, `@agent-sandbox/cli`. Installing Python does
+not install `abx`; there is no Python `[cli]` extra. Follow the
+[CLI installation guide](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md).

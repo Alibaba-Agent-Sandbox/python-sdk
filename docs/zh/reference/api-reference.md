@@ -1,13 +1,13 @@
 # API 参考
 
-本文档列出 Agent Sandbox Python SDK 的全部公开 API 签名、参数、返回值和异常。
+本文介绍 ProviderSandbox 扩展 API。根入口 Sandbox / AsyncSandbox 使用独立标准契约，见 [E2B 迁移](../guide/migrate-from-e2b.md)。
 
 ---
 
 ## Sandbox 类
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 ```
 
 ### 类方法
@@ -29,7 +29,7 @@ async def create(
     memory: int | None = None,
     disk: int | None = None,
     gpu: str | None = None,
-    secure: bool = True,
+    secure: bool | None = None,
     sandbox_api_key: str | None = None,
     sandbox_base_url: str | None = None,
     sandbox_domain: str | None = None,
@@ -44,7 +44,7 @@ async def create(
 |------|------|--------|------|
 | `template` | `str` | `"base"` | 沙箱模板名称 |
 | `timeout` | `int` | `300` | 沙箱生存时长（TTL）秒数（1~86400）；非 HTTP 请求超时 |
-| `request_timeout` | `float` | `None` | 仅针对本次创建请求的 HTTP 超时（秒）。为 `None` 时使用 `SANDBOX_HTTP_TIMEOUT` / `http_timeout`。与 E2B SDK 对齐。调大它无法绕过平台侧创建挂起。 |
+| `request_timeout` | `float` | `None` | 仅针对本次创建请求的 HTTP 超时（秒）。为 `None` 时使用 `ABX_HTTP_TIMEOUT` / `http_timeout`。与 E2B SDK 对齐。调大它无法绕过平台侧创建挂起。 |
 | `metadata` | `dict` | `None` | 任意元数据键值对 |
 | `envs` | `dict` | `None` | 注入的环境变量 |
 | `volume_mounts` | `dict[str, str]` | `None` | 仅内置提供方：规范化的沙箱绝对路径 → 已有 Volume 名称。省略或空字典不挂载，其他提供方的非空参数返回 E8004。见[挂载要求与请求 schema](../guide/provider-commands.md#创建沙箱时挂载已有-volume)。 |
@@ -52,7 +52,7 @@ async def create(
 | `memory` | `int` | `None` | 内存 MB |
 | `disk` | `int` | `None` | 磁盘 MB |
 | `gpu` | `str` | `None` | GPU 规格（如 `"A10"`） |
-| `secure` | `bool` | `True` | 安全模式（端口访问需 token） |
+| `secure` | `bool` | `None` | 安全模式（端口访问需 token） |
 | `sandbox_api_key` | `str` | `None` | API Key 覆盖 |
 | `sandbox_base_url` | `str` | `None` | 平台 API URL 覆盖 |
 | `sandbox_domain` | `str` | `None` | 域名覆盖 |

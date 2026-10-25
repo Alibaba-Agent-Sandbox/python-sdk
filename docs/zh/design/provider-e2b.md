@@ -20,9 +20,9 @@ E2B 是目录提供方，源码在 `awesome-providers/e2b`，id 是 `e2b`。用 
 | `domain` | 字符串 | `ABX_E2B_DOMAIN` | `e2b.app` |
 | `api_key` | 密钥 | `ABX_E2B_API_KEY` | 不设置 |
 
-这三个名字也可以放在 `provider_options` 里。`Sandbox.create(api_url=...)` 不会改这个源站。解析器读的是 `provider_options["base_url"]`。
+这三个名字也可以放在 `provider_options` 里。通过 `provider_options["base_url"]` 选择源站，而不是顶层 API URL 覆盖。
 
-设置了密钥时，客户端发送请求头 `X-API-Key`。没有 `ABX_E2B_API_KEY` 时抛出 `InvalidAPIKeyError`，错误信息里写明 `ABX_E2B_API_KEY`。这个提供方不读 `ABX_SANDBOX_API_KEY`（阿里云极速版的密钥），也不读 `ABX_SANDBOX_API_KEY`（本产品拒绝的旧名字）。
+设置了密钥时，客户端发送请求头 `X-API-Key`。没有 `ABX_E2B_API_KEY` 时抛出 `InvalidAPIKeyError`，错误信息里写明 `ABX_E2B_API_KEY`。这个提供方不读 `ABX_SANDBOX_API_KEY`（阿里云极速版的密钥）。
 
 `domain` 是 `https://{port}-{sandboxID}.{domain}` 的后缀。envd 端口是 49983。创建响应里没有 `region` 时保持未知（空字符串），不会落成 `cn-hangzhou`。
 

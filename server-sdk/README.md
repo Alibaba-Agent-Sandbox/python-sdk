@@ -12,7 +12,7 @@ Import path: `agent_sandbox.server` (a namespace shared with `agent-sandbox-clie
 ## Install
 
 ```bash
-python -m pip install --upgrade --pre agent-sandbox-server
+python -m pip install --index-url https://pypi.org/simple --upgrade --pre agent-sandbox-server
 python -m pip check
 ```
 

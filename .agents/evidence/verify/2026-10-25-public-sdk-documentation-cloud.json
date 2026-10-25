@@ -1,0 +1,35 @@
+{
+  "public_packages": "0.4.0a2",
+  "cases": [
+    {
+      "guide": "docs/en/guide/getting-started.md",
+      "sha256": "3b4dee410a0d373cb1841111e3693b77045ef8718172356706aed1c1f5405ab2",
+      "status": "PASS",
+      "operations": [
+        "create",
+        "command",
+        "file write/read",
+        "download",
+        "upload",
+        "kill on context exit",
+        "independent typed absence"
+      ],
+      "owned_cleanup": "PASS"
+    },
+    {
+      "guide": "docs/zh/guide/getting-started.md",
+      "sha256": "ce3b8b9dd36b6131f29f4186c1076b2cdc6d68caa6f28e97d1fbd98e8a8b2c6d",
+      "status": "PASS",
+      "operations": [
+        "create",
+        "command",
+        "file write/read",
+        "download",
+        "upload",
+        "kill on context exit",
+        "independent typed absence"
+      ],
+      "owned_cleanup": "PASS"
+    }
+  ]
+}
