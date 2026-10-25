@@ -6,7 +6,9 @@ The [unified startup proposal](notes/proposed/architecture/2026-10-25-unified-te
 removes workflow selection and preserves all template services. The
 [contract foundation](evidence/verify/2026-10-25-unified-template-contract.md) records
 local shared-vector checks only. [Runtime checkpoint](evidence/verify/2026-10-25-unified-template-runtime.md) records
-real native-template acceptance and retained environment failures; full gates are in progress;
+real native-template acceptance and retained environment failures. The
+[cloud follow-up](evidence/verify/2026-10-25-unified-template-cloud.md) verifies all five
+startup scenarios including two HTTP services; final-head gates remain in progress;
 the previous 92-case matrix below remains specification 4 history, not v5 evidence.
 
 ## Previous delivery — 2026-10-24

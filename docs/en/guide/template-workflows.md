@@ -34,7 +34,7 @@ async with await launch_template(
 ```
 
 There is no workflow selection. Python creates one sandbox, runs `start_cmd` once,
-checks `ready_cmd`, and resolves every service in `provides`. SandboxServer services
+checks `ready_cmd`, and resolves every service in `provides`. SandboxServer protocol v2 services
 receive health/discovery checks before use. Other service protocols use the template's
 readiness command; their endpoints are returned without guessing protocol routes.
 `session.services` contains every service client, while `session.servers` contains

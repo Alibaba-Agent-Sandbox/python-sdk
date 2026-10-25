@@ -64,6 +64,7 @@ class TemplateSession:
             name: client
             for name, client in services.items()
             if plan["services"][name]["protocol"] == "agent-sandbox-server"
+            and plan["services"][name]["version"] == 2
         }
         self.server = next(iter(self.servers.values())) if len(self.servers) == 1 else None
         self.journal_path = journal.path
@@ -304,7 +305,7 @@ async def launch_template(
         for name, service in plan["services"].items():
             client = await sandbox.application_client(service["port"], token=token)
             clients[name] = client
-            if service["protocol"] != "agent-sandbox-server":
+            if service["protocol"] != "agent-sandbox-server" or service["version"] != 2:
                 continue
             deadline = asyncio.get_running_loop().time() + readiness_timeout
             while not await client.health():

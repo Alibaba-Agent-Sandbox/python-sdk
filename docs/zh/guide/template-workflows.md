@@ -34,7 +34,7 @@ async with await launch_template(
 ```
 
 不再选择工作流。Python 创建一个沙箱，执行一次 `start_cmd`，检查 `ready_cmd`，
-并解析 `provides` 中所有服务。SandboxServer 服务执行 health/discovery 检查；
+并解析 `provides` 中所有服务。SandboxServer 协议 v2 服务执行 health/discovery 检查；
 其他协议由模板的就绪命令检查，返回对应客户端但不猜测其协议路由。
 `session.services` 包含全部服务客户端，`session.servers` 包含 SandboxServer 客户端。
 只有一个 SandboxServer 时可以使用 `session.server` 和 `session.run_command`；

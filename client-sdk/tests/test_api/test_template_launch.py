@@ -205,7 +205,7 @@ async def test_client_close_failure_still_deletes_owned_sandbox(tmp_path):
     sandbox = SimpleNamespace(id="owned", provider="fixture", kill=AsyncMock())
     journal = tmp_path / "run"
     session = TemplateSession(
-        {"services": {"app": {"protocol": "agent-sandbox-server"}}},
+        {"services": {"app": {"protocol": "agent-sandbox-server", "version": 2}}},
         sandbox,
         {"app": server},
         _Journal(journal),
@@ -272,7 +272,7 @@ async def test_journal_failure_never_blocks_owned_cleanup(tmp_path):
     sandbox = SimpleNamespace(id="owned", provider="fixture", kill=AsyncMock())
     server = SimpleNamespace(aclose=AsyncMock())
     session = TemplateSession(
-        {"services": {"app": {"protocol": "agent-sandbox-server"}}},
+        {"services": {"app": {"protocol": "agent-sandbox-server", "version": 2}}},
         sandbox,
         {"app": server},
         journal,
@@ -400,9 +400,14 @@ async def test_fixed_mutable_image_is_rejected_before_create(tmp_path, monkeypat
     create.assert_not_awaited()
 
 
-async def test_other_protocol_is_exposed_without_guessing_http_routes(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    ("protocol", "version"), [("custom-http", 1), ("agent-sandbox-server", 99)]
+)
+async def test_other_protocol_is_exposed_without_guessing_http_routes(
+    tmp_path, monkeypatch, protocol, version
+):
     body = manifest()
-    body["provides"]["app"]["protocol"] = "custom-http"
+    body["provides"]["app"].update(protocol=protocol, version=version)
     server = AsyncMock()
     sandbox = SimpleNamespace(
         id="owned",

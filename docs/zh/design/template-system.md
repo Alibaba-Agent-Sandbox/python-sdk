@@ -16,7 +16,7 @@ CLI 使用 `abx --provider PROVIDER template launch TEMPLATE_REF`；Python 使�
 就绪和清理实际需要的操作。缺少解释器不阻止无关应用启动。执行具体操作时，
 Provider 和服务端策略仍负责实际能力与权限检查。
 
-保留 `provides` 中所有服务。SandboxServer 检查协议；其他协议返回客户端，
+保留 `provides` 中所有服务。SandboxServer 协议 v2 额外检查 health/discovery；其他协议返回客户端，
 由作者的就绪命令检查。多服务模板只启动一次，后续选择调用地址不会改变启动内容。
 
 ## 清单与迁移

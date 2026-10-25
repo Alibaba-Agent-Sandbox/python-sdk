@@ -176,7 +176,7 @@ package copies. Historical workflow/receipt files remain for old evidence only;
 they do not certify the new launcher. Provider operation declarations remain exact.
 
 `api/template.py` exposes `launch_template` for prepared references, journals owned
-resources, starts the template once and checks all SandboxServer services. Python
+resources, starts the template once and checks all SandboxServer protocol v2 services. Python
 does not build source. Use `session.services` for all resolved clients and
 `session.servers` for SandboxServer clients. Do not block startup on an unrelated
 interpreter operation. See [the launch guide](docs/en/guide/template-workflows.md).

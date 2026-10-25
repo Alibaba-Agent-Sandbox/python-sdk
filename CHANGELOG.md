@@ -17,6 +17,8 @@ Candidate: not yet published.
 - Specification 5 starts complete templates without workflow selection. Python now
   exposes `launch_template`, `TemplateSession` and `TemplateLaunchError`, preserving
   all declared services and cleanup ownership. Source preparation remains CLI-owned.
+- Express Provider startup metadata now includes its implemented process-start path,
+  verified with a real two-service template.
 - Migrate specification 4 by removing workflow declarations and using the existing
   startup/readiness fields. `launch_workflow` and `workflow_id` are removed; historical
   receipts remain unchanged and do not certify the new launch path.

@@ -20,7 +20,7 @@ operations needed to create, start, inspect readiness and clean up. Missing inte
 operations never prevent an unrelated application from starting. Actual operations
 remain guarded by the Provider and server policy at invocation time.
 
-Every `provides` service is retained. SandboxServer endpoints receive protocol checks;
+Every `provides` service is retained. SandboxServer protocol v2 endpoints receive protocol checks;
 unknown protocols are returned and use the author's readiness command. A multi-service
 template starts once. Calling one endpoint later does not start a different template.
 
