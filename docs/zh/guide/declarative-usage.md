@@ -33,9 +33,9 @@ print(result)
     serializer="json",                # 序列化方式（默认 "json"）
     sandbox_id=None,                  # 复用已有沙箱 ID（不为 None 时跳过创建）
     keep_alive=False,                 # True 时执行后不销毁沙箱
-    sandbox_api_key=None,                     # API Key 覆盖
-    sandbox_base_url=None,                     # 平台 API URL 覆盖
-    sandbox_domain=None,                      # 域名覆盖
+    sandbox_api_key=None,             # API Key 覆盖
+    sandbox_base_url=None,            # 平台 API URL 覆盖
+    sandbox_domain=None,              # 域名覆盖
     cpu=None,                         # CPU 核数
     memory=None,                      # 内存 MB
 )

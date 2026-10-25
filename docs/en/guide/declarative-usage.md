@@ -33,9 +33,9 @@ print(result)
     serializer="json",                # Serialization method (default "json")
     sandbox_id=None,                  # Reuse an existing sandbox ID (skips creation when not None)
     keep_alive=False,                 # When True, the sandbox is not destroyed after execution
-    sandbox_api_key=None,                     # API Key override
-    sandbox_base_url=None,                     # Platform API URL override
-    sandbox_domain=None,                      # Domain override
+    sandbox_api_key=None,             # API Key override
+    sandbox_base_url=None,            # Platform API URL override
+    sandbox_domain=None,              # Domain override
     cpu=None,                         # CPU cores
     memory=None,                      # Memory in MB
 )

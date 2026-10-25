@@ -5,20 +5,20 @@ description: Write an Agent Sandbox provider plugin so ProviderSandbox.create(pr
 
 # Write an Agent Sandbox provider
 
-Specification 5 and 0.4.0a1 are release candidates until publication; use the matching checkout for validation.
+Specification 5 is implemented in the published 0.4.0a2 client/server alpha pair.
 
 This file is instructions for a coding agent. It is not executed by the SDK.
 Calling `Sandbox.create` against a backend that already exists is
 `agent-sandbox-sdk`. This skill only covers the provider you add.
 The client distribution is `agent-sandbox-client` (import `agent_sandbox`).
-For the specification 5 candidate, install the matching alpha pair after publication; the client installs its matching server dependency:
+Install the published alpha client; it installs its matching server dependency:
 
 ```bash
-python -m pip install 'agent-sandbox-client==0.4.0a1'
+python -m pip install 'agent-sandbox-client==0.4.0a2'
 python -m pip check
 ```
 
-The image needs only `agent-sandbox-server==0.4.0a1`. Installing that package on the host does not update an existing image. Development source installations must use a matching client/server revision.
+The image needs only `agent-sandbox-server==0.4.0a2`. Installing that package on the host does not update an existing image. Development source installations must use a matching client/server revision.
 Do not install `agent-sandbox`; that PyPI project is unrelated.
 
 Only `alicloud-express` is built in. Do not reinstall it and do not reuse
@@ -60,7 +60,7 @@ CLI if it reports that initialization cannot be verified. Doctor never creates a
 and a successful initialization does not prove cloud credentials or backend availability.
 The Node.js SDK currently provides the in-sandbox HTTP `ServerClient`, not provider lifecycle.
 
-Do not start from the Express engine. Do not copy the Express `ABX_SANDBOX_API_KEY` or its standard-entry `E2B_API_KEY` setting into the new provider. Credentials belong to their selected backend.
+Do not start from the Express engine. Do not copy the Express `ABX_SANDBOX_API_KEY` into the new provider. Credentials belong to their selected backend.
 
 ## Credentials
 

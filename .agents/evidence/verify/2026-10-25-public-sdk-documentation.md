@@ -53,6 +53,14 @@ the owned sandbox was independently absent with typed 404. This closes the runti
 deadline acceptance scope of [Issue 113](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/113),
 separately from the unfinished browser scope in Issue 111.
 
+## Repository skills
+
+The current SDK/provider SKILL.md files now use published a2 instead of claiming
+a1 is awaiting publication. Their installation/Dockerfile pins and shared ABX
+configuration agree with the user guides. Original public client/server wheels
+and sdists contain neither skill file, so this Git documentation fix does not
+replace or require rebuilding the immutable published a2 artifacts.
+
 ## Static checks and limits
 
 - PASS: repository health 106 PASS / 1 warning / 0 failures; hygiene PASS.

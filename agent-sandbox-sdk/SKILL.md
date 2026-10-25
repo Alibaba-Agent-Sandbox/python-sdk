@@ -5,7 +5,7 @@ description: Write a Python client or a sandbox template for Agent Sandbox. Use 
 
 # Write an Agent Sandbox client or template
 
-Specification 5 and 0.4.0a1 are release candidates until publication; use the matching checkout for validation.
+Specification 5 is implemented in the published 0.4.0a2 client/server alpha pair.
 
 This file is instructions for a coding agent. It is not executed by the SDK.
 Operating a sandbox with `abx` or MCP is the `agent-sandbox` skill. This skill
@@ -18,19 +18,19 @@ Two packages share one version:
 | `agent-sandbox-client` | `agent_sandbox` | The caller's machine |
 | `agent-sandbox-server` | `agent_sandbox.server` | Inside the image, port 9000 |
 
-For the specification 5 candidate, install the matching alpha pair after publication; the client installs its matching server dependency:
+Install the published alpha client; it installs its matching server dependency:
 
 ```bash
-python -m pip install 'agent-sandbox-client==0.4.0a1'
+python -m pip install 'agent-sandbox-client==0.4.0a2'
 python -m pip check
 ```
 
-The image needs only `agent-sandbox-server==0.4.0a1`. Installing that package on the host does not update an existing image. Development source installations must use a matching client/server revision.
+The image needs only `agent-sandbox-server==0.4.0a2`. Installing that package on the host does not update an existing image. Development source installations must use a matching client/server revision.
 Do not run `pip install agent-sandbox`. That PyPI name is an unrelated project.
 
 ## Credentials
 
-ProviderSandbox reads `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and `ABX_SANDBOX_DOMAIN`. Standard clients also map the E2B environment names according to the [migration contract](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/migrate-from-e2b.md). Preserve the selected entry's configuration; never forward a control-plane key as an application token.
+Use `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and `ABX_SANDBOX_DOMAIN` for project configuration. Standard Sandbox / AsyncSandbox, code_interpreter and ProviderSandbox all support these settings. Public parameters retain each entry's [documented contract](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/migrate-from-e2b.md); never forward a control-plane key as an application token.
 
 AK/SK, when a call needs them, are `ALICLOUD_ACCESS_KEY_ID` and
 `ALICLOUD_ACCESS_KEY_SECRET`. Never print a key, never commit one, and never
@@ -195,7 +195,7 @@ Do not listen on 49983, 5000, or 49999. `<region>` defaults to `cn-hangzhou`.
 
 ```dockerfile
 FROM fc-e2b-registry.<region>.cr.aliyuncs.com/runtime/base:<tag>
-RUN pip install --no-cache-dir 'agent-sandbox-server==0.4.0a1'
+RUN pip install --no-cache-dir 'agent-sandbox-server==0.4.0a2'
 WORKDIR /home/user/app
 COPY commands.py /home/user/app/commands.py
 EXPOSE 9000
@@ -207,7 +207,7 @@ The CLI can prepare the supported official native base recipe for both Express a
 
 ```dockerfile
 FROM python:3.12-slim
-RUN pip install --no-cache-dir 'agent-sandbox-server==0.4.0a1'
+RUN pip install --no-cache-dir 'agent-sandbox-server==0.4.0a2'
 WORKDIR /home/user/app
 COPY commands.py /home/user/app/commands.py
 EXPOSE 9000
