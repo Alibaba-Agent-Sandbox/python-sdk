@@ -2,7 +2,7 @@
 
 This guide describes asynchronous `ProviderSandbox` provider extensions. Root `Sandbox` and `AsyncSandbox` follow the pinned standard migration contract; see [Migrate from E2B](migrate-from-e2b.md).
 
-For current SDK installation, use the [paired source installation guide](install-python.md).
+For current SDK installation, use the [installation guide](install-python.md).
 
 > **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository ([CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
@@ -68,7 +68,7 @@ sandbox_domain = "cn-hangzhou.e2b.fc.aliyuncs.com"
 #### 5. Code parameter (wins over the environment and over `~/.abx`)
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 # Pass directly when creating
 sandbox = await Sandbox.create(sandbox_api_key="your-api-key")
@@ -85,7 +85,7 @@ sandbox = await Sandbox.connect("sbx-xxxx", sandbox_api_key="your-api-key")
 The previous automatic AK/SK-to-sandbox-key exchange has been removed. With only
 AccessKey credentials, sandbox authentication now raises `InvalidAPIKeyError`
 (E1001) locally, before any exchange/network request. Configure
-`ABX_SANDBOX_API_KEY` or pass `sandbox_api_key=` / `api_key=` explicitly for
+`ABX_SANDBOX_API_KEY` or pass `sandbox_api_key=` explicitly for
 sandbox create/connect/list and data-plane requests.
 
 Keep `ALICLOUD_ACCESS_KEY_ID`, `ALICLOUD_ACCESS_KEY_SECRET` and the configured

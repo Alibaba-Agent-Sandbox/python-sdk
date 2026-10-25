@@ -1,6 +1,6 @@
 # 常见问题（FAQ）
 
-当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+当前 SDK 安装使用[安装指南](install-python.md)。
 
 > **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（[CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
@@ -42,7 +42,7 @@
 
 ```text
 [E1001] API key cannot be empty
-  Suggestion: Check your E2B_API_KEY environment variable or pass sandbox_api_key.
+  Suggestion: Check your ABX_SANDBOX_API_KEY environment variable or pass sandbox_api_key.
 ```
 
 **解决**：
@@ -54,7 +54,7 @@ abx config get sandbox_api_key
 abx config set sandbox_api_key your-api-key
 
 # 或设置环境变量
-export E2B_API_KEY="your-api-key"
+export ABX_SANDBOX_API_KEY="your-api-key"
 ```
 
 ### E1003 — AK/SK 凭证无效
@@ -211,9 +211,7 @@ entries = await sandbox.files.list("/home/user")
 
 ```bash
 # 确保使用正确的包名
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a2"
 
 # 如果遇到依赖冲突
 python -m pip check

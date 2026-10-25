@@ -3,7 +3,7 @@
 Install the public Python pair through the client dependency:
 
 ```bash
-python -m pip install "agent-sandbox-client[all]==0.4.0a2"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client[all]==0.4.0a2"
 export ABX_SANDBOX_API_KEY="your-express-sandbox-api-key"
 # Configure ABX_SANDBOX_BASE_URL and ABX_SANDBOX_DOMAIN for your region if needed.
 ```
@@ -33,7 +33,7 @@ For `codex_agent.py`, set `OPENAI_API_KEY`; optionally set `OPENAI_BASE_URL` and
 
 The browser example installs Playwright and real headless Chromium. Its default HTTP page runs inside the owned sandbox, providing deterministic title/link/screenshot checks. Set `BROWSER_URL` for an external site; non-success HTTP responses and absent expected content fail visibly. Installation still needs outbound access to package/browser repositories.
 
-The standard-client import migration example uses `E2B_API_KEY`, `E2B_API_URL`, and `E2B_DOMAIN` configured for your Express account, then runs `python examples/compat-demos/e2b_import_migration.py`. These names belong to the standard E2B-compatible client. Do not reuse credentials from a different provider account. `ProviderSandbox` and decorator examples above use `ABX_SANDBOX_API_KEY`.
+The standard-client import migration example uses the same project `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and `ABX_SANDBOX_DOMAIN` configuration as the other examples. Run `python examples/compat-demos/e2b_import_migration.py`. These values must belong to the Express account; do not reuse credentials from a different provider.
 
 For local HTTP/session examples run `python examples/run_examples_e2e.py`. That runner uses real local server processes and controlled Codex/Qwen protocol executables, not model calls. Cloud scripts are explicitly listed as `needs-provider` there. See the [example catalog](../../../examples/README.md) and [template HTTP API](template-server-api.md).
 

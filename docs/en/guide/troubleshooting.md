@@ -1,6 +1,6 @@
 # Troubleshooting (FAQ)
 
-For current SDK installation, use the [paired source installation guide](install-python.md).
+For current SDK installation, use the [installation guide](install-python.md).
 
 > **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository ([CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
@@ -42,7 +42,7 @@ For current SDK installation, use the [paired source installation guide](install
 
 ```text
 [E1001] API key cannot be empty
-  Suggestion: Check your E2B_API_KEY environment variable or pass sandbox_api_key.
+  Suggestion: Check your ABX_SANDBOX_API_KEY environment variable or pass sandbox_api_key.
 ```
 
 **Solution**:
@@ -54,7 +54,7 @@ abx config get sandbox_api_key
 abx config set sandbox_api_key your-api-key
 
 # Or set the environment variable
-export E2B_API_KEY="your-api-key"
+export ABX_SANDBOX_API_KEY="your-api-key"
 ```
 
 ### E1003 — Invalid AK/SK Credentials
@@ -211,9 +211,7 @@ Check file permissions. The default user in the sandbox is `user`; you can speci
 
 ```bash
 # Ensure the correct package name
-python -m pip install \
-  "agent-sandbox-server @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=server-sdk" \
-  "agent-sandbox-client @ https://github.com/Alibaba-Agent-Sandbox/python-sdk/archive/3aa5e5ae6bd9c843f62c6689e549437f460b382d.tar.gz#subdirectory=client-sdk"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a2"
 
 # If dependency conflicts occur
 python -m pip check

@@ -21,7 +21,7 @@ This repository holds the Python SDK as two lock-step PyPI distributions — `ag
 ### Quick Start
 
 ```bash
-pip install agent-sandbox-client
+python -m pip install --index-url https://pypi.org/simple agent-sandbox-client==0.4.0a2
 export ABX_SANDBOX_API_KEY=your-api-key
 ```
 
@@ -29,8 +29,8 @@ export ABX_SANDBOX_API_KEY=your-api-key
 from agent_sandbox import ProviderSandbox as Sandbox
 
 async with await Sandbox.create(template="base") as sb:
-    result = await sb.run_code("print('Hello, Agent Sandbox!')")
-    print(result.text)
+    result = await sb.commands.run("printf 'Hello, Agent Sandbox!'")
+    print(result.stdout)
 ```
 
 ---

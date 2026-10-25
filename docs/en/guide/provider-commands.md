@@ -42,18 +42,13 @@ hints for other providers fail with E8004 before loading their implementation. O
 dictionaries preserve existing request payloads.
 
 This creation hint is separate from management commands and does not add a portable
-`storage.mount` protocol or runtime attach API. Python's built-in lifecycle retains its local
-gRPC engine: additive `CreateRequest.volume_mounts` carries the dictionary, and the existing
-Python protocol serializes `POST /sandboxes` as
-`"volumeMounts": [{"name": "existing-volume-name", "path": "/mnt/data"}]`.
-For nonempty hints, the client first checks `Health.supported_create_options` contains
-`volume_mounts`. An older live engine fails with E8004 and an upgrade/restart suggestion,
-before `Create`; it is never replaced automatically. This prevents older protobuf handlers
-from silently ignoring a mount request. Calls without mounts retain the existing behavior.
-Provider management commands continue using the shared Node HTTP engine. Mount wiring is
-covered by local gRPC/HTTP regression tests and real OSS mount/read/write/cleanup acceptance
-on the base template in cn-hangzhou. The opt-in Volume E2E suite also checks that data survives
-sandbox destruction and recreation.
+`storage.mount` protocol or runtime attach API. The client validates the selected
+provider's `create_options` before creating a sandbox. The built-in provider sends
+`"volumeMounts": [{"name": "existing-volume-name", "path": "/mnt/data"}]` in
+`POST /sandboxes` using its direct HTTP transport. Provider management commands
+use the separate shared Node HTTP engine. The opt-in Volume E2E suite checks
+mount/read/write/cleanup and persistence across sandbox recreation; live access
+remains subject to the account and image prerequisites above.
 
 ## Python API
 

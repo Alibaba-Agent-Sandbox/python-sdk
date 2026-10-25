@@ -1,6 +1,6 @@
 # Authoring Templates
 
-For current SDK installation, use the [paired source installation guide](install-python.md).
+For current SDK installation, use the [installation guide](install-python.md).
 
 > **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository ([CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
@@ -136,7 +136,7 @@ The server does not select a provider. Port 9000 is the application HTTP listen 
 
 `commands.py` imports only `agent_sandbox.server` and calls `start(port)` from its
 main entry; the image explicitly installs the server SDK. For the provider-native
-application API in the published 0.3.1a1 alpha, import `ProviderSandbox` from
+application API in the published 0.4.0a2 alpha, import `ProviderSandbox` from
 `agent_sandbox` and connect with `await ProviderSandbox.connect(ID)`. This instance
 supports `async with await sandbox.application_client(9000, token=application_token)`;
 the standard `Sandbox`/`AsyncSandbox` classes have a different interface.

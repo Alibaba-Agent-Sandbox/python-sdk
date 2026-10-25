@@ -19,9 +19,9 @@ The command-line tool (`abx`) is a separate Node.js project that lives in the [`
 ## Install
 
 ```bash
-python -m pip install --upgrade --pre agent-sandbox-client
+python -m pip install --index-url https://pypi.org/simple --upgrade --pre agent-sandbox-client
 # Optional extras:
-python -m pip install --upgrade --pre 'agent-sandbox-client[all]'
+python -m pip install --index-url https://pypi.org/simple --upgrade --pre 'agent-sandbox-client[all]'
 python -m pip check
 ```
 

@@ -168,6 +168,7 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 
 - [Command execution deadline](notes/proposed/feature/2026-10-25-command-execution-deadline.md) · [verification](evidence/verify/2026-10-25-command-execution-deadline.md)
 
+- [Current public SDK documentation](notes/proposed/process/2026-10-25-public-sdk-documentation.md) · [verification](evidence/verify/2026-10-25-public-sdk-documentation.md)
 - [Bounded public PyPI readback](notes/proposed/process/2026-10-25-pypi-public-readback.md) · [verification](evidence/verify/2026-10-25-pypi-public-readback.md)
 
 - [Public runtime fixture images](notes/proposed/process/2026-10-25-public-runtime-fixture-images.md) · [verification](evidence/verify/2026-10-25-public-runtime-fixture-images.md)

@@ -7,7 +7,7 @@
 
 ## 安装
 
-请按[安装指南](install-python.md)安装。公开客户端/服务端 alpha 版本为 0.4.0a1；安装客户端会安装匹配的服务端依赖。宿主机安装不会更新已有沙箱镜像。
+请按[安装指南](install-python.md)安装。公开客户端/服务端 alpha 版本为 0.4.0a2；安装客户端会安装匹配的服务端依赖。宿主机安装不会更新已有沙箱镜像。
 
 不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。
 
@@ -23,42 +23,11 @@ from agent_sandbox import ProviderSandbox as Sandbox
 
 下面的模板作者示例保留其明确部署前提。连接 CLI 返回的已有实例时，优先通过 `await sandbox.application_client(9000, token=application_token, timeout=330)` 获取应用客户端，再调用 `client.commands.run(...)`；见[模板工作流](template-workflows.md)。它保留 Provider 网关头、URL 前缀与签名查询参数。`close()` 只释放连接，`kill()` 删除实例；不要销毁借用的实例。HTTP 等待超时不保证取消远端执行，也不会自动重试命令。
 
-## 模板作者快速路径
+## 模板应用
 
-2026-10-15 在阿里云 Express（`alicloud-express`）上验证。模板是 generation 2，启动命令运行 `agent-sandbox-server`。`Sandbox.create(template=..., provider="alicloud-express")` 使用 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL` 和 `ABX_SANDBOX_DOMAIN`。`template` 可以是模板 id 或名称。
-
-```python
-import asyncio
-
-from agent_sandbox import ProviderSandbox as Sandbox
-
-TEMPLATE = "hello-x"  # generation-2 模板的名称或 id
-
-
-async def main() -> None:
-    async with await Sandbox.create(
-        template=TEMPLATE, provider="alicloud-express", timeout=300
-    ) as sb:
-        assert await sb.run("hello", name="Bob") == "Hello, Bob!"
-        echoed = await sb.commands.run("echo hi", on_stdout=lambda text: None)
-        assert echoed.stdout == "hi\n" and echoed.exit_code == 0
-        await sb.files.write("/home/user/note.txt", "abc")
-        assert await sb.files.read("/home/user/note.txt") == "abc"
-        url = sb.network.get_url(9000)
-        headers = sb.network.get_access_headers()
-        # 用 headers 对 {url}/health 发 GET。/health 返回 200。
-
-
-asyncio.run(main())
-```
-
-`sandbox.run` 是调用命名命令的那一次调用，返回函数的值。`timeout=`（秒）是 HTTP 时限，不会传给函数。Shell 输出通过 `commands.run` 的 `on_stdout` / `on_stderr` 流式输出。命名命令不会把自己的 print 流出来；函数返回时调用才结束。
-
-名字不存在抛 `CommandNotFoundError`，消息里带有服务端列出的命令。参数错误抛 `CommandArgumentError`。命令函数抛出的异常是 `CommandExecutionError`（`error_type` 是异常类名）。上下文管理器会调用 `kill()`。
-
-部署：`abx template deploy . -y --generation 2 --start-cmd 'agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py' --ready-cmd 'agent-sandbox-server healthcheck --port 9000'`。完整步骤见 [Express 快速开始](express-quickstart.md)。
-
----
+通过 `abx template launch <reference>` 启动完整模板，再使用 `application_client`
+携带应用令牌调用注册命令。源码镜像准备和平台配置由 CLI 负责。见
+[Express 快速开始](express-quickstart.md)和[模板启动](template-workflows.md)。
 
 ## 创建与销毁
 

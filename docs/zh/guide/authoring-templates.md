@@ -1,6 +1,6 @@
 # 编写模板
 
-当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+当前 SDK 安装使用[安装指南](install-python.md)。
 
 > **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（[CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
 服务端不选择 Provider。9000 是应用 HTTP 默认监听端口；平台注入的 envd、解释器及保留端口属于各后端，不能据此推导应用服务不可用。声明的 `start_cmd` 只运行一次，没有该字段时使用镜像或平台模板入口；不要让原生入口与启动命令重复运行。非空 `ready_cmd` 必须实际检查。构建配置必须明确选择，其有效 Dockerfile 和构建参数进入输入身份。
 
 `commands.py` 只导入 `agent_sandbox.server`，在主入口调用 `start(port)`；镜像显式安装 server SDK。
-已发布 0.3.1a1 alpha 中的 Provider 原生应用 API 使用 `from agent_sandbox import ProviderSandbox`，
+已发布 0.4.0a2 alpha 中的 Provider 原生应用 API 使用 `from agent_sandbox import ProviderSandbox`，
 再通过 `await ProviderSandbox.connect(ID)` 连接。这个实例支持
 `async with await sandbox.application_client(9000, token=application_token)`；标准
 `Sandbox`/`AsyncSandbox` 是另一套接口。应用端点解析保留代理前缀，并隔离网关和应用凭据。

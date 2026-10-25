@@ -1,6 +1,6 @@
 """Import-only migration example / 仅替换导入的迁移示例.
 
-Configure E2B_API_KEY, E2B_API_URL, E2B_DOMAIN for Alibaba Express.
+Configure ABX_SANDBOX_API_KEY, ABX_SANDBOX_BASE_URL, ABX_SANDBOX_DOMAIN for Alibaba Express.
 配置阿里云极速版连接参数后直接执行。
 """
 

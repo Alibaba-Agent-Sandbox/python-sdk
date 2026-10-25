@@ -14,10 +14,10 @@
 
 ```bash
 # 完整安装（推荐，包含声明式装饰器、MCP 服务等）
-python -m pip install "agent-sandbox-client[all]==0.4.0a2"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client[all]==0.4.0a2"
 
 # 或按需安装
-python -m pip install "agent-sandbox-client==0.4.0a2"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a2"
 
 # 从源码安装（在 python-sdk 仓库根目录执行）
 pip install -e ./server-sdk -e ./client-sdk
@@ -73,8 +73,8 @@ examples/
 |------|------|----------|
 | [`01_hello.py`](quickstart/01_hello.py) | **基础沙箱操作** —— 创建、执行命令、生命周期管理 | SDK 入门 |
 | [`02_file_ops.py`](quickstart/02_file_ops.py) | **文件操作** —— 读写文件、目录管理、二进制文件 | 数据交换 |
-| [`03_web_service.py`](quickstart/03_web_service.py) | **Web 服务** —— 启动 Express 服务、获取公网 URL | Web 开发、API 测试 |
-| [`04_data_analysis.py`](quickstart/04_data_analysis.py) | **数据分析** —— 上传 CSV、pandas 分析、run_code | 数据科学 |
+| [`03_web_service.py`](quickstart/03_web_service.py) | **Web 服务** —— 启动 Node.js 内置 HTTP 服务并调用公网 URL | Web 开发、API 测试 |
+| [`04_data_analysis.py`](quickstart/04_data_analysis.py) | **数据分析** —— 上传 CSV、通过 Python 命令进行 pandas 分析 | 数据科学 |
 | [`05_decorator_usage.py`](quickstart/05_decorator_usage.py) | **@sandbox 装饰器** —— 声明式远程执行 | 简化调用 |
 
 ### agents/ —— Client SDK
@@ -116,35 +116,67 @@ python examples/compat-demos/e2b_data_analysis.py
 
 ## 核心 API 速览
 
-### 执行方法
+### base 上的 Shell 执行
 
 ```python
-from agent_sandbox import ProviderSandbox as Sandbox
+from agent_sandbox import ProviderSandbox
 
-async with await Sandbox.create(template="base", sandbox_api_key="...") as sandbox:
-
-    # 1. 裸 Shell —— sandbox.commands.run(cmd)
+async with await ProviderSandbox.create(template="base") as sandbox:
     proc = await sandbox.commands.run("echo hello")
     print(proc.stdout, proc.exit_code)
-
-    # 2. 代码解释器 —— sandbox.run_code(code)
-    code_result = await sandbox.run_code("print(1 + 1)")
-    print(code_result.text)   # "2"
-
-    # 3. 命名命令 —— sandbox.run(name, **kwargs)
-    #    对模板 SandboxServer 发 POST /commands/hello
-    value = await sandbox.run("hello", name="Alice")
-    print(value)              # 命令返回值
 ```
 
-> **说明：** `sandbox.run(name, **kwargs)` 调用注册在模板 server 里的命令，不会执行 shell 字符串。要执行 shell 请用 `sandbox.commands.run(cmd)`。
+### 结构化解释器结果
+
+使用标准解释器入口及包含解释器的模板。极速版 ProviderSandbox 适配器未实现解释器操作。
+
+```python
+from agent_sandbox.code_interpreter import Sandbox
+
+with Sandbox.create(template="code-interpreter-v1") as sandbox:
+    result = sandbox.run_code("print(1 + 1)")
+    assert result.error is None
+    print(result.text)
+```
+
+完整脚本见[导入迁移示例](compat-demos/e2b_import_migration.py)和
+[装饰器示例](quickstart/05_decorator_usage.py)。
+
+### 注册的应用命令
+
+先按[模板指南](../docs/zh/guide/template-workflows.md)配置所选提供方并启动
+python-hello。源码准备需要 CLI 文档中的 Docker 和镜像仓库配置。
+
+```bash
+export ABX_SERVER_TOKEN='replace_me'
+abx --provider alicloud-express template launch 'alibaba-agent-sandbox/awesome-templates//python-hello'
+```
+
+将返回的标识写入 `SANDBOX_ID`，使用相同的应用令牌：
+
+```python
+import os
+from agent_sandbox import ProviderSandbox
+
+sandbox = await ProviderSandbox.connect(os.environ["SANDBOX_ID"])
+try:
+    async with await sandbox.application_client(
+        9000, token=os.environ["ABX_SERVER_TOKEN"]
+    ) as client:
+        print(await client.commands.run("hello", name="Alice"))
+finally:
+    await sandbox.close()
+```
+
+这里只释放借用的连接；使用完按启动器的清理说明删除自己创建的资源。
+普通 base 沙箱不包含 hello 服务。
 
 ### 文件操作
 
 ```python
     # 写入和读取文件
-    await sandbox.files.write("/app/data.txt", "内容")
-    content = await sandbox.files.read("/app/data.txt")
+    await sandbox.files.write("/home/user/data.txt", "内容")
+    content = await sandbox.files.read("/home/user/data.txt")
 ```
 
 ### 网络
@@ -159,7 +191,7 @@ async with await Sandbox.create(template="base", sandbox_api_key="...") as sandb
 ```python
 from agent_sandbox.declarative import sandbox
 
-@sandbox(template="code-interpreter", packages=["numpy"])
+@sandbox(template="code-interpreter-v1", packages=["numpy"])
 def compute(n: int) -> float:
     import numpy as np
     return float(np.random.random(n).mean())
@@ -173,4 +205,4 @@ result = compute(1000)  # 自动在远程沙箱中执行
 
 `agents/codex_agent.py` 必须提供真实 `OPENAI_API_KEY`；可选 `OPENAI_BASE_URL`、`OPENAI_MODEL` 指定兼容模型，不会使用模拟回答。`agents/browser_automation.py` 安装真实 Chromium，默认访问沙箱内自建 HTTP 页面；设置 `BROWSER_URL` 可测试外部页面。
 
-`compat-demos/e2b_import_migration.py` 使用标准同步解释器客户端及其文档中的 E2B 配置名；其他云端示例使用 `ProviderSandbox` 或 `@sandbox` 和 `ABX_SANDBOX_API_KEY`。完整命令见[云端示例](../docs/zh/guide/cloud-examples.md)。
+`compat-demos/e2b_import_migration.py` 使用标准同步解释器客户端；本项目示例统一使用 ABX 沙箱配置，其他云端示例通过 `ProviderSandbox` 或 `@sandbox` 调用。完整命令见[云端示例](../docs/zh/guide/cloud-examples.md)。

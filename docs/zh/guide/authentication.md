@@ -2,7 +2,7 @@
 
 本指南描述异步 `ProviderSandbox` 扩展；根级 `Sandbox` 和 `AsyncSandbox` 遵循固定版本的标准迁移契约，详见[从 E2B 迁移](migrate-from-e2b.md)。
 
-当前 SDK 安装使用[配套源码安装指南](install-python.md)。
+当前 SDK 安装使用[安装指南](install-python.md)。
 
 > **说明：** 本页出现的 `abx` 命令由 `cli` 仓库中的 Node.js CLI 提供（[CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)）。CLI 专属文档（CLI 设计、教程、参考）也在该仓库；本仓库记录 Python SDK（`agent-sandbox-client`）与容器侧运行时（`agent-sandbox-server`）。
 
@@ -68,7 +68,7 @@ sandbox_domain = "cn-hangzhou.e2b.fc.aliyuncs.com"
 #### 5. 代码参数（高于环境变量和 `~/.abx`）
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 # 创建时直接传入
 sandbox = await Sandbox.create(sandbox_api_key="your-api-key")
@@ -85,7 +85,7 @@ sandbox = await Sandbox.connect("sbx-xxxx", sandbox_api_key="your-api-key")
 过去自动将 AK/SK 换成沙箱密钥的默认路径已删除。仅配置 AccessKey 时，沙箱鉴权
 会在本地、任何交换请求或网络请求之前抛出 `InvalidAPIKeyError`（E1001）。
 沙箱创建、连接、列表及运行时请求请配置 `ABX_SANDBOX_API_KEY`，或显式传入
-`sandbox_api_key=` / `api_key=`。
+`sandbox_api_key=`。
 
 官方模板、镜像和 ACR 控制面仍使用 `ALICLOUD_ACCESS_KEY_ID`、
 `ALICLOUD_ACCESS_KEY_SECRET` 与对应区域；这些操作使用独立客户端，已有支持的

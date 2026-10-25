@@ -205,7 +205,7 @@ explain_config()   # {"sandbox_api_key": {"value": "****3dc1", "source": "enviro
 Pass parameters directly in code (highest priority):
 
 ```python
-from agent_sandbox.api.sandbox import Sandbox
+from agent_sandbox import ProviderSandbox as Sandbox
 
 sandbox = await Sandbox.create(
     sandbox_api_key="REPLACE_ME",

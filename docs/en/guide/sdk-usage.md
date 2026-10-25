@@ -6,7 +6,7 @@ This page documents the asynchronous **ProviderSandbox** provider/server extensi
 
 ## Installation
 
-Follow the [installation guide](install-python.md). The public client/server alpha pair is 0.4.0a1; installing the client installs the matching server dependency. Host package installation does not change existing sandbox images.
+Follow the [installation guide](install-python.md). The public client/server alpha pair is 0.4.0a2; installing the client installs the matching server dependency. Host package installation does not change existing sandbox images.
 
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
 
@@ -22,42 +22,12 @@ from agent_sandbox import ProviderSandbox as Sandbox
 
 The template-author example below retains its explicit deployment prerequisite. When connecting to an existing instance returned by the CLI, obtain an application client with `await sandbox.application_client(9000, token=application_token, timeout=330)` and call `client.commands.run(...)`; see [template workflows](template-workflows.md). This preserves provider gateway headers, URL prefixes and signed query parameters. `close()` releases a connection; `kill()` deletes an instance. Do not delete a borrowed instance. An HTTP wait timeout does not guarantee remote cancellation and does not automatically replay a command.
 
-## Template author quick path
+## Template applications
 
-Verified 2026-10-15 on Alibaba Cloud Express (`alicloud-express`) with a generation-2 template whose start command runs `agent-sandbox-server`. `Sandbox.create(template=..., provider="alicloud-express")` uses `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL`, and `ABX_SANDBOX_DOMAIN`. The template argument is the template id or its name.
-
-```python
-import asyncio
-
-from agent_sandbox import ProviderSandbox as Sandbox
-
-TEMPLATE = "hello-x"  # name or id of a generation-2 template
-
-
-async def main() -> None:
-    async with await Sandbox.create(
-        template=TEMPLATE, provider="alicloud-express", timeout=300
-    ) as sb:
-        assert await sb.run("hello", name="Bob") == "Hello, Bob!"
-        echoed = await sb.commands.run("echo hi", on_stdout=lambda text: None)
-        assert echoed.stdout == "hi\n" and echoed.exit_code == 0
-        await sb.files.write("/home/user/note.txt", "abc")
-        assert await sb.files.read("/home/user/note.txt") == "abc"
-        url = sb.network.get_url(9000)
-        headers = sb.network.get_access_headers()
-        # GET {url}/health with headers. /health answers 200.
-
-
-asyncio.run(main())
-```
-
-`sandbox.run` is the one call for a named command. It returns the function's value. `timeout=` (seconds) is the HTTP limit for a slow command and is not passed to the function. Shell output streams through `on_stdout` / `on_stderr` on `commands.run`. A named command does not stream its own prints; it returns when the function returns.
-
-An unknown name raises `CommandNotFoundError` and lists the commands the server reported. Bad arguments raise `CommandArgumentError`. A command that raises raises `CommandExecutionError` (`error_type` is the exception class). The context manager calls `kill()`.
-
-Deploy the template with `abx template deploy . -y --generation 2 --start-cmd 'agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py' --ready-cmd 'agent-sandbox-server healthcheck --port 9000'`. Full steps: [Express quickstart](express-quickstart.md).
-
----
+Launch the complete template with `abx template launch <reference>`, then use
+`application_client` to call its registered commands with the application token.
+Source image preparation and platform configuration belong to the CLI. See
+[Express quickstart](express-quickstart.md) and [template launch](template-workflows.md).
 
 ## Create and Destroy
 

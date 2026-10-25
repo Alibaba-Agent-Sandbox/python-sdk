@@ -1,0 +1,11 @@
+{
+  "source": "client-sdk/benchmarks/bench_create.py",
+  "source_sha256": "2927f443f4ac89c57e5f2961f267a96d7cf66b94c326c44953faa0248c6e5637",
+  "public_client_server": "0.4.0a2",
+  "source_path_injection": false,
+  "actual_source_public_kwargs_sentinel_binding": true,
+  "owned_created": 3,
+  "independent_get_info_typed404": 3,
+  "result": "PASS",
+  "seconds": 4.47
+}

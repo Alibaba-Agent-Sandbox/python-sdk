@@ -18,9 +18,9 @@ Chinese page: [provider-e2b.md](../../zh/design/provider-e2b.md).
 | `domain` | string | `ABX_E2B_DOMAIN` | `e2b.app` |
 | `api_key` | secret | `ABX_E2B_API_KEY` | unset |
 
-Pass the same three names in `provider_options`. `Sandbox.create(api_url=...)` does not select this origin. The resolver reads `provider_options["base_url"]`.
+Pass the same three names in `provider_options`. Select the origin with `provider_options["base_url"]`, not a top-level API URL override.
 
-When the key is set, the client sends header `X-API-Key`. A missing `ABX_E2B_API_KEY` raises `InvalidAPIKeyError` and the message names `ABX_E2B_API_KEY`. This provider does not read `ABX_SANDBOX_API_KEY` (the Alibaba Cloud Express key) or retired `ABX_SANDBOX_API_KEY`.
+When the key is set, the client sends header `X-API-Key`. A missing `ABX_E2B_API_KEY` raises `InvalidAPIKeyError` and the message names `ABX_E2B_API_KEY`. This provider does not read `ABX_SANDBOX_API_KEY` (the Alibaba Cloud Express key).
 
 `domain` is the suffix in `https://{port}-{sandboxID}.{domain}`. The envd port is 49983. A create response that omits `region` stays unknown (empty), not `cn-hangzhou`.
 
