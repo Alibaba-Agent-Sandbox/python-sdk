@@ -112,13 +112,20 @@ jobs:
         run: |
           # PyPI metadata and index propagation can lag a successful upload.
           for attempt in 1 2 3 4 5 6; do
-            if python scripts/check_release.py published; then break; fi
-            if [ "$attempt" = 6 ]; then exit 1; fi
+            if python scripts/check_release.py published; then break; else result=$?; fi
+            # Only a missing public metadata endpoint is propagation. A digest
+            # mismatch or another verification error must stop immediately.
+            if [ "$result" != 75 ] || [ "$attempt" = 6 ]; then exit "$result"; fi
             sleep 10
           done
           version=$(python -c 'import sys; sys.path.insert(0, "scripts"); from check_release import release_version; print(release_version())')
           python -m venv "$RUNNER_TEMP/pypi-readback"
-          "$RUNNER_TEMP/pypi-readback/bin/python" -m pip install --no-cache-dir --index-url https://pypi.org/simple "agent-sandbox-client==$version"
+          for attempt in 1 2 3 4 5 6; do
+            if "$RUNNER_TEMP/pypi-readback/bin/python" -m pip install --no-cache-dir --index-url https://pypi.org/simple "agent-sandbox-client==$version"; then break; fi
+            if [ "$attempt" = 6 ]; then exit 1; fi
+            echo "Public PyPI installation failed (attempt $attempt/6); retrying in 10 seconds"
+            sleep 10
+          done
           "$RUNNER_TEMP/pypi-readback/bin/python" -m pip check
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/pypi-readback/bin/python" -c 'from agent_sandbox import Sandbox, AsyncSandbox, ProviderSandbox; from agent_sandbox.server import start; assert all(callable(x) for x in (Sandbox.create, AsyncSandbox.create, ProviderSandbox.create, start))'

@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Bound public PyPI metadata and fresh-install propagation retries while keeping artifact digest mismatches and dependency/import failures fatal. / 为公开 PyPI 元数据及全新安装增加有限传播重试，保持产物哈希、依赖与导入检查失败即中止。
+
+### Fixed
+
 - Enforce the documented total command timeout even while stdout/stderr continues;
   close the stream and attempt to stop the owned PID on expiry (#113).
 
