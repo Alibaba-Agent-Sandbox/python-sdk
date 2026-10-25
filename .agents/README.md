@@ -167,3 +167,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Current example entry points](notes/proposed/process/2026-10-25-current-example-entrypoints.md) · [verification](evidence/verify/2026-10-25-current-example-entrypoints.md)
 
 - [Command execution deadline](notes/proposed/feature/2026-10-25-command-execution-deadline.md) · [verification](evidence/verify/2026-10-25-command-execution-deadline.md)
+
+- [Bounded public PyPI readback](notes/proposed/process/2026-10-25-pypi-public-readback.md) · [verification](evidence/verify/2026-10-25-pypi-public-readback.md)

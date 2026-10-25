@@ -54,3 +54,13 @@ to initialize within the existing deadline and read the complete framed response
 intermediary can reject intentionally malformed HTTP/WebSocket traffic before it reaches
 the handler; keep those failures visible and run the unchanged assertions in hosted CI.
 Do not substitute skips, longer timeouts or proxy policy changes for protocol coverage.
+
+## Public release readback
+
+After uploading the paired distributions, the publication workflow compares all four
+local release filenames and SHA-256 digests with PyPI. Missing metadata (HTTP 404)
+gets at most six attempts, ten seconds apart; a digest mismatch fails immediately.
+The separate fresh installation from the official PyPI index has the same bounded
+retry interval because that index may appear later than package metadata. Each
+failed installation remains visible in the log. Dependency and public import checks
+run once after installation succeeds; their failures stop the release.

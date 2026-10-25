@@ -74,7 +74,13 @@ def main() -> None:
         validate_tag(args.tag, version)
         print(f"Candidate {args.tag}: both distributions {version}")
     else:
-        public_artifacts(version, required=args.mode == "published")
+        try:
+            public_artifacts(version, required=args.mode == "published")
+        except HTTPError as exc:
+            if args.mode == "published" and exc.code == 404:
+                print("Public PyPI metadata is not visible yet")
+                raise SystemExit(75) from None  # Temporary publication propagation only.
+            raise
 
 
 if __name__ == "__main__":
