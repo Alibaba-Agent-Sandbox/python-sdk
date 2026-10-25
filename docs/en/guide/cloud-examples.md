@@ -36,3 +36,5 @@ The browser example installs Playwright and real headless Chromium. Its default 
 The standard-client import migration example uses `E2B_API_KEY`, `E2B_API_URL`, and `E2B_DOMAIN` configured for your Express account, then runs `python examples/compat-demos/e2b_import_migration.py`. These names belong to the standard E2B-compatible client. Do not reuse credentials from a different provider account. `ProviderSandbox` and decorator examples above use `ABX_SANDBOX_API_KEY`.
 
 For local HTTP/session examples run `python examples/run_examples_e2e.py`. That runner uses real local server processes and controlled Codex/Qwen protocol executables, not model calls. Cloud scripts are explicitly listed as `needs-provider` there. See the [example catalog](../../../examples/README.md) and [template HTTP API](template-server-api.md).
+
+Command `timeout` bounds total execution time, including a process that continually writes stdout/stderr. On expiry the client closes its stream, attempts to stop the owned process and raises `CommandTimeoutError`; cleanup can add a short request delay. This is separate from sandbox lifetime and HTTP read inactivity.

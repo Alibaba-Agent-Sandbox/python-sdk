@@ -83,7 +83,12 @@ async def main() -> None:
             ("python -m playwright install --with-deps --only-shell chromium", 300),
         ]:
             print(f"Installing browser dependency: {command}", flush=True)
-            result = await sandbox.commands.run(command, timeout=timeout)
+            result = await sandbox.commands.run(
+                command,
+                timeout=timeout,
+                on_stdout=lambda text: print(text, end="", flush=True),
+                on_stderr=lambda text: print(text, end="", flush=True),
+            )
             if not result.success:
                 raise RuntimeError(f"Browser installation failed: {result.stderr}")
         print("Running Chromium against the selected HTTP page", flush=True)

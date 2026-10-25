@@ -15,6 +15,7 @@ import json
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 
 
@@ -86,6 +87,13 @@ def main() -> int:
         },
     )
     ok = show("POST /files/upload-stream", status, payload) and ok
+
+    assert isinstance(payload, dict) and payload["bytes"] == len(b"hello\n")
+    query = urllib.parse.urlencode({"path": f"{base_dir}/call-api.txt"})
+    status, downloaded = call(origin, "GET", f"/files/download-stream?{query}")
+    ok = show("GET /files/download-stream", status, downloaded) and ok
+    assert isinstance(downloaded, dict)
+    assert base64.b64decode(downloaded["content_base64"], validate=True) == b"hello\n"
 
     # process. shlex.split + shell=False, so this is a single argv, not a pipeline.
     status, payload = call(origin, "POST", "/shell", {"command": "echo hello-from-template"})

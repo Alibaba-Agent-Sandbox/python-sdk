@@ -165,3 +165,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Provider guide accuracy](notes/implemented/process/2026-10-24-provider-guide-accuracy.md) · [verification](evidence/verify/2026-10-24-provider-guide-accuracy.md).
 
 - [Current example entry points](notes/proposed/process/2026-10-25-current-example-entrypoints.md) · [verification](evidence/verify/2026-10-25-current-example-entrypoints.md)
+
+- [Command execution deadline](notes/proposed/feature/2026-10-25-command-execution-deadline.md) · [verification](evidence/verify/2026-10-25-command-execution-deadline.md)

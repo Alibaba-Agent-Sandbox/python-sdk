@@ -42,12 +42,16 @@ make e2e
 | Real model sorting example | PASS | Real compatible model; five cases checked against independent local `sorted()`; one owned sandbox independently absent |
 | Data-analysis oracle additions | PASS | CSV/Decimal reference totals and product ranking; five owned sandboxes independently absent across two scripts |
 | Browser external-page earlier attempt | FAIL | Page did not expose expected h1; cleanup confirmed. No browser-engine success inferred from this attempt |
-| Default browser owned-page rerun | IN PROGRESS | Real Chromium, owned HTTP page, PNG and HTML assertions |
+| Default browser owned-page candidate rerun | PASS | Candidate SDK; real Chromium 156, owned HTTP/title/link, PNG 11,473 bytes, HTML 172 characters; 280.36s; one owned sandbox independently absent |
 | Initial owner `make ci` | FAIL | Server 872 passed, 3 failed, 1 skipped; remaining targets did not run |
 | Package-list failure investigation | PASS | Installing pip in the uv-created check venv resolved its missing-pip prerequisite; focused test passed |
 | Raw HTTP environment probe | PARTIAL | Actual chunked request returned expected 400. Malformed WS upgrade was intercepted by host network audit with 501/plaintext, not the server's HTTP response |
 | Required `make e2e` | PASS | 126 passed, 9 skipped, 2 deselected; 239.24s pytest; janitor dry-run 0 candidates |
-| Required CI and release | IN PROGRESS | Not inferred from focused or example passes |
+| Initial source head clean-runner CI | PASS | All 11 checks at 39d09af, before the additional execution-deadline fix |
+| Candidate full client unit suite | PASS | 2240 passed, 27 skipped, 10 deselected before the two new deadline regressions |
+| Candidate distribution checks | PASS | Four 0.4.0a2 distributions, twine, py.typed and fresh combined installation |
+| Additional runtime deadline fix | PASS (focused/cloud) | Issue 113: 24 protocol tests; full real-cloud suite now 127 passed, 9 skipped, 2 deselected; janitor 0 candidates |
+| Final-head CI and release | IN PROGRESS | Not inferred from the initial head or candidate passes |
 
 ## Cleanup
 
@@ -68,8 +72,20 @@ to the actual provider configuration name.
 
 ## Not verified
 
-The final published 0.4.0a2 installation and reruns, final browser receipt and full
-owner CI gates remain pending. Cloud skips were missing OpenSandbox/Cube/E2B/container
+The final published 0.4.0a2 installation and reruns, plus final-head owner CI gates
+remain pending. Cloud skips were missing OpenSandbox/Cube/E2B/container
 plugins/backends, explicit volume opt-in, the optional CLI named-array configuration,
 and platform-enabled pause/snapshot accounts. None was counted as a pass. Provider accounts not configured for this run do not
 receive Express credentials and do not count as passes.
+
+## Independent review corrections
+
+A separate agent found one remaining implicit adapter selection and the local
+provider test installer using the user's HOME with `--force`. Both were removed:
+use the explicit public adapter selector and an owned temporary HOME without force.
+The local HTTP examples additionally assert actual upload/download bytes. The
+complete local runner was executed again with all local scopes passing.
+
+The intermediate public-SDK owned-browser run exceeded the harness 900-second
+limit and remained TIMEOUT; the exact owned sandbox was independently confirmed
+absent afterward. That attempt is not overwritten by the later candidate pass.

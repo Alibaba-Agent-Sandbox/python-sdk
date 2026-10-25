@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Enforce the documented total command timeout even while stdout/stderr continues;
+  close the stream and attempt to stop the owned PID on expiry (#113).
+
 - Use current SDK keywords, public installations, HTTP file routes and explicit
   agent adapters/workspaces in examples; propagate failures instead of reporting
   successful exits. Remove obsolete installation fallbacks and simulated models.

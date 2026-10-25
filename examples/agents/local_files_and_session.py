@@ -170,13 +170,16 @@ def main() -> int:
     query = urllib.parse.urlencode({"path": upload_path})
     status, body, _headers = call(base, "GET", f"/files/download-stream?{query}")
     ok = show("GET /files/download-stream", status, body) and ok
+    assert isinstance(body, dict)
+    assert base64.b64decode(body["content_base64"], validate=True) == b"hello-from-files\n"
 
     status, created, headers = call(
         base,
         "POST",
         "/v1/agents/sessions",
         {
-            "agent": {"model": "codex"},
+            "adapter": "codex",
+            "agent": {},
             "environment": {
                 "type": "self_hosted",
                 "workspace_directory": str(workspace),

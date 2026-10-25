@@ -36,3 +36,5 @@ Node HTTP 入门示例直接使用 `base` 自带的 Node，无需先部署另一
 标准客户端导入迁移示例使用配置为极速版账号的 `E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN`，然后执行 `python examples/compat-demos/e2b_import_migration.py`。这些配置名属于标准 E2B 兼容客户端；不要使用其他平台账号的密钥。上述 `ProviderSandbox` 和装饰器示例使用 `ABX_SANDBOX_API_KEY`。
 
 本地 HTTP、会话示例执行 `python examples/run_examples_e2e.py`。它运行真实本地服务进程及受控 Codex/Qwen 协议程序，不调用模型；云端脚本会明确列为 `needs-provider`。另见[示例目录](../../../examples/README.zh-CN.md)和[模板 HTTP API](template-server-api.md)。
+
+命令的 `timeout` 限制执行总时长，持续输出也不会重置计时。到期后客户端关闭流、尝试停止该自有进程并抛出 `CommandTimeoutError`；清理请求可能增加少量返回延迟。这与沙箱存活时长、HTTP 读空闲超时分别定义。

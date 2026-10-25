@@ -96,33 +96,34 @@ def run_script(rows: list[tuple[str, str, str]], rel: str, *args: str, timeout: 
 
 
 def run_local_process_examples(rows: list[tuple[str, str, str]]) -> None:
-    env = _base_env()
-    code, out = _run(
-        [
-            PY,
-            "-m",
-            "agent_sandbox.providers",
-            "install",
-            str(EXAMPLES / "providers" / "local-process"),
-            "--force",
-            "--yes",
-        ],
-        cwd=ROOT,
-        env=env,
-        timeout=60,
-    )
-    if code != 0:
-        _record(rows, "fail", "install local-process provider", out.strip() or f"exit {code}")
-        return
-    env["ABX_PROVIDER"] = "local-process"
-    for rel in ("examples/quickstart/01_hello.py", "examples/quickstart/02_file_ops.py"):
-        code, out = _run([PY, str(ROOT / rel)], cwd=ROOT, env=env, timeout=60)
-        _record(
-            rows,
-            "ok" if code == 0 else "fail",
-            rel + " via local-process",
-            out.strip() or f"exit {code}",
+    with tempfile.TemporaryDirectory(prefix="abx-local-provider-home-") as home:
+        env = _base_env()
+        env["HOME"] = home
+        code, out = _run(
+            [
+                PY,
+                "-m",
+                "agent_sandbox.providers",
+                "install",
+                str(EXAMPLES / "providers" / "local-process"),
+                "--yes",
+            ],
+            cwd=ROOT,
+            env=env,
+            timeout=60,
         )
+        if code != 0:
+            _record(rows, "fail", "install local-process provider", out.strip() or f"exit {code}")
+            return
+        env["ABX_PROVIDER"] = "local-process"
+        for rel in ("examples/quickstart/01_hello.py", "examples/quickstart/02_file_ops.py"):
+            code, out = _run([PY, str(ROOT / rel)], cwd=ROOT, env=env, timeout=60)
+            _record(
+                rows,
+                "ok" if code == 0 else "fail",
+                rel + " via local-process",
+                out.strip() or f"exit {code}",
+            )
 
 
 def run_python_hello(rows: list[tuple[str, str, str]]) -> None:
