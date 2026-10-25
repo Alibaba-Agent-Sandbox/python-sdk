@@ -202,6 +202,8 @@ explain_config()   # {"sandbox_api_key": {"value": "****3dc1", "source": "enviro
 
 ## SDK Parameter Override
 
+`ProviderSandbox.create`, `connect` and `list` accept only `sandbox_api_key`, `sandbox_base_url` and `sandbox_domain` for these overrides. Control-plane `kill_by_id`, `get_info_by_id` and `set_timeout_by_id` accept the first two and do not need a data-plane domain. Their `_sync` variants use the same parameters. Standard `Sandbox` / `AsyncSandbox` retain their separate `ApiParams` contract.
+
 Pass parameters directly in code (highest priority):
 
 ```python

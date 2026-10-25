@@ -635,13 +635,10 @@ class Sandbox:
                 the built-in provider behaves as ``True`` (port access requires an access
                 token) and plugin providers receive no ``secure`` hint, so their own default
                 applies. Pass ``True``/``False`` to send an explicit request.
-            api_key: API key override.
-            api_url: Platform API URL override.
-            domain: Platform domain for port URL computation.
             access_key_id: AK/SK access key ID.
             access_key_secret: AK/SK access key secret.
-            sandbox_api_key: Canonical name of *api_key* (same value; a different one is an error).
-            sandbox_base_url: Canonical name of *api_url*.
+            sandbox_api_key: Sandbox platform API key override.
+            sandbox_base_url: Sandbox platform API base URL override.
             sandbox_domain: Provider data-plane domain.
             region: Built-in provider region (derives the API URL and domain).
             provider: Provider id (or a ``Provider`` object). Default: ``ABX_PROVIDER`` /
@@ -713,13 +710,10 @@ class Sandbox:
 
         Args:
             sandbox_id: The ID of the sandbox to connect to.
-            api_key: API key override.
-            api_url: Platform API URL override.
-            domain: Platform domain for port URL computation.
             access_key_id: AK/SK access key ID.
             access_key_secret: AK/SK access key secret.
-            sandbox_api_key: Canonical name of *api_key* (same value; a different one is an error).
-            sandbox_base_url: Canonical name of *api_url*.
+            sandbox_api_key: Sandbox platform API key override.
+            sandbox_base_url: Sandbox platform API base URL override.
             sandbox_domain: Provider data-plane domain.
             region: Built-in provider region (derives the API URL and domain).
             provider: Provider id (or a ``Provider`` object). Default: ``ABX_PROVIDER`` /
@@ -767,12 +761,10 @@ class Sandbox:
             status: Filter by sandbox status.
             limit: Maximum number of sandboxes to return.
             offset: Pagination offset.
-            api_key: API key override.
-            api_url: Platform API URL override.
             access_key_id: AK/SK access key ID.
             access_key_secret: AK/SK access key secret.
-            sandbox_api_key: Canonical name of *api_key* (same value; a different one is an error).
-            sandbox_base_url: Canonical name of *api_url*.
+            sandbox_api_key: Sandbox platform API key override.
+            sandbox_base_url: Sandbox platform API base URL override.
             sandbox_domain: Provider data-plane domain.
             region: Built-in provider region (derives the API URL and domain).
             provider: Provider id (or a ``Provider`` object). Default: ``ABX_PROVIDER`` /
@@ -927,13 +919,10 @@ class Sandbox:
 
         Args:
             sandbox_id: The ID of the sandbox to kill.
-            api_key: API key override.
-            api_url: Platform API URL override.
             access_key_id: AK/SK access key ID.
             access_key_secret: AK/SK access key secret.
-            sandbox_api_key: Canonical name of *api_key* (same value; a different one is an error).
-            sandbox_base_url: Canonical name of *api_url*.
-            sandbox_domain: Provider data-plane domain.
+            sandbox_api_key: Sandbox platform API key override.
+            sandbox_base_url: Sandbox platform API base URL override.
             region: Built-in provider region (derives the API URL and domain).
             provider: Provider id (or a ``Provider`` object). Default: ``ABX_PROVIDER`` /
                 ``[core] provider`` / ``alicloud-express``. A qualified ``provider:id``

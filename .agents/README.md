@@ -189,3 +189,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Prepared-template readiness](notes/proposed/feature/2026-10-25-prepared-template-readiness.md) · [verification](evidence/verify/2026-10-25-prepared-template-readiness.md).
 
 - [Current public a3 guidance](notes/proposed/process/2026-10-25-current-public-a3.md) · [verification](evidence/verify/2026-10-25-public-a3-docs.md).
+
+- [Provider parameter documentation correction](notes/proposed/process/2026-10-25-provider-parameter-docstrings.md) · [candidate verification](evidence/verify/2026-10-25-provider-parameter-docstrings.md). Candidate a4 is not yet a public-install recommendation.

@@ -1,0 +1,59 @@
+{
+  "candidate_version": "0.4.0a4",
+  "base": "53956043008d0658340448c97fcb453387da62d1",
+  "methods": {
+    "create": {
+      "signature_unchanged": true,
+      "documented_names_valid": true
+    },
+    "create_sync": {
+      "signature_unchanged": true,
+      "documented_names_valid": true
+    },
+    "connect": {
+      "signature_unchanged": true,
+      "documented_names_valid": true
+    },
+    "connect_sync": {
+      "signature_unchanged": true,
+      "documented_names_valid": true
+    },
+    "list": {
+      "signature_unchanged": true,
+      "documented_names_valid": true
+    },
+    "list_sync": {
+      "signature_unchanged": true,
+      "documented_names_valid": true
+    },
+    "kill_by_id": {
+      "signature_unchanged": true,
+      "documented_names_valid": true
+    },
+    "kill_by_id_sync": {
+      "signature_unchanged": true,
+      "documented_names_valid": true
+    },
+    "get_info_by_id": {
+      "signature_unchanged": true,
+      "documented_names_valid": true
+    },
+    "get_info_by_id_sync": {
+      "signature_unchanged": true,
+      "documented_names_valid": true
+    },
+    "set_timeout_by_id": {
+      "signature_unchanged": true,
+      "documented_names_valid": true
+    },
+    "set_timeout_by_id_sync": {
+      "signature_unchanged": true,
+      "documented_names_valid": true
+    }
+  },
+  "actual_old_keyword_rejections": 24,
+  "network_calls": 0,
+  "provider_executable_ast_unchanged": true,
+  "standard_ApiParams_unchanged": true,
+  "result": "PASS"
+}
