@@ -97,6 +97,10 @@ Template builder helpers are public imports from this installed package:
 No separate `e2b` installation is needed for these names. Standard template APIs
 retain their documented platform/account prerequisites and public parameters.
 
+Standard sandbox classes use `from agent_sandbox import Sandbox, AsyncSandbox`.
+Interpreter classes use `from agent_sandbox.code_interpreter import Sandbox, AsyncSandbox`;
+these are distinct entries. Their imports require no separate upstream SDK.
+
 The [2026-10-25 public-a4 example record](../../../.agents/evidence/verify/2026-10-25-public-a4-examples.md)
 separates 14 real cloud examples from local protocol fixtures, timeout controls
 and independent cleanup checks. A passing example is not whole-catalog coverage.

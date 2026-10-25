@@ -89,6 +89,10 @@ assert result.exit_code == 0 and result.stdout.strip() == "2"
 `from agent_sandbox import Template, AsyncTemplate, wait_for_port, default_build_logger`。
 这些名称不需要另装 `e2b`；标准模板 API 仍有其文档规定的平台、账号前提和公开参数。
 
+标准沙箱类使用 `from agent_sandbox import Sandbox, AsyncSandbox`；解释器类使用
+`from agent_sandbox.code_interpreter import Sandbox, AsyncSandbox`，二者是不同入口。
+这些导入不需要另装上游 SDK。
+
 [2026-10-25 公开 a4 示例记录](../../../.agents/evidence/verify/2026-10-25-public-a4-examples.md)
 区分了 14 个真实云端示例、本地协议夹具、超时控制和独立清理检查。
 示例通过不代表整个模板目录都已验证。

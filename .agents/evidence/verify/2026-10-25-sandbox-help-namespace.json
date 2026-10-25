@@ -1,0 +1,112 @@
+{
+  "base_commit": "c7b4a55ff930753eb35866b161184f946b04d46c",
+  "candidate_version": "0.4.0a6",
+  "python_files_audited": 390,
+  "docstrings_audited": 2358,
+  "help_upstream_import_residue_before": 4,
+  "help_upstream_import_residue_after": [],
+  "upstream_runtime_imports": [],
+  "changed_source": [
+    {
+      "file": "client-sdk/src/agent_sandbox/code_interpreter/code_interpreter_async.py",
+      "executable_ast_unchanged": true,
+      "candidate_sha256": "a41afd248db766f262c77c7b255f861ca034026d20b729e89842c7d73149350e"
+    },
+    {
+      "file": "client-sdk/src/agent_sandbox/code_interpreter/code_interpreter_sync.py",
+      "executable_ast_unchanged": true,
+      "candidate_sha256": "54ecf57b1d8ffa03c75ea01a786834995f57016b1b32e7c87a6504c573dca1c6"
+    },
+    {
+      "file": "client-sdk/src/agent_sandbox/_standard/sandbox_async/main.py",
+      "executable_ast_unchanged": true,
+      "candidate_sha256": "b92268eb1377a5f91578e3bed2f7b5a5a5be7098116948336a575d667d15ce52"
+    },
+    {
+      "file": "client-sdk/src/agent_sandbox/_standard/sandbox_sync/main.py",
+      "executable_ast_unchanged": true,
+      "candidate_sha256": "bf11221b71387d408f93575e3dfb94e2579d1a19d0bab163fc00c5884ce1b377"
+    }
+  ],
+  "notices_preserved": [
+    "client-sdk/NOTICE",
+    "client-sdk/src/agent_sandbox/_standard/LICENSE",
+    "client-sdk/src/agent_sandbox/_standard/SOURCES.json",
+    "client-sdk/src/agent_sandbox/code_interpreter/LICENSE"
+  ],
+  "maintained_markdown_files_audited": 174,
+  "upstream_markdown_import_contexts": [
+    {
+      "file": "docs/en/guide/command-map.md",
+      "line": 14,
+      "classification": "explicit third-party product comparison",
+      "action": "preserve"
+    },
+    {
+      "file": "docs/en/guide/migrate-from-alicloud-express.md",
+      "line": 18,
+      "classification": "explicit previous-import migration table",
+      "action": "preserve"
+    },
+    {
+      "file": "docs/en/guide/migrate-from-e2b.md",
+      "line": 12,
+      "classification": "explicit previous-import migration table",
+      "action": "preserve"
+    },
+    {
+      "file": "docs/en/guide/migrate-from-e2b.md",
+      "line": 13,
+      "classification": "explicit previous-import migration table",
+      "action": "preserve"
+    },
+    {
+      "file": "docs/en/guide/migrate-from-e2b.md",
+      "line": 14,
+      "classification": "explicit previous-import migration table",
+      "action": "preserve"
+    },
+    {
+      "file": "docs/zh/guide/command-map.md",
+      "line": 14,
+      "classification": "explicit third-party product comparison",
+      "action": "preserve"
+    },
+    {
+      "file": "docs/zh/guide/migrate-from-alicloud-express.md",
+      "line": 17,
+      "classification": "explicit previous-import migration table",
+      "action": "preserve"
+    },
+    {
+      "file": "docs/zh/guide/migrate-from-e2b.md",
+      "line": 12,
+      "classification": "explicit previous-import migration table",
+      "action": "preserve"
+    },
+    {
+      "file": "docs/zh/guide/migrate-from-e2b.md",
+      "line": 13,
+      "classification": "explicit previous-import migration table",
+      "action": "preserve"
+    },
+    {
+      "file": "docs/zh/guide/migrate-from-e2b.md",
+      "line": 14,
+      "classification": "explicit previous-import migration table",
+      "action": "preserve"
+    }
+  ],
+  "skills_audited": [
+    "agent-sandbox-provider/SKILL.md",
+    "agent-sandbox-sdk/SKILL.md"
+  ],
+  "regression_before": {
+    "failed": 5,
+    "passed": 24
+  },
+  "regression_after": {
+    "focused_passed": 54
+  },
+  "scope": "source candidate only; not public a6"
+}

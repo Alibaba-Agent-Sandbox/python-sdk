@@ -52,7 +52,7 @@ class AsyncSandbox(BaseAsyncSandbox):
 
     Example:
     ```python
-    from e2b_code_interpreter import AsyncSandbox
+    from agent_sandbox.code_interpreter import AsyncSandbox
     sandbox = await AsyncSandbox.create()
     ```
     """

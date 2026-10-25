@@ -1,0 +1,40 @@
+{
+  "package": "0.4.0a5",
+  "rows": [
+    {
+      "class": "agent_sandbox._standard.sandbox_sync.main.Sandbox",
+      "displayed_import": "from e2b import Sandbox",
+      "actual_old_import_fails": true,
+      "correct_import": "from agent_sandbox import Sandbox",
+      "correct_object_identity": true,
+      "external_comparison_label": false
+    },
+    {
+      "class": "agent_sandbox._standard.sandbox_async.main.AsyncSandbox",
+      "displayed_import": "from e2b import AsyncSandbox",
+      "actual_old_import_fails": true,
+      "correct_import": "from agent_sandbox import AsyncSandbox",
+      "correct_object_identity": true,
+      "external_comparison_label": false
+    },
+    {
+      "class": "agent_sandbox.code_interpreter.code_interpreter_sync.Sandbox",
+      "displayed_import": "from e2b_code_interpreter import Sandbox",
+      "actual_old_import_fails": true,
+      "correct_import": "from agent_sandbox.code_interpreter import Sandbox",
+      "correct_object_identity": true,
+      "external_comparison_label": false
+    },
+    {
+      "class": "agent_sandbox.code_interpreter.code_interpreter_async.AsyncSandbox",
+      "displayed_import": "from e2b_code_interpreter import AsyncSandbox",
+      "actual_old_import_fails": true,
+      "correct_import": "from agent_sandbox.code_interpreter import AsyncSandbox",
+      "correct_object_identity": true,
+      "external_comparison_label": false
+    }
+  ],
+  "e2b_installed": false,
+  "e2b_code_interpreter_installed": false,
+  "scope": "actual public class help imports; no cloud calls"
+}

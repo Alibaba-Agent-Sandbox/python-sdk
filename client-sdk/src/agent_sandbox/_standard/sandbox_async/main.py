@@ -60,7 +60,7 @@ class AsyncSandbox(SandboxApi):
 
     Example:
     ```python
-    from e2b import AsyncSandbox
+    from agent_sandbox import AsyncSandbox
 
     sandbox = await AsyncSandbox.create()
     ```

@@ -48,7 +48,7 @@ class Sandbox(BaseSandbox):
 
     Example:
     ```python
-    from e2b_code_interpreter import Sandbox
+    from agent_sandbox.code_interpreter import Sandbox
 
     sandbox = Sandbox.create()
     ```

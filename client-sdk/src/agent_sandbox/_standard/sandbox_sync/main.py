@@ -58,7 +58,7 @@ class Sandbox(SandboxApi):
 
     Example:
     ```python
-    from e2b import Sandbox
+    from agent_sandbox import Sandbox
 
     sandbox = Sandbox.create()
     ```
