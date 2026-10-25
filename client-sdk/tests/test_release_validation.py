@@ -47,7 +47,12 @@ def test_existing_and_published_files_are_content_checked(tmp_path):
 
 @pytest.mark.parametrize(
     "mode,status,expected",
-    [("published", 404, 75), ("published", 500, None), ("preflight", 404, None)],
+    [
+        ("published", 404, 75),
+        ("published", 401, None),
+        ("published", 500, None),
+        ("preflight", 404, None),
+    ],
 )
 def test_only_published_metadata_not_found_is_retryable(monkeypatch, mode, status, expected):
     import sys
@@ -141,11 +146,12 @@ def _run_public_workflow(tmp_path, metadata=0, install=0, check=0, probe=0):
     return result, state, sleeps
 
 
-def test_public_workflow_retries_propagation_then_checks_install_once(tmp_path):
-    result, state, sleeps = _run_public_workflow(tmp_path, metadata=1, install=1)
+@pytest.mark.parametrize("metadata_failures", [1, 7])
+def test_public_workflow_retries_propagation_then_checks_install_once(tmp_path, metadata_failures):
+    result, state, sleeps = _run_public_workflow(tmp_path, metadata=metadata_failures, install=1)
     assert result.returncode == 0, result.stderr
-    assert state == {"metadata": 2, "install": 2, "check": 1, "probe": 1}
-    assert sleeps == 2
+    assert state == {"metadata": metadata_failures + 1, "install": 2, "check": 1, "probe": 1}
+    assert sleeps == metadata_failures + 1
     assert "install failure" in result.stderr
 
 
@@ -153,7 +159,7 @@ def test_public_workflow_retries_propagation_then_checks_install_once(tmp_path):
     "options,expected,sleeps",
     [
         ({"metadata": -1}, {"metadata": 1}, 0),
-        ({"metadata": 9}, {"metadata": 6}, 5),
+        ({"metadata": 30}, {"metadata": 18}, 17),
         ({"install": 9}, {"metadata": 1, "install": 6}, 5),
         ({"check": 1}, {"metadata": 1, "install": 1, "check": 1}, 0),
         ({"probe": 1}, {"metadata": 1, "install": 1, "check": 1, "probe": 1}, 0),

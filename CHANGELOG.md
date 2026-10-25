@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Synchronize maintained installs, skills and runtime fixtures with verified public client/server a4. Give only public-metadata 404 propagation an 18-probe bound; retain hard digest/auth/import failures and the original a4 failure/recovery receipts. / 维护中的安装、技能与夹具同步已验证公开 a4；仅将公开元数据 404 传播等待扩为 18 次，保留摘要、认证和导入的硬失败及原始 a4 发布失败/恢复记录。
+
 - Align ProviderSandbox lifecycle parameter docstrings and copied synchronous docs with their actual canonical signatures; remove nonexistent alias/domain entries without changing runtime behavior. Prepare lockstep client/server 0.4.0a4. / 对齐 ProviderSandbox 生命周期及同步版本文档与真实规范参数，删除不存在的别名和域名参数说明；运行行为不变，准备同版本双包 0.4.0a4。
 
 - Wait for prepared-template readiness inside one bounded `readiness_timeout` instead of failing after the first early nonzero probe; preserve timeout/cancellation cleanup. Prepare lockstep client/server 0.4.0a3 without changing published a2 artifacts. / 修复模板进程启动后首次就绪探测过早失败的问题，在单一预算内等待就绪，并保留超时和取消时的资源清理；准备同版本双包 0.4.0a3，不覆盖公开 a2。

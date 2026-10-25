@@ -1,0 +1,135 @@
+{
+  "publication": {
+    "version": "0.4.0a4",
+    "run_id": 40215483508,
+    "run_url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/40215483508",
+    "source_commit": "100da4661809f91a5d50e2722d1f4a8d4da3b131",
+    "original_release_artifact_id": 12608120413,
+    "rerun_release_artifact_id": 12608106130,
+    "both_preserved_artifacts_identical": true,
+    "run_attempt": 2,
+    "first_attempt_result": "FAIL_METADATA_HTTP404_EXIT75",
+    "result": "PASS",
+    "files": [
+      {
+        "package": "agent-sandbox-client",
+        "filename": "agent_sandbox_client-0.4.0a4-py3-none-any.whl",
+        "sha256": "3985f520cd07fd7dc708833714777ff7ed725a2567173bac07238ee5d9cb94f8",
+        "release_artifact_matches_metadata_and_download": true
+      },
+      {
+        "package": "agent-sandbox-client",
+        "filename": "agent_sandbox_client-0.4.0a4.tar.gz",
+        "sha256": "d9a21c809ea6508e87db4ccd5a9d9348512ac9b99de4dc731e828c38a2bbfc62",
+        "release_artifact_matches_metadata_and_download": true
+      },
+      {
+        "package": "agent-sandbox-server",
+        "filename": "agent_sandbox_server-0.4.0a4-py3-none-any.whl",
+        "sha256": "0a2bca2a261c5ce78a79bb4f922a5c96f9cc05ee1157a145440e14257663874d",
+        "release_artifact_matches_metadata_and_download": true
+      },
+      {
+        "package": "agent-sandbox-server",
+        "filename": "agent_sandbox_server-0.4.0a4.tar.gz",
+        "sha256": "56a4cad2d65dd36c0e461a03435c9e8a367563f88b1d316b0495b4e3f8d957cd",
+        "release_artifact_matches_metadata_and_download": true
+      }
+    ]
+  },
+  "installation": {
+    "packages": {
+      "agent-sandbox-client": "0.4.0a4",
+      "agent-sandbox-server": "0.4.0a4"
+    },
+    "fresh_home_cwd": true,
+    "no_source_injection": true,
+    "imports_from_fresh_venv": true,
+    "all_12_lifecycle_docstrings_match_signatures": {
+      "create": true,
+      "create_sync": true,
+      "connect": true,
+      "connect_sync": true,
+      "list": true,
+      "list_sync": true,
+      "kill_by_id": true,
+      "kill_by_id_sync": true,
+      "get_info_by_id": true,
+      "get_info_by_id_sync": true,
+      "set_timeout_by_id": true,
+      "set_timeout_by_id_sync": true
+    },
+    "standard_ApiParams_unchanged": true,
+    "pip_check": "PASS",
+    "result": "PASS",
+    "actual_public_retired_keyword_rejections": 24,
+    "installed_api_source_matches_reviewed": true,
+    "installed_api_source_sha256": "10d593ef1320f2ee8bd6bb72bb5310355a86eaa048dc5d01396a892322295c9e"
+  },
+  "actual_public_http": {
+    "packages": {
+      "agent-sandbox-client": "0.4.0a4",
+      "agent-sandbox-server": "0.4.0a4"
+    },
+    "source_install": false,
+    "scope": "official public packages, real local HTTP; no cloud or model call",
+    "health": true,
+    "shell_exit": 0,
+    "shell_stdout": "4\n",
+    "file_roundtrip": true,
+    "owned_process_exit": -15,
+    "owned_pid_independently_absent": true,
+    "script_sha256": "2b2d02ab4b67e15e2d9e8bde9fa458aad500ab76e7ebd507158eca9a9d9140f9",
+    "result": "PASS"
+  },
+  "recovery": {
+    "run_id": 40215483508,
+    "attempt1_conclusion": "failure",
+    "attempt2_conclusion": "success",
+    "same_tag": true,
+    "source_commit": "100da4661809f91a5d50e2722d1f4a8d4da3b131",
+    "already_existing_file_skips": 4,
+    "skip_reason": "appears to already exist (wrapped over two log lines)"
+  },
+  "original_failure": {
+    "run_id": 40215483508,
+    "attempt": 1,
+    "result": "FAIL",
+    "failed_job": 121237097667,
+    "failed_step": "Verify public PyPI files and fresh installation",
+    "failure_class": "official metadata HTTP 404 on all six probes, exit75; fresh install not reached",
+    "probe_timestamps_utc": [
+      "17:21:19.3438409",
+      "17:21:29.4594161",
+      "17:21:39.5735746",
+      "17:21:49.7409977",
+      "17:21:59.8556727",
+      "17:22:09.9872731"
+    ],
+    "original_artifact_id": 12608120413,
+    "later_canonical_metadata_http_status": 200,
+    "later_files_match": [
+      {
+        "filename": "agent_sandbox_client-0.4.0a4-py3-none-any.whl",
+        "sha256": "3985f520cd07fd7dc708833714777ff7ed725a2567173bac07238ee5d9cb94f8",
+        "original_publisher_artifact_matches_public_metadata_and_bytes": true
+      },
+      {
+        "filename": "agent_sandbox_client-0.4.0a4.tar.gz",
+        "sha256": "d9a21c809ea6508e87db4ccd5a9d9348512ac9b99de4dc731e828c38a2bbfc62",
+        "original_publisher_artifact_matches_public_metadata_and_bytes": true
+      },
+      {
+        "filename": "agent_sandbox_server-0.4.0a4-py3-none-any.whl",
+        "sha256": "0a2bca2a261c5ce78a79bb4f922a5c96f9cc05ee1157a145440e14257663874d",
+        "original_publisher_artifact_matches_public_metadata_and_bytes": true
+      },
+      {
+        "filename": "agent_sandbox_server-0.4.0a4.tar.gz",
+        "sha256": "56a4cad2d65dd36c0e461a03435c9e8a367563f88b1d316b0495b4e3f8d957cd",
+        "original_publisher_artifact_matches_public_metadata_and_bytes": true
+      }
+    ],
+    "immutable_tag_unchanged": true
+  }
+}

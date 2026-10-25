@@ -1,6 +1,6 @@
 # Decision: Match provider parameter help to the callable contract
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -53,3 +53,7 @@ artifact verification/fresh install receive new evidence; previous a3 evidence
 and current installation claims remain accurate.
 
 [Verification](../../../evidence/verify/2026-10-25-provider-parameter-docstrings.md).
+
+## Implementation
+
+PR 125 merged at 100da4661809f91a5d50e2722d1f4a8d4da3b131 after all 13 checks and independent review. Public a4 publication/readback completed; the first metadata-404 failure and successful same-tag retry are retained in the new public-a4 delivery evidence.

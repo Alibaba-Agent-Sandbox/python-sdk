@@ -2,16 +2,20 @@
 
 ## Current public pair — 2026-10-25
 
-Client/server **0.4.0a3** are public. [Release and fresh-install verification](evidence/verify/2026-10-25-public-a3-docs.md)
-links the immutable tag/merge, successful publication workflow and four preserved
-artifact hashes matched to actual PyPI downloads. The public package passed real
-prepared-reference delayed readiness, bounded failure and cancellation; all three
-owned sandboxes were independently confirmed absent. This covers `ready_cmd`
-polling, not a new whole-launch deadline or whole-catalog certification.
-Maintained installation and skill examples use this exact public pair. The
-[earlier example run](evidence/verify/2026-10-25-public-sdk-documentation.md)
-retains its actual a2 scope; the browser cold-install failure remains Issue 111.
+Client/server **0.4.0a4** are public. [Current delivery verification](evidence/verify/2026-10-25-public-a4-delivery.md)
+records the reviewed immutable tag, original metadata-404 failure, successful
+same-tag recovery, both identical preserved artifact sets, four official download
+hashes and fresh official installation. The 12 lifecycle async/sync docstrings
+match actual signatures; retired Provider keyword calls still reject. Real local
+HTTP health/shell/files and owned-process cleanup passed with public packages.
+This documentation correction does not certify new cloud/catalog/model coverage.
+Maintained installation/skill examples and SDK fixture recipes select public a4.
 
+The [earlier public-a3 readiness delivery](evidence/verify/2026-10-25-public-a3-docs.md)
+retains its exact real-cloud delayed-readiness/failure/cancellation scope. The
+[earlier a2 example run](evidence/verify/2026-10-25-public-sdk-documentation.md)
+retains its browser cold-install failure; later example runs reconcile that result
+separately. Historical failures are not rewritten as new-version passes.
 
 ## Published specification 5 alpha — 2026-10-25
 
@@ -186,8 +190,10 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 
 - [Public runtime fixture images](notes/proposed/process/2026-10-25-public-runtime-fixture-images.md) · [verification](evidence/verify/2026-10-25-public-runtime-fixture-images.md)
 
-- [Prepared-template readiness](notes/proposed/feature/2026-10-25-prepared-template-readiness.md) · [verification](evidence/verify/2026-10-25-prepared-template-readiness.md).
+- [Prepared-template readiness](notes/implemented/feature/2026-10-25-prepared-template-readiness.md) · [verification](evidence/verify/2026-10-25-prepared-template-readiness.md).
 
-- [Current public a3 guidance](notes/proposed/process/2026-10-25-current-public-a3.md) · [verification](evidence/verify/2026-10-25-public-a3-docs.md).
+- [Current public a3 guidance](notes/implemented/process/2026-10-25-current-public-a3.md) · [verification](evidence/verify/2026-10-25-public-a3-docs.md).
 
-- [Provider parameter documentation correction](notes/proposed/process/2026-10-25-provider-parameter-docstrings.md) · [candidate verification](evidence/verify/2026-10-25-provider-parameter-docstrings.md). Candidate a4 is not yet a public-install recommendation.
+- [Provider parameter documentation correction](notes/implemented/process/2026-10-25-provider-parameter-docstrings.md) · [candidate verification](evidence/verify/2026-10-25-provider-parameter-docstrings.md) · [published follow-up](evidence/verify/2026-10-25-public-a4-delivery.md).
+
+- [Current public a4 guidance and bounded metadata propagation](notes/proposed/process/2026-10-25-current-public-a4.md) · [verification](evidence/verify/2026-10-25-public-a4-delivery.md).

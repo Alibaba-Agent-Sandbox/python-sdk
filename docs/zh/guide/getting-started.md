@@ -10,7 +10,7 @@
 使用 Python 3.10 及以上版本，先按[安装指南](install-python.md)创建并激活虚拟环境，再安装：
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a3'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a4'
 python -m pip check
 export ABX_SANDBOX_API_KEY='your-api-key'
 ```

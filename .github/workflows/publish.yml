@@ -111,11 +111,11 @@ jobs:
         if: steps.publish.outputs.upload == 'true'
         run: |
           # PyPI metadata and index propagation can lag a successful upload.
-          for attempt in 1 2 3 4 5 6; do
+          for attempt in {1..18}; do
             if python scripts/check_release.py published; then break; else result=$?; fi
             # Only a missing public metadata endpoint is propagation. A digest
             # mismatch or another verification error must stop immediately.
-            if [ "$result" != 75 ] || [ "$attempt" = 6 ]; then exit "$result"; fi
+            if [ "$result" != 75 ] || [ "$attempt" = 18 ]; then exit "$result"; fi
             sleep 10
           done
           version=$(python -c 'import sys; sys.path.insert(0, "scripts"); from check_release import release_version; print(release_version())')

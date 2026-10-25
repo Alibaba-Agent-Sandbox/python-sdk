@@ -1,6 +1,6 @@
 # Decision: Wait for prepared-template readiness within its existing budget
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -50,3 +50,7 @@ complete before claiming public delivery. Preserve failed and historical receipt
 [Verification](../../../evidence/verify/2026-10-25-prepared-template-readiness.md).
 
 Issue: https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/121
+
+## Implementation
+
+PR 122 merged and immutable public a3 publication/readback completed. Real delayed-readiness, bounded failure and cancellation with independent owned cleanup passed; provider PR 40 completed its real Docker T4 and merged. Issue 121 is completed. This did not change the whole-launch budget.

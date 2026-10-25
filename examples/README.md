@@ -14,10 +14,10 @@ Examples are split by which package they exercise.
 
 ```bash
 # Full install (recommended — includes the declarative decorator, MCP server, ...)
-python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client[all]==0.4.0a3"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client[all]==0.4.0a4"
 
 # Or install selectively
-python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a3"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-client==0.4.0a4"
 
 # From source (run from the python-sdk repository root)
 pip install -e ./server-sdk -e ./client-sdk
