@@ -48,8 +48,11 @@ unchanged from the earlier checkpoint; these are new actual a6 runs.
 ## Commands run and reproduction
 
 Install public packages independently of the source checkout. No editable SDK
-installation or PYTHONPATH is used. Cloud examples used the all extra; the local
-runner used ordinary `agent-sandbox-client==0.4.0a6` without extras.
+installation or PYTHONPATH is used. The cloud examples and local runner used
+the same fresh official `agent-sandbox-client[all]==0.4.0a6` environment. The local
+runner used a separate isolated HOME with provider/model credentials removed;
+the non-all help/HTTP installation is a separate delivery check, not this runner
+environment.
 
 ```bash
 python3 -m venv public-sdk
