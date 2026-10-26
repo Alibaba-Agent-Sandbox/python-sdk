@@ -10,6 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Normalize Python MCP background-task `sandbox_id` handles to the actual `provider:id`. Return the opaque handle unchanged when querying/cancelling; callers parsing a raw ID must update. Legacy raw IDs still resolve within a unique lifecycle cache or the SDK's default-provider scope. / Python MCP 后台任务的 `sandbox_id` 句柄规范为实际 `provider:id`；查询和取消须原样回传，拆分原始 ID 的调用者需要更新。历史原始 ID 仍可在无歧义的生命周期缓存或 SDK 默认提供方范围内解析。
+
+- Add an optional real desktop acceptance runner with isolated pinned dependencies, private ingress, screenshot/input, user handover and replay documentation. / 新增可选真实桌面验收运行器、隔离固定依赖及私有入口、画面输入、用户接管和回放说明。
+
+- Add opt-in standard-client acceptance for owned OSS persistence across sandbox recreation and read-only enforcement; keep Snapshot mutation inside an owned non-sticky directory and preserve real mounted pause/resume evidence. / 新增标准客户端自有 OSS 跨沙箱重建持久化及只读约束验收；快照修改使用自有非 sticky 目录，并保留真实挂载暂停恢复证据；仅新增验收夹具。
+
 - Correct bilingual environment guidance for ProviderSandbox ownership, Express terminal-only env flags and authenticated application environment calls; retain provider-specific interpreter and exec initialization contracts. Documentation only, without runtime or version changes. / 修正双语环境说明，明确 ProviderSandbox 资源归属、Express 终端环境参数和带认证的应用环境调用，保留提供方解释器与 exec 初始化契约；仅改文档，不改运行行为或版本。
 
 - Clarify CLI-started application connection versus Python-owned prepared-reference startup in both template guides; correct the SDK Skill's specification number to 5. No runtime, API or package version change. / 双语模板指南区分 CLI 启动后连接与 Python 根据已准备引用启动，避免重复启动同一个服务；SDK 技能的规范编号更正为 5，不改运行行为、接口或版本。
@@ -17,6 +23,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Select verified public client/server a6 in maintained bilingual installs, Skills and runtime fixtures. Preserve immutable publication hashes, exhaustive help checks and real current-design cleanup separately from earlier a4/a5 receipts. No runtime/API change or new package publication. / 维护中的双语安装、技能与运行夹具统一使用已验证公开 a6；另存不可变产物摘要、完整帮助检查与真实设计示例清理结果，不改旧 a4/a5 证据，不改运行接口或另发包。
 
 ### Fixed
+
+- Verify explicit Python MCP CPU/memory requests against actual platform metadata before success; reject unknown/mismatched resources, roll back only the new sandbox and report independently verified cleanup or a recovery handle. Direct SDK creation is unchanged. / Python MCP 对显式 CPU/内存请求独立核验平台实际配置，无法核验或不匹配时仅回滚新建沙箱，返回清理确认或恢复句柄；直接 SDK 创建行为不变。
+
+- Track Python MCP sandbox creation ownership separately from borrowed connections. Closing a borrowing session now closes its client handle without deleting another session's sandbox; explicit kills and retained-task behavior remain supported. Correct the Provider Skill to use `template.prepare` instead of the CLI-rejected `templates.deploy` feature. / Python MCP 分开记录沙箱创建归属与借用连接；关闭借用会话不再删除其他会话的沙箱，保留显式删除及后台任务保留行为；Provider 技能改用 `template.prepare`，删除 CLI 拒绝的 `templates.deploy` 特性声明。
 
 - Correct current bilingual API/lifecycle examples to use actual base commands/files, canonical Provider parameters and typed timeout cleanup; remove unimplemented global cleanup and speculative persistence/billing guarantees. / 修正当前双语 API/生命周期示例，使用真实 base 命令/文件、规范 Provider 参数与类型化超时清理；删除未实现全局策略及推测的持久化/计费承诺。
 

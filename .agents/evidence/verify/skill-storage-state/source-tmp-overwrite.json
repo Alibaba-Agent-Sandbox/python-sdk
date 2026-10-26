@@ -1,0 +1,14 @@
+[
+  {
+    "folder": "/tmp/",
+    "overwrite": "FAIL",
+    "error": "500: error opening file: open /tmp/abx-owned-af726c18c61844e18d822e5f3b703a6e: permission denied"
+  },
+  {
+    "folder": "/home/user/",
+    "overwrite": "PASS"
+  },
+  {
+    "cleanup_deleted": true
+  }
+]

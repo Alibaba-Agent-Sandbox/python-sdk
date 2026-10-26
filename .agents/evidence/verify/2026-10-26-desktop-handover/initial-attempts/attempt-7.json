@@ -1,0 +1,130 @@
+{
+  "steps": [
+    {
+      "name": "desktop-created-correct-spec",
+      "result": "PASS",
+      "cpu": 4,
+      "memory": 8192
+    },
+    {
+      "name": "agent-mouse-keyboard-effect",
+      "result": "PASS",
+      "sequence": [
+        "agent-start"
+      ]
+    },
+    {
+      "name": "stream-static-resource-access",
+      "result": "PASS",
+      "unauthenticated_static_status": 200,
+      "authenticated_static_status": 200,
+      "upstream_content_type": "text/html",
+      "upstream_disposition": "attachment",
+      "html_document_observed": true,
+      "connected_without_gateway_token": true,
+      "rfb_banner_received": true
+    },
+    {
+      "name": "gateway-token-enforcement",
+      "result": "NOT_CONFIRMED",
+      "connected_without_gateway_token": true,
+      "rfb_banner_received": true
+    },
+    {
+      "name": "vnc-password-rejected",
+      "result": "PASS",
+      "connected": false,
+      "status": "New connection has been rejected with reason: password check failed!"
+    },
+    {
+      "name": "live-stream-renders",
+      "result": "PASS",
+      "websocket_sessions": 2,
+      "transported_bytes": 33380,
+      "canvas_width": 1100
+    },
+    {
+      "name": "operator-handover-effect",
+      "result": "FAIL",
+      "actor": "simulated operator through independent VNC client",
+      "sequence": [
+        "agent-start"
+      ]
+    },
+    {
+      "name": "desktop-cleanup",
+      "result": "PASS",
+      "deleted": true,
+      "independently_absent": true
+    }
+  ],
+  "timeline": [
+    {
+      "at_seconds": 17.63,
+      "actor": "agent",
+      "action": "Open the synthetic local acceptance page in the real desktop browser",
+      "file": "01-browser-ready.png",
+      "sha256": "869764cbe433fc11986032712610e68d6de132b0a8b694cba3c0ae1f54a24c0a",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "at_seconds": 19.93,
+      "actor": "agent",
+      "action": "Mouse focus, keyboard text and mouse commit",
+      "file": "02-agent-state.png",
+      "sha256": "2e599f95b3c886b45255af27c3994826e3068dcfd14d741570635e8a138079b4",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "at_seconds": 35.11,
+      "actor": "simulated-operator",
+      "action": "Observe authenticated live stream through controlled backend proxy",
+      "file": "03-live-stream-view.png",
+      "sha256": "3ab4de0a27d070385ef42cecf196668bff4963b7f3f8766507e14be0e9c8158e"
+    },
+    {
+      "at_seconds": 38.8,
+      "actor": "simulated-operator",
+      "action": "Independent screenshot after VNC input before checking state",
+      "file": "operator-diagnostic.png",
+      "sha256": "5a027bd7ba25d97c0e00e7edc608eefb2a109c5def18257535c5d17912b28f95",
+      "width": 1024,
+      "height": 768
+    }
+  ],
+  "scope": "Real official desktop image; operator is simulated by a second controller, not a human/login session.",
+  "sandbox_id": "sbx-b45cef0c-507b-43c3-a605-990faab478ae",
+  "gateway_observation": {
+    "unauthenticated_static_status": 200,
+    "authenticated_static_status": 200,
+    "upstream_content_type": "text/html",
+    "upstream_disposition": "attachment",
+    "html_document_observed": true,
+    "connected_without_gateway_token": true,
+    "rfb_banner_received": true
+  },
+  "proxy": {
+    "bind": "127.0.0.1",
+    "gateway_token_stays_backend": true
+  },
+  "canvas_observation": {
+    "bounding_box": {
+      "x": 0,
+      "y": 12.5,
+      "width": 1100,
+      "height": 825
+    },
+    "dimensions": {
+      "width": 1024,
+      "height": 768
+    },
+    "view_only_setting": false
+  },
+  "failure": {
+    "type": "AssertionError",
+    "message": "operator-handover-effect"
+  },
+  "result": "FAIL"
+}

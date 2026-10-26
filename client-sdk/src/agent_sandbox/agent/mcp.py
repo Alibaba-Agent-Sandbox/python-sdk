@@ -67,6 +67,8 @@ class SandboxManager:
     - An explicit ``sandbox_id`` addresses that sandbox and does not change
       the default.
     - Concurrent callers share one lazy create.
+    - Session shutdown kills only sandboxes created by this manager. Explicit-ID
+      connections are borrowed and only their client handles are closed.
     """
 
     def __init__(
@@ -81,11 +83,37 @@ class SandboxManager:
         self._domain = sandbox_domain
         self._default_template = template
         self._default_sandbox: Any = None  # Sandbox instance
-        self._sandboxes: dict[str, Any] = {}  # sandbox_id -> Sandbox
+        self._sandboxes: dict[str, Any] = {}  # sandbox_id -> cached Sandbox handle
+        self._owned_sandbox_ids: set[str] = set()
         self._lifetimes: dict[str, int] = {}  # sandbox_id -> timeout seconds
         self._retained_task_sandboxes: set[str] = set()
         self._state_lock = asyncio.Lock()
         self._default_lock = asyncio.Lock()
+        self._closed = False
+
+    @staticmethod
+    def _sandbox_key(sandbox: Any) -> str:
+        """Keep provider identity when different backends reuse a raw ID."""
+        provider = getattr(sandbox, "provider", None)
+        return (
+            f"{provider}:{sandbox.id}"
+            if isinstance(provider, str) and provider
+            else str(sandbox.id)
+        )
+
+    def _require_open(self) -> None:
+        if self._closed:
+            raise _ToolInputError("MCP session is closed.")
+
+    def _cached_sandbox(self, reference: str) -> Any:
+        """Resolve an exact reference or a unique bare ID while holding the state lock."""
+        cached = self._sandboxes.get(reference)
+        if cached is not None or ":" in reference:
+            return cached
+        matches = [sb for sb in self._sandboxes.values() if sb.id == reference]
+        if len(matches) > 1:
+            raise _ToolInputError("Ambiguous sandbox ID; qualify it with its provider.")
+        return matches[0] if matches else None
 
     def _connect_kwargs(self, **extra: Any) -> dict[str, Any]:
         """Build SDK kwargs shared by create, connect, and kill."""
@@ -110,7 +138,7 @@ class SandboxManager:
         if setter is None:
             return
         sandbox_id = getattr(sandbox, "id", "")
-        timeout = self._lifetimes.get(sandbox_id, 300)
+        timeout = self._lifetimes.get(self._sandbox_key(sandbox), 300)
         try:
             result = setter(int(timeout))
             if asyncio.iscoroutine(result) or asyncio.isfuture(result):
@@ -133,6 +161,8 @@ class SandboxManager:
         provider: str | None = None,
     ) -> Any:
         """Create a sandbox and make it the session default."""
+        async with self._state_lock:
+            self._require_open()
         from agent_sandbox.api.sandbox import Sandbox
 
         kwargs = self._connect_kwargs(
@@ -150,9 +180,18 @@ class SandboxManager:
                 kwargs[name] = value
         sandbox = await Sandbox.create(**kwargs)
         async with self._state_lock:
-            self._sandboxes[sandbox.id] = sandbox
-            self._lifetimes[sandbox.id] = timeout
-            self._default_sandbox = sandbox
+            closed = self._closed
+            if not closed:
+                key = self._sandbox_key(sandbox)
+                self._sandboxes[key] = sandbox
+                self._owned_sandbox_ids.add(key)
+                self._lifetimes[key] = timeout
+                self._default_sandbox = sandbox
+        if closed:
+            # Shutdown may win while the backend is creating. This instance is
+            # ours, but must never be registered into the terminated session.
+            await sandbox.kill()
+            raise _ToolInputError("MCP session is closed.")
         logger.info("Created sandbox: %s", sandbox.id)
         return sandbox
 
@@ -166,7 +205,8 @@ class SandboxManager:
         """Get a sandbox by ID, or create/return the default sandbox."""
         if sandbox_id:
             async with self._state_lock:
-                cached = self._sandboxes.get(sandbox_id)
+                self._require_open()
+                cached = self._cached_sandbox(sandbox_id)
             if cached is not None:
                 if refresh_lifetime:
                     await self._refresh_lifetime(cached)
@@ -175,24 +215,40 @@ class SandboxManager:
 
             sb = await Sandbox.connect(**self._connect_kwargs(sandbox_id=sandbox_id))
             async with self._state_lock:
-                self._sandboxes[sb.id] = sb
-                self._lifetimes.setdefault(sb.id, 300)
+                closed = self._closed
+                key = self._sandbox_key(sb)
+                selected = self._sandboxes.get(key)
+                if not closed and selected is None:
+                    self._sandboxes[key] = sb
+                    self._lifetimes.setdefault(key, 300)
+                    selected = sb
+            # An alias or concurrent connect must not overwrite an owned handle.
+            # A connect completing after shutdown is borrowed and only closed.
+            if closed or selected is not sb:
+                await sb.close()
+            if closed:
+                raise _ToolInputError("MCP session is closed.")
             if refresh_lifetime:
-                await self._refresh_lifetime(sb)
-            return sb
+                await self._refresh_lifetime(selected)
+            return selected
 
         # One lazy create even when two tool calls arrive together.
         async with self._default_lock:
-            if self._default_sandbox is None:
+            async with self._state_lock:
+                self._require_open()
+                sandbox = self._default_sandbox
+            if sandbox is None:
                 if not create_default:
                     raise _ToolInputError(
                         "No default sandbox. Call create_sandbox or specify sandbox_id."
                     )
                 created = await self.create_sandbox()
-                if self._default_sandbox is None:
-                    self._default_sandbox = created
-                logger.info("Auto-created default sandbox: %s", self._default_sandbox.id)
-            sandbox = self._default_sandbox
+                async with self._state_lock:
+                    self._require_open()
+                    if self._default_sandbox is None:
+                        self._default_sandbox = created
+                    sandbox = self._default_sandbox
+                logger.info("Auto-created default sandbox: %s", sandbox.id)
         if refresh_lifetime:
             await self._refresh_lifetime(sandbox)
         return sandbox
@@ -228,7 +284,7 @@ class SandboxManager:
         """Refresh metadata without creating a sandbox or extending its TTL."""
         if sandbox_id:
             async with self._state_lock:
-                cached = self._sandboxes.get(sandbox_id)
+                cached = self._cached_sandbox(sandbox_id)
             if cached is None:
                 from agent_sandbox.api.sandbox import Sandbox
 
@@ -246,7 +302,7 @@ class SandboxManager:
         """Set the platform TTL and use it for subsequent session refreshes."""
         if sandbox_id:
             async with self._state_lock:
-                cached = self._sandboxes.get(sandbox_id)
+                cached = self._cached_sandbox(sandbox_id)
             if cached is None:
                 from agent_sandbox.api.sandbox import Sandbox
 
@@ -261,9 +317,10 @@ class SandboxManager:
         )
         await sandbox.set_timeout(timeout)
         async with self._state_lock:
-            managed = self._sandboxes.get(sandbox.id)
+            key = self._sandbox_key(sandbox)
+            managed = self._sandboxes.get(key)
             if managed is not None and managed is sandbox:
-                self._lifetimes[managed.id] = timeout
+                self._lifetimes[key] = timeout
         return str(sandbox.id)
 
     async def kill_sandbox(self, sandbox_id: str | None = None) -> str | None:
@@ -275,11 +332,15 @@ class SandboxManager:
         """
         if sandbox_id:
             async with self._state_lock:
-                sb = self._sandboxes.pop(sandbox_id, None)
-                self._lifetimes.pop(sandbox_id, None)
-                self._retained_task_sandboxes.discard(sandbox_id)
-                if self._default_sandbox is not None and self._default_sandbox.id == sandbox_id:
-                    self._default_sandbox = None
+                sb = self._cached_sandbox(sandbox_id)
+                if sb is not None:
+                    key = self._sandbox_key(sb)
+                    self._sandboxes.pop(key, None)
+                    self._lifetimes.pop(key, None)
+                    self._retained_task_sandboxes.discard(key)
+                    self._owned_sandbox_ids.discard(key)
+                    if self._default_sandbox is sb:
+                        self._default_sandbox = None
             if sb is not None:
                 await sb.kill()
                 logger.info("Killed sandbox: %s", sandbox_id)
@@ -298,9 +359,11 @@ class SandboxManager:
             sb = self._default_sandbox
             self._default_sandbox = None
             if sb is not None:
-                self._sandboxes.pop(sb.id, None)
-                self._lifetimes.pop(sb.id, None)
-                self._retained_task_sandboxes.discard(sb.id)
+                key = self._sandbox_key(sb)
+                self._sandboxes.pop(key, None)
+                self._lifetimes.pop(key, None)
+                self._retained_task_sandboxes.discard(key)
+                self._owned_sandbox_ids.discard(key)
         if sb is None:
             return None
         sid = sb.id
@@ -316,31 +379,34 @@ class SandboxManager:
         """
         if sandbox is None:
             return False
-        sandbox_id = str(sandbox.id)
+        key = self._sandbox_key(sandbox)
         async with self._state_lock:
-            if self._sandboxes.get(sandbox_id) is not sandbox:
+            if self._closed or self._sandboxes.get(key) is not sandbox:
                 return False
-            self._retained_task_sandboxes.add(sandbox_id)
+            self._retained_task_sandboxes.add(key)
             return True
 
     async def shutdown(self) -> None:
-        """Clean session sandboxes, preserving only explicitly retained tasks."""
+        """Kill owned sandboxes, closing borrowed handles and retained-task handles."""
         async with self._state_lock:
+            self._closed = True
             items = list(self._sandboxes.items())
             retained = self._retained_task_sandboxes.copy()
+            owned = self._owned_sandbox_ids.copy()
+            self._owned_sandbox_ids.clear()
             self._retained_task_sandboxes.clear()
             self._sandboxes.clear()
             self._lifetimes.clear()
             self._default_sandbox = None
         for sid, sb in items:
             try:
-                if sid in retained:
+                if sid not in owned or sid in retained:
                     await sb.close()
                     continue
                 await sb.kill()
                 logger.info("Shutdown: killed sandbox %s", sid)
             except Exception:
-                logger.warning("Failed to kill sandbox %s during shutdown", sid, exc_info=True)
+                logger.warning("Failed to clean sandbox %s during shutdown", sid, exc_info=True)
 
 
 # ---------------------------------------------------------------------------

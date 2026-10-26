@@ -1,0 +1,29 @@
+{
+  "checks": [
+    {
+      "name": "prepare-owned-workdir",
+      "passed": true,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "workload-exception",
+      "passed": false,
+      "error": "Command exited with code 128 and error:\nCloning into '/home/user/skills-tools-live/repo'...\nfatal: unable to access 'https://github.com/alibaba-agent-sandbox/awesome-templates.git/': Operation too slow. Less than 1 bytes/sec transferred the last 30 seconds\n"
+    },
+    {
+      "name": "owned-sandbox-cleanup-independent-readback",
+      "passed": true
+    }
+  ],
+  "resources": [
+    {
+      "id": "sbx-5372c0ed-361d-4f00-97af-be85af2b59d5",
+      "kind": "sandbox"
+    }
+  ],
+  "scope": "Real SDK-controlled sandbox; actual public repository, MCP npm packages and application-level expiring preview",
+  "failure": "Command exited with code 128 and error:\nCloning into '/home/user/skills-tools-live/repo'...\nfatal: unable to access 'https://github.com/alibaba-agent-sandbox/awesome-templates.git/': Operation too slow. Less than 1 bytes/sec transferred the last 30 seconds\n",
+  "sandbox_absent": true
+}

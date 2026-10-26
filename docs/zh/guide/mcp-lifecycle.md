@@ -42,8 +42,16 @@ metadata、任意 lifecycle 对象或端点 URL。列表结果的 `sandboxes` �
 可用。SDK 没有对应 Team 参数，因此不提供 Team 选择。
 
 ```json
-{"name":"create_sandbox","arguments":{"template":"base","timeout":600,"cpu":2,"memory":1024}}
+{"name":"create_sandbox","arguments":{"template":"base","timeout":600,"cpu":2,"memory":2048}}
 ```
+
+当前源码在显式指定 `cpu` 或 `memory` 时，会读取最新平台元数据，逐项核验实际配置后才
+返回成功；此修复晚于公开的 0.4.0a6。无法核验或配置不符时返回工具错误，包含
+`category: "resource_configuration"`、`requested_resources`、`observed_resources` 和
+`cleanup_verified`，核验与回滚始终使用本次新建实例的原句柄，即使会话已关闭或缓存已变化，也不会按 ID 改查其他实例，并且只回滚本次新建沙箱。清理回读使用该实例实际解析的提供方、端点、地域和凭据建立新的控制面连接，不会用另一默认地域的 404 作为删除证明。只有类型化的不存在错误或 HTTP404 回读
+才确认清理完成；结果不明时保留带提供方前缀的 `recovery_sandbox_id`，供显式清理。
+直接 SDK 的 `Sandbox.create` 合同保持原样。`region` 仍遵循提供方端点配置，不属于这项
+CPU/内存核验。
 
 创建后该沙箱成为默认沙箱。秘密应保存在 MCP 进程已有授权配置中；工具参数和结果可能对
 连接的模型可见。
@@ -81,3 +89,18 @@ metadata、任意 lifecycle 对象或端点 URL。列表结果的 `sandboxes` �
 默认沙箱解析、续期失败和元数据泄漏检查。Mock 测试不能证明真实 provider 支持；云端结果
 必须另行记录在仓库验证证据中。接口参考
 [官方 MCP tools 规范](https://modelcontextprotocol.io/specification/2025-06-18/server/tools)。
+
+## 借用连接与会话关闭
+
+本源码版本分别记录创建归属和缓存连接。执行或文件工具可通过已配置账号权限，访问
+显式指定的外部 ID；该连接属于借用。删除借用方 HTTP 会话、关闭 STDIO 或空闲到期时，
+只关闭客户端连接。manager 仅删除自己的创建实例，明确提交的后台任务可保留至平台 TTL。
+显式、已授权的 `kill_sandbox` 仍执行删除。
+
+此修正晚于公开的 0.4.0a6。同一账号凭证下的不同会话不构成租户授权隔离；不同用户
+应使用独立凭证、Team 或应用层授权。
+
+manager 按实际提供方和沙箱 ID 组合记录缓存归属、TTL 与任务保留。两个提供方返回相同
+原始 ID 时，显式访问须使用 `provider:id`；有歧义的原始 ID 会被拒绝。别名不会替换已有
+自有连接。创建或连接期间关闭会话后，会话保持关闭：晚到的创建实例被删除，晚到的
+借用连接被关闭，不重新登记资源。

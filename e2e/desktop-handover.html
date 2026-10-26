@@ -1,0 +1,59 @@
+<!doctype html>
+<meta charset=utf-8>
+<title>Sandbox handover acceptance</title>
+<style>
+body{margin:0;
+background:#eef3ff;
+color:#15233b;
+font-family:Arial}
+h1{position:absolute;
+left:80px;
+top:40px;
+font-size:30px}
+p{position:absolute;
+left:80px;
+top:105px}
+input{position:absolute;
+left:80px;
+top:170px;
+width:620px;
+height:46px;
+font-size:26px;
+padding:0 12px;
+box-sizing:border-box}
+button{position:absolute;
+left:80px;
+top:240px;
+width:220px;
+height:52px;
+font-size:22px;
+background:#2858dc;
+color:white;
+border:0;
+border-radius:8px}
+h2{position:absolute;
+left:80px;
+top:330px;
+font-size:30px}
+small{position:absolute;
+left:80px;
+top:420px;
+font-size:20px}
+
+</style>
+<h1>Shared desktop handover</h1>
+<p>Agent → simulated operator → agent. Synthetic acceptance data only.</p>
+<input id=value autocomplete=off autofocus>
+<button id=save>Commit state</button>
+<h2 id=result>Saved: none</h2>
+<small>Sequence: <span id=sequence>0</span>
+</small>
+<script>document.querySelector('#save').onclick=async()=>{const r=await fetch('/save',{method:'POST',body:JSON.stringify({value:document.querySelector('#value').value}
+)}
+);
+const j=await r.json();
+document.querySelector('#result').textContent='Saved: '+j.latest;
+document.querySelector('#sequence').textContent=j.events.length;
+}
+;
+</script>

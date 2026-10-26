@@ -242,3 +242,13 @@ real provider with memory/file continuity, clone isolation and owned-resource cl
 cloud/model acceptance is added to Actions. Official constraints:
 [pause/resume](https://help.aliyun.com/zh/agent-sandbox/pause-and-resume),
 [Snapshot](https://help.aliyun.com/zh/agent-sandbox/snapshot-invited-test).
+
+The [owned storage acceptance](../../../e2e/README.md#owned-oss-persistence-and-read-only-acceptance)
+separately verifies real OSS persistence after sandbox recreation and read-only
+access with the standard Python client. Volume registration alone cannot establish
+those data-plane guarantees. The recorded MicroVM mounted pause/resume check uses
+a checksum-verified ossfs2 2.0.10 installation and the
+[documented append-mount API](https://www.alibabacloud.com/help/zh/agent-sandbox/append-mount-volume);
+that API is not a new shared Provider command. The tested backend rejected
+volume/mount overrides on Snapshot restoration with HTTP400. Do not use a Snapshot
+ID as an image-template replacement when changing mount configuration.

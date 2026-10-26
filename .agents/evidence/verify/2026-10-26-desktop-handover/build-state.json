@@ -1,0 +1,36 @@
+{
+  "name": "skills-desktop-00c77839d5fd",
+  "image": "fc-e2b-registry.cn-hangzhou.cr.aliyuncs.com/runtime/desktop:v0.0.44",
+  "cpu": 4,
+  "memory": 8192,
+  "checks": [
+    {
+      "stage": "template-submitted",
+      "template_id": "iallftl5zi2vdi0u0ht0"
+    },
+    {
+      "stage": "build-progress",
+      "state": "building",
+      "elapsed_seconds": 0
+    },
+    {
+      "stage": "build-progress",
+      "state": "building",
+      "elapsed_seconds": 16
+    },
+    {
+      "stage": "build-progress",
+      "state": "building",
+      "elapsed_seconds": 31
+    },
+    {
+      "stage": "template-ready",
+      "state": "ready",
+      "cpu": 4,
+      "memory": 8192,
+      "generation": 2
+    }
+  ],
+  "owned": true,
+  "template_id": "iallftl5zi2vdi0u0ht0"
+}

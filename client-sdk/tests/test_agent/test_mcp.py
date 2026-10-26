@@ -130,6 +130,7 @@ class TestSandboxManager:
         sb2.id = "sb2"
         sb2.kill = AsyncMock()
         mgr._sandboxes = {"sb1": sb1, "sb2": sb2}
+        mgr._owned_sandbox_ids.update({"sb1", "sb2"})
         mgr._default_sandbox = sb1
 
         await mgr.shutdown()

@@ -48,8 +48,18 @@ enforces resource combinations; passing input validation does not guarantee avai
 Team selection is not exposed because the SDK has no corresponding parameter.
 
 ```json
-{"name":"create_sandbox","arguments":{"template":"base","timeout":600,"cpu":2,"memory":1024}}
+{"name":"create_sandbox","arguments":{"template":"base","timeout":600,"cpu":2,"memory":2048}}
 ```
+
+When `cpu` or `memory` is explicit, the current source verifies each requested value
+against newly refreshed platform metadata before reporting success. This correction
+is newer than public 0.4.0a6. Unknown or mismatched values return a tool error with
+`category: "resource_configuration"`, `requested_resources`, `observed_resources`
+and `cleanup_verified`. Both verification and rollback keep the exact newly created handle even if the session closes or its cache changes. Only that newly created sandbox is rolled back. Cleanup uses a fresh control plane with the created instance's resolved provider, endpoint, region and credentials; a different default region cannot confirm absence. A typed
+not-found or HTTP404 readback confirms cleanup; an ambiguous response retains a
+provider-qualified `recovery_sandbox_id` for explicit cleanup. This does not change
+the direct SDK `Sandbox.create` contract. `region` still follows provider endpoint
+configuration; it is not a verified CPU/memory override.
 
 Creation makes that sandbox the default. Keep secrets in the MCP process's authorized
 configuration; tool arguments and results may be visible to the connected model.
@@ -97,3 +107,22 @@ SDK delegation, default selection, renewal failures, and metadata disclosure che
 Mocked tests do not establish real provider support; cloud results must be recorded
 separately in repository evidence. See the
 [official MCP tools specification](https://modelcontextprotocol.io/specification/2025-06-18/server/tools).
+
+## Borrowed connections and session shutdown
+
+This source revision tracks creation ownership separately from cached connections.
+Execution/file tools may connect to an explicit external ID with the configured
+account authority. That connection is borrowed: deleting the borrowing HTTP
+session, closing STDIO or reaching idle timeout closes only its client handle.
+The manager deletes its own creations unless an explicit background task retained
+them until platform TTL. Explicit authorized `kill_sandbox` remains destructive.
+
+This correction is newer than public 0.4.0a6. Do not infer that sessions sharing
+one account credential provide a tenant authorization boundary; use separate
+credentials/Teams or application authorization for distinct users.
+
+The manager keys cached ownership, TTL and retained tasks by the actual provider
+and sandbox ID. If two providers return the same raw ID, explicit access must use
+`provider:id`; an ambiguous bare ID is rejected. Aliases cannot replace an owned
+handle. A session closed during creation/connection stays closed: a late created
+sandbox is deleted and a late borrowed connection is closed.

@@ -104,3 +104,14 @@ print them. Use separately authorized sandboxes for separate trust domains.
 The real Express verification records native Start/Connect replay limitations and
 start → disconnect → reconnect → saved exit/logs → cancellation → cleanup. Other
 providers, Windows and hosted multi-user deployment are not accepted by that run.
+
+## Qualified handle compatibility
+
+This source revision returns `start_task.sandbox_id` as the actual `provider:id`,
+so a fresh session reconnects to the same backend even when the task was started
+on a non-default provider. Treat the complete returned handle as opaque and pass
+it unchanged to `get_task`/`cancel_task`; clients that strip or parse the raw ID
+must update. There are no new parameters, but the returned string representation
+changes. Legacy unqualified IDs work when the SDK's default provider identifies
+the original resource; lifecycle cache lookup also accepts a unique bare ID. A
+bare ID shared by multiple cached providers is rejected rather than guessed.

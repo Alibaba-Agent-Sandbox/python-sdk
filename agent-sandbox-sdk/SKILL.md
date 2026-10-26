@@ -11,6 +11,8 @@ This file is instructions for a coding agent. It is not executed by the SDK.
 Operating a sandbox with `abx` or MCP is the `agent-sandbox` skill. This skill
 only covers the code you write.
 
+For optional desktop/browser control, simulated operator handover and screenshot replay, read [desktop workflows](references/desktop-workflows.md) before writing the integration.
+
 Two packages share one version:
 
 | Package | Import | Where it runs |
@@ -98,6 +100,11 @@ This binding preserves the provider gateway's headers and full URL/query. Explic
 - `sb.commands.run` wraps an unquoted pipe, redirect, or `&&` in `sh -c`. A variable, backtick, or glob still needs an explicit `sh -c '...'`. Its `timeout` defaults to 60 seconds. `send_signal` accepts only 15 (SIGTERM) and 9 (SIGKILL).
 - `sb.run_code(...)` requires the exact provider operation: `code.execute` for stateless mode, `code.default-context.execute` for explicit `mode="default-context"`, or `code.context.execute` for a context ID. An installed interpreter package does not implement these operations. Native `alicloud-express` currently refuses interpreter calls; use the supported standard `agent_sandbox.code_interpreter` client for its separate backend contract.
 - Files on `sb.files`: `write`, `read`, `read_bytes`, `list`, `exists`, `remove`, `make_dir`, `upload`, `download`. On Express, `sb.files.upload_url` and `sb.files.download_url` return an envd URL that still needs header `X-Access-Token`. A provider that does not declare `files.transfer` raises `E8004`. `sb.upload_url` and `sb.download_url` always refuse. Do not invent a signature-only URL.
+  When the user leaves the path open, use an owned task directory for files that
+  will be overwritten. The tested Express envd image denied SDK overwrites
+  directly under sticky `/tmp`, independently of Snapshots; an owned non-sticky
+  subdirectory passed. Preserve specified paths and report permission failures.
+
 - A ProviderSandbox context manager kills the sandbox. For a newly created instance use `kill()` and `close()` in cleanup; for a borrowed connection use only `close()` unless deletion was authorized.
 - ProviderSandbox defaults to alicloud-express. Use its configured provider transport; do not hardcode a local engine socket or spawn a separate provider implementation.
 - The only built-in provider is `alicloud-express`. `opensandbox`, `alicloud-container`, `cubesandbox`, and `e2b` are not part of this package. Install them from the catalog with `python -m agent_sandbox.providers install registry:<id> --yes`, then pass that id to `Sandbox.create`. Their notes are in `awesome-providers/<id>/docs/README.md`. Native ProviderSandbox reads canonical `ABX_SANDBOX_API_KEY`; only the standard entry maps `E2B_*` settings.

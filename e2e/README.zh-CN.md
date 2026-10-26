@@ -54,6 +54,7 @@ cd e2e && python -m pytest -m "not e2e_slow" -ra               # 等同 `make e2
 | `test_07_declarative.py` | `@sandbox` 声明式远程执行 |
 | `test_08_providers.py` | 真实后端调用：内置 `alicloud-express`（SDK 和 CLI），以及已安装的目录提供方 `opensandbox`、`cubesandbox`、`e2b`、`alicloud-container`。没有自己的后端时跳过，并且不会把极速版密钥发给它。 |
 | `test_09_volume_mounts.py` | 显式启用的已有 Volume 验收：确认内核精确挂载点，独占创建、读取并删除一个测试文件，再释放带标签的沙箱。普通目录不能通过。 |
+| `test_skill_storage_state.py` | 显式自有 RW/RO OSS 夹具：标准客户端释放并重建后的持久化、内核精确挂载点、只读约束及类型化清理。 |
 | `test_09_mcp_lifecycle.py` | Python MCP 元数据/续期/列表、命令文件与外部实例归属 |
 
 标记:`e2e`(全部)、`e2e_slow`(> 约 60 秒)、`known_issue`(记录已知缺陷的严格 xfail,见
@@ -92,6 +93,44 @@ cd e2e && python -m pytest -m "not e2e_slow" -ra               # 等同 `make e2
 | `ABX_E2E_VOLUME_MOUNT_PATH` | 未设置则跳过 | `/mnt/abx-e2e/` 下专用的规范沙箱路径；这是测试工具的收窄要求。 |
 | `E2E_VOLUME_TEMPLATE` | 未设置则跳过 | 满足[官方挂载指南](https://help.aliyun.com/zh/agent-sandbox/mount-oss-volume-1)存储及运行时前提的模板。 |
 
+## 自有 OSS 持久化与只读验收
+
+`test_skill_storage_state.py` 使用标准同步客户端，验证两个显式自有的 OSS Volume
+配置：两者指向同一专用存储路径，一个可读写，一个只读。请在当前 API Key 的
+Team 和地域预先创建这些配置，并将 RAM 角色权限限制为该自有存储。此测试不会
+创建或删除 Volume、角色或 Bucket。
+
+设置 `E2E_VOLUME_ACCEPTANCE=owned-only`；`E2E_VOLUME_OWNER_RUN` 为本次自有运行名
+（`abx-accept-` 后接 12 位小写字母或数字）；`E2E_VOLUME_RW_NAME` 和
+`E2E_VOLUME_RO_NAME` 分别等于运行名加 `-rw` 和 `-ro`。必须显式设置满足挂载前提的
+`E2E_VOLUME_TEMPLATE`。MicroVM 镜像须预装 ossfs2 2.0.10 或更高版本，详见
+[官方挂载前提](https://help.aliyun.com/zh/agent-sandbox/mount-oss-volume-1)。
+
+运行 `python -m pytest e2e/test_skill_storage_state.py -ra`。测试先验证内核精确挂载点，
+再独占创建唯一测试文件、fsync，释放首个沙箱并断言类型化 not-found，随后新建沙箱
+读取保留的数据。只读挂载须能读取该文件，且另一独占写入须返回只读或权限错误号。
+仅清理已验证归属的测试文件和已登记沙箱；夹具所有者另行清理 Volume、角色及底层存储。
+未显式启用时，在构造云端夹具前跳过；启用后前提缺失则失败，不自动挑选其他 Volume。
+
+标准快照回归把可修改标记放在自有、非 sticky 的目录中。被测 envd 镜像在创建快照前，
+就会拒绝 SDK 直接覆盖 sticky `/tmp` 下的文件；该独立行为保留在
+[状态及存储验证记录](../.agents/evidence/verify/2026-10-26-skill-storage-state-acceptance.md)。
+
+## 代码仓库、到期预览及第三方 MCP 运行器
+
+在已安装本 checkout 配套客户端/服务端的环境执行
+`python e2e/skill_tools_acceptance.py --output NEW_JSON_PATH`。沙箱凭据只配置于本地，
+不向沙箱发送账号密钥。运行时须具备 Python、Node.js、git 以及 GitHub/npm 出网能力。
+`ABX_SKILL_RUNTIME_TEMPLATE` 指定合适模板（默认 `code-interpreter-v1`），
+`ABX_SKILL_RUN_PREFIX` 指定自有夹具 purpose 标签。证据输出文件必须尚不存在。
+
+运行器最多用两次有界、只读的获取操作拉取指定公开提交，验证并启动 Node 应用，
+随后检查应用 HMAC 预览：有效请求成功、未签名及篡改请求被拒绝、20 秒后到期。
+该临时夹具使用 `secure=False` 和应用代理，不代表提供方网关原生签名链接通过。
+随后依次安装固定的文件系统 MCP `2026.7.10`、`2026.8.31`，执行真实 initialize、
+工具发现和 read_file，回读日志，删除工具并核实无自有 MCP 进程及沙箱残留。
+这是手动实云运行器，不会自动启用单测或 Actions；失败和清理结果与成功检查分开记录。
+
 ## 新增测试
 
 1. 使用 fixture(`base_sandbox`、`code_sandbox`、`server_sandbox`、`sandbox_factory`、`workdir`);不要直接调用 `Sandbox.create`,否则沙箱不会被追踪。
@@ -115,3 +154,10 @@ python e2e/provider_conditional.py --abx "$ABX_BIN" \
 ```
 
 控制器启动隔离的真实引擎，比较两端发现结果，双向验证暂停恢复、快照创建/列表/恢复/删除、内存文件连续性、克隆隔离和独立清理。不会创建或删除传入的模板。二进制应放在不会被另一轮构建清理的独立位置。报告不包含凭据及资源标识；该手动控制器不会被 pytest 收集，也不从 Actions 调度。
+
+## 可选的真实桌面验收
+
+按照[桌面验收指南](../docs/zh/guide/desktop-acceptance.md)准备隔离环境和固定依赖，运行
+`python e2e/desktop_acceptance.py --template "$E2B_DESKTOP_TEMPLATE" --output-dir NEWDIR`。
+它独立于标准及 Provider 客户端套件；真实桌面模板、私有入口、流量令牌、VNC 密码与
+接管/回放前提均由指南明确列出。

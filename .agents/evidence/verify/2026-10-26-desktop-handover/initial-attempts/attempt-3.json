@@ -1,0 +1,56 @@
+{
+  "steps": [
+    {
+      "name": "desktop-created-correct-spec",
+      "result": "PASS",
+      "cpu": 4,
+      "memory": 8192
+    },
+    {
+      "name": "agent-mouse-keyboard-effect",
+      "result": "PASS",
+      "sequence": [
+        "agent-start"
+      ]
+    },
+    {
+      "name": "gateway-stream-auth",
+      "result": "FAIL",
+      "without_gateway_token": 200,
+      "with_gateway_token": 200
+    },
+    {
+      "name": "desktop-cleanup",
+      "result": "PASS",
+      "deleted": true,
+      "independently_absent": true
+    }
+  ],
+  "timeline": [
+    {
+      "at_seconds": 17.36,
+      "actor": "agent",
+      "action": "Open the synthetic local acceptance page in the real desktop browser",
+      "file": "01-browser-ready.png",
+      "sha256": "869764cbe433fc11986032712610e68d6de132b0a8b694cba3c0ae1f54a24c0a",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "at_seconds": 19.66,
+      "actor": "agent",
+      "action": "Mouse focus, keyboard text and mouse commit",
+      "file": "02-agent-state.png",
+      "sha256": "2e599f95b3c886b45255af27c3994826e3068dcfd14d741570635e8a138079b4",
+      "width": 1024,
+      "height": 768
+    }
+  ],
+  "scope": "Real official desktop image; operator is simulated by a second controller, not a human/login session.",
+  "sandbox_id": "sbx-ba26d969-9837-4fa4-9dff-4b9162ec8144",
+  "failure": {
+    "type": "AssertionError",
+    "message": "gateway-stream-auth"
+  },
+  "result": "FAIL"
+}

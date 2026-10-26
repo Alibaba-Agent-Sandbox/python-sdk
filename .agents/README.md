@@ -1,5 +1,21 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+## Skill storage/state acceptance — 2026-10-26
+
+[Real storage/state evidence](evidence/verify/2026-10-26-skill-storage-state-acceptance.md)
+records owned OSS RW/RO recreation, mounted MicroVM pause/resume, Snapshot isolation,
+LangGraph conversation boundaries, repository/preview/third-party MCP execution and
+retained initial failures. The [proposed acceptance note](notes/proposed/process/2026-10-26-skill-storage-state-acceptance.md)
+defines the scoped proof. The [borrowed-connection ownership correction](notes/proposed/feature/2026-10-26-mcp-borrowed-sandbox-ownership.md)
+separates manager-created instances from cached connections; it is newer than
+public a6, whose historical receipts remain unchanged. Repository-wide server
+check failures and delivery gates remain explicit.
+
+[Desktop handover/replay acceptance](evidence/verify/2026-10-26-desktop-handover.md)
+and its [proposed note](notes/proposed/process/2026-10-26-desktop-handover-acceptance.md)
+record the separate pinned desktop adapter, private ingress, real screenshot/input,
+simulated operator handover and replay controls with owned cleanup.
+
 ## Current public pair — 2026-10-25
 
 Client/server **0.4.0a6** are public. [Public delivery verification](evidence/verify/2026-10-25-public-a6-delivery.md)

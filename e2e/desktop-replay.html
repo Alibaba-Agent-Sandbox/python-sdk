@@ -1,0 +1,36 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Desktop handover replay</title>
+<style>
+body {font-family:Arial;margin:24px;background:#edf2ff}
+img {display:block;max-width:100%;max-height:78vh;margin:18px 0}
+button {padding:10px}
+input {width:300px}
+</style>
+<h1>Desktop handover acceptance replay</h1>
+<p>Actual screenshot timeline. Operator was simulated; no human login occurred.</p>
+<button id="prev">Previous</button>
+<input id="step" type="range" min="0" max="__MAXIMUM__" value="0">
+<button id="next">Next</button>
+<p id="label"></p>
+<img id="frame" alt="Recorded desktop frame">
+<script>
+const rows = __TIMELINE__;
+const step = document.querySelector('#step');
+function show() {
+  const row = rows[step.value];
+  document.querySelector('#frame').src = row.file;
+  document.querySelector('#label').textContent =
+    row.at_seconds + 's · ' + row.actor + ' · ' + row.action;
+}
+step.oninput = show;
+document.querySelector('#prev').onclick = () => {
+  step.value = Math.max(0, +step.value - 1);
+  show();
+};
+document.querySelector('#next').onclick = () => {
+  step.value = Math.min(rows.length - 1, +step.value + 1);
+  show();
+};
+show();
+</script>

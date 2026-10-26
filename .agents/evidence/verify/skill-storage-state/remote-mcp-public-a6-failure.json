@@ -1,0 +1,46 @@
+{
+  "checks": [
+    {
+      "id": "remote-unauthorized-denied",
+      "result": "PASS",
+      "status": 401
+    },
+    {
+      "id": "separate-client-sessions",
+      "result": "PASS"
+    },
+    {
+      "id": "remote-tool-discovery",
+      "result": "PASS",
+      "tool_count": 15
+    },
+    {
+      "id": "remote-cloud-create-command-isolation",
+      "result": "PASS",
+      "sandbox_ids": [
+        "sbx-51609a4c-c9cc-4329-ad8b-71ce5997f47b",
+        "sbx-645a1cd3-964f-4c61-af6a-29e422ada16c"
+      ]
+    },
+    {
+      "id": "same-credential-manual-access",
+      "result": "PASS",
+      "scope": "same authority; not distinct-user isolation"
+    },
+    {
+      "id": "remote-mcp-workflow",
+      "result": "FAIL",
+      "error_type": "SandboxNotFoundException",
+      "message": "Sandbox sbx-51609a4c-c9cc-4329-ad8b-71ce5997f47b not found"
+    }
+  ],
+  "cleanup": [
+    {
+      "host_sandbox_id": "sbx-a823ca63-299e-4c84-bb21-51f7189b1a74",
+      "absence_verified": true
+    }
+  ],
+  "scope": "real HTTPS hosted test MCP process in its own sandbox; not a permanent managed production service",
+  "host_sandbox_id": "sbx-a823ca63-299e-4c84-bb21-51f7189b1a74",
+  "result": "FAIL"
+}

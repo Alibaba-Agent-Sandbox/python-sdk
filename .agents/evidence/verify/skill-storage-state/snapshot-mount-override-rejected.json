@@ -1,0 +1,99 @@
+{
+  "steps": [
+    {
+      "scenario": "owned source sandbox installed official pinned ossfs2 deb with SHA256 verified",
+      "result": "PASS",
+      "stdout": "/tmp/abx-owned-ossfs2.deb: OK\n/usr/local/bin/ossfs2\nossfs2\t2.0.10"
+    },
+    {
+      "scenario": "snapshot ready as owned prepared gen2 fixture",
+      "result": "PASS"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "source-sandbox",
+      "deleted": true
+    },
+    {
+      "kind": "fixture-snapshot",
+      "deleted": true
+    }
+  ],
+  "mount_subprocess_exit": 0,
+  "mount": {
+    "run": "abx-accept-a9265ac52b3a",
+    "steps": [
+      {
+        "scenario": "owned private empty OSS bucket created",
+        "result": "PASS"
+      },
+      {
+        "scenario": "owned FC trust role scoped only to owned OSS bucket",
+        "result": "PASS"
+      },
+      {
+        "scenario": "RW and RO Volume configurations reached AVAILABLE",
+        "result": "PASS"
+      }
+    ],
+    "cleanup": [
+      {
+        "kind": "volume",
+        "result": "PASS"
+      },
+      {
+        "kind": "volume",
+        "result": "PASS"
+      },
+      {
+        "kind": "bucket",
+        "result": "PASS"
+      },
+      {
+        "kind": "policy-detach",
+        "result": "PASS"
+      },
+      {
+        "kind": "policy",
+        "result": "PASS"
+      },
+      {
+        "kind": "role",
+        "result": "PASS"
+      }
+    ],
+    "sources": [
+      "https://www.alibabacloud.com/help/zh/agent-sandbox/mount-oss-volume-1",
+      "https://www.alibabacloud.com/help/zh/agent-sandbox/create-ram-role"
+    ],
+    "failure": {
+      "type": "SandboxException",
+      "message": "400: creating from a snapshot does not allow volume or mount overrides",
+      "frames": [
+        {
+          "file": "mount_acceptance.py",
+          "line": 34,
+          "name": "new"
+        },
+        {
+          "file": "main.py",
+          "line": 212,
+          "name": "create"
+        },
+        {
+          "file": "main.py",
+          "line": 939,
+          "name": "_create"
+        },
+        {
+          "file": "sandbox_api.py",
+          "line": 272,
+          "name": "_create_sandbox"
+        }
+      ]
+    },
+    "result": "FAIL"
+  },
+  "result": "FAIL"
+}

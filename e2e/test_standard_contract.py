@@ -184,7 +184,10 @@ def test_standard_snapshot_restore(tracker):
     snapshot = None
     restored = None
     try:
-        sandbox.files.write("/tmp/snapshot-contract", "snapshot")
+        # Keep overwrite assertions inside an owned non-sticky directory.
+        # Some envd images reject rewriting user files directly under sticky /tmp
+        # even before snapshot creation; that is a separate file-service behavior.
+        sandbox.files.write("/tmp/standard-snapshot-contract/state", "snapshot")
         probe, token = _start_memory_probe(sandbox)
         snapshot = sandbox.create_snapshot(request_timeout=300)
         # Creation and list indexing are separate, eventually consistent operations.
@@ -193,10 +196,10 @@ def test_standard_snapshot_restore(tracker):
         restored = Sandbox.create(template=snapshot.snapshot_id, timeout=300,
                                   metadata=H.tag_metadata("standard-restored"))
         tracker.sandbox(restored.sandbox_id)
-        assert restored.files.read("/tmp/snapshot-contract") == "snapshot"
+        assert restored.files.read("/tmp/standard-snapshot-contract/state") == "snapshot"
         assert restored.commands.run(probe).stdout.strip() == token
-        restored.files.write("/tmp/snapshot-contract", "restored-only")
-        assert sandbox.files.read("/tmp/snapshot-contract") == "snapshot"
+        restored.files.write("/tmp/standard-snapshot-contract/state", "restored-only")
+        assert sandbox.files.read("/tmp/standard-snapshot-contract/state") == "snapshot"
     finally:
         if restored is not None:
             _kill_settled(restored.sandbox_id)

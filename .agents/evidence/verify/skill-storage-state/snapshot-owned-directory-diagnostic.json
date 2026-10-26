@@ -1,0 +1,67 @@
+{
+  "steps": [
+    {
+      "uid": 1000,
+      "euid": 1000,
+      "stat": [
+        33188,
+        1573971,
+        65024,
+        1,
+        1000,
+        1000,
+        6,
+        1792984865,
+        1792984865,
+        1792984865
+      ],
+      "data": "source",
+      "write": "PASS",
+      "path_kind": "home"
+    },
+    {
+      "path_kind": "home",
+      "files_write": "PASS"
+    },
+    {
+      "uid": 1000,
+      "euid": 1000,
+      "stat": [
+        33188,
+        2097165,
+        65024,
+        1,
+        1000,
+        1000,
+        6,
+        1792984865,
+        1792984865,
+        1792984865
+      ],
+      "data": "source",
+      "write": "PASS",
+      "path_kind": "tmp"
+    },
+    {
+      "path_kind": "tmp",
+      "files_write": "FAIL",
+      "error": "500: error opening file: open /tmp/abx-owned-3e0485d7: permission denied"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "sandbox",
+      "deleted": true
+    },
+    {
+      "kind": "sandbox",
+      "deleted": true
+    },
+    {
+      "kind": "snapshot",
+      "deleted": true
+    }
+  ],
+  "new_file_isolation": "PASS",
+  "same_user_chown_result": "success\n"
+}

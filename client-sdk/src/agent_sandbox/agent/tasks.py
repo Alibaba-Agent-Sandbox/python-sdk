@@ -124,7 +124,9 @@ async def start_task(params: dict[str, Any], manager: SandboxManager) -> dict[st
         "runtime": _RUNTIME,
     }
     _command(request)  # Validate expansion before even connecting to a sandbox.
-    temporary = sandbox_id is not None and sandbox_id not in manager._sandboxes
+    async with manager._state_lock:
+        manager._require_open()
+        temporary = sandbox_id is not None and manager._cached_sandbox(sandbox_id) is None
     if temporary:
         from agent_sandbox.api.sandbox import Sandbox
 
@@ -134,6 +136,8 @@ async def start_task(params: dict[str, Any], manager: SandboxManager) -> dict[st
             sandbox_id, refresh_lifetime=False, create_default=False
         )
     try:
+        async with manager._state_lock:
+            manager._require_open()
         try:
             result = await _operate(sandbox, request, manager)
         except _ToolInputError:
@@ -151,11 +155,11 @@ async def start_task(params: dict[str, Any], manager: SandboxManager) -> dict[st
         # Qualified provider IDs can connect to a sandbox already owned under
         # its canonical SDK ID. Retain that original owner, not the temporary
         # connection, so disconnect cannot destroy accepted background work.
-        owned = manager._sandboxes.get(sandbox.id)
+        owned = manager._sandboxes.get(manager._sandbox_key(sandbox))
         retained = await manager.retain_task_sandbox(owned) if owned is not None else temporary
         return {
             **result,
-            "sandbox_id": sandbox_id or sandbox.id,
+            "sandbox_id": manager._sandbox_key(sandbox),
             "retained_until_sandbox_ttl": retained,
         }
     finally:

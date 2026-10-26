@@ -1,0 +1,9 @@
+{
+  "roles_absent": 7,
+  "policies_absent": 7,
+  "buckets_absent": 7,
+  "owned_volumes_remaining": 0,
+  "owned_sandboxes_remaining": 0,
+  "errors": [],
+  "result": "PASS"
+}
