@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "anonymous",
+      "headers": {},
+      "expected": {}
+    },
+    {
+      "id": "application",
+      "headers": {},
+      "token": "placeholder-application",
+      "expected": {
+        "authorization": "Bearer placeholder-application",
+        "x-access-token": "placeholder-application"
+      }
+    },
+    {
+      "id": "gateway",
+      "headers": {
+        "X-Gateway-Token": "placeholder-gateway"
+      },
+      "expected": {
+        "x-gateway-token": "placeholder-gateway"
+      }
+    },
+    {
+      "id": "separate-audiences",
+      "headers": {
+        "X-Access-Token": "placeholder-gateway"
+      },
+      "token": "placeholder-application",
+      "expected": {
+        "authorization": "Bearer placeholder-application",
+        "x-access-token": "placeholder-gateway"
+      }
+    },
+    {
+      "id": "case-insensitive-gateway",
+      "headers": {
+        "x-aCcEsS-tOkEn": "placeholder-gateway",
+        "X-Gateway-Token": "placeholder-extra"
+      },
+      "token": "placeholder-application",
+      "expected": {
+        "authorization": "Bearer placeholder-application",
+        "x-access-token": "placeholder-gateway",
+        "x-gateway-token": "placeholder-extra"
+      }
+    }
+  ]
+}

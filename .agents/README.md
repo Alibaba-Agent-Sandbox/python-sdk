@@ -242,3 +242,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Provider parameter documentation correction](notes/implemented/process/2026-10-25-provider-parameter-docstrings.md) · [candidate verification](evidence/verify/2026-10-25-provider-parameter-docstrings.md) · [published follow-up](evidence/verify/2026-10-25-public-a4-delivery.md).
 
 - [Current public a4 guidance and bounded metadata propagation](notes/implemented/process/2026-10-25-current-public-a4.md) · [verification](evidence/verify/2026-10-25-public-a4-delivery.md).
+
+- [Shared application authentication vectors](notes/proposed/feature/2026-10-26-application-auth-vectors.md) · [verification](evidence/verify/2026-10-26-application-auth-vectors.md).
