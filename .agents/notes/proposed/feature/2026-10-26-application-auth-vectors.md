@@ -8,7 +8,7 @@ The CLI, Python client and Node HTTP client maintained similar authentication ex
 
 ## Decision
 
-Own a small, language-neutral application authentication fixture under contracts/. Consumers verify the same anonymous, application-token and case-insensitive gateway-header cases. Python continues to accept its existing parameters, environment/dotenv and configuration inputs. No runtime API, cloud behavior or package version changes.
+Own a small, language-neutral application authentication fixture under contracts/testing/. Consumers verify the same anonymous, application-token and case-insensitive gateway-header cases. Python continues to accept its existing parameters, environment/dotenv and configuration inputs. No runtime API, cloud behavior or package version changes.
 
 ## API Design
 
