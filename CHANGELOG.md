@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Tests
+
+- Add canonical application authentication vectors for the Python, CLI and Node clients; SDK runtime/configuration APIs remain unchanged.
+
+
 ### Changed
 
 - Normalize Python MCP background-task `sandbox_id` handles to the actual `provider:id`. Return the opaque handle unchanged when querying/cancelling; callers parsing a raw ID must update. Legacy raw IDs still resolve within a unique lifecycle cache or the SDK's default-provider scope. / Python MCP 后台任务的 `sandbox_id` 句柄规范为实际 `provider:id`；查询和取消须原样回传，拆分原始 ID 的调用者需要更新。历史原始 ID 仍可在无歧义的生命周期缓存或 SDK 默认提供方范围内解析。

@@ -263,3 +263,6 @@ Reading and writing this configuration from the command line is a CLI feature: `
 ### Transport attempts
 
 Builtin platform/envd HTTP performs one transport attempt. Provider-engine read recovery is separate. Applications that retry safe reads must bound attempts; reconcile an unknown write outcome before repeating a mutation.
+
+
+Application HTTP clients share authentication regression vectors with CLI and Node consumers. SDK configuration remains through parameters and its existing environment/dotenv/configuration sources; there is no SDK setup wizard.
