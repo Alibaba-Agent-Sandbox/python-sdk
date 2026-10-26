@@ -54,9 +54,11 @@ def local_sandbox(tmp_path, monkeypatch):
 
 def owner(sandbox):
     manager = SandboxManager()
-    manager._sandboxes[sandbox.id] = sandbox
+    key = manager._sandbox_key(sandbox)
+    manager._sandboxes[key] = sandbox
+    manager._owned_sandbox_ids.add(key)
     manager._default_sandbox = sandbox
-    manager._lifetimes[sandbox.id] = 300
+    manager._lifetimes[key] = 300
     return manager
 
 
@@ -452,3 +454,68 @@ async def test_qualified_handle_retains_existing_canonical_owner(local_sandbox):
     local_sandbox.kill.assert_not_awaited()
     handle = {k: started[k] for k in ("sandbox_id", "task_id")}
     assert (await terminal(handle, SandboxManager()))["stdout"] == "qualified\n"
+
+
+async def test_explicit_bare_task_id_reuses_qualified_cached_owner(local_sandbox, monkeypatch):
+    local_sandbox.provider = "e2b"
+    manager = owner(local_sandbox)
+
+    connect = AsyncMock(side_effect=AssertionError("owned provider must reuse its cached handle"))
+    monkeypatch.setattr("agent_sandbox.api.sandbox.Sandbox.connect", connect)
+    started = await dispatch_tool(
+        "start_task", {"sandbox_id": local_sandbox.id, "command": "echo cached-owner"}, manager
+    )
+    assert "error" not in started
+    assert started["retained_until_sandbox_ttl"] is True
+    assert started["sandbox_id"] == "e2b:" + local_sandbox.id
+    connect.assert_not_awaited()
+    # Query uses a temporary connection and must carry the original provider.
+    reconnect = AsyncMock(return_value=local_sandbox)
+    monkeypatch.setattr("agent_sandbox.api.sandbox.Sandbox.connect", reconnect)
+    handle = {key: started[key] for key in ("sandbox_id", "task_id")}
+    assert (await terminal(handle, manager))["stdout"] == "cached-owner\n"
+    assert reconnect.call_args.kwargs["sandbox_id"] == handle["sandbox_id"]
+    await manager.shutdown()
+    local_sandbox.kill.assert_not_awaited()
+
+
+async def test_bare_task_id_collision_is_rejected_before_connect(local_sandbox, monkeypatch):
+    first = SimpleNamespace(id="same-id", provider="alicloud-express")
+    second = SimpleNamespace(id="same-id", provider="e2b")
+    manager = SandboxManager()
+    manager._sandboxes = {
+        manager._sandbox_key(first): first,
+        manager._sandbox_key(second): second,
+    }
+    connect = AsyncMock(return_value=local_sandbox)
+    monkeypatch.setattr("agent_sandbox.api.sandbox.Sandbox.connect", connect)
+    result = await dispatch_tool(
+        "start_task", {"sandbox_id": "same-id", "command": "echo ambiguous"}, manager
+    )
+    assert "qualify" in result.get("error", "")
+    connect.assert_not_awaited()
+
+
+async def test_task_connect_finishing_after_shutdown_does_not_submit(local_sandbox, monkeypatch):
+    manager = SandboxManager()
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def late_connect(**_kwargs):
+        entered.set()
+        await release.wait()
+        return local_sandbox
+
+    execute = AsyncMock(return_value=SimpleNamespace(stdout="{}", stderr="", exit_code=0))
+    local_sandbox.commands = SimpleNamespace(run=execute)
+    monkeypatch.setattr("agent_sandbox.api.sandbox.Sandbox.connect", late_connect)
+    submission = asyncio.create_task(
+        dispatch_tool("start_task", {"sandbox_id": "external", "command": "echo late"}, manager)
+    )
+    await entered.wait()
+    await manager.shutdown()
+    release.set()
+    result = await submission
+    assert "closed" in result.get("error", "")
+    execute.assert_not_awaited()
+    local_sandbox.close.assert_awaited_once()
+    local_sandbox.kill.assert_not_awaited()

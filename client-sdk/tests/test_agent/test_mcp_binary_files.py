@@ -327,9 +327,7 @@ async def test_bounded_stream_http_error_closes_without_reading_body(status):
 
 
 @pytest.mark.parametrize("tool", ["upload_file", "download_file"])
-async def test_binary_file_tools_preserve_explicit_external_adoption_and_shutdown(
-    tool, monkeypatch
-):
+async def test_binary_file_tools_borrow_external_sandbox_until_shutdown(tool, monkeypatch):
     from agent_sandbox.agent.mcp import SandboxManager
 
     files = SimpleNamespace(write=AsyncMock(), read_bytes=AsyncMock(return_value=b"x"))
@@ -346,7 +344,8 @@ async def test_binary_file_tools_preserve_explicit_external_adoption_and_shutdow
     result = await dispatch_tool(tool, args, owner)
     assert "error" not in result and owner._sandboxes["external"] is sandbox
     await owner.shutdown()
-    sandbox.kill.assert_awaited_once()
+    sandbox.kill.assert_not_awaited()
+    sandbox.close.assert_awaited_once()
 
 
 async def test_encoded_size_rejection_precedes_base64_allocation(monkeypatch):

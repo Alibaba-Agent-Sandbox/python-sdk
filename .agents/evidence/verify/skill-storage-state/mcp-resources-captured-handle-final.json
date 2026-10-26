@@ -1,0 +1,67 @@
+{
+  "source": "private local SDK",
+  "checks": [],
+  "actual_base_resources": {
+    "cpu": 2,
+    "memory": 2048
+  },
+  "before": {
+    "claimed_success": true,
+    "sandbox_id": "sbx-62ed4e2f-0556-4102-9430-40d758aa6619",
+    "requested": {
+      "cpu": 3,
+      "memory": 2304,
+      "timeout": 300
+    },
+    "observed": {
+      "cpu": 2,
+      "memory": 2048
+    }
+  },
+  "matching": {
+    "sandbox_id": "sbx-4cc36f2e-6de1-4850-97e9-7c2ab009f540",
+    "observed": {
+      "cpu": 2,
+      "memory": 2048
+    },
+    "passed": true
+  },
+  "rejected": {
+    "error": "The provider did not apply the requested sandbox resources.",
+    "category": "resource_configuration",
+    "verified": false,
+    "requested_resources": {
+      "cpu": 3,
+      "memory": 2304
+    },
+    "observed_resources": {
+      "cpu": 2,
+      "memory": 2048
+    },
+    "sandbox_id": "alicloud-express:sbx-c33a31cc-30ff-47d6-9e59-065d86a16fbf",
+    "cleanup_verified": true,
+    "suggestion": "Select or build a template with the required resources, then verify its sandbox metadata. Retry cleanup of this sandbox ID if cleanup_verified is false."
+  },
+  "existing_preserved": true,
+  "cleanup": [
+    {
+      "sandbox_id": "sbx-fbddecff-3dfa-4528-a4b9-5c8e7aae7207",
+      "not_found": true
+    },
+    {
+      "sandbox_id": "sbx-62ed4e2f-0556-4102-9430-40d758aa6619",
+      "not_found": true
+    },
+    {
+      "sandbox_id": "sbx-4cc36f2e-6de1-4850-97e9-7c2ab009f540",
+      "not_found": true
+    },
+    {
+      "sandbox_id": "alicloud-express:sbx-c33a31cc-30ff-47d6-9e59-065d86a16fbf",
+      "not_found": true
+    }
+  ],
+  "passed": true,
+  "source_test_client_sha256": "cbd1710159090133099cfde61f2d17fe511ca730d47c74838218d105e7d36746",
+  "release_status": "private source-test wheel; public 0.4.0a6 is not fixed"
+}

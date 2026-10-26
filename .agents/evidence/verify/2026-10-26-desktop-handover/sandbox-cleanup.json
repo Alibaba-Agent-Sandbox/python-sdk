@@ -1,0 +1,50 @@
+{
+  "count": 11,
+  "all_absent": true,
+  "rows": [
+    {
+      "sandbox_id": "sbx-0f83659e-9b64-4120-8a81-4b2e906eaa20",
+      "independent_typed_not_found": true
+    },
+    {
+      "sandbox_id": "sbx-224fa321-2ad3-4e53-a48e-7b2f4fe26f54",
+      "independent_typed_not_found": true
+    },
+    {
+      "sandbox_id": "sbx-27eb36ca-3fa4-4684-8f79-a2a873ee33e1",
+      "independent_typed_not_found": true
+    },
+    {
+      "sandbox_id": "sbx-29e3ef0f-864c-4139-a272-437341c1656c",
+      "independent_typed_not_found": true
+    },
+    {
+      "sandbox_id": "sbx-3eacd02b-8299-49b6-a860-0a2e01281a79",
+      "independent_typed_not_found": true
+    },
+    {
+      "sandbox_id": "sbx-4fab2127-b83d-4904-bb0a-21cc0f10789f",
+      "independent_typed_not_found": true
+    },
+    {
+      "sandbox_id": "sbx-91e9ff49-6cdd-46ef-ab43-cd20bcfb287f",
+      "independent_typed_not_found": true
+    },
+    {
+      "sandbox_id": "sbx-b45cef0c-507b-43c3-a605-990faab478ae",
+      "independent_typed_not_found": true
+    },
+    {
+      "sandbox_id": "sbx-ba26d969-9837-4fa4-9dff-4b9162ec8144",
+      "independent_typed_not_found": true
+    },
+    {
+      "sandbox_id": "sbx-ec4ff483-de6d-4919-9311-6162447d4737",
+      "independent_typed_not_found": true
+    },
+    {
+      "sandbox_id": "sbx-ff3cae53-31f3-4e13-bdc2-cdd3a48ac298",
+      "independent_typed_not_found": true
+    }
+  ]
+}

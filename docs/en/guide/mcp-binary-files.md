@@ -5,12 +5,13 @@ STDIO and Streamable HTTP. The CLI's independent MCP implementation is unchanged
 These tools operate on the selected sandbox's files; they never open a path on
 the MCP host. Keep `read_file`/`write_file` for text.
 
-**Ownership:** like existing file tools, either binary tool adopts an explicitly
-selected external sandbox into that MCP session. Session shutdown/HTTP session
-delete destroys adopted sandboxes, even after a read-only download. Finish all
-uses before closing that session. This differs from metadata inspection and TTL
-updates, which do not adopt external resources. Explicit retained background
-tasks keep their separate documented retention rules.
+**Ownership in this source revision:** an explicit external `sandbox_id` is a
+borrowed connection. Session shutdown/HTTP session deletion closes that client
+handle and does not destroy the external sandbox. Only sandboxes created by the
+same MCP manager are deleted automatically; explicit retained background tasks
+keep their separate retention rules. An explicit authorized `kill_sandbox` still
+deletes its selected sandbox. This correction is newer than public 0.4.0a6; use
+the verified fixed source/build until a release containing it is available.
 
 An upload accepts standard Base64 and overwrites the remote path:
 

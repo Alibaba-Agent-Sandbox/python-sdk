@@ -1,0 +1,36 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Desktop handover replay</title>
+<style>
+body {font-family:Arial;margin:24px;background:#edf2ff}
+img {display:block;max-width:100%;max-height:78vh;margin:18px 0}
+button {padding:10px}
+input {width:300px}
+</style>
+<h1>Desktop handover acceptance replay</h1>
+<p>Actual screenshot timeline. Operator was simulated; no human login occurred.</p>
+<button id="prev">Previous</button>
+<input id="step" type="range" min="0" max="5" value="0">
+<button id="next">Next</button>
+<p id="label"></p>
+<img id="frame" alt="Recorded desktop frame">
+<script>
+const rows = [{"at_seconds": 17.86, "actor": "agent", "action": "Open the synthetic local acceptance page in the real desktop browser", "file": "01-browser-ready.png", "sha256": "869764cbe433fc11986032712610e68d6de132b0a8b694cba3c0ae1f54a24c0a", "width": 1024, "height": 768}, {"at_seconds": 20.13, "actor": "agent", "action": "Mouse focus, keyboard text and mouse commit", "file": "02-agent-state.png", "sha256": "2e599f95b3c886b45255af27c3994826e3068dcfd14d741570635e8a138079b4", "width": 1024, "height": 768}, {"at_seconds": 35.15, "actor": "simulated-operator", "action": "Observe authenticated live stream through controlled backend proxy", "file": "03-live-stream-view.png", "sha256": "3ab4de0a27d070385ef42cecf196668bff4963b7f3f8766507e14be0e9c8158e"}, {"at_seconds": 42.91, "actor": "simulated-operator", "action": "Independent screenshot after VNC input before checking state", "file": "operator-diagnostic.png", "sha256": "c68c23a466c467052d70720d6c5da2aa916af4cf68ba11bb2c6b33f94547787d", "width": 1024, "height": 768}, {"at_seconds": 43.48, "actor": "simulated-operator", "action": "Type and commit through the second controller", "file": "04-operator-state.png", "sha256": "c68c23a466c467052d70720d6c5da2aa916af4cf68ba11bb2c6b33f94547787d", "width": 1024, "height": 768}, {"at_seconds": 45.94, "actor": "agent", "action": "Resume on the same desktop and preserve prior operator state", "file": "05-agent-resumed.png", "sha256": "c9ef3fc538e3576c83f0dbebf8b80d4c9820654e0e752c952bb3f44b1e608409", "width": 1024, "height": 768}];
+const step = document.querySelector('#step');
+function show() {
+  const row = rows[step.value];
+  document.querySelector('#frame').src = row.file;
+  document.querySelector('#label').textContent =
+    row.at_seconds + 's · ' + row.actor + ' · ' + row.action;
+}
+step.oninput = show;
+document.querySelector('#prev').onclick = () => {
+  step.value = Math.max(0, +step.value - 1);
+  show();
+};
+document.querySelector('#next').onclick = () => {
+  step.value = Math.min(rows.length - 1, +step.value + 1);
+  show();
+};
+show();
+</script>

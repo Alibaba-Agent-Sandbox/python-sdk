@@ -1,0 +1,36 @@
+{
+  "scenarios": [
+    {
+      "user": null,
+      "result": "FAIL",
+      "error": "500: error opening file: open /tmp/abx-owned-snapshot-diagnostic: permission denied"
+    },
+    {
+      "user": "root",
+      "result": "PASS",
+      "source_unchanged": true
+    },
+    {
+      "user": "user",
+      "result": "FAIL",
+      "error": "500: error opening file: open /tmp/abx-owned-snapshot-diagnostic: permission denied"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "sandbox",
+      "deleted": true
+    },
+    {
+      "kind": "sandbox",
+      "deleted": true
+    },
+    {
+      "kind": "snapshot",
+      "deleted": true
+    }
+  ],
+  "source_before": "uid=1000(user) gid=1000(user) groups=1000(user),27(sudo)\nuser user 644 1000 1000\n/dev/root / ext4 rw,relatime,discard 0 0\n",
+  "clone_after": "uid=1000(user) gid=1000(user) groups=1000(user),27(sudo)\nuser user 644 1000 1000\n/dev/root / ext4 rw,relatime,discard 0 0\n",
+  "clone_new_write": "success\n"
+}

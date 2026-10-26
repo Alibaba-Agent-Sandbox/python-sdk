@@ -62,6 +62,7 @@ Third-party providers are not part of this suite's cloud run. They follow the sa
 | `test_07_declarative.py` | `@sandbox` declarative remote execution |
 | `test_08_providers.py` | Live calls for `opensandbox`, `alicloud-express` (SDK and CLI), `cubesandbox`, `e2b`, and `alicloud-container`. A provider with no backend of its own is skipped and does not receive the Express key. |
 | `test_09_volume_mounts.py` | Opt-in existing Volume acceptance: prove an exact kernel mount, exclusively create/read/remove a sentinel, and verify persistence after destroying and recreating a sandbox. All tagged sandboxes are released. Ordinary directories cannot pass. |
+| `test_skill_storage_state.py` | Explicitly owned RW/RO OSS fixtures: standard-client persistence after sandbox destruction/recreation, exact kernel mounts, read-only enforcement and typed cleanup. |
 | `test_09_mcp_lifecycle.py` | Python MCP metadata/TTL/list, command/files and external-instance ownership |
 
 Markers: `e2e` (everything), `e2e_slow` (> ~60 s),
@@ -115,6 +116,57 @@ valid credential refusals. Cube live acceptance requires an explicitly configure
 | `ABX_E2E_VOLUME_MOUNT_PATH` | unset; skips | Dedicated canonical sandbox path under `/mnt/abx-e2e/`. This narrower path rule belongs to the test harness. |
 | `E2E_VOLUME_TEMPLATE` | unset; skips | Template meeting the storage/runtime requirements in the [official mount guide](https://help.aliyun.com/zh/agent-sandbox/mount-oss-volume-1). |
 
+## Owned OSS persistence and read-only acceptance
+
+`test_skill_storage_state.py` uses the standard synchronous client against two
+explicitly owned OSS Volume configurations pointing at the same dedicated storage
+path: one writable and one read-only. Provision them separately, in the configured
+API key's Team/region, with a RAM role limited to that owned storage. No Volume,
+role or bucket is provisioned or deleted by this test.
+
+Set `E2E_VOLUME_ACCEPTANCE=owned-only`, `E2E_VOLUME_OWNER_RUN` to your owned run name
+(`abx-accept-` followed by 12 lowercase letters/digits), and
+`E2E_VOLUME_RW_NAME`/`E2E_VOLUME_RO_NAME` to that run name plus `-rw`/`-ro`.
+Also set `E2E_VOLUME_TEMPLATE` explicitly to an eligible runtime. MicroVM images
+must already contain ossfs2 2.0.10 or newer; see the
+[official mount prerequisites](https://help.aliyun.com/zh/agent-sandbox/mount-oss-volume-1).
+
+Run `python -m pytest e2e/test_skill_storage_state.py -ra`. The test verifies the
+exact kernel mount before touching a uniquely named, exclusively created sentinel,
+fsyncs it, destroys the first sandbox and checks typed not-found, then creates a
+new sandbox and reads the persisted data. A read-only mount must read that data
+and reject a separate exclusive write with a permission/read-only errno. Cleanup
+only removes the verified owned sentinel and tracked sandboxes. The fixture owner
+must separately clean up its Volume definitions, role and backing storage.
+Missing opt-in skips before constructing cloud fixtures; incomplete explicit
+prerequisites fail rather than selecting an arbitrary Volume.
+
+The standard Snapshot regression keeps its mutable marker inside an owned,
+non-sticky directory. The tested envd image rejects SDK overwrite directly under
+sticky `/tmp` even before a Snapshot; that independent behavior is retained in
+[the state/storage verification record](../.agents/evidence/verify/2026-10-26-skill-storage-state-acceptance.md).
+
+## Repository, expiring preview and third-party MCP runner
+
+Run `python e2e/skill_tools_acceptance.py --output NEW_JSON_PATH` in an environment
+with this checkout's matching client/server pair installed. Configure the standard
+sandbox credentials locally; no account key is sent into the sandbox. The runtime
+must provide Python, Node.js, git and outbound access to GitHub/npm.
+`ABX_SKILL_RUNTIME_TEMPLATE` selects the eligible runtime (default
+`code-interpreter-v1`); `ABX_SKILL_RUN_PREFIX` sets the owned fixture's purpose tag.
+The new evidence output must not already exist.
+
+The runner fetches the exact pinned public repository commit with at most two
+bounded read-only attempts, verifies and starts its Node application, then checks
+an application HMAC preview: valid response, unsigned/tampered rejection and
+20-second expiry. This temporary fixture uses an application proxy with
+`secure=False`; it does not prove provider gateway-native signed links. It then
+installs pinned filesystem MCP releases `2026.7.10` and `2026.8.31`, performs actual
+initialize/tools-list/read-file calls, reads logs, removes tools and verifies no
+owned MCP process or sandbox remains. It is a manual real-cloud runner, not an
+implicitly enabled unit/Actions test. Failures and cleanup are saved separately
+from successful checks.
+
 ## Adding a test
 
 1. Use the fixtures (`base_sandbox`, `code_sandbox`, `server_sandbox`, `sandbox_factory`, `workdir`);
@@ -149,3 +201,12 @@ because platform health can answer before port forwarding is ready.
 可执行文件，可启用 `test_19_named_string_array.py` 的原生 JSON 数组回归。
 该用例上传并校验当前 checkout 的服务器源码，使用独立、受跟踪的沙箱，
 不会假定预置服务器已更新；以命令目录的就绪作为异步端口转发生效的依据。
+
+## Optional real desktop acceptance
+
+Follow the [desktop acceptance guide](../docs/en/guide/desktop-acceptance.md) and
+its isolated pinned requirements, then run
+`python e2e/desktop_acceptance.py --template "$E2B_DESKTOP_TEMPLATE" --output-dir NEWDIR`.
+This is separate from the standard/Provider client suites; real desktop template,
+private ingress, traffic token, VNC password and handover/replay prerequisites
+remain explicit in the guide.

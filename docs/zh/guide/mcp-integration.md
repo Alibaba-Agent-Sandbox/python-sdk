@@ -61,7 +61,7 @@ Python MCP server 提供 15 个工具。Node.js CLI 使用独立 MCP 实现；Py
 
 > **命名说明**：MCP 工具 `run_command` 通过 `sh -c` 执行命令（SDK 中 `sandbox.commands.run(..., shell=True)`），它不是命名命令调度；要调用注册在沙箱 server 上的命令，请使用 `Sandbox.run(name, **kwargs)`。
 >
-> **默认沙箱**：`create_sandbox` 的结果会成为默认沙箱，所以随后省略 `sandbox_id` 的 `write_file` / `run_code` / `kill_sandbox` 都作用在刚创建的那只沙箱上。还没有默认沙箱时，第一次省略 `sandbox_id` 的执行或文件工具调用会懒创建一只。元数据和续期工具不会创建沙箱。省略 `template` 时使用 server 配置的模板（Python server 默认为 `base`，CLI 的 `abx mcp start` 默认为 `code-interpreter-v1`）。执行与文件操作会按会话策略续期，初值为创建时的 `timeout`，可由 `set_sandbox_timeout` 更新。元数据查询不续期。IDE 关闭 server（STDIO）或 `DELETE /mcp` / 空闲超时（HTTP）时会销毁会话创建或由执行、文件工具接管的沙箱；只查询或续期的外部实例不接管。
+> **默认沙箱**：`create_sandbox` 的结果会成为默认沙箱，所以随后省略 `sandbox_id` 的 `write_file` / `run_code` / `kill_sandbox` 都作用在刚创建的那只沙箱上。还没有默认沙箱时，第一次省略 `sandbox_id` 的执行或文件工具调用会懒创建一只。元数据和续期工具不会创建沙箱。省略 `template` 时使用 server 配置的模板（Python server 默认为 `base`，CLI 的 `abx mcp start` 默认为 `code-interpreter-v1`）。执行与文件操作会按会话策略续期，初值为创建时的 `timeout`，可由 `set_sandbox_timeout` 更新。元数据查询不续期。本源码版本在 IDE 关闭 server（STDIO）或 `DELETE /mcp` / 空闲超时（HTTP）时，仅销毁本会话创建的沙箱；显式 ID 访问的其他沙箱属于借用，只关闭客户端连接。此归属修正晚于公开的 0.4.0a6。显式、已授权的 `kill_sandbox` 仍可删除选中的沙箱。
 
 显式 `start_task` 是会话销毁规则的例外：保留该沙箱到平台 TTL，其他沙箱仍正常清理。
 请保存句柄，结束后显式 `kill_sandbox`。分页、取消和持久性边界见

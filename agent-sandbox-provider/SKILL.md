@@ -94,13 +94,17 @@ files.watch         files.watch
 files.transfer      upload_url / download_url
 templates.read      template list
 templates.build     legacy template build
-templates.deploy    opt-in image deployment via a provider template factory (CLI owned)
 ports.url           network.resolve_url
 ports.domain        a separate domain feature
 storage.mount       volume mount
 network.vpc         VPC
 sessions            named commands on the in-sandbox server
 ```
+
+Do not declare `templates.deploy`: the current CLI rejects that feature id. Image
+preparation is the exact `template.prepare` operation in the consumer-specific
+`[operations]` contract; declare it only for a transport/consumer that actually
+implements preparation. The SDK does not build source images.
 
 Interpreter and workflow calls use the separate exact `[operations]` contract, with `operation_contract_version = 1` and explicit `cli`/`python` arrays. `code.interpret` is not an accepted feature id. Declare `code.execute`, `code.default-context.execute` or context/stream operations only for implemented consumer paths. Python exec/rest bridges do not implement interpreter operations. `[workflow]` declares supported input/startup kinds; declarations do not implement the transport. See the [shared contract](https://github.com/Alibaba-Agent-Sandbox/python-sdk/tree/main/contracts).
 

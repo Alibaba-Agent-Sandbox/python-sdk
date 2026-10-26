@@ -1,0 +1,178 @@
+{
+  "steps": [
+    {
+      "name": "desktop-created-correct-spec",
+      "result": "PASS",
+      "cpu": 4,
+      "memory": 8192
+    },
+    {
+      "name": "agent-mouse-keyboard-effect",
+      "result": "PASS",
+      "sequence": [
+        "agent-start"
+      ]
+    },
+    {
+      "name": "traffic-token-issued",
+      "result": "PASS"
+    },
+    {
+      "name": "stream-static-resource-access",
+      "result": "PASS",
+      "unauthenticated_static_status": 403,
+      "authenticated_static_status": 200,
+      "upstream_content_type": "text/html",
+      "upstream_disposition": "attachment",
+      "html_document_observed": true,
+      "connected_without_gateway_token": false,
+      "http_status": 403
+    },
+    {
+      "name": "gateway-token-enforcement",
+      "result": "PASS",
+      "connected_without_gateway_token": false,
+      "http_status": 403
+    },
+    {
+      "name": "vnc-password-rejected",
+      "result": "PASS",
+      "connected": false,
+      "status": "New connection has been rejected with reason: password check failed!"
+    },
+    {
+      "name": "live-stream-renders",
+      "result": "PASS",
+      "websocket_sessions": 2,
+      "transported_bytes": 33380,
+      "canvas_width": 1100
+    },
+    {
+      "name": "operator-handover-effect",
+      "result": "PASS",
+      "actor": "simulated operator through independent VNC client",
+      "sequence": [
+        "agent-start",
+        "operator-step"
+      ]
+    },
+    {
+      "name": "agent-resume-same-state",
+      "result": "PASS",
+      "sequence": [
+        "agent-start",
+        "operator-step",
+        "agent-resumed"
+      ]
+    },
+    {
+      "name": "stream-stopped",
+      "result": "PASS",
+      "websocket_sessions": 2,
+      "transported_bytes": 93910
+    },
+    {
+      "name": "replay-artifacts",
+      "result": "PASS",
+      "screenshots": 6,
+      "format": "offline screenshot timeline with SHA-256; not full-motion video"
+    },
+    {
+      "name": "desktop-cleanup",
+      "result": "PASS",
+      "deleted": true,
+      "independently_absent": true
+    }
+  ],
+  "timeline": [
+    {
+      "at_seconds": 17.86,
+      "actor": "agent",
+      "action": "Open the synthetic local acceptance page in the real desktop browser",
+      "file": "01-browser-ready.png",
+      "sha256": "869764cbe433fc11986032712610e68d6de132b0a8b694cba3c0ae1f54a24c0a",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "at_seconds": 20.13,
+      "actor": "agent",
+      "action": "Mouse focus, keyboard text and mouse commit",
+      "file": "02-agent-state.png",
+      "sha256": "2e599f95b3c886b45255af27c3994826e3068dcfd14d741570635e8a138079b4",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "at_seconds": 35.15,
+      "actor": "simulated-operator",
+      "action": "Observe authenticated live stream through controlled backend proxy",
+      "file": "03-live-stream-view.png",
+      "sha256": "3ab4de0a27d070385ef42cecf196668bff4963b7f3f8766507e14be0e9c8158e"
+    },
+    {
+      "at_seconds": 42.91,
+      "actor": "simulated-operator",
+      "action": "Independent screenshot after VNC input before checking state",
+      "file": "operator-diagnostic.png",
+      "sha256": "c68c23a466c467052d70720d6c5da2aa916af4cf68ba11bb2c6b33f94547787d",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "at_seconds": 43.48,
+      "actor": "simulated-operator",
+      "action": "Type and commit through the second controller",
+      "file": "04-operator-state.png",
+      "sha256": "c68c23a466c467052d70720d6c5da2aa916af4cf68ba11bb2c6b33f94547787d",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "at_seconds": 45.94,
+      "actor": "agent",
+      "action": "Resume on the same desktop and preserve prior operator state",
+      "file": "05-agent-resumed.png",
+      "sha256": "c9ef3fc538e3576c83f0dbebf8b80d4c9820654e0e752c952bb3f44b1e608409",
+      "width": 1024,
+      "height": 768
+    }
+  ],
+  "scope": "Real official desktop image; operator is simulated by a second controller, not a human/login session.",
+  "template_id": "iallftl5zi2vdi0u0ht0",
+  "creation_controls": {
+    "secure": true,
+    "network": {
+      "allow_public_traffic": false
+    }
+  },
+  "sandbox_id": "sbx-ff3cae53-31f3-4e13-bdc2-cdd3a48ac298",
+  "gateway_observation": {
+    "unauthenticated_static_status": 403,
+    "authenticated_static_status": 200,
+    "upstream_content_type": "text/html",
+    "upstream_disposition": "attachment",
+    "html_document_observed": true,
+    "connected_without_gateway_token": false,
+    "http_status": 403
+  },
+  "proxy": {
+    "bind": "127.0.0.1",
+    "gateway_token_stays_backend": true
+  },
+  "canvas_observation": {
+    "bounding_box": {
+      "x": 0,
+      "y": 12.5,
+      "width": 1100,
+      "height": 825
+    },
+    "dimensions": {
+      "width": 1024,
+      "height": 768
+    },
+    "view_only_setting": false
+  },
+  "result": "PASS",
+  "result_scope": "GUI, password-authenticated VNC, simulated handover and screenshot replay only; gateway token enforcement is separately observed"
+}

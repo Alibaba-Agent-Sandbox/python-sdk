@@ -1,0 +1,58 @@
+{
+  "checks": [
+    {
+      "id": "remote-unauthorized-denied",
+      "result": "PASS",
+      "status": 401
+    },
+    {
+      "id": "separate-client-sessions",
+      "result": "PASS"
+    },
+    {
+      "id": "remote-tool-discovery",
+      "result": "PASS",
+      "tool_count": 15
+    },
+    {
+      "id": "remote-cloud-create-command-isolation",
+      "result": "PASS",
+      "sandbox_ids": [
+        "sbx-90d2038b-d61b-4244-a0ba-16593b0d6a58",
+        "sbx-03c64e2e-6009-4668-991b-00a503950d06"
+      ]
+    },
+    {
+      "id": "same-credential-manual-access",
+      "result": "PASS",
+      "scope": "same authority; not distinct-user isolation"
+    },
+    {
+      "id": "borrower-session-preserves-owner",
+      "result": "PASS"
+    },
+    {
+      "id": "remote-session-delete-auto-cleanup",
+      "result": "PASS"
+    }
+  ],
+  "cleanup": [
+    {
+      "sandbox_id": "sbx-90d2038b-d61b-4244-a0ba-16593b0d6a58",
+      "session_delete_absence_verified": true
+    },
+    {
+      "sandbox_id": "sbx-03c64e2e-6009-4668-991b-00a503950d06",
+      "session_delete_absence_verified": true
+    },
+    {
+      "host_sandbox_id": "sbx-1184412c-03f8-4e85-a1f4-65d00201f1e5",
+      "absence_verified": true
+    }
+  ],
+  "scope": "real HTTPS hosted test MCP process in its own sandbox; not a permanent managed production service",
+  "host_sandbox_id": "sbx-1184412c-03f8-4e85-a1f4-65d00201f1e5",
+  "source_test_client_sha256": "e392045f50b39fd3ba094dbbb6df16d687e47f4e912cbc4ca61ae42622c31587",
+  "release_status": "private source-test wheel; public 0.4.0a6 is not fixed",
+  "result": "PASS"
+}

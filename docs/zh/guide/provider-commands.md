@@ -218,3 +218,10 @@ Python 仓库的手动验收控制器通过两端访问同一个真实 Provider�
 [快照](https://help.aliyun.com/zh/agent-sandbox/snapshot-invited-test)。
 
 真实验收中，恢复后立即创建快照曾返回 HTTP503；先确认运行状态并等待服务准入稳定，再首次创建。最终验收使用30秒静置间隔，该值是验收观察，不是服务就绪 SLA。失败写入不自动重试。
+
+[自有存储验收](../../../e2e/README.zh-CN.md#自有-oss-持久化与只读验收)另行通过标准
+Python 客户端验证真实 OSS 跨沙箱重建持久化和只读访问；仅注册 Volume 不能证明数据面
+已经可用。已记录的 MicroVM 挂载暂停/恢复检查使用经摘要校验的 ossfs2 2.0.10 和
+[官方追加挂载 API](https://www.alibabacloud.com/help/zh/agent-sandbox/append-mount-volume)，
+这不代表新增了共享 Provider 命令。被测后端在快照恢复时拒绝修改 Volume 或挂载配置，
+返回 HTTP400；需要改变挂载配置时，不应把快照 ID 当作重新构建的镜像模板。

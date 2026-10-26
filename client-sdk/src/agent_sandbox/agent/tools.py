@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from agent_sandbox.agent.mcp import SandboxManager
     from agent_sandbox.models.sandbox import SandboxInfo
 
+from agent_sandbox.agent.create_resources import verify_created_resources
 from agent_sandbox.utils.logging import get_logger
 
 logger = get_logger("agent.tools")
@@ -396,6 +397,11 @@ async def handle_create_sandbox(
         envs=envs,
         **options,
     )
+    failure = await verify_created_resources(
+        manager, sandbox, {name: options[name] for name in ("cpu", "memory") if name in options}
+    )
+    if failure is not None:
+        return failure
     return {
         "sandbox_id": sandbox.id,
         "status": sandbox.status.value,

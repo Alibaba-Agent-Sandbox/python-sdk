@@ -1,0 +1,77 @@
+{
+  "run": "abx-accept-3e45c39dacb0",
+  "steps": [
+    {
+      "scenario": "owned private empty OSS bucket created",
+      "result": "PASS"
+    },
+    {
+      "scenario": "owned FC trust role scoped only to owned OSS bucket",
+      "result": "PASS"
+    },
+    {
+      "scenario": "RW and RO Volume configurations reached AVAILABLE",
+      "result": "PASS"
+    },
+    {
+      "scenario": "repository opt-in pytest real OSS persistence/RO acceptance",
+      "result": "PASS"
+    },
+    {
+      "scenario": "exact kernel mount and exclusive RW sentinel fsync/read",
+      "result": "PASS"
+    },
+    {
+      "scenario": "first sandbox killed and404 verified",
+      "result": "PASS"
+    },
+    {
+      "scenario": "fresh recreated sandbox reads persistent sentinel",
+      "result": "PASS"
+    },
+    {
+      "scenario": "RO mount reads persisted object and rejects writes",
+      "result": "PASS"
+    },
+    {
+      "scenario": "owned sentinel removed from OSS",
+      "result": "PASS"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "volume",
+      "result": "PASS"
+    },
+    {
+      "kind": "volume",
+      "result": "PASS"
+    },
+    {
+      "kind": "bucket",
+      "result": "PASS"
+    },
+    {
+      "kind": "policy-detach",
+      "result": "PASS"
+    },
+    {
+      "kind": "policy",
+      "result": "PASS"
+    },
+    {
+      "kind": "role",
+      "result": "PASS"
+    }
+  ],
+  "sources": [
+    "https://www.alibabacloud.com/help/zh/agent-sandbox/mount-oss-volume-1",
+    "https://www.alibabacloud.com/help/zh/agent-sandbox/create-ram-role"
+  ],
+  "pytest": {
+    "exit": 0,
+    "output": "...                                                                      [100%]\n3 passed in 17.33s\n"
+  },
+  "readonly_error_type": "SandboxException",
+  "result": "PASS"
+}

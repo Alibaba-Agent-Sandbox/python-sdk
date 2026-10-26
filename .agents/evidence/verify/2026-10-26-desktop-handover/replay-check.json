@@ -1,0 +1,8 @@
+{
+  "result": "PASS",
+  "first_frame": "01-browser-ready.png",
+  "last_frame": "05-agent-resumed.png",
+  "previous_frame": "04-operator-state.png",
+  "frame_count": 6,
+  "host_browser_version": "150.0.7871.114"
+}

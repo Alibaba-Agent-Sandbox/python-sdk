@@ -416,3 +416,139 @@ async def test_late_managed_timeout_after_shutdown_does_not_restore_renewal_stat
     assert manager._sandboxes == {}
     assert manager._lifetimes == {}
     assert manager._default_sandbox is None
+
+
+async def test_borrower_shutdown_preserves_another_session_owned_sandbox():
+    owner = SandboxManager()
+    borrower = SandboxManager()
+    created = _sandbox("shared-authority-sandbox")
+    borrowed = _sandbox("shared-authority-sandbox")
+    with (
+        patch(
+            "agent_sandbox.api.sandbox.Sandbox.create", new_callable=AsyncMock, return_value=created
+        ),
+        patch(
+            "agent_sandbox.api.sandbox.Sandbox.connect",
+            new_callable=AsyncMock,
+            return_value=borrowed,
+        ),
+    ):
+        await owner.create_sandbox()
+        assert await borrower.get_sandbox(created.id, refresh_lifetime=False) is borrowed
+        await borrower.shutdown()
+        borrowed.close.assert_awaited_once()
+        borrowed.kill.assert_not_awaited()
+        created.kill.assert_not_awaited()
+        assert await owner.get_sandbox(refresh_lifetime=False) is created
+        await owner.shutdown()
+    created.kill.assert_awaited_once()
+    created.close.assert_not_awaited()
+
+
+async def test_explicit_kill_of_borrowed_sandbox_remains_authorized():
+    manager = SandboxManager()
+    borrowed = _sandbox("explicit-external")
+    with patch(
+        "agent_sandbox.api.sandbox.Sandbox.connect", new_callable=AsyncMock, return_value=borrowed
+    ):
+        await manager.get_sandbox(borrowed.id, refresh_lifetime=False)
+        assert await manager.kill_sandbox(borrowed.id) == borrowed.id
+        await manager.shutdown()
+    borrowed.kill.assert_awaited_once()
+    borrowed.close.assert_not_awaited()
+
+
+async def test_qualified_borrow_cannot_replace_another_provider_owned_handle():
+    manager = SandboxManager()
+    owned = _sandbox("same-id")
+    owned.provider = "alicloud-express"
+    borrowed = _sandbox("same-id")
+    borrowed.provider = "e2b"
+    with (
+        patch("agent_sandbox.api.sandbox.Sandbox.create", AsyncMock(return_value=owned)),
+        patch("agent_sandbox.api.sandbox.Sandbox.connect", AsyncMock(return_value=borrowed)),
+    ):
+        await manager.create_sandbox()
+        assert await manager.get_sandbox("e2b:same-id", refresh_lifetime=False) is borrowed
+        await manager.shutdown()
+    owned.kill.assert_awaited_once()
+    borrowed.kill.assert_not_awaited()
+    borrowed.close.assert_awaited_once()
+
+
+async def test_same_raw_id_from_two_providers_keeps_both_owned_handles():
+    manager = SandboxManager()
+    first, second = _sandbox("same-id"), _sandbox("same-id")
+    first.provider, second.provider = "alicloud-express", "e2b"
+    with patch("agent_sandbox.api.sandbox.Sandbox.create", AsyncMock(side_effect=[first, second])):
+        await manager.create_sandbox(provider="alicloud-express")
+        await manager.create_sandbox(provider="e2b")
+        with pytest.raises(ValueError, match="qualif"):
+            await manager.get_sandbox("same-id", refresh_lifetime=False)
+        await manager.shutdown()
+    first.kill.assert_awaited_once()
+    second.kill.assert_awaited_once()
+
+
+async def test_connect_alias_reuses_owned_handle_without_replacing_it():
+    manager = SandboxManager()
+    owned, alias = _sandbox("same-id"), _sandbox("same-id")
+    owned.provider = alias.provider = "alicloud-express"
+    with (
+        patch("agent_sandbox.api.sandbox.Sandbox.create", AsyncMock(return_value=owned)),
+        patch("agent_sandbox.api.sandbox.Sandbox.connect", AsyncMock(return_value=alias)),
+    ):
+        await manager.create_sandbox()
+        assert await manager.get_sandbox("alias:same-id", refresh_lifetime=False) is owned
+        await manager.shutdown()
+    alias.close.assert_awaited_once()
+    alias.kill.assert_not_awaited()
+    owned.kill.assert_awaited_once()
+
+
+@pytest.mark.parametrize("operation", ["create", "connect"])
+async def test_lifecycle_completion_after_shutdown_cannot_restore_ownership(operation):
+    manager = SandboxManager()
+    late = _sandbox("late-owned" if operation == "create" else "late-borrowed")
+    late.provider = "alicloud-express"
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def complete_late(**_kwargs):
+        entered.set()
+        await release.wait()
+        return late
+
+    with patch("agent_sandbox.api.sandbox.Sandbox." + operation, complete_late):
+        pending = asyncio.create_task(
+            manager.create_sandbox()
+            if operation == "create"
+            else manager.get_sandbox(late.id, refresh_lifetime=False)
+        )
+        await entered.wait()
+        await manager.shutdown()
+        release.set()
+        with pytest.raises(ValueError, match="closed"):
+            await pending
+    assert not manager._sandboxes and not manager._lifetimes
+    assert not manager._owned_sandbox_ids and not manager._retained_task_sandboxes
+    if operation == "create":
+        late.kill.assert_awaited_once()
+        late.close.assert_not_awaited()
+    else:
+        late.close.assert_awaited_once()
+        late.kill.assert_not_awaited()
+
+
+async def test_closed_manager_cannot_begin_new_lifecycle_calls():
+    manager = SandboxManager()
+    await manager.shutdown()
+    with (
+        patch("agent_sandbox.api.sandbox.Sandbox.create", AsyncMock()) as create,
+        patch("agent_sandbox.api.sandbox.Sandbox.connect", AsyncMock()) as connect,
+    ):
+        with pytest.raises(ValueError, match="closed"):
+            await manager.create_sandbox()
+        with pytest.raises(ValueError, match="closed"):
+            await manager.get_sandbox("external", refresh_lifetime=False)
+    create.assert_not_awaited()
+    connect.assert_not_awaited()
