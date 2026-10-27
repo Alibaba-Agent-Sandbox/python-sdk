@@ -244,3 +244,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Current public a4 guidance and bounded metadata propagation](notes/implemented/process/2026-10-25-current-public-a4.md) · [verification](evidence/verify/2026-10-25-public-a4-delivery.md).
 
 - [Shared application authentication vectors](notes/proposed/feature/2026-10-26-application-auth-vectors.md) · [verification](evidence/verify/2026-10-26-application-auth-vectors.md).
+
+- [Consented Express managed API keys](notes/proposed/architecture/2026-10-27-managed-api-key.md) · [verification](evidence/verify/2026-10-27-managed-api-key.md).

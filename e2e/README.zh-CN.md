@@ -1,5 +1,7 @@
 # 真实云端 E2E 套件(Python SDK)
 
+使用 `ABX_BIN=<candidate> pytest e2e/test_managed_api_key.py -q`，配置 AK/SK 和极速版端点/域名，验证 SDK 显式准备，以及标准/Provider 沙箱命令和文件操作。测试使用独立用户目录，确认 Key 删除并停止本次引擎。清理需额外的 `sandbox:DeleteApiKey`，见[权限指南](../docs/zh/guide/permissions.md)。
+
 针对**真实阿里云 FC 智能体沙箱平台**对 `agent-sandbox`(client-sdk)与 `agent-sandbox-server`(server-sdk)做端到端测试:
 真实沙箱、真实 envd、真实沙箱内 server。模板的构建与部署由 `abx template build|deploy` 负责，由 CLI 自己的 E2E 套件覆盖。mock 测试位于 `client-sdk/tests` 与 `server-sdk/tests`;本套件的存在
 是因为 mock 无法证明产品可用(见 [`../.agents/notes/DEFINITION-OF-DONE.md`](../.agents/notes/DEFINITION-OF-DONE.md) 中的完成定义)。

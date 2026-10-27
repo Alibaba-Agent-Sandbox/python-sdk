@@ -11,6 +11,10 @@ Local changes beyond namespace relocation:
 - Use project package metadata and version; do not require installed E2B distributions.
 - Read canonical E2B connection settings with project config-file fallback; default to
   Alibaba Express, derive explicit domains correctly, and accept Alibaba-issued API keys.
+- When the Express project configuration supplies only AK/SK, resolve an already
+  prepared managed key through its provider-owned helper and shared local engine.
+  Credential creation/renewal requires explicit preparation consent. Existing
+  E2B/explicit API keys short-circuit this path; no public standard signatures change.
 - Support Alibaba's documented optional snapshot `name` list filter in sync and async
   clients/paginators, which the fixed Python SDK does not expose. Preserve all existing
   positional arguments. Encode qualified snapshot names in the template deletion path.

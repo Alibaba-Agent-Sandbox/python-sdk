@@ -1,5 +1,7 @@
 # Real-cloud E2E suite (Python SDK)
 
+Run `ABX_BIN=<candidate> pytest e2e/test_managed_api_key.py -q` with AK/SK and the Express endpoint/domain to verify explicit SDK preparation and standard/provider sandbox exec/files lifecycle through the real shared engine. The test uses an isolated home, confirms key deletion and stops its engine. Cleanup additionally needs `sandbox:DeleteApiKey`; see [permissions](../docs/en/guide/permissions.md).
+
 End-to-end tests of `agent-sandbox` (client-sdk) and `agent-sandbox-server` (server-sdk) against the
 **real Alibaba Cloud FC agent sandbox platform**: real sandboxes, real envd, real in-sandbox server.
 Templates are built and deployed with `abx template build|deploy`, which the CLI's own E2E suite covers. Mocks live in `client-sdk/tests` and `server-sdk/tests`; this suite exists
