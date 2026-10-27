@@ -270,3 +270,8 @@ CLI（`abx`）原先位于 `src/agent_sandbox/cli/`（`commands/` 下的 Click �
 提供方配置发现由包入口延迟装配。传输配置只消费 `_provider_schema.py` 中的低层 `ProviderSchema` 值与注入的解析器，不导入提供方 registry。内置配置不触发提供方发现；注册、entry-point 和已安装提供方仍遵循原有选择、派生、默认值及继承规则。
 
 内置平台/envd HTTP 每次执行一次传输尝试，见[配置说明](../reference/configuration.md#传输尝试)；引擎读取恢复另行处理。
+
+
+## 未使用代码审查
+
+私有配置 helper 可在核对源码和测试消费者后清理，公共配置 schema 导出保持稳定。兼容参数、框架回调以及声明异步生成器的语句需要语义复核，不能自动删除。浏览器资源释放属于独立的生命周期问题，变更其归属前须完成相应验证。

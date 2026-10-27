@@ -272,3 +272,8 @@ The CLI (`abx`) formerly lived in `src/agent_sandbox/cli/` (Click commands under
 Provider configuration discovery is assembled lazily by the package composition root. Transport consumes a low-level `ProviderSchema` value and an injected resolver from `_provider_schema.py`; it does not import the provider registry. Builtin configuration resolves without provider discovery. Registered, entry-point and installed providers retain the registry selection and derive/default/inheritance rules.
 
 Builtin platform/envd HTTP uses one transport attempt; see [configuration](../reference/configuration.md#transport-attempts). Engine read recovery remains separate.
+
+
+## Unused-code review
+
+Private configuration helpers may be removed after source and test consumer review; public schema exports stay stable. Compatibility parameters, framework callbacks and async-generator marker statements need semantic review instead of automatic deletion. Browser resource teardown is a separate lifecycle concern and must be verified before changing its ownership.
