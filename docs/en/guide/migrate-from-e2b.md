@@ -2,6 +2,12 @@
 
 The standard Python API targets `e2b==2.31.0` and `e2b-code-interpreter==2.8.1`, the versions recommended in [Alibaba's compatibility contract](https://help.aliyun.com/zh/agent-sandbox/e2b-compatibility-explanation). It owns its protocol implementation and installs neither E2B package. This contract applies to Alibaba Express; other providers use the explicit `ProviderSandbox` extension API. Node SDK migration is outside this change.
 
+## Minimum migration
+
+For an application already using Express through the E2B SDK, install this client, change imports as shown below, and keep the existing API key, `E2B_API_KEY`, `E2B_API_URL`, `E2B_DOMAIN` (or explicit `api_key=`), and sync/async calling style. Standard entries retain these E2B settings. No replacement key/template, AccessKey or CLI is required. Provider extensions use the project's `ABX_*` settings.
+
+Choosing AK/SK-managed keys adds a matching CLI with `api-key.prepare` / `api-key.resolve`, AK/SK and region configuration, Team-scoped RAM permissions, and one explicit `prepare_api_key_sync(confirm=True)` before the application starts (async: `await prepare_api_key(confirm=True)`). Existing standard business calls then remain unchanged; renewal needs fresh consent. Add permissions for template builds, ACR and Volume only when using those features: see [permissions](permissions.md). These preparation APIs require source containing this feature or a subsequent matching release; arbitrary older installations do not provide them.
+
 ## Installation and imports
 
 Install the published client with `python -m pip install --index-url https://pypi.org/simple agent-sandbox-client==0.4.0a6`. Configure the Express account with `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and `ABX_SANDBOX_DOMAIN`; these project settings work for standard `Sandbox` / `AsyncSandbox`, `code_interpreter` and `ProviderSandbox`. `abx config` and project/home configuration files also feed these settings. The standard client's public `api_key=` parameter remains part of its pinned contract. A separate application still using the third-party E2B SDK uses that SDK's native configuration names; do not send credentials from another provider account.

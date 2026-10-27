@@ -75,7 +75,7 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 [E1002] envdAccessToken not available. Sandbox may not be created or connected.
 ```
 
-**Solution**: Check that the system clock is accurate. Reconnect for a current envd token or inspect an explicitly configured custom exchange; API keys are not automatically minted or refreshed.
+**Solution**: Check that the system clock is accurate. Reconnect for a current envd token. Managed API-key creation and renewal require explicit confirmation; see [permissions](permissions.md).
 
 ---
 
