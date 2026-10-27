@@ -1,6 +1,6 @@
 # Decision: Remove verified unused code and record candidate dispositions
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -46,3 +46,9 @@ StreamReader.buffer_size explicitly preserves its signature contract. Unreachabl
 ## Evidence
 
 - [Verification](../../../evidence/verify/2026-10-27-dead-code-cleanup.md)
+
+## Implementation
+
+The scoped implementation merged through https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/147 at `c7a66351127731132fb94937a1ba45aa70bf71fa`. The original verification checkpoint is preserved as history; the acceptance receipt below records the actual remote result.
+
+- [Acceptance receipt](../../../evidence/verify/2026-10-27-dead-code-cleanup-acceptance.md)
