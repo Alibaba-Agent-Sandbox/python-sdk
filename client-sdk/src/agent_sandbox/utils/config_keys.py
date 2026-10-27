@@ -133,10 +133,6 @@ def validate_provider_id(provider_id: str) -> str | None:
     return None
 
 
-def _a(name: str, kind: str, surface: str = "env") -> Alias:
-    return Alias(name, kind, surface)
-
-
 _G_CONN = "Connection"
 _G_AUTH = "Sandbox authentication"
 _G_ALI = "Alibaba Cloud credentials"
