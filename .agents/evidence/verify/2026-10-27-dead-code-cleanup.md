@@ -4,7 +4,7 @@
 - Issue: https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/146
 - Base revision: `259cc1ef9b154346bb8d5de0689b4b624d97baff`
 - Functional patch SHA256: `4eec7a76ae4dac0d950d18451b75276046622295daa021cb294df8ae02a74d47` (Git binary diff against the base, excluding records/docs/changelog).
-- Result: BLOCKED
+- Result: PARTIAL
 - Environment: Linux; Node 22.22.2, TypeScript 5.9.3, ESLint 10.12.0; final Python checks use system Python 3.13.13; Ruff 0.17.3.
 
 ## What was verified
@@ -23,7 +23,9 @@ The scoped deletion preserves observable behavior, public contracts, generator o
 | `make build && make dist-check` | PASS | Both wheels/sdists, twine, py.typed and clean combined installation/imports. |
 | `bash scripts/check-repo-health.sh` | PASS | 106 pass, 1 warning, 0 failures before final evidence update. |
 | Existing-key service listing | PASS | Read-only CLI preflight against the existing configured service. |
-| `make e2e` | IN PROGRESS | Existing service key only; AK/SK not supplied. |
+| `make e2e` plus corrected single-case rerun | PASS in combined results | Initial run: 129 passed, 1 failed, 11 skipped, 2 deselected. The only failure lacked ABX_BIN; after supplying the immutable CLI artifact, that exact test passed (445.88 seconds). No product source changed between runs; the initial failure remains recorded. |
+| Remote CI at `0e5a572bef3c7d5068a4e80a80584980343e2a76` | PASS | Full Python 3.10/3.11/3.12 client/server matrix, public contract, runtime fixtures and Node provider engine; Docs links also passed. |
+| `python scripts/e2e-cleanup.py --run-id "$E2E_RUN_ID"` | PASS | Dry run: 0 candidates, 0 deletions. Subsequent independent SDK inventory: 0 total sandboxes, 0 owned by this run. |
 
 The failing server cases are `test_upgrade_without_a_key_is_a_400_not_a_hang` (501 instead of 400) and `test_transfer_encoding_rejected_in_policy_mode` (502 instead of 400). An independent HTTPServer negative control always sends 400: malformed WebSocket traffic is intercepted before reaching that handler and returns 501; chunked POST reaches the handler but the observed response becomes 502. An ordinary explicit-port request reaches it and returns 400. This isolates local forwarding behavior from the unchanged server implementation. Remote CI must validate the original tests on normal networking; no security assertion was weakened.
 
@@ -35,4 +37,4 @@ Only private `_a()` is removed from runtime source. Public aliases/exports, gene
 
 ## Cleanup and remaining gates
 
-Cloud acceptance is running with unique test ownership. No cleanup success is claimed at this checkpoint. Required current-head remote Python matrix, reviews and complete real-cloud results remain pending. The PR stays draft while these gates are unmet.
+Real-component acceptance totals 130 passing cases across the initial run and corrected one-case rerun. Eleven optional/provider/volume/conditional cases remain skipped; two slow cases were deselected. AK/SK key preparation and renewal were not attempted. The CLI provider rerun verified create/info/list/exec/files and two idempotent kills. Independent post-run inventory was empty: none leaked. This metadata-only evidence update still requires current-head CI/review before merge; the passing CI result above belongs to the exact earlier code head and is not misrepresented as a future-head result.
