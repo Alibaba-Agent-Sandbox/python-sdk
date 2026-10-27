@@ -245,4 +245,6 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 
 - [Shared application authentication vectors](notes/proposed/feature/2026-10-26-application-auth-vectors.md) · [verification](evidence/verify/2026-10-26-application-auth-vectors.md).
 
-- [Consented Express managed API keys](notes/proposed/architecture/2026-10-27-managed-api-key.md) · [verification](evidence/verify/2026-10-27-managed-api-key.md).
+- [Consented Express managed API keys](notes/implemented/architecture/2026-10-27-managed-api-key.md) · [verification](evidence/verify/2026-10-27-managed-api-key.md).
+
+- [Managed-key supported CI acceptance](evidence/verify/2026-10-27-managed-api-key-ci.md).

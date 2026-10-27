@@ -1,5 +1,5 @@
 # Decision: Use consented Express managed API keys
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -39,3 +39,5 @@ Consent denial and --ci, explicit-key priority, official generated models, real 
 ## Evidence
 
 - [Verification](../../../evidence/verify/2026-10-27-managed-api-key.md).
+
+- [Supported remote CI acceptance](../../../evidence/verify/2026-10-27-managed-api-key-ci.md).

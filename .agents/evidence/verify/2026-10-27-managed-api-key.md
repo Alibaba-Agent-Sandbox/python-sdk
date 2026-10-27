@@ -2,7 +2,7 @@
 
 - Date: 2026-10-27
 - Pull request: https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/145. Tested feature source: 0e6e27aa97797dd33791352ff6d801846d39ab8c (subsequent documentation-only corrections do not change SDK behavior).
-- Change: [Issue #143](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/143); [decision](../../notes/proposed/architecture/2026-10-27-managed-api-key.md).
+- Change: [Issue #143](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/143); [decision](../../notes/implemented/architecture/2026-10-27-managed-api-key.md).
 - Result: PARTIAL — client and cloud acceptance passed; unchanged server full-suite failure blocks local make ci.
 - Packages: candidate client/server 0.4.0a6 built from main 5d855223e3ec8797b3c4ad7d01644a8a5145b501 plus this PR; no package publication.
 - Environment: Linux, Python 3.12.13 (supplementary 3.13.13 checks), Node 22.22.2, real Express cn-hangzhou; candidate CLI from the companion feature branch. Credentials supplied through ignored environment configuration; values not recorded.
@@ -51,3 +51,5 @@ The pre-existing server malformed-WebSocket assertion prevents full local make c
 ## Not verified
 
 Remote Python 3.10/3.11 matrix, Windows ACL behavior, alternate regions, the full slow cloud matrix and an independently restricted RAM identity were not verified here. Direct cloud SDK behavior is owned/tested by the companion CLI, not reimplemented in Python. No PyPI release was requested or performed.
+
+Supported remote CI subsequently passed; see [CI acceptance](2026-10-27-managed-api-key-ci.md). The local failures above remain part of this run history.
