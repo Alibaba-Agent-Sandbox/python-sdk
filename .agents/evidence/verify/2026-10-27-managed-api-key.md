@@ -1,6 +1,7 @@
 # Verification: Shared Express managed API keys in Python
 
 - Date: 2026-10-27
+- Pull request: https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/145. Tested feature source: 0e6e27aa97797dd33791352ff6d801846d39ab8c (subsequent documentation-only corrections do not change SDK behavior).
 - Change: [Issue #143](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/143); [decision](../../notes/proposed/architecture/2026-10-27-managed-api-key.md).
 - Result: PARTIAL — client and cloud acceptance passed; unchanged server full-suite failure blocks local make ci.
 - Packages: candidate client/server 0.4.0a6 built from main 5d855223e3ec8797b3c4ad7d01644a8a5145b501 plus this PR; no package publication.
@@ -45,7 +46,7 @@ Acceptance uses an isolated user directory and only its tracked key/sandboxes. E
 
 ## Problems found
 
-The pre-existing server malformed-WebSocket assertion prevents full local make ci success. See follow-up linked in the PR; no server behavior was changed by this client feature. This PR depends on the CLI's new api-key.resolve/api-key.prepare operations landing first. Existing direct API-key SDK use still needs no CLI.
+The pre-existing server malformed-WebSocket assertion prevents full local make ci success. Tracked in [baseline issue #144](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/144); no server behavior was changed by this client feature. This PR depends on the CLI's new api-key.resolve/api-key.prepare operations landing first. Existing direct API-key SDK use still needs no CLI.
 
 ## Not verified
 
