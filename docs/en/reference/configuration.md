@@ -62,7 +62,7 @@ Resolving for provider `P` never reads `ABX_<Q>_*` or `[providers.Q]` for anothe
 
 ---
 
-Sandbox calls require `ABX_SANDBOX_API_KEY`; AK/SK settings configure separate official control-plane operations and cannot substitute for it. See [authentication migration](../guide/authentication.md).
+Sandbox calls use an explicit API key or an Express-managed key prepared with AK/SK and explicit consent. The AK/SK path needs the matching abx engine; native control-plane operations have separate permissions. See [authentication](../guide/authentication.md) and [feature permissions](../guide/permissions.md).
 
 ## Environment Variables
 

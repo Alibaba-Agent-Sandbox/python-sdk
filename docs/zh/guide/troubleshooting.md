@@ -75,7 +75,7 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 [E1002] envdAccessToken not available. Sandbox may not be created or connected.
 ```
 
-**解决**：检查系统时钟是否准确。重新连接获取有效 envd token，或检查显式配置的自定义交换；API Key 不会被自动创建或刷新。
+**解决**：检查系统时钟是否准确。重新连接获取有效 envd token。管理 API Key 的创建和续期需要明确确认，见[功能与权限](permissions.md)。
 
 ---
 

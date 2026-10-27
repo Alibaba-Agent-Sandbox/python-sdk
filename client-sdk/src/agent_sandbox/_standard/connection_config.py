@@ -90,7 +90,8 @@ class ConnectionConfig:
 
     @staticmethod
     def _api_key():
-        return os.getenv("E2B_API_KEY") or ConnectionConfig._project_value("sandbox_api_key")
+        from agent_sandbox.providers.registry import builtin_provider
+        return os.getenv("E2B_API_KEY") or builtin_provider().standard_api_key()
 
     @staticmethod
     def _validate_api_key():

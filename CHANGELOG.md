@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- Express AK/SK managed-key preparation with explicit consent, private shared storage, expiry renewal and feature-scoped RAM permission guidance. / 极速版支持经确认的 AK/SK 管理 Key 准备、私有共享存储、到期续期及按功能划分的 RAM 授权指南。
+
 ### Tests
 
 - Add canonical application authentication vectors for the Python, CLI and Node clients; SDK runtime/configuration APIs remain unchanged.

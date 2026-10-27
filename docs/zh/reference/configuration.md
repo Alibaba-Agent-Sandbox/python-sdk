@@ -62,7 +62,7 @@
 
 ---
 
-沙箱调用需要 `ABX_SANDBOX_API_KEY`；AK/SK 用于独立官方控制面，不能替代沙箱密钥。见[鉴权迁移](../guide/authentication.md)。
+沙箱调用使用显式 API Key，或经明确确认、由极速版使用 AK/SK 准备的管理 Key。AK/SK 路径需配套 abx 引擎；原生控制面功能另行授权。见[认证](../guide/authentication.md)和[功能与权限](../guide/permissions.md)。
 
 ## 环境变量
 

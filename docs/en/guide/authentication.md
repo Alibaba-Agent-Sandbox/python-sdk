@@ -6,7 +6,7 @@ For current SDK installation, use the [installation guide](install-python.md).
 
 > **Note:** The `abx` commands shown on this page are provided by the Node.js CLI in the `cli` repository ([CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)). CLI-specific documentation (CLI design, tutorial, reference) lives there too; this repository documents the Python SDK (`agent-sandbox-client`) and the container-side runtime (`agent-sandbox-server`).
 
-Sandbox runtime requests require an **API Key**. **AK/SK (Alibaba Cloud AccessKey)** is configured separately for official control-plane operations.
+Sandbox runtime requests require an **API Key**. **AK/SK (Alibaba Cloud AccessKey)** can explicitly prepare that key for Express, and authenticates native control-plane operations; see [permissions](permissions.md).
 
 Credentials belong to a [provider](providers.md). The built-in provider is **Alibaba Cloud Express Edition (阿里云极速版)**, id `alicloud-express`, and it is the default. The sandbox key is `ABX_SANDBOX_API_KEY`. Alibaba Cloud access keys use the official names `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. The region is `ALIBABA_CLOUD_REGION_ID`. Each key has one name.
 
@@ -19,7 +19,7 @@ Credentials belong to a [provider](providers.md). The built-in provider is **Ali
 Agent Sandbox provides three authentication paths for different scenarios:
 
 - **API Key mode**: The most common approach. Accesses the platform API via the `Authorization: Bearer {api_key}` header. Suitable for personal development, CI/CD, SDK calls, and most other scenarios.
-- **AK/SK control plane**: Used by official template/image/ACR operations. It does not automatically create or exchange a sandbox API key.
+- **AK/SK control plane**: Used by official template/image/ACR operations. Preparation requires explicit consent; see [permissions](permissions.md).
 - **envd internal authentication**: After sandbox creation, the SDK communicates with the in-sandbox envd service using `envdAccessToken` (obtained from the creation response). This is an internal mechanism managed automatically by the SDK — no manual handling required.
 
 ---
@@ -80,35 +80,9 @@ sandbox = await Sandbox.connect("sbx-xxxx", sandbox_api_key="your-api-key")
 ---
 
 <a id="aksk-alibaba-cloud-extended-authentication-"></a>
-## AK/SK control plane and migration
+## AK/SK managed authentication
 
-The previous automatic AK/SK-to-sandbox-key exchange has been removed. With only
-AccessKey credentials, sandbox authentication now raises `InvalidAPIKeyError`
-(E1001) locally, before any exchange/network request. Configure
-`ABX_SANDBOX_API_KEY` or pass `sandbox_api_key=` explicitly for
-sandbox create/connect/list and data-plane requests.
-
-Keep `ALICLOUD_ACCESS_KEY_ID`, `ALICLOUD_ACCESS_KEY_SECRET` and the configured
-region for official template/image and ACR control-plane operations. These
-operations have their own clients and credentials; their supported endpoints
-are unchanged. API key and AccessKey credentials may be configured together for
-a workflow that needs both runtime and template deployment.
-
-The locked official FCSandbox SDK has a `CreateApiKey` operation, but models it
-as `POST /pop/2026-05-09/api-keys` with a structured `apiKey.apiKeyValue` response.
-That credential-resource API does not establish an STS-style one-hour exchange
-or safe automatic refresh lifecycle. The old guessed RPC GET/signing/parser
-implementation is retired; the runtime never mints credentials implicitly.
-
-For an application-owned custom token service, the exported `AkSkAuth` adapter
-still supports an explicitly supplied `set_exchange_func()` callback. It must
-return a non-empty string; objects/empty values fail without being cached.
-The application owns endpoint, credential lifecycle and documented TTL. Legacy
-cache constants are a local policy, not a claim about Alibaba token validity.
-The default factory never injects a callback. Direct imports of the removed
-private exchange/signing helpers must migrate to their own documented service.
-
----
+Express AK/SK-only clients use a key prepared by the shared provider engine. Explicitly call `prepare_api_key(confirm=True)` or `prepare_api_key_sync(confirm=True)` before first use or renewal. SDK calls never prompt or silently create credentials. [Permissions, policy and examples](permissions.md).
 
 ## Configuration Priority Chain
 
@@ -130,7 +104,7 @@ The generic sandbox key (`sandbox_api_key`, environment variable `ABX_SANDBOX_AP
 
 Every plugin option follows one rule: the canonical name is `ABX_<PROVIDER_ID>_<FIELD>` (dashes become underscores), and a manifest may add the vendor's own variable as an alias with `env = [...]`. Secret fields (`secret = true`) live only in the environment or `.env` files (mode 0600) and are refused on the command line; other fields can also live under `[providers.<id>]` in `config.toml`. Verified with OpenSandbox on 2026-10-13: `ABX_OPENSANDBOX_API_KEY` and `ABX_OPENSANDBOX_BASE_URL` were enough to drive a real server from both the CLI and the SDK; `OPEN_SANDBOX_API_KEY` and `OPEN_SANDBOX_DOMAIN` are its declared native aliases, and the canonical name wins when both are set. A plugin that declares `[core] inherit = ["sandbox_api_key"]` receives the generic key only after you consent at install time, and `abx provider info <id>` shows that list under "Inherits".
 
-The sandbox API key is never derived from AK/SK. When both are configured, runtime calls use the API key:
+AK/SK-managed preparation requires explicit consent. When both are configured, runtime calls use the API key:
 - If both `sandbox_api_key` and `access_key_id` are provided, API Key is used
 - If both `ABX_SANDBOX_API_KEY` and `ALICLOUD_ACCESS_KEY_ID` are set, `ABX_SANDBOX_API_KEY` is used
 

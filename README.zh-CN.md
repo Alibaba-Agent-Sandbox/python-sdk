@@ -227,3 +227,5 @@ graph TB
 命名命令支持原生 `list[str]` JSON 参数，校验和服务器兼容性见[服务器 API 指南](docs/zh/guide/template-server-api.md#字符串数组命令参数)。
 
 Current API / 当前接口: [development contract](docs/zh/guide/current-api.md).
+
+[极速版认证与所需权限](docs/zh/guide/permissions.md)：已有 API Key，或经显式确认的 AK/SK 管理 Key。

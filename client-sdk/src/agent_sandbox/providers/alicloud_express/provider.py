@@ -97,6 +97,12 @@ class AlicloudExpressProvider(Provider):
     def config_keys(self):  # type: ignore[no-untyped-def]
         return ALICLOUD_EXPRESS_KEYS
 
+    def standard_api_key(self) -> str | None:
+        """Resolve standard Express credentials without leaking backend code into core."""
+        from agent_sandbox.providers.alicloud_express.managed_api_key import standard_api_key
+
+        return standard_api_key()
+
     create_options = frozenset({"volume_mounts"})
 
     def session_protocols(self, http: Any) -> dict[str, Any]:
@@ -160,6 +166,7 @@ class AlicloudExpressProvider(Provider):
 
     async def build_infra(self, config: TransportConfig) -> ProviderInfra:
         from agent_sandbox.providers.alicloud_express.auth import create_auth_provider
+        from agent_sandbox.providers.alicloud_express.managed_api_key import resolve_sandbox_api_key
         from agent_sandbox.providers.shared.e2b.code_interpreter import UnsupportedCodeProtocol
         from agent_sandbox.providers.shared.e2b.filesystem import FilesystemProtocol
         from agent_sandbox.providers.shared.e2b.process import ProcessProtocol
@@ -167,7 +174,11 @@ class AlicloudExpressProvider(Provider):
         from agent_sandbox.transport.http import HttpClient
 
         auth = create_auth_provider(
-            api_key=config.sandbox_api_key,
+            api_key=(
+                await resolve_sandbox_api_key(config)
+                if config.access_key_id or config.access_key_secret
+                else config.sandbox_api_key
+            ),
         )
         http = HttpClient(config, auth)
         from agent_sandbox.providers.feature_gate import gate_operation_protocols

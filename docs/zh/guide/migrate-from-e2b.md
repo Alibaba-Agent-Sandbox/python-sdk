@@ -2,6 +2,12 @@
 
 标准 Python API 以阿里云推荐的 `e2b==2.31.0`、`e2b-code-interpreter==2.8.1` 为行为基线，范围遵循[阿里云 E2B 兼容说明](https://help.aliyun.com/zh/agent-sandbox/e2b-compatibility-explanation)。项目自行持有协议实现，不安装这两个 E2B 包。本契约针对极速版；其他 Provider 通过独立的 `ProviderSandbox` 扩展 API 使用。本次不涉及 Node SDK。
 
+## 最小迁移步骤
+
+已通过 E2B SDK 使用极速版的应用：安装本项目客户端，按下表修改导入，保留已有 API Key、`E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN`（或原有 `api_key=` 参数）以及同步/异步调用方式。标准入口继续读取这些 E2B 配置；无需重建 Key/模板，也不要求新增 AK/SK 或 CLI。Provider 扩展入口使用项目的 `ABX_*` 配置。
+
+只有在你选择 AK/SK 管理 Key 时，才需安装包含 `api-key.prepare` / `api-key.resolve` 的配套 CLI、配置 AK/SK 和地域、授予 Team 级权限，并在 SDK 首次运行前调用一次 `prepare_api_key_sync(confirm=True)`（异步用 `await prepare_api_key(confirm=True)`）。之后沿用现有标准业务调用，续期仍需明确确认。新增模板构建、ACR、Volume 等功能按需增加权限，见[完整权限指南](permissions.md)。这些准备接口需包含本功能的 CLI/SDK 源码或后续配套发行版，不能假定任意旧安装已经支持。
+
 ## 安装与导入
 
 使用已发布客户端：`python -m pip install --index-url https://pypi.org/simple agent-sandbox-client==0.4.0a6`。通过 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL` 和 `ABX_SANDBOX_DOMAIN` 配置极速版账号；本项目标准 `Sandbox` / `AsyncSandbox`、`code_interpreter` 和 `ProviderSandbox` 均支持这些项目配置。也可使用 `abx config` 与项目/用户配置文件。标准客户端公开 `api_key=` 参数仍属于其固定契约。仍使用第三方 E2B SDK 的独立应用按该 SDK 的原生配置操作，不要混用不同提供商账号的凭据。
