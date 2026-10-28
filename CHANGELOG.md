@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- Reorganize the English and Chinese repository READMEs around installation, first use and task-oriented documentation; keep migration and detailed reference material in their guides.
+
 ### Added
 
 - Express AK/SK managed-key preparation with explicit consent, private shared storage, expiry renewal and feature-scoped RAM permission guidance. / 极速版支持经确认的 AK/SK 管理 Key 准备、私有共享存储、到期续期及按功能划分的 RAM 授权指南。
