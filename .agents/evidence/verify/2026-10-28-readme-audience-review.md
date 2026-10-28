@@ -28,13 +28,17 @@ Documentation changes only. No provider API calls, sandboxes, templates, cloud k
 - `make hygiene`: PASS.
 - `make test`: PARTIAL: server suite 872 passed, 1 skipped, 3 failed; make stopped before client suite.
 - `pytest (three failed server tests after installing missing pip in the test environment)`: PARTIAL: package-list test now passes; malformed WebSocket and chunked-request tests still receive HTTP 501/502 instead of 400.
-- `pytest tests/ (client-sdk)`: IN PROGRESS at evidence capture.
-- `make lint typecheck`: Lint passed for both packages; type checking still running at evidence capture.
+- `pytest tests/ (client-sdk)`: PASS: 2348 passed, 27 skipped.
+- `make lint typecheck`: PASS: Ruff checks passed for both packages; mypy passed for 56 server and 101 client source files (one unused-section configuration note).
 
 ## Reviewed public-file identity
 
 | File | SHA-256 |
 | --- | --- |
-| `CHANGELOG.md` | `deb8df59b48f97a4db56b99834570d5f0a041e31a54f48657b53fe78cc1c2226` |
+| `CHANGELOG.md` | `f412ce3f97945f2bf7ea93da3b5cc1a05844a937cd2da362054228df5d408a66` |
 | `README.md` | `fafd9d8ccf215f639cad22d099670e2be2063f430c09b0b2b8da7af2dd5ca584` |
 | `README.zh-CN.md` | `2983f3a8cab891379e1a5f6ae60928f92ab9f7fd6b07b6f6626e95e9ee97ea76` |
+
+## Final local review follow-up
+
+The two raw HTTP server tests still fail locally with HTTP 501/502 instead of 400 after the missing-pip prerequisite was fixed. Their executable source is unchanged by this documentation PR. The reason for those responses is not established. The PR must pass the complete current-head remote matrix before merge; no local server-suite pass is claimed. The changelog entry was folded into the existing Unreleased/Changed group during review.
