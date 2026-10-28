@@ -252,3 +252,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Unused-code cleanup](notes/implemented/process/2026-10-27-dead-code-cleanup.md) · [verification](evidence/verify/2026-10-27-dead-code-cleanup.md).
 
 - [Unused-code cleanup acceptance](evidence/verify/2026-10-27-dead-code-cleanup-acceptance.md).
+
+- [README audience review](notes/proposed/process/2026-10-28-readme-audience-review.md) · [verification](evidence/verify/2026-10-28-readme-audience-review.md).
