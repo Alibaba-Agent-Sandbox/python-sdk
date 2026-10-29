@@ -134,6 +134,8 @@ result = await sandbox.commands.run(
 )
 ```
 
+Unquoted shell operators such as `|` and `>` select shell execution. Quoted or escaped operators remain literal arguments. Use `shell=True` for variable expansion and other shell syntax; this also applies with `background=True`.
+
 ### Streaming Output
 
 ```python
@@ -292,6 +294,8 @@ await sandbox.pause()
 await sandbox.resume()
 ```
 
+`is_running()` returns `False` when the sandbox does not exist. Authentication, connection and service errors propagate to the caller.
+
 ### Properties
 
 ```python
@@ -318,7 +322,7 @@ The SDK uses an **async-first** design — all core methods are asynchronous. Ea
 | `sandbox.files.read()` | `sandbox.files.read_sync()` |
 | `sandbox.files.write()` | `sandbox.files.write_sync()` |
 
-Sync methods run an event loop in the background and are suitable for scripts and non-async environments.
+Sync methods share a background event loop and block until a result is ready. Keep a client on one execution style: use its async methods within one event loop, or use its `_sync` methods. Call `close_sync()` when releasing a synchronous client. A synchronous method cannot be re-entered from a callback running on its background loop; keep callbacks synchronous or schedule async work instead.
 
 ---
 
@@ -368,23 +372,23 @@ An unknown name raises `CommandNotFoundError` (the message includes the server's
 
 ## Template Server — server
 
-Templates that ship an `agent-sandbox-server` expose a second, template-authored data plane (port 9000). `sandbox.server`
-is its typed client. Use it when the template restricts what is reachable (per-endpoint policy) or when you need
+Templates that ship an `agent-sandbox-server` expose a second, template-authored data plane (port 9000). `await sandbox.application_client(9000, token=application_token)`
+resolves its typed client using the selected provider. Use the application token supplied at launch. Use it when the template restricts what is reachable (per-endpoint policy) or when you need
 endpoints envd does not have (search, archive, file watching, process output/stdin, git, browser).
 
 ```python
 async with await Sandbox.create(template="my-server-template") as sandbox:
-    server = sandbox.server                        # or sandbox.server_at(9000, token="...")
-    caps = await server.discover()                 # explicit; enables fail-fast pre-checks
-    if caps.can("files_download_stream"):
-        data = await server.files.download("/home/user/out/report.csv")
-    await server.files.upload("/home/user/in/data.json", b"{}")
+    async with await sandbox.application_client(9000, token=application_token) as server:
+        caps = await server.discover()                 # explicit; enables fail-fast pre-checks
+        if caps.can("files_download_stream"):
+            data = await server.files.download("/home/user/out/report.csv")
+        await server.files.upload("/home/user/in/data.json", b"{}")
 
-    result = await server.process.shell("ls -la", cwd="/home/user")
-    async for event in server.process.shell_stream("make test"):
-        print(event.event, event.data)
+        result = await server.process.shell("ls -la", cwd="/home/user")
+        async for event in server.process.shell_stream("make test"):
+            print(event.event, event.data)
 
-    print(server.files.list_sync("/home/user"))    # every coroutine has a *_sync twin
+        print(await server.files.list("/home/user"))
 ```
 
 Starting a server in a running sandbox (the image must contain `agent-sandbox-server`):

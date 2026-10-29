@@ -54,6 +54,10 @@ class TestCommandsParsing:
             ("python3 -c 'print(1|2)'", "python3"),  # inside quotes, no wrap
             ('grep -r "a|b" .', "grep"),  # inside quotes, no wrap
             ("echo hello", "echo"),  # simple, no wrap
+            ('printf "%s%s" "$HOME" "|"', "printf"),
+            (r"echo \|", "echo"),
+            (r"echo \\| cat", "sh"),
+            ("echo '#' | cat", "sh"),
             ("ls -la /tmp", "ls"),  # simple with args, no wrap
         ],
     )
@@ -334,7 +338,7 @@ class TestCommandsUserParam:
 
 
 class TestCommandsBackground:
-    """Test that background=True delegates to start() and returns a handle."""
+    """Test that background=True returns the started process handle."""
 
     @pytest.mark.asyncio
     async def test_background_returns_stream_reader(
@@ -355,6 +359,14 @@ class TestCommandsBackground:
         assert not isinstance(result, ProcessResult)
         # Should be async-iterable (the handle from start())
         assert hasattr(result, "__aiter__")
+
+    async def test_background_requires_only_stream_operation(
+        self, commands_module: CommandsModule, mock_process_protocol: AsyncMock
+    ) -> None:
+        commands_module._operations = frozenset({"exec.stream"})
+        reader = mock_process_protocol.start.return_value
+        assert await commands_module.run("echo $HOME", shell=True, background=True) is reader
+        assert mock_process_protocol.start.call_args.kwargs["cmd"] == "sh"
 
     @pytest.mark.asyncio
     async def test_background_false_returns_process_result(
@@ -391,8 +403,11 @@ class TestCommandsBackground:
             cwd="/tmp",
             user="root",
             background=True,
+            shell=True,
         )
         call_kwargs = mock_process_protocol.start.call_args[1]
+        assert call_kwargs["cmd"] == "sh"
+        assert call_kwargs["args"] == ["-c", "ls"]
         assert call_kwargs["timeout"] == 30
         assert call_kwargs["env"] == {"A": "1"}
         assert call_kwargs["cwd"] == "/tmp"

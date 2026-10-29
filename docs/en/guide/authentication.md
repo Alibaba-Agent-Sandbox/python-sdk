@@ -10,7 +10,6 @@ Sandbox runtime requests require an **API Key**. **AK/SK (Alibaba Cloud AccessKe
 
 Credentials belong to a [provider](providers.md). The built-in provider is **Alibaba Cloud Express Edition (阿里云极速版)**, id `alicloud-express`, and it is the default. The sandbox key is `ABX_SANDBOX_API_KEY`. Alibaba Cloud access keys use the official names `ALICLOUD_ACCESS_KEY_ID` and `ALICLOUD_ACCESS_KEY_SECRET`. The region is `ALIBABA_CLOUD_REGION_ID`. Each key has one name.
 
-> **Historical note**: the `abx auth` CLI command group (`login`/`logout`/`status`/`switch`) was removed before the first stable release (`0.1.0`). Credentials are configured with the environment variables and `abx config set sandbox_api_key` shown below; check the effective state with `abx config list`.
 
 ---
 
@@ -102,7 +101,7 @@ The GitHub token and the region use this same chain. A blank or whitespace-only 
 
 The generic sandbox key (`sandbox_api_key`, environment variable `ABX_SANDBOX_API_KEY`) and the Alibaba Cloud AK/SK belong to the built-in provider. If you switch to a [provider plugin](providers.md), the plugin does **not** receive them unless its manifest asks for them and you consented at install time. A plugin has its own scoped credential keys, for example `ABX_MY_CLOUD_API_KEY` for a provider `my-cloud`. This prevents a key for one cloud from being sent to another.
 
-Every plugin option follows one rule: the canonical name is `ABX_<PROVIDER_ID>_<FIELD>` (dashes become underscores), and a manifest may add the vendor's own variable as an alias with `env = [...]`. Secret fields (`secret = true`) live only in the environment or `.env` files (mode 0600) and are refused on the command line; other fields can also live under `[providers.<id>]` in `config.toml`. Verified with OpenSandbox on 2026-10-13: `ABX_OPENSANDBOX_API_KEY` and `ABX_OPENSANDBOX_BASE_URL` were enough to drive a real server from both the CLI and the SDK; `OPEN_SANDBOX_API_KEY` and `OPEN_SANDBOX_DOMAIN` are its declared native aliases, and the canonical name wins when both are set. A plugin that declares `[core] inherit = ["sandbox_api_key"]` receives the generic key only after you consent at install time, and `abx provider info <id>` shows that list under "Inherits".
+Every plugin option follows one rule: the canonical name is `ABX_<PROVIDER_ID>_<FIELD>` (dashes become underscores), and a manifest may add the vendor's own variable as an alias with `env = [...]`. Secret fields (`secret = true`) live only in the environment or `.env` files (mode 0600) and are refused on the command line; other fields can also live under `[providers.<id>]` in `config.toml`. OpenSandbox uses `ABX_OPENSANDBOX_API_KEY` and `ABX_OPENSANDBOX_BASE_URL`; `OPEN_SANDBOX_API_KEY` and `OPEN_SANDBOX_DOMAIN` are its declared native aliases, and the canonical name wins when both are set. A plugin that declares `[core] inherit = ["sandbox_api_key"]` receives the generic key only after you consent at install time, and `abx provider info <id>` shows that list under "Inherits".
 
 AK/SK-managed preparation requires explicit consent. When both are configured, runtime calls use the API key:
 - If both `sandbox_api_key` and `access_key_id` are provided, API Key is used
@@ -110,22 +109,13 @@ AK/SK-managed preparation requires explicit consent. When both are configured, r
 
 ---
 
-## Secret Storage (File-Based)
+## Credential storage
 
-Secrets are stored in `~/.abx/secrets.json`, a plaintext JSON file protected by `chmod 600` file permissions. This is suitable for local development only.
-
-> **⚠️ Warning**: `secrets.json` stores secrets in **plaintext**. It relies solely on POSIX file permissions (`chmod 600`) for access control. For production environments, use a dedicated secrets management service.
-
-Manage secrets via environment variables or the `.env` files, or pass `envs={"MY_TOKEN": "..."}` to `Sandbox.create()` to inject secrets into one sandbox:
-
-```bash
-# Set API Key via environment variable (recommended)
-export ABX_SANDBOX_API_KEY="your-api-key"
-```
-
-The CLI equivalents (`abx config set`, `abx create --env`) are in the [CLI Authentication guide](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authentication.md).
-
-> **Historical note**: macOS Keychain integration was removed in the overdesign cleanup (ADR 2026-09-23). The `abx secret` CLI command group has also been removed. All secret management is now done through environment variables, `.env` files, or `abx config set` (a CLI command).
+`abx config set sandbox_api_key` saves the key as `ABX_SANDBOX_API_KEY` in
+`~/.abx/.env` with owner-only permissions. The SDK reads that file; environment
+variables and the project's `.env` can override it as described above.
+Non-secret defaults are stored in `~/.abx/config.toml`. Keep credential files out
+of version control. For CI, supply credentials through the job's secret environment.
 
 ---
 

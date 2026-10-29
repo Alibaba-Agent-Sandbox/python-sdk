@@ -7,54 +7,71 @@ and make_sync for generating sync method variants.
 from __future__ import annotations
 
 import asyncio
+import atexit
 import functools
-from concurrent.futures import ThreadPoolExecutor
+import threading
+from concurrent.futures import Future
 from typing import TYPE_CHECKING, Any, TypeVar
-
-from agent_sandbox.utils.logging import get_logger
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
 
-logger = get_logger("utils.async_bridge")
-
 T = TypeVar("T")
 
-# Shared thread pool for sync bridging
-_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="sandbox-sync")
+
+class _SyncRunner:
+    """Own the event loop shared by synchronous SDK calls and their clients."""
+
+    def __init__(self) -> None:
+        ready: Future[tuple[asyncio.AbstractEventLoop, asyncio.Event]] = Future()
+
+        async def serve() -> None:
+            stop = asyncio.Event()
+            ready.set_result((asyncio.get_running_loop(), stop))
+            await stop.wait()
+
+        self.thread = threading.Thread(
+            target=lambda: asyncio.run(serve()), name="sandbox-sync", daemon=True
+        )
+        self.thread.start()
+        self.loop, self.stop = ready.result()
+        atexit.register(self.close)
+
+    def close(self) -> None:
+        self.loop.call_soon_threadsafe(self.stop.set)
+        self.thread.join()
+
+    def run(self, coro: Coroutine[Any, Any, T]) -> T:
+        if threading.current_thread() is self.thread:
+            coro.close()
+            raise RuntimeError(
+                "A synchronous SDK callback cannot call another synchronous SDK method; "
+                "use the asynchronous API for nested operations."
+            )
+        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
+        try:
+            return future.result()
+        except BaseException:
+            future.cancel()
+            raise
 
 
-def _has_running_loop() -> bool:
-    """Check if there's a running event loop in the current thread."""
-    try:
-        loop = asyncio.get_running_loop()
-        return loop is not None
-    except RuntimeError:
-        return False
+_runner: _SyncRunner | None = None
+_runner_lock = threading.Lock()
 
 
 def run_sync(coro: Coroutine[Any, Any, T]) -> T:
-    """Run an async coroutine from synchronous code.
+    """Run a coroutine on the shared synchronous SDK loop and wait for its result.
 
-    Handles the common case where an event loop may already be running
-    (e.g., in Jupyter notebooks) by falling back to a thread pool.
-
-    Args:
-        coro: The coroutine to execute.
-
-    Returns:
-        The coroutine's return value.
-
-    Raises:
-        Whatever the coroutine raises.
+    Successive calls reuse the loop, including calls from notebook event loops.
+    This blocks the calling thread. Clients used here must be opened and closed
+    through their synchronous methods; do not move live async clients between loops.
     """
-    if _has_running_loop():
-        # Already in an async context (e.g., Jupyter) — run in a separate thread
-        logger.debug("Detected running event loop, using thread pool for sync execution")
-        future = _executor.submit(asyncio.run, coro)
-        return future.result()
-    else:
-        return asyncio.run(coro)
+    global _runner
+    with _runner_lock:
+        if _runner is None:
+            _runner = _SyncRunner()
+    return _runner.run(coro)
 
 
 def make_sync(

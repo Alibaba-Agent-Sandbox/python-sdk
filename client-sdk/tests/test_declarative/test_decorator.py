@@ -106,6 +106,20 @@ class TestAsyncDecoration:
         mock_sb.kill.assert_awaited_once()
 
 
+@pytest.mark.asyncio
+@patch("agent_sandbox.api.sandbox.Sandbox", new_callable=lambda: MagicMock)
+async def test_sync_decorator_inside_running_loop(mock_sandbox_cls: MagicMock) -> None:
+    mock_sb = _make_mock_sandbox(stdout=json.dumps("ok"))
+    mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
+
+    @sandbox(sandbox_api_key="placeholder")
+    def example() -> str:
+        return "ok"
+
+    assert example() == "ok"
+    mock_sb.kill.assert_awaited_once()
+
+
 # ---------------------------------------------------------------------------
 # keep_alive mode
 # ---------------------------------------------------------------------------
@@ -125,6 +139,7 @@ class TestKeepAlive:
 
         noop()
         mock_sb.kill.assert_not_awaited()
+        mock_sb.close.assert_awaited_once()
 
 
 # ---------------------------------------------------------------------------
@@ -149,6 +164,7 @@ class TestSandboxIdReuse:
         mock_sandbox_cls.connect.assert_awaited_once()
         # sandbox_id mode: should NOT kill
         mock_sb.kill.assert_not_awaited()
+        mock_sb.close.assert_awaited_once()
 
 
 # ---------------------------------------------------------------------------

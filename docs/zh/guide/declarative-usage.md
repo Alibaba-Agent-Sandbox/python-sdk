@@ -89,76 +89,73 @@ async def async_analyze(data):
 result = await async_analyze({"col": [1, 2, 3]})
 ```
 
-对于同步函数，装饰器生成同步包装器。若在已有事件循环中调用同步包装器，会通过 `ThreadPoolExecutor` 避免阻塞。
+同步装饰函数会阻塞到远程结果返回。在异步应用中，装饰 `async def` 函数并使用 `await` 调用。
 
 ---
 
 ## 复用沙箱
 
-```python
-# 创建沙箱并保持运行
-@sandbox(template="code-interpreter-v1", keep_alive=True)
-def setup():
-    import subprocess
-    subprocess.run(["pip", "install", "flask"])
-    return "ready"
-
-sandbox_id = "sbx-xxxx"  # 获取沙箱 ID
-
-# 复用已有沙箱
-@sandbox(sandbox_id=sandbox_id)
-def use_flask():
-    from flask import Flask
-    return "Flask imported successfully"
-```
-
----
-
-## 注册式命令
-
-除了装饰器模式，`sandbox` 对象还支持注册式命令：
+显式创建实例，保留 ID 并决定何时删除。装饰器连接该实例，执行后关闭借用的客户端。
 
 ```python
+import asyncio
+from agent_sandbox import ProviderSandbox
 from agent_sandbox.declarative import sandbox
 
-@sandbox.register
-def demo(x: int, y: str) -> str:
-    """简单的演示命令"""
-    return f"{y}={x}"
+async def main():
+    instance = await ProviderSandbox.create(template="base")
+    try:
+        @sandbox(sandbox_id=instance.id)
+        async def calculate():
+            import math
+            return math.factorial(6)
 
-# 同步调用
-result = sandbox.run("demo", x=1, y="hello")
-print(result)  # "hello=1"
+        print(await calculate())
+    finally:
+        await instance.kill()
 
-# 异步调用
-result = await sandbox.run_async("demo", x=2, y="world")
-
-# 查看已注册的命令
-commands = sandbox.list_registered()
+asyncio.run(main())
 ```
 
-注册函数的参数仅支持标量类型：`str`、`int`、`float`、`bool`。
+自动创建时传入 `keep_alive=True` 会保留远程沙箱，但装饰器只返回函数结果。需要重连或主动清理时，优先使用上面的显式管理方式。
 
-这是命名命令的唯一机制。注册在模板 `commands.py` 里（或用 `@sandbox.register`）的命令由沙箱内 server 提供，普通 `Sandbox` 用 `await sandbox.run("demo", x=1, y="hello")` 调用（`POST /commands/demo`）。`template.yaml` 没有 `custom_commands` 键，客户端会拒绝它。
+## 注册应用命令
 
-### 文件传输
-
-`sandbox.register` 只注册命名命令。文件上传和下载是 server `file_ops` 组的端点（默认开启），客户端用 `sandbox.files` 或 `ServerClient.files`。
-
-### 启动 HTTP Server
+在模板镜像内注册应用命令并启动服务：
 
 ```python
-sandbox.server.start(port=9000, host="0.0.0.0")
+# commands.py inside the template image
+from agent_sandbox.server import command, start
+
+@command()
+def demo(x: int, y: str) -> str:
+    return f"{y}={x}"
+
+if __name__ == "__main__":
+    start(9000)
 ```
 
----
+按[模板启动指南](template-workflows.md)启动模板，再连接返回的沙箱 ID。`application_token` 使用启动服务时的同一个应用令牌：
+
+```python
+from agent_sandbox import ProviderSandbox
+
+instance = await ProviderSandbox.connect(sandbox_id)
+try:
+    async with await instance.application_client(9000, token=application_token) as client:
+        print(await client.commands.run("demo", x=1, y="hello"))
+finally:
+    await instance.close()
+```
+
+本机 `sandbox.register` 不会把函数上传到远程沙箱。命名 HTTP 命令需要部署模板并运行应用服务；直接执行函数使用前述函数装饰器。
 
 ## 限制
 
 1. **参数序列化**：函数参数和返回值必须是 JSON 可序列化的（不支持的类型会回退为 `str`）
 2. **函数源码**：装饰器通过 `inspect.getsource()` 获取函数源码，Lambda 和动态生成的函数不支持
 3. **导入**：远程沙箱中需要的库必须通过 `packages` 参数预安装，或已包含在模板中
-4. **注册命令参数类型**：`@sandbox.register` 仅支持标量类型（`str`/`int`/`float`/`bool`），不支持复杂类型
+4. **注册命令参数类型**：`@sandbox.register` 支持 `str`、`int`、`float`、`bool` 和 `list[str]`，不支持任意对象类型
 5. **闭包变量**：函数中引用的外部变量不会被自动序列化，请使用显式参数传递
 6. **执行环境隔离**：被装饰的函数在独立的远程 Python 进程中执行，不共享本地进程的状态
 

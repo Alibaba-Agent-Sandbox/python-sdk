@@ -81,6 +81,46 @@ def test_run_shell_flag_expands_variables(run, base_sandbox):  # type: ignore[no
     assert result.stdout.strip() == "43"
 
 
+def test_quoted_operator_keeps_arguments_literal(run, base_sandbox):  # type: ignore[no-untyped-def]
+    result = run(
+        base_sandbox.commands.run(
+            'printf "%s%s" "$E2E_LITERAL" "|"',
+            env={"E2E_LITERAL": "expanded"},
+        )
+    )
+    assert result.exit_code == 0
+    assert result.stdout == "$E2E_LITERAL|"
+
+
+def test_background_preserves_explicit_shell(run, base_sandbox):  # type: ignore[no-untyped-def]
+    async def scenario():  # type: ignore[no-untyped-def]
+        reader = await base_sandbox.commands.run(
+            'printf "%s" "$E2E_BACKGROUND"',
+            shell=True,
+            background=True,
+            env={"E2E_BACKGROUND": "expanded"},
+        )
+        return await reader.collect()
+
+    chunks = run(scenario())
+    assert "".join(c.data for c in chunks if c.type.value == "stdout") == "expanded"
+    assert chunks[-1].type.value == "exit" and chunks[-1].exit_code == 0
+
+
+def test_sync_connection_reuses_client_for_sequential_calls(base_sandbox):  # type: ignore[no-untyped-def]
+    from agent_sandbox import ProviderSandbox
+
+    client = ProviderSandbox.connect_sync(base_sandbox.id)
+    try:
+        for _ in range(3):
+            assert client.refresh_info_sync().sandbox_id == base_sandbox.id
+            result = client.commands.run_sync("printf sync-reused")
+            assert result.exit_code == 0
+            assert result.stdout == "sync-reused"
+    finally:
+        client.close_sync()
+
+
 def test_unknown_executable_raises_envd_rpc_error(run, base_sandbox):  # type: ignore[no-untyped-def]
     from agent_sandbox.models.errors import EnvdRpcError
 

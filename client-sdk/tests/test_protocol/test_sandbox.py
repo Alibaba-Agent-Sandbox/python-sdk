@@ -5,9 +5,11 @@ from __future__ import annotations
 import json
 from unittest.mock import AsyncMock, MagicMock
 
+import httpx
 import pytest
 
 from agent_sandbox.models.errors import (
+    InvalidAPIKeyError,
     QuotaExceededError,
     SandboxCreationError,
     TemplateNotFoundError,
@@ -323,6 +325,24 @@ class TestIsRunning:
             json={"message": "not found"},
         )
         assert await protocol.is_running("sbx-gone") is False
+
+    @pytest.mark.parametrize("status", [401, 403])
+    async def test_is_running_propagates_access_failure(self, protocol, httpx_mock, status):
+        httpx_mock.add_response(
+            url=f"{BASE}/sandboxes/sbx-abc123",
+            status_code=status,
+            json={"message": "access denied"},
+        )
+        error = InvalidAPIKeyError if status == 401 else httpx.HTTPStatusError
+        with pytest.raises(error):
+            await protocol.is_running("sbx-abc123")
+
+    async def test_is_running_propagates_transport_failure(self, protocol):
+        failure = ConnectionError("provider unreachable")
+        protocol.get_info = AsyncMock(side_effect=failure)
+        with pytest.raises(ConnectionError) as caught:
+            await protocol.is_running("sbx-abc123")
+        assert caught.value is failure
 
 
 class TestPause:

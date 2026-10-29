@@ -195,7 +195,7 @@ class SandboxProtocol:
         try:
             info = await self.get_info(sandbox_id)
             return info.status == SandboxStatus.RUNNING
-        except Exception:
+        except SandboxNotFoundError:
             return False
 
     async def pause(self, sandbox_id: str) -> None:

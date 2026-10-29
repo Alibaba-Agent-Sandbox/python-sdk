@@ -37,6 +37,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Reuse a persistent loop for synchronous ProviderSandbox calls, preserve background shell execution and quoted arguments, release borrowed decorator clients, and retain session records when deletion fails. Authentication and transport failures now propagate from is_running. / 同步 ProviderSandbox 调用复用事件循环，修复后台 shell 和引号参数，释放装饰器借用连接；删除失败保留会话记录，is_running 向调用方抛出认证和传输错误。
+
 - Verify explicit Python MCP CPU/memory requests against actual platform metadata before success; reject unknown/mismatched resources, roll back only the new sandbox and report independently verified cleanup or a recovery handle. Direct SDK creation is unchanged. / Python MCP 对显式 CPU/内存请求独立核验平台实际配置，无法核验或不匹配时仅回滚新建沙箱，返回清理确认或恢复句柄；直接 SDK 创建行为不变。
 
 - Track Python MCP sandbox creation ownership separately from borrowed connections. Closing a borrowing session now closes its client handle without deleting another session's sandbox; explicit kills and retained-task behavior remain supported. Correct the Provider Skill to use `template.prepare` instead of the CLI-rejected `templates.deploy` feature. / Python MCP 分开记录沙箱创建归属与借用连接；关闭借用会话不再删除其他会话的沙箱，保留显式删除及后台任务保留行为；Provider 技能改用 `template.prepare`，删除 CLI 拒绝的 `templates.deploy` 特性声明。

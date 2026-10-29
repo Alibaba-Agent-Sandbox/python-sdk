@@ -35,19 +35,22 @@ _SHELL_PUNCT: frozenset[str] = frozenset("();<>|&")
 def _needs_shell_wrap(cmd: str) -> bool:
     """Return ``True`` if *cmd* contains unquoted shell operators.
 
-    Uses :class:`shlex.shlex` with ``punctuation_chars=True`` so that
-    operators inside quoted sections (single or double) are *not* flagged.
+    Inspect the original text: shlex tokens have already lost their quoting.
     """
-    try:
-        lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
-        lex.whitespace_split = True
-        for token in lex:
-            if token and all(c in _SHELL_PUNCT for c in token):
-                return True
-    except ValueError:
-        # Malformed quoting — let it through; the caller will get an error
-        # from shlex.split or the remote side.
-        pass
+    quote = ""
+    escaped = False
+    for char in cmd:
+        if escaped:
+            escaped = False
+        elif char == "\\" and quote != "'":
+            escaped = True
+        elif quote:
+            if char == quote:
+                quote = ""
+        elif char in ("'", '"'):
+            quote = char
+        elif char in _SHELL_PUNCT:
+            return True
     return False
 
 
@@ -129,7 +132,7 @@ class CommandsModule:
             env: Additional environment variables.
             cwd: Working directory.
             user: OS user to run the command as.
-            background: If True, delegate to start() and return a
+            background: If True, return a
                 StreamReader handle immediately without blocking.
                 ``on_stdout`` / ``on_stderr`` are not called in that case.
             shell: When True, always run ``cmd`` via ``sh -c`` so variable
@@ -146,17 +149,8 @@ class CommandsModule:
             handle is returned instead (not a ProcessResult); iterate
             over it to consume :class:`ProcessChunk` items.
         """
-        if background:
-            return await self.start(
-                cmd,
-                timeout=timeout,
-                env=env,
-                cwd=cwd,
-                user=user,
-            )
-
-        self._require("exec.run")
-        if background or on_stdout or on_stderr:
+        self._require("exec.stream" if background else "exec.run")
+        if on_stdout or on_stderr:
             self._require("exec.stream")
         if shell:
             command, args = "sh", ["-c", cmd]
@@ -176,6 +170,9 @@ class CommandsModule:
             timeout=timeout,
             user=user,
         )
+
+        if background:
+            return reader
 
         stdout_parts: list[str] = []
         stderr_parts: list[str] = []
