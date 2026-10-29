@@ -359,6 +359,7 @@ class TestSyncTwins:
     def test_sync_wrappers_against_real_server(self, server_factory: Any, tree: Path) -> None:
         _live, client = server_factory()
         assert client.health_sync() is True
+        http = client._http
         caps = client.discover_sync()
         assert caps.can("shell")
         target = str(tree / "out" / "s.txt")
@@ -371,7 +372,9 @@ class TestSyncTwins:
         assert client.process.get_sync(proc.pid).running
         client.process.kill_sync(proc.pid)
         assert client.commands.list_sync() == []
+        assert client._http is http
         client.aclose_sync()
+        assert http is not None and http.is_closed
 
     def test_every_coroutine_has_a_sync_twin(self) -> None:
         import inspect

@@ -133,16 +133,8 @@ class SessionManager:
             raise SessionNotFoundError(f"Session {name!r} not found")
 
         if kill and session.sandbox_id:
-            try:
-                await Sandbox.kill_by_id(session.sandbox_id)
-                logger.info("Sandbox %s killed for session %r", session.sandbox_id, name)
-            except Exception:
-                logger.warning(
-                    "Failed to kill sandbox %s for session %r",
-                    session.sandbox_id,
-                    name,
-                    exc_info=True,
-                )
+            await Sandbox.kill_by_id(session.sandbox_id)
+            logger.info("Sandbox %s killed for session %r", session.sandbox_id, name)
 
         if kill:
             await self._store.delete(name)

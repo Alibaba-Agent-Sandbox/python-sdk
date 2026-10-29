@@ -1,6 +1,6 @@
 # Session Persistence
 
-The SDK still provides `LocalSessionStore` and `SessionManager`; the removed surface is the CLI `abx session` group. Persistence stores local names, sandbox IDs and connection metadata, not remote memory or file snapshots, and cannot restore deleted or expired instances. `SessionManager.stop()` attempts deletion but logs and suppresses deletion errors; independently check the actual instance when confirmed cleanup is required.
+The SDK still provides `LocalSessionStore` and `SessionManager`; the removed surface is the CLI `abx session` group. Persistence stores local names, sandbox IDs and connection metadata, not remote memory or file snapshots, and cannot restore deleted or expired instances. `SessionManager.stop()` propagates deletion errors and retains the local session so you can retry. A successful deletion removes the local record.
 
 For current SDK installation, use the [installation guide](install-python.md).
 

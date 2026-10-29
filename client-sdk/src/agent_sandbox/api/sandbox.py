@@ -1254,7 +1254,9 @@ class Sandbox:
         ``timeout`` when that may take longer than the default 30s HTTP timeout.
 
         The server must be running in the sandbox (see :meth:`start_server`).  A server
-        protected by its own token needs ``sandbox.server_at(port, token=...).commands.run(...)``.
+        protected by its own token needs
+        ``client = await sandbox.application_client(port, token=...)`` followed by
+        ``await client.commands.run(...)``.
 
         Args:
             name: Registered command name.

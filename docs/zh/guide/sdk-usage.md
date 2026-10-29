@@ -134,6 +134,8 @@ result = await sandbox.commands.run(
 )
 ```
 
+未加引号的 `|`、`>` 等操作符会启用 shell 执行；引号内或经过转义的操作符保持为普通参数。变量展开等 shell 语法请使用 `shell=True`，也适用于 `background=True`。
+
 ### 流式输出
 
 ```python
@@ -292,6 +294,8 @@ await sandbox.pause()
 await sandbox.resume()
 ```
 
+`is_running()` 在沙箱不存在时返回 `False`；认证、连接或服务错误会向调用方抛出。
+
 ### 属性
 
 ```python
@@ -318,7 +322,7 @@ SDK 采用 **async-first** 设计，所有核心方法都是异步的。每个�
 | `sandbox.files.read()` | `sandbox.files.read_sync()` |
 | `sandbox.files.write()` | `sandbox.files.write_sync()` |
 
-同步方法在后台运行事件循环，适用于脚本和非异步环境。
+同步方法共用后台事件循环，并阻塞到结果返回。同一个客户端应使用一种调用方式：在同一个事件循环中调用异步方法，或使用 `_sync` 方法。同步客户端使用完后调用 `close_sync()`。在后台循环中执行的同步回调不能再次调用同步 SDK 方法；嵌套操作请使用异步 API。
 
 ---
 
@@ -368,22 +372,22 @@ result = await sandbox.run("dev", port=8080)   # 注册函数的返回值
 
 ## 模板服务端 — server
 
-自带 `agent-sandbox-server` 的模板会暴露第二条由模板作者定义的数据通道（端口 9000），`sandbox.server` 是它的类型化客户端。
+自带 `agent-sandbox-server` 的模板会暴露第二条由模板作者定义的数据通道（端口 9000），`await sandbox.application_client(9000, token=application_token)` 按所选 Provider 解析其类型化客户端。应用令牌与启动服务时保持一致。
 当模板按端点策略限制了可访问范围，或你需要 envd 没有的端点（搜索、打包、文件监听、进程输出/标准输入、git、浏览器）时使用它。
 
 ```python
 async with await Sandbox.create(template="my-server-template") as sandbox:
-    server = sandbox.server                        # 或 sandbox.server_at(9000, token="...")
-    caps = await server.discover()                 # 显式调用；启用快速失败的预检查
-    if caps.can("files_download_stream"):
-        data = await server.files.download("/home/user/out/report.csv")
-    await server.files.upload("/home/user/in/data.json", b"{}")
+    async with await sandbox.application_client(9000, token=application_token) as server:
+        caps = await server.discover()                 # 显式调用；启用快速失败的预检查
+        if caps.can("files_download_stream"):
+            data = await server.files.download("/home/user/out/report.csv")
+        await server.files.upload("/home/user/in/data.json", b"{}")
 
-    result = await server.process.shell("ls -la", cwd="/home/user")
-    async for event in server.process.shell_stream("make test"):
-        print(event.event, event.data)
+        result = await server.process.shell("ls -la", cwd="/home/user")
+        async for event in server.process.shell_stream("make test"):
+            print(event.event, event.data)
 
-    print(server.files.list_sync("/home/user"))    # 每个协程都有 *_sync 孪生方法
+        print(await server.files.list("/home/user"))
 ```
 
 在运行中的沙箱里启动服务端（镜像中需要有 `agent-sandbox-server`）：

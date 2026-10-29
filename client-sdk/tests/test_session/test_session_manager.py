@@ -167,6 +167,25 @@ class TestStop:
         mock_kill.assert_awaited_once_with("sbx-stop-001")
         assert (await store.load("to-stop")) is None
 
+    async def test_failed_kill_preserves_session(
+        self, manager: SessionManager, store: LocalSessionStore
+    ) -> None:
+        session = SessionInfo(name="retry", sandbox_id="sbx-retry", status="running")
+        await store.save("retry", session)
+        with (
+            patch(
+                "agent_sandbox.api.session_manager.Sandbox.kill_by_id",
+                new_callable=AsyncMock,
+                side_effect=ConnectionError("provider unreachable"),
+            ),
+            pytest.raises(ConnectionError, match="provider unreachable"),
+        ):
+            await manager.stop("retry")
+        saved = await store.load("retry")
+        assert saved is not None
+        assert saved.sandbox_id == "sbx-retry"
+        assert saved.status == "running"
+
     async def test_stop_keep_alive(self, manager: SessionManager, store: LocalSessionStore) -> None:
         session = SessionInfo(
             name="keep-me",

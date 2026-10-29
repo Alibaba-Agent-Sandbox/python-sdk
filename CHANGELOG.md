@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Reuse a persistent loop for synchronous ProviderSandbox calls, preserve background shell execution and quoted arguments, release borrowed decorator clients, and retain session records when deletion fails. Authentication and transport failures now propagate from is_running. / 同步 ProviderSandbox 调用复用事件循环，修复后台 shell 和引号参数，释放装饰器借用连接；删除失败保留会话记录，is_running 向调用方抛出认证和传输错误。
+
 ### Added
 
 - Express AK/SK managed-key preparation with explicit consent, private shared storage, expiry renewal and feature-scoped RAM permission guidance. / 极速版支持经确认的 AK/SK 管理 Key 准备、私有共享存储、到期续期及按功能划分的 RAM 授权指南。

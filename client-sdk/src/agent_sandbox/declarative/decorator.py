@@ -16,15 +16,13 @@
     def demo(x: int, y: str) -> str:
         return f"{y}={x}"
 
-    result = sandbox.run("demo", x=1, y="hello")
-
+    # 在模板的容器内注册并启动服务；注册不会上传本机函数。
     # 启动容器内 HTTP server
     sandbox.server.start(port=9000)
 """
 
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import functools
 import importlib
@@ -37,6 +35,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
+from agent_sandbox.utils.async_bridge import run_sync
 from agent_sandbox.utils.coerce import coerce_kwargs as _coerce_kwargs
 from agent_sandbox.utils.coerce import parse_scalar as _parse_scalar  # noqa: F401  re-exported
 
@@ -272,10 +271,10 @@ class _SandboxFactory:
     1. **Decorator factory** — ``@sandbox(template=..., ...)``:
        wraps a function so calls execute remotely in a sandbox.
 
-    2. **Register + run** — ``@sandbox.register`` then
-       ``sandbox.run("name", ...)``: registers a function by name;
-       ``run`` creates a sandbox, invokes ``POST /commands/{name}``
-       on its HTTP server, and returns the result.
+    2. **Server registration** — ``@sandbox.register`` registers a function in
+       the current process. Put registration in the template's server program;
+       clients invoke it through ``ServerClient.commands.run``.
+       Registration does not deploy a local function to a remote sandbox.
 
     3. **Server proxy** — ``sandbox.server.start(port=9000)``:
        lazy proxy to :mod:`agent_sandbox.server`.
@@ -359,18 +358,7 @@ class _SandboxFactory:
             @functools.wraps(func)
             def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
                 """同步调用入口。"""
-                try:
-                    loop = asyncio.get_running_loop()
-                except RuntimeError:
-                    loop = None
-
-                if loop and loop.is_running():
-                    import concurrent.futures
-
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                        future = pool.submit(asyncio.run, _execute(func, args, kwargs))
-                        return future.result()
-                return asyncio.run(_execute(func, args, kwargs))
+                return run_sync(_execute(func, args, kwargs))
 
             @functools.wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -452,6 +440,8 @@ class _SandboxFactory:
                 finally:
                     if not keep_alive and not sandbox_id:
                         await sb.kill()
+                    else:
+                        await sb.close()
 
             if inspect.iscoroutinefunction(func):
                 return async_wrapper
@@ -498,8 +488,10 @@ class _SandboxFactory:
     def run(self, name: str, **kwargs: Any) -> Any:
         """Execute a registered command synchronously.
 
-        Creates a sandbox with a persistent HTTP server and sends
-        ``POST /commands/{name}`` with coerced arguments.
+        Legacy convenience call: creates ``code-interpreter-v1`` and calls an
+        already deployed command of the same name. It does not upload the local
+        registered function. For template services, use an explicit sandbox and
+        ``application_client().commands.run``.
 
         Args:
             name: The registered command name.
@@ -517,21 +509,7 @@ class _SandboxFactory:
         cmd = self._get_registered(name)
         coerced = _coerce_kwargs(cmd.args, kwargs)
 
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            import concurrent.futures
-
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                future = pool.submit(
-                    asyncio.run,
-                    self._execute_registered(cmd, coerced),
-                )
-                return future.result()
-        return asyncio.run(self._execute_registered(cmd, coerced))
+        return run_sync(self._execute_registered(cmd, coerced))
 
     async def run_async(self, name: str, **kwargs: Any) -> Any:
         """Execute a registered command asynchronously.

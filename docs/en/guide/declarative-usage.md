@@ -89,76 +89,74 @@ async def async_analyze(data):
 result = await async_analyze({"col": [1, 2, 3]})
 ```
 
-For synchronous functions, the decorator generates a synchronous wrapper. If the synchronous wrapper is called within an existing event loop, it uses a `ThreadPoolExecutor` to avoid blocking.
+Synchronous decorated functions block until their remote result is available. In an asynchronous application, decorate an `async def` function and await it.
 
 ---
 
 ## Reusing a Sandbox
 
-```python
-# Create a sandbox and keep it running
-@sandbox(template="code-interpreter-v1", keep_alive=True)
-def setup():
-    import subprocess
-    subprocess.run(["pip", "install", "flask"])
-    return "ready"
-
-sandbox_id = "sbx-xxxx"  # Get the sandbox ID
-
-# Reuse the existing sandbox
-@sandbox(sandbox_id=sandbox_id)
-def use_flask():
-    from flask import Flask
-    return "Flask imported successfully"
-```
-
----
-
-## Registration-Style Commands
-
-In addition to the decorator pattern, the `sandbox` object also supports registration-style commands:
+Create the instance explicitly so you retain its ID and control when it is deleted.
+The decorator connects to that instance and closes its borrowed client after execution.
 
 ```python
+import asyncio
+from agent_sandbox import ProviderSandbox
 from agent_sandbox.declarative import sandbox
 
-@sandbox.register
-def demo(x: int, y: str) -> str:
-    """A simple demo command"""
-    return f"{y}={x}"
+async def main():
+    instance = await ProviderSandbox.create(template="base")
+    try:
+        @sandbox(sandbox_id=instance.id)
+        async def calculate():
+            import math
+            return math.factorial(6)
 
-# Sync call
-result = sandbox.run("demo", x=1, y="hello")
-print(result)  # "hello=1"
+        print(await calculate())
+    finally:
+        await instance.kill()
 
-# Async call
-result = await sandbox.run_async("demo", x=2, y="world")
-
-# List registered commands
-commands = sandbox.list_registered()
+asyncio.run(main())
 ```
 
-Registered function parameters only support scalar types: `str`, `int`, `float`, `bool`.
+`keep_alive=True` on an automatically created instance retains the remote sandbox, but the decorator returns only the function result. Prefer the explicit ownership pattern above when you need to reconnect or clean up.
 
-This is the one mechanism for named commands. A command registered in a template's `commands.py` (or with `@sandbox.register`) is served by the in-sandbox server, and a regular `Sandbox` calls it with `await sandbox.run("demo", x=1, y="hello")` (`POST /commands/demo`). `template.yaml` has no `custom_commands` key; the client rejects it.
+## Registered application commands
 
-### File Transfer
-
-`sandbox.register` only registers named commands. File upload and download are endpoints of the server's `file_ops` group (on by default); a client uses `sandbox.files` or `ServerClient.files`.
-
-### Start the HTTP Server
+Register application commands inside the template image and start its service:
 
 ```python
-sandbox.server.start(port=9000, host="0.0.0.0")
+# commands.py inside the template image
+from agent_sandbox.server import command, start
+
+@command()
+def demo(x: int, y: str) -> str:
+    return f"{y}={x}"
+
+if __name__ == "__main__":
+    start(9000)
 ```
 
----
+Launch the template using the [CLI template guide](template-workflows.md), then connect to the returned sandbox ID. Set `application_token` to the same application token used at launch:
+
+```python
+from agent_sandbox import ProviderSandbox
+
+instance = await ProviderSandbox.connect(sandbox_id)
+try:
+    async with await instance.application_client(9000, token=application_token) as client:
+        print(await client.commands.run("demo", x=1, y="hello"))
+finally:
+    await instance.close()
+```
+
+Local `sandbox.register` registration does not upload a function to a remote sandbox. Template deployment and a running application service are required for named HTTP commands. Use the function decorator above for direct function execution.
 
 ## Limitations
 
 1. **Parameter serialization**: Function arguments and return values must be JSON-serializable (non-serializable types fall back to `str`)
 2. **Function source code**: The decorator obtains function source via `inspect.getsource()` — lambdas and dynamically generated functions are not supported
 3. **Imports**: Libraries needed in the remote sandbox must be pre-installed via the `packages` parameter or already included in the template
-4. **Registered command parameter types**: `@sandbox.register` only supports scalar types (`str`/`int`/`float`/`bool`) — complex types are not supported
+4. **Registered command parameter types**: `@sandbox.register` supports `str`, `int`, `float`, `bool` and `list[str]`; arbitrary object types are not supported
 5. **Closure variables**: External variables referenced in the function are not automatically serialized — use explicit parameter passing instead
 6. **Execution environment isolation**: The decorated function runs in an independent remote Python process and does not share state with the local process
 

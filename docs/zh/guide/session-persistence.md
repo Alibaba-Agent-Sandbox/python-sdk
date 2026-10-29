@@ -1,6 +1,6 @@
 # 会话持久化
 
-本页的 SDK `LocalSessionStore` 和 `SessionManager` 仍存在；已移除的是 CLI 的 `abx session` 命令组。持久化内容是本地名称与沙箱 ID 等连接信息，不是远端内存或文件快照，不能恢复已删除或到期的实例。`SessionManager.stop()` 会尝试删除实例，但会记录并吞掉删除异常；需要确认资源清理时必须额外核对实际实例状态。
+本页的 SDK `LocalSessionStore` 和 `SessionManager` 仍存在；已移除的是 CLI 的 `abx session` 命令组。持久化内容是本地名称与沙箱 ID 等连接信息，不是远端内存或文件快照，不能恢复已删除或到期的实例。`SessionManager.stop()` 会抛出实例删除异常并保留本地会话，便于重试；删除成功后才移除本地记录。
 
 当前 SDK 安装使用[安装指南](install-python.md)。
 
