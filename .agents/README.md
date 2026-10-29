@@ -1,6 +1,6 @@
 # `.agents/` — engineering record of the python-sdk repository
 
-- [Defensive complexity cleanup](notes/proposed/architecture/2026-10-29-defensive-complexity-cleanup.md) · [verification](evidence/verify/2026-10-29-defensive-complexity-cleanup.md).
+- [Defensive complexity cleanup](notes/implemented/architecture/2026-10-29-defensive-complexity-cleanup.md) · [verification](evidence/verify/2026-10-29-defensive-complexity-cleanup.md).
 
 ## Skill storage/state acceptance — 2026-10-26
 

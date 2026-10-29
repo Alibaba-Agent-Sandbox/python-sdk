@@ -1,6 +1,6 @@
 # Decision: Reduce redundant interaction and execution branches
 
-Status: proposed
+Status: implemented
 
 ## Problem
 

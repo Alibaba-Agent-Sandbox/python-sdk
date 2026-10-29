@@ -4,7 +4,7 @@
 - Issue: https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/150
 - PR: https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/151
 - Base: 78f6d8616e3371e01faaabc3313c7328a1f5bf5b
-- Result: PARTIAL — changed behavior and targeted real-cloud checks pass; full local suite has recorded failures. Merge is pending remote gates.
+- Result: Source behavior, targeted real-cloud acceptance and the complete remote CI matrix pass. Local environment failures remain recorded below. Final documentation commit and merge still require current-head checks.
 - Source and test changes are on an isolated branch; original workspace edits are preserved.
 
 ## Checks
@@ -45,6 +45,8 @@ English and Chinese application registration examples were executed locally: @co
 
 Final repository health: 107 passed, 1 warning, 0 failed. git diff --check passed. Python make hygiene passed; CLI hygiene passed as part of make ci. The first CLI health run found a generated ignored parity report containing local paths; the report was moved outside the checkout and health rerun. No tracked source was exempted.
 
-## Remaining gates
+## Remote CI and remaining gates
 
-Overall local CI is not green. No network assertions were relaxed. Initial remote checks already passed static/links and (for Python) the real Python-to-Node provider-engine job; complete matrices are still pending. Remote PR checks and required review must pass before merge; no release is part of this change.
+Complete remote checks passed for source revision `7499ddf6c6805b50a65afa6e4b9778f5c466d468`: Build packages, server-sdk (Python 3.11), Public runtime fixture (python-hello), client-sdk (Python 3.12), Python to Node provider engine, Pinned E2B public contract, server-sdk (Python 3.12), No local paths or secrets, Public runtime fixture (agents-cli), client-sdk (Python 3.11), server-sdk (Python 3.10), client-sdk (Python 3.10), Markdown links. This independently distinguishes local environment failures from the successful remote matrices. Local failures and prior cancellations remain in history; no network assertions were relaxed.
+
+The final records-only commit must pass its own current-head checks before merge. The ADR describes the implemented change; the PR carries pending merge state. No release is part of this change.
