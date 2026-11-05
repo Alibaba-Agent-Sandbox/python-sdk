@@ -40,6 +40,7 @@ Each key has one name. Product settings use `ABX_<KEY>`. A vendor that already p
 | Data-plane domain | `sandbox_domain` | `ABX_SANDBOX_DOMAIN` |
 | Region | `region` | `ALIBABA_CLOUD_REGION_ID` |
 | Alibaba Cloud AK / SK | `access_key_id` / `access_key_secret` | `ALICLOUD_ACCESS_KEY_ID` / `ALICLOUD_ACCESS_KEY_SECRET` |
+| STS SecurityToken | `security_token` | `ALIBABA_CLOUD_SECURITY_TOKEN` |
 | GitHub token | `github_token` | `GITHUB_TOKEN` |
 | Default provider | `provider` | `ABX_PROVIDER` |
 
@@ -89,6 +90,7 @@ Each row is the only environment variable for that key. `abx config set` writes 
 |---|---|---|
 | `ALICLOUD_ACCESS_KEY_ID` | `access_key_id` | Alibaba Cloud AccessKey ID |
 | `ALICLOUD_ACCESS_KEY_SECRET` | `access_key_secret` | Alibaba Cloud AccessKey Secret |
+| `ALIBABA_CLOUD_SECURITY_TOKEN` | `security_token` | STS token paired with temporary AccessKeys |
 
 ### GitHub, templates, MCP
 

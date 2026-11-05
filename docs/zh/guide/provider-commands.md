@@ -36,7 +36,7 @@ Volume 目前要求提交阿里云工单申请邀测，准备存储前应确认�
 名称必须是非空字符串，不能包含前后空白或 NUL。无效参数会在构造提供方和引擎 I/O 前失败；
 其他提供方的非空挂载参数会在加载插件实现前返回 E8004。省略参数或传空字典不改变原请求。
 
-这是创建参数，与资源管理命令独立，不增加可移植的 `storage.mount` 协议或运行时追加挂载 API。
+这是创建参数，与资源管理和下文的运行时追加挂载命令独立。
 客户端先检查所选提供方的 `create_options`，再创建沙箱。内置提供方通过直接 HTTP 传输，
 在 `POST /sandboxes` 中发送
 `"volumeMounts": [{"name": "existing-volume-name", "path": "/mnt/data"}]`。
@@ -225,3 +225,30 @@ Python 客户端验证真实 OSS 跨沙箱重建持久化和只读访问；仅�
 [官方追加挂载 API](https://www.alibabacloud.com/help/zh/agent-sandbox/append-mount-volume)，
 这不代表新增了共享 Provider 命令。被测后端在快照恢复时拒绝修改 Volume 或挂载配置，
 返回 HTTP400；需要改变挂载配置时，不应把快照 ID 当作重新构建的镜像模板。
+
+## 极速版网络配置与运行时扩展
+
+`ProviderSandbox.create` 接受 `network` 中的 `allow_out`、`deny_out`、`allow_public_traffic`、`mask_request_host` 和 `rules`，另有独立的布尔参数 `allow_internet_access`。这些参数要求提供方声明创建时网络配置支持。`allow_public_traffic=False` 要求启用安全模式。规则可能含秘密，不能写入日志或保存到示例。
+
+运行时扩展通过现有公共提供方命令客户端调用，需要兼容的 abx 安装：
+
+```python
+from agent_sandbox.providers import commands
+
+await commands.run_command(
+    "alicloud-express", "sandbox.mounts.append",
+    {"sandbox_id": sandbox.id, "named_volume_mounts": [
+        {"name": "existing-volume-name", "path": "/mnt/extra"},
+    ]},
+    confirm=True,
+)
+await commands.run_command(
+    "alicloud-express", "sandbox.network.update",
+    {"sandbox_id": sandbox.id, "network": {
+        "allow_out": ["api.example.com"], "deny_out": ["0.0.0.0/0"],
+    }},
+    confirm=True,
+)
+```
+
+直接传存储配置前应先查看命令输入 schema。追加挂载保留现有挂载、角色和 VPC，不支持解绑或替换；响应丢失后先确认实际状态再决定是否重试。网络更新整体替换原配置，不做合并；`network={}` 清空运行时规则。公网流量鉴权和 Host 改写只能在创建时配置。使用前需具备存储客户端、服务开通资格、同 Team 资源以及所需角色与网络。

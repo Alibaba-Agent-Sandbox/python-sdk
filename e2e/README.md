@@ -212,3 +212,9 @@ its isolated pinned requirements, then run
 This is separate from the standard/Provider client suites; real desktop template,
 private ingress, traffic token, VNC password and handover/replay prerequisites
 remain explicit in the guide.
+
+## Express lifecycle and application acceptance
+
+With the candidate CLI selected by `ABX_BIN` and existing same-region Sandbox/AccessKey configuration, run `python e2e/express_api_completion.py` from the repository root. It selects an accessible ready generation-2 template, or accepts `ABX_E2E_GEN2_TEMPLATE`, creates only owned temporary sandboxes and independently confirms their deletion. The separate application fixture defaults to `code-interpreter-v1`; `ABX_E2E_APPLICATION_TEMPLATE` overrides it.
+
+`ABX_E2E_MOUNTS_FILE` optionally points to private structured mount inputs backed by real existing storage/role/network resources. Without it, mount acceptance is reported BLOCKED, not passed. No management Key is prepared or renewed. The script exits 0 for complete success, 1 for failure and 2 for blocked acceptance. Keep fixture secrets in private files; do not include them in reports.

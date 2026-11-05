@@ -40,6 +40,7 @@
 | 数据平面域名 | `sandbox_domain` | `ABX_SANDBOX_DOMAIN` |
 | 地域 | `region` | `ALIBABA_CLOUD_REGION_ID` |
 | 阿里云 AK / SK | `access_key_id` / `access_key_secret` | `ALICLOUD_ACCESS_KEY_ID` / `ALICLOUD_ACCESS_KEY_SECRET` |
+| STS SecurityToken | `security_token` | `ALIBABA_CLOUD_SECURITY_TOKEN` |
 | GitHub token | `github_token` | `GITHUB_TOKEN` |
 | 默认提供方 | `provider` | `ABX_PROVIDER` |
 
@@ -89,6 +90,7 @@
 |---|---|---|
 | `ALICLOUD_ACCESS_KEY_ID` | `access_key_id` | 阿里云 AccessKey ID |
 | `ALICLOUD_ACCESS_KEY_SECRET` | `access_key_secret` | 阿里云 AccessKey Secret |
+| `ALIBABA_CLOUD_SECURITY_TOKEN` | `security_token` | 与临时 AccessKey 配套的 STS SecurityToken |
 
 ### GitHub、模板、MCP
 

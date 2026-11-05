@@ -42,7 +42,7 @@ hints for other providers fail with E8004 before loading their implementation. O
 dictionaries preserve existing request payloads.
 
 This creation hint is separate from management commands and does not add a portable
-`storage.mount` protocol or runtime attach API. The client validates the selected
+`storage.mount` protocol or a portable runtime attach API. The client validates the selected
 provider's `create_options` before creating a sandbox. The built-in provider sends
 `"volumeMounts": [{"name": "existing-volume-name", "path": "/mnt/data"}]` in
 `POST /sandboxes` using its direct HTTP transport. Provider management commands
@@ -252,3 +252,30 @@ a checksum-verified ossfs2 2.0.10 installation and the
 that API is not a new shared Provider command. The tested backend rejected
 volume/mount overrides on Snapshot restoration with HTTP400. Do not use a Snapshot
 ID as an image-template replacement when changing mount configuration.
+
+## Express network configuration and runtime extensions
+
+`ProviderSandbox.create` accepts `network` with `allow_out`, `deny_out`, `allow_public_traffic`, `mask_request_host` and `rules`, plus the separate `allow_internet_access` boolean. These inputs require a provider that declares network creation support. Setting `allow_public_traffic=False` requires secure mode. Rules can contain secrets; keep them out of logs and saved examples.
+
+Runtime extensions use the existing public provider-command client and require a compatible abx installation:
+
+```python
+from agent_sandbox.providers import commands
+
+await commands.run_command(
+    "alicloud-express", "sandbox.mounts.append",
+    {"sandbox_id": sandbox.id, "named_volume_mounts": [
+        {"name": "existing-volume-name", "path": "/mnt/extra"},
+    ]},
+    confirm=True,
+)
+await commands.run_command(
+    "alicloud-express", "sandbox.network.update",
+    {"sandbox_id": sandbox.id, "network": {
+        "allow_out": ["api.example.com"], "deny_out": ["0.0.0.0/0"],
+    }},
+    confirm=True,
+)
+```
+
+Inspect each command's input schema before using direct storage configurations. Appending mounts retains existing mounts, role and VPC settings; it cannot detach or replace them. A lost response must be reconciled before retrying. Network updates replace the configuration rather than merge it; `network={}` clears runtime rules. Public-traffic authentication and host masking are creation-only settings. Storage clients, service admission, same-Team resources and the required role/network must already be available.

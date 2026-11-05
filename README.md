@@ -69,6 +69,7 @@ The server exposes registered application commands over HTTP. Template authors i
 | Make your first API calls | [Getting started](docs/en/guide/getting-started.md) |
 | Look up methods and models | [API reference](docs/en/reference/api-reference.md) |
 | Configure credentials and endpoints | [Authentication](docs/en/guide/authentication.md) |
+| Invoke registered application functions | [Explicit arguments and authentication](docs/en/guide/provider-commands.md) |
 | Configure file and process behavior | [File and command controls](docs/en/guide/file-and-command-controls.md) |
 | Move existing E2B code | [Migration guide](docs/en/guide/migrate-from-e2b.md) |
 | Resolve errors | [Troubleshooting](docs/en/guide/troubleshooting.md) |

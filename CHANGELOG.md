@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Add explicit application command `invoke` arguments, Express network creation and STS SecurityToken handoff. / 新增应用命令 invoke 显式业务参数、极速版创建时网络配置和 STS SecurityToken 传递。
+
 - Express AK/SK managed-key preparation with explicit consent, private shared storage, expiry renewal and feature-scoped RAM permission guidance. / 极速版支持经确认的 AK/SK 管理 Key 准备、私有共享存储、到期续期及按功能划分的 RAM 授权指南。
 
 ### Tests
@@ -38,6 +40,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Select verified public client/server a6 in maintained bilingual installs, Skills and runtime fixtures. Preserve immutable publication hashes, exhaustive help checks and real current-design cleanup separately from earlier a4/a5 receipts. No runtime/API change or new package publication. / 维护中的双语安装、技能与运行夹具统一使用已验证公开 a6；另存不可变产物摘要、完整帮助检查与真实设计示例清理结果，不改旧 a4/a5 证据，不改运行接口或另发包。
 
 ### Fixed
+
+- Implement typed Express pause/resume with session credential rebinding, preserve private traffic tokens without implicit reconnection, and keep legacy application command keyword behavior. / 完善极速版类型化暂停恢复和会话凭据更新，保留私有流量 token 且不隐式重连，并兼容原应用命令关键字行为。
+
+- Use Express lifecycle behavior in fallback session construction, redact reflected network header credentials from creation errors and their exception chains, and accept explicit application authentication in ProviderSandbox.invoke. / 回退会话构造使用极速版生命周期实现，创建失败时对网络请求头凭据及异常链定向脱敏，并支持 ProviderSandbox.invoke 显式传入应用认证。
 
 - Reuse a persistent loop for synchronous ProviderSandbox calls, preserve background shell execution and quoted arguments, release borrowed decorator clients, and retain session records when deletion fails. Authentication and transport failures now propagate from is_running. / 同步 ProviderSandbox 调用复用事件循环，修复后台 shell 和引号参数，释放装饰器借用连接；删除失败保留会话记录，is_running 向调用方抛出认证和传输错误。
 

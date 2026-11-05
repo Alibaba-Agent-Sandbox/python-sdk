@@ -87,6 +87,9 @@ class TransportConfig(BaseModel):
     access_key_secret: str | None = Field(
         default=None, description="Provider AccessKey Secret", repr=False
     )
+    security_token: str | None = Field(
+        default=None, description="Provider STS SecurityToken", repr=False
+    )
 
     # Provider-scoped values of non-built-in providers (and extra built-in keys such as ``acr_*``)
     provider_options: dict[str, Any] = Field(default_factory=dict)

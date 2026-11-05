@@ -308,6 +308,16 @@ ALICLOUD_EXPRESS_KEYS: tuple[ConfigKey, ...] = (
         description="Alibaba Cloud AccessKey secret",
         description_zh="阿里云 AccessKey Secret",
     ),
+    _ali(
+        "security_token",
+        secret=True,
+        credential=True,
+        group=_G_ALI,
+        env_override="ALIBABA_CLOUD_SECURITY_TOKEN",
+        storage=Storage("env", "ALIBABA_CLOUD_SECURITY_TOKEN"),
+        description="Alibaba Cloud STS security token (with temporary AccessKey credentials)",
+        description_zh="阿里云 STS SecurityToken（与临时 AccessKey 凭据配套使用）",
+    ),
 )
 
 _BY_KEY: dict[tuple[str, str], ConfigKey] = {}

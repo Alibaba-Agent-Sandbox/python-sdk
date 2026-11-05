@@ -167,3 +167,24 @@ envd authentication requires the following HTTP headers (set automatically by th
 ## Related: the abx CLI
 
 Setting credentials from the command line (`abx config set` / `list` / `get`, `abx create --env`) is documented in the CLI repository: [CLI Authentication](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authentication.md).
+
+## STS temporary identities and private application access
+
+When your cloud identity uses STS, obtain the temporary AccessKey ID, AccessKey Secret and SecurityToken together from your RAM role or CI credential issuer. Set `ALICLOUD_ACCESS_KEY_ID`, `ALICLOUD_ACCESS_KEY_SECRET` and `ALIBABA_CLOUD_SECURITY_TOKEN` for the same identity and validity period. The canonical Python override is `security_token`; it is a secret provider setting. Native provider management forwards the complete triplet. The SDK does not acquire or refresh STS credentials.
+
+Express uses separate credentials for the platform API, envd, public application traffic and the application server. When public traffic requires authentication, the gateway uses `e2b-traffic-access-token`; `ABX_SERVER_TOKEN` remains the application's bearer token. A newly created `ProviderSandbox` retains its traffic token in memory. To attach to an existing private instance, supply the token obtained from its original create or an explicit standard-client connect:
+
+```python
+from agent_sandbox import ProviderSandbox
+
+sandbox = await ProviderSandbox.connect(
+    sandbox_id, traffic_access_token=traffic_token,
+)
+try:
+    async with await sandbox.application_client(9000, token=application_token) as client:
+        print(await client.health())
+finally:
+    await sandbox.close()
+```
+
+`ProviderSandbox.connect` only reads instance information; it does not resume the sandbox or change its lifetime. `application_client` also performs no hidden connect or renewal. You may instead pass `traffic_access_token` directly to `application_client` for that client only. GET information does not recover this token. Keep it private; it is excluded from default model serialization.

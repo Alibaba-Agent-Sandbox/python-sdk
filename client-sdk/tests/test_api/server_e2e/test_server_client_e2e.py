@@ -48,6 +48,80 @@ def server(server_factory: Any, tree: Path) -> ServerClient:  # noqa: F811
 
 
 class TestCoreAndDiscovery:
+    async def test_provider_invoke_authenticates_real_application(
+        self, server_factory: Any, sandbox: Any, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from agent_sandbox.server.registry import CommandRegistry
+
+        from agent_sandbox.providers.registry import get_provider
+
+        registry = CommandRegistry()
+
+        @registry.command("reserved")
+        def echo(timeout: int, application_token: str) -> dict[str, Any]:
+            return {"timeout": timeout, "application_token": application_token}
+
+        monkeypatch.setenv("ABX_SERVER_TOKEN", "placeholder-application-auth")
+        live, unused_client = server_factory(registry=registry)
+
+        async def endpoint(context: Any, port: int, protocol: Any = None) -> dict[str, Any]:
+            return {
+                "provider_id": sandbox.provider,
+                "sandbox_id": sandbox.id,
+                "port": port,
+                "url": live.url,
+                "headers": {"e2b-traffic-access-token": "placeholder-gateway"},
+                "authentication_audience": "gateway",
+                "path_mode": "prefix",
+            }
+
+        monkeypatch.setattr(get_provider(sandbox.provider), "application_endpoint", endpoint)
+        arguments = {"timeout": 5, "application_token": "business-value"}
+        try:
+            with pytest.raises(ServerAPIError) as rejected:
+                await sandbox.invoke("reserved", arguments)
+            assert rejected.value.status_code == 401
+            assert (
+                await sandbox.invoke(
+                    "reserved", arguments, application_token="placeholder-application-auth"
+                )
+                == arguments
+            )
+        finally:
+            await unused_client.aclose()
+
+    async def test_explicit_command_arguments_on_real_server(self, server_factory: Any) -> None:
+        from agent_sandbox.server.registry import CommandArg, CommandRegistry
+
+        registry = CommandRegistry()
+
+        def echo(timeout: int, request_timeout: int, arguments: str, name: str) -> dict[str, Any]:
+            return {
+                "timeout": timeout,
+                "request_timeout": request_timeout,
+                "arguments": arguments,
+                "name": name,
+            }
+
+        registry.register(
+            "reserved",
+            echo,
+            args=[
+                CommandArg(name="timeout", type="integer", required=True),
+                CommandArg(name="request_timeout", type="integer", required=True),
+                CommandArg(name="arguments", type="string", required=True),
+                CommandArg(name="name", type="string", required=True),
+            ],
+        )
+        _, client = server_factory(registry=registry)
+        arguments = {"timeout": 5, "request_timeout": 7, "arguments": "body", "name": "Ada"}
+        try:
+            assert (
+                await client.commands.invoke("reserved", arguments, request_timeout=10) == arguments
+            )
+        finally:
+            await client.aclose()
+
     async def test_health(self, server: ServerClient) -> None:
         assert await server.health() is True
 

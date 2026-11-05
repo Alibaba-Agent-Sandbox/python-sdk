@@ -50,6 +50,8 @@ class SandboxStatus(str, enum.Enum):
     RUNNING = "running"  # 已实测验证
     PAUSED = "paused"
     PAUSING = "pausing"  # CubeSandbox while a pause is in progress
+    RESUMING = "resuming"
+    SNAPSHOTTING = "snapshotting"
     STOPPING = "stopping"  # SDK 自定义过渡态
     STOPPED = "stopped"
     ERROR = "error"
@@ -90,6 +92,8 @@ class SandboxConfig(BaseModel):
         exclude=True,
         description="User-requested secure mode; None = not specified",
     )
+    network: dict[str, Any] | None = Field(default=None, exclude=True, repr=False)
+    allow_internet_access: bool | None = Field(default=None, exclude=True)
     provider_options: dict[str, Any] = Field(
         default_factory=dict,
         exclude=True,
@@ -120,6 +124,18 @@ class SandboxConfig(BaseModel):
             payload["volumeMounts"] = [
                 {"name": name, "path": path} for path, name in mounts.items()
             ]
+        if self.network is not None:
+            from agent_sandbox.models.network import network_create_payload
+
+            payload["network"] = network_create_payload(self.network)
+            if self.network.get("allow_public_traffic") is False:
+                if self.secure is False:
+                    raise ProviderConfigError("Disabling public traffic requires secure=True.")
+                payload["secure"] = True
+        if self.secure is not None:
+            payload["secure"] = self.secure
+        if self.allow_internet_access is not None:
+            payload["allowInternetAccess"] = self.allow_internet_access
         return payload
 
 
@@ -137,6 +153,9 @@ class SandboxInfo(BaseModel):
 
     # 认证与版本信息（已实测验证）
     envd_access_token: str | None = Field(default=None, alias="envdAccessToken")
+    traffic_access_token: str | None = Field(
+        default=None, alias="trafficAccessToken", repr=False, exclude=True
+    )
     envd_version: str | None = Field(default=None, alias="envdVersion")
     client_id: str | None = Field(default=None, alias="clientID")
     account_id: str | None = Field(default=None, alias="accountID")

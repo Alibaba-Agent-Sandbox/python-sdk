@@ -1048,13 +1048,35 @@ class ServerCommandsApi(_Api):
             CommandArgumentError: The arguments failed validation (HTTP 400).
             CommandExecutionError: The command function raised (HTTP 500).
         """
+        return await self.invoke(name, kwargs, request_timeout=timeout)
+
+    async def invoke(
+        self,
+        name: str,
+        arguments: dict[str, Any],
+        /,
+        *,
+        request_timeout: float | None = None,
+    ) -> Any:
+        """Invoke a command with an explicit business-argument object.
+
+        Args:
+            name: Registered command name.
+            arguments: Command arguments, including names such as ``timeout``.
+            request_timeout: HTTP timeout in seconds, independent of arguments.
+
+        Returns:
+            The command's JSON result value.
+        """
+        if not isinstance(arguments, dict) or any(not isinstance(key, str) for key in arguments):
+            raise TypeError("Command arguments must be an object with string keys.")
         try:
             data = await self._c._request(
                 "run_command",
                 "POST",
                 f"/commands/{quote(name, safe='')}",
-                json_body=kwargs,
-                timeout=timeout,
+                json_body=dict(arguments),
+                timeout=request_timeout,
             )
         except (EndpointNotAvailableError, PolicyDeniedError):
             raise
@@ -1075,6 +1097,7 @@ class ServerCommandsApi(_Api):
 
     list_sync = make_sync(list)
     run_sync = make_sync(run)
+    invoke_sync = make_sync(invoke)
 
 
 # --------------------------------------------------------------------------- #
@@ -1109,7 +1132,7 @@ class ServerClient:
         "capabilities": ("discover",),
         "capabilities_check": ("check",),
         "list_commands": ("commands.list",),
-        "run_command": ("commands.run",),
+        "run_command": ("commands.run", "commands.invoke"),
         "shell": ("process.shell",),
         "files_list": ("files.list",),
         "files_stat": ("files.stat", "files.exists"),

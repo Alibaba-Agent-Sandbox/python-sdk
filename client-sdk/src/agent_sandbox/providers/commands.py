@@ -52,7 +52,7 @@ def _client(
             connection[wire] = value
     if provider == BUILTIN_PROVIDER_ID:
         connection["region"] = resolved.region
-        for name in ("access_key_id", "access_key_secret"):
+        for name in ("access_key_id", "access_key_secret", "security_token"):
             if value := getattr(resolved, name, None):
                 connection[name] = value
     return EngineClient(connection)

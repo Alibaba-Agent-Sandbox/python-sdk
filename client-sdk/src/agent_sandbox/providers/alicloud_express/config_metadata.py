@@ -20,6 +20,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "sandbox_base_url": "https://api.cn-hangzhou.e2b.fc.aliyuncs.com",
         "sandbox_domain": "cn-hangzhou.e2b.fc.aliyuncs.com",
     },
-    "transport_fields": frozenset({"region", "access_key_id", "access_key_secret"}),
+    "transport_fields": frozenset(
+        {"region", "access_key_id", "access_key_secret", "security_token"}
+    ),
     "omit_default_options": True,
 }

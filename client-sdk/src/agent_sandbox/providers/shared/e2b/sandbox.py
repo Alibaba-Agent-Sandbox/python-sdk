@@ -207,7 +207,7 @@ class SandboxProtocol:
         # 注意：REST 路径基于 E2B SDK 逆向推断，未经官方文档确认
         await self._sandbox_request("POST", sandbox_id, "/pause")
 
-    async def resume(self, sandbox_id: str) -> None:
+    async def resume(self, sandbox_id: str) -> SandboxInfo | None:
         """Resume a paused sandbox.
 
         POST /sandboxes/{sandbox_id}/resume
@@ -215,6 +215,7 @@ class SandboxProtocol:
         """
         # 注意：REST 路径基于 E2B SDK 逆向推断，未经官方文档确认
         await self._sandbox_request("POST", sandbox_id, "/resume")
+        return None
 
     def _handle_create_error(self, exc: httpx.HTTPStatusError) -> None:
         """Convert HTTP errors to typed exceptions for create."""

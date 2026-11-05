@@ -25,17 +25,24 @@ async def create(
     metadata: dict[str, str] | None = None,
     envs: dict[str, str] | None = None,
     volume_mounts: dict[str, str] | None = None,
+    network: dict[str, Any] | None = None,
+    allow_internet_access: bool | None = None,
     cpu: int | None = None,
     memory: int | None = None,
     disk: int | None = None,
     gpu: str | None = None,
     secure: bool | None = None,
+    access_key_id: str | None = None,
+    access_key_secret: str | None = None,
+    security_token: str | None = None,
     sandbox_api_key: str | None = None,
     sandbox_base_url: str | None = None,
     sandbox_domain: str | None = None,
-    access_key_id: str | None = None,
-    access_key_secret: str | None = None,
-) -> Sandbox
+    region: str | None = None,
+    provider: str | Provider | None = None,
+    provider_options: dict[str, Any] | None = None,
+    on_created: Callable[[str], None] | None = None,
+) -> Sandbox:
 ```
 
 创建新沙箱。
@@ -47,6 +54,8 @@ async def create(
 | `request_timeout` | `float` | `None` | 仅针对本次创建请求的 HTTP 超时（秒）。为 `None` 时使用 `ABX_HTTP_TIMEOUT` / `http_timeout`。与 E2B SDK 对齐。调大它无法绕过平台侧创建挂起。 |
 | `metadata` | `dict` | `None` | 任意元数据键值对 |
 | `envs` | `dict` | `None` | 注入的环境变量 |
+| `network` | `dict` | `None` | 创建时显式传入的 snake_case 网络配置 |
+| `allow_internet_access` | `bool` | `None` | 显式出网开关 |
 | `volume_mounts` | `dict[str, str]` | `None` | 仅内置提供方：规范化的沙箱绝对路径 → 已有 Volume 名称。省略或空字典不挂载，其他提供方的非空参数返回 E8004。见[挂载要求与请求 schema](../guide/provider-commands.md#创建沙箱时挂载已有-volume)。 |
 | `cpu` | `int` | `None` | CPU 核数 |
 | `memory` | `int` | `None` | 内存 MB |
@@ -58,6 +67,7 @@ async def create(
 | `sandbox_domain` | `str` | `None` | 域名覆盖 |
 | `access_key_id` | `str` | `None` | 阿里云 AK |
 | `access_key_secret` | `str` | `None` | 阿里云 SK |
+| `security_token` | `str` | `None` | 与临时 AccessKey 配套的 STS SecurityToken |
 
 **返回**：`Sandbox` 实例
 
@@ -71,12 +81,17 @@ async def connect(
     cls,
     sandbox_id: str,
     *,
+    traffic_access_token: str | None = None,
+    access_key_id: str | None = None,
+    access_key_secret: str | None = None,
+    security_token: str | None = None,
     sandbox_api_key: str | None = None,
     sandbox_base_url: str | None = None,
     sandbox_domain: str | None = None,
-    access_key_id: str | None = None,
-    access_key_secret: str | None = None,
-) -> Sandbox
+    region: str | None = None,
+    provider: str | Provider | None = None,
+    provider_options: dict[str, Any] | None = None,
+) -> Sandbox:
 ```
 
 连接到已有沙箱。
@@ -95,11 +110,16 @@ async def list(
     status: SandboxStatus | None = None,
     limit: int = 100,
     offset: int = 0,
-    sandbox_api_key: str | None = None,
-    sandbox_base_url: str | None = None,
     access_key_id: str | None = None,
     access_key_secret: str | None = None,
-) -> list[SandboxInfo]
+    security_token: str | None = None,
+    sandbox_api_key: str | None = None,
+    sandbox_base_url: str | None = None,
+    sandbox_domain: str | None = None,
+    region: str | None = None,
+    provider: str | Provider | None = None,
+    provider_options: dict[str, Any] | None = None,
+) -> list[SandboxInfo]:
 ```
 
 列出沙箱（类方法，不需要实例）。
@@ -116,11 +136,15 @@ async def kill_by_id(
     cls,
     sandbox_id: str,
     *,
-    sandbox_api_key: str | None = None,
-    sandbox_base_url: str | None = None,
     access_key_id: str | None = None,
     access_key_secret: str | None = None,
-) -> None
+    security_token: str | None = None,
+    sandbox_api_key: str | None = None,
+    sandbox_base_url: str | None = None,
+    region: str | None = None,
+    provider: str | Provider | None = None,
+    provider_options: dict[str, Any] | None = None,
+) -> None:
 ```
 
 按 ID 销毁沙箱（类方法，不需要先连接）。
@@ -211,7 +235,7 @@ async def run(
 ) -> Any
 ```
 
-调用沙箱内 SandboxServer 上注册的命名命令：`sandbox.run("name", x=1)` 即以 `kwargs` 作为 JSON body 的 `POST /commands/name`。这是调用命名命令的唯一方式。裸 shell 命令请使用 `sandbox.commands.run(cmd, ...)`。
+调用沙箱内 SandboxServer 上注册的命名命令：`sandbox.run("name", x=1)` 即以 `kwargs` 作为 JSON body 的 `POST /commands/name`。需要显式参数对象时，使用 `sandbox.invoke(name, arguments, request_timeout=...)`。裸 shell 命令请使用 `sandbox.commands.run(cmd, ...)`。
 
 **返回**：命令的返回值
 
@@ -343,7 +367,7 @@ from agent_sandbox.api import ServerClient, ServerCapabilities
 | 成员 | 签名 | 说明 |
 |------|------|------|
 | `ServerClient()` | `(base_url, *, token=None, headers=None, pty_url=None, timeout=30.0, http_client=None, expires_at=None)` | `token` 以 `Authorization: Bearer` 发送；`headers` 携带网关的 `X-Access-Token` |
-| `ProviderSandbox.application_client()` | `async (port=9000, *, token=None, timeout=30.0) -> ServerClient` | 解析 Provider 应用网关描述符，保留其路径前缀、查询参数及网关头，应用令牌单独传入；跨 Provider 推荐使用 |
+| `ProviderSandbox.application_client()` | `async (port=9000, *, token=None, traffic_access_token=None, timeout=30.0) -> ServerClient` | 解析 Provider 应用网关描述符，保留其路径前缀、查询参数及网关头，应用令牌单独传入；跨 Provider 推荐使用 |
 | `Sandbox.server` | `cached_property -> ServerClient` | 9000 端口原生本地 URL 辅助入口；跨 Provider 使用 application_client |
 | `Sandbox.server_at()` | `(port=9000, *, token=None, pty_port=9001, timeout=30.0) -> ServerClient` | 原生本地 URL 辅助入口；需 Provider 网关描述符时使用 application_client；`token` 是应用令牌 |
 | `Sandbox.start_server()` | `async (*, port=9000, commands=None, policy=None, token=None, env=None, command=None, wait=True, timeout=30.0) -> ServerClient` | 以 envd 后台命令启动 `agent-sandbox-server serve` 并轮询 `/health`；`policy` 为字典（`ABX_SERVER_POLICY`）或预设名；超时抛 `ConnectionError_` |
@@ -405,6 +429,9 @@ class SandboxStatus(str, Enum):
     CREATING = "creating"
     RUNNING  = "running"
     PAUSED   = "paused"
+    PAUSING  = "pausing"
+    RESUMING = "resuming"
+    SNAPSHOTTING = "snapshotting"
     STOPPING = "stopping"
     STOPPED  = "stopped"
     ERROR    = "error"
@@ -477,3 +504,9 @@ class SandboxStatus(str, Enum):
 所有异常继承自 `SandboxError`，携带 `code`、`message`、`suggestion`、`docs_url` 属性。
 
 详细错误码列表参见 [错误码参考](./error-codes.md)。
+
+## 显式应用调用与极速版选项
+
+`ServerClient.commands.invoke(name, arguments, /, *, request_timeout=None)` 和 `ProviderSandbox.invoke(name, arguments, /, *, server_port=9000, application_token=None, request_timeout=None)` 将 arguments 作为命令 JSON 请求体；均有 `invoke_sync`，旧 `run` 保留关键字参数契约。应用服务要求认证时，将其 `ABX_SERVER_TOKEN` 通过 `application_token` 传入。
+
+接受云 AccessKey 的 Provider 生命周期方法同时接受 `security_token`，环境变量为 `ALIBABA_CLOUD_SECURITY_TOKEN`。`ProviderSandbox.create` 另接受 `network`、`allow_internet_access`。`ProviderSandbox.connect(..., traffic_access_token=...)` 保留 GET 只读连接语义；`application_client(..., traffic_access_token=...)` 仅为该应用客户端覆盖网关凭据。详见[提供方命令](../guide/provider-commands.md)和[认证](../guide/authentication.md)。

@@ -41,6 +41,7 @@ async def resolve_sandbox_api_key(config: TransportConfig) -> str:
         "api-key.resolve",
         access_key_id=config.access_key_id,
         access_key_secret=config.access_key_secret,
+        security_token=config.security_token,
         region=config.region,
         http_timeout=config.http_timeout,
     )
