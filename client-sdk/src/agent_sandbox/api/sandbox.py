@@ -120,6 +120,7 @@ def _endpoint_overrides(
     access_key_id: str | None,
     access_key_secret: str | None,
     region: str | None,
+    security_token: str | None = None,
 ) -> dict[str, Any]:
     overrides: dict[str, Any] = {}
     for name, value in (
@@ -127,6 +128,7 @@ def _endpoint_overrides(
         ("sandbox_base_url", sandbox_base_url),
         ("access_key_id", access_key_id),
         ("access_key_secret", access_key_secret),
+        ("security_token", security_token),
         ("region", region),
     ):
         if value is not None:
@@ -340,6 +342,7 @@ class Sandbox:
                     self._domain,
                     self._secure,
                     self._envd_token.token if self._envd_token else None,
+                    traffic_access_token=self._info.traffic_access_token,
                 ),
                 self._sandbox_protocol,
             ),
@@ -403,12 +406,19 @@ class Sandbox:
         )
 
     async def application_client(
-        self, port: int = 9000, *, token: str | None = None, timeout: float = 30.0
+        self,
+        port: int = 9000,
+        *,
+        token: str | None = None,
+        traffic_access_token: str | None = None,
+        timeout: float = 30.0,
     ) -> ServerClient:
         """Resolve application HTTP independently of the sandbox control/data transport.
 
         The provider supplies this sandbox's port URL and minimal gateway headers.
         Application credentials are explicit and never inherited from API keys.
+        traffic_access_token overrides the stored gateway token for this client
+        only. No connect, resume or lifetime renewal is performed.
         """
         from datetime import datetime, timezone
 
@@ -422,6 +432,11 @@ class Sandbox:
                 self._domain,
                 self._secure,
                 self._envd_token.token if self._envd_token else None,
+                traffic_access_token=(
+                    traffic_access_token
+                    if traffic_access_token is not None
+                    else self._info.traffic_access_token
+                ),
             ),
             port,
             self._sandbox_protocol,
@@ -585,6 +600,8 @@ class Sandbox:
         metadata: dict[str, str] | None = None,
         envs: dict[str, str] | None = None,
         volume_mounts: dict[str, str] | None = None,
+        network: dict[str, Any] | None = None,
+        allow_internet_access: bool | None = None,
         cpu: int | None = None,
         memory: int | None = None,
         disk: int | None = None,
@@ -592,6 +609,7 @@ class Sandbox:
         secure: bool | None = None,
         access_key_id: str | None = None,
         access_key_secret: str | None = None,
+        security_token: str | None = None,
         sandbox_api_key: str | None = None,
         sandbox_base_url: str | None = None,
         sandbox_domain: str | None = None,
@@ -619,6 +637,8 @@ class Sandbox:
             volume_mounts: Absolute sandbox paths mapped to existing Volume names,
                 for example ``{"/mnt/data": "my-volume"}``. Supported only by the
                 built-in provider; the Volume and API key must belong to the same Team.
+            network: Explicit snake-case network creation settings, supported by Express.
+            allow_internet_access: Optional sandbox egress switch, supported by Express.
             envs: Environment variables injected into the envd root process.
                 These are inherited by all subsequent ``commands.run()``,
                 ``run_code()``, and terminal sessions.  Per-call overrides
@@ -637,6 +657,7 @@ class Sandbox:
                 applies. Pass ``True``/``False`` to send an explicit request.
             access_key_id: AK/SK access key ID.
             access_key_secret: AK/SK access key secret.
+            security_token: STS token paired with temporary AccessKey credentials.
             sandbox_api_key: Sandbox platform API key override.
             sandbox_base_url: Sandbox platform API base URL override.
             sandbox_domain: Provider data-plane domain.
@@ -662,11 +683,25 @@ class Sandbox:
             )
 
         mounts = validate_volume_mounts(volume_mounts)
+        if network is not None:
+            from agent_sandbox.models.network import network_create_payload
+
+            network_create_payload(network)
+        if allow_internet_access is not None and type(allow_internet_access) is not bool:
+            raise ValueError("allow_internet_access must be a boolean.")
+        if network and network.get("allow_public_traffic") is False and secure is False:
+            raise ValueError("Disabling public traffic requires secure=True.")
         prov, _ = _select_provider(provider)
         if mounts and "volume_mounts" not in prov.create_options:
             from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
 
             raise ProviderFeatureNotSupportedError(prov.id, "volume_mounts")
+        if (
+            network is not None or allow_internet_access is not None
+        ) and "network" not in prov.create_options:
+            from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
+
+            raise ProviderFeatureNotSupportedError(prov.id, "network")
         return await cls._create_via_provider(
             prov,
             template=template,
@@ -679,6 +714,8 @@ class Sandbox:
             disk=disk,
             gpu=gpu,
             volume_mounts=mounts,
+            network=network,
+            allow_internet_access=allow_internet_access,
             secure=secure,
             domain=sandbox_domain,
             overrides=_endpoint_overrides(
@@ -686,6 +723,7 @@ class Sandbox:
                 sandbox_base_url=sandbox_base_url,
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
+                security_token=security_token,
                 region=region,
             ),
             options=provider_options,
@@ -697,8 +735,10 @@ class Sandbox:
         cls,
         sandbox_id: str,
         *,
+        traffic_access_token: str | None = None,
         access_key_id: str | None = None,
         access_key_secret: str | None = None,
+        security_token: str | None = None,
         sandbox_api_key: str | None = None,
         sandbox_base_url: str | None = None,
         sandbox_domain: str | None = None,
@@ -712,6 +752,7 @@ class Sandbox:
             sandbox_id: The ID of the sandbox to connect to.
             access_key_id: AK/SK access key ID.
             access_key_secret: AK/SK access key secret.
+            security_token: STS token paired with temporary AccessKey credentials.
             sandbox_api_key: Sandbox platform API key override.
             sandbox_base_url: Sandbox platform API base URL override.
             sandbox_domain: Provider data-plane domain.
@@ -734,9 +775,11 @@ class Sandbox:
                 sandbox_base_url=sandbox_base_url,
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
+                security_token=security_token,
                 region=region,
             ),
             options=provider_options,
+            traffic_access_token=traffic_access_token,
         )
 
     @classmethod
@@ -748,6 +791,7 @@ class Sandbox:
         offset: int = 0,
         access_key_id: str | None = None,
         access_key_secret: str | None = None,
+        security_token: str | None = None,
         sandbox_api_key: str | None = None,
         sandbox_base_url: str | None = None,
         sandbox_domain: str | None = None,
@@ -763,6 +807,7 @@ class Sandbox:
             offset: Pagination offset.
             access_key_id: AK/SK access key ID.
             access_key_secret: AK/SK access key secret.
+            security_token: STS token paired with temporary AccessKey credentials.
             sandbox_api_key: Sandbox platform API key override.
             sandbox_base_url: Sandbox platform API base URL override.
             sandbox_domain: Provider data-plane domain.
@@ -783,6 +828,7 @@ class Sandbox:
                 sandbox_base_url=sandbox_base_url,
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
+                security_token=security_token,
                 region=region,
             ),
             provider_options,
@@ -799,6 +845,7 @@ class Sandbox:
         *,
         access_key_id: str | None = None,
         access_key_secret: str | None = None,
+        security_token: str | None = None,
         sandbox_api_key: str | None = None,
         sandbox_base_url: str | None = None,
         region: str | None = None,
@@ -819,6 +866,7 @@ class Sandbox:
             sandbox_id,
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
+            security_token=security_token,
             sandbox_api_key=sandbox_api_key,
             sandbox_base_url=sandbox_base_url,
             region=region,
@@ -836,6 +884,7 @@ class Sandbox:
         *,
         access_key_id: str | None = None,
         access_key_secret: str | None = None,
+        security_token: str | None = None,
         sandbox_api_key: str | None = None,
         sandbox_base_url: str | None = None,
         region: str | None = None,
@@ -854,6 +903,7 @@ class Sandbox:
             sandbox_id,
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
+            security_token=security_token,
             sandbox_api_key=sandbox_api_key,
             sandbox_base_url=sandbox_base_url,
             region=region,
@@ -872,6 +922,7 @@ class Sandbox:
         timeout: int | None = None,
         access_key_id: str | None = None,
         access_key_secret: str | None = None,
+        security_token: str | None = None,
         sandbox_api_key: str | None = None,
         sandbox_base_url: str | None = None,
         region: str | None = None,
@@ -888,6 +939,7 @@ class Sandbox:
                 sandbox_base_url=sandbox_base_url,
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
+                security_token=security_token,
                 region=region,
             ),
             provider_options,
@@ -909,6 +961,7 @@ class Sandbox:
         *,
         access_key_id: str | None = None,
         access_key_secret: str | None = None,
+        security_token: str | None = None,
         sandbox_api_key: str | None = None,
         sandbox_base_url: str | None = None,
         region: str | None = None,
@@ -921,6 +974,7 @@ class Sandbox:
             sandbox_id: The ID of the sandbox to kill.
             access_key_id: AK/SK access key ID.
             access_key_secret: AK/SK access key secret.
+            security_token: STS token paired with temporary AccessKey credentials.
             sandbox_api_key: Sandbox platform API key override.
             sandbox_base_url: Sandbox platform API base URL override.
             region: Built-in provider region (derives the API URL and domain).
@@ -938,6 +992,7 @@ class Sandbox:
                 sandbox_base_url=sandbox_base_url,
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
+                security_token=security_token,
                 region=region,
             ),
             provider_options,
@@ -964,6 +1019,8 @@ class Sandbox:
         disk: int | None,
         gpu: str | None,
         volume_mounts: dict[str, str],
+        network: dict[str, Any] | None,
+        allow_internet_access: bool | None,
         secure: bool | None,
         domain: str | None,
         overrides: dict[str, Any],
@@ -984,6 +1041,8 @@ class Sandbox:
                 disk=disk,
                 gpu=gpu,
                 volume_mounts=volume_mounts,
+                network=network,
+                allow_internet_access=allow_internet_access,
                 secure=secure,
                 provider_options=dict(options or {}),
             )
@@ -1043,11 +1102,14 @@ class Sandbox:
         domain: str | None,
         overrides: dict[str, Any],
         options: dict[str, Any] | None,
+        traffic_access_token: str | None = None,
     ) -> Sandbox:
         infra = await _provider_infra(prov, overrides, options)
         closer = _InfraCloser(infra)
         try:
             info = await infra.sandbox_protocol.connect(sandbox_id)
+            if traffic_access_token is not None:
+                info.traffic_access_token = traffic_access_token
             binding = await prov.prepare_session(
                 infra, info, operation="connect", template=info.template
             )
@@ -1126,7 +1188,7 @@ class Sandbox:
     async def pause(self) -> None:
         """Pause the sandbox.
 
-        # 注意：REST 路径基于 E2B SDK 逆向推断，未经官方文档确认
+        Express retains memory and requires the account's pause admission.
         """
         await self._sandbox_protocol.pause(self.id)
         logger.info("Sandbox paused: %s", self.id)
@@ -1134,20 +1196,47 @@ class Sandbox:
     async def resume(self) -> None:
         """Resume a paused sandbox.
 
-        # 注意：REST 路径基于 E2B SDK 逆向推断，未经官方文档确认
+        Express explicitly connects with a 300-second lifetime and refreshes
+        this object's returned session credentials. Read-only attach does not
+        perform this operation.
         """
-        await self._sandbox_protocol.resume(self.id)
+        info = await self._sandbox_protocol.resume(self.id)
+        if isinstance(info, SandboxInfo):
+            await self._rebind_session(info)
         logger.info("Sandbox resumed: %s", self.id)
 
     async def refresh_info(self) -> SandboxInfo:
         """Refresh sandbox info from the platform."""
-        self._info = await self._sandbox_protocol.get_info(self.id)
-        # Re-derive envd URL if the platform still omits it
-        if not self._info.envd_url and self._info.sandbox_id:
+        info = await self._sandbox_protocol.get_info(self.id)
+        if not info.envd_url:
+            info.envd_url = get_provider(self._provider_id).resolve_session_url(info, self._config)
+        await self._rebind_session(info)
+        return self._info
+
+    async def _rebind_session(self, info: SandboxInfo) -> None:
+        """Apply returned session fields without erasing credentials omitted by GET."""
+        if info.sandbox_id != self.id:
+            raise ValueError("Session refresh returned a different sandbox identity.")
+        previous_binding = (self.url, self._envd_token.token, self._info.traffic_access_token)
+        changes = {name: getattr(info, name) for name in info.model_fields_set}
+        self._info = self._info.model_copy(update=changes)
+        if not self._info.envd_url:
             self._info.envd_url = get_provider(self._provider_id).resolve_session_url(
                 self._info, self._config
             )
-        return self._info
+        if "envd_access_token" in changes:
+            if self._info.envd_access_token is None:
+                self._envd_token.clear()
+            else:
+                self._envd_token.set_token(self._info.envd_access_token, self.id)
+        if previous_binding == (self.url, self._envd_token.token, self._info.traffic_access_token):
+            return
+        await self._close_server_streams()
+        previous_server = self.__dict__.get("server")
+        for name in ("commands", "files", "network", "code", "server"):
+            self.__dict__.pop(name, None)
+        if previous_server is not None:
+            await previous_server.aclose()
 
     # ---- Convenience methods ----
 
@@ -1277,6 +1366,31 @@ class Sandbox:
         async with await self.application_client(server_port) as client:
             return await client.commands.run(name, timeout=timeout, **kwargs)
 
+    async def invoke(
+        self,
+        name: str,
+        arguments: dict[str, Any],
+        /,
+        *,
+        server_port: int = 9000,
+        application_token: str | None = None,
+        request_timeout: float | None = None,
+    ) -> Any:
+        """Invoke a registered application command with explicit business arguments.
+
+        Args:
+            name: Registered command name.
+            arguments: JSON argument object; all names are business fields.
+            server_port: Application HTTP port.
+            application_token: Explicit application authentication token.
+            request_timeout: HTTP timeout in seconds, independent of arguments.
+
+        Returns:
+            The command's JSON result value.
+        """
+        async with await self.application_client(server_port, token=application_token) as client:
+            return await client.commands.invoke(name, arguments, request_timeout=request_timeout)
+
     # ---- E2B-shaped URL stubs ----
 
     async def upload_url(self, path: str, **_kwargs: object) -> str:
@@ -1332,6 +1446,7 @@ class Sandbox:
     get_upload_url_sync = make_sync(get_upload_url)
     get_download_url_sync = make_sync(get_download_url)
     run_sync = make_sync(run)
+    invoke_sync = make_sync(invoke)
     list_commands_sync = make_sync(list_commands)
 
     def __repr__(self) -> str:

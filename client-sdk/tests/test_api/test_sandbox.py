@@ -70,7 +70,9 @@ class TestSandboxCreate:
                 "agent_sandbox.providers.alicloud_express.auth.create_auth_provider"
             ) as mock_create_auth,
             patch("agent_sandbox.transport.http.HttpClient") as mock_http_cls,
-            patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_proto_cls,
+            patch(
+                "agent_sandbox.providers.alicloud_express.sandbox.SandboxProtocol"
+            ) as mock_proto_cls,
         ):
             mock_load_config.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_create_auth.return_value = mock_auth
@@ -97,7 +99,9 @@ class TestSandboxCreate:
                 "agent_sandbox.providers.alicloud_express.auth.create_auth_provider"
             ) as mock_create_auth,
             patch("agent_sandbox.transport.http.HttpClient"),
-            patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_proto_cls,
+            patch(
+                "agent_sandbox.providers.alicloud_express.sandbox.SandboxProtocol"
+            ) as mock_proto_cls,
         ):
             mock_load_config.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_create_auth.return_value = AsyncMock()
@@ -129,7 +133,9 @@ class TestSandboxCreate:
                 "agent_sandbox.providers.alicloud_express.auth.create_auth_provider"
             ) as mock_create_auth,
             patch("agent_sandbox.transport.http.HttpClient"),
-            patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_proto_cls,
+            patch(
+                "agent_sandbox.providers.alicloud_express.sandbox.SandboxProtocol"
+            ) as mock_proto_cls,
         ):
             mock_load_config.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_create_auth.return_value = AsyncMock()
@@ -152,7 +158,9 @@ class TestSandboxCreate:
                 "agent_sandbox.providers.alicloud_express.auth.create_auth_provider"
             ) as mock_create_auth,
             patch("agent_sandbox.transport.http.HttpClient"),
-            patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_proto_cls,
+            patch(
+                "agent_sandbox.providers.alicloud_express.sandbox.SandboxProtocol"
+            ) as mock_proto_cls,
         ):
             mock_load_config.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_create_auth.return_value = AsyncMock()
@@ -194,7 +202,9 @@ class TestSandboxConnect:
                 "agent_sandbox.providers.alicloud_express.auth.create_auth_provider"
             ) as mock_create_auth,
             patch("agent_sandbox.transport.http.HttpClient"),
-            patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_proto_cls,
+            patch(
+                "agent_sandbox.providers.alicloud_express.sandbox.SandboxProtocol"
+            ) as mock_proto_cls,
         ):
             mock_load_config.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_create_auth.return_value = AsyncMock()
@@ -524,7 +534,7 @@ class TestSandboxResourceParams:
             patch("agent_sandbox.api.sandbox.load_config") as mock_lc,
             patch("agent_sandbox.providers.alicloud_express.auth.create_auth_provider") as mock_ca,
             patch("agent_sandbox.transport.http.HttpClient"),
-            patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_pc,
+            patch("agent_sandbox.providers.alicloud_express.sandbox.SandboxProtocol") as mock_pc,
         ):
             mock_lc.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()
@@ -556,7 +566,7 @@ class TestSandboxResourceParams:
             patch("agent_sandbox.api.sandbox.load_config") as mock_lc,
             patch("agent_sandbox.providers.alicloud_express.auth.create_auth_provider") as mock_ca,
             patch("agent_sandbox.transport.http.HttpClient"),
-            patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_pc,
+            patch("agent_sandbox.providers.alicloud_express.sandbox.SandboxProtocol") as mock_pc,
         ):
             mock_lc.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()
@@ -588,7 +598,7 @@ class TestSandboxResourceParams:
             patch("agent_sandbox.api.sandbox.load_config") as mock_lc,
             patch("agent_sandbox.providers.alicloud_express.auth.create_auth_provider") as mock_ca,
             patch("agent_sandbox.transport.http.HttpClient"),
-            patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_pc,
+            patch("agent_sandbox.providers.alicloud_express.sandbox.SandboxProtocol") as mock_pc,
         ):
             mock_lc.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()
@@ -763,7 +773,7 @@ class TestSandboxEnvdUrlDerivation:
             patch("agent_sandbox.api.sandbox.load_config") as mock_lc,
             patch("agent_sandbox.providers.alicloud_express.auth.create_auth_provider") as mock_ca,
             patch("agent_sandbox.transport.http.HttpClient"),
-            patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_pc,
+            patch("agent_sandbox.providers.alicloud_express.sandbox.SandboxProtocol") as mock_pc,
         ):
             mock_lc.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()
@@ -794,7 +804,7 @@ class TestSandboxEnvdUrlDerivation:
             patch("agent_sandbox.api.sandbox.load_config") as mock_lc,
             patch("agent_sandbox.providers.alicloud_express.auth.create_auth_provider") as mock_ca,
             patch("agent_sandbox.transport.http.HttpClient"),
-            patch("agent_sandbox.providers.shared.e2b.sandbox.SandboxProtocol") as mock_pc,
+            patch("agent_sandbox.providers.alicloud_express.sandbox.SandboxProtocol") as mock_pc,
         ):
             mock_lc.return_value = TransportConfig(sandbox_api_key=TEST_API_KEY)
             mock_ca.return_value = AsyncMock()

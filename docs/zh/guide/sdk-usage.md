@@ -486,3 +486,11 @@ print(result)
 ```
 
 ---
+
+### 显式应用命令参数
+
+业务字段与请求选项重名时，使用 `await sandbox.invoke("command", {"timeout": 5}, request_timeout=30)` 或 `await client.commands.invoke("command", {"timeout": 5}, request_timeout=30)`。参数对象内的全部键都会传给已注册函数；ProviderSandbox 和 ServerClient 命令均有 `invoke_sync`。旧 `run(..., timeout=...)` 继续把 timeout 解释为 HTTP 超时，其余已有关键字参数语义保持不变。
+
+应用服务要求认证时，显式传入其应用令牌：`await sandbox.invoke("command", {"timeout": 5}, application_token=application_token)`。该值是服务的 `ABX_SERVER_TOKEN`，与 Sandbox API Key、网关 traffic token 分开。
+
+极速版 `await sandbox.pause()` 保留内存；`await sandbox.resume()` 明确重新连接，将生命周期设为 300 秒，并更新同一对象的会话凭据。两者均需服务开通资格。只读的 `ProviderSandbox.connect` 不恢复沙箱。私有应用流量 token 见[认证指南](authentication.md)，网络和追加挂载扩展见[提供方命令](provider-commands.md)。

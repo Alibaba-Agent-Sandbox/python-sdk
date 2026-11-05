@@ -22,8 +22,9 @@ class TestSandboxStatus:
         assert SandboxStatus.STOPPED == "stopped"
         assert SandboxStatus.ERROR == "error"
 
-    def test_enum_count(self):
-        assert len(SandboxStatus) == 7
+    @pytest.mark.parametrize("state", ["resuming", "snapshotting"])
+    def test_provider_transition_states_are_readable(self, state):
+        assert SandboxInfo(sandboxID="example", state=state).status.value == state
 
 
 class TestSandboxConfig:

@@ -487,3 +487,11 @@ print(result)
 ```
 
 ---
+
+### Explicit application command arguments
+
+Use `await sandbox.invoke("command", {"timeout": 5}, request_timeout=30)` or `await client.commands.invoke("command", {"timeout": 5}, request_timeout=30)` when business fields overlap request options. Every key in the argument object reaches the registered function. `invoke_sync` is available for synchronous ProviderSandbox and ServerClient command use. Existing `run(..., timeout=...)` keeps its HTTP-timeout meaning and existing keyword payloads.
+
+For an authenticated application service, pass its application token explicitly: `await sandbox.invoke("command", {"timeout": 5}, application_token=application_token)`. This is the service's `ABX_SERVER_TOKEN`, separate from the sandbox API key and gateway traffic token.
+
+On Express, `await sandbox.pause()` retains memory; `await sandbox.resume()` explicitly reconnects with a 300-second lifetime and refreshes the same object's session credentials. Both require service admission. Read-only `ProviderSandbox.connect` does not resume. See [authentication](authentication.md) for private application traffic tokens and [provider commands](provider-commands.md) for network and append-mount extensions.

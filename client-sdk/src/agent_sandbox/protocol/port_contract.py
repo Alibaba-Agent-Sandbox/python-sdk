@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import NoReturn, Protocol
 
 from agent_sandbox.models.errors import ProviderFeatureNotSupportedError
@@ -14,6 +14,7 @@ class PortContext:
     domain: str
     secure: bool
     access_token: str | None
+    traffic_access_token: str | None = field(default=None, repr=False)
 
 
 class PortAccess(Protocol):

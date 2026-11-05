@@ -25,17 +25,24 @@ async def create(
     metadata: dict[str, str] | None = None,
     envs: dict[str, str] | None = None,
     volume_mounts: dict[str, str] | None = None,
+    network: dict[str, Any] | None = None,
+    allow_internet_access: bool | None = None,
     cpu: int | None = None,
     memory: int | None = None,
     disk: int | None = None,
     gpu: str | None = None,
     secure: bool | None = None,
+    access_key_id: str | None = None,
+    access_key_secret: str | None = None,
+    security_token: str | None = None,
     sandbox_api_key: str | None = None,
     sandbox_base_url: str | None = None,
     sandbox_domain: str | None = None,
-    access_key_id: str | None = None,
-    access_key_secret: str | None = None,
-) -> Sandbox
+    region: str | None = None,
+    provider: str | Provider | None = None,
+    provider_options: dict[str, Any] | None = None,
+    on_created: Callable[[str], None] | None = None,
+) -> Sandbox:
 ```
 
 Create a new sandbox.
@@ -47,6 +54,8 @@ Create a new sandbox.
 | `request_timeout` | `float` | `None` | Per-request HTTP timeout (seconds) for the create call only. When `None`, uses `ABX_HTTP_TIMEOUT` / `http_timeout`. Aligns with the E2B SDK. Raising it does not work around platform-side create stalls. |
 | `metadata` | `dict` | `None` | Arbitrary metadata key-value pairs |
 | `envs` | `dict` | `None` | Injected environment variables |
+| `network` | `dict` | `None` | Explicit snake-case network creation settings |
+| `allow_internet_access` | `bool` | `None` | Explicit egress switch |
 | `volume_mounts` | `dict[str, str]` | `None` | Built-in provider only: normalized absolute sandbox path → existing Volume name. Omitted/empty means no mounts. Other providers reject nonempty hints with E8004. See [mount requirements and wire schema](../guide/provider-commands.md#mount-an-existing-volume-when-creating-a-sandbox). |
 | `cpu` | `int` | `None` | Number of CPU cores |
 | `memory` | `int` | `None` | Memory in MB |
@@ -58,6 +67,7 @@ Create a new sandbox.
 | `sandbox_domain` | `str` | `None` | Domain override |
 | `access_key_id` | `str` | `None` | Alibaba Cloud AK |
 | `access_key_secret` | `str` | `None` | Alibaba Cloud SK |
+| `security_token` | `str` | `None` | STS SecurityToken paired with temporary AccessKeys |
 
 **Returns**: `Sandbox` instance
 
@@ -71,12 +81,17 @@ async def connect(
     cls,
     sandbox_id: str,
     *,
+    traffic_access_token: str | None = None,
+    access_key_id: str | None = None,
+    access_key_secret: str | None = None,
+    security_token: str | None = None,
     sandbox_api_key: str | None = None,
     sandbox_base_url: str | None = None,
     sandbox_domain: str | None = None,
-    access_key_id: str | None = None,
-    access_key_secret: str | None = None,
-) -> Sandbox
+    region: str | None = None,
+    provider: str | Provider | None = None,
+    provider_options: dict[str, Any] | None = None,
+) -> Sandbox:
 ```
 
 Connect to an existing sandbox.
@@ -95,11 +110,16 @@ async def list(
     status: SandboxStatus | None = None,
     limit: int = 100,
     offset: int = 0,
-    sandbox_api_key: str | None = None,
-    sandbox_base_url: str | None = None,
     access_key_id: str | None = None,
     access_key_secret: str | None = None,
-) -> list[SandboxInfo]
+    security_token: str | None = None,
+    sandbox_api_key: str | None = None,
+    sandbox_base_url: str | None = None,
+    sandbox_domain: str | None = None,
+    region: str | None = None,
+    provider: str | Provider | None = None,
+    provider_options: dict[str, Any] | None = None,
+) -> list[SandboxInfo]:
 ```
 
 List sandboxes (class method, no instance required).
@@ -116,11 +136,15 @@ async def kill_by_id(
     cls,
     sandbox_id: str,
     *,
-    sandbox_api_key: str | None = None,
-    sandbox_base_url: str | None = None,
     access_key_id: str | None = None,
     access_key_secret: str | None = None,
-) -> None
+    security_token: str | None = None,
+    sandbox_api_key: str | None = None,
+    sandbox_base_url: str | None = None,
+    region: str | None = None,
+    provider: str | Provider | None = None,
+    provider_options: dict[str, Any] | None = None,
+) -> None:
 ```
 
 Destroy a sandbox by ID (class method, no prior connection required).
@@ -211,7 +235,7 @@ async def run(
 ) -> Any
 ```
 
-Call a named command registered on the sandbox's SandboxServer: `sandbox.run("name", x=1)` is `POST /commands/name` with `kwargs` as the JSON body. This is the only way to call a named command. For a raw shell command use `sandbox.commands.run(cmd, ...)`.
+Call a named command registered on the sandbox's SandboxServer: `sandbox.run("name", x=1)` is `POST /commands/name` with `kwargs` as the JSON body. For an explicit argument object, use `sandbox.invoke(name, arguments, request_timeout=...)`. For a raw shell command use `sandbox.commands.run(cmd, ...)`.
 
 **Returns**: The command's result value
 
@@ -343,8 +367,8 @@ you want policy-scoped, scope-checked access, or need endpoints envd lacks (`fil
 
 | Member | Signature | Description |
 |--------|-----------|-------------|
-| `ServerClient()` | `(base_url, *, token=None, headers=None, pty_url=None, timeout=30.0, http_client=None, expires_at=None)` | `token` is sent as `Authorization: Bearer`; `headers` carry the gateway `X-Access-Token` |
-| `ProviderSandbox.application_client()` | `async (port=9000, *, token=None, timeout=30.0) -> ServerClient` | Resolves the provider application gateway descriptor, preserves its prefix/query and gateway headers, and uses a separate application token. Recommended across providers |
+| `ServerClient()` | `(base_url, *, token=None, headers=None, pty_url=None, timeout=30.0, http_client=None, expires_at=None)` | `token` is sent as `Authorization: Bearer`; `headers` carry the provider gateway credentials |
+| `ProviderSandbox.application_client()` | `async (port=9000, *, token=None, traffic_access_token=None, timeout=30.0) -> ServerClient` | Resolves the provider application gateway descriptor, preserves its prefix/query and gateway headers, and uses a separate application token. Recommended across providers |
 | `Sandbox.server` | `cached_property -> ServerClient` | Client for port 9000. Native local URL helper; use application_client for a provider gateway descriptor |
 | `Sandbox.server_at()` | `(port=9000, *, token=None, pty_port=9001, timeout=30.0) -> ServerClient` | A fresh client. Native local URL helper; use application_client for a provider gateway descriptor; `token` is `ABX_SERVER_TOKEN` |
 | `Sandbox.start_server()` | `async (*, port=9000, commands=None, policy=None, token=None, env=None, command=None, wait=True, timeout=30.0) -> ServerClient` | Starts `agent-sandbox-server serve` as a background envd command and polls `/health`; `policy` is a dict (`ABX_SERVER_POLICY`) or a preset name; raises `ConnectionError_` on timeout |
@@ -408,6 +432,9 @@ class SandboxStatus(str, Enum):
     CREATING = "creating"
     RUNNING  = "running"
     PAUSED   = "paused"
+    PAUSING  = "pausing"
+    RESUMING = "resuming"
+    SNAPSHOTTING = "snapshotting"
     STOPPING = "stopping"
     STOPPED  = "stopped"
     ERROR    = "error"
@@ -480,3 +507,9 @@ class SandboxStatus(str, Enum):
 All exceptions inherit from `SandboxError` and carry `code`, `message`, `suggestion`, and `docs_url` attributes.
 
 See [Error Codes Reference](./error-codes.md) for the complete error code listing.
+
+## Explicit application invocation and Express options
+
+`ServerClient.commands.invoke(name, arguments, /, *, request_timeout=None)` and `ProviderSandbox.invoke(name, arguments, /, *, server_port=9000, application_token=None, request_timeout=None)` send `arguments` as the command JSON body. Both expose `invoke_sync`; legacy `run` keeps its keyword contract. Set `application_token` to the application's `ABX_SERVER_TOKEN` when its service requires authentication.
+
+Provider lifecycle methods that accept cloud AccessKeys also accept `security_token`; the environment name is `ALIBABA_CLOUD_SECURITY_TOKEN`. `ProviderSandbox.create` additionally accepts `network` and `allow_internet_access`. `ProviderSandbox.connect(..., traffic_access_token=...)` retains GET-only attach semantics, and `application_client(..., traffic_access_token=...)` provides a per-client gateway credential override. See [provider commands](../guide/provider-commands.md) and [authentication](../guide/authentication.md).

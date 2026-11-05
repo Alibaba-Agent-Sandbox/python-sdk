@@ -37,4 +37,8 @@ class WirePortAccess:
         return {}
 
     def get_server_headers(self) -> dict[str, str]:
-        return self.get_access_headers() if self._server_auth else {}
+        if self._server_auth:
+            return self.get_access_headers()
+        if self._context.traffic_access_token:
+            return {"e2b-traffic-access-token": self._context.traffic_access_token}
+        return {}

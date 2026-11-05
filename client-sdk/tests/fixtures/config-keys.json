@@ -483,6 +483,28 @@
       "choices": [],
       "group": "Alibaba Cloud credentials",
       "description": "Alibaba Cloud AccessKey secret"
+    },
+    {
+      "key": "security_token",
+      "scope": "alicloud-express",
+      "type": "str",
+      "secret": true,
+      "credential": true,
+      "settable": true,
+      "env": "ALIBABA_CLOUD_SECURITY_TOKEN",
+      "aliases": [],
+      "env_names": [
+        "ALIBABA_CLOUD_SECURITY_TOKEN"
+      ],
+      "toml_section": null,
+      "storage": {
+        "file": "env",
+        "name": "ALIBABA_CLOUD_SECURITY_TOKEN"
+      },
+      "default": null,
+      "choices": [],
+      "group": "Alibaba Cloud credentials",
+      "description": "Alibaba Cloud STS security token (with temporary AccessKey credentials)"
     }
   ]
 }

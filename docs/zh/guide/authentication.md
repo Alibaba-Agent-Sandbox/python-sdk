@@ -166,3 +166,24 @@ envd 认证需要以下 HTTP 头（已由 SDK 自动设置）：
 ## 相关：abx CLI
 
 通过命令行设置凭证（`abx config set` / `list` / `get`、`abx create --env`）的说明位于 CLI 仓库：[CLI 认证配置](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authentication.md)。
+
+## STS 临时身份与私有应用访问
+
+使用 STS 时，从 RAM 角色或 CI 凭据提供方获取配套的临时 AccessKey ID、AccessKey Secret 和 SecurityToken，并在同一有效期内设置 `ALICLOUD_ACCESS_KEY_ID`、`ALICLOUD_ACCESS_KEY_SECRET`、`ALIBABA_CLOUD_SECURITY_TOKEN`。Python 规范覆盖参数为 `security_token`，属于提供方秘密配置。原生管理调用会传递完整三元组；SDK 不负责获取或刷新 STS 凭据。
+
+极速版的平台 API、envd、公网应用流量和应用服务分别使用不同凭据。公网流量鉴权使用 `e2b-traffic-access-token`，`ABX_SERVER_TOKEN` 仍是应用服务的 Bearer token。新建的 `ProviderSandbox` 在内存中保留 traffic token。连接已有私有实例时，显式传入原创建响应或一次明确的标准客户端 connect 返回的 token：
+
+```python
+from agent_sandbox import ProviderSandbox
+
+sandbox = await ProviderSandbox.connect(
+    sandbox_id, traffic_access_token=traffic_token,
+)
+try:
+    async with await sandbox.application_client(9000, token=application_token) as client:
+        print(await client.health())
+finally:
+    await sandbox.close()
+```
+
+`ProviderSandbox.connect` 只读取实例信息，不恢复沙箱或延长生命周期；`application_client` 也不会隐式连接或续期。也可仅为一个应用客户端向 `application_client` 显式传入 `traffic_access_token`。GET 信息接口无法取回该 token；它属于秘密，不进入模型默认序列化结果。

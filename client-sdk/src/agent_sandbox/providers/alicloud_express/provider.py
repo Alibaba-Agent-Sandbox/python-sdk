@@ -53,6 +53,7 @@ class AlicloudExpressProvider(Provider):
         {
             "sandbox.lifecycle",
             "sandbox.timeout",
+            "sandbox.pause",
             "exec.run",
             "exec.stream",
             "process.manage",
@@ -73,6 +74,8 @@ class AlicloudExpressProvider(Provider):
             "sandbox.list",
             "sandbox.delete",
             "sandbox.timeout",
+            "sandbox.pause",
+            "sandbox.resume",
             "exec.run",
             "exec.stream",
             "files.read",
@@ -103,12 +106,15 @@ class AlicloudExpressProvider(Provider):
 
         return standard_api_key()
 
-    create_options = frozenset({"volume_mounts"})
+    create_options = frozenset({"volume_mounts", "network"})
 
     def session_protocols(self, http: Any) -> dict[str, Any]:
+        from agent_sandbox.providers.alicloud_express.sandbox import SandboxProtocol
         from agent_sandbox.providers.shared.e2b.session import session_protocols
 
-        return session_protocols(http, provider_id=self.id)
+        protocols = session_protocols(http, provider_id=self.id)
+        protocols["sandbox_protocol"] = SandboxProtocol(http)
+        return protocols
 
     def create_port_access(self, context: PortContext, protocol: Any = None) -> PortAccess:
         from agent_sandbox.providers.shared.e2b.ports import WirePortAccess
@@ -167,10 +173,10 @@ class AlicloudExpressProvider(Provider):
     async def build_infra(self, config: TransportConfig) -> ProviderInfra:
         from agent_sandbox.providers.alicloud_express.auth import create_auth_provider
         from agent_sandbox.providers.alicloud_express.managed_api_key import resolve_sandbox_api_key
+        from agent_sandbox.providers.alicloud_express.sandbox import SandboxProtocol
         from agent_sandbox.providers.shared.e2b.code_interpreter import UnsupportedCodeProtocol
         from agent_sandbox.providers.shared.e2b.filesystem import FilesystemProtocol
         from agent_sandbox.providers.shared.e2b.process import ProcessProtocol
-        from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol
         from agent_sandbox.transport.http import HttpClient
 
         auth = create_auth_provider(
