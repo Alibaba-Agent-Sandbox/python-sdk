@@ -1,5 +1,7 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+- [Provider runtime setup](notes/proposed/process/2026-11-05-provider-runtime-setup.md) · [verification](evidence/verify/2026-11-05-provider-runtime-setup.md).
+
 - [Defensive complexity cleanup](notes/implemented/architecture/2026-10-29-defensive-complexity-cleanup.md) · [verification](evidence/verify/2026-10-29-defensive-complexity-cleanup.md).
 
 ## Skill storage/state acceptance — 2026-10-26

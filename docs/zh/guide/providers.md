@@ -4,7 +4,7 @@
 
 本指南描述异步 `ProviderSandbox` 扩展；根级 `Sandbox` 和 `AsyncSandbox` 遵循固定版本的标准迁移契约，详见[从 E2B 迁移](migrate-from-e2b.md)。
 
-> **说明：** 本页的 `abx provider ...` 命令由 `cli` 仓库中的 Node.js CLI 提供。只用 Python 的用户可以用 `python -m agent_sandbox.providers ...` 完成同样的操作。两者使用相同的安装目录、相同的回执和相同的目录树摘要。
+> **说明：** `abx provider ...` 命令来自独立的 [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox)。Python 用户可用 `python -m agent_sandbox.providers ...` 管理提供方；Node 提供方仍需本机 `abx` 引擎。两个管理入口共用安装目录、回执和目录树摘要。
 
 **提供方**就是一个沙箱后端。SDK 和 CLI 只内置 `alicloud-express`。其余提供方用 `python -m agent_sandbox.providers install registry:<id> --yes` 安装，索引是 `https://registry.agent-sandbox.cn/providers/index.json`。启动时会在后台对照这份索引检查更新，结果写到 `~/.abx/providers/updates.json`。`ABX_PROVIDER_UPDATE_CHECK=0` 关掉检查。`ABX_PROVIDER_REGISTRY` 可以改索引地址。官网是 <https://www.agent-sandbox.cn>。提供方注册站是 <https://registry.agent-sandbox.cn>。
 
@@ -16,7 +16,7 @@
 | `e2b` | E2B | 目录插件，`node`；安装后 CLI 和 Python ProviderSandbox 可用 | 否 |
 | `opensandbox` | OpenSandbox | 目录插件，`node`（ES 模块，EPP 方法在宿主进程内）；安装后 CLI 和 Python ProviderSandbox 可用 | 否 |
 
-除默认项以外的四个 id 在 `awesome-providers`，用 `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` 安装；也可用 `python -m agent_sandbox.providers install registry:<id> --yes`（`abx` 没有 `registry:` 写法）。装好之后用 `ProviderSandbox.create(provider="…")` 或 `abx --provider <id>` 选择。四个都是 `runtime.kind = "node"`（ES 模块 `provider.mjs`），只用 Node.js 写一次。CLI 在进程内加载它们。Python SDK 通过本机 Node 引擎（`abx provider engine serve`，按需启动，所以 `abx` 要在 `PATH` 里或用 `ABX_BIN` 指定）用 `EngineProvider` 访问（`engine://<provider>/<sandbox-id>`）。第三方的 `exec` 或 `rest` 清单仍在 Python 进程里运行。内置的 `alicloud-express` 是 Python 内置提供方。没有可安装的 `python` 类型。见 CLI 的[引擎 HTTP API](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/engine-api.md)。
+除默认项以外的四个 id 在 `awesome-providers`，用 `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` 安装；也可用 `python -m agent_sandbox.providers install registry:<id> --yes`（`abx` 没有 `registry:` 写法）。装好之后用 `ProviderSandbox.create(provider="…")` 或 `abx --provider <id>` 选择。四个都是 `runtime.kind = "node"`（ES 模块 `provider.mjs`），只用 Node.js 写一次。CLI 在进程内加载它们。Python SDK 通过本机 Node 引擎（`abx provider engine serve`，按需启动，所以 `abx` 要在 `PATH` 里或用 `ABX_BIN` 指定）用 `EngineProvider` 访问（`engine://<provider>/<sandbox-id>`）。第三方 `rest` 提供方使用 Python HTTP 传输；`exec` 提供方由 Python 适配器启动清单中声明的可执行程序。内置的 `alicloud-express` 是 Python 内置提供方。没有可安装的 `python` 类型。见 CLI 的[引擎 HTTP API](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/engine-api.md)。
 
 | Id | 怎么用 |
 |---|---|
@@ -28,6 +28,64 @@
 让代理写一个新的提供方插件，用技能 `agent-sandbox-provider`（`agent-sandbox-provider/SKILL.md`）。
 
 ---
+
+## 环境要求与快速安装
+
+Python 使用 OpenSandbox 等目录中的 Node 提供方时，需要 **Python 3.10+，以及带 Node 运行时的 `abx` 引擎**。引擎安装方式二选一：
+
+| 方式 | 客户端环境 | 适用情况 |
+| --- | --- | --- |
+| 独立 `abx` 可执行文件（推荐） | Python 3.10+，以及下面列出的安装工具 | `abx` 内置 Node，无须单独安装 Node.js 或 npm |
+| npm CLI 包 | Python 3.10+、Node.js 22+ 和 npm | 本机已经管理 Node.js 环境 |
+
+独立安装器支持 macOS、Linux 的 x64/arm64，以及 Windows x64。它下载对应平台的发行文件并校验公开的 SHA-256。macOS/Linux 需要 shell、`curl`，以及 `sha256sum` 或 `shasum`：
+
+```bash
+curl -fsSL https://www.agent-sandbox.cn/install.sh | sh
+```
+
+Windows 在 PowerShell 中运行：
+
+```powershell
+irm https://raw.githubusercontent.com/Alibaba-Agent-Sandbox/agent-sandbox/main/install.ps1 | iex
+```
+
+按安装器提示配置 PATH，再运行 `abx --version`。如果可执行文件不放在 PATH 中，在运行 Python 前用 `ABX_BIN` 指定其路径。固定版本、手动下载和离线安装见 [CLI 安装指南](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/zh/guide/binary-installation.md)。选择 npm 方式时，使用 `npm install -g @agent-sandbox/cli@0.5.8 --registry=https://registry.npmjs.org` 安装当前公开 CLI，无须再运行独立安装器。
+
+首次安装公开 Python SDK 和提供方：
+
+```bash
+python -m pip install "agent-sandbox-client==0.4.0a6"
+python -m agent_sandbox.providers install registry:opensandbox --yes
+```
+
+`registry:` 安装下载并校验提供方归档，**不需要 Git**；只有 Git 源安装需要 Git。`--yes` 表示同意安装提供方，默认验证可能初始化其代码。`pip install agent-sandbox-client` 不会安装 `abx`、Node.js 或目录插件。目前没有把它们合并为一次 pip 操作的已发布 `[opensandbox]` extra。
+
+这些步骤准备的是**客户端**，不会部署或启动 OpenSandbox 服务。请先单独部署或启动服务，并确保 Python 进程可访问；在容器中，`127.0.0.1` 指容器自身，不是宿主机。构建源码模板还可能需要 Docker、镜像仓库访问和构建凭据；连接已有沙箱进行普通操作不需要这套构建环境。
+
+## Node 提供方的调用原理与性能影响
+
+```text
+Python ProviderSandbox
+  -> 本机 abx 引擎（HTTP / SSE / WebSocket）
+  -> 引擎内加载的 Node 提供方
+  -> 提供方后端
+```
+
+SDK 发现正在运行的引擎，或按需启动一个，安装验证时也可能启动。后续调用复用引擎，不会每次执行命令或操作文件都重新启动 Node。`close()` 关闭本地 SDK 客户端，不停止共享引擎。CLI 可在自身 Node 进程内加载同一份提供方。普通的标准 Express SDK 调用使用 Python 原生路径，不需要这层 Node 提供方转发。
+
+与 Python 提供方直接访问同一后端相比，这条路径增加本机通信、编解码、分发，以及 Node 进程的内存占用。引擎尚未运行时，还会有启动和插件加载时间。这些开销取决于数据大小、操作、机器和并发：
+
+| 工作负载 | 需要考虑的影响 |
+| --- | --- |
+| 创建沙箱、拉镜像、长时间命令 | 后端耗时可能占主要部分，本机开销在总耗时中可能较小 |
+| 大量短命令、小文件操作 | 额外往返可能占据明显比例，连续串行调用还会累积 |
+| 大响应或文件传输 | 转发与提供方自身的编码、拷贝可能影响内存和吞吐 |
+| 流式调用或高并发 | 应分别测量首个事件时间、事件传递和饱和情况，不能只看缓冲式调用 |
+
+没有固定毫秒数或百分比的开销保证。简化的本机转发探针不能代表完整 SDK/提供方的性能差值或真实文件吞吐。评估自己的业务时，使用相同后端、操作和数据，分别通过直连客户端与 `ProviderSandbox` 调用，并复用连接；将冷启动与稳定运行后的 P50/P95 延迟、吞吐和内存分开记录。若测得额外延迟为 `delta`、直连延迟为 `T`，延迟增幅为 `delta / T`，不能把该比例套到其他工作负载。
+
+独立可执行文件简化了环境准备，但仍然运行 Node 引擎并经过同一条转发路径，不会消除这笔运行开销。
 
 ## 内容更新与本机验证
 
@@ -112,11 +170,11 @@ abx provider update my-cloud --check
 abx provider uninstall my-cloud
 ```
 
-不用 CLI 时：
+使用 Python 管理入口时（Node 提供方仍需上面的引擎）：
 
 ```bash
 python -m agent_sandbox.providers install ./my-provider
-python -m agent_sandbox.providers list --json
+python -m agent_sandbox.providers --json list
 python -m agent_sandbox.providers update my-cloud --check
 python -m agent_sandbox.providers doctor my-cloud
 python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需要 pytest）
@@ -206,32 +264,42 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 
 ### OpenSandbox
 
-OpenSandbox 是目录插件，不在这个包里。先安装并完成平台配置：
+按[快速安装](#环境要求与快速安装)准备客户端、引擎和提供方。OpenSandbox 默认地址是 `http://127.0.0.1:8080`，**使用该地址时无须再 export 一遍**。服务地址不同时，可用 `ABX_OPENSANDBOX_BASE_URL` 临时覆盖，或保存到 `~/.abx/config.toml` 的 `[providers.opensandbox]`：
 
-```bash
-python -m agent_sandbox.providers install registry:opensandbox --yes
+```toml
+[providers.opensandbox]
+base_url = "https://opensandbox.example.com"
 ```
 
-按照[工作流指南](template-workflows.md)用 CLI 启动模板，将下面的 `SANDBOX_ID` 替换为返回的标识。本例连接已有沙箱；`close()` 释放本地客户端，任务结束后按启动指南销毁沙箱及本次构建产物。
+如果服务启用了鉴权，向配置该 OpenSandbox 服务的运维人员取得 API Key，再设置 `ABX_OPENSANDBOX_API_KEY`（也支持原生别名 `OPEN_SANDBOX_API_KEY`）。未启用鉴权的本机服务不需要 API Key。这是 OpenSandbox 服务凭据，与阿里云 Sandbox API Key、沙箱应用使用的 `ABX_SERVER_TOKEN` 分开。完整配置见提供方的[配置参考](https://github.com/Alibaba-Agent-Sandbox/awesome-providers/blob/main/opensandbox/README.zh-CN.md#配置)。
+
+创建沙箱、执行命令、读写文件并删除沙箱：
 
 ```python
 import asyncio
 from agent_sandbox import ProviderSandbox
 
 async def main():
-    sb = await ProviderSandbox.connect("SANDBOX_ID", provider="opensandbox")
+    sb = await ProviderSandbox.create(
+        provider="opensandbox", template="base", timeout=120,
+    )
     try:
         proc = await sb.commands.run("echo hello")
         print(proc.stdout)
         await sb.files.write("/tmp/note.txt", "hello")
         print(await sb.files.read("/tmp/note.txt"))
     finally:
-        await sb.close()
+        try:
+            await sb.kill()
+        finally:
+            await sb.close()
 
 asyncio.run(main())
 ```
 
-能力对照在 [OpenSandbox 提供方](../design/provider-opensandbox-mapping.md)。同一份说明在 `awesome-providers/opensandbox/docs/README.md`。
+`base` 选择提供方的默认镜像（未修改配置时为 `python:3.12-slim`），服务端需要能拉取该镜像。使用已有沙箱时，改用 `ProviderSandbox.connect("SANDBOX_ID", provider="opensandbox")`；仅调用 `close()` 会释放本地连接，保留该沙箱。模板应用按[工作流指南](template-workflows.md)使用，并清理自己创建的构建产物。
+
+可运行 `python -m agent_sandbox.providers doctor opensandbox` 检查本机提供方初始化。握手成功不代表服务鉴权、命令执行或文件访问通过；上面的实际操作才会经过这些路径。各项能力和限制见 [OpenSandbox 提供方文档](https://github.com/Alibaba-Agent-Sandbox/awesome-providers/blob/main/opensandbox/README.zh-CN.md)。
 
 ### 扩展能力
 

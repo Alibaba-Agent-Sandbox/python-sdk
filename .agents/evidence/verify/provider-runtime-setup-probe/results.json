@@ -1,0 +1,63 @@
+{
+  "scope": "synthetic loopback backend; Python httpx direct vs Python httpx via minimal Node HTTP JSON forwarding bridge; not abx SDK/provider benchmark",
+  "platform": "Linux-5.10.134-013.10.1.kangaroo.al8.x86_64-x86_64-with-glibc2.41",
+  "node": "v22.22.2",
+  "httpx": "0.28.1",
+  "bridge_idle_rss_mib": 45.5,
+  "cases": [
+    {
+      "response_stdout_bytes": 1024,
+      "direct": {
+        "n": 400,
+        "median_ms": 4.6841,
+        "p95_ms": 7.1524,
+        "mean_ms": 5.1689
+      },
+      "via_bridge": {
+        "n": 400,
+        "median_ms": 8.6018,
+        "p95_ms": 13.891,
+        "mean_ms": 9.2435
+      },
+      "median_delta_ms": 3.9178
+    },
+    {
+      "response_stdout_bytes": 65536,
+      "direct": {
+        "n": 150,
+        "median_ms": 4.7061,
+        "p95_ms": 7.3077,
+        "mean_ms": 5.0222
+      },
+      "via_bridge": {
+        "n": 150,
+        "median_ms": 9.0484,
+        "p95_ms": 12.863,
+        "mean_ms": 9.5751
+      },
+      "median_delta_ms": 4.3423
+    },
+    {
+      "response_stdout_bytes": 1048576,
+      "direct": {
+        "n": 40,
+        "median_ms": 10.5209,
+        "p95_ms": 12.8941,
+        "mean_ms": 10.7809
+      },
+      "via_bridge": {
+        "n": 40,
+        "median_ms": 23.258,
+        "p95_ms": 30.0417,
+        "mean_ms": 24.0419
+      },
+      "median_delta_ms": 12.7371
+    }
+  ],
+  "node_minimal_start_and_exit": {
+    "n": 12,
+    "median_ms": 22.5419,
+    "p95_ms": 25.1904,
+    "mean_ms": 22.2548
+  }
+}

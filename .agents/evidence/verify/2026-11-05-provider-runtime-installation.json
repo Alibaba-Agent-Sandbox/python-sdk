@@ -1,0 +1,117 @@
+{
+  "platform": "Linux-5.10.134-013.10.1.kangaroo.al8.x86_64-x86_64-with-glibc2.41",
+  "python": "Python 3.13.13",
+  "external_tools_absent": {
+    "node": true,
+    "npm": true,
+    "git": true,
+    "abx": true
+  },
+  "steps": [
+    {
+      "name": "official_binary_installer",
+      "argv": [
+        "/bin/sh",
+        "${EVIDENCE}/install.sh"
+      ],
+      "exit": 0,
+      "seconds": 2.253,
+      "stdout": "Installing abx 0.5.8 (linux-x64) to ${EVIDENCE}/installed/bin\nDownloading https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/releases/download/v0.5.8/abx-0.5.8-linux-x64\nChecksum verified.\nInstalled ${EVIDENCE}/installed/bin/abx\nabx --version\nabx, version 0.5.8\n",
+      "stderr": "warning: ${EVIDENCE}/installed/bin is not on PATH.\nAdd this line to your shell profile (~/.profile, ~/.bashrc, or ~/.zshrc), then open a new terminal:\nexport PATH=\"${EVIDENCE}/installed/bin:$PATH\"\n"
+    },
+    {
+      "name": "binary_version",
+      "argv": [
+        "${EVIDENCE}/installed/bin/abx",
+        "--version"
+      ],
+      "exit": 0,
+      "seconds": 0.317,
+      "stdout": "abx, version 0.5.8\n",
+      "stderr": ""
+    },
+    {
+      "name": "python_sdk_version",
+      "argv": [
+        "${EVIDENCE}/venv/bin/python",
+        "-c",
+        "from importlib.metadata import version;print(version('agent-sandbox-client'))"
+      ],
+      "exit": 0,
+      "seconds": 0.053,
+      "stdout": "0.4.0a6\n",
+      "stderr": ""
+    },
+    {
+      "name": "provider_install",
+      "argv": [
+        "${EVIDENCE}/venv/bin/python",
+        "-m",
+        "agent_sandbox.providers",
+        "install",
+        "registry:opensandbox",
+        "--yes"
+      ],
+      "exit": 0,
+      "seconds": 1.711,
+      "stdout": "Installed opensandbox 0.5.1\n",
+      "stderr": ""
+    },
+    {
+      "name": "doctor_first",
+      "argv": [
+        "${EVIDENCE}/venv/bin/python",
+        "-m",
+        "agent_sandbox.providers",
+        "--json",
+        "doctor",
+        "opensandbox"
+      ],
+      "exit": 0,
+      "seconds": 0.29,
+      "stdout": "{\n  \"id\": \"opensandbox\",\n  \"ok\": true,\n  \"checks\": [\n    {\n      \"name\": \"installed\",\n      \"ok\": true,\n      \"detail\": \"OpenSandbox 0.5.1\"\n    },\n    {\n      \"name\": \"integrity\",\n      \"ok\": true,\n      \"detail\": \"f22999f947a5155e\"\n    },\n    {\n      \"name\": \"config\",\n      \"ok\": true,\n      \"detail\": \"\"\n    },\n    {\n      \"name\": \"handshake\",\n      \"ok\": true,\n      \"detail\": \"\"\n    }\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "name": "doctor_reuse",
+      "argv": [
+        "${EVIDENCE}/venv/bin/python",
+        "-m",
+        "agent_sandbox.providers",
+        "--json",
+        "doctor",
+        "opensandbox"
+      ],
+      "exit": 0,
+      "seconds": 0.293,
+      "stdout": "{\n  \"id\": \"opensandbox\",\n  \"ok\": true,\n  \"checks\": [\n    {\n      \"name\": \"installed\",\n      \"ok\": true,\n      \"detail\": \"OpenSandbox 0.5.1\"\n    },\n    {\n      \"name\": \"integrity\",\n      \"ok\": true,\n      \"detail\": \"f22999f947a5155e\"\n    },\n    {\n      \"name\": \"config\",\n      \"ok\": true,\n      \"detail\": \"\"\n    },\n    {\n      \"name\": \"handshake\",\n      \"ok\": true,\n      \"detail\": \"\"\n    }\n  ]\n}\n",
+      "stderr": ""
+    }
+  ],
+  "binary_sha256": "69a55b0486acb1c8dcb85ef1277984a800ba946778c3cec5b009691a32212802",
+  "official_sha256": "69a55b0486acb1c8dcb85ef1277984a800ba946778c3cec5b009691a32212802",
+  "engine_after_install": {
+    "record_exists": true,
+    "pid_alive": true,
+    "protocol": "abx-engine/1",
+    "version": "0.5.8"
+  },
+  "engine_reused_same_pid": true,
+  "result": "PASS",
+  "owned_engine_stopped": true,
+  "cloud_resources_created": false,
+  "website_installer": {
+    "status": 200,
+    "final_url": "https://www.agent-sandbox.cn/install.sh",
+    "bytes": 8230,
+    "sha256": "638b9cf103f22a1e97e303eb2b3c0400cc28a0f1aa19a4e68dfa81f2f92eb3ff",
+    "same_as_fixed_v0_5_8_script": false,
+    "execution_exit": 0,
+    "stdout": "Installing abx 0.5.8 (linux-x64) to ${EVIDENCE}/website-installed/bin\nDownloading https://www.agent-sandbox.cn/releases/download/v0.5.8/abx-0.5.8-linux-x64\nChecksum verified.\nInstalled ${EVIDENCE}/website-installed/bin/abx\nabx --version\nabx, version 0.5.8\n",
+    "stderr": "warning: ${EVIDENCE}/website-installed/bin is not on PATH.\nAdd this line to your shell profile (~/.profile, ~/.bashrc, or ~/.zshrc), then open a new terminal:\nexport PATH=\"${EVIDENCE}/website-installed/bin:$PATH\"\n",
+    "binary_sha256": "69a55b0486acb1c8dcb85ef1277984a800ba946778c3cec5b009691a32212802",
+    "matches_official_release": true
+  },
+  "uv_version": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+  "owned_engine_record_and_log_removed": true
+}

@@ -4,7 +4,7 @@ Workflow support uses exact consumer operations; see [template workflows](templa
 
 This guide describes asynchronous `ProviderSandbox` provider extensions. Root `Sandbox` and `AsyncSandbox` follow the pinned standard migration contract; see [Migrate from E2B](migrate-from-e2b.md).
 
-> **Note:** The `abx provider ...` commands on this page are provided by the Node.js CLI in the `cli` repository. Python-only users get the same operations from `python -m agent_sandbox.providers ...`. Both use the same install directory, the same receipts and the same tree digest.
+> **Note:** The `abx provider ...` commands come from the separate [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox). Python users can manage providers with `python -m agent_sandbox.providers ...`; Node providers still need the local `abx` engine. Both management entries share the install directory, receipts and tree digest.
 
 A **provider** is a sandbox backend. The SDK and the CLI ship only `alicloud-express`. The others install with `python -m agent_sandbox.providers install registry:<id> --yes` from `https://registry.agent-sandbox.cn/providers/index.json`. A background check compares recorded archive digests and writes content-change notices to `~/.abx/providers/updates.json`. `ABX_PROVIDER_UPDATE_CHECK=0` turns the check off. `ABX_PROVIDER_REGISTRY` changes the index URL. The official site is <https://www.agent-sandbox.cn>. The registry website is <https://registry.agent-sandbox.cn>.
 
@@ -16,7 +16,7 @@ A **provider** is a sandbox backend. The SDK and the CLI ship only `alicloud-exp
 | `e2b` | E2B | catalog plugin, `node`; CLI and Python ProviderSandbox after install | no |
 | `opensandbox` | OpenSandbox | catalog plugin, `node` (ES module, EPP methods run in the host process); CLI and Python ProviderSandbox after install | no |
 
-The four non-default ids live in `awesome-providers`. Install with `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` or `python -m agent_sandbox.providers install registry:<id> --yes` (the `abx` CLI has no `registry:` form), then select with `ProviderSandbox.create(provider="…")` or `abx --provider <id>`. All four are `runtime.kind = "node"` (an ES module, `provider.mjs`), written once in Node.js. The CLI loads them in-process. The Python SDK reaches them through the local Node engine (`abx provider engine serve`, started on demand, so `abx` must be on `PATH` or in `ABX_BIN`) using `EngineProvider` (`engine://<provider>/<sandbox-id>`). A third-party `exec` or `rest` manifest still runs in the Python process. The built-in `alicloud-express` is the Python builtin provider. There is no installable `python` kind. See the CLI's [Engine HTTP API](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md).
+The four non-default ids live in `awesome-providers`. Install with `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` or `python -m agent_sandbox.providers install registry:<id> --yes` (the `abx` CLI has no `registry:` form), then select with `ProviderSandbox.create(provider="…")` or `abx --provider <id>`. All four are `runtime.kind = "node"` (an ES module, `provider.mjs`), written once in Node.js. The CLI loads them in-process. The Python SDK reaches them through the local Node engine (`abx provider engine serve`, started on demand, so `abx` must be on `PATH` or in `ABX_BIN`) using `EngineProvider` (`engine://<provider>/<sandbox-id>`). A third-party `rest` provider uses Python HTTP transport; an `exec` provider starts the executable declared in its manifest through the Python adapter. The built-in `alicloud-express` is the Python builtin provider. There is no installable `python` kind. See the CLI's [Engine HTTP API](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md).
 
 | Id | How to use it |
 |---|---|
@@ -28,6 +28,64 @@ The four non-default ids live in `awesome-providers`. Install with `abx provider
 A coding agent that is adding a provider loads the `agent-sandbox-provider` skill (`agent-sandbox-provider/SKILL.md`).
 
 ---
+
+## Runtime requirements and quick installation
+
+Using OpenSandbox or another catalog Node provider from Python requires **Python 3.10+ and an `abx` engine with a Node runtime**. Choose one engine installation method:
+
+| Method | Client environment | When to use it |
+| --- | --- | --- |
+| Standalone `abx` executable (recommended) | Python 3.10+; the installer tools below | Node is embedded in `abx`; no separate Node.js or npm installation is needed |
+| npm CLI package | Python 3.10+, Node.js 22+ and npm | You already manage Node.js on this machine |
+
+The standalone installer supports macOS and Linux on x64/arm64, and Windows on x64. It downloads the release for your platform and verifies its published SHA-256. On macOS/Linux, use a shell, `curl` and either `sha256sum` or `shasum`:
+
+```bash
+curl -fsSL https://www.agent-sandbox.cn/install.sh | sh
+```
+
+On Windows, run the equivalent in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/Alibaba-Agent-Sandbox/agent-sandbox/main/install.ps1 | iex
+```
+
+Follow the installer's PATH instructions, then check `abx --version`. If you keep the executable outside PATH, set `ABX_BIN` to its path before running Python. For version selection, manual download and offline installation, see the [CLI installation guide](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md). For the npm alternative, install the current public CLI with `npm install -g @agent-sandbox/cli@0.5.8 --registry=https://registry.npmjs.org` instead of running the binary installer.
+
+Install the public Python SDK and the provider once:
+
+```bash
+python -m pip install "agent-sandbox-client==0.4.0a6"
+python -m agent_sandbox.providers install registry:opensandbox --yes
+```
+
+`registry:` installation downloads a verified provider archive and does **not** require Git. Git is needed only for a Git-source installation. `--yes` accepts the provider installation; default verification may initialize its code. `pip install agent-sandbox-client` does not install `abx`, Node.js or a catalog provider. There is no published `[opensandbox]` extra that combines them into one pip operation.
+
+These steps prepare the **client**, not an OpenSandbox server. Deploy or start a server separately and ensure it is reachable from the Python process. In a container, `127.0.0.1` refers to that container, not its host. Source-template builds may additionally need Docker, registry access and build credentials; ordinary connections to an existing sandbox do not require that build environment.
+
+## How Node providers run and affect performance
+
+```text
+Python ProviderSandbox
+  -> local abx engine (HTTP / SSE / WebSocket)
+  -> Node provider loaded in the engine
+  -> provider backend
+```
+
+The SDK discovers a running engine or starts one on demand, including during installation verification. It reuses the engine across calls; it does not start Node for every command or file operation. `close()` closes the local SDK client, not the shared engine. The CLI can load the same provider in its own Node process. Ordinary standard Express SDK calls use their native Python path and do not require this Node-provider bridge.
+
+Compared with a Python provider that accesses the same backend directly, the bridge adds local communication, encoding/decoding, dispatch and a Node process's memory. An engine that is not running also adds startup and plugin-loading time. These costs depend on payload size, operation, machine and concurrency:
+
+| Workload | What to account for |
+| --- | --- |
+| Sandbox creation, image pulls, long commands | Backend time may dominate; the local overhead can be a small share of elapsed time |
+| Many short commands or small file operations | The extra round trip can be a material share of latency and can accumulate across sequential calls |
+| Large responses or transfers | Forwarding and provider-specific encoding/copying can affect memory and throughput |
+| Streaming or high concurrency | Measure time to first event, event delivery and saturation separately from buffered calls |
+
+There is no fixed millisecond or percentage overhead guarantee. A small synthetic loopback forwarding test does not establish the full SDK/provider performance difference or real file throughput. For your workload, compare the same backend operation and payload through a direct client and `ProviderSandbox`, reuse connections, and report cold startup separately from warm P50/P95 latency, throughput and memory. If the measured extra latency is `delta` and direct latency is `T`, the latency increase is `delta / T`; do not apply that percentage to unrelated workloads.
+
+Installing the standalone executable simplifies setup; it keeps the Node engine and the same forwarding path. It does not remove the runtime overhead.
 
 ## Content updates and local verification
 
@@ -120,11 +178,11 @@ abx provider update my-cloud --check
 abx provider uninstall my-cloud
 ```
 
-Without the CLI:
+Using the Python management entry (Node providers still need the engine above):
 
 ```bash
 python -m agent_sandbox.providers install ./my-provider
-python -m agent_sandbox.providers list --json
+python -m agent_sandbox.providers --json list
 python -m agent_sandbox.providers update my-cloud --check
 python -m agent_sandbox.providers doctor my-cloud
 python -m agent_sandbox.providers test my-cloud       # the contract suite (needs pytest)
@@ -216,32 +274,42 @@ Process execution, named commands, interpreters and PTY are different interfaces
 
 ### OpenSandbox
 
-OpenSandbox is a catalog plugin, not part of this package. Install it and configure the platform:
+Install the client, engine and provider using [quick installation](#runtime-requirements-and-quick-installation). OpenSandbox defaults to `http://127.0.0.1:8080`, so **do not export a base URL just to repeat that default**. For a different server, use `ABX_OPENSANDBOX_BASE_URL` as a temporary override or save its address under `[providers.opensandbox]` in `~/.abx/config.toml`:
 
-```bash
-python -m agent_sandbox.providers install registry:opensandbox --yes
+```toml
+[providers.opensandbox]
+base_url = "https://opensandbox.example.com"
 ```
 
-Launch a template with the CLI as described in the [workflow guide](template-workflows.md), then replace `SANDBOX_ID` below with the returned identifier. This example connects to an existing sandbox; `close()` releases the local client. Follow the launch guide to delete the sandbox and owned build artifacts when the task is finished.
+If that server enables authentication, obtain its API key from the operator who configured the OpenSandbox server and set `ABX_OPENSANDBOX_API_KEY` (the native alias `OPEN_SANDBOX_API_KEY` is also supported). A local server without authentication needs no API key. This is the OpenSandbox service credential, separate from an Alibaba Cloud Sandbox API key and the `ABX_SERVER_TOKEN` used by a sandbox application. See the provider's [configuration reference](https://github.com/Alibaba-Agent-Sandbox/awesome-providers/blob/main/opensandbox/README.md#configuration).
+
+Create a sandbox, execute a command, read/write a file and delete the sandbox:
 
 ```python
 import asyncio
 from agent_sandbox import ProviderSandbox
 
 async def main():
-    sb = await ProviderSandbox.connect("SANDBOX_ID", provider="opensandbox")
+    sb = await ProviderSandbox.create(
+        provider="opensandbox", template="base", timeout=120,
+    )
     try:
         proc = await sb.commands.run("echo hello")
         print(proc.stdout)
         await sb.files.write("/tmp/note.txt", "hello")
         print(await sb.files.read("/tmp/note.txt"))
     finally:
-        await sb.close()
+        try:
+            await sb.kill()
+        finally:
+            await sb.close()
 
 asyncio.run(main())
 ```
 
-The capability table is [OpenSandbox provider](../design/provider-opensandbox-mapping.md). The same notes are in `awesome-providers/opensandbox/docs/README.md`.
+`base` selects the provider's default image (`python:3.12-slim` unless configured otherwise); the server must be able to pull it. To use a sandbox you already created, use `ProviderSandbox.connect("SANDBOX_ID", provider="opensandbox")`; `close()` alone releases local connections and leaves that sandbox running. For template applications, follow the [workflow guide](template-workflows.md), including cleanup of owned build artifacts.
+
+Use `python -m agent_sandbox.providers doctor opensandbox` to check local provider initialization. A successful doctor handshake does not prove server authentication, command execution or file access; the operations above exercise those paths. Provider-specific support and limitations are in the [OpenSandbox provider documentation](https://github.com/Alibaba-Agent-Sandbox/awesome-providers/blob/main/opensandbox/README.md).
 
 ### Extra capabilities
 
