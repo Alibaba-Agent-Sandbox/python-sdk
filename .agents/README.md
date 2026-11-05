@@ -1,6 +1,6 @@
 # `.agents/` — engineering record of the python-sdk repository
 
-- [Express SDK completion](notes/proposed/feature/2026-11-05-express-sdk-completion.md) · [verification](evidence/verify/2026-11-05-express-sdk-completion.md).
+- [Express SDK completion](notes/implemented/feature/2026-11-05-express-sdk-completion.md) · [verification](evidence/verify/2026-11-05-express-sdk-completion.md).
 
 - [Defensive complexity cleanup](notes/implemented/architecture/2026-10-29-defensive-complexity-cleanup.md) · [verification](evidence/verify/2026-10-29-defensive-complexity-cleanup.md).
 

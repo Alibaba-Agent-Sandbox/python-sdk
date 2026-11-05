@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import copy
-import json
-import re
 from typing import Any
 
 from agent_sandbox.models.errors import ProviderConfigError
@@ -39,20 +37,11 @@ def network_create_payload(network: dict[str, Any]) -> dict[str, Any]:
     return {names[key]: copy.deepcopy(value) for key, value in network.items()}
 
 
-def network_secret_values(network: dict[str, Any] | None) -> set[str]:
-    """Find credential-bearing header values without logging or rewriting rules."""
-    secrets: set[str] = set()
-
-    def add(value: object) -> None:
-        if isinstance(value, str) and value:
-            secrets.add(value)
-            bearer = re.match(r"^Bearer\s+(.+)$", value, re.IGNORECASE)
-            if bearer:
-                secrets.add(bearer[1])
-
+def network_has_header_values(network: dict[str, Any] | None) -> bool:
+    """Identify credential-bearing rules without copying their secret values."""
     rules = network.get("rules", {}) if isinstance(network, dict) else {}
     if not isinstance(rules, dict):
-        return secrets
+        return False
     for entries in rules.values():
         if not isinstance(entries, list):
             continue
@@ -61,16 +50,6 @@ def network_secret_values(network: dict[str, Any] | None) -> set[str]:
             headers = transform.get("headers") if isinstance(transform, dict) else None
             if not isinstance(headers, dict):
                 continue
-            for name, value in headers.items():
-                add(value)
-                if str(name).lower() == "fc.sandbox.network.header-value-replacements":
-                    try:
-                        replacements = json.loads(value)
-                    except (TypeError, ValueError):
-                        continue
-                    if isinstance(replacements, list):
-                        for item in replacements:
-                            if isinstance(item, dict):
-                                add(item.get("value"))
-    # Cloud errors may reflect a JSON-escaped value rather than the literal value.
-    return secrets | {json.dumps(value, ensure_ascii=True)[1:-1] for value in secrets}
+            if any(isinstance(value, str) and value for value in headers.values()):
+                return True
+    return False

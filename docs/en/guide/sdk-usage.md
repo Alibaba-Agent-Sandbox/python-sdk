@@ -161,6 +161,8 @@ You can also use the `background=True` parameter of `run`:
 reader = await sandbox.commands.run("sleep 60", background=True)
 ```
 
+Retain and asynchronously consume the returned reader to start the execution and receive its output. For a long-running service, consume it in a task that stays alive while you use the service, and set an execution timeout long enough for that use.
+
 ### Process Management
 
 ```python

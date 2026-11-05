@@ -163,3 +163,9 @@ python e2e/provider_conditional.py --abx "$ABX_BIN" \
 `python e2e/desktop_acceptance.py --template "$E2B_DESKTOP_TEMPLATE" --output-dir NEWDIR`。
 它独立于标准及 Provider 客户端套件；真实桌面模板、私有入口、流量令牌、VNC 密码与
 接管/回放前提均由指南明确列出。
+
+## 极速版生命周期与应用验收
+
+通过 `ABX_BIN` 选择候选 CLI，配置已有的同地域 Sandbox/AccessKey 凭据后，在仓库根目录执行 `python e2e/express_api_completion.py`。脚本选择有访问权限且已就绪的二代模板，也可通过 `ABX_E2E_GEN2_TEMPLATE` 指定；只创建本轮拥有的临时沙箱，并独立确认删除。单独的应用场景默认使用 `code-interpreter-v1`，可通过 `ABX_E2E_APPLICATION_TEMPLATE` 覆盖。
+
+可选的 `ABX_E2E_MOUNTS_FILE` 指向私有结构化挂载输入文件，使用真实已有存储、角色和网络。未提供时，挂载验收明确为 BLOCKED。脚本不创建或续期管理 Key；全部成功退出 0，失败退出 1，受阻退出 2。含秘密的配置保存在私有文件中，不写入报告。

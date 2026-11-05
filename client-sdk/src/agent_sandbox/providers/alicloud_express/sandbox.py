@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from agent_sandbox.models.errors import ProviderProtocolError, SandboxCreationError
-from agent_sandbox.models.network import network_secret_values
+from agent_sandbox.models.errors import ProviderProtocolError, SandboxError
+from agent_sandbox.models.network import network_has_header_values
 from agent_sandbox.models.sandbox import SandboxStatus
 from agent_sandbox.providers.shared.e2b.sandbox import SandboxProtocol as E2bSandboxProtocol
 
@@ -20,26 +20,24 @@ class SandboxProtocol(E2bSandboxProtocol):
         self, config: SandboxConfig, *, request_timeout: float | None = None
     ) -> SandboxInfo:
         """Keep reflected network credentials out of public errors and chains."""
-        secrets = network_secret_values(config.network)
+        has_credentials = network_has_header_values(config.network)
         try:
             return await super().create(config, request_timeout=request_timeout)
-        except SandboxCreationError as error:
-            if not secrets:
+        except SandboxError as error:
+            if not has_credentials:
                 raise
 
-            def redact(value: str) -> str:
-                for secret in sorted(secrets, key=len, reverse=True):
-                    value = value.replace(secret, "[redacted]")
-                return value
-
-            safe = type(error)(
-                redact(error.message),
-                code=error.code,
-                suggestion=redact(error.suggestion),
-                docs_url=redact(error.docs_url),
-            )
             response = getattr(error.__cause__, "response", None)
             status = getattr(error, "status_code", getattr(response, "status_code", None))
+            status_text = f" (HTTP{status})" if isinstance(status, int) else ""
+            safe = type(error)(
+                f"Express sandbox creation failed{status_text}. "
+                "Network header credentials were omitted from error details.",
+                code=error.code,
+                suggestion="Check template, quota, account policy and declared network fields. "
+                "No retry was made.",
+                docs_url="",
+            )
             if isinstance(status, int):
                 safe.status_code = status  # type: ignore[attr-defined]
         # Raise after leaving the handler: even a suppressed __context__ would

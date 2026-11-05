@@ -16,6 +16,7 @@ import pytest
 from agent_sandbox.api.sandbox import Sandbox
 from agent_sandbox.api.server_client import ServerClient
 from agent_sandbox.models.errors import (
+    InvalidAPIKeyError,
     QuotaExceededError,
     SandboxCreationError,
     TemplateNotFoundError,
@@ -353,7 +354,8 @@ async def test_network_create_errors_redact_reflection_and_detach_raw_exception(
     with pytest.raises(error_type) as caught:
         await SandboxProtocol(http).create(config)
     error = caught.value
-    assert "Invalid header" in error.message
+    assert f"HTTP{status}" in error.message
+    assert "Network header credentials were omitted" in error.message
     assert getattr(error, "status_code", None) == status
     assert error.__context__ is None and error.__cause__ is None
     rendered = "".join(traceback.format_exception(error)) + repr(error.to_dict())
@@ -374,3 +376,67 @@ async def test_network_create_keeps_nonsecret_error_detail() -> None:
     with pytest.raises(SandboxCreationError, match="Unsupported instance size") as caught:
         await SandboxProtocol(http).create(SandboxConfig(network={"allow_out": []}))
     assert caught.value.__cause__ is not None
+
+
+async def test_network_authentication_failure_detaches_raw_http_request(
+    iso: Any, httpx_mock: Any
+) -> None:
+    httpx_mock.add_response(
+        method="POST",
+        url="https://api.cn-hangzhou.e2b.fc.aliyuncs.com/sandboxes",
+        status_code=401,
+        json={"message": "Rejected placeholder-network-secret"},
+    )
+    provider = AlicloudExpressProvider()
+    infra = await provider.build_infra(load_config(sandbox_api_key="placeholder-key"))
+    config = SandboxConfig(
+        network={
+            "rules": {
+                "example.invalid": [
+                    {
+                        "transform": {
+                            "headers": {"Authorization": "Bearer placeholder-network-secret"}
+                        }
+                    }
+                ]
+            }
+        }
+    )
+    try:
+        with pytest.raises(InvalidAPIKeyError) as caught:
+            await infra.sandbox_protocol.create(config)
+        assert caught.value.__context__ is None and caught.value.__cause__ is None
+        assert getattr(caught.value, "status_code", None) == 401
+        assert "placeholder-network-secret" not in "".join(traceback.format_exception(caught.value))
+    finally:
+        await infra.http_client.close()
+
+
+async def test_network_create_omits_encoded_credential_reflections(
+    iso: Any, httpx_mock: Any
+) -> None:
+    network = {
+        "rules": {
+            "example.invalid": [
+                {"transform": {"headers": {"X-Private-Key": 'placeholder-quoted-"\\-secret'}}}
+            ]
+        }
+    }
+    reflected = json.dumps(json.dumps({"request": network}))
+    httpx_mock.add_response(
+        method="POST",
+        url="https://api.cn-hangzhou.e2b.fc.aliyuncs.com/sandboxes",
+        status_code=400,
+        json={"message": reflected},
+    )
+    infra = await AlicloudExpressProvider().build_infra(
+        load_config(sandbox_api_key="placeholder-key")
+    )
+    try:
+        with pytest.raises(SandboxCreationError) as caught:
+            await infra.sandbox_protocol.create(SandboxConfig(network=network))
+        assert "placeholder-quoted" not in "".join(traceback.format_exception(caught.value))
+        assert caught.value.__context__ is None and caught.value.__cause__ is None
+        assert getattr(caught.value, "status_code", None) == 400
+    finally:
+        await infra.http_client.close()

@@ -69,6 +69,7 @@ finally:
 | 完成第一次 API 调用 | [快速开始](docs/zh/guide/getting-started.md) |
 | 查询方法与数据模型 | [API 参考](docs/zh/reference/api-reference.md) |
 | 配置凭据与端点 | [认证](docs/zh/guide/authentication.md) |
+| 调用已注册应用函数 | [显式参数与认证](docs/zh/guide/provider-commands.md) |
 | 配置文件与进程行为 | [文件与命令控制](docs/zh/guide/file-and-command-controls.md) |
 | 迁移已有 E2B 代码 | [迁移指南](docs/zh/guide/migrate-from-e2b.md) |
 | 处理错误 | [故障排查](docs/zh/guide/troubleshooting.md) |

@@ -1,6 +1,6 @@
 # Decision: Complete Express session and application command interfaces
 
-Status: proposed
+Status: implemented
 
 ## Problem
 

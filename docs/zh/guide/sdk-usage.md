@@ -161,6 +161,8 @@ reader = await sandbox.commands.start("python server.py")
 reader = await sandbox.commands.run("sleep 60", background=True)
 ```
 
+保留并异步消费返回的 reader，执行才会启动并输出结果。运行长期服务时，使用持续存活的任务消费 reader，并为服务使用期设置足够的执行超时。
+
 ### 进程管理
 
 ```python
