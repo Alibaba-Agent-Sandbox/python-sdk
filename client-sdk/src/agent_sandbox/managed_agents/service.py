@@ -85,6 +85,11 @@ class ManagedService:
 
     def __init__(self, store: ManagedStore, config: ManagedConfig) -> None:
         self.store, self.config = store, config
+        if (
+            config.expected_state_id is not None
+            and config.expected_state_id != store.state_instance_id
+        ):
+            raise ValueError("Managed state identity does not match the pinned deployment")
 
     def capabilities(self) -> dict[str, Any]:
         """Publish supported operations and honest adapter/stream/lifecycle limits."""

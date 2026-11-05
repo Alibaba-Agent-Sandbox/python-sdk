@@ -111,15 +111,17 @@ FC 部署要求 PostgreSQL；SQLite 仅用于明确的本地模式。存储、�
 
 | 环境变量前缀 | 配置正文 |
 | --- | --- |
-| `ABX_MANAGED_CONFIG` | 编译后的 revision、application ID、模板、模型/adapter 白名单、`modelEnvAllowlist`、Session/存储/执行预算与保留 Worker 映射 |
+| `ABX_MANAGED_CONFIG` | 编译后的 revision、application ID、模板、模型/adapter 白名单、`modelEnvAllowlist`、Session/存储/执行预算、`expectedStateId` 与保留 Worker 映射 |
 | `ABX_MANAGED_AUTH` | `tokens: [{sha256,owner,scopes,expiresAt?}]`，scope 为 `agents:read`、`agents:write` |
 | `ABX_MANAGED_MODEL_CONFIG` | 仅 Worker 使用 `{apiKey,baseUrl,model,adapter}` |
 | `ABX_MANAGED_PROVIDER_CONFIG` | Worker/Dispatcher 使用 `{provider:"alicloud-express",apiKey,baseUrl,domain,region}` |
 
-`ABX_MANAGED_DATABASE_URL` 指向 PostgreSQL。`ABX_MANAGED_INTERNAL_TOKEN` 认证私有角色调用，
+`ABX_MANAGED_DATABASE_URL` 指向 PostgreSQL。部署会固定持久状态身份，替换为空数据库会被拒绝，已有暖实例也会校验；同一状态库的凭据与 CA 轮换仍可使用。`ABX_MANAGED_INTERNAL_TOKEN` 认证私有角色调用，
 保留旧 revision 排空期间应保持稳定。`ABX_MANAGED_FC_ENDPOINT` 指定派发所用 FC 服务主机。
 `modelEnvAllowlist` 必须明确允许 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_MODEL`。
 凭据仅交给需要它的角色，不写入镜像或公开资源。文件来源的业务认证每次重读以支持撤权，并执行可选到期限制。
 
-TLS 始终校验证书，默认采用系统信任库且不继承 HTTP 代理设置。
+沙箱私有桥接 HTTPS 客户端始终校验证书，默认采用系统信任库且不继承 HTTP 代理设置。
 私有 CA 使用 `ABX_MANAGED_TLS_CA_FILE` 指向可读 PEM CA bundle；CA 配置错误会失败，不会关闭证书校验。
+
+数据库需要私有 CA 时，为三个 Server 角色提供 `ABX_MANAGED_DATABASE_CA_PEM`。它只接受 1–8 个 PEM 证书，总大小不超过 64 KiB。运行时生成私有临时 CA 文件并显式传给 libpq，保留连接地址中的 `sslmode=verify-full`。它与沙箱 HTTPS 的 CA 配置分别使用，不会发送到沙箱。

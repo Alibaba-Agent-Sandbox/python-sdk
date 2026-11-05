@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
+import re
 import ssl
+import tempfile
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .backend import ExpressBackend
 from .dispatch import FCTaskSender, ManagedDispatcher
@@ -16,6 +19,9 @@ from .models import ManagedConfig
 from .service import ManagedService
 from .store import ManagedStore
 from .worker import ManagedWorker
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 def load_document(name: str, *, required: bool = True) -> dict[str, Any] | None:
@@ -42,11 +48,43 @@ def main() -> None:
     parser.add_argument("--local", action="store_true")
     args = parser.parse_args()
     ssl.create_default_context(cafile=os.getenv("ABX_MANAGED_TLS_CA_FILE"))
+    with database_ca_file(os.getenv("ABX_MANAGED_DATABASE_CA_PEM")) as ca_file:
+        serve(args, ca_file)
+
+
+@contextlib.contextmanager
+def database_ca_file(pem: str | None) -> Iterator[str | None]:
+    """Materialize a bounded CA-only bundle privately for libpq, never in guest config."""
+    if pem is None:
+        yield None
+        return
+    pattern = re.compile(r"-----BEGIN CERTIFICATE-----[A-Za-z0-9+/=\r\n]+-----END CERTIFICATE-----")
+    certificates = pattern.findall(pem)
+    if len(pem.encode()) > 65536 or not 1 <= len(certificates) <= 8 or pattern.sub("", pem).strip():
+        raise ValueError("Database CA must contain only 1-8 PEM certificates within 64 KiB")
+    try:
+        ssl.create_default_context().load_verify_locations(cadata=pem)
+    except ssl.SSLError:
+        raise ValueError("Database CA certificates are invalid") from None
+    with tempfile.TemporaryDirectory(prefix="abx-managed-database-ca-") as directory:
+        path = os.path.join(directory, "ca.pem")
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, "w") as stream:
+            stream.write(pem)
+        yield path
+
+
+def serve(args: argparse.Namespace, ca_file: str | None) -> None:
+    """Serve one role while its explicit database trust material remains alive."""
     compiled = load_document("ABX_MANAGED_CONFIG")
     assert compiled is not None
     config = ManagedConfig.from_dict(compiled)
     store = ManagedStore(
-        os.environ["ABX_MANAGED_DATABASE_URL"], config.application_id, local=args.local
+        os.environ["ABX_MANAGED_DATABASE_URL"],
+        config.application_id,
+        local=args.local,
+        expected_state_id=config.expected_state_id,
+        database_ca_file=ca_file,
     )
     service = ManagedService(store, config)
     auth = None

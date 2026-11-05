@@ -20,6 +20,8 @@ Template dependency: https://github.com/Alibaba-Agent-Sandbox/awesome-templates/
 Add the optional `agent_sandbox.managed_agents` client-package runtime with Gateway, Worker and
 Dispatcher entrypoints. Add the separate `agent_sandbox.server.managed` private guest listener,
 reusing `AgentRuntime` and its real Codex/Qwen parsers without changing the legacy public routes.
+The Store persists a random non-secret state identity. An expected identity must exist and match before bootstrap; every subsequent connection verifies the frozen identity. Empty databases and warm-instance backend replacement are rejected. Private database CA input is bounded to 64 KiB/eight certificates, materialized with mode 0600 and passed explicitly to libpq without lowering verify-full.
+
 PostgreSQL is authoritative for owner-scoped acceptance, ordering, public identity, publication,
 delete and cleanup. Explicit local SQLite is supported outside FC only.
 
@@ -98,3 +100,7 @@ build and fresh-install checks, and record full results independently of public 
 - Existing local Agents API behavior and required package test/CI gates remain green.
 - Real Express/model use, independent artifact consumption, cleanup and published-package template
   installation are verified before declaring final delivery or moving this decision to implemented.
+
+## Implementation
+
+The pre-commit Ruff pin is aligned to v0.17.3 and its official `ruff-check` hook, matching the declared client dev toolchain. The old v0.4.9 falsely required eager runtime imports for the existing lazy provider facade. All rule selections, secret checks and Bandit remain enabled; required native Express implementation lives under its provider, with a lazy explicit facade export.

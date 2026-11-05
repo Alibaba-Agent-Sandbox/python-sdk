@@ -413,6 +413,7 @@ class ManagedWorker:
                 kind = wire.get("type", "")
                 if (
                     kind.endswith((".completed", ".failed", ".cancelled", ".idle"))
+                    or kind in {"agent.session.created", "agent.session.turn.created"}
                     or "reasoning" in kind
                 ):
                     continue

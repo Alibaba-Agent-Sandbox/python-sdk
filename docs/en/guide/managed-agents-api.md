@@ -124,18 +124,20 @@ Each configuration document accepts exactly one `_FILE` or `_JSON` source:
 
 | Variable prefix | Document |
 | --- | --- |
-| `ABX_MANAGED_CONFIG` | Compiled revision, application ID, template, model/adapter allowlist, `modelEnvAllowlist`, Session/storage/execution budgets and retained Worker mapping |
+| `ABX_MANAGED_CONFIG` | Compiled revision, application ID, template, model/adapter allowlist, `modelEnvAllowlist`, Session/storage/execution budgets, `expectedStateId` and retained Worker mapping |
 | `ABX_MANAGED_AUTH` | `tokens: [{sha256,owner,scopes,expiresAt?}]`; scopes are `agents:read` and `agents:write` |
 | `ABX_MANAGED_MODEL_CONFIG` | Worker-only `{apiKey,baseUrl,model,adapter}` |
 | `ABX_MANAGED_PROVIDER_CONFIG` | Worker/Dispatcher `{provider:"alicloud-express",apiKey,baseUrl,domain,region}` |
 
-`ABX_MANAGED_DATABASE_URL` identifies PostgreSQL. `ABX_MANAGED_INTERNAL_TOKEN` authenticates private
+`ABX_MANAGED_DATABASE_URL` identifies PostgreSQL. The deployment pins its persistent state identity; replacing the database with empty state is rejected, including by warm instances. Credential and CA rotation on the same state remains supported. `ABX_MANAGED_INTERNAL_TOKEN` authenticates private
 role invocations and must remain stable while retained revisions drain.
 `ABX_MANAGED_FC_ENDPOINT` selects the explicit FC service host for dispatch.
 `modelEnvAllowlist` must explicitly allow `OPENAI_API_KEY`, `OPENAI_BASE_URL` and `OPENAI_MODEL`.
 Credentials are passed only to roles which need them, and never put in images or public resources.
 File-backed business authentication is reread for revocation; optional token expiry is enforced.
 
-TLS certificate verification remains enabled. The runtime uses the system trust store without
+TLS certificate verification remains enabled. The private bridge HTTPS client uses the system trust store without
 inheriting HTTP proxy settings. To trust a private CA, set `ABX_MANAGED_TLS_CA_FILE` to a readable
 PEM CA bundle. Invalid CA configuration fails; it does not disable verification.
+
+For a database which requires a private CA, supply `ABX_MANAGED_DATABASE_CA_PEM` to the three Server roles. It accepts only 1–8 PEM certificates, at most 64 KiB. The runtime writes a private temporary CA file and passes it to libpq while preserving the connection URI’s `sslmode=verify-full`. This setting is separate from the guest HTTPS CA setting and is never sent to the sandbox.

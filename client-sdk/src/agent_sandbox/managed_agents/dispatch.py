@@ -146,6 +146,7 @@ class ManagedDispatcher:
             ]
             control = self.service.control(tx)
             return {
+                "stateInstanceId": self.store.state_instance_id,
                 "activeSessions": len(active),
                 "pendingCleanup": len(pending),
                 "uncertainResources": len(uncertain),

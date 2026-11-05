@@ -114,6 +114,7 @@ class ManagedConfig:
     port: int = 9000
     workers: dict[str, str] = field(default_factory=dict)
     model_env_allowlist: list[str] = field(default_factory=list)
+    expected_state_id: str | None = None
     sessions: dict[str, int] = field(
         default_factory=lambda: {
             "idleTimeoutSeconds": 900,
@@ -200,6 +201,12 @@ class ManagedConfig:
             for v in self.model_env_allowlist
         ):
             raise ValueError("Only explicit model environment names may be allowed")
+        if self.expected_state_id is not None and (
+            not isinstance(self.expected_state_id, str)
+            or len(self.expected_state_id) != 32
+            or any(c not in "0123456789abcdef" for c in self.expected_state_id)
+        ):
+            raise ValueError("Expected state identity must be a lowercase 32-character hex ID")
 
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> ManagedConfig:
@@ -214,6 +221,7 @@ class ManagedConfig:
             "port",
             "workers",
             "modelEnvAllowlist",
+            "expectedStateId",
             "sessions",
             "limits",
             "storage",
@@ -232,6 +240,7 @@ class ManagedConfig:
             ("port", "port"),
             ("workers", "workers"),
             ("modelEnvAllowlist", "model_env_allowlist"),
+            ("expectedStateId", "expected_state_id"),
         ):
             if wire in value:
                 kwargs[native] = value[wire]

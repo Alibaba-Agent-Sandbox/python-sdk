@@ -228,10 +228,21 @@ def new_object(
 class ManagedStore:
     """A fixed application database with a cross-process admission lock."""
 
-    def __init__(self, url: str, application: str = "agents-api", *, local: bool = False) -> None:
+    def __init__(
+        self,
+        url: str,
+        application: str = "agents-api",
+        *,
+        local: bool = False,
+        expected_state_id: str | None = None,
+        database_ca_file: str | None = None,
+    ) -> None:
         self.url, self.application = url, application
+        self.database_ca_file = database_ca_file
         self.sqlite = url.startswith("sqlite:///")
         if self.sqlite:
+            if database_ca_file is not None:
+                raise ValueError("Database CA configuration requires PostgreSQL")
             if (
                 not local
                 or os.getenv("FC_FUNCTION_NAME")
@@ -239,9 +250,40 @@ class ManagedStore:
                 or url == "sqlite:///:memory:"
             ):
                 raise ValueError("File-backed SQLite requires explicit non-FC local mode")
+            if expected_state_id is not None and not os.path.isfile(url[len("sqlite:///") :]):
+                raise ValueError("Expected managed state is absent; refusing initialization")
         elif not url.startswith(("postgres://", "postgresql://")):
             raise ValueError("Managed storage requires PostgreSQL or explicit local SQLite")
         with self.transaction(initialize=True) as tx:
+            if expected_state_id is not None:
+                if self.sqlite:
+                    found = tx.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table' "
+                        "AND name='managed_identity'"
+                    ).fetchone()
+                else:
+                    found = tx.execute("SELECT to_regclass('managed_identity') AS name").fetchone()
+                    found = found if found and found["name"] else None
+                if not found:
+                    raise ValueError("Expected managed state is absent; refusing initialization")
+                identity = tx.execute(
+                    "SELECT state_id FROM managed_identity WHERE application=?", (application,)
+                ).fetchone()
+                if identity is None or identity["state_id"] != expected_state_id:
+                    raise ValueError("Managed state identity does not match the pinned deployment")
+            tx.execute(
+                "CREATE TABLE IF NOT EXISTS managed_identity(application TEXT PRIMARY KEY,"
+                " state_id TEXT NOT NULL)"
+            )
+            tx.execute(
+                "INSERT INTO managed_identity(application,state_id) VALUES(?,?) "
+                "ON CONFLICT(application) DO NOTHING",
+                (application, secrets.token_hex(16)),
+            )
+            self.state_instance_id = tx.execute(
+                "SELECT state_id FROM managed_identity WHERE application=?",
+                (application,),
+            ).fetchone()["state_id"]
             tx.execute(
                 "CREATE TABLE IF NOT EXISTS managed_meta(application TEXT PRIMARY KEY, "
                 "secret TEXT NOT NULL)"
@@ -314,7 +356,8 @@ class ManagedStore:
         else:
             import psycopg
 
-            with psycopg.connect(self.url, autocommit=True, connect_timeout=10) as db:
+            options = {"sslrootcert": self.database_ca_file} if self.database_ca_file else {}
+            with psycopg.connect(self.url, autocommit=True, connect_timeout=10, **options) as db:
                 db.execute("SET statement_timeout='10000ms'")
                 key = int.from_bytes(identity[:8], "big", signed=True)
                 db.execute("SELECT pg_advisory_lock(%s)", (key,))
@@ -336,13 +379,24 @@ class ManagedStore:
                 from psycopg.rows import dict_row
             except ImportError as exc:
                 raise RuntimeError("Install agent-sandbox-client[managed-agents]") from exc
-            db = psycopg.connect(self.url, row_factory=dict_row, connect_timeout=10)
+            options = {"sslrootcert": self.database_ca_file} if self.database_ca_file else {}
+            db = psycopg.connect(self.url, row_factory=dict_row, connect_timeout=10, **options)
             lock = int.from_bytes(
                 hashlib.sha256(self.application.encode()).digest()[:8], "big", signed=True
             )
             db.execute("SELECT pg_advisory_xact_lock(%s)", (lock,))
         try:
-            yield Transaction(db, self.sqlite, self.application)
+            transaction = Transaction(db, self.sqlite, self.application)
+            if not initialize:
+                actual = transaction.execute(
+                    "SELECT state_id FROM managed_identity WHERE application=?",
+                    (self.application,),
+                ).fetchone()
+                if actual is None or actual["state_id"] != self.state_instance_id:
+                    raise ManagedError(
+                        503, "state_identity_changed", "The deployment state identity changed"
+                    )
+            yield transaction
             db.commit()
         except BaseException:
             db.rollback()

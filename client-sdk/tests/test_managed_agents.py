@@ -38,6 +38,7 @@ class LocalBackend:
         self.root, self.binary = root, binary
         self.resources: dict[str, tuple[Any, Any, Any]] = {}
         self.created = 0
+        self.block_turns = False
 
     async def create(self, session: dict[str, Any], token: str, on_created: Any) -> dict[str, Any]:
         self.created += 1
@@ -64,6 +65,8 @@ class LocalBackend:
             kill_grace_s=0.1,
             term_grace_s=0.1,
         )
+        if self.block_turns:
+            runtime._slots.acquire()
         bridge = TestBridge(str(directory / "journal"), str(workspace), runtime=runtime)
         server = make_bridge_server(bridge, token, port=0)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -972,3 +975,149 @@ def test_private_bridge_preserves_provider_header_and_authenticates_bearer(tmp_p
         server.shutdown()
         server.server_close()
         thread.join(timeout=3)
+
+
+@pytest.mark.parametrize("components", ["sqlite", "postgres"], indirect=True)
+def test_pinned_state_identity_rejects_empty_store_before_initialization(
+    components: Any, tmp_path: Path
+) -> None:
+    from urllib.parse import urlsplit
+
+    service = components[0]
+    original = service.store
+    identity = original.state_instance_id
+    reopened = ManagedStore(
+        original.url, original.application, local=True, expected_state_id=identity
+    )
+    assert reopened.state_instance_id == identity
+    with pytest.raises(ValueError, match="identity"):
+        ManagedStore(original.url, original.application, local=True, expected_state_id="0" * 32)
+    if original.sqlite:
+        import sqlite3
+
+        empty_url = "sqlite:///" + str(tmp_path / "empty.db")
+        with pytest.raises(ValueError, match="absent"):
+            ManagedStore(empty_url, original.application, local=True, expected_state_id=identity)
+        assert not (tmp_path / "empty.db").exists()
+        with sqlite3.connect(tmp_path / "empty.db") as db:
+            assert not db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    else:
+        import psycopg
+
+        with psycopg.connect(original.url, autocommit=True) as db:
+            db.execute("CREATE DATABASE managed_empty_state")
+        empty_url = urlsplit(original.url)._replace(path="/managed_empty_state").geturl()
+        with pytest.raises(ValueError, match="absent"):
+            ManagedStore(empty_url, original.application, expected_state_id=identity)
+        with psycopg.connect(empty_url) as db:
+            assert db.execute("SELECT to_regclass('managed_identity')").fetchone()[0] is None
+    if original.sqlite:
+        database_path = Path(original.url[len("sqlite:///") :])
+        database_path.rename(tmp_path / "retained-state.db")
+    else:
+        maintenance = urlsplit(original.url)._replace(path="/template1").geturl()
+        with psycopg.connect(maintenance, autocommit=True) as db:
+            db.execute("ALTER DATABASE postgres RENAME TO managed_retained_state")
+            db.execute("CREATE DATABASE postgres")
+    replacement = ManagedStore(original.url, original.application, local=True)
+    assert replacement.state_instance_id != identity
+    with pytest.raises(ManagedError) as changed, original.transaction():
+        pass
+    assert changed.value.code == "state_identity_changed"
+
+
+def test_database_ca_is_bounded_private_and_removed() -> None:
+    import ssl
+    import stat
+
+    from agent_sandbox.managed_agents.__main__ import database_ca_file
+
+    certificate = ssl.DER_cert_to_PEM_cert(
+        ssl.create_default_context().get_ca_certs(binary_form=True)[0]
+    )
+    with database_ca_file(certificate) as path:
+        assert path is not None and Path(path).read_text() == certificate
+        assert stat.S_IMODE(Path(path).stat().st_mode) == 0o600
+        retained = Path(path)
+    assert not retained.exists()
+    for invalid in (
+        "not a certificate",
+        "x" * 65537,
+        certificate * 9,
+        certificate + "unexpected text",
+    ):
+        with pytest.raises(ValueError), database_ca_file(invalid):
+            pass
+
+
+@pytest.mark.parametrize("components", ["postgres"], indirect=True)
+def test_database_ca_preserves_libpq_verification_on_all_connections(
+    components: Any, monkeypatch: Any
+) -> None:
+    import ssl
+    from urllib.parse import parse_qsl, urlencode, urlsplit
+
+    import psycopg
+
+    from agent_sandbox.managed_agents.__main__ import database_ca_file
+
+    service = components[0]
+    certificate = ssl.DER_cert_to_PEM_cert(
+        ssl.create_default_context().get_ca_certs(binary_form=True)[0]
+    )
+    original_connect = psycopg.connect
+    connections = []
+    with database_ca_file(certificate) as path:
+
+        def connect(url: str, **options: Any) -> Any:
+            assert options["sslrootcert"] == path
+            connections.append(options)
+            return original_connect(url, **options)
+
+        monkeypatch.setattr(psycopg, "connect", connect)
+        parsed = urlsplit(service.store.url)
+        url = parsed._replace(
+            query=urlencode([*parse_qsl(parsed.query), ("sslmode", "verify-full")])
+        ).geturl()
+        store = ManagedStore(
+            url,
+            service.store.application,
+            expected_state_id=service.store.state_instance_id,
+            database_ca_file=path,
+        )
+        with store.transaction() as tx:
+            assert tx.execute("SELECT 1 AS value").fetchone()["value"] == 1
+        with store.session_gate("example-session"):
+            pass
+        assert len(connections) == 3 and all(c["sslrootcert"] == path for c in connections)
+        assert dict(parse_qsl(urlsplit(store.url).query))["sslmode"] == "verify-full"
+
+
+@pytest.mark.asyncio
+async def test_guest_queue_is_not_a_public_turn_before_real_execution(components: Any) -> None:
+    service, backend, worker, _ = components
+    backend.block_turns = True
+    sid = create(service, "held before native execution")["id"]
+    running = asyncio.create_task(worker.run(sid))
+    runtime = None
+    try:
+        for _ in range(200):
+            await asyncio.sleep(0.01)
+            if sid in backend.resources:
+                runtime = backend.resources[sid][0].runtime
+                sessions = runtime.list_sessions()
+                if sessions and sessions[0].turns:
+                    break
+        assert runtime is not None and sessions[0].turns[0].status == "queued"
+        await asyncio.sleep(0.05)
+        assert service.handle("owner", "GET", f"/v1/agents/sessions/{sid}/turns")[1]["data"] == []
+        assert not any(
+            e["type"] == "agent.session.turn.created" for e in service.events("owner", sid, "0")
+        )
+    finally:
+        if runtime is not None:
+            runtime._slots.release()
+    assert await running
+    events = service.events("owner", sid, "0")
+    assert sum(e["type"] == "agent.session.turn.created" for e in events) == 1
+    assert all(e.get("turn_id") for e in events if e["type"] == "agent.session.turn.created")
