@@ -1,0 +1,27 @@
+{
+  "platform": "Linux-5.10.134-013.10.1.kangaroo.al8.x86_64-x86_64-with-glibc2.41",
+  "python": "Python 3.13.13",
+  "external_tools_absent": {
+    "node": true,
+    "npm": true,
+    "git": true,
+    "abx": true
+  },
+  "steps": [
+    {
+      "name": "official_binary_installer",
+      "argv": [
+        "/bin/sh",
+        "${EVIDENCE}/install.sh"
+      ],
+      "exit": 1,
+      "seconds": 4.431,
+      "stdout": "Installing abx 0.5.8 (linux-x64) to ${EVIDENCE}/installed/bin\nDownloading https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/releases/download/v0.5.8/abx-0.5.8-linux-x64\nChecksum verified.\n",
+      "stderr": "${EVIDENCE}/install.sh: 189: mkdir: not found\nerror: cannot create ${EVIDENCE}/installed/bin\n"
+    }
+  ],
+  "result": "FAIL",
+  "error": "binary installer failed",
+  "owned_engine_stopped": "no_engine_record",
+  "cloud_resources_created": false
+}
