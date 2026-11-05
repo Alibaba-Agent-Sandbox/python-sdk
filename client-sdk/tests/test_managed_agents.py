@@ -1,0 +1,974 @@
+"""Managed business behavior over real HTTP/files/subprocesses; no cloud/model claims."""
+
+from __future__ import annotations
+
+import asyncio
+import base64
+import copy
+import hashlib
+import json
+import os
+import sys
+import threading
+import time
+from pathlib import Path
+from typing import Any
+
+import httpx
+import pytest
+
+from agent_sandbox.managed_agents import ManagedConfig, ManagedError, ManagedService, ManagedStore
+from agent_sandbox.managed_agents.dispatch import (
+    ManagedDispatcher,
+    sign_invocation,
+    verify_invocation,
+)
+from agent_sandbox.managed_agents.http import TokenAuthenticator, make_server
+from agent_sandbox.managed_agents.worker import ManagedWorker
+
+# isort: split
+from agent_sandbox.server.agents.runtime import AgentRuntime
+from agent_sandbox.server.managed import ManagedBridge, make_bridge_server
+
+
+class LocalBackend:
+    """Real private HTTP bridge and CLI fixture, with one isolated directory per Sandbox."""
+
+    def __init__(self, root: Path, binary: Path) -> None:
+        self.root, self.binary = root, binary
+        self.resources: dict[str, tuple[Any, Any, Any]] = {}
+        self.created = 0
+
+    async def create(self, session: dict[str, Any], token: str, on_created: Any) -> dict[str, Any]:
+        self.created += 1
+        directory = self.root / session["id"]
+        workspace = directory / "workspace"
+        logical = session["_settings"]["workspace"]
+
+        class TestBridge(ManagedBridge):
+            def submit(self, body: dict[str, Any]) -> dict[str, Any]:
+                body = copy.deepcopy(body)
+                for file in body["files"]:
+                    file["path"] = str(workspace) + file["path"][len(logical) :]
+                return super().submit(body)
+
+        environment = {
+            "PATH": str(self.binary) + os.pathsep + os.environ.get("PATH", ""),
+            "HOME": str(directory),
+            "ABX_AGENTS_ALLOW_COMMAND": "0",
+        }
+        runtime = AgentRuntime(
+            persist=False,
+            environ=environment,
+            max_concurrent_turns=1,
+            kill_grace_s=0.1,
+            term_grace_s=0.1,
+        )
+        bridge = TestBridge(str(directory / "journal"), str(workspace), runtime=runtime)
+        server = make_bridge_server(bridge, token, port=0)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        resource = {
+            "sandbox_id": session["id"],
+            "ownership": "owned",
+            "token": token,
+            "headers": {},
+            "url": f"http://127.0.0.1:{server.server_port}",
+        }
+        self.resources[session["id"]] = bridge, server, thread
+        on_created(resource)
+        return resource
+
+    async def kill(self, resource: dict[str, Any]) -> bool:
+        entry = self.resources.pop(resource["sandbox_id"], None)
+        if entry:
+            bridge, server, thread = entry
+            for session in bridge.runtime.list_sessions():
+                bridge.runtime.delete_session(session.id)
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=3)
+        return resource["sandbox_id"] not in self.resources
+
+
+@pytest.fixture
+def components(tmp_path: Path, request: Any) -> Any:
+    binary = tmp_path / "bin"
+    binary.mkdir()
+    script = binary / "qwen"
+    script.write_text(
+        f"#!{sys.executable}\n"
+        + """
+import json,pathlib,subprocess,sys,time
+if '--version' in sys.argv:
+ print('qwen-fixture-1');sys.exit(0)
+print(json.dumps({'type':'system','subtype':'init','session_id':'native-fixture-thread'}),flush=True)
+if 'slow' in sys.argv[1]:time.sleep(15)
+if 'tool-' in sys.argv[1]:
+ print(json.dumps({'type':'assistant','message':{'id':'tool-message','content':[
+  {'type':'tool_use','id':'sleep-tool','name':'Bash','input':{'command':'sleep'}}]}}),flush=True)
+ subprocess.run([sys.executable,'-c','import time;time.sleep(15)'
+  if 'tool-long' in sys.argv[1] else 'import time;time.sleep(.05)'],check=True)
+ print(json.dumps({'type':'user','message':{'content':[
+  {'type':'tool_result','tool_use_id':'sleep-tool','content':'done'}]}}),flush=True)
+ time.sleep(1.2)
+root=pathlib.Path.cwd();out=root/'outputs';out.mkdir(exist_ok=True)
+counter=root/'counter'
+n=int(counter.read_text())+1 if counter.exists() else 1;counter.write_text(str(n))
+source=root/'input'/'sales.csv'
+text=source.read_text() if source.exists() else 'no input'
+(out/'result.txt').write_text(str(n)+'|'+text)
+print(json.dumps({'type':'assistant','message':{'id':'message-'+str(n),
+ 'content':[{'type':'text','text':'completed '+str(n)}]}}),flush=True)
+print(json.dumps({'type':'result','subtype':'success','is_error':False,
+ 'result':'completed '+str(n)}),flush=True)
+"""
+    )
+    script.chmod(0o755)
+    config = ManagedConfig.from_dict(
+        {
+            "revision": "revision-a",
+            "template": "fixture-template",
+            "models": {"fixture-model": "qwen-code"},
+            "modelEnvAllowlist": ["OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL"],
+            "sessions": {"maxLifetimeSeconds": 60, "idleTimeoutSeconds": 30},
+            "limits": {"maxRunSeconds": 20, "maxToolSeconds": 5},
+        }
+    )
+    postgres = None
+    if getattr(request, "param", "sqlite") == "postgres":
+        pgserver = pytest.importorskip("pgserver", reason="real PostgreSQL component extra")
+        postgres = pgserver.get_server(tmp_path / "postgres", cleanup_mode="delete")
+        url = postgres.get_uri()
+    else:
+        url = "sqlite:///" + str(tmp_path / "state.db")
+    service = ManagedService(ManagedStore(url, local=True), config)
+    backend = LocalBackend(tmp_path / "sandboxes", binary)
+    worker = ManagedWorker(service, backend, poll_seconds=0.01)
+    dispatcher = ManagedDispatcher(worker)
+    yield service, backend, worker, dispatcher
+    for sid in list(backend.resources):
+        asyncio.run(backend.kill({"sandbox_id": sid}))
+    if postgres:
+        postgres.cleanup()
+
+
+def create(service: ManagedService, text: str | None = None, key: str = "") -> dict[str, Any]:
+    body: dict[str, Any] = {"agent": {"model": "fixture-model"}}
+    if text is not None:
+        body["input"] = text
+    return service.handle("owner", "POST", "/v1/agents/sessions", body, key=key)[1]
+
+
+def test_create_replay_busy_queue_and_owner_boundaries(components: Any) -> None:
+    service, backend, _, _ = components
+    session = create(service, "first", "initial")
+    assert create(service, "first", "initial")["id"] == session["id"]
+    assert backend.created == 0
+    with pytest.raises(ManagedError, match="another request"):
+        create(service, "different", "initial")
+    with pytest.raises(ManagedError) as busy:
+        service.handle(
+            "owner", "POST", f"/v1/agents/sessions/{session['id']}/events", {"input": "next"}
+        )
+    assert busy.value.status == 409 and busy.value.code == "active_turn_not_steerable"
+    status, queued, _ = service.handle(
+        "owner",
+        "POST",
+        f"/v1/agent-sandbox/sessions/{session['id']}/submissions",
+        {"input": "later"},
+        key="later",
+    )
+    assert status == 202 and queued["turn_id"] is None
+    op = service.handle(
+        "owner",
+        "POST",
+        f"/v1/agent-sandbox/sessions/{session['id']}/submissions/{queued['id']}/cancel",
+    )[1]
+    assert op["result"]["stop_confirmed"] is True
+    with pytest.raises(ManagedError) as foreign:
+        service.handle("foreign", "GET", f"/v1/agents/sessions/{session['id']}")
+    assert foreign.value.status == 404
+
+
+@pytest.mark.asyncio
+async def test_real_bridge_two_turns_files_artifacts_close_and_delete(components: Any) -> None:
+    service, backend, worker, dispatcher = components
+    source = service.upload_file("owner", "sales.csv", "user_data", b"month,amount\nJan,3\n")
+    status, session, _ = service.handle(
+        "owner",
+        "POST",
+        "/v1/agents/sessions",
+        {
+            "agent": {"model": "fixture-model"},
+            "input": "summarize the CSV",
+            "x_agent_sandbox": {
+                "input_files": [{"file_id": source["id"], "path": "/workspace/input/sales.csv"}]
+            },
+        },
+    )
+    assert status == 201
+    sid = session["id"]
+    assert await worker.run(sid)
+    turns = service.handle("owner", "GET", f"/v1/agents/sessions/{sid}/turns")[1]["data"]
+    assert len(turns) == 1 and turns[0]["status"] == "completed"
+    turn = service.handle("owner", "GET", f"/v1/agents/sessions/{sid}/turns/{turns[0]['id']}")[1]
+    assert turn["object"] == "agent.session.turn"
+    items = service.handle("owner", "GET", f"/v1/agents/sessions/{sid}/turns/{turn['id']}/items")[
+        1
+    ]["data"]
+    assert items[0]["content"][0]["text"] == "completed 1"
+    artifacts = service.handle("owner", "GET", f"/v1/agents/sessions/{sid}/artifacts")[1]["data"]
+    original = artifacts[0]["id"]
+    content = service.handle(
+        "owner", "GET", f"/v1/agents/sessions/{sid}/artifacts/{original}/content"
+    )[1]
+    assert content == b"1|month,amount\nJan,3\n"
+    service.handle(
+        "owner", "POST", f"/v1/agents/sessions/{sid}/events", {"input": "continue"}, key="second"
+    )
+    assert await worker.run(sid)
+    assert backend.created == 1
+    assert service.handle("owner", "GET", f"/v1/agents/sessions/{sid}/items")[1]["data"]
+    env = service.handle("owner", "GET", f"/v1/agents/environments/{session['environment']['id']}")[
+        1
+    ]
+    assert env["x_agent_sandbox"]["lifecycle"] == "ready"
+    closed = service.handle("owner", "POST", f"/v1/agent-sandbox/sessions/{sid}/close")[1]
+    assert await worker.run(sid)
+    assert not backend.resources
+    assert service.handle("owner", "GET", f"/v1/agent-sandbox/operations/{closed['id']}")[1][
+        "result"
+    ]["compute_released"]
+    assert (
+        service.handle("owner", "GET", f"/v1/agents/sessions/{sid}/artifacts/{original}/content")[1]
+        == content
+    )
+    assert dispatcher.status()["activeSessions"] == 0
+    assert service.handle("owner", "DELETE", f"/v1/agents/sessions/{sid}")[0] == 200
+    for tail in ("", "/items", "/artifacts", f"/artifacts/{original}/content"):
+        with pytest.raises(ManagedError) as gone:
+            service.handle("owner", "GET", f"/v1/agents/sessions/{sid}" + tail)
+        assert gone.value.status == 404
+
+
+def test_raw_sdk_pagination_and_cross_owner_cursor(components: Any) -> None:
+    service = components[0]
+    for i in range(3):
+        service.handle("owner", "POST", "/v1/agents", {"model": "fixture-model", "name": str(i)})
+    first = service.handle("owner", "GET", "/v1/agents", query={"limit": "1"})[1]
+    second = service.handle(
+        "owner", "GET", "/v1/agents", query={"limit": "1", "after": first["last_id"]}
+    )[1]
+    assert first["data"][0]["id"] != second["data"][0]["id"]
+    with pytest.raises(ManagedError):
+        service.handle(
+            "foreign", "GET", "/v1/agents", query={"after": first["x_agent_sandbox"]["next_cursor"]}
+        )
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"limits": {"unknown": 1}},
+        {"sessions": {"guestRestartPolicy": "replay"}},
+        {"limits": {"maxToolSeconds": 601}},
+        {"port": True},
+        {"models": {"bad": "missing"}},
+    ],
+)
+def test_compiled_configuration_rejects_unknown_or_invalid_budgets(body: dict[str, Any]) -> None:
+    with pytest.raises(ValueError):
+        ManagedConfig.from_dict(
+            {"revision": "r", "template": "t", "models": {"m": "qwen-code"}, **body}
+        )
+
+
+def test_metadata_queries_do_not_load_binary_and_deleted_bytes_still_count(components: Any) -> None:
+    service = components[0]
+    file = service.upload_file("owner", "x", "user_data", b"binary canary")
+    with service.store.transaction() as tx:
+        rows = tx.list("file", "owner")
+        assert "_data" not in rows[0] and rows[0]["_has_blob"] is True
+        raw = tx.execute("SELECT body FROM managed_objects WHERE id=?", (file["id"],)).fetchone()[
+            "body"
+        ]
+        assert base64.b64encode(b"binary canary").decode() not in raw
+    service.handle("owner", "DELETE", "/v1/files/" + file["id"])
+    with service.store.transaction() as tx:
+        assert tx.get(file["id"], "owner", deleted=True)["_has_blob"]
+
+
+@pytest.mark.asyncio
+async def test_drain_counts_idle_logical_sessions_and_unknown_revisions(components: Any) -> None:
+    service, _, _, dispatcher = components
+    session = create(service)
+    assert dispatcher.status()["activeSessions"] == 1
+    assert not dispatcher.worker.due(revisions={"other-revision"})
+    response = await dispatcher.invoke({"operation": "drain", "applicationId": "agents-api"})
+    assert response["activeSessions"] == 0 and response["pendingCleanup"] == 0
+    assert (
+        service.handle("owner", "GET", f"/v1/agents/sessions/{session['id']}")[1][
+            "x_agent_sandbox"
+        ]["lifecycle"]
+        == "closed"
+    )
+    with pytest.raises(ManagedError) as rejected:
+        create(service)
+    assert rejected.value.code == "application_draining"
+
+
+def test_auth_expiry_and_role_body_signature() -> None:
+    key = "b" * 40
+    doc = {
+        "tokens": [
+            {
+                "sha256": hashlib.sha256(key.encode()).hexdigest(),
+                "owner": "owner",
+                "scopes": ["agents:read"],
+                "expiresAt": time.time() + 60,
+            }
+        ]
+    }
+    auth = TokenAuthenticator(doc)
+    assert auth.authenticate(key, False) == "owner"
+    with pytest.raises(ManagedError) as denied:
+        auth.authenticate(key, True)
+    assert denied.value.status == 403
+    doc["tokens"][0]["expiresAt"] = time.time() - 1
+    with pytest.raises(ManagedError) as expired:
+        auth.authenticate(key, False)
+    assert expired.value.status == 401
+    envelope = sign_invocation({"limit": 1}, "i" * 40, "dispatcher")
+    assert verify_invocation(envelope, "i" * 40, "dispatcher") == {"limit": 1}
+    with pytest.raises(ManagedError):
+        verify_invocation(envelope, "i" * 40, "worker")
+
+
+def test_real_http_multipart_and_safe_errors(components: Any) -> None:
+    service = components[0]
+    token = "b" * 40
+    auth = TokenAuthenticator(
+        {
+            "tokens": [
+                {
+                    "sha256": hashlib.sha256(token.encode()).hexdigest(),
+                    "owner": "owner",
+                    "scopes": ["agents:read", "agents:write"],
+                }
+            ]
+        }
+    )
+    server = make_server(service, auth, port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with httpx.Client(
+            base_url=f"http://127.0.0.1:{server.server_port}",
+            headers={"Authorization": "Bearer " + token},
+            trust_env=False,
+        ) as client:
+            assert client.get("/healthz").json()["status"] == "ok"
+            response = client.post(
+                "/v1/files",
+                data={"purpose": "user_data"},
+                files={"file": ("sales.csv", b"x,y\n1,2\n")},
+            )
+            assert response.status_code == 200
+            file = response.json()
+            assert client.get("/v1/files/" + file["id"] + "/content").content == b"x,y\n1,2\n"
+            result = client.post("/v1/agents/sessions", json={"agent": {"model": "fixture-model"}})
+            assert result.status_code == 201 and "Location" in result.headers
+            sid = result.json()["id"]
+            accepted = client.post(
+                f"/v1/agents/sessions/{sid}/events",
+                json={"input": "hello"},
+                headers={"Idempotency-Key": "message-1"},
+            )
+            assert accepted.status_code == 202 and not accepted.content
+            assert client.get(accepted.headers["Location"]).json()["turn_id"] is None
+            forbidden = client.post("/invoke", json={"token": "private-value"})
+            assert forbidden.status_code == 404 and "private-value" not in forbidden.text
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
+
+
+@pytest.mark.asyncio
+async def test_active_cancel_exact_target_replays_without_cancelling_next_turn(
+    components: Any,
+) -> None:
+    service, backend, worker, _ = components
+    sid = create(service, "slow")["id"]
+    running = asyncio.create_task(worker.run(sid))
+    for _ in range(200):
+        await asyncio.sleep(0.02)
+        turns = service.handle("owner", "GET", f"/v1/agents/sessions/{sid}/turns")[1]["data"]
+        if turns:
+            break
+    assert turns and turns[0]["status"] == "in_progress"
+    body = {"events": [{"type": "agent.session.input.cancel"}]}
+    original = service.handle(
+        "owner", "POST", f"/v1/agents/sessions/{sid}/events", body, key="stop-a"
+    )
+    assert await running
+    operation = service.handle(
+        "owner",
+        "GET",
+        "/v1/agent-sandbox/operations/" + original[2]["X-Agent-Sandbox-Operation-Id"],
+    )[1]
+    assert operation["result"]["stop_confirmed"] is True
+    assert backend.created == 1 and backend.resources
+    service.handle("owner", "POST", f"/v1/agents/sessions/{sid}/events", {"input": "continue"})
+    # A new process sees the same durable cancel target, even after A completed.
+    reloaded = ManagedService(ManagedStore(service.store.url, local=True), service.config)
+    replay = reloaded.handle(
+        "owner", "POST", f"/v1/agents/sessions/{sid}/events", body, key="stop-a"
+    )
+    assert replay == original
+    with reloaded.store.transaction() as tx:
+        pending = [r for r in tx.list("submission", parent=sid) if r["status"] == "queued"]
+        assert len(pending) == 1 and not pending[0]["_cancel"]
+    assert await worker.run(sid)
+    assert backend.created == 1
+
+
+@pytest.mark.asyncio
+async def test_cancel_during_create_never_sends_input(components: Any) -> None:
+    service, backend, worker, _ = components
+    sid = create(service, "first")["id"]
+    original_create = backend.create
+
+    async def cancelling_create(
+        session: dict[str, Any], token: str, created: Any
+    ) -> dict[str, Any]:
+        resource = await original_create(session, token, created)
+        with service.store.transaction() as tx:
+            sub = tx.list("submission", parent=sid)[0]
+            service._cancel(tx, tx.get(sid), sub)
+        return resource
+
+    backend.create = cancelling_create
+    assert await worker.run(sid)
+    bridge = backend.resources[sid][0]
+    assert not bridge.runtime.get_session(bridge._session_record()["session_id"]).turns
+    with service.store.transaction() as tx:
+        sub = tx.list("submission", parent=sid)[0]
+        assert sub["status"] == "cancelled" and not sub.get("_sent")
+
+
+def test_real_detached_child_survives_leader_but_process_domain_stops_it(tmp_path: Path) -> None:
+    import secrets
+    import subprocess
+
+    from agent_sandbox.server.managed_process import ProcessDomain
+
+    scope = secrets.token_hex(20)
+    domain = ProcessDomain(scope)
+    output = tmp_path / "ticks"
+    # Use a real detached executable rather than treating leader exit as evidence.
+    child_script = tmp_path / "child.py"
+    child_script.write_text(
+        "import pathlib,sys,time\np=pathlib.Path(sys.argv[1])\n"
+        "while True:\n p.write_text(str(time.time())); time.sleep(.02)\n"
+    )
+    leader = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "import subprocess,sys; p=subprocess.Popen(sys.argv[1:],start_new_session=True,"
+            "stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);print(p.pid)",
+            sys.executable,
+            str(child_script),
+            str(output),
+        ],
+        env={**os.environ, "ABX_MANAGED_TURN_SCOPE": scope},
+        stdout=subprocess.PIPE,
+    )
+    child_pid = int(leader.communicate(timeout=5)[0])
+    try:
+        assert leader.returncode == 0
+        for _ in range(100):
+            if output.exists():
+                break
+            time.sleep(0.02)
+        before = output.read_text()
+        time.sleep(0.08)
+        assert output.read_text() != before  # escaped child remains active after leader exit
+        domain.quiesce()  # unknown concurrent host processes may conservatively refuse reuse
+        stopped = output.read_text()
+        time.sleep(0.08)
+        assert output.read_text() == stopped
+    finally:
+        import contextlib
+        import signal
+
+        with contextlib.suppress(ProcessLookupError):
+            os.kill(child_pid, signal.SIGKILL)
+
+
+def test_output_snapshot_rejects_ancestor_swapped_to_symlink(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    workspace = tmp_path / "workspace"
+    nested = workspace / "outputs" / "nested"
+    nested.mkdir(parents=True)
+    (nested / "report.txt").write_text("owned")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "report.txt").write_text("private outside")
+    bridge = ManagedBridge(str(tmp_path / "journal"), str(workspace))
+    original_open = os.open
+
+    def swapping_open(path: Any, *args: Any, **kwargs: Any) -> Any:
+        if path == "nested" and kwargs.get("dir_fd") is not None:
+            nested.rename(workspace / "saved")
+            nested.symlink_to(outside, target_is_directory=True)
+        return original_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(os, "open", swapping_open)
+    artifacts, errors = bridge._snapshots()
+    assert artifacts == [] and errors
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("prompt,expected", [("tool-long", "failed"), ("tool-done", "completed")])
+async def test_observed_real_tool_wall_deadline(
+    components: Any, prompt: str, expected: str
+) -> None:
+    service, backend, worker, _ = components
+    service.config.limits["maxToolSeconds"] = 1
+    sid = create(service, prompt)["id"]
+    assert await worker.run(sid)
+    turn = service.handle("owner", "GET", f"/v1/agents/sessions/{sid}/turns")[1]["data"][0]
+    assert turn["status"] == expected
+    if expected == "failed":
+        assert turn["error"]["code"] == "tool_deadline_exceeded"
+    with service.store.transaction() as tx:
+        current = tx.get(sid)
+        # Dedicated cooperative domains may be reused; unknown concurrent host
+        # processes require provider destruction before stop can be confirmed.
+        assert backend.resources or current.get("_cleanup_confirmed") is True
+
+
+@pytest.mark.asyncio
+async def test_preparation_heartbeat_prevents_second_create_after_original_lease(
+    components: Any,
+) -> None:
+    service, backend, _, _ = components
+    worker = ManagedWorker(service, backend, poll_seconds=0.01, lease_seconds=0.15)
+    sid = create(service, "first")["id"]
+    original_create = backend.create
+    entered = asyncio.Event()
+
+    async def slow_create(session: dict[str, Any], token: str, created: Any) -> dict[str, Any]:
+        entered.set()
+        await asyncio.sleep(0.5)
+        return await original_create(session, token, created)
+
+    backend.create = slow_create
+    first = asyncio.create_task(worker.run(sid))
+    await entered.wait()
+    await asyncio.sleep(0.3)
+    assert await worker.run(sid) is False
+    assert worker.due() == []
+    assert await first
+    assert backend.created == 1
+    with service.store.transaction() as tx:
+        assert tx.get(sid)["x_agent_sandbox"]["lifecycle"] == "ready"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("components", ["sqlite", "postgres"], indirect=True)
+async def test_all_39_http_operations_against_frozen_inventory(components: Any) -> None:
+    from agent_sandbox.managed_agents.service import OPERATIONS
+
+    service, backend, worker, _ = components
+    inventory = json.loads((Path(__file__).parent / "fixtures" / "managed_api_v1.json").read_text())
+    definitions = {item["operation_id"]: item for item in inventory["operations"]}
+    assert {(o["method"], o["path"]) for o in definitions.values()} == set(OPERATIONS)
+    token = "inventory-test-business-token"
+    auth = TokenAuthenticator(
+        {
+            "tokens": [
+                {
+                    "sha256": hashlib.sha256(token.encode()).hexdigest(),
+                    "owner": "owner",
+                    "scopes": ["agents:read", "agents:write"],
+                }
+            ]
+        }
+    )
+    server = make_server(service, auth, port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    values = {"model_id": "fixture-model"}
+    observed: set[str] = set()
+    try:
+        with httpx.Client(
+            base_url=f"http://127.0.0.1:{server.server_port}",
+            headers={"Authorization": "Bearer " + token},
+            trust_env=False,
+        ) as client:
+
+            def call(name: str, body: Any = None, **kwargs: Any) -> Any:
+                definition = definitions[name]
+                path = definition["path"].format(**values)
+                response = client.request(definition["method"], path, json=body, **kwargs)
+                assert response.status_code in definition["success_codes"], (name, response.text)
+                observed.add(name)
+                return (
+                    response.json()
+                    if response.content and "json" in response.headers.get("content-type", "")
+                    else response
+                )
+
+            call("health_get")
+            call("capabilities_get")
+            call("models_list")
+            call("models_get")
+            call("runtimes_list")
+            agent = call("agents_create", {"model": "fixture-model", "instructions": "Be precise"})
+            values["agent_id"] = agent["id"]
+            call("agents_list")
+            call("agents_get")
+            call("agents_update", {"name": "Reusable agent"})
+            uploaded = call(
+                "files_create",
+                data={"purpose": "user_data"},
+                files={"file": ("sales.csv", b"x,y\n1,2\n")},
+            )
+            values["file_id"] = uploaded["id"]
+            call("files_list")
+            call("files_get")
+            call("files_content")
+            session = call("sessions_create", {"agent_id": agent["id"]})
+            values["session_id"] = session["id"]
+            values["environment_id"] = session["environment"]["id"]
+            call("sessions_list")
+            call("sessions_get")
+            call("sessions_update", {"metadata": {"label": "inventory"}})
+            call("environments_list")
+            call("environments_get")
+            call(
+                "session_events_create",
+                {"input": "generate report"},
+                headers={"Idempotency-Key": "first"},
+            )
+            assert await worker.run(session["id"])
+            turns = call("turns_list")["data"]
+            values["turn_id"] = turns[0]["id"]
+            call("turns_get")
+            call("turn_items_list")
+            call("session_items_list")
+            artifacts = call("artifacts_list")["data"]
+            values["artifact_id"] = artifacts[0]["id"]
+            call("artifacts_get")
+            call("artifacts_content")
+            assert client.get("/v1/agents/environments/" + values["artifact_id"]).status_code == 404
+            assert (
+                client.get(
+                    f"/v1/agent-sandbox/sessions/{session['id']}/submissions/{values['turn_id']}"
+                ).status_code
+                == 404
+            )
+            with client.stream(
+                "GET", f"/v1/agents/sessions/{session['id']}/events?after=0"
+            ) as stream:
+                assert stream.status_code == 200
+                assert any(line.startswith("data:") for line in stream.iter_lines())
+                observed.add("session_events_stream")
+            queued = call(
+                "submissions_enqueue", {"input": "queued"}, headers={"Idempotency-Key": "queued"}
+            )
+            values["submission_id"] = queued["id"]
+            call("submissions_list")
+            call("submissions_get")
+            call("submissions_cancel")
+            call("turns_cancel")
+            operation = call("sessions_close")
+            values["operation_id"] = operation["id"]
+            assert await worker.run(session["id"])
+            assert call("operations_get")["result"]["compute_released"]
+            call("artifacts_delete")
+            call("files_delete")
+            call("agents_delete")
+            call("sessions_delete")
+            assert observed == set(definitions)
+            # Every protected route authenticates before parsing or touching resources.
+            for name, definition in definitions.items():
+                path = definition["path"].format(**values)
+                if name == "health_get":
+                    assert client.get("/healthz/missing").status_code == 404
+                else:
+                    response = client.request(
+                        definition["method"], path, headers={"Authorization": "Bearer invalid"}
+                    )
+                    assert response.status_code == 401, (name, response.text)
+            assert client.get("/v1/agents/sessions/" + session["id"]).status_code == 404
+            assert (
+                client.post(
+                    "/v1/agents",
+                    json={
+                        "model": "fixture-model",
+                        "tools": [{"type": "function", "name": "shell"}],
+                    },
+                ).status_code
+                == 400
+            )
+            assert not backend.resources
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("components", ["sqlite", "postgres"], indirect=True)
+async def test_retention_gc_keeps_pending_files_and_uncertain_resources(components: Any) -> None:
+    from agent_sandbox.managed_agents.store import new_object
+
+    service, _, worker, dispatcher = components
+    uploaded = service.upload_file("owner", "input.txt", "user_data", b"pending input")
+    session = service.handle(
+        "owner",
+        "POST",
+        "/v1/agents/sessions",
+        {
+            "agent": {"model": "fixture-model"},
+            "input": "later",
+            "x_agent_sandbox": {
+                "input_files": [{"file_id": uploaded["id"], "path": "/workspace/input/input.txt"}]
+            },
+        },
+    )[1]
+    sid = session["id"]
+    with service.store.transaction() as tx:
+        file = tx.get(uploaded["id"])
+        file["expires_at"] = time.time() - 1
+        tx.put(file)
+        service.collect(tx, limit=1)
+        assert tx.get(uploaded["id"], with_data=True)["_data"]
+        sub = tx.list("submission", parent=sid)[0]
+        service._cancel(tx, tx.get(sid), sub)
+        service.collect(tx, limit=1)
+        assert not tx.get(uploaded["id"]).get("_has_blob")
+    service.handle("owner", "POST", f"/v1/agent-sandbox/sessions/{sid}/close")
+    assert await worker.run(sid)
+    with service.store.transaction() as tx:
+        closed = tx.get(sid)
+        closed["_retain_until"] = time.time() - 1
+        tx.put(closed)
+        for _i in range(5):
+            tx.put(
+                new_object(
+                    "artifact",
+                    "owner",
+                    parent=sid,
+                    bytes=1,
+                    _data="eA==",
+                    expires_at=time.time() + 10,
+                )
+            )
+        uncertain = new_object(
+            "session",
+            "owner",
+            status="failed",
+            x_agent_sandbox={"lifecycle": "requires_reconcile"},
+            _creation_started=True,
+            _revision=service.config.revision,
+            _retain_until=time.time() - 1,
+            _cleanup_confirmed=False,
+        )
+        tx.put(uncertain)
+    for _ in range(20):
+        with service.store.transaction() as tx:
+            service.collect(tx, limit=1)
+    with service.store.transaction() as tx:
+        assert tx.get(sid, deleted=True).get("_collected")
+        assert tx.get(uncertain["id"], deleted=True)["_creation_started"]
+        assert not tx.events(sid, 0)
+    assert dispatcher.status()["uncertainResources"] == 1
+    with pytest.raises(ManagedError) as expired:
+        service.handle("owner", "GET", f"/v1/agents/sessions/{sid}")
+    assert expired.value.status == 410
+
+
+def test_closed_tombstone_history_does_not_block_dispatch_or_admission(components: Any) -> None:
+    from agent_sandbox.managed_agents.store import new_object
+
+    service, _, worker, dispatcher = components
+    with service.store.transaction() as tx:
+        for _ in range(10002):
+            tx.put(
+                new_object(
+                    "session",
+                    "historical",
+                    _deleted=True,
+                    _cleanup_confirmed=True,
+                    _revision=service.config.revision,
+                    x_agent_sandbox={"lifecycle": "closed"},
+                )
+            )
+    assert worker.due() == []
+    assert dispatcher.status()["activeSessions"] == 0
+    assert create(service)["id"]
+
+
+def test_partial_body_times_out_and_other_connections_remain_usable(components: Any) -> None:
+    import socket
+
+    service = components[0]
+    token = "partial-body-test-key"
+    auth = TokenAuthenticator(
+        {
+            "tokens": [
+                {
+                    "sha256": hashlib.sha256(token.encode()).hexdigest(),
+                    "owner": "owner",
+                    "scopes": ["agents:write", "agents:read"],
+                }
+            ]
+        }
+    )
+    server = make_server(service, auth, port=0, read_timeout=0.15, max_connections=2)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with socket.create_connection(("127.0.0.1", server.server_port), timeout=2) as client:
+            client.sendall(
+                (
+                    f"POST /v1/agents HTTP/1.1\r\nHost: localhost\r\n"
+                    f"Authorization: Bearer {token}\r\nContent-Length: 100\r\n\r\n{{"
+                ).encode()
+            )
+            assert client.recv(100) == b""
+        assert (
+            httpx.get(f"http://127.0.0.1:{server.server_port}/healthz", trust_env=False).status_code
+            == 200
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
+
+
+@pytest.mark.asyncio
+async def test_lost_submit_response_inspects_original_receipt_without_replay(
+    components: Any, monkeypatch: Any
+) -> None:
+    import agent_sandbox.managed_agents.worker as implementation
+    from agent_sandbox.managed_agents.backend import bridge_request
+
+    service, backend, worker, _ = components
+    sid = create(service, "one effect")["id"]
+    submits = 0
+
+    async def lost_response(resource: Any, method: str, path: str, body: Any = None) -> Any:
+        nonlocal submits
+        result = await bridge_request(resource, method, path, body)
+        if method == "POST" and path == "/managed/submissions":
+            submits += 1
+            raise ManagedError(503, "connection_lost", "response was lost after acceptance")
+        return result
+
+    monkeypatch.setattr(implementation, "bridge_request", lost_response)
+    assert await worker.run(sid)
+    assert submits == 1
+    assert (backend.root / sid / "workspace" / "counter").read_text() == "1"
+
+
+def test_deep_artifact_tree_reports_partial_and_preserves_valid_sibling(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    (workspace / "outputs" / "a" / "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9").mkdir(
+        parents=True
+    )
+    (workspace / "outputs" / "z").mkdir()
+    (workspace / "outputs" / "z" / "expected.txt").write_text("expected")
+    bridge = ManagedBridge(str(tmp_path / "journal"), str(workspace))
+    artifacts, errors = bridge._snapshots()
+    assert [a["path"] for a in artifacts] == ["outputs/z/expected.txt"]
+    assert any(e["code"] == "artifact_depth_limit" for e in errors)
+
+
+@pytest.mark.asyncio
+async def test_small_output_budget_reaches_real_cli_and_bounds_public_items(
+    components: Any,
+) -> None:
+    service, _, worker, _ = components
+    service.config.limits["maxOutputBytes"] = 16
+    sid = create(service, "output")["id"]
+    assert await worker.run(sid)
+    turns = service.handle("owner", "GET", f"/v1/agents/sessions/{sid}/turns")[1]["data"]
+    assert turns[0]["status"] == "failed"
+    assert service.handle("owner", "GET", f"/v1/agents/sessions/{sid}/items")[1]["data"] == []
+    with service.store.transaction() as tx:
+        submission = tx.list("submission", parent=sid)[0]
+        assert not submission.get("_native_seen")
+
+
+@pytest.mark.asyncio
+async def test_uncertain_session_never_executes_queued_successor(components: Any) -> None:
+    service, backend, worker, _ = components
+    sid = create(service, "first")["id"]
+    queued = service.handle(
+        "owner",
+        "POST",
+        f"/v1/agent-sandbox/sessions/{sid}/submissions",
+        {"input": "must not execute"},
+        key="next",
+    )[1]
+    with service.store.transaction() as tx:
+        first = tx.list("submission", parent=sid)[0]
+    worker._uncertain(sid, first["id"], None, "injected_setup_failure")
+    operation = service.handle(
+        "owner", "POST", f"/v1/agent-sandbox/sessions/{sid}/submissions/{first['id']}/cancel"
+    )[1]
+    assert operation["status"] == "requires_reconcile"
+    assert operation["result"]["stop_confirmed"] is False
+    assert await worker.run(sid) is False
+    assert backend.created == 0 and not (backend.root / sid / "workspace" / "counter").exists()
+    assert (
+        service.handle(
+            "owner", "GET", f"/v1/agent-sandbox/sessions/{sid}/submissions/{queued['id']}"
+        )[1]["status"]
+        == "queued"
+    )
+
+
+def test_private_bridge_preserves_provider_header_and_authenticates_bearer(tmp_path: Path) -> None:
+    bridge = ManagedBridge(str(tmp_path / "journal"), str(tmp_path / "workspace"))
+    token = "test-application-" + "a" * 32
+    server = make_bridge_server(bridge, token, port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with httpx.Client(
+            base_url=f"http://127.0.0.1:{server.server_port}", trust_env=False
+        ) as client:
+            assert (
+                client.get(
+                    "/capabilities",
+                    headers={
+                        "X-Access-Token": "platform-test-token",
+                        "Authorization": "Bearer " + token,
+                    },
+                ).status_code
+                == 200
+            )
+            assert (
+                client.get(
+                    "/capabilities",
+                    headers={
+                        "X-Access-Token": "platform-test-token",
+                        "Authorization": "Bearer wrong-test-token",
+                    },
+                ).status_code
+                == 401
+            )
+            assert client.get("/capabilities", headers={"Authorization": token}).status_code == 401
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)

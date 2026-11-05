@@ -64,6 +64,8 @@ finally:
 
 ## 文档
 
+通过统一 Gateway 运行 Agent，见[托管 Agents API](docs/zh/guide/managed-agents-api.md)。
+
 | 任务 | 指南 |
 | --- | --- |
 | 完成第一次 API 调用 | [快速开始](docs/zh/guide/getting-started.md) |

@@ -79,3 +79,5 @@ cd client-sdk && pytest -m "not integration" && ruff check src tests && mypy src
 ```
 
 Licensed under Apache-2.0.
+
+Managed per-Session Agents API deployment: [English guide](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/managed-agents-api.md) / [中文指南](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/zh/guide/managed-agents-api.md).

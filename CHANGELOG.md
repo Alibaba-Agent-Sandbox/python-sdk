@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Optional managed Agents API Gateway, Worker and Dispatcher with durable Sessions, explicit queue receipts, files/artifacts, safe cancellation and a restart-aware private guest bridge. / 新增可选托管 Agents API Gateway、Worker、Dispatcher，支持持久 Session、显式队列收据、文件与产物、安全取消和可识别重启的私有沙箱桥接。
+
 - Add explicit application command `invoke` arguments, Express network creation and STS SecurityToken handoff. / 新增应用命令 invoke 显式业务参数、极速版创建时网络配置和 STS SecurityToken 传递。
 
 - Express AK/SK managed-key preparation with explicit consent, private shared storage, expiry renewal and feature-scoped RAM permission guidance. / 极速版支持经确认的 AK/SK 管理 Key 准备、私有共享存储、到期续期及按功能划分的 RAM 授权指南。

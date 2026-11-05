@@ -66,6 +66,7 @@ The server exposes registered application commands over HTTP. Template authors i
 
 | Task | Guide |
 | --- | --- |
+| Run agents through one Gateway endpoint | [Managed Agents API](docs/en/guide/managed-agents-api.md) |
 | Make your first API calls | [Getting started](docs/en/guide/getting-started.md) |
 | Look up methods and models | [API reference](docs/en/reference/api-reference.md) |
 | Configure credentials and endpoints | [Authentication](docs/en/guide/authentication.md) |
