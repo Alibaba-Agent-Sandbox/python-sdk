@@ -141,8 +141,21 @@ async def main() -> int:
         assert sandbox is not None
 
         async def lifecycle() -> None:
+            async def state_is(expected: str) -> bool:
+                async with httpx.AsyncClient(timeout=20) as http:
+                    response = await http.get(
+                        api + "/sandboxes/" + sandbox.id, headers={"X-API-Key": key}
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    return str(data.get("state", data.get("status", ""))).lower() == expected
+
             await sandbox.pause()
+            await until(lambda: state_is("paused"))
+            print(json.dumps({"checkpoint": "control plane paused confirmed"}), flush=True)
             await sandbox.resume()
+            await until(lambda: state_is("running"))
+            print(json.dumps({"checkpoint": "control plane running confirmed"}), flush=True)
 
             async def readable() -> bool:
                 # This explicitly repeats an idempotent read while the backend resumes.
