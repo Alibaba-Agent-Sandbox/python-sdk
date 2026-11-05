@@ -247,7 +247,7 @@ class ManagedBridge:
             if session.status != "idle":
                 raise BridgeError(409, "session_busy")
             remaining = body["deadline"] - time.time()
-            if remaining < 1:
+            if remaining <= 0:
                 raise BridgeError(409, "turn_deadline")
             spec = self.runtime.store.require(session.agent_name)
             spec.limits.turn_timeout_s = remaining

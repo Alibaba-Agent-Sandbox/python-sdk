@@ -35,6 +35,7 @@ Cooperative process-domain observation includes marked children after leader exi
 reparenting. Incomplete attribution refuses reuse and releases the whole Sandbox. This is not an
 audit or isolation guarantee against hostile same-UID code. Tool deadlines start at observed
 native start events. Guest limits and independent host projection/stream limits remain finite.
+Attachment admission has a 10 MiB aggregate ceiling, including repeated references, before acceptance. Guest RPCs have whole-context wall deadlines clipped to the remaining turn budget. Budget exhaustion preserves unknown outcomes and advances owned cleanup; PostgreSQL statement/lock acquisition have explicit finite server-side timeouts and all acquisition failures close their connections.
 Artifacts are immutable regular-file snapshots under `outputs/`, opened through no-follow directory
 FDs with bounded enumeration, bytes, depth and time.
 

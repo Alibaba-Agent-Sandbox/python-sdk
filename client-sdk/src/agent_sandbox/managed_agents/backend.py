@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import math
 import os
 import ssl
 from typing import Any
@@ -17,7 +19,29 @@ __all__ = ["ExpressBackend", "bridge_request"]
 
 
 async def bridge_request(
-    resource: dict[str, Any], method: str, path: str, body: dict[str, Any] | None = None
+    resource: dict[str, Any],
+    method: str,
+    path: str,
+    body: dict[str, Any] | None = None,
+    *,
+    timeout_seconds: float = 30,
+) -> dict[str, Any]:
+    """Bound the entire authenticated exchange, including a continuously dripping body."""
+    if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
+        raise ManagedError(504, "guest_request_timeout", "The private request deadline expired")
+    try:
+        return await asyncio.wait_for(_request(resource, method, path, body), timeout_seconds)
+    except asyncio.TimeoutError:
+        raise ManagedError(
+            504, "guest_request_timeout", "The private request deadline expired"
+        ) from None
+
+
+async def _request(
+    resource: dict[str, Any],
+    method: str,
+    path: str,
+    body: dict[str, Any] | None,
 ) -> dict[str, Any]:
     """Call a recorded private endpoint, preserving provider headers and app auth."""
     headers = dict(resource.get("headers", {}))

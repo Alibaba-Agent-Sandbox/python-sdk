@@ -23,6 +23,8 @@ from .models import (
 )
 from .store import ManagedStore, Transaction, new_object
 
+MAX_TOTAL_INPUT_FILE_BYTES = 10485760
+
 OPERATIONS = (
     ("GET", "/healthz"),
     ("GET", "/v1/agent-sandbox/capabilities"),
@@ -109,7 +111,12 @@ class ManagedService:
                 "guest_restart": "freeze_and_reconcile",
                 "input_types": ["input_text", "managed_file_reference"],
             },
-            "limits": {**self.config.limits, **self.config.storage, **self.config.sessions},
+            "limits": {
+                **self.config.limits,
+                **self.config.storage,
+                **self.config.sessions,
+                "max_total_input_file_bytes": MAX_TOTAL_INPUT_FILE_BYTES,
+            },
         }
 
     def control(self, tx: Transaction) -> dict[str, Any]:
@@ -303,6 +310,7 @@ class ManagedService:
                 "x_agent_sandbox.input_files",
             )
         out, paths = [], set()
+        total = 0
         for ref in files:
             if not isinstance(ref, dict) or set(ref) != {"file_id", "path"}:
                 raise ManagedError(400, "invalid_file_reference", "Expected file_id and path")
@@ -326,6 +334,14 @@ class ManagedService:
             file = tx.get(str(ref["file_id"]), owner)
             if file["_kind"] != "file" or file.get("expires_at", 0) < time.time():
                 raise ManagedError(400, "file_unavailable", "Input file is unavailable", "file_id")
+            total += file["bytes"]
+            if total > MAX_TOTAL_INPUT_FILE_BYTES:
+                raise ManagedError(
+                    413,
+                    "input_files_too_large",
+                    "Total attachment bytes exceed the 10 MiB budget",
+                    "x_agent_sandbox.input_files",
+                )
             out.append(
                 {"file_id": file["id"], "path": path, "sha256": file["x_agent_sandbox"]["sha256"]}
             )

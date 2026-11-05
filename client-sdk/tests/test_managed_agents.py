@@ -868,9 +868,11 @@ async def test_lost_submit_response_inspects_original_receipt_without_replay(
     sid = create(service, "one effect")["id"]
     submits = 0
 
-    async def lost_response(resource: Any, method: str, path: str, body: Any = None) -> Any:
+    async def lost_response(
+        resource: Any, method: str, path: str, body: Any = None, **options: Any
+    ) -> Any:
         nonlocal submits
-        result = await bridge_request(resource, method, path, body)
+        result = await bridge_request(resource, method, path, body, **options)
         if method == "POST" and path == "/managed/submissions":
             submits += 1
             raise ManagedError(503, "connection_lost", "response was lost after acceptance")
@@ -1121,3 +1123,284 @@ async def test_guest_queue_is_not_a_public_turn_before_real_execution(components
     events = service.events("owner", sid, "0")
     assert sum(e["type"] == "agent.session.turn.created" for e in events) == 1
     assert all(e.get("turn_id") for e in events if e["type"] == "agent.session.turn.created")
+
+
+@pytest.mark.asyncio
+async def test_http_attachment_total_budget_is_atomic_and_exact_limit_executes(
+    components: Any,
+) -> None:
+    service, _, worker, _ = components
+    token = "test-attachment-budget-token"
+    auth = TokenAuthenticator(
+        {
+            "tokens": [
+                {
+                    "sha256": hashlib.sha256(token.encode()).hexdigest(),
+                    "owner": "owner",
+                    "scopes": ["agents:read", "agents:write"],
+                }
+            ]
+        }
+    )
+    server = make_server(service, auth, port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with httpx.Client(
+            base_url=f"http://127.0.0.1:{server.server_port}",
+            headers={"Authorization": "Bearer " + token},
+            trust_env=False,
+            timeout=30,
+        ) as client:
+
+            def upload(size: int, fill: bytes) -> str:
+                response = client.post(
+                    "/v1/files",
+                    data={"purpose": "user_data"},
+                    files={"file": ("input.bin", fill * size)},
+                )
+                assert response.status_code == 200
+                return response.json()["id"]
+
+            first = upload(6 * 1048576, b"a")
+            second = upload(6 * 1048576, b"b")
+
+            def body(ids: list[str]) -> dict[str, Any]:
+                return {
+                    "agent": {"model": "fixture-model"},
+                    "input": "consume accepted inputs",
+                    "x_agent_sandbox": {
+                        "input_files": [
+                            {"file_id": file, "path": f"/workspace/input/{i}.bin"}
+                            for i, file in enumerate(ids)
+                        ]
+                    },
+                }
+
+            for ids in ([first, second], [first, first]):
+                response = client.post("/v1/agents/sessions", json=body(ids))
+                assert (
+                    response.status_code == 413
+                    and response.json()["error"]["code"] == "input_files_too_large"
+                )
+            assert client.get("/v1/agents/sessions").json()["data"] == []
+            with service.store.transaction() as tx:
+                assert tx.list("submission") == [] and tx.list("environment") == []
+                assert (
+                    tx.execute("SELECT COUNT(*) AS total FROM managed_events").fetchone()["total"]
+                    == 0
+                )
+            exact = [upload(5 * 1048576, b"c"), upload(5 * 1048576, b"d")]
+            response = client.post("/v1/agents/sessions", json=body(exact))
+            assert response.status_code == 201
+            sid = response.json()["id"]
+            assert await worker.run(sid)
+            assert (
+                client.get(f"/v1/agents/sessions/{sid}/turns").json()["data"][0]["status"]
+                == "completed"
+            )
+            assert (
+                client.get("/v1/agent-sandbox/capabilities").json()["limits"][
+                    "max_total_input_file_bytes"
+                ]
+                == 10485760
+            )
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
+
+
+@pytest.mark.asyncio
+async def test_total_http_deadline_stops_drip_and_preserves_external_cancellation() -> None:
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    from agent_sandbox.managed_agents.backend import bridge_request
+
+    closed = threading.Event()
+
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *args: Any) -> None:
+            return
+
+        def do_GET(self) -> None:
+            raw = b'{"status":"running","padding":"continuous drip"}'
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(raw)))
+            self.end_headers()
+            try:
+                for character in raw:
+                    self.wfile.write(bytes([character]))
+                    self.wfile.flush()
+                    time.sleep(0.03)
+            except OSError:
+                closed.set()
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    server.daemon_threads = True
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    resource = {
+        "url": f"http://127.0.0.1:{server.server_port}",
+        "headers": {},
+        "token": "test-drip-token",
+    }
+    try:
+        start = time.monotonic()
+        with pytest.raises(ManagedError) as deadline:
+            await bridge_request(resource, "GET", "/receipt", timeout_seconds=0.15)
+        assert deadline.value.code == "guest_request_timeout" and time.monotonic() - start < 0.6
+        for _ in range(50):
+            if closed.is_set():
+                break
+            await asyncio.sleep(0.02)
+        assert closed.is_set()
+        task = asyncio.create_task(bridge_request(resource, "GET", "/receipt", timeout_seconds=5))
+        await asyncio.sleep(0.1)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
+
+
+@pytest.mark.asyncio
+async def test_expired_observer_drip_releases_owned_compute_and_preserves_uncertain_turn(
+    components: Any,
+) -> None:
+    service, backend, worker, _ = components
+    service.config.limits["maxRunSeconds"] = 1
+    service.config.limits["maxToolSeconds"] = 1
+    original_create, original_kill = backend.create, backend.kill
+    killed_at = []
+
+    async def create_dripping(session: Any, token: str, created: Any) -> Any:
+        resource = await original_create(session, token, created)
+        bridge, server, _ = backend.resources[session["id"]]
+        original_send = server.RequestHandlerClass._send
+
+        def send(handler: Any, status: int, body: Any) -> None:
+            if handler.path == "/managed/submissions" and status < 400:
+                until = time.monotonic() + 0.5
+                while time.monotonic() < until:
+                    _, turn = bridge.runtime.find_turn(body["turn_id"])
+                    if turn.started_at:
+                        break
+                    time.sleep(0.005)
+                return original_send(handler, status, bridge.get(body["submission_id"]))
+            if handler.path.startswith("/managed/submissions/") and handler.command == "GET":
+                raw = json.dumps(body).encode()
+                handler.send_response(status)
+                handler.send_header("Content-Length", str(len(raw)))
+                handler.end_headers()
+                try:
+                    for character in raw:
+                        handler.wfile.write(bytes([character]))
+                        handler.wfile.flush()
+                        time.sleep(0.03)
+                except OSError:
+                    pass
+                return None
+            return original_send(handler, status, body)
+
+        server.RequestHandlerClass._send = send
+        return resource
+
+    async def kill(resource: Any) -> bool:
+        killed_at.append(time.monotonic())
+        return await original_kill(resource)
+
+    backend.create, backend.kill = create_dripping, kill
+    sid = create(service, "slow")["id"]
+    start = time.monotonic()
+    assert await worker.run(sid) is False
+    assert killed_at and killed_at[0] - start < 1.6
+    assert not backend.resources
+    with service.store.transaction() as tx:
+        submission = tx.list("submission", parent=sid)[0]
+        assert submission["status"] == "uncertain"
+        assert tx.get(sid)["_cleanup_confirmed"] is True
+        turn = tx.get(submission["turn_id"])
+        assert (
+            turn["status"] == "failed"
+            and turn["x_agent_sandbox"]["execution_status"] == "uncertain"
+        )
+        assert turn["error"]["code"] == "execution_result_uncertain"
+
+
+@pytest.mark.parametrize("components", ["postgres"], indirect=True)
+def test_real_postgres_statement_and_advisory_timeouts_close_connections(
+    components: Any, monkeypatch: Any
+) -> None:
+    from urllib.parse import parse_qsl, urlencode, urlsplit
+
+    import psycopg
+
+    service = components[0]
+    store = ManagedStore(
+        service.store.url,
+        service.store.application,
+        expected_state_id=service.store.state_instance_id,
+        statement_timeout_ms=200,
+        lock_timeout_ms=100,
+    )
+    raw_connect = psycopg.connect
+    blocker = raw_connect(store.url, autocommit=True)
+    lock = int.from_bytes(
+        hashlib.sha256(store.application.encode()).digest()[:8], "big", signed=True
+    )
+    opened = []
+
+    def connect(*args: Any, **kwargs: Any) -> Any:
+        connection = raw_connect(*args, **kwargs)
+        opened.append(connection)
+        return connection
+
+    monkeypatch.setattr(psycopg, "connect", connect)
+    try:
+        blocker.execute("SELECT pg_advisory_lock(%s)", (lock,))
+        start = time.monotonic()
+        with pytest.raises(psycopg.errors.LockNotAvailable), store.transaction():
+            pass
+        assert time.monotonic() - start < 1 and opened[-1].closed
+        blocker.execute("SELECT pg_advisory_unlock(%s)", (lock,))
+        with store.transaction() as tx:
+            assert tx.execute("SHOW statement_timeout").fetchone()["statement_timeout"] == "200ms"
+            assert tx.execute("SHOW lock_timeout").fetchone()["lock_timeout"] == "100ms"
+        start = time.monotonic()
+        with pytest.raises(psycopg.errors.QueryCanceled), store.transaction() as tx:
+            tx.execute("SELECT pg_sleep(1)")
+        assert time.monotonic() - start < 1 and opened[-1].closed
+        parsed = urlsplit(store.url)
+        unsafe = parsed._replace(
+            query=urlencode([*parse_qsl(parsed.query), ("options", "-c statement_timeout=0")])
+        ).geturl()
+        with pytest.raises(ValueError, match="options"):
+            ManagedStore(unsafe, store.application)
+    finally:
+        blocker.close()
+
+
+def test_guest_never_starts_an_already_expired_submission(tmp_path: Path) -> None:
+    from agent_sandbox.server.managed import BridgeError
+
+    bridge = ManagedBridge(str(tmp_path / "journal"), str(tmp_path / "workspace"))
+    local = bridge.create_session(
+        {"nonce": "expired-test", "agent": {"adapter": "qwen-code", "model": "fixture-model"}}
+    )
+    with pytest.raises(BridgeError) as expired:
+        bridge.submit(
+            {
+                "submission_id": "expired-submission",
+                "session_id": local["session_id"],
+                "input": "must not execute",
+                "files": [],
+                "deadline": time.time() - 1,
+            }
+        )
+    assert expired.value.code == "turn_deadline"
+    assert not bridge.runtime.get_session(local["session_id"]).turns
+    with bridge._db() as db:
+        assert db.execute("SELECT COUNT(*) FROM receipts").fetchone()[0] == 0

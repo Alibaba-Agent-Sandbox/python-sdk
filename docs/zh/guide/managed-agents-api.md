@@ -59,6 +59,7 @@ Submission 对象。排队会创建下一轮，不会引导当前执行。
 提交输入时附带 `x_agent_sandbox.input_files: [{"file_id":"file_...",
 "path":"/workspace/input/data.csv"}]`。路径必须规范化且处于部署工作区的 `input` 目录内，
 已有文件不能覆盖。提交接收时固定输入快照，删除公开 File 不撤销已经接收的附件。
+每次提交的附件总大小最多 10 MiB（`max_total_input_file_bytes`），重复引用同一个 File 也逐次计数。超限返回 `413`，不会留下已接收的 Session 或 Submission。
 只发布 `outputs/` 中普通文件的不可变产物快照；符号链接、不可读或读取期间变化的文件会被拒绝，
 并报告部分发布结果。
 
@@ -125,3 +126,5 @@ FC 部署要求 PostgreSQL；SQLite 仅用于明确的本地模式。存储、�
 私有 CA 使用 `ABX_MANAGED_TLS_CA_FILE` 指向可读 PEM CA bundle；CA 配置错误会失败，不会关闭证书校验。
 
 数据库需要私有 CA 时，为三个 Server 角色提供 `ABX_MANAGED_DATABASE_CA_PEM`。它只接受 1–8 个 PEM 证书，总大小不超过 64 KiB。运行时生成私有临时 CA 文件并显式传给 libpq，保留连接地址中的 `sslmode=verify-full`。它与沙箱 HTTPS 的 CA 配置分别使用，不会发送到沙箱。
+
+沙箱 HTTPS 请求的总墙钟期限为 30 秒，执行期间还会收紧到本轮剩余预算。预算耗尽而结果未知时，运行时尝试清理自有计算资源，Submission 保持 uncertain；已创建的 Turn 会标记 Gateway 失败，并另行说明 Agent 执行结果尚未确认。PostgreSQL 连接与单语句超时为 10 秒，锁等待超时为 5 秒；连接地址中的 `options` 覆盖会被拒绝。

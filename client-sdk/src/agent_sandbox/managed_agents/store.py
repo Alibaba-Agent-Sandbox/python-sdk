@@ -11,6 +11,7 @@ import sqlite3
 import time
 import uuid
 from typing import TYPE_CHECKING, Any
+from urllib.parse import parse_qsl, urlsplit
 
 from .models import ManagedError, canonical
 
@@ -236,9 +237,29 @@ class ManagedStore:
         local: bool = False,
         expected_state_id: str | None = None,
         database_ca_file: str | None = None,
+        statement_timeout_ms: int = 10000,
+        lock_timeout_ms: int = 5000,
     ) -> None:
         self.url, self.application = url, application
         self.database_ca_file = database_ca_file
+        if any(
+            not isinstance(v, int) or isinstance(v, bool) or not 1 <= v <= bound
+            for v, bound in ((statement_timeout_ms, 10000), (lock_timeout_ms, 5000))
+        ):
+            raise ValueError(
+                "Database statement/lock deadlines must be positive bounded milliseconds"
+            )
+        if any(key.lower() == "options" for key, _ in parse_qsl(urlsplit(url).query)):
+            raise ValueError(
+                "Database URI options are not supported; runtime deadlines are explicit"
+            )
+        self.pg_options = {
+            "options": (
+                f"-c statement_timeout={statement_timeout_ms} -c lock_timeout={lock_timeout_ms}"
+            )
+        }
+        if database_ca_file:
+            self.pg_options["sslrootcert"] = database_ca_file
         self.sqlite = url.startswith("sqlite:///")
         if self.sqlite:
             if database_ca_file is not None:
@@ -356,9 +377,8 @@ class ManagedStore:
         else:
             import psycopg
 
-            options = {"sslrootcert": self.database_ca_file} if self.database_ca_file else {}
+            options = self.pg_options
             with psycopg.connect(self.url, autocommit=True, connect_timeout=10, **options) as db:
-                db.execute("SET statement_timeout='10000ms'")
                 key = int.from_bytes(identity[:8], "big", signed=True)
                 db.execute("SELECT pg_advisory_lock(%s)", (key,))
                 try:
@@ -369,23 +389,24 @@ class ManagedStore:
     @contextlib.contextmanager
     def transaction(self, *, initialize: bool = False) -> Iterator[Transaction]:
         """Serialize application mutation across Gateway, Worker and Dispatcher."""
-        if self.sqlite:
-            db: Any = sqlite3.connect(self.url[len("sqlite:///") :], timeout=30)
-            db.row_factory = sqlite3.Row
-            db.execute("BEGIN IMMEDIATE")
-        else:
-            try:
-                import psycopg
-                from psycopg.rows import dict_row
-            except ImportError as exc:
-                raise RuntimeError("Install agent-sandbox-client[managed-agents]") from exc
-            options = {"sslrootcert": self.database_ca_file} if self.database_ca_file else {}
-            db = psycopg.connect(self.url, row_factory=dict_row, connect_timeout=10, **options)
-            lock = int.from_bytes(
-                hashlib.sha256(self.application.encode()).digest()[:8], "big", signed=True
-            )
-            db.execute("SELECT pg_advisory_xact_lock(%s)", (lock,))
+        db: Any = None
         try:
+            if self.sqlite:
+                db = sqlite3.connect(self.url[len("sqlite:///") :], timeout=30)
+                db.row_factory = sqlite3.Row
+                db.execute("BEGIN IMMEDIATE")
+            else:
+                try:
+                    import psycopg
+                    from psycopg.rows import dict_row
+                except ImportError as exc:
+                    raise RuntimeError("Install agent-sandbox-client[managed-agents]") from exc
+                options = self.pg_options
+                db = psycopg.connect(self.url, row_factory=dict_row, connect_timeout=10, **options)
+                lock = int.from_bytes(
+                    hashlib.sha256(self.application.encode()).digest()[:8], "big", signed=True
+                )
+                db.execute("SELECT pg_advisory_xact_lock(%s)", (lock,))
             transaction = Transaction(db, self.sqlite, self.application)
             if not initialize:
                 actual = transaction.execute(
@@ -399,7 +420,9 @@ class ManagedStore:
             yield transaction
             db.commit()
         except BaseException:
-            db.rollback()
+            if db is not None:
+                db.rollback()
             raise
         finally:
-            db.close()
+            if db is not None:
+                db.close()

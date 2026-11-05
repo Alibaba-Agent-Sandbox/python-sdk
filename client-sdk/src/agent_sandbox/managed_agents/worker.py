@@ -68,6 +68,24 @@ class ManagedWorker:
                 sub = tx.get(subid, deleted=True)
                 sub.update(status="uncertain", error={"code": code})
                 tx.put(sub)
+                if sub.get("turn_id"):
+                    turn = tx.get(sub["turn_id"], deleted=True)
+                    if turn["status"] == "in_progress":
+                        turn.update(
+                            status="failed",
+                            completed_at=time.time(),
+                            error={
+                                "code": "execution_result_uncertain",
+                                "message": "Gateway could not confirm execution outcome",
+                            },
+                            x_agent_sandbox={"execution_status": "uncertain"},
+                        )
+                        tx.put(turn)
+                        tx.event(
+                            row,
+                            "agent.session.turn.failed",
+                            {"turn_id": turn["id"], "turn": public(turn)},
+                        )
             tx.event(row, "agent.session.failed", {"error": row["error"]})
 
     async def run(self, sid: str, submission_id: str | None = None) -> bool:
@@ -132,10 +150,31 @@ class ManagedWorker:
             assert sub is not None
             await self._work(sid, sub["id"], claim)
             return True
+        except asyncio.CancelledError:
+            with self.store.transaction() as tx:
+                interrupted = tx.get(sid, deleted=True)
+            if interrupted.get("_phase") in {"creating", "submitting"}:
+                self._uncertain(sid, sub["id"] if sub else None, claim, "observer_cancelled")
+            raise
         except Exception as exc:
             if isinstance(exc, ManagedError) and exc.code == "claim_changed":
                 return False
             self._uncertain(sid, sub["id"] if sub else None, claim, "execution_result_uncertain")
+            expired = False
+            if sub:
+                with self.store.transaction() as tx:
+                    current_sub, current = (
+                        tx.get(sub["id"], deleted=True),
+                        tx.get(sid, deleted=True),
+                    )
+                    expired = current_sub.get("_deadline", float("inf")) <= time.time()
+                    if expired:
+                        self.service._close(tx, current)
+            if expired:
+                try:
+                    await asyncio.wait_for(self._close(sid, claim), 10)
+                except Exception:
+                    self._uncertain(sid, sub["id"] if sub else None, claim, "stop_unconfirmed")
             return False
         finally:
             heartbeat.cancel()
@@ -147,6 +186,13 @@ class ManagedWorker:
                     row["_claim_until"] = 0
                     row["_claim"] = None
                     tx.put(row)
+
+    @staticmethod
+    def _rpc_timeout(sub: dict[str, Any], cap: float = 30) -> float:
+        remaining = sub["_deadline"] - time.time()
+        if remaining <= 0:
+            raise ManagedError(504, "turn_deadline", "The host execution deadline expired")
+        return min(cap, remaining)
 
     async def _prepare(self, sid: str, claim: str) -> dict[str, Any]:
         session = self._owned(sid, claim)
@@ -296,16 +342,23 @@ class ManagedWorker:
                         "max_output_bytes": session["_settings"]["limits"]["maxOutputBytes"],
                         "max_events": session["_settings"]["limits"]["maxEventsPerRun"],
                     },
+                    timeout_seconds=self._rpc_timeout(sub),
                 )
             except Exception:
                 # Inspect the original receipt. A 404/timeout is uncertain, never
                 # permission to submit the same input into a fresh runtime.
                 receipt = await bridge_request(
-                    session["_resource"], "GET", "/managed/submissions/" + subid
+                    session["_resource"],
+                    "GET",
+                    "/managed/submissions/" + subid,
+                    timeout_seconds=self._rpc_timeout(sub),
                 )
         else:
             receipt = await bridge_request(
-                session["_resource"], "GET", "/managed/submissions/" + subid
+                session["_resource"],
+                "GET",
+                "/managed/submissions/" + subid,
+                timeout_seconds=self._rpc_timeout(sub),
             )
         while True:
             current = self._owned(sid, claim)
@@ -337,6 +390,7 @@ class ManagedWorker:
                     "POST",
                     "/managed/submissions/" + subid + "/cancel",
                     {"epoch": current["_guest_epoch"], "session_id": current["_guest_session"]},
+                    timeout_seconds=min(5, max(0.001, sub["_deadline"] - time.time())),
                 )
             self._ingest(sid, subid, claim, receipt)
             if receipt.get("status") in {"completed", "failed", "cancelled"} and receipt.get(
@@ -367,6 +421,7 @@ class ManagedWorker:
                 current["_resource"],
                 "GET",
                 "/managed/submissions/" + subid + "?after=" + str(sub.get("_native_seq", 0)),
+                timeout_seconds=self._rpc_timeout(sub),
             )
 
     def _ingest(self, sid: str, subid: str, claim: str, receipt: dict[str, Any]) -> None:
@@ -580,6 +635,13 @@ class ManagedWorker:
                     if sub["status"] not in SUBMISSION_TERMINAL:
                         sub["status"] = "cancelled"
                         tx.put(sub)
+                for cancellation in tx.list("operation", parent=sid, deleted=True):
+                    if (
+                        cancellation.get("kind") == "cancel"
+                        and cancellation.get("status") != "succeeded"
+                    ):
+                        cancellation.update(status="succeeded", result={"stop_confirmed": True})
+                        tx.put(cancellation)
             op = tx.get(current["_close_operation"], deleted=True)
             op.update(
                 status="succeeded" if confirmed else "requires_reconcile",
