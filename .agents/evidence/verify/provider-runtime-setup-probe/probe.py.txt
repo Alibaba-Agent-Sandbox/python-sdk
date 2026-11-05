@@ -1,0 +1,59 @@
+import asyncio,json,math,os,platform,statistics,subprocess,time
+from pathlib import Path
+import httpx
+ROOT=Path(__file__).parent
+
+def stats(xs):
+    ys=sorted(xs)
+    return {'n':len(ys),'median_ms':round(statistics.median(ys),4),'p95_ms':round(ys[math.ceil(.95*len(ys))-1],4),'mean_ms':round(statistics.mean(ys),4)}
+
+def start(name,args=()):
+    p=subprocess.Popen(['node',str(ROOT/name),*args],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env={k:v for k,v in os.environ.items() if k in ['PATH','LANG','LC_ALL','TMPDIR']})
+    ready=json.loads(p.stdout.readline())
+    return p,ready
+
+async def measure():
+    procs=[]
+    try:
+        backend,binfo=start('backend.cjs');procs.append(backend)
+        burl=f"http://127.0.0.1:{binfo['port']}"
+        bridge,einfo=start('bridge.cjs',(burl,));procs.append(bridge)
+        eurl=f"http://127.0.0.1:{einfo['port']}"
+        result={'scope':'synthetic loopback backend; Python httpx direct vs Python httpx via minimal Node HTTP JSON forwarding bridge; not abx SDK/provider benchmark', 'platform':platform.platform(),'node':subprocess.check_output(['node','--version'],text=True).strip(),'httpx':httpx.__version__,'bridge_idle_rss_mib':round(einfo['rss']/2**20,1),'cases':[]}
+        async with httpx.AsyncClient(trust_env=False,timeout=20) as client:
+            for size,count in [(1024,400),(65536,150),(1048576,40)]:
+                async def request(url):
+                    t=time.perf_counter_ns()
+                    r=await client.post(url,json={'size':size})
+                    r.raise_for_status()
+                    assert len(r.json()['stdout'])==size
+                    return (time.perf_counter_ns()-t)/1e6
+                for _ in range(25):
+                    await request(burl);await request(eurl)
+                direct=[];via=[]
+                for i in range(count):
+                    if i%2:
+                        via.append(await request(eurl));direct.append(await request(burl))
+                    else:
+                        direct.append(await request(burl));via.append(await request(eurl))
+                entry={'response_stdout_bytes':size,'direct':stats(direct),'via_bridge':stats(via),'median_delta_ms':round(statistics.median(via)-statistics.median(direct),4)}
+                result['cases'].append(entry)
+                print(json.dumps(entry),flush=True)
+        times=[]
+        for _ in range(12):
+            t=time.perf_counter_ns()
+            p=subprocess.Popen(['node','-e',"require('node:http');process.stdout.write('ready\\n')"],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+            out,err=p.communicate(timeout=10)
+            assert p.returncode==0
+            times.append((time.perf_counter_ns()-t)/1e6)
+        result['node_minimal_start_and_exit']=stats(times)
+        (ROOT/'results.json').write_text(json.dumps(result,indent=2))
+        print(json.dumps(result,indent=2),flush=True)
+    finally:
+        for p in reversed(procs):
+            p.terminate()
+            try:p.wait(timeout=5)
+            except subprocess.TimeoutExpired:p.kill();p.wait(timeout=5)
+        print('owned_probe_processes_stopped',all(p.poll() is not None for p in procs),flush=True)
+
+asyncio.run(measure())

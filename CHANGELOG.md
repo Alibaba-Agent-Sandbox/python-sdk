@@ -19,6 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Explain Python Node-provider runtime requirements, standalone quick installation, OpenSandbox credentials and cleanup, and workload-dependent bridge costs in both provider guides. / 双语提供方指南补齐 Python 使用 Node 提供方的运行环境、独立二进制快速安装、OpenSandbox 凭据与清理，以及随工作负载变化的转发开销。
+
 - Reorganize the English and Chinese repository READMEs around installation, first use and task-oriented documentation; keep migration and detailed reference material in their guides.
 
 - Remove an uncalled private configuration alias helper while preserving public configuration schema exports and compatibility signatures.
