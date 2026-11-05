@@ -9,7 +9,7 @@ Codex、Qwen Code 模型。它采用部分 OpenAI 风格资源结构，不声明
 安装匹配版本的客户端、服务端与托管部署依赖：
 
 ```bash
-python -m pip install --pre 'agent-sandbox-client[managed-agents]'
+python -m pip install --pre 'agent-sandbox-client[managed-agents]==0.4.0a7'
 ```
 
 [agents-api 模板](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/tree/main/agents-api)

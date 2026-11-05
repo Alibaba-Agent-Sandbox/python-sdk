@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+Release candidate: matching client/server **0.4.0a7**. / 候选版本：客户端与服务端均为 **0.4.0a7**。
+
 ### Added
 
 - Optional managed Agents API Gateway, Worker and Dispatcher with durable Sessions, explicit queue receipts, files/artifacts, safe cancellation and a restart-aware private guest bridge. / 新增可选托管 Agents API Gateway、Worker、Dispatcher，支持持久 Session、显式队列收据、文件与产物、安全取消和可识别重启的私有沙箱桥接。

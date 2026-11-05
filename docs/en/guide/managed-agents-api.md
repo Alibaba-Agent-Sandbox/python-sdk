@@ -11,7 +11,7 @@ OpenAI SDK compatibility or OpenAI-managed harness behavior.
 Install the matching client and server packages with the managed deployment dependencies:
 
 ```bash
-python -m pip install --pre 'agent-sandbox-client[managed-agents]'
+python -m pip install --pre 'agent-sandbox-client[managed-agents]==0.4.0a7'
 ```
 
 The [agents-api template](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/tree/main/agents-api)
