@@ -18,6 +18,11 @@ from .models import ManagedError, canonical
 if TYPE_CHECKING:
     import builtins
     from collections.abc import Iterator
+    from typing import TypedDict
+
+    class _PostgresOptions(TypedDict, total=False):
+        options: str
+        sslrootcert: str
 
 
 class Transaction:
@@ -253,7 +258,7 @@ class ManagedStore:
             raise ValueError(
                 "Database URI options are not supported; runtime deadlines are explicit"
             )
-        self.pg_options = {
+        self.pg_options: _PostgresOptions = {
             "options": (
                 f"-c statement_timeout={statement_timeout_ms} -c lock_timeout={lock_timeout_ms}"
             )

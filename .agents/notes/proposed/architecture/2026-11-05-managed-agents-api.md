@@ -105,3 +105,18 @@ build and fresh-install checks, and record full results independently of public 
 ## Implementation
 
 The pre-commit Ruff pin is aligned to v0.17.3 and its official `ruff-check` hook, matching the declared client dev toolchain. The old v0.4.9 falsely required eager runtime imports for the existing lazy provider facade. All rule selections, secret checks and Bandit remain enabled; required native Express implementation lives under its provider, with a lazy explicit facade export.
+
+The 2026-11-06 continuation moves the shared `ManagedError` definition into the dependency-free
+models layer. Its original `managed_agents.models` path re-exports the same class, preserving
+exception identity and the HTTP envelope. The native provider no longer imports the upper
+managed application package merely to report a bounded error. A fresh-interpreter regression
+demonstrated the previous eager application imports and verifies their absence after the change.
+Latest-candidate verification is recorded separately in
+[the continuation evidence](../../../evidence/verify/2026-11-06-managed-agents-release-candidate.md);
+earlier evidence remains unchanged.
+
+The same continuation makes the existing libpq kwargs precise to the current psycopg type
+contract and annotates the host-generated numeric timeout intermediate without changing runtime
+expressions. The real provider E2E no longer asserts the obsolete claim that pause is unimplemented;
+eligible-template pause/resume remains separately opt-in and is not inferred from base-template
+HTTP rejection. Initial failures and corrected replays are retained in the new evidence.

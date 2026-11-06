@@ -45,6 +45,8 @@ Release candidate: matching client/server **0.4.0a7**. / 候选版本：客户�
 
 ### Fixed
 
+- Keep the native managed Express backend independent of the application runtime at import time while preserving the public `ManagedError` identity and HTTP error envelope. / 原生托管极速版后端导入时不再加载上层应用运行时，保留公开 `ManagedError` 的同一异常类型与 HTTP 错误结构。
+
 - Implement typed Express pause/resume with session credential rebinding, preserve private traffic tokens without implicit reconnection, and keep legacy application command keyword behavior. / 完善极速版类型化暂停恢复和会话凭据更新，保留私有流量 token 且不隐式重连，并兼容原应用命令关键字行为。
 
 - Use Express lifecycle behavior in fallback session construction, redact reflected network header credentials from creation errors and their exception chains, and accept explicit application authentication in ProviderSandbox.invoke. / 回退会话构造使用极速版生命周期实现，创建失败时对网络请求头凭据及异常链定向脱敏，并支持 ProviderSandbox.invoke 显式传入应用认证。

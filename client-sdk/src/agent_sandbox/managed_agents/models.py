@@ -7,6 +7,8 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
+from agent_sandbox.models.managed_agents import ManagedError as ManagedError
+
 PROTOCOL = "agent-sandbox-managed-agents/v1"
 BRIDGE_PROTOCOL = "agent-sandbox-managed-bridge/v1"
 TERMINAL = frozenset({"completed", "failed", "cancelled"})
@@ -23,25 +25,6 @@ def canonical(value: Any) -> str:
 def digest(value: Any) -> str:
     """Hash a JSON request without exposing it in logs."""
     return hashlib.sha256(canonical(value).encode()).hexdigest()
-
-
-class ManagedError(Exception):
-    """A bounded, explicitly public error, never an arbitrary exception string."""
-
-    def __init__(self, status: int, code: str, message: str, param: str | None = None) -> None:
-        super().__init__(message)
-        self.status, self.code, self.message, self.param = status, code, message, param
-
-    def body(self) -> dict[str, Any]:
-        """Return the documented error envelope."""
-        return {
-            "error": {
-                "type": "invalid_request_error",
-                "code": self.code,
-                "message": self.message,
-                "param": self.param,
-            }
-        }
 
 
 def reject_unknown(body: dict[str, Any], allowed: set[str], param: str = "") -> None:

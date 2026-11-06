@@ -6,7 +6,7 @@ import contextlib
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
-from agent_sandbox.managed_agents.models import ManagedError
+from agent_sandbox.models.managed_agents import ManagedError
 
 if TYPE_CHECKING:
     from collections.abc import Callable

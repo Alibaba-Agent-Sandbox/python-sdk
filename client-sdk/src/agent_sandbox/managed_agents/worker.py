@@ -189,7 +189,7 @@ class ManagedWorker:
 
     @staticmethod
     def _rpc_timeout(sub: dict[str, Any], cap: float = 30) -> float:
-        remaining = sub["_deadline"] - time.time()
+        remaining: float = sub["_deadline"] - time.time()
         if remaining <= 0:
             raise ManagedError(504, "turn_deadline", "The host execution deadline expired")
         return min(cap, remaining)
