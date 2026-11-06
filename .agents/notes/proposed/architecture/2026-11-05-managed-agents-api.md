@@ -120,3 +120,8 @@ contract and annotates the host-generated numeric timeout intermediate without c
 expressions. The real provider E2E no longer asserts the obsolete claim that pause is unimplemented;
 eligible-template pause/resume remains separately opt-in and is not inferred from base-template
 HTTP rejection. Initial failures and corrected replays are retained in the new evidence.
+
+The exact runtime commit passes the complete remote matrix and both public runtime fixtures.
+The selected CI distribution identities and the local-filesystem archive-mode difference are
+recorded in [the CI artifact evidence](../../../evidence/verify/2026-11-06-managed-agents-ci-artifacts.md).
+Public release and managed FC qualification remain separate acceptance conditions.
