@@ -143,4 +143,11 @@ PEM CA bundle. Invalid CA configuration fails; it does not disable verification.
 
 For a database which requires a private CA, supply `ABX_MANAGED_DATABASE_CA_PEM` to the three Server roles. It accepts only 1–8 PEM certificates, at most 64 KiB. The runtime writes a private temporary CA file and passes it to libpq while preserving the connection URI’s `sslmode=verify-full`. This setting is separate from the guest HTTPS CA setting and is never sent to the sandbox.
 
+Deployments with limited environment-variable space can pass the public CA bundle as
+`--database-ca-base64 BASE64_PEM` after the role name. Use canonical Base64 of ASCII PEM; this
+argument and `ABX_MANAGED_DATABASE_CA_PEM` are mutually exclusive. Keep database credentials,
+model keys and internal tokens in their existing credential configuration. The same certificate
+validation and private temporary file apply. The runtime's 64 KiB decoded bound does not guarantee
+that a deployment platform accepts startup arguments of that size; platform limits still apply.
+
 Guest HTTPS exchanges have a total wall deadline of 30 seconds, clipped to the remaining execution budget during a turn. If that budget expires with an unknown result, the runtime attempts owned compute cleanup and retains an uncertain Submission; a public Turn reports the Gateway failure separately from the unconfirmed agent outcome. PostgreSQL connections use a 10-second connection/statement timeout and a 5-second lock timeout. URI `options` overrides are rejected.

@@ -125,3 +125,10 @@ The exact runtime commit passes the complete remote matrix and both public runti
 The selected CI distribution identities and the local-filesystem archive-mode difference are
 recorded in [the CI artifact evidence](../../../evidence/verify/2026-11-06-managed-agents-ci-artifacts.md).
 Public release and managed FC qualification remain separate acceptance conditions.
+
+The FC continuation adds only `--database-ca-base64` to the explicit managed role command.
+It carries public CA certificates, decodes canonical ASCII Base64 within 64 KiB, rejects an
+existing PEM environment source, and reuses the existing CA/X509 validation and private temporary
+file. Role credentials stay in their original configuration. Actual cloud acceptance of a
+particular startup-argument size is a separate gate; no undocumented FC argument maximum is assumed.
+See [the argument verification](../../../evidence/verify/2026-11-06-managed-agents-database-ca-argument.md).

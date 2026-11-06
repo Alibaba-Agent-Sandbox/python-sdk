@@ -127,4 +127,9 @@ FC 部署要求 PostgreSQL；SQLite 仅用于明确的本地模式。存储、�
 
 数据库需要私有 CA 时，为三个 Server 角色提供 `ABX_MANAGED_DATABASE_CA_PEM`。它只接受 1–8 个 PEM 证书，总大小不超过 64 KiB。运行时生成私有临时 CA 文件并显式传给 libpq，保留连接地址中的 `sslmode=verify-full`。它与沙箱 HTTPS 的 CA 配置分别使用，不会发送到沙箱。
 
+环境变量空间有限的部署可在角色名后传入 `--database-ca-base64 BASE64_PEM`，值为 ASCII PEM
+公开 CA bundle 的标准 Base64 编码。它与 `ABX_MANAGED_DATABASE_CA_PEM` 互斥；数据库凭据、模型
+Key 与内部令牌继续使用原有凭据配置。证书验证与私有临时文件流程相同。运行时解码后 64 KiB 的
+上限不表示部署平台一定接受同等大小的启动参数，仍须满足平台自身限制。
+
 沙箱 HTTPS 请求的总墙钟期限为 30 秒，执行期间还会收紧到本轮剩余预算。预算耗尽而结果未知时，运行时尝试清理自有计算资源，Submission 保持 uncertain；已创建的 Turn 会标记 Gateway 失败，并另行说明 Agent 执行结果尚未确认。PostgreSQL 连接与单语句超时为 10 秒，锁等待超时为 5 秒；连接地址中的 `options` 覆盖会被拒绝。

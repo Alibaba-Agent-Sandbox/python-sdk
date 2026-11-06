@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import contextlib
 import json
 import os
@@ -46,10 +48,32 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=9000)
     parser.add_argument("--host", default="0.0.0.0")  # nosec B104 - authenticated container ingress
     parser.add_argument("--local", action="store_true")
+    parser.add_argument("--database-ca-base64", type=decode_database_ca, metavar="BASE64_PEM")
     args = parser.parse_args()
+    pem = os.getenv("ABX_MANAGED_DATABASE_CA_PEM")
+    if args.database_ca_base64 is not None:
+        if pem is not None:
+            parser.error("Provide database CA through exactly one argument or environment source")
+        pem = args.database_ca_base64
     ssl.create_default_context(cafile=os.getenv("ABX_MANAGED_TLS_CA_FILE"))
-    with database_ca_file(os.getenv("ABX_MANAGED_DATABASE_CA_PEM")) as ca_file:
+    with database_ca_file(pem) as ca_file:
         serve(args, ca_file)
+
+
+def decode_database_ca(value: str) -> str:
+    """Decode bounded public CA material without reflecting argument values in errors."""
+    try:
+        if not value or len(value) > 4 * ((65536 + 2) // 3):
+            raise ValueError
+        encoded = value.encode("ascii")
+        raw = base64.b64decode(encoded, validate=True)
+        if len(raw) > 65536 or base64.b64encode(raw) != encoded:
+            raise ValueError
+        return raw.decode("ascii")
+    except (ValueError, UnicodeError, binascii.Error):
+        raise argparse.ArgumentTypeError(
+            "Database CA must be canonical Base64 of at most 64 KiB ASCII PEM"
+        ) from None
 
 
 @contextlib.contextmanager
