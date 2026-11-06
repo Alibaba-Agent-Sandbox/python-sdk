@@ -124,6 +124,10 @@ FC 部署要求 PostgreSQL；SQLite 仅用于明确的本地模式。存储、�
 `modelEnvAllowlist` 必须明确允许 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_MODEL`。
 凭据仅交给需要它的角色，不写入镜像或公开资源。文件来源的业务认证每次重读以支持撤权，并执行可选到期限制。
 
+正常版本更新通过上一份部署收据复用现有应用与数据库。完整销毁部署后，外部管理的 PostgreSQL
+数据仍会保留，该应用标识保持关闭。之后重新创建部署时，应使用新的模板/应用名称，或新的空
+PostgreSQL 数据库；原收据继续用于清理与核对资源。
+
 沙箱私有桥接 HTTPS 客户端始终校验证书，默认采用系统信任库且不继承 HTTP 代理设置。
 私有 CA 使用 `ABX_MANAGED_TLS_CA_FILE` 指向可读 PEM CA bundle；CA 配置错误会失败，不会关闭证书校验。
 

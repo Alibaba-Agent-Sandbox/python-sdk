@@ -141,3 +141,8 @@ stream failure closes the connection rather than appending a second HTTP respons
 PostgreSQL subscription admission and frame/deletion gates remain unchanged. Real PG, HTTP and
 process-kill recovery evidence is recorded in
 [the streaming/recovery continuation](../../../evidence/verify/2026-11-06-managed-agents-streaming-and-recovery.md).
+
+Complete destruction leaves its application admission fence in retained external state. A new
+application identifier or empty database establishes a new deployment; ordinary upgrades retain
+the same ledger via the preceding receipt. No automatic reactivation or deletion of the old
+control record is introduced. Both operator guides document this lifecycle boundary.

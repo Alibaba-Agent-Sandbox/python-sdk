@@ -139,6 +139,12 @@ role invocations and must remain stable while retained revisions drain.
 Credentials are passed only to roles which need them, and never put in images or public resources.
 File-backed business authentication is reread for revocation; optional token expiry is enforced.
 
+Normal revision updates reuse the existing application and database through the previous
+deployment receipt. Destroying the complete deployment retains externally managed PostgreSQL
+data and leaves that application identifier closed. To create another deployment afterward,
+use a new template/application name or a new empty PostgreSQL database. Retain the original
+receipt for cleanup and reconciliation.
+
 TLS certificate verification remains enabled. The private bridge HTTPS client uses the system trust store without
 inheriting HTTP proxy settings. To trust a private CA, set `ABX_MANAGED_TLS_CA_FILE` to a readable
 PEM CA bundle. Invalid CA configuration fails; it does not disable verification.
