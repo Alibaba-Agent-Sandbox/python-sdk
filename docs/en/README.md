@@ -147,3 +147,5 @@ The `abx` CLI (npm `@agent-sandbox/cli`) is documented in the [`cli` repository]
 The [E2B migration contract](guide/migrate-from-e2b.md) defines synchronous Sandbox, asynchronous AsyncSandbox and the interpreter API; provider/server extensions use ProviderSandbox.
 
 - [Local conditional acceptance](guide/conditional-acceptance.md)
+
+- [Managed Agents API / 托管 Agents API](guide/managed-agents-api.md)

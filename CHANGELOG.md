@@ -8,7 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+Release candidate: matching client/server **0.4.0a7**. / 候选版本：客户端与服务端均为 **0.4.0a7**。
+
 ### Added
+
+- Optional managed Agents API Gateway, Worker and Dispatcher with durable Sessions, explicit queue receipts, files/artifacts, safe cancellation and a restart-aware private guest bridge. / 新增可选托管 Agents API Gateway、Worker、Dispatcher，支持持久 Session、显式队列收据、文件与产物、安全取消和可识别重启的私有沙箱桥接。
 
 - Add explicit application command `invoke` arguments, Express network creation and STS SecurityToken handoff. / 新增应用命令 invoke 显式业务参数、极速版创建时网络配置和 STS SecurityToken 传递。
 
@@ -40,6 +44,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Select verified public client/server a6 in maintained bilingual installs, Skills and runtime fixtures. Preserve immutable publication hashes, exhaustive help checks and real current-design cleanup separately from earlier a4/a5 receipts. No runtime/API change or new package publication. / 维护中的双语安装、技能与运行夹具统一使用已验证公开 a6；另存不可变产物摘要、完整帮助检查与真实设计示例清理结果，不改旧 a4/a5 证据，不改运行接口或另发包。
 
 ### Fixed
+
+- Reject an empty private control revision before state access, preserving omitted-revision global drain and nonempty revision behavior. / 私有控制调用在访问状态前拒绝空 revision，保留省略 revision 时的全局排空及非空 revision 的既有行为。
+- Accept FC's binary media type only for signed private managed invocations, preserving JSON validation and the public Gateway's media requirements. / 托管私有签名调用兼容 FC 的二进制媒体类型，保留 JSON 校验与公开 Gateway 的媒体类型要求。
+
+- Accept bounded public database CA startup arguments in one or more segments while preserving certificate validation and the existing environment source. / 托管角色启动支持分段传递有界的公开数据库 CA，保留证书校验与原有环境变量来源。
+
+- Frame managed SSE responses with HTTP/1.1 chunks and close failed streams without appending another HTTP response. / 托管 SSE 响应采用 HTTP/1.1 分块编码，流中途失败时关闭连接，不追加第二个 HTTP 响应。
+
+- Keep the native managed Express backend independent of the application runtime at import time while preserving the public `ManagedError` identity and HTTP error envelope. / 原生托管极速版后端导入时不再加载上层应用运行时，保留公开 `ManagedError` 的同一异常类型与 HTTP 错误结构。
 
 - Implement typed Express pause/resume with session credential rebinding, preserve private traffic tokens without implicit reconnection, and keep legacy application command keyword behavior. / 完善极速版类型化暂停恢复和会话凭据更新，保留私有流量 token 且不隐式重连，并兼容原应用命令关键字行为。
 

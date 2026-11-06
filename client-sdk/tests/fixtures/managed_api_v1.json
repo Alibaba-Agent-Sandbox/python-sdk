@@ -1,0 +1,318 @@
+{
+  "contract": "agent-sandbox-managed-agents/v1",
+  "source": "2026-11-05 reviewed V1 contract",
+  "operations": [
+    {
+      "operation_id": "health_get",
+      "method": "GET",
+      "path": "/healthz",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "capabilities_get",
+      "method": "GET",
+      "path": "/v1/agent-sandbox/capabilities",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "models_list",
+      "method": "GET",
+      "path": "/v1/models",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "models_get",
+      "method": "GET",
+      "path": "/v1/models/{model_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "runtimes_list",
+      "method": "GET",
+      "path": "/v1/agents/runtimes",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "agents_create",
+      "method": "POST",
+      "path": "/v1/agents",
+      "success_codes": [
+        201
+      ]
+    },
+    {
+      "operation_id": "agents_list",
+      "method": "GET",
+      "path": "/v1/agents",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "agents_get",
+      "method": "GET",
+      "path": "/v1/agents/{agent_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "agents_update",
+      "method": "POST",
+      "path": "/v1/agents/{agent_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "agents_delete",
+      "method": "DELETE",
+      "path": "/v1/agents/{agent_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "sessions_create",
+      "method": "POST",
+      "path": "/v1/agents/sessions",
+      "success_codes": [
+        201
+      ]
+    },
+    {
+      "operation_id": "sessions_list",
+      "method": "GET",
+      "path": "/v1/agents/sessions",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "sessions_get",
+      "method": "GET",
+      "path": "/v1/agents/sessions/{session_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "sessions_update",
+      "method": "POST",
+      "path": "/v1/agents/sessions/{session_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "sessions_delete",
+      "method": "DELETE",
+      "path": "/v1/agents/sessions/{session_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "session_events_create",
+      "method": "POST",
+      "path": "/v1/agents/sessions/{session_id}/events",
+      "success_codes": [
+        202
+      ]
+    },
+    {
+      "operation_id": "session_events_stream",
+      "method": "GET",
+      "path": "/v1/agents/sessions/{session_id}/events",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "session_items_list",
+      "method": "GET",
+      "path": "/v1/agents/sessions/{session_id}/items",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "turns_list",
+      "method": "GET",
+      "path": "/v1/agents/sessions/{session_id}/turns",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "turns_get",
+      "method": "GET",
+      "path": "/v1/agents/sessions/{session_id}/turns/{turn_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "turn_items_list",
+      "method": "GET",
+      "path": "/v1/agents/sessions/{session_id}/turns/{turn_id}/items",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "artifacts_list",
+      "method": "GET",
+      "path": "/v1/agents/sessions/{session_id}/artifacts",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "artifacts_get",
+      "method": "GET",
+      "path": "/v1/agents/sessions/{session_id}/artifacts/{artifact_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "artifacts_content",
+      "method": "GET",
+      "path": "/v1/agents/sessions/{session_id}/artifacts/{artifact_id}/content",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "artifacts_delete",
+      "method": "DELETE",
+      "path": "/v1/agents/sessions/{session_id}/artifacts/{artifact_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "files_create",
+      "method": "POST",
+      "path": "/v1/files",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "files_list",
+      "method": "GET",
+      "path": "/v1/files",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "files_get",
+      "method": "GET",
+      "path": "/v1/files/{file_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "files_content",
+      "method": "GET",
+      "path": "/v1/files/{file_id}/content",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "files_delete",
+      "method": "DELETE",
+      "path": "/v1/files/{file_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "environments_list",
+      "method": "GET",
+      "path": "/v1/agents/environments",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "environments_get",
+      "method": "GET",
+      "path": "/v1/agents/environments/{environment_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "sessions_close",
+      "method": "POST",
+      "path": "/v1/agent-sandbox/sessions/{session_id}/close",
+      "success_codes": [
+        202
+      ]
+    },
+    {
+      "operation_id": "operations_get",
+      "method": "GET",
+      "path": "/v1/agent-sandbox/operations/{operation_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "submissions_enqueue",
+      "method": "POST",
+      "path": "/v1/agent-sandbox/sessions/{session_id}/submissions",
+      "success_codes": [
+        202
+      ]
+    },
+    {
+      "operation_id": "submissions_list",
+      "method": "GET",
+      "path": "/v1/agent-sandbox/sessions/{session_id}/submissions",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "submissions_get",
+      "method": "GET",
+      "path": "/v1/agent-sandbox/sessions/{session_id}/submissions/{submission_id}",
+      "success_codes": [
+        200
+      ]
+    },
+    {
+      "operation_id": "turns_cancel",
+      "method": "POST",
+      "path": "/v1/agent-sandbox/sessions/{session_id}/turns/{turn_id}/cancel",
+      "success_codes": [
+        202
+      ]
+    },
+    {
+      "operation_id": "submissions_cancel",
+      "method": "POST",
+      "path": "/v1/agent-sandbox/sessions/{session_id}/submissions/{submission_id}/cancel",
+      "success_codes": [
+        202
+      ]
+    }
+  ]
+}

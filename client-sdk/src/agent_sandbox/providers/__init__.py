@@ -11,6 +11,9 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from agent_sandbox.providers import commands as commands
+    from agent_sandbox.providers.alicloud_express.managed import (
+        ExpressBackend as ManagedExpressBackend,
+    )
     from agent_sandbox.providers.base import FEATURES as FEATURES
     from agent_sandbox.providers.base import ConfigField as ConfigField
     from agent_sandbox.providers.base import Provider as Provider
@@ -28,6 +31,7 @@ if TYPE_CHECKING:
     from agent_sandbox.utils.config_keys import BUILTIN_PROVIDER_ID as BUILTIN_PROVIDER_ID
 
 __all__ = [
+    "ManagedExpressBackend",
     "BUILTIN_PROVIDER_ID",
     "FEATURES",
     "ConfigField",
@@ -49,6 +53,8 @@ __all__ = [
 
 def __getattr__(name: str) -> Any:
     """Keep public exports lazy so reading bundled metadata does not discover providers."""
+    if name == "ManagedExpressBackend":
+        return import_module("agent_sandbox.providers.alicloud_express.managed").ExpressBackend
     if name == "commands":
         return import_module("agent_sandbox.providers.commands")
     if name == "BUILTIN_PROVIDER_ID":

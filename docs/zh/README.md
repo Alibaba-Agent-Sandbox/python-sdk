@@ -147,3 +147,5 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 [E2B 迁移契约](guide/migrate-from-e2b.md)定义同步 Sandbox、异步 AsyncSandbox 和解释器接口；Provider/Server 扩展使用 ProviderSandbox。
 
 - [本地暂停与快照验收](guide/conditional-acceptance.md)
+
+- [Managed Agents API / 托管 Agents API](guide/managed-agents-api.md)

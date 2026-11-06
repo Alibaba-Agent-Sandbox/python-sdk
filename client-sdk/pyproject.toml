@@ -44,10 +44,14 @@ dependencies = [
     "tomli>=2.0; python_version < '3.11'",
     # The client uses the matching local server runtime for its server/declarative helpers.
     # Keep the required distribution version equal to ``_version.py``.
-    "agent-sandbox-server==0.4.0a6",
+    "agent-sandbox-server==0.4.0a7",
 ]
 
 [project.optional-dependencies]
+managed-agents = [
+    "psycopg[binary]>=3.2,<4",
+    "alibabacloud-fc20230330>=4.8.3,<5",
+]
 mcp = [
     "mcp>=1.0.0",
     "starlette>=1.7.0",
@@ -126,6 +130,10 @@ exclude = ["src/agent_sandbox/_standard/", "src/agent_sandbox/code_interpreter/"
 
 # ``tomli`` is only present as a fallback on older interpreters (the stdlib ``tomllib`` is
 # unavailable before Python 3.11).
+[[tool.mypy.overrides]]
+module = ["psycopg.*", "alibabacloud_credentials.*", "alibabacloud_fc20230330.*", "alibabacloud_tea_openapi.*", "alibabacloud_tea_util.*"]
+ignore_missing_imports = true
+
 [[tool.mypy.overrides]]
 module = [
     "tomli",

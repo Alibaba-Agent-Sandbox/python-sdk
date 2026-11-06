@@ -82,13 +82,12 @@ def test_alicloud_express_sdk_live() -> None:
         expect_pass=_EXPRESS_PASS,
         expect_refused={"code.execute", "code.default-context.execute"},
     )
-    # The base template has no in-sandbox command server. Pause is refused
-    # by the adapter before a platform call, while the envd
-    # terminal is not implemented by this project adapter. StartRequest.stdin
-    # is false, and this envd still keeps the stdin pipe, so cat waits.
+    # The base template has no in-sandbox command server, and its envd terminal
+    # is not implemented by this project adapter. StartRequest.stdin is false,
+    # and this envd still keeps the stdin pipe, so cat waits. Conditional
+    # pause/resume is verified separately with E2E_PAUSE_TEMPLATE in
+    # test_standard_contract.py; the base template does not prove admission.
     assert live.row(report, "sessions").status == "blocked"
-    assert live.row(report, "sandbox.pause").status == "refused"
-    assert "E8004" in live.row(report, "sandbox.pause").detail
     assert live.row(report, "pty").status == "fail"
     assert live.row(report, "exec.stdin").status == "fail"
     assert "did not finish" in live.row(report, "exec.stdin").detail

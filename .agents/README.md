@@ -1,5 +1,8 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+- [Managed Agents API](notes/proposed/architecture/2026-11-05-managed-agents-api.md) · [initial verification](evidence/verify/2026-11-05-managed-agents-api.md) · [release-candidate verification](evidence/verify/2026-11-06-managed-agents-release-candidate.md) · [CI artifacts](evidence/verify/2026-11-06-managed-agents-ci-artifacts.md).
+- Managed Agents API cloud continuations: [private invocation/drain](evidence/verify/2026-11-06-managed-agents-fc-private-drain.md), [source business operations](evidence/verify/2026-11-06-managed-agents-fc-business-source.md), [private input boundary](evidence/verify/2026-11-06-managed-agents-empty-private-revision.md).
+
 - [Express SDK completion](notes/implemented/feature/2026-11-05-express-sdk-completion.md) · [verification](evidence/verify/2026-11-05-express-sdk-completion.md).
 - [Provider runtime setup](notes/proposed/process/2026-11-05-provider-runtime-setup.md) · [verification](evidence/verify/2026-11-05-provider-runtime-setup.md).
 
