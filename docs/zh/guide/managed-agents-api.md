@@ -55,6 +55,8 @@ Submission 对象。排队会创建下一轮，不会引导当前执行。
 
 ## 文件与事件
 
+资源 POST 请求必须使用 `Content-Type: application/json`；文件上传使用 multipart 表单。
+
 使用 multipart `POST /v1/files` 上传文件，字段为 `purpose=user_data` 与 `file`。
 提交输入时附带 `x_agent_sandbox.input_files: [{"file_id":"file_...",
 "path":"/workspace/input/data.csv"}]`。路径必须规范化且处于部署工作区的 `input` 目录内，

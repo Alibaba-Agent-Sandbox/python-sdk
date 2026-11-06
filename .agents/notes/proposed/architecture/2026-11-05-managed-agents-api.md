@@ -146,3 +146,12 @@ Complete destruction leaves its application admission fence in retained external
 application identifier or empty database establishes a new deployment; ordinary upgrades retain
 the same ledger via the preceding receipt. No automatic reactivation or deletion of the old
 control record is introduced. Both operator guides document this lifecycle boundary.
+
+An actual native FC invocation reached the private HTTP handler but returned the bounded
+`unsupported_media_type` error inside a transport-level 200 response. FC's documented
+InvokeFunction conversion uses `POST /invoke` with `application/octet-stream`, even when the
+payload contains JSON. Only this existing non-Gateway role branch now accepts that media type;
+bounded finite JSON-object parsing, role-scoped HMAC and application identity checks are retained.
+The public Gateway still requires JSON for resource requests. The separate
+[private invocation evidence](../../../evidence/verify/2026-11-06-managed-agents-private-invocation.md)
+preserves the cloud failure and new component checks without treating a native 200 as success.

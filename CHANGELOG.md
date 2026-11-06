@@ -45,6 +45,8 @@ Release candidate: matching client/server **0.4.0a7**. / 候选版本：客户�
 
 ### Fixed
 
+- Accept FC's binary media type only for signed private managed invocations, preserving JSON validation and the public Gateway's media requirements. / 托管私有签名调用兼容 FC 的二进制媒体类型，保留 JSON 校验与公开 Gateway 的媒体类型要求。
+
 - Accept bounded public database CA startup arguments in one or more segments while preserving certificate validation and the existing environment source. / 托管角色启动支持分段传递有界的公开数据库 CA，保留证书校验与原有环境变量来源。
 
 - Frame managed SSE responses with HTTP/1.1 chunks and close failed streams without appending another HTTP response. / 托管 SSE 响应采用 HTTP/1.1 分块编码，流中途失败时关闭连接，不追加第二个 HTTP 响应。

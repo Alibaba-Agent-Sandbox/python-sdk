@@ -168,11 +168,14 @@ def make_server(
                 raise ManagedError(400, "incomplete_body", "Incomplete request body")
             return raw
 
-        def _body(self) -> dict[str, Any]:
+        def _body(self, *, allow_octet_stream: bool = False) -> dict[str, Any]:
             raw = self._raw()
             if not raw:
                 return {}
-            if self.headers.get_content_type() != "application/json":
+            content_type = self.headers.get_content_type()
+            if content_type != "application/json" and not (
+                allow_octet_stream and content_type == "application/octet-stream"
+            ):
                 raise ManagedError(415, "unsupported_media_type", "Use application/json")
             try:
                 value = json.loads(raw)
@@ -353,7 +356,9 @@ def make_server(
                     raise ManagedError(
                         404, "endpoint_not_available", "Only private invocation is available"
                     )
-                payload = verify_invocation(self._body(), internal_token, mode)
+                payload = verify_invocation(
+                    self._body(allow_octet_stream=True), internal_token, mode
+                )
                 if mode == "worker":
                     if set(payload) - {"sessionId", "submissionId"} or not isinstance(
                         payload.get("sessionId"), str

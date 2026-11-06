@@ -399,6 +399,121 @@ def test_real_http_multipart_and_safe_errors(components: Any) -> None:
         thread.join(timeout=3)
 
 
+@pytest.mark.parametrize("components", ["sqlite", "postgres"], indirect=True)
+@pytest.mark.parametrize("mode", ["dispatcher", "worker"])
+def test_private_fc_octet_stream_keeps_json_and_role_boundaries(components: Any, mode: str) -> None:
+    service, backend, _, dispatcher = components
+    sid = create(service)["id"]
+    token = "test-internal-token-" * 3
+    payload = (
+        {"operation": "status", "applicationId": service.config.application_id}
+        if mode == "dispatcher"
+        else {"sessionId": sid}
+    )
+    envelope = sign_invocation(payload, token, mode)
+    server = make_server(
+        service, None, mode=mode, dispatcher=dispatcher, internal_token=token, port=0
+    )
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with httpx.Client(
+            base_url=f"http://127.0.0.1:{server.server_port}", trust_env=False
+        ) as client:
+            for media_type in (
+                "application/json",
+                "application/octet-stream",
+                "Application/Octet-Stream; charset=utf-8",
+            ):
+                response = client.post(
+                    "/invoke", content=json.dumps(envelope), headers={"Content-Type": media_type}
+                )
+                assert response.status_code == 200
+                if mode == "dispatcher":
+                    assert response.json()["activeSessions"] == 1
+                else:
+                    assert response.json() == {"claimed": False}
+            octet = {"Content-Type": "application/octet-stream"}
+            invalid = {**envelope, "signature": "0" * 64}
+            assert (
+                client.post("/invoke", content=json.dumps(invalid), headers=octet).status_code
+                == 401
+            )
+            other_role = "worker" if mode == "dispatcher" else "dispatcher"
+            wrong_role = sign_invocation(payload, token, other_role)
+            assert (
+                client.post("/invoke", content=json.dumps(wrong_role), headers=octet).status_code
+                == 401
+            )
+            for raw in (b"{", b"[]", b'{"value":NaN}'):
+                response = client.post("/invoke", content=raw, headers=octet)
+                assert response.status_code == 400
+                assert response.json()["error"]["code"] == "invalid_json"
+            assert client.post("/invoke/other", content=b"{}", headers=octet).status_code == 404
+            assert client.get("/invoke", headers=octet).status_code == 404
+            assert (
+                client.post(
+                    "/invoke", content=json.dumps(envelope), headers={"Content-Type": "text/plain"}
+                ).status_code
+                == 415
+            )
+        with socket.create_connection(("127.0.0.1", server.server_port), timeout=3) as connection:
+            size = service.config.storage["maxFileBytes"] + 16385
+            connection.sendall(
+                (
+                    "POST /invoke HTTP/1.1\r\nHost: localhost\r\n"
+                    "Content-Type: application/octet-stream\r\n"
+                    f"Content-Length: {size}\r\nConnection: close\r\n\r\n"
+                ).encode()
+            )
+            assert connection.makefile("rb").readline().startswith(b"HTTP/1.1 413 ")
+        assert backend.created == 0
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
+
+
+def test_gateway_still_requires_json_for_octet_stream_envelopes(components: Any) -> None:
+    service = components[0]
+    token = "test-business-token-" * 3
+    auth = TokenAuthenticator(
+        {
+            "tokens": [
+                {
+                    "sha256": hashlib.sha256(token.encode()).hexdigest(),
+                    "owner": "owner",
+                    "scopes": ["agents:read", "agents:write"],
+                }
+            ]
+        }
+    )
+    server = make_server(service, auth, port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with httpx.Client(
+            base_url=f"http://127.0.0.1:{server.server_port}",
+            headers={"Authorization": "Bearer " + token},
+            trust_env=False,
+        ) as client:
+            envelope = sign_invocation(
+                {"operation": "status"}, "test-private-token-" * 3, "dispatcher"
+            )
+            response = client.post(
+                "/v1/agents/sessions",
+                content=json.dumps(envelope),
+                headers={"Content-Type": "application/octet-stream"},
+            )
+            assert response.status_code == 415
+            assert response.json()["error"]["code"] == "unsupported_media_type"
+            assert client.post("/invoke", json=envelope).status_code == 404
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
+
+
 @pytest.mark.asyncio
 async def test_active_cancel_exact_target_replays_without_cancelling_next_turn(
     components: Any,

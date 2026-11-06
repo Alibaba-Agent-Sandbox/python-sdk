@@ -61,6 +61,8 @@ with a Submission object. Queuing schedules another turn; it does not steer the 
 
 ## Files and events
 
+Resource POST requests require `Content-Type: application/json`. File uploads use multipart form data.
+
 Upload files with multipart `POST /v1/files`, fields `purpose=user_data` and `file`. Attach an
 uploaded file to input using `x_agent_sandbox.input_files: [{"file_id":"file_...",
 "path":"/workspace/input/data.csv"}]`. Paths must be normalized beneath the deployment's
