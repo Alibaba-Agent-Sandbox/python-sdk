@@ -162,7 +162,7 @@ class ManagedDispatcher:
         if (
             (not isinstance(limit, int) or isinstance(limit, bool))
             or not 1 <= limit <= 100
-            or (revision is not None and not isinstance(revision, str))
+            or (revision is not None and (not isinstance(revision, str) or not revision))
         ):
             raise ManagedError(400, "invalid_invocation", "Invalid dispatch bounds")
         if operation not in {"dispatch", "status", "drain"}:

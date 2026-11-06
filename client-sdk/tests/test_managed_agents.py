@@ -474,6 +474,85 @@ def test_private_fc_octet_stream_keeps_json_and_role_boundaries(components: Any,
         thread.join(timeout=3)
 
 
+@pytest.mark.parametrize("components", ["sqlite", "postgres"], indirect=True)
+@pytest.mark.parametrize("operation", ["status", "drain"])
+def test_empty_private_revision_rejects_without_state_changes(
+    components: Any, operation: str
+) -> None:
+    service, backend, _, dispatcher = components
+    sid = create(service)["id"]
+    token = "test-private-control-token-" * 3
+
+    def snapshot() -> dict[str, Any]:
+        queries = {
+            "control": "SELECT * FROM managed_control WHERE application=? ORDER BY 1,2",
+            "objects": "SELECT * FROM managed_objects WHERE application=? ORDER BY 1,2",
+            "events": "SELECT * FROM managed_events WHERE application=? ORDER BY 1,2,3",
+            "idempotency": "SELECT * FROM managed_idempotency WHERE application=? ORDER BY 1,2,3",
+            "meta": "SELECT * FROM managed_meta WHERE application=? ORDER BY 1,2",
+        }
+        with service.store.transaction() as tx:
+            return {
+                label: [dict(row) for row in tx.execute(query, (tx.application,)).fetchall()]
+                for label, query in queries.items()
+            }
+
+    before = snapshot()
+    assert dispatcher.status()["activeSessions"] == 1
+    server = make_server(
+        service, None, mode="dispatcher", dispatcher=dispatcher, internal_token=token, port=0
+    )
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with httpx.Client(
+            base_url=f"http://127.0.0.1:{server.server_port}", trust_env=False
+        ) as client:
+            payload = {
+                "operation": operation,
+                "applicationId": service.config.application_id,
+                "revision": "",
+            }
+            invalid = client.post(
+                "/invoke",
+                content=json.dumps(sign_invocation(payload, token, "dispatcher")),
+                headers={"Content-Type": "application/octet-stream"},
+            )
+            assert invalid.status_code == 400
+            assert invalid.json()["error"]["code"] == "invalid_invocation"
+            assert snapshot() == before
+            assert dispatcher.status()["activeSessions"] == 1
+            assert dispatcher.status()["draining"] is False
+            assert backend.created == 0
+            scoped = client.post(
+                "/invoke",
+                json=sign_invocation(
+                    {**payload, "operation": "status", "revision": service.config.revision},
+                    token,
+                    "dispatcher",
+                ),
+            )
+            assert scoped.status_code == 200 and scoped.json()["activeSessions"] == 1
+            drained = client.post(
+                "/invoke",
+                json=sign_invocation(
+                    {"operation": "drain", "applicationId": service.config.application_id},
+                    token,
+                    "dispatcher",
+                ),
+            )
+            assert drained.status_code == 200
+            assert drained.json()["draining"] is True
+            for field in ("activeSessions", "pendingCleanup", "uncertainResources"):
+                assert drained.json()[field] == 0
+            session = service.handle("owner", "GET", f"/v1/agents/sessions/{sid}")[1]
+            assert session["x_agent_sandbox"]["lifecycle"] == "closed"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
+
+
 def test_gateway_still_requires_json_for_octet_stream_envelopes(components: Any) -> None:
     service = components[0]
     token = "test-business-token-" * 3

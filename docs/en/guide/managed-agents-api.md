@@ -137,6 +137,8 @@ Each configuration document accepts exactly one `_FILE` or `_JSON` source:
 `ABX_MANAGED_DATABASE_URL` identifies PostgreSQL. The deployment pins its persistent state identity; replacing the database with empty state is rejected, including by warm instances. Credential and CA rotation on the same state remains supported. `ABX_MANAGED_INTERNAL_TOKEN` authenticates private
 role invocations and must remain stable while retained revisions drain.
 `ABX_MANAGED_FC_ENDPOINT` selects the explicit FC service host for dispatch.
+Private control requests may omit `revision` to address the whole application or supply a nonempty
+revision. The private HTTP listener rejects an empty string with HTTP 400 before accessing or changing application state.
 `modelEnvAllowlist` must explicitly allow `OPENAI_API_KEY`, `OPENAI_BASE_URL` and `OPENAI_MODEL`.
 Credentials are passed only to roles which need them, and never put in images or public resources.
 File-backed business authentication is reread for revocation; optional token expiry is enforced.

@@ -155,3 +155,12 @@ bounded finite JSON-object parsing, role-scoped HMAC and application identity ch
 The public Gateway still requires JSON for resource requests. The separate
 [private invocation evidence](../../../evidence/verify/2026-11-06-managed-agents-private-invocation.md)
 preserves the cloud failure and new component checks without treating a native 200 as success.
+
+The final input-boundary continuation rejects an explicitly empty private `revision` before
+Dispatcher state access. Omitting the field still addresses the complete application; every
+previously accepted nonempty revision keeps its behavior. This avoids treating the empty value
+as global for admission fencing while filtering it as a specific revision during close/counts.
+Real HTTP regressions against SQLite and PostgreSQL preserve complete control/resource/event
+snapshots after rejection and retain the normal global-drain control. The original frozen cloud
+candidate remains a separate source identity; its valid-input results are not relabeled as tests
+of this new package. See [the input-boundary evidence](../../../evidence/verify/2026-11-06-managed-agents-empty-private-revision.md).

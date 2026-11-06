@@ -45,6 +45,7 @@ Release candidate: matching client/server **0.4.0a7**. / 候选版本：客户�
 
 ### Fixed
 
+- Reject an empty private control revision before state access, preserving omitted-revision global drain and nonempty revision behavior. / 私有控制调用在访问状态前拒绝空 revision，保留省略 revision 时的全局排空及非空 revision 的既有行为。
 - Accept FC's binary media type only for signed private managed invocations, preserving JSON validation and the public Gateway's media requirements. / 托管私有签名调用兼容 FC 的二进制媒体类型，保留 JSON 校验与公开 Gateway 的媒体类型要求。
 
 - Accept bounded public database CA startup arguments in one or more segments while preserving certificate validation and the existing environment source. / 托管角色启动支持分段传递有界的公开数据库 CA，保留证书校验与原有环境变量来源。

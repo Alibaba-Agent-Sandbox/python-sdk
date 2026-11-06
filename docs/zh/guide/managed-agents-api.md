@@ -123,6 +123,7 @@ FC 部署要求 PostgreSQL；SQLite 仅用于明确的本地模式。存储、�
 
 `ABX_MANAGED_DATABASE_URL` 指向 PostgreSQL。部署会固定持久状态身份，替换为空数据库会被拒绝，已有暖实例也会校验；同一状态库的凭据与 CA 轮换仍可使用。`ABX_MANAGED_INTERNAL_TOKEN` 认证私有角色调用，
 保留旧 revision 排空期间应保持稳定。`ABX_MANAGED_FC_ENDPOINT` 指定派发所用 FC 服务主机。
+私有控制请求可省略 `revision` 来操作整个应用，或提供非空 revision。私有 HTTP 监听端会在访问或修改应用状态前拒绝空字符串，并返回 HTTP 400。
 `modelEnvAllowlist` 必须明确允许 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_MODEL`。
 凭据仅交给需要它的角色，不写入镜像或公开资源。文件来源的业务认证每次重读以支持撤权，并执行可选到期限制。
 
