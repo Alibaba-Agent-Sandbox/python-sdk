@@ -262,8 +262,10 @@ def make_server(
                             current["_admitted_event"] = event_id
                             tx.put(current)
                         return True
-                    except ManagedError:
-                        return False
+                    except ManagedError as error:
+                        if error.status in {401, 403, 404, 410}:
+                            return False
+                        raise
 
                 if not admit(cursor):
                     raise ManagedError(404, "resource_not_found", "Session was removed")
@@ -282,7 +284,9 @@ def make_server(
                 while time.monotonic() < end:
                     try:
                         authorized = self._owner() == owner
-                    except ManagedError:
+                    except ManagedError as error:
+                        if error.status not in {401, 403}:
+                            raise
                         authorized = False
                     if not authorized:
                         break
@@ -309,22 +313,22 @@ def make_server(
                     time.sleep(0.2)
                     try:
                         pending = service.events(owner, sid, cursor)
-                    except ManagedError:
-                        break
+                    except ManagedError as error:
+                        if error.status in {404, 410}:
+                            break
+                        raise
             except BaseException:
                 stream_aborted = True
                 raise
             finally:
-                try:
-                    if stream_started and not stream_aborted:
-                        self._chunk(b"")
-                finally:
-                    if subscription_id:
-                        with service.store.transaction() as tx:
-                            tx.execute(
-                                "DELETE FROM managed_objects WHERE application=? AND id=?",
-                                (tx.application, subscription_id),
-                            )
+                if subscription_id:
+                    with service.store.transaction() as tx:
+                        tx.execute(
+                            "DELETE FROM managed_objects WHERE application=? AND id=?",
+                            (tx.application, subscription_id),
+                        )
+                if stream_started and not stream_aborted:
+                    self._chunk(b"")
 
         def _handle(self, method: str) -> None:
             self.close_connection = True

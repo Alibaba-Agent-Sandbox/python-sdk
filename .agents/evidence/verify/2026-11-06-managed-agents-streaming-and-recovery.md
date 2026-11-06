@@ -60,6 +60,12 @@ single public CA argument exceeded the observed platform limit. Both narrow corr
 independently reviewed before implementation. The guest process observer correctly rejects
 unknown same-UID processes, which requires an appropriately isolated test topology.
 
+Final source review also identified that the previous late-event exception handler classified
+every `ManagedError` as a normal slice ending. Only authentication/resource removal now ends
+normally; a service-unavailable error propagates and truncates the stream. Subscription cleanup
+must succeed before the normal terminator is written. The raw-socket failure regression also
+exercises an explicit 503 `ManagedError`, without treating it as a successful end.
+
 ## Not verified
 
 Local PostgreSQL connection refusal is not a cloud RDS outage or an in-flight transaction failure.

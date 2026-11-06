@@ -1489,8 +1489,9 @@ async def test_sse_http11_chunks_arrive_during_turn_and_close_cleanly(components
         thread.join(timeout=3)
 
 
+@pytest.mark.parametrize("failure", ["runtime", "managed"])
 def test_sse_failure_after_headers_does_not_write_another_http_response(
-    components: Any, monkeypatch: Any
+    components: Any, monkeypatch: Any, failure: str
 ) -> None:
     service = components[0]
     sid = create(service)["id"]
@@ -1501,6 +1502,8 @@ def test_sse_failure_after_headers_does_not_write_another_http_response(
         nonlocal fetches
         fetches += 1
         if fetches > 1:
+            if failure == "managed":
+                raise ManagedError(503, "service_unavailable", "Example service unavailable")
             raise RuntimeError("example stream failure after headers")
         return original(*args, **kwargs)
 
