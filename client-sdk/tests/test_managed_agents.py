@@ -8,6 +8,7 @@ import copy
 import hashlib
 import json
 import os
+import socket
 import sys
 import threading
 import time
@@ -1404,3 +1405,139 @@ def test_guest_never_starts_an_already_expired_submission(tmp_path: Path) -> Non
     assert not bridge.runtime.get_session(local["session_id"]).turns
     with bridge._db() as db:
         assert db.execute("SELECT COUNT(*) FROM receipts").fetchone()[0] == 0
+
+
+@pytest.mark.asyncio
+async def test_sse_http11_chunks_arrive_during_turn_and_close_cleanly(components: Any) -> None:
+    service, _, worker, _ = components
+    session = service.handle(
+        "owner",
+        "POST",
+        "/v1/agents/sessions",
+        {"agent": {"model": "fixture-model"}, "input": "slow", "metadata": {"note": "你好"}},
+    )[1]
+    sid = session["id"]
+    running = asyncio.create_task(worker.run(sid))
+    token = "test-stream-token-" + "x" * 32
+    document = {
+        "tokens": [
+            {
+                "sha256": hashlib.sha256(token.encode()).hexdigest(),
+                "owner": "owner",
+                "scopes": ["agents:read", "agents:write"],
+            }
+        ]
+    }
+    server = make_server(service, TokenAuthenticator(lambda: document), port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        turns = []
+        for _ in range(200):
+            turns = service.handle("owner", "GET", f"/v1/agents/sessions/{sid}/turns")[1]["data"]
+            if turns:
+                break
+            await asyncio.sleep(0.02)
+        assert turns and turns[0]["status"] == "in_progress"
+
+        def receive() -> list[bytes]:
+            with socket.create_connection(
+                ("127.0.0.1", server.server_port), timeout=3
+            ) as connection:
+                connection.sendall(
+                    (
+                        f"GET /v1/agents/sessions/{sid}/events?after=0 HTTP/1.1\r\n"
+                        f"Host: localhost\r\nAuthorization: Bearer {token}\r\n\r\n"
+                    ).encode()
+                )
+                with connection.makefile("rb") as stream:
+                    assert stream.readline().startswith(b"HTTP/1.1 200 ")
+                    headers = {}
+                    while (line := stream.readline()) != b"\r\n":
+                        name, value = line.decode().strip().split(":", 1)
+                        headers[name.lower()] = value.strip()
+                    assert headers["transfer-encoding"] == "chunked"
+                    assert "content-length" not in headers
+                    frames = []
+                    for _ in range(100):
+                        size = int(stream.readline().strip(), 16)
+                        payload = stream.read(size)
+                        assert len(payload) == size and stream.read(2) == b"\r\n"
+                        if not size:
+                            assert any(frame.startswith(b"id:") for frame in frames)
+                            assert any("你好".encode() in frame for frame in frames)
+                            assert b": heartbeat\n\n" in frames
+                            return frames
+                        frames.append(payload)
+                        if payload == b": heartbeat\n\n":
+                            document["tokens"] = []
+                    raise AssertionError("bounded chunk reader did not receive terminator")
+
+        frames = await asyncio.to_thread(receive)
+        assert frames
+        assert (
+            service.handle("owner", "GET", f"/v1/agents/sessions/{sid}/turns/{turns[0]['id']}")[1][
+                "status"
+            ]
+            == "in_progress"
+        )
+    finally:
+        running.cancel()
+        await asyncio.gather(running, return_exceptions=True)
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
+
+
+def test_sse_failure_after_headers_does_not_write_another_http_response(
+    components: Any, monkeypatch: Any
+) -> None:
+    service = components[0]
+    sid = create(service)["id"]
+    original = service.events
+    fetches = 0
+
+    def events(*args: Any, **kwargs: Any) -> Any:
+        nonlocal fetches
+        fetches += 1
+        if fetches > 1:
+            raise RuntimeError("example stream failure after headers")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(service, "events", events)
+    token = "test-failed-stream-token-" + "x" * 32
+    auth = TokenAuthenticator(
+        {
+            "tokens": [
+                {
+                    "sha256": hashlib.sha256(token.encode()).hexdigest(),
+                    "owner": "owner",
+                    "scopes": ["agents:read", "agents:write"],
+                }
+            ]
+        }
+    )
+    server = make_server(service, auth, port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with socket.create_connection(("127.0.0.1", server.server_port), timeout=3) as connection:
+            connection.sendall(
+                (
+                    f"GET /v1/agents/sessions/{sid}/events?after=0 HTTP/1.1\r\n"
+                    f"Host: localhost\r\nAuthorization: Bearer {token}\r\n\r\n"
+                ).encode()
+            )
+            with connection.makefile("rb") as stream:
+                assert stream.readline().startswith(b"HTTP/1.1 200 ")
+                while stream.readline() != b"\r\n":
+                    pass
+                body = stream.read()
+        assert b"id:" in body and b"HTTP/1.1" not in body
+        assert not body.endswith(b"0\r\n\r\n")
+        with service.store.transaction() as tx:
+            assert tx.list("subscription", parent=sid) == []
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)

@@ -132,3 +132,12 @@ existing PEM environment source, and reuses the existing CA/X509 validation and 
 file. Role credentials stay in their original configuration. Actual cloud acceptance of a
 particular startup-argument size is a separate gate; no undocumented FC argument maximum is assumed.
 See [the argument verification](../../../evidence/verify/2026-11-06-managed-agents-database-ca-argument.md).
+
+Actual FC validation then established a 2048-character limit on one startup argument. The CA
+option now accepts multiple segments, bounds their combined encoding before allocation, and
+validates the joined canonical Base64 exactly once. Single-argument use remains supported.
+The HTTP Gateway now emits actual chunked SSE frames and a normal terminator; after headers,
+stream failure closes the connection rather than appending a second HTTP response. Shared
+PostgreSQL subscription admission and frame/deletion gates remain unchanged. Real PG, HTTP and
+process-kill recovery evidence is recorded in
+[the streaming/recovery continuation](../../../evidence/verify/2026-11-06-managed-agents-streaming-and-recovery.md).

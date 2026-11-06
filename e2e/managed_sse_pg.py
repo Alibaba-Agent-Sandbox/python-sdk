@@ -97,7 +97,15 @@ def child(file):
 
         def write(self, data):
             nonlocal first_write
-            frame = data.startswith(b"id: ")
+            prefix, separator, body = data.partition(b"\r\n")
+            frame = bool(
+                separator
+                and prefix
+                and all(byte in b"0123456789abcdefABCDEF" for byte in prefix)
+                and body.endswith(b"\r\n")
+                and int(prefix, 16) == len(body) - 2
+                and body.startswith(b"id: ")
+            )
             if frame and barrier == "write" and first_write:
                 first_write = False
                 Path(doc["ready"]).touch()

@@ -74,6 +74,8 @@ Subscribe with `GET /v1/agents/sessions/{id}/events`. Supply `Last-Event-ID` or 
 `after=0` replays from the beginning, while omission tails new events. Streams close periodically;
 reconnect using the last received event ID. Public events are durable during result retention. Deletion stops new frame writes across Gateway instances; a frame already in the network may finish arriving. Slow readers are disconnected, and oversized frames report a gap; use the durable items API for full content.
 A native event gap is reported explicitly. Raw reasoning and provider secrets are not exposed.
+The Gateway sends HTTP/1.1 chunked event-stream responses. An FC deployment needs a Web Gateway
+which supports streaming responses; events received only after completion do not establish live streaming.
 
 ## Close, cancel and delete
 
@@ -149,5 +151,7 @@ argument and `ABX_MANAGED_DATABASE_CA_PEM` are mutually exclusive. Keep database
 model keys and internal tokens in their existing credential configuration. The same certificate
 validation and private temporary file apply. The runtime's 64 KiB decoded bound does not guarantee
 that a deployment platform accepts startup arguments of that size; platform limits still apply.
+The argument accepts multiple Base64 segments, concatenated before validation. The FC deployer
+splits the public certificate value into bounded arguments to satisfy its per-argument limit.
 
 Guest HTTPS exchanges have a total wall deadline of 30 seconds, clipped to the remaining execution budget during a turn. If that budget expires with an unknown result, the runtime attempts owned compute cleanup and retains an uncertain Submission; a public Turn reports the Gateway failure separately from the unconfirmed agent outcome. PostgreSQL connections use a 10-second connection/statement timeout and a 5-second lock timeout. URI `options` overrides are rejected.

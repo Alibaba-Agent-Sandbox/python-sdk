@@ -45,7 +45,9 @@ Release candidate: matching client/server **0.4.0a7**. / 候选版本：客户�
 
 ### Fixed
 
-- Accept a bounded public database CA argument for managed role startup while preserving certificate validation and the existing environment source. / 托管角色启动支持有界的公开数据库 CA 参数，保留证书校验与原有环境变量来源。
+- Accept bounded public database CA startup arguments in one or more segments while preserving certificate validation and the existing environment source. / 托管角色启动支持分段传递有界的公开数据库 CA，保留证书校验与原有环境变量来源。
+
+- Frame managed SSE responses with HTTP/1.1 chunks and close failed streams without appending another HTTP response. / 托管 SSE 响应采用 HTTP/1.1 分块编码，流中途失败时关闭连接，不追加第二个 HTTP 响应。
 
 - Keep the native managed Express backend independent of the application runtime at import time while preserving the public `ManagedError` identity and HTTP error envelope. / 原生托管极速版后端导入时不再加载上层应用运行时，保留公开 `ManagedError` 的同一异常类型与 HTTP 错误结构。
 

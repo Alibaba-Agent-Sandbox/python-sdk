@@ -135,3 +135,38 @@ def test_base64_ca_main_removes_file_after_startup_failure(monkeypatch: Any, ca_
     with pytest.raises(RuntimeError, match="example startup failure"):
         run_main(monkeypatch, ["worker", "--database-ca-base64", encoded], serve)
     assert not paths[0].exists() and not paths[0].parent.exists()
+
+
+@pytest.mark.parametrize("mode", ["gateway", "worker", "dispatcher"])
+def test_base64_ca_main_accepts_multiple_segments(monkeypatch: Any, ca_pem: str, mode: str) -> None:
+    monkeypatch.delenv("ABX_MANAGED_DATABASE_CA_PEM", raising=False)
+    encoded = base64.b64encode(ca_pem.encode("ascii")).decode("ascii")
+    pieces = [encoded[index : index + 192] for index in range(0, len(encoded), 192)]
+    assert len(pieces) > 1
+
+    def serve(args: Any, ca_file: str | None) -> None:
+        assert args.mode == mode and ca_file is not None
+        assert Path(ca_file).read_text() == ca_pem
+
+    run_main(monkeypatch, [mode, "--database-ca-base64", *pieces], serve)
+
+
+@pytest.mark.parametrize("pieces", [["QQ==", "Qg=="], ["QUJD", "===="], ["", "QQ=="]])
+def test_base64_ca_main_rejects_invalid_joined_segments(
+    monkeypatch: Any, capsys: Any, pieces: list[str]
+) -> None:
+    monkeypatch.delenv("ABX_MANAGED_DATABASE_CA_PEM", raising=False)
+    with pytest.raises(SystemExit) as error:
+        run_main(monkeypatch, ["worker", "--database-ca-base64", *pieces])
+    assert error.value.code == 2
+    assert "canonical Base64" in capsys.readouterr().err
+
+
+def test_base64_ca_main_bounds_the_combined_segments(monkeypatch: Any, capsys: Any) -> None:
+    monkeypatch.delenv("ABX_MANAGED_DATABASE_CA_PEM", raising=False)
+    encoded = base64.b64encode(b"x" * 65537).decode("ascii")
+    pieces = [encoded[index : index + 1920] for index in range(0, len(encoded), 1920)]
+    with pytest.raises(SystemExit) as error:
+        run_main(monkeypatch, ["gateway", "--database-ca-base64", *pieces])
+    assert error.value.code == 2
+    assert "64 KiB ASCII PEM" in capsys.readouterr().err

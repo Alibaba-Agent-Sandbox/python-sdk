@@ -140,6 +140,11 @@ def make_server(
             self.end_headers()
             self.wfile.write(payload)
 
+        def _chunk(self, payload: bytes) -> None:
+            self.connection.settimeout(write_timeout)
+            self.wfile.write(f"{len(payload):X}\r\n".encode("ascii") + payload + b"\r\n")
+            self.wfile.flush()
+
         def _owner(self, write: bool = False) -> str:
             supplied = self.headers.get("Authorization", "")
             if auth is None or not supplied.startswith("Bearer "):
@@ -226,6 +231,7 @@ def make_server(
                 raise ManagedError(400, "invalid_cursor", "Conflicting event cursors")
             cursor = header or after
             subscription_id = None
+            stream_started = stream_aborted = False
             with service.store.transaction() as tx:
                 session = service._session(tx, sid, owner)
                 if cursor is None:
@@ -263,12 +269,14 @@ def make_server(
                     raise ManagedError(404, "resource_not_found", "Session was removed")
                 self.send_response(status)
                 self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Transfer-Encoding", "chunked")
                 self.send_header("Cache-Control", "no-store")
                 self.send_header("X-Accel-Buffering", "no")
                 self.send_header("X-Request-Id", self.request_id)
                 self.send_header("Connection", "close")
                 for name, value in (headers or {}).items():
                     self.send_header(name, value)
+                self._stream_started = stream_started = True
                 self.end_headers()
                 end = time.monotonic() + 20
                 while time.monotonic() < end:
@@ -294,25 +302,29 @@ def make_server(
                                 f"id: {event['event_id']}\nevent: {payload['type']}\n"
                                 f"data: {canonical(payload)}\n\n"
                             )
-                            self.connection.settimeout(write_timeout)
-                            self.wfile.write(frame.encode())
-                            self.wfile.flush()
+                            self._chunk(frame.encode())
                             cursor = event["event_id"]
                     if not pending:
-                        self.wfile.write(b": heartbeat\n\n")
-                    self.wfile.flush()
+                        self._chunk(b": heartbeat\n\n")
                     time.sleep(0.2)
                     try:
                         pending = service.events(owner, sid, cursor)
                     except ManagedError:
                         break
+            except BaseException:
+                stream_aborted = True
+                raise
             finally:
-                if subscription_id:
-                    with service.store.transaction() as tx:
-                        tx.execute(
-                            "DELETE FROM managed_objects WHERE application=? AND id=?",
-                            (tx.application, subscription_id),
-                        )
+                try:
+                    if stream_started and not stream_aborted:
+                        self._chunk(b"")
+                finally:
+                    if subscription_id:
+                        with service.store.transaction() as tx:
+                            tx.execute(
+                                "DELETE FROM managed_objects WHERE application=? AND id=?",
+                                (tx.application, subscription_id),
+                            )
 
         def _handle(self, method: str) -> None:
             self.close_connection = True
@@ -379,11 +391,15 @@ def make_server(
 
         def _safe(self, method: str) -> None:
             self.request_id = uuid.uuid4().hex
+            self._stream_started = False
             try:
                 self._handle(method)
             except (BrokenPipeError, ConnectionResetError, TimeoutError):
                 return
             except Exception as exc:
+                if self._stream_started:
+                    self.close_connection = True
+                    return
                 error = (
                     exc
                     if isinstance(exc, ManagedError)

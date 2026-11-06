@@ -48,24 +48,31 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=9000)
     parser.add_argument("--host", default="0.0.0.0")  # nosec B104 - authenticated container ingress
     parser.add_argument("--local", action="store_true")
-    parser.add_argument("--database-ca-base64", type=decode_database_ca, metavar="BASE64_PEM")
+    parser.add_argument("--database-ca-base64", nargs="+", metavar="BASE64_PEM")
     args = parser.parse_args()
     pem = os.getenv("ABX_MANAGED_DATABASE_CA_PEM")
     if args.database_ca_base64 is not None:
         if pem is not None:
             parser.error("Provide database CA through exactly one argument or environment source")
-        pem = args.database_ca_base64
+        try:
+            pem = decode_database_ca(args.database_ca_base64)
+        except argparse.ArgumentTypeError as error:
+            parser.error(str(error))
     ssl.create_default_context(cafile=os.getenv("ABX_MANAGED_TLS_CA_FILE"))
     with database_ca_file(pem) as ca_file:
         serve(args, ca_file)
 
 
-def decode_database_ca(value: str) -> str:
+def decode_database_ca(parts: list[str]) -> str:
     """Decode bounded public CA material without reflecting argument values in errors."""
     try:
-        if not value or len(value) > 4 * ((65536 + 2) // 3):
+        if (
+            not parts
+            or any(not part for part in parts)
+            or sum(map(len, parts)) > 4 * ((65536 + 2) // 3)
+        ):
             raise ValueError
-        encoded = value.encode("ascii")
+        encoded = "".join(parts).encode("ascii")
         raw = base64.b64decode(encoded, validate=True)
         if len(raw) > 65536 or base64.b64encode(raw) != encoded:
             raise ValueError
