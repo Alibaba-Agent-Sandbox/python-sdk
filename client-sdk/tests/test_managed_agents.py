@@ -755,23 +755,29 @@ async def test_preparation_heartbeat_prevents_second_create_after_original_lease
     components: Any,
 ) -> None:
     service, backend, _, _ = components
-    worker = ManagedWorker(service, backend, poll_seconds=0.01, lease_seconds=0.15)
+    lease_seconds = 2
+    worker = ManagedWorker(service, backend, poll_seconds=0.01, lease_seconds=lease_seconds)
     sid = create(service, "first")["id"]
     original_create = backend.create
     entered = asyncio.Event()
+    release = asyncio.Event()
 
     async def slow_create(session: dict[str, Any], token: str, created: Any) -> dict[str, Any]:
         entered.set()
-        await asyncio.sleep(0.5)
+        await asyncio.wait_for(release.wait(), timeout=15)
         return await original_create(session, token, created)
 
     backend.create = slow_create
     first = asyncio.create_task(worker.run(sid))
-    await entered.wait()
-    await asyncio.sleep(0.3)
-    assert await worker.run(sid) is False
-    assert worker.due() == []
-    assert await first
+    try:
+        await asyncio.wait_for(entered.wait(), timeout=5)
+        await asyncio.sleep(lease_seconds + 0.2)
+        assert await asyncio.wait_for(worker.run(sid), timeout=5) is False
+        assert worker.due() == []
+    finally:
+        release.set()
+        completed = await asyncio.wait_for(first, timeout=15)
+    assert completed
     assert backend.created == 1
     with service.store.transaction() as tx:
         assert tx.get(sid)["x_agent_sandbox"]["lifecycle"] == "ready"

@@ -164,3 +164,11 @@ Real HTTP regressions against SQLite and PostgreSQL preserve complete control/re
 snapshots after rejection and retain the normal global-drain control. The original frozen cloud
 candidate remains a separate source identity; its valid-input results are not relabeled as tests
 of this new package. See [the input-boundary evidence](../../../evidence/verify/2026-11-06-managed-agents-empty-private-revision.md).
+
+The source `cd43e9e` deployment subsequently reaches normal FC ready and passes the complete
+39-operation/38-protected-route real HTTP inventory, both real model/tool turns, independent
+original/held-out program checks and the finite live SSE flush test. Active cancellation and
+revision update have separate failures under investigation, rather than being inferred from
+that business pass. The runtime/package identities and boundaries are retained in
+[the source business evidence](../../../evidence/verify/2026-11-06-managed-agents-fc-business-source.md)
+and [the prior private drain evidence](../../../evidence/verify/2026-11-06-managed-agents-fc-private-drain.md).

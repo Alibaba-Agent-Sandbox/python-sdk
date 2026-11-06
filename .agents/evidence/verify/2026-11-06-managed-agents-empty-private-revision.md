@@ -38,12 +38,22 @@ namespace. Exact workstation paths and raw private inputs are not repository doc
 | New regressions before the code correction | FAIL: 4 failed, 48 deselected, 11.07 s | Signed real HTTP empty-revision status/drain each return 200 under SQLite and PostgreSQL, rather than the required 400. The original failure log is retained. |
 | New cases plus existing media/global-drain controls after correction | PASS: 9 passed, 43 deselected, 10.34 s | Both databases reject the empty revision. Full control/object/event/idempotency/meta snapshots remain equal, active count remains one and global draining remains false. A nonempty scoped status and omitted-revision global drain still work. |
 | Scoped Ruff | PASS | The runtime and regression file pass the existing rule set. |
-| Complete local `make ci` | RUNNING | Both packages, types, lint, format, distribution builds and install checks are executing. |
-| Latest-head remote CI/distribution | NOT YET VERIFIED | The final independent commit and immutable artifact identity will be recorded after they exist. |
+| First complete local `make ci`, `8df1ed7` | FAIL | Server 875 passed/1 skipped; client 2460 passed, 1 failed, 27 skipped, 10 deselected. An existing 150-ms heartbeat fixture fails at its final completion assertion. New invalid-revision cases pass. |
+| First remote CI, `8df1ed7` | FAIL in client Python 3.10 | [Run 42189130012](https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/42189130012), job 127796524669 preserves the original failure: the same existing heartbeat fixture sees a due item during its timing window. Python 3.11/3.12 client jobs pass. |
+| Bounded heartbeat fixture continuation | PASS: 5 focused cases, 47 deselected, 9.11 s | A real two-second lease and an explicit preparation barrier preserve all previous assertions and keep the observation past the original lease. New invalid-revision regressions remain green. |
+| Final complete local/remote CI and distribution | IN PROGRESS | A new independent test-only continuation requires the full latest-head gates and a separately frozen artifact. |
 
 The tests use a blank logical Session. They intentionally prove validation and global-drain
 semantics without creating a provider Sandbox or making a model request. They do not claim a new
 active-cancellation or complete cloud/model/business result.
+
+The pre-existing heartbeat fixture combined a 150-ms lease, a fixed 500-ms preparation sleep
+and a 300-ms observation sleep. The two observed failures do not prove a new product regression
+or a duplicate Sandbox creation. Independent review accepted a test-only correction: use a real
+two-second lease, wait 2.2 seconds, and keep preparation behind an Event until after the existing
+second-worker refusal and empty-due assertions. Entry, barrier and task waits all have finite
+deadlines; `finally` releases and waits for the original task. The completion/create-count/ready
+assertions remain. No product heartbeat, lease rule, clock, queue or cleanup behavior changes.
 
 ## Cleanup and delivery boundary
 
