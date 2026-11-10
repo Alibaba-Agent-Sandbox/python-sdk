@@ -72,3 +72,11 @@ a real function. Keep cloud E2E results separate from local distribution checks.
 ## Evidence
 
 - [Verification](../../../evidence/verify/2026-11-10-client-runtime-boundaries.md)
+
+## Mainline reconciliation
+
+PR #160 initially had no Actions run because its branch conflicted with the current mainline. GitHub reported `mergeable=false` / `mergeable_state=dirty`; repository Actions and CI/Docs workflows were enabled. The one queued check suite belonged to Cursor, not GitHub Actions.
+
+Merge fixed main `eb7c980a825d804483474923938277700e048571` without rebasing the published branch. Its changes are the preview/community announcement and QR replacement from PR #158/#159. Only the Unreleased changelog insertion conflicts; retain both sides' entries and preserve the README announcements, current QR asset and their historical records. No SDK/runtime/workflow changes are needed for this reconciliation. Parent review accepted this minimal resolution and documentation plus focused packaging validation.
+
+References: https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/160 ; https://docs.github.com/en/actions/how-tos/troubleshoot-workflows .
