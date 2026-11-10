@@ -15,8 +15,8 @@ Express supports pause/resume and Snapshot after the corresponding account/regio
 | Pause | `sandbox.pause()` | `abx sandbox pause "$SANDBOX_ID"` |
 | Resume the same sandbox | `Sandbox.connect(sandbox_id)` | `abx sandbox resume "$SANDBOX_ID"` |
 | Create a snapshot | `sandbox.create_snapshot(name="checkpoint", request_timeout=300)` | `abx sandbox snapshot create "$SANDBOX_ID" --name checkpoint` |
-| List snapshots | `Sandbox.list_snapshots(sandbox_id=sandbox_id)`, consume the paginator | `abx sandbox snapshot list "$SANDBOX_ID" --format json` |
-| Create from a snapshot | `Sandbox.create(template=snapshot.snapshot_id)` | `abx create "$SNAPSHOT_ID" --detach` |
+| List snapshots | `Sandbox.list_snapshots(sandbox_id=sandbox_id)`, consume the paginator | `abx --json sandbox snapshot list "$SANDBOX_ID"` |
+| Create from a snapshot | `Sandbox.create(template=snapshot.snapshot_id)` | `abx deploy --template-id "$SNAPSHOT_ID" --name restored --yes` |
 | Delete a snapshot | `Sandbox.delete_snapshot(snapshot.snapshot_id)` | `abx sandbox snapshot delete "$SNAPSHOT_ID"` |
 
 Python examples use `from agent_sandbox import Sandbox`; asynchronous callers use `AsyncSandbox` and await the appropriate operations. These standard clients are distinct from the native Provider/Server extension at `agent_sandbox.api.sandbox.Sandbox`. A native provider feature gate is not a statement that the Express standard API is unavailable. Python spells the method `create_snapshot`; TypeScript uses `createSnapshot`, with argument shapes determined by the installed SDK version.
@@ -54,23 +54,27 @@ needs no local Docker build or private registry credentials.
 ## Provision a uniquely named fixture
 
 Choose the same region/Team as the runtime key. Set REGION and TEAM_ID from local
-configuration; NAME must be unique and at most36 characters. From a checkout with
-the standard CLI entry use this existing project extension:
+configuration; NAME must be unique and at most36 characters. Use the provider management operation:
 
 ```bash
 REGION=cn-hangzhou
-NAME="conditional-$(date +%s)"
-abx template from-image \
-  "fc-e2b-registry.${REGION}.cr.aliyuncs.com/runtime-v2/base:v0.0.53" \
-  --name "$NAME" --team-id "$TEAM_ID" --region "$REGION" \
-  --generation 2 --cpu 2 --memory 2048 --disk-size 15360 --no-envd-inject
-abx template info "$TEMPLATE_ID"
+cat > template-create.json <<'JSON'
+{
+  "name": "conditional-UNIQUE",
+  "team_id": "YOUR_TEAM_ID",
+  "image": "fc-e2b-registry.cn-hangzhou.cr.aliyuncs.com/runtime-v2/base:v0.0.53",
+  "generation": 2,
+  "cpu": 2,
+  "memory_size": 2048,
+  "disk_size": 15360,
+  "envd_inject": false
+}
+JSON
+abx --provider alicloud-express --region "$REGION" provider run template.create --input-file template-create.json --yes
+abx --provider alicloud-express --region "$REGION" provider run template.get --input-file template-get.json
 ```
 
-The create result supplies TEMPLATE_ID. Poll info until build state is ready;
-creation is asynchronous. Accepted native CLI builds use `template create` for
-this image-registration operation; inspect installed help before choosing it.
-Do not pass --force or update existing templates for this test.
+Replace the unique name, Team and image region before running. Put the returned `template_id` and the same `team_id` in `template-get.json`; poll until the build is ready. Submission is asynchronous. The create operation rejects existing names. These commands follow the current source CLI; inspect installed help when using an older release.
 
 ## Run and verify
 
@@ -92,9 +96,11 @@ absence rather than expecting a second delete to return false.
 
 ## Cleanup and evidence
 
+Before deleting the template, write this run’s `template_id` to `template-delete.json` (a JSON object such as `{ "template_id": "owned-template-id" }`), then run the Provider operation below.
+
 Delete restored/source sandboxes before their occupied snapshot. Delete only
 resources created by this run. Verify exact resource absence after cleanup, then
-remove the owned fixture with `abx template delete "$TEMPLATE_ID" --yes`.
+remove the owned fixture with `abx --provider alicloud-express provider run template.delete --input-file template-delete.json --yes`.
 Record source/artifact SHA, actual passes/failures/skips, admission errors and
 owned residual count; omit keys, account identifiers and private endpoint details.
 Do not upload credentials or dispatch cloud/model acceptance in Actions.

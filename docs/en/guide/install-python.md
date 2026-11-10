@@ -21,7 +21,7 @@ Check the installed pair:
 python -c "from importlib.metadata import version; print(version('agent-sandbox-client'), version('agent-sandbox-server'))"
 ```
 
-Install the [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) separately. For template launch in this guide, use CLI 0.5.0 or newer and configure the selected provider before creating a sandbox.
+Install the [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) separately. Named deployment examples in the current guides require the matching current CLI source. Older releases may expose different commands; check their help and configure the selected provider before deployment.
 
 Project configuration uses `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and
 `ABX_SANDBOX_DOMAIN` for all project entries, including standard Sandbox /
@@ -43,6 +43,29 @@ python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-server=
 ```
 
 The server runs the application inside an image. Installing it does not create a sandbox. See the [server guide](server-sdk.md) to register commands and start the service.
+
+## Client and runtime boundaries in current source
+
+The current checkout makes the local runtime optional. Install only the client
+for standard `Sandbox` / `AsyncSandbox`, `ProviderSandbox`, `ServerClient`, template
+YAML and the remote `@sandbox(...)` decorator:
+
+```bash
+python -m pip install ./client-sdk
+```
+
+For local `@sandbox.register` or `sandbox.server`, install the matching runtime:
+
+```bash
+python -m pip install ./server-sdk './client-sdk[server]'
+```
+
+`[all]` and `[dev]` include `[server]`. The pinned public release above predates
+this dependency change; source installation does not publish a new release.
+Registration belongs in the application server program and does not upload a
+local function. The module-level `sandbox.run` / `sandbox.run_async` have been
+removed: call an explicitly selected application's `ServerClient.commands.run`
+instead. `ProviderSandbox.run` and the remote decorator remain available.
 
 ## Development from a checkout
 

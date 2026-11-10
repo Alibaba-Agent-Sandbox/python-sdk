@@ -37,7 +37,7 @@ asyncio.run(main())
 ```
 
 `close()` releases this client connection; it leaves the existing sandbox running.
-The creator remains responsible for `kill()` or `abx kill ID`.
+The creator remains responsible for `kill()` or `abx delete ID`.
 
 
 This resolves the endpoint for that sandbox and port, preserving the full proxy prefix and signed query. Gateway headers and the application `ABX_SERVER_TOKEN` are separate; no control-plane API key is copied and no anonymous authentication retry occurs. Redirects (including another sandbox on the same origin), URL userinfo and authority overrides are rejected. Operation-signed endpoints require the provider's per-operation resolver, never generic prefix joining.

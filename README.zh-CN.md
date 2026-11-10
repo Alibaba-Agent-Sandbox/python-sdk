@@ -17,7 +17,7 @@ python -m pip install --index-url https://pypi.org/simple --upgrade --pre agent-
 python -m pip check
 ```
 
-`--pre` 表示选择预览版本。导入名为 `agent_sandbox`，安装时自动带上同版本的 `agent-sandbox-server` 依赖。固定版本、可选依赖和源码安装见[安装指南](docs/zh/guide/install-python.md)。PyPI 上的 `agent-sandbox` 属于另一个项目。
+`--pre` 表示选择预览版本。导入名为 `agent_sandbox`。标准客户端、`ProviderSandbox` 与应用 HTTP 客户端 `ServerClient` 在客户端使用；`agent-sandbox-server` 在应用镜像内运行。固定版本、可选依赖和源码安装见[安装指南](docs/zh/guide/install-python.md)。PyPI 上的 `agent-sandbox` 属于另一个项目。
 
 ## 快速开始
 

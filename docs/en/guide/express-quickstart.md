@@ -10,7 +10,7 @@ source builds require the documented Docker/registry prerequisites.
 
 ```bash
 export ABX_SERVER_TOKEN='replace_me'
-abx --provider alicloud-express template launch 'alibaba-agent-sandbox/awesome-templates//python-hello'
+abx --provider alicloud-express deploy 'alibaba-agent-sandbox/awesome-templates//python-hello' --name my-app
 ```
 
 The launcher prepares the provider reference, creates the sandbox, runs the

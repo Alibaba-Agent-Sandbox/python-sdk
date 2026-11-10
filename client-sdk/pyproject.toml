@@ -42,12 +42,11 @@ dependencies = [
     "pyyaml>=6.0.3",
     "protobuf>=5",
     "tomli>=2.0; python_version < '3.11'",
-    # The client uses the matching local server runtime for its server/declarative helpers.
-    # Keep the required distribution version equal to ``_version.py``.
-    "agent-sandbox-server==0.4.0a7",
 ]
 
 [project.optional-dependencies]
+# Local command registration/runtime only; keep the lockstep version pin.
+server = ["agent-sandbox-server==0.4.0a7"]
 managed-agents = [
     "psycopg[binary]>=3.2,<4",
     "alibabacloud-fc20230330>=4.8.3,<5",
@@ -64,7 +63,7 @@ session = [
     "filelock>=3.12",
 ]
 all = [
-    "agent-sandbox-client[fast,session,mcp]",
+    "agent-sandbox-client[fast,session,mcp,server]",
 ]
 dev = [
     "agent-sandbox-client[all]",

@@ -128,4 +128,7 @@ jobs:
           done
           "$RUNNER_TEMP/pypi-readback/bin/python" -m pip check
           cd "$RUNNER_TEMP"
-          "$RUNNER_TEMP/pypi-readback/bin/python" -c 'from agent_sandbox import Sandbox, AsyncSandbox, ProviderSandbox; from agent_sandbox.server import start; assert all(callable(x) for x in (Sandbox.create, AsyncSandbox.create, ProviderSandbox.create, start))'
+          "$RUNNER_TEMP/pypi-readback/bin/python" -c 'import importlib.util; from agent_sandbox import Sandbox, AsyncSandbox, ProviderSandbox; from agent_sandbox.api.server_client import ServerClient; assert all(callable(x) for x in (Sandbox.create, AsyncSandbox.create, ProviderSandbox.create, ServerClient)); assert importlib.util.find_spec("agent_sandbox.server") is None'
+          "$RUNNER_TEMP/pypi-readback/bin/python" -m pip install --no-cache-dir --index-url https://pypi.org/simple "agent-sandbox-client[server]==$version"
+          "$RUNNER_TEMP/pypi-readback/bin/python" -m pip check
+          "$RUNNER_TEMP/pypi-readback/bin/python" -c 'from agent_sandbox.server import start; assert callable(start)'

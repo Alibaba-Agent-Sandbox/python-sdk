@@ -24,7 +24,7 @@ The template-author example below retains its explicit deployment prerequisite. 
 
 ## Template applications
 
-Launch the complete template with `abx template launch <reference>`, then use
+Launch the complete template with `abx deploy <reference> --name my-app`, then use
 `application_client` to call its registered commands with the application token.
 Source image preparation and platform configuration belong to the CLI. See
 [Express quickstart](express-quickstart.md) and [template launch](template-workflows.md).

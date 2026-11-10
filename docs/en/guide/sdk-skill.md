@@ -8,7 +8,7 @@ The guide covers:
 
 - client code: `Sandbox.create`, `commands.run`, `run`, `files`, and the built-in provider `alicloud-express`
 - a template: `template.yaml`, `Dockerfile`, `commands.py` with `@command` and `start()`
-- deploy: `abx template deploy` (the Python package does not build images)
+- deploy: `abx deploy` (the Python package does not build images)
 - test: `make test` and a local `commands.py` health check
 - publish: one version for both packages, released from GitHub
 

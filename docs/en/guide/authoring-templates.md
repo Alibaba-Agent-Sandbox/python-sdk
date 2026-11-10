@@ -8,7 +8,7 @@ This is the **Server SDK**: `commands.py` starts with the image and serves HTTP 
 
 This document explains how to create custom Agent Sandbox templates, including directory structure, field reference, whole-template startup, registered commands, and publishing.
 
-A template is a directory of plain files, written by hand or generated. The `abx template scaffold` command generates one three ways (built-in scaffold, a one-sentence description, or adopting a project that already has source code); that workflow is documented in the CLI repository: [Authoring Templates (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authoring-templates.md).
+A template is a directory of plain files, written by hand or generated. The `abx template init` command generates one three ways (built-in scaffold, a one-sentence description, or adopting a project that already has source code); that workflow is documented in the CLI repository: [Authoring Templates (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authoring-templates.md).
 
 ---
 
@@ -120,7 +120,7 @@ if __name__ == "__main__":
 
 File upload and download are server endpoints (`/files/*`, `/upload`, `/download`) of the `file_ops` group, which is on by default. They are not registered from `commands.py`. Deploy does not apply a `server:` block. Turn an opt-in group on with `default_table().enable_group(CapabilityGroup.DEV_TOOLS)` (a `CapabilityGroup`, not a string) or `ABX_SERVER_ENABLED_GROUPS`. `dev_tools`, `browser`, and `agents` start disabled.
 
-Registered commands are served by the in-sandbox HTTP server (`POST /commands/{name}`). Clients call them with `await sandbox.run("demo", x=1, y="hello")` or `abx run <id> demo --arg x=1 --arg y=hello`, and list them with `sandbox.list_commands()` or `abx sandbox command list <id>`. A bare shell command is a different call: `sandbox.commands.run(cmd)`.
+Registered commands are served by the in-sandbox HTTP server (`POST /commands/{name}`). Clients call them with `await sandbox.run("demo", x=1, y="hello")` or `abx sandbox command run <id> demo --arg x=1 --arg y=hello`, and list them with `sandbox.list_commands()` or `abx sandbox command list <id>`. A bare shell command is a different call: `sandbox.commands.run(cmd)`.
 
 ---
 
@@ -148,9 +148,9 @@ the sandbox creator owns its final deletion.
 
 ## Publishing and Deploying Templates
 
-The Python SDK is the runtime client and does not build source templates. Normally use `abx --provider PROVIDER template launch SOURCE --yes`, then connect Python to the returned sandbox. Advanced image preparation uses `abx template build` and `abx template deploy`; before passing a prepared reference to `launch_template`, ensure its native startup does not also start the same service. See [startup ownership](template-workflows.md) and [Build & Deploy](build-and-deploy.md).
+The Python SDK is the runtime client and does not build source templates. Normally use `abx --provider PROVIDER deploy SOURCE --name my-app --yes`, then connect Python to the returned sandbox. Advanced image preparation uses `abx template build` and `abx deploy`; before passing a prepared reference to `launch_template`, ensure its native startup does not also start the same service. See [startup ownership](template-workflows.md) and [Build & Deploy](build-and-deploy.md).
 
-To publish a template to GitHub, install one locally or from a registry, adopt an existing project (`abx template scaffold --adopt`), or build and register one from the command line (`abx deploy`, `abx template deploy|create`), use the `abx` CLI; see [Related: the abx CLI](#related-the-abx-cli).
+To publish a template to GitHub, install one locally or from a registry, adopt an existing project (`abx template init --adopt`), or build and register one from the command line (`abx deploy`, `abx template build`), use the `abx` CLI; see [Related: the abx CLI](#related-the-abx-cli).
 
 ## Next Steps
 
@@ -162,4 +162,4 @@ To publish a template to GitHub, install one locally or from a registry, adopt a
 
 ## Related: the abx CLI
 
-The command-line workflow for templates is documented in the CLI repository: [Authoring Templates (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authoring-templates.md) (`abx template scaffold`, `--adopt`, publishing, `template install`), [Deploy & Build](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/deploy-and-build.md) (`abx deploy`, `abx template deploy|create`) and [Using Templates](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/using-templates.md).
+The command-line workflow for templates is documented in the CLI repository: [Authoring Templates (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authoring-templates.md) (`abx template init`, `--adopt`, publishing, `template init --from`), [Deploy & Build](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/deploy-and-build.md) (`abx deploy`, `abx template build`) and [Using Templates](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/using-templates.md).

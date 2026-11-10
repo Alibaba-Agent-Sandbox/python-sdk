@@ -17,7 +17,7 @@ python -m pip install --index-url https://pypi.org/simple --upgrade --pre agent-
 python -m pip check
 ```
 
-`--pre` opts into preview releases. The package imports as `agent_sandbox` and installs its matching `agent-sandbox-server` dependency. See [installation](docs/en/guide/install-python.md) for a pinned version, optional extras and source setup. The PyPI name `agent-sandbox` belongs to a different project.
+`--pre` opts into preview releases. The package imports as `agent_sandbox`. Standard clients, `ProviderSandbox` and the application HTTP `ServerClient` run on the client; `agent-sandbox-server` runs inside the application image. See [installation](docs/en/guide/install-python.md) for a pinned version, optional extras and source setup. The PyPI name `agent-sandbox` belongs to a different project.
 
 ## Quick start
 

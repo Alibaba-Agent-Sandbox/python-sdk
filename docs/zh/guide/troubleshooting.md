@@ -93,11 +93,11 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 1. 检查模板名称拼写
 2. 确认模板已安装：
    ```bash
-   abx template install owner/repo
+   abx template init ./project --from owner/repo
    ```
 3. 使用默认模板测试：
    ```bash
-   abx create base
+   abx deploy --template-id base --name my-sandbox
    ```
 
 ### E2009 — SandboxNotFoundError
@@ -150,10 +150,10 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 abx list --status running
 
 # 销毁不需要的沙箱
-abx kill sbx-xxxx
+abx delete sbx-xxxx
 
 # 批量销毁
-abx kill --all --yes
+abx delete <unused-sandbox-id> --yes
 ```
 
 ---
@@ -174,14 +174,14 @@ abx kill --all --yes
 result = await sandbox.commands.run("long-command", timeout=300)
 
 # CLI 中增加超时
-abx exec sbx-xxxx "long-command" --timeout 300
+abx sandbox exec sbx-xxxx "long-command" --timeout 300
 ```
 
 ---
 
 ## 构建与部署相关
 
-构建、推送、部署的错误（`E7xxx` 错误码，以及 `abx create` / `abx template scaffold` 缺少 LLM Key）由 `abx` CLI 抛出，不属于这个 SDK。见 CLI 的排障指南和[构建与部署](build-and-deploy.md)。
+构建、推送、部署的错误（`E7xxx` 错误码，以及 `abx template init --prompt` / `abx template init` 缺少 LLM Key）由 `abx` CLI 抛出，不属于这个 SDK。见 CLI 的排障指南和[构建与部署](build-and-deploy.md)。
 
 ---
 
@@ -239,4 +239,4 @@ python -m pip show agent-sandbox-client
 
 ## 相关：abx CLI
 
-CLI 特有的问题（找不到 `abx`、`abx deploy` 没有 Dockerfile、部署步骤长时间无输出、无效的快捷方式目标、`abx template scaffold --adopt` 确认提示）见 CLI 仓库：[故障排查（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/troubleshooting.md)。
+CLI 特有的问题（找不到 `abx`、`abx deploy` 没有 Dockerfile、部署步骤长时间无输出、无效的快捷方式目标、`abx template init --adopt` 确认提示）见 CLI 仓库：[故障排查（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/troubleshooting.md)。

@@ -47,8 +47,8 @@ Each key has one name. Product settings use `ABX_<KEY>`. A vendor that already p
 The same chain is what these calls read:
 
 - `Sandbox.create` and the other SDK clients (`load_config`)
-- natural-language `abx create` (the coding agent)
-- `abx template install` / `abx template search` (GitHub token)
+- natural-language `abx template init --prompt` (the coding agent)
+- `abx template init --from SOURCE` / `abx template list` (GitHub token)
 - `abx mcp install` (the sandbox API key copied into the editor config)
 
 `abx mcp install` writes `ABX_SANDBOX_API_KEY` into the Cursor and Claude config. `ABX_SANDBOX_BASE_URL` and `ALIBABA_CLOUD_REGION_ID` are copied into the same file only when the process environment sets them. `abx mcp start` loads `~/.abx` again, so a region saved with `abx config set region` still applies when the editor starts the server.
@@ -134,7 +134,7 @@ Config file path: `~/.abx/config.toml`
 
 ```toml
 [core]
-provider = "alicloud-express"   # default provider (abx provider default NAME)
+provider = "alicloud-express"   # default provider (abx config set provider NAME)
 
 [transport]
 sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"

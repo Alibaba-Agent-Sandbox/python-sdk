@@ -165,7 +165,7 @@ envd 认证需要以下 HTTP 头（已由 SDK 自动设置）：
 
 ## 相关：abx CLI
 
-通过命令行设置凭证（`abx config set` / `list` / `get`、`abx create --env`）的说明位于 CLI 仓库：[CLI 认证配置](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authentication.md)。
+通过命令行设置凭证（`abx config set` / `list` / `get`、`abx deploy --env`）的说明位于 CLI 仓库：[CLI 认证配置](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authentication.md)。
 
 ## STS 临时身份与私有应用访问
 

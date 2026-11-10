@@ -1,55 +1,17 @@
-# Build and Deploy
+# Build and deploy
 
-The Python SDK (`agent-sandbox-client`) is the **runtime** client. It creates, uses and kills sandboxes. It does not build images or register templates. Building and deploying a template is the job of the `abx` CLI.
+The Python SDK is a runtime client. The CLI owns source acquisition, builds, deployment and source version publication. These are the current source commands; use `abx --help` for the installed release.
 
-| Step | Command | Notes |
-|------|---------|-------|
-| Author | `abx template scaffold` | Writes `Dockerfile`, `template.yaml`, `commands.py` |
-| Build | `abx template build` | Build the selected Dockerfile or explicit cloud steps |
-| Publish | `abx template deploy` (or `abx deploy`) | Publish the selected build path; check the returned status before creating |
-| Launch | `abx create <TEMPLATE_ID>` or `Sandbox.create(template=...)` | Runtime; this is where the SDK starts |
-
-The full workflow, every option and the AI-assisted authoring steps are documented in the CLI's [Deploy and Build](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/deploy-and-build.md) guide.
-
-## Cloud steps and readiness
-
-Dockerfile deployment requires local Docker and the configured image registry.
-`abx template deploy --build steps` uses explicit steps in `template.yaml` and
-requires neither local Docker nor an ACR push. It does not translate a Dockerfile
-or upload local `COPY` files automatically. For the catalog's `python-hello`, use
-[the public steps preparation guide](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/docs/platform-steps.md#quick-start-python-hello-without-docker).
-
-In CLI 0.4.11, a direct steps deployment may return `Status: submitted` and a
-`TemplateID`. Submission is not readiness: poll `abx --json template info ID` until
-its state is `ready`, with a finite deadline; stop and clean up on failure. That
-version returns `status` as a string containing a Python dictionary, so automation
-must parse the outer JSON and use `ast.literal_eval` for that string, never `eval`.
-Only then call `abx create ID --detach` or `ProviderSandbox.create(template=ID)`.
-Retain each exact resource ID for cleanup (`abx kill SANDBOX_ID`, then
-`abx template delete TEMPLATE_ID -y`) and verify that subsequent exact-ID reads
-report not-found. A successful submit exit or an empty list alone is insufficient.
-
-## Using the result from Python
-
-```python
-from agent_sandbox import ProviderSandbox as Sandbox
-
-async with await Sandbox.create(template="<TEMPLATE_ID or alias>") as sandbox:
-    print(await sandbox.run("hello", name="Ada"))      # a command registered in the template's server
-    proc = await sandbox.commands.run("python3 --version")
+```bash
+abx template init ./my-template --template python
+abx deploy ./my-template --name my-app --yes
+abx status my-app
+abx sandbox command run my-app hello --arg name=Ada
+abx delete my-app --yes
 ```
 
-Templates that ship an `agent-sandbox-server` are described in [Authoring Templates](authoring-templates.md) and [Template server HTTP API](template-server-api.md).
+For reuse, prepare with `abx template build ./my-template --out ./.abx/build.json --yes`, then deploy with `abx deploy --build ./.abx/build.json --name my-app --yes`. Building creates no running instance. Deleting the application retains a separately prepared build. Clean an unused build with `abx template build --clean ./.abx/build.json --yes`; retained resources that require manual cleanup, such as images, are listed.
 
-## What changed
+For an existing native template, Python can call `await ProviderSandbox.create(template=template_id, provider=provider)`. Connect to the returned Sandbox ID when the CLI already started the application. `launch_template` is an advanced runtime entry: its caller must ensure that the image entrypoint or platform startup does not also start the manifest’s service.
 
-The earlier SDK carried its own copy of the build pipeline (`Sandbox.deploy`, `Image`, `DockerBuilder`, `TemplateManager`, the `[alicloud]` extra, and the E7xxx build errors). They are removed: one pipeline in one tool. If your code called them, replace the call with the CLI commands above (a script can run `abx template deploy --yes`).
-
-## Next Steps
-
-- [Authoring Templates](authoring-templates.md) — Define templates via template.yaml
-- [SDK Usage Guide](sdk-usage.md) — Runtime usage of the SDK
-
-## Related: the abx CLI
-
-The command-line template lifecycle is documented in the [`cli` repository](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/deploy-and-build.md).
+[CLI authoring guide](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/authoring-templates.md) · [SDK application connections](template-workflows.md)

@@ -25,7 +25,7 @@ from agent_sandbox import ProviderSandbox as Sandbox
 
 ## 模板应用
 
-通过 `abx template launch <reference>` 启动完整模板，再使用 `application_client`
+通过 `abx deploy <reference> --name my-app` 启动完整模板，再使用 `application_client`
 携带应用令牌调用注册命令。源码镜像准备和平台配置由 CLI 负责。见
 [Express 快速开始](express-quickstart.md)和[模板启动](template-workflows.md)。
 

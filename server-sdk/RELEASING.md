@@ -1,6 +1,6 @@
 # Releasing the Python package pair
 
-Publish `agent-sandbox-server` first, then `agent-sandbox-client`, from the same source tag. The client pins the matching server dependency. The unrelated PyPI project `agent-sandbox` is never a publication target.
+Publish `agent-sandbox-server` first, then `agent-sandbox-client`, from the same source tag. The client `[server]` extra pins the matching runtime dependency. The unrelated PyPI project `agent-sandbox` is never a publication target.
 
 ## Candidate and versions
 
@@ -71,7 +71,7 @@ alpha，发布流程、产物摘要及全新公开安装验证均已通过；这
 
 四处版本（两个 `_version.py`、client 的 server 精确依赖、MCP `SERVER_VERSION`）一起更新。先通过同一标签的完整 CI、产物检查和真实组件验收。将 token 保存在 GitHub repository 或 `pypi` environment 的 `PYPI_API_TOKEN` secret 中，由上传步骤直接引用；不要复制到源码或日志。此流程发布到正式 PyPI 的预发布版本，不是 TestPyPI，也不声明 OIDC 证明。
 
-手动执行默认 `dry_run=true`，必须选择实际已审查的 `v<next-version>` 版本标签，选择 main 会失败。验证后创建该标签的 GitHub prerelease，或显式设置 `dry_run=false`。工作流保存本次产物，先检查已有公开文件摘要，再按顺序上传；最后仅安装固定版本 client，验证 server 自动依赖、导入与 `pip check`。
+手动执行默认 `dry_run=true`，必须选择实际已审查的 `v<next-version>` 版本标签，选择 main 会失败。验证后创建该标签的 GitHub prerelease，或显式设置 `dry_run=false`。工作流保存本次产物，先检查已有公开文件摘要，再按顺序上传；最后先安装固定版本 client 验证独立导入，再安装 `[server]` extra 验证配套运行时导入与 `pip check`。
 
 部分上传失败时保留并使用同一批候选文件。重新构建后如摘要不同，应停止调查，不得依赖 skip-existing 掩盖差异。全部公开包下载与安装验证通过后，才更新对外的发布状态。
 

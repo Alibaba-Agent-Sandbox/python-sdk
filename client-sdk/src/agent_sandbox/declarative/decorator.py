@@ -36,8 +36,6 @@ from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from agent_sandbox.utils.async_bridge import run_sync
-from agent_sandbox.utils.coerce import coerce_kwargs as _coerce_kwargs
-from agent_sandbox.utils.coerce import parse_scalar as _parse_scalar  # noqa: F401  re-exported
 
 from .serializer import Serializer, SerializerType
 
@@ -75,12 +73,6 @@ def _annotation_to_type_str(annotation: Any) -> str:
     )
 
 
-# ``_parse_scalar`` and ``_coerce_kwargs`` are imported from
-# ``agent_sandbox.utils.coerce`` (canonical shared implementation).
-# They are re-imported at the top of this file so existing callers
-# (including tests) can still use them via this module.
-
-
 # ---------------------------------------------------------------------------
 # Registered command model
 # ---------------------------------------------------------------------------
@@ -102,7 +94,6 @@ class _RegisteredCommand:
     """Metadata for a ``@sandbox.register``-ed function."""
 
     name: str
-    source: str
     args: list[_CommandArg] = field(default_factory=list)
 
 
@@ -118,7 +109,7 @@ def _import_server() -> Any:
     except ImportError as exc:
         raise ImportError(
             "agent_sandbox.server is not available: install the in-sandbox server with "
-            "'pip install agent-sandbox-server'."
+            "pip install 'agent-sandbox-client[server]'."
         ) from exc
     if not hasattr(server_mod, "start"):
         raise ImportError(
@@ -171,8 +162,8 @@ class _RegisterProxy:
             def demo(x: int, y: str) -> str:
                 return f"{y}={x}"
 
-        Only scalar parameter types are supported:
-        ``str``, ``int``, ``float``, ``bool``.
+        Requires the local ``server`` extra. Supported parameter types:
+        ``str``, ``int``, ``float``, ``bool``, ``list[str]``.
 
         Args:
             func: The function to register (used as a bare decorator,
@@ -181,8 +172,8 @@ class _RegisterProxy:
         Returns:
             The original function, unmodified.
         """
+        _import_server()
         name = func.__name__
-        source = _get_function_source(func)
         sig = inspect.signature(func)
         # Resolve string annotations (from __future__ annotations) to real types
         try:
@@ -218,7 +209,6 @@ class _RegisterProxy:
             )
         cmd = _RegisteredCommand(
             name=name,
-            source=source,
             args=args,
         )
         self._factory._registry[name] = cmd
@@ -247,8 +237,6 @@ class _RegisterProxy:
                 args=server_args,
                 description=getattr(cmd, "description", ""),
             )
-        except ImportError:
-            pass  # server module not installed
         except RuntimeError:
             pass  # registry already frozen
 
@@ -262,7 +250,7 @@ class _RegisterProxy:
 
 class _SandboxFactory:
     """Callable object that unifies ``@sandbox(...)`` decorator,
-    ``.register`` / ``.run``, and ``.server`` access.
+    ``.register`` and ``.server`` access.
 
     ``sandbox`` is a module-level singleton of this class.
 
@@ -450,7 +438,7 @@ class _SandboxFactory:
         return decorator
 
     # ------------------------------------------------------------------ #
-    # Register + Run  (@sandbox.register / sandbox.run)
+    # Server registration metadata
     # ------------------------------------------------------------------ #
 
     def list_registered(self) -> list[dict[str, Any]]:
@@ -485,73 +473,6 @@ class _SandboxFactory:
             )
         return result
 
-    def run(self, name: str, **kwargs: Any) -> Any:
-        """Execute a registered command synchronously.
-
-        Legacy convenience call: creates ``code-interpreter-v1`` and calls an
-        already deployed command of the same name. It does not upload the local
-        registered function. For template services, use an explicit sandbox and
-        ``application_client().commands.run``.
-
-        Args:
-            name: The registered command name.
-            **kwargs: Arguments for the command (coerced to declared
-                types).
-
-        Returns:
-            The return value of the remote function.
-
-        Raises:
-            ValueError: If *name* is not registered, a required arg
-                is missing, or an undeclared arg is passed.
-            RuntimeError: If the server responds with an error.
-        """
-        cmd = self._get_registered(name)
-        coerced = _coerce_kwargs(cmd.args, kwargs)
-
-        return run_sync(self._execute_registered(cmd, coerced))
-
-    async def run_async(self, name: str, **kwargs: Any) -> Any:
-        """Execute a registered command asynchronously.
-
-        Same as :meth:`run` but ``await``-able.
-        """
-        cmd = self._get_registered(name)
-        coerced = _coerce_kwargs(cmd.args, kwargs)
-        return await self._execute_registered(cmd, coerced)
-
-    # -- internal helpers ------------------------------------------------
-
-    def _get_registered(self, name: str) -> _RegisteredCommand:
-        if name not in self._registry:
-            available = ", ".join(sorted(self._registry)) or "(none)"
-            raise ValueError(f"Unknown registered command {name!r}; available: {available}")
-        return self._registry[name]
-
-    async def _execute_registered(
-        self,
-        cmd: _RegisteredCommand,
-        coerced_kwargs: dict[str, Any],
-    ) -> Any:
-        """Execute a registered command via the sandbox HTTP server.
-
-        Creates a sandbox whose template runs a persistent
-        :mod:`agent_sandbox.server`, then sends
-        ``POST /commands/{name}`` with *coerced_kwargs* as the JSON body
-        via :meth:`~agent_sandbox.api.sandbox.Sandbox.run`, returning the command's raw JSON
-        value.
-        """
-        from agent_sandbox.api.sandbox import Sandbox
-
-        sb = await Sandbox.create(
-            template="code-interpreter-v1",
-            timeout=300,
-        )
-        try:
-            return await sb.run(cmd.name, **coerced_kwargs)
-        finally:
-            await sb.kill()
-
 
 # Module-level singleton ------------------------------------------------- #
 sandbox = _SandboxFactory()
@@ -560,11 +481,6 @@ sandbox = _SandboxFactory()
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-# ``_coerce_kwargs`` is now the shared ``coerce_kwargs`` imported from
-# ``agent_sandbox.utils.coerce`` at the top of this module.  The alias
-# ``_coerce_kwargs`` preserves internal call-sites unchanged.
 
 
 async def _detect_python_cmd(sb: Any) -> str:

@@ -48,8 +48,8 @@ async with await ProviderSandbox.create(template="base") as sandbox:
 
 ## 模板应用
 
-使用 `abx template launch <reference>` 准备并启动完整模板。高级 `template build` /
-`template deploy` 可单独准备镜像。启动后通过
+使用 `abx deploy <reference> --name my-app` 准备并启动完整模板。高级 `template build` /
+`template build` 可单独准备镜像。启动后通过
 `await sandbox.application_client(9000, token=application_token)` 绑定应用客户端，
 再调用 `client.commands.run("hello", name="Python")`。前提是运行中的模板注册了 hello，
 普通 `base` 不包含该服务。见 [Express 快速开始](express-quickstart.md)和

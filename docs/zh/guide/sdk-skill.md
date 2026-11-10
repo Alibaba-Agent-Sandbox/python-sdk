@@ -8,7 +8,7 @@
 
 - 客户端：`Sandbox.create`、`commands.run`、`run`、`files`，以及内置提供方 `alicloud-express`
 - 模板：`template.yaml`、`Dockerfile`、用 `@command` 和 `start()` 写的 `commands.py`
-- 部署：`abx template deploy`（Python 包不构建镜像）
+- 部署：`abx deploy`（Python 包不构建镜像）
 - 测试：`make test`，以及在本地启动 `commands.py` 做健康检查
 - 发布：两个包同一个版本号，由 GitHub Release 发布
 

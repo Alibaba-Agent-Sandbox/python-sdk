@@ -9,8 +9,8 @@ Checks:
 
 * ``py-typed`` — each wheel ships its PEP 561 marker
   (``agent_sandbox/py.typed`` for the client, ``agent_sandbox/server/py.typed`` for the server).
-* ``combined-install`` — both wheels install into one fresh virtualenv and the shared
-  ``agent_sandbox`` namespace works (``import agent_sandbox`` and ``import agent_sandbox.server``).
+* ``combined-install`` — install the client alone, exercise HTTP without the runtime,
+  then resolve the local server extra and verify command registration.
 
 Usage: ``python scripts/check_dists.py [py-typed|combined-install|all]``
 """
@@ -32,20 +32,89 @@ PY_TYPED_MARKERS = {
     "server-sdk": "agent_sandbox/server/py.typed",
 }
 
-IMPORT_CHECK = """
-import agent_sandbox
-import agent_sandbox.server
+CLIENT_CHECK = """
+import asyncio
+import importlib.metadata
+import importlib.util
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
 import yaml
+from agent_sandbox import Sandbox, AsyncSandbox, ProviderSandbox, sandbox
 from agent_sandbox.api import launch_template
-from agent_sandbox import Sandbox, AsyncSandbox, ProviderSandbox
+from agent_sandbox.api.server_client import ServerClient
+from agent_sandbox.code_interpreter import Sandbox as InterpreterSandbox
+from agent_sandbox.code_interpreter import AsyncSandbox as AsyncInterpreterSandbox
+
+classes = (Sandbox, AsyncSandbox, ProviderSandbox, InterpreterSandbox, AsyncInterpreterSandbox)
+assert all(callable(cls.create) for cls in classes)
+assert callable(launch_template) and callable(sandbox)
+assert not hasattr(sandbox, "run") and not hasattr(sandbox, "run_async")
+assert yaml.safe_load("spec_version: 5") == {"spec_version": 5}
+assert importlib.util.find_spec("agent_sandbox.server") is None
+try:
+    importlib.metadata.distribution("agent-sandbox-server")
+except importlib.metadata.PackageNotFoundError:
+    pass
+else:
+    raise AssertionError("base install pulled in the server runtime")
+
+def identity(value: str) -> str:
+    return value
+
+assert callable(sandbox(template="code-interpreter-v1")(identity))
+
+try:
+    sandbox.register(identity)
+except ImportError as exc:
+    assert "agent-sandbox-client[server]" in str(exc)
+else:
+    raise AssertionError("registration without the runtime silently succeeded")
+assert sandbox.list_registered() == []
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        assert self.path == "/health"
+        body = b'{"status":"ok"}'
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+    def log_message(self, *args):
+        pass
+
+server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+thread = threading.Thread(target=server.serve_forever)
+thread.start()
+async def check_http():
+    client = ServerClient(f"http://127.0.0.1:{server.server_port}")
+    try:
+        assert await client.health()
+    finally:
+        await client.aclose()
+try:
+    asyncio.run(check_http())
+finally:
+    server.shutdown()
+    server.server_close()
+    thread.join()
+print("client-only imports, explicit runtime error, and real HTTP: OK")
+"""
+
+SERVER_CHECK = """
+from agent_sandbox import sandbox
 from agent_sandbox.server import default_registry, start
 
-assert all(callable(cls.create) for cls in (Sandbox, AsyncSandbox, ProviderSandbox))
-assert callable(launch_template)
-assert yaml.safe_load("spec_version: 4") == {"spec_version": 4}
-print("template YAML parser: available in the base install")
-print("agent_sandbox       :", agent_sandbox.__file__)
-print("agent_sandbox.server:", agent_sandbox.server.__file__)
+@sandbox.register
+def identity(value: str) -> str:
+    return value
+
+assert callable(start)
+assert identity("registered") == "registered"
+assert any(command["name"] == "identity" for command in sandbox.list_registered())
+assert default_registry().get("identity") is not None
+print("server extra namespace and command registration: OK")
 """
 
 
@@ -79,12 +148,28 @@ def check_combined_install() -> None:
         bindir = "Scripts" if sys.platform == "win32" else "bin"
         python = venv / bindir / ("python.exe" if sys.platform == "win32" else "python")
         subprocess.run(
-            [str(python), "-m", "pip", "install", "--quiet", str(server), str(client)],
+            [str(python), "-m", "pip", "install", "--quiet", str(client)],
             check=True,
         )
         # Run outside the repo so the installed wheels, not the source trees, are imported.
-        subprocess.run([str(python), "-c", IMPORT_CHECK], check=True, cwd=tmp)
-    print("client + server wheels install into one venv and import: OK")
+        subprocess.run([str(python), "-c", CLIENT_CHECK], check=True, cwd=tmp)
+        subprocess.run(
+            [
+                str(python),
+                "-m",
+                "pip",
+                "install",
+                "--quiet",
+                "--no-index",
+                "--find-links",
+                str(server.parent),
+                f"{client}[server]",
+            ],
+            check=True,
+        )
+        subprocess.run([str(python), "-c", SERVER_CHECK], check=True, cwd=tmp)
+        subprocess.run([str(python), "-m", "pip", "check"], check=True, cwd=tmp)
+    print("client-only and optional server wheel installation: OK")
 
 
 def main(argv: list[str]) -> int:
