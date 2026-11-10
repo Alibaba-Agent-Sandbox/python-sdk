@@ -1,5 +1,10 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+## Recent changes — 2026-11-10
+
+- [Owner change index](notes/proposed/process/2026-11-10-recent-change-index.md) · [records verification](evidence/verify/2026-11-10-recent-change-index.md).
+- This is a dated source/delivery index; Draft implementation, prior releases and new validation remain separate.
+
 - [Client/runtime boundaries](notes/proposed/architecture/2026-11-10-client-runtime-boundaries.md) · [verification](evidence/verify/2026-11-10-client-runtime-boundaries.md).
 
 - [Managed Agents API](notes/proposed/architecture/2026-11-05-managed-agents-api.md) · [initial verification](evidence/verify/2026-11-05-managed-agents-api.md) · [release-candidate verification](evidence/verify/2026-11-06-managed-agents-release-candidate.md) · [CI artifacts](evidence/verify/2026-11-06-managed-agents-ci-artifacts.md).
