@@ -86,11 +86,11 @@ finally:
 
 ## 交流与反馈
 
-欢迎加入 **Agent Sandbox 开发者工具交流群**，交流使用经验、分享建议与反馈。[点击加入钉钉群](https://qr.dingtalk.com/action/joingroup?code=v1,k1,kIZr4Ai7sYm4U0xoz1p1QSlgoBHeoi/kE5TkIXeFCR4=&_dt_no_comment=1&origin=11)，或搜索钉钉群号 **213605001586**。
+欢迎加入 **Agent Sandbox 开发者工具交流群**，交流使用经验、分享建议与反馈。[点击加入钉钉群](https://qr.dingtalk.com/action/joingroup?code=v1,k1,LSusypYdoGm4U0xoz1p1QSlgoBHeoi/kgpsl4uQ8qus=&_dt_no_comment=1&origin=1)，或搜索钉钉群号 **213605001586**。
 
 也可以使用钉钉扫描二维码加入：
 
-<a href="https://qr.dingtalk.com/action/joingroup?code=v1,k1,kIZr4Ai7sYm4U0xoz1p1QSlgoBHeoi/kE5TkIXeFCR4=&amp;_dt_no_comment=1&amp;origin=11"><img src="assets/dingtalk-group.png" alt="钉钉交流群二维码" width="235" /></a>
+<a href="https://qr.dingtalk.com/action/joingroup?code=v1,k1,LSusypYdoGm4U0xoz1p1QSlgoBHeoi/kgpsl4uQ8qus=&amp;_dt_no_comment=1&amp;origin=1"><img src="assets/dingtalk-group.jpg" alt="钉钉交流群二维码" width="235" /></a>
 
 ## 参与贡献
 
