@@ -8,6 +8,8 @@ Create sandboxes, execute code and commands, and work with remote files from Pyt
 
 [Website](https://www.agent-sandbox.cn/en/) · [Documentation](docs/en/README.md) · [Examples](examples/README.md)
 
+> **Preview release:** Agent Sandbox is currently in preview and may introduce breaking changes. The stable **1.0.0** release is expected on **November 15, 2026**. Stay tuned!
+
 ## Installation
 
 Use Python 3.10+ in a virtual environment:
@@ -80,6 +82,14 @@ See the [full documentation index](docs/README.md), [examples](examples/README.m
 ## Related: the abx CLI
 
 The [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) provides terminal operations, template builds and launches. Install it separately when your workflow requires it.
+
+## Community
+
+Join the **Agent Sandbox 开发者工具交流群** on DingTalk to discuss usage and share feedback. [Join the group](https://qr.dingtalk.com/action/joingroup?code=v1,k1,kIZr4Ai7sYm4U0xoz1p1QSlgoBHeoi/kE5TkIXeFCR4=&_dt_no_comment=1&origin=11) or search for group number **213605001586**.
+
+Scan the QR code with DingTalk:
+
+<a href="https://qr.dingtalk.com/action/joingroup?code=v1,k1,kIZr4Ai7sYm4U0xoz1p1QSlgoBHeoi/kE5TkIXeFCR4=&amp;_dt_no_comment=1&amp;origin=11"><img src="assets/dingtalk-group.png" alt="DingTalk group QR code" width="235" /></a>
 
 ## Contributing
 

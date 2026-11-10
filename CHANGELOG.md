@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Documentation
+
+- Announce the expected November 15, 2026 project 1.0.0 release, preview compatibility notice, and DingTalk community contact in both README languages.
+
 Release candidate: matching client/server **0.4.0a7**. / 候选版本：客户端与服务端均为 **0.4.0a7**。
 
 ### Added
