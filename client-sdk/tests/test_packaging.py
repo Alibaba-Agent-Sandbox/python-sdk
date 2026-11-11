@@ -84,10 +84,9 @@ def test_wheel_metadata_has_no_cli_dependencies(built_dists: dict[str, Path]) ->
     for dep in ("click", "questionary", "e2b", "e2b-code-interpreter"):
         assert f"Requires-Dist: {dep}" not in metadata
     assert "Provides-Extra: cli" not in metadata
-    assert "Provides-Extra: server" not in metadata
 
 
-def test_wheel_hard_depends_on_matching_server_and_keeps_functional_extras(
+def test_wheel_offers_matching_server_only_as_extra(
     built_dists: dict[str, Path],
 ) -> None:
     import agent_sandbox
@@ -96,8 +95,17 @@ def test_wheel_hard_depends_on_matching_server_and_keeps_functional_extras(
         metadata = next(zf.read(n).decode() for n in zf.namelist() if n.endswith("/METADATA"))
     requires = [line for line in metadata.splitlines() if line.startswith("Requires-Dist: ")]
     unconditional = [r for r in requires if "extra ==" not in r]
-    assert f"Requires-Dist: agent-sandbox-server=={agent_sandbox.__version__}" in unconditional
-    assert "Provides-Extra: server" not in metadata
+    assert not any("agent-sandbox-server" in r for r in unconditional)
+    assert (
+        f"Requires-Dist: agent-sandbox-server=={agent_sandbox.__version__}; extra == 'server'"
+        in requires
+    )
+    assert "Provides-Extra: server" in metadata
+    for extra in ("all", "dev"):
+        assert (
+            f"Requires-Dist: agent-sandbox-server=={agent_sandbox.__version__}; extra == '{extra}'"
+            in requires
+        )
     assert "Provides-Extra: declarative" not in metadata
     assert "Requires-Dist: pyyaml>=6.0.3" in unconditional
     mcp_deps = [r for r in requires if "extra == 'mcp'" in r]

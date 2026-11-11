@@ -45,7 +45,7 @@ async def main():
 asyncio.run(main())
 ```
 
-On the default Express CLI path, `abx create base --env KEY=value` sets the new interactive terminal's environment; it is not a sandbox-lifetime creation-env API and has no terminal to configure with `--detach`. Use `ProviderSandbox.create(envs=...)` for the creation input above. For template applications, declare runtime defaults in the template and configure required values before `abx template launch`. See the [CLI guide](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/cli-tutorial.md).
+The CLI passes `abx deploy SOURCE --name APP --env KEY=value` to the created runtime. Declare required runtime environment in the template and keep secrets out of source. Python can use `ProviderSandbox.create(envs=...)` directly.
 
 When attaching to an instance you do not own, release the local connection with `await sandbox.close()` instead of deleting the instance.
 

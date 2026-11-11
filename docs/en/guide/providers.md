@@ -129,11 +129,11 @@ Highest priority first:
 | Where | Example |
 |---|---|
 | SDK argument | `await ProviderSandbox.create(provider="my-cloud")` |
-| CLI flag | `abx create --provider my-cloud` |
+| CLI flag | `abx --provider my-cloud deploy --template-id base --name my-sandbox` |
 | Process environment | `export ABX_PROVIDER=my-cloud` |
 | `./.env` | `ABX_PROVIDER=my-cloud` |
 | `~/.abx/.env` | `ABX_PROVIDER=my-cloud` |
-| `~/.abx/config.toml` | `[core]` `provider = "my-cloud"` (written by `abx provider default my-cloud`) |
+| `~/.abx/config.toml` | `[core]` `provider = "my-cloud"` (written by `abx config set provider my-cloud`) |
 | Built-in | `alicloud-express` |
 
 ```python
@@ -159,9 +159,9 @@ Default provider management:
 
 ```bash
 abx provider list
-abx provider default my-cloud       # persist in ~/.abx/config.toml
-abx provider default                # show the current default
-abx provider default alicloud-express
+abx config set provider my-cloud       # persist in ~/.abx/config.toml
+abx config set provider                # show the current default
+abx config set provider alicloud-express
 ```
 
 ---
@@ -268,7 +268,7 @@ Installing a plugin does not implement every interface. Inspect `abx provider in
 | Read and write files | `files.read/write` | `upload`, `download` |
 | Call a template application | `await application_client(port, token=...)`, then `client.commands.run` | Named-command entry, see the [server API](template-server-api.md) |
 | Resolve an application endpoint | `await network.resolve(port)` returns the URL and gateway headers | No dedicated URL command |
-| Prepare a source template | Prepare with the CLI, then connect to its sandbox or use a prepared reference | `template launch`, see the [workflow guide](template-workflows.md) |
+| Prepare a source template | Prepare with the CLI, then connect to its sandbox or use a prepared reference | `abx deploy SOURCE --name APP`, see the [workflow guide](template-workflows.md) |
 
 Process execution, named commands, interpreters and PTY are different interfaces; one working interface does not implement the others. Preserve gateway headers and provide the application token explicitly when calling an application. See the [SDK reference](../reference/api-reference.md) for the complete methods.
 

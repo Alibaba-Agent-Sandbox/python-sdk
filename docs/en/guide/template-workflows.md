@@ -1,6 +1,6 @@
 # Launch and use a template
 
-Use `abx --provider PROVIDER template launch SOURCE --yes` to prepare and start a source template, then connect with Python using the returned sandbox ID and the same provider. If the platform already provides a template ID, Python can create it directly.
+Use `abx --provider PROVIDER deploy SOURCE --name my-app --yes` to prepare and start a source template, then connect with Python using the returned sandbox ID and the same provider. If the platform already provides a template ID, Python can create it directly.
 
 ## Python application consumption
 
@@ -21,7 +21,7 @@ finally:
 
 The client also sends the explicit application token in the server's existing `X-Access-Token` header when that header is unused. This keeps authentication working through proxies that strip `Authorization`, including OpenSandbox 1.1.1. Existing gateway headers, including defaults on an injected HTTP client, are never replaced. Bearer authentication remains available for services that require it.
 
-For advanced preparation, `launch_template` creates a new sandbox from a prepared provider reference and runs the manifest's `start_cmd`. The reference must not also start the same service through its native startup command or image entrypoint. An ordinary `abx template deploy` can retain native startup behavior; its returned reference is not automatically idle. If the CLI has already started the application, connect to its sandbox as above.
+For advanced preparation, `launch_template` creates a new sandbox from a prepared provider reference and runs the manifest's `start_cmd`. The reference must not also start the same service through its native startup command or image entrypoint. CLI build artifacts retain their declared startup behavior; do not treat a prepared reference as an instruction to start the service twice. If the CLI has already started the application, connect to its sandbox as above.
 
 To let Python own startup and cleanup after checking that preparation boundary:
 

@@ -51,8 +51,8 @@ from account availability and live acceptance; see [providers](providers.md).
 
 ## Template applications
 
-Use `abx template launch <reference>` to prepare and start the complete template.
-Advanced `template build` / `template deploy` handle image preparation separately.
+Use `abx deploy <reference> --name my-app` to prepare and start the complete template.
+Advanced `template build` / `deploy --build` handle image preparation separately.
 After launch, bind an application client with
 `await sandbox.application_client(9000, token=application_token)` and call
 `client.commands.run("hello", name="Python")`. This requires a running template

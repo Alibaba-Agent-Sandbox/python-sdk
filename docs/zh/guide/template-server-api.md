@@ -35,7 +35,7 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-`close()` 释放本次客户端连接，不销毁这个现有沙箱；创建者仍负责调用 `kill()` 或 `abx kill ID`。
+`close()` 释放本次客户端连接，不销毁这个现有沙箱；创建者仍负责调用 `kill()` 或 `abx delete ID`。
 
 
 此调用解析当前沙箱和端口的应用端点，保留完整代理前缀及签名 query。平台网关请求头和应用 `ABX_SERVER_TOKEN` 分离，不复制控制面 API key，不做匿名认证重试。重定向（包括同域另一沙箱）、URL 用户信息和寻址覆盖被拒绝；逐操作签名入口必须由 Provider 解析操作请求，不能按 URL 前缀拼接。

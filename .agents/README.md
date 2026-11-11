@@ -1,5 +1,12 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+## Recent changes — 2026-11-10
+
+- [Owner change index](notes/proposed/process/2026-11-10-recent-change-index.md) · [records verification](evidence/verify/2026-11-10-recent-change-index.md).
+- This is a dated source/delivery index; Draft implementation, prior releases and new validation remain separate.
+
+- [Client/runtime boundaries](notes/proposed/architecture/2026-11-10-client-runtime-boundaries.md) · [verification](evidence/verify/2026-11-10-client-runtime-boundaries.md).
+
 - [Managed Agents API](notes/proposed/architecture/2026-11-05-managed-agents-api.md) · [initial verification](evidence/verify/2026-11-05-managed-agents-api.md) · [release-candidate verification](evidence/verify/2026-11-06-managed-agents-release-candidate.md) · [CI artifacts](evidence/verify/2026-11-06-managed-agents-ci-artifacts.md).
 - Managed Agents API cloud continuations: [private invocation/drain](evidence/verify/2026-11-06-managed-agents-fc-private-drain.md), [source business operations](evidence/verify/2026-11-06-managed-agents-fc-business-source.md), [private input boundary](evidence/verify/2026-11-06-managed-agents-empty-private-revision.md).
 
@@ -266,3 +273,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Preview release notice and community](notes/proposed/process/2026-11-10-preview-release-community.md) · [verification](evidence/verify/2026-11-10-preview-release-community.md).
 
 - [Community QR replacement](notes/proposed/process/2026-11-10-refresh-community-qr.md) · [verification](evidence/verify/2026-11-10-refresh-community-qr.md).
+
+- [SDK simplification mainline reconciliation](evidence/verify/2026-11-10-simplification-main-merge.md).

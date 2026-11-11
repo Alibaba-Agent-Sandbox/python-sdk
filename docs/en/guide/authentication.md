@@ -166,7 +166,7 @@ envd authentication requires the following HTTP headers (set automatically by th
 
 ## Related: the abx CLI
 
-Setting credentials from the command line (`abx config set` / `list` / `get`, `abx create --env`) is documented in the CLI repository: [CLI Authentication](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authentication.md).
+Setting credentials from the command line (`abx config set` / `list` / `get`, `abx deploy --env`) is documented in the CLI repository: [CLI Authentication](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/authentication.md).
 
 ## STS temporary identities and private application access
 

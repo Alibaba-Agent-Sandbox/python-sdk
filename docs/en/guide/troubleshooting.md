@@ -93,11 +93,11 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 1. Check the template name for typos
 2. Confirm the template is installed:
    ```bash
-   abx template install owner/repo
+   abx template init ./project --from owner/repo
    ```
 3. Test with the default template:
    ```bash
-   abx create base
+   abx deploy --template-id base --name my-sandbox
    ```
 
 ### E2009 — SandboxNotFoundError
@@ -150,10 +150,10 @@ See [explicit template workflows](template-workflows.md) and [Template server HT
 abx list --status running
 
 # Destroy unneeded sandboxes
-abx kill sbx-xxxx
+abx delete sbx-xxxx
 
 # Batch destroy
-abx kill --all --yes
+abx delete <unused-sandbox-id> --yes
 ```
 
 ---
@@ -174,14 +174,14 @@ abx kill --all --yes
 result = await sandbox.commands.run("long-command", timeout=300)
 
 # Increase timeout in CLI
-abx exec sbx-xxxx "long-command" --timeout 300
+abx sandbox exec sbx-xxxx "long-command" --timeout 300
 ```
 
 ---
 
 ## Build and Deploy Issues
 
-Build, push and deploy errors (the `E7xxx` codes, a missing LLM key for `abx create` / `abx template scaffold`) are raised by the `abx` CLI, not by this SDK. See the CLI troubleshooting guide and [Build and deploy](build-and-deploy.md).
+Build, push and deploy errors (the `E7xxx` codes, a missing LLM key for `abx template init --prompt` / `abx template init`) are raised by the `abx` CLI, not by this SDK. See the CLI troubleshooting guide and [Build and deploy](build-and-deploy.md).
 
 ---
 
@@ -239,4 +239,4 @@ python -m pip show agent-sandbox-client
 
 ## Related: the abx CLI
 
-CLI-specific problems (`abx` not found, `abx deploy` with no Dockerfile, long deploy steps, invalid shortcut targets, `abx template scaffold --adopt` confirmations) are covered in the CLI repository: [Troubleshooting (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/troubleshooting.md).
+CLI-specific problems (`abx` not found, `abx deploy` with no Dockerfile, long deploy steps, invalid shortcut targets, `abx template init --adopt` confirmations) are covered in the CLI repository: [Troubleshooting (CLI)](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/guide/troubleshooting.md).

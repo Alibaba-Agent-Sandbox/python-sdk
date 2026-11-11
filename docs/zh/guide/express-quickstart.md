@@ -9,7 +9,7 @@
 
 ```bash
 export ABX_SERVER_TOKEN='replace_me'
-abx --provider alicloud-express template launch 'alibaba-agent-sandbox/awesome-templates//python-hello'
+abx --provider alicloud-express deploy 'alibaba-agent-sandbox/awesome-templates//python-hello' --name my-app
 ```
 
 启动器准备提供方引用、创建沙箱、执行模板启动命令并检查声明的服务，不需要选择

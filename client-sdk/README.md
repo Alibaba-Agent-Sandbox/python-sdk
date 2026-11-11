@@ -11,8 +11,10 @@ The standard root Sandbox/AsyncSandbox and code_interpreter APIs follow Alibaba-
 
 This package is the `agent_sandbox` import namespace *except* `agent_sandbox.server`, which is
 the container-side runtime shipped separately as
-[`agent-sandbox-server`](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/server-sdk/README.md) (a hard dependency pinned to the same version,
-so installing the published client also installs the matching server).
+[`agent-sandbox-server`](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/server-sdk/README.md) (available through the optional `[server]` extra, pinned to the same version).
+Standard clients, `ProviderSandbox`, `ServerClient` and `@sandbox(...)` do not require
+a local server runtime. Local `@sandbox.register` and `sandbox.server` require the
+server extra; `[all]` and `[dev]` include it.
 
 The command-line tool (`abx`) is a separate Node.js project that lives in the [`cli`](https://github.com/alibaba-agent-sandbox/agent-sandbox) repository.
 

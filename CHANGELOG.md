@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- Align current English and Chinese CLI guides with template authoring, named deployment lifecycle and Provider operations; preserve the SDK’s independent clients and instance methods.
+
+- The client no longer installs the local server runtime by default. Use the
+  lockstep `[server]` extra for local command registration and server startup;
+  `[all]` and `[dev]` retain the runtime. Remote clients and decorators remain
+  available in the base package. Registration without the runtime now reports
+  the required extra instead of silently storing an unusable command.
+
+### Removed
+
+- Module-level `sandbox.run` / `sandbox.run_async`, which created an implicit
+  sandbox without deploying the registered function. Select an application and
+  use `ServerClient.commands.run`; instance `ProviderSandbox.run` is unchanged.
 ### Documentation
 
 - Announce the expected November 15, 2026 project 1.0.0 release, preview compatibility notice, and DingTalk community contact in both README languages.

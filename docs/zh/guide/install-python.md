@@ -21,7 +21,7 @@ python -m pip check
 python -c "from importlib.metadata import version; print(version('agent-sandbox-client'), version('agent-sandbox-server'))"
 ```
 
-[abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) 需要独立安装。本指南中的模板启动使用 CLI 0.5.0 或更高版本；创建沙箱前先配置所选平台。
+[abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) 需要独立安装。本指南中的 CLI 命令对应当前 CLI 源码；较早发行版请以已安装的帮助为准。创建沙箱前先配置所选平台。
 
 本项目配置统一使用 `ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL` 和
 `ABX_SANDBOX_DOMAIN`，标准 Sandbox / AsyncSandbox 与 ProviderSandbox 均支持。
@@ -42,6 +42,27 @@ python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-server=
 ```
 
 服务端负责在镜像内运行应用，安装它不会创建沙箱。注册命令与启动服务见[服务端指南](server-sdk.md)。
+
+## 当前源码的客户端与运行时边界
+
+当前检出已将本机服务端运行时改为可选依赖。标准 `Sandbox` / `AsyncSandbox`、
+`ProviderSandbox`、`ServerClient`、模板 YAML 与远程执行装饰器 `@sandbox(...)`
+只需客户端：
+
+```bash
+python -m pip install ./client-sdk
+```
+
+本机使用 `@sandbox.register` 或 `sandbox.server` 时，安装匹配的运行时：
+
+```bash
+python -m pip install ./server-sdk './client-sdk[server]'
+```
+
+`[all]` 和 `[dev]` 包含 `[server]`。上文固定的公开发行版早于这项依赖调整；
+源码安装不代表已有新发行版。注册代码应放在应用服务程序中，不会上传本机函数。
+模块级 `sandbox.run` / `sandbox.run_async` 已删除，请通过明确选定的应用的
+`ServerClient.commands.run` 调用命名命令。`ProviderSandbox.run` 与远程执行装饰器仍保留。
 
 ## 从检出源码进行开发
 

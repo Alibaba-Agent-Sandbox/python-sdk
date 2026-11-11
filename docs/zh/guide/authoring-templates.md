@@ -8,7 +8,7 @@
 
 本文档介绍如何创建自定义 Agent Sandbox 模板，包括目录结构、字段参考、整体启动、注册命令和发布流程。
 
-模板是一个由纯文件组成的目录，可手写也可生成。`abx template scaffold` 命令有三种生成方式（内置脚手架、一句话描述、适配已有源码的项目）；该工作流记录在 CLI 仓库：[模板编写（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authoring-templates.md)。
+模板是一个由纯文件组成的目录，可手写也可生成。`abx template init` 命令有三种生成方式（内置脚手架、一句话描述、适配已有源码的项目）；该工作流记录在 CLI 仓库：[模板编写（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authoring-templates.md)。
 
 ---
 
@@ -118,7 +118,7 @@ if __name__ == "__main__":
 
 文件上传和下载是 server 的端点（`/files/*`、`/upload`、`/download`），属于默认开启的 `file_ops` 组，不在 `commands.py` 里注册。部署不会应用 `server:` 块。可选组用 `default_table().enable_group(CapabilityGroup.DEV_TOOLS)`（参数是 `CapabilityGroup`，不是字符串）或 `ABX_SERVER_ENABLED_GROUPS` 打开。`dev_tools`、`browser`、`agents` 默认关闭。
 
-注册的命令由沙箱内 HTTP server 提供（`POST /commands/{name}`）。客户端用 `await sandbox.run("demo", x=1, y="hello")` 或 `abx run <id> demo --arg x=1 --arg y=hello` 调用，用 `sandbox.list_commands()` 或 `abx sandbox command list <id>` 列出。裸 shell 命令是另一个调用：`sandbox.commands.run(cmd)`。
+注册的命令由沙箱内 HTTP server 提供（`POST /commands/{name}`）。客户端用 `await sandbox.run("demo", x=1, y="hello")` 或 `abx sandbox command run <id> demo --arg x=1 --arg y=hello` 调用，用 `sandbox.list_commands()` 或 `abx sandbox command list <id>` 列出。裸 shell 命令是另一个调用：`sandbox.commands.run(cmd)`。
 
 ---
 
@@ -143,9 +143,9 @@ if __name__ == "__main__":
 
 ## 发布与部署模板
 
-Python SDK 是运行时客户端，不构建源码模板。通常使用 `abx --provider PROVIDER template launch SOURCE --yes`，再用 Python 连接返回的沙箱。高级镜像准备使用 `abx template build` 和 `abx template deploy`；将准备好的引用传给 `launch_template` 前，确认原生启动路径不会同时启动同一个服务。见[启动方说明](template-workflows.md)和[构建与部署](build-and-deploy.md)。
+Python SDK 是运行时客户端，不构建源码模板。通常使用 `abx --provider PROVIDER deploy SOURCE --name my-app --yes`，再用 Python 连接返回的沙箱。高级镜像准备使用 `abx template build` 和 `abx deploy`；将准备好的引用传给 `launch_template` 前，确认原生启动路径不会同时启动同一个服务。见[启动方说明](template-workflows.md)和[构建与部署](build-and-deploy.md)。
 
-将模板发布到 GitHub、从本地或 registry 安装模板、适配已有项目（`abx template scaffold --adopt`），或通过命令行构建并注册模板（`abx deploy`、`abx template deploy|create`），请使用 `abx` CLI；见[相关：abx CLI](#相关abx-cli)。
+将模板发布到 GitHub、从本地或 registry 安装模板、适配已有项目（`abx template init --adopt`），或通过命令行构建并注册模板（`abx deploy`、`abx template build`），请使用 `abx` CLI；见[相关：abx CLI](#相关abx-cli)。
 
 ## 下一步
 
@@ -157,4 +157,4 @@ Python SDK 是运行时客户端，不构建源码模板。通常使用 `abx --p
 
 ## 相关：abx CLI
 
-模板的命令行工作流记录在 CLI 仓库：[模板编写（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authoring-templates.md)（`abx template scaffold`、`--adopt`、发布、`template install`）、[部署与构建](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/deploy-and-build.md)（`abx deploy`、`abx template deploy|create`）和[模板使用](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/using-templates.md)。
+模板的命令行工作流记录在 CLI 仓库：[模板编写（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/authoring-templates.md)（`abx template init`、`--adopt`、发布、`template init --from`）、[部署与构建](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/deploy-and-build.md)（`abx deploy`、`abx template build`）和[模板使用](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/using-templates.md)。

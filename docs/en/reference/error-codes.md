@@ -65,8 +65,8 @@ except SandboxError as e:
 | E3002 | `ProcessError` | Non-zero exit code | — | Command returned a non-zero exit code (carries `exit_code`, `stdout`, `stderr` attributes) |
 | E3003 | `CodeExecutionError` | Code execution failed | Check code syntax and runtime dependencies | Code Interpreter failed to execute code |
 | E3004 | `CapabilityNotSupportedError` | Selected call or endpoint unavailable | Inspect the exact operation and consumer; retired template flags cannot bypass it | Includes disabled server endpoints; unsupported provider operations use E8004 |
-| E3005 | `CommandNotFoundError` | Named command not found | Check the command name with `sandbox.list_commands()`, and make sure the SandboxServer is running in the sandbox (`sandbox.start_server()`) | `Sandbox.run(name)` / `abx run <id> <name>` names a command the in-sandbox SandboxServer does not have (HTTP 404). Carries the `command_name` attribute |
-| E3006 | `EnvdRpcError` | envd rejected an RPC call (HTTP >= 400) | Check the command and arguments, or run with `abx -v` for the raw error response | Sandbox envd returned HTTP >= 400 (e.g., a `process.Process/Start` 500 for an unknown executable). Carries `status_code`, `rpc_path`, `envd_error` (parsed JSON body) and `body_text`; the message never includes the full sandbox URL. `abx connect` maps it to a single friendly notice (e.g., `Command not found: <cmd>`) |
+| E3005 | `CommandNotFoundError` | Named command not found | Check the command name with `sandbox.list_commands()`, and make sure the SandboxServer is running in the sandbox (`sandbox.start_server()`) | `Sandbox.run(name)` / `abx sandbox command run <id> <name>` names a command the in-sandbox SandboxServer does not have (HTTP 404). Carries the `command_name` attribute |
+| E3006 | `EnvdRpcError` | envd rejected an RPC call (HTTP >= 400) | Check the command and arguments, or run with `abx -v` for the raw error response | Sandbox envd returned HTTP >= 400 (e.g., a `process.Process/Start` 500 for an unknown executable). Carries `status_code`, `rpc_path`, `envd_error` (parsed JSON body) and `body_text`; the message never includes the full sandbox URL. `abx sandbox exec` maps it to a single friendly notice (e.g., `Command not found: <cmd>`) |
 
 ### E3004 Details
 
@@ -96,7 +96,7 @@ Interpreter HTTP 404, missing runtime and not-ready responses never fall back to
 | Error Code | Exception Class | Meaning | Suggestion | Trigger Scenario |
 |------------|----------------|---------|------------|------------------|
 | E5000 | `NetworkError` | Network error (base class) | — | General network connection errors |
-| E5000 | `GitHubRateLimitError` | GitHub anonymous API rate limit hit while fetching templates | Run `abx config set github_token` (masked input; the CLI offers this interactively and retries once), or inject `GITHUB_TOKEN` in CI | `abx template install` / `abx install` / `abx template search` without a token configured |
+| E5000 | `GitHubRateLimitError` | GitHub anonymous API rate limit hit while fetching templates | Run `abx config set github_token` (masked input; the CLI offers this interactively and retries once), or inject `GITHUB_TOKEN` in CI | `abx template init --from SOURCE` / `abx template list` without a token configured |
 | E5001 | `ConnectionError_` | Connection failed | Check network connectivity and firewall rules | Unable to connect to the sandbox service |
 
 > **Note**: The `ConnectionError_` class name has a trailing underscore to avoid shadowing Python's built-in `ConnectionError`.

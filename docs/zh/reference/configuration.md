@@ -47,8 +47,8 @@
 下面这些调用读的是同一条链：
 
 - `Sandbox.create` 以及其他 SDK 客户端（`load_config`）
-- 自然语言 `abx create`（编码代理）
-- `abx template install` / `abx template search`（GitHub token）
+- 自然语言 `abx template init --prompt`（编码代理）
+- `abx template init --from SOURCE` / `abx template list`（GitHub token）
 - `abx mcp install`（写入编辑器配置的沙箱 API Key）
 
 `abx mcp install` 把 `ABX_SANDBOX_API_KEY` 写入 Cursor 和 Claude 的配置。`ABX_SANDBOX_BASE_URL` 和 `ALIBABA_CLOUD_REGION_ID` 只有在进程环境变量里设置了才会写进同一份文件。`abx mcp start` 会再次读取 `~/.abx`，所以用 `abx config set region` 保存的区域在编辑器启动 server 时仍然生效。
@@ -134,7 +134,7 @@
 
 ```toml
 [core]
-provider = "alicloud-express"   # 默认提供方（abx provider default NAME）
+provider = "alicloud-express"   # 默认提供方（abx config set provider NAME）
 
 [transport]
 sandbox_base_url = "https://api.cn-hangzhou.e2b.fc.aliyuncs.com"

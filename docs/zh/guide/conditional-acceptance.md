@@ -15,8 +15,8 @@ E2B_API_URL、E2B_DOMAIN。不要把极速版密钥发给其他提供商。
 | 暂停 | `sandbox.pause()` | `abx sandbox pause "$SANDBOX_ID"` |
 | 恢复同一个沙箱 | `Sandbox.connect(sandbox_id)` | `abx sandbox resume "$SANDBOX_ID"` |
 | 创建快照 | `sandbox.create_snapshot(name="checkpoint", request_timeout=300)` | `abx sandbox snapshot create "$SANDBOX_ID" --name checkpoint` |
-| 快照列表 | `Sandbox.list_snapshots(sandbox_id=sandbox_id)`，通过分页器读取 | `abx sandbox snapshot list "$SANDBOX_ID" --format json` |
-| 从快照新建沙箱 | `Sandbox.create(template=snapshot.snapshot_id)` | `abx create "$SNAPSHOT_ID" --detach` |
+| 快照列表 | `Sandbox.list_snapshots(sandbox_id=sandbox_id)`，通过分页器读取 | `abx --json sandbox snapshot list "$SANDBOX_ID"` |
+| 从快照新建沙箱 | `Sandbox.create(template=snapshot.snapshot_id)` | `abx deploy --template-id "$SNAPSHOT_ID" --name restored --yes` |
 | 删除快照 | `Sandbox.delete_snapshot(snapshot.snapshot_id)` | `abx sandbox snapshot delete "$SNAPSHOT_ID"` |
 
 上表 Python 使用 `from agent_sandbox import Sandbox`；异步使用 `AsyncSandbox` 并 await 相应操作。它们是标准 SDK 入口，不能与 `agent_sandbox.api.sandbox.Sandbox` 的原生 Provider/Server 扩展入口混为一谈，也不能把原生提供方的特性门禁当成极速版标准 API 的服务能力结论。Python 命名为 `create_snapshot`，TypeScript 命名为 `createSnapshot`；参数形式以实际 SDK 版本为准。
@@ -54,21 +54,27 @@ finally:
 ## 创建独立模板
 
 选择与运行时密钥相同的地域和 Team，TEAM_ID 从本地配置获取。
-名称必须唯一且不超过36字符。在具有标准入口的 CLI 检出中执行现有项目扩展：
+名称必须唯一且不超过36字符。使用 Provider 管理操作：
 
 ```bash
 REGION=cn-hangzhou
-NAME="conditional-$(date +%s)"
-abx template from-image \
-  "fc-e2b-registry.${REGION}.cr.aliyuncs.com/runtime-v2/base:v0.0.53" \
-  --name "$NAME" --team-id "$TEAM_ID" --region "$REGION" \
-  --generation 2 --cpu 2 --memory 2048 --disk-size 15360 --no-envd-inject
-abx template info "$TEMPLATE_ID"
+cat > template-create.json <<'JSON'
+{
+  "name": "conditional-UNIQUE",
+  "team_id": "YOUR_TEAM_ID",
+  "image": "fc-e2b-registry.cn-hangzhou.cr.aliyuncs.com/runtime-v2/base:v0.0.53",
+  "generation": 2,
+  "cpu": 2,
+  "memory_size": 2048,
+  "disk_size": 15360,
+  "envd_inject": false
+}
+JSON
+abx --provider alicloud-express --region "$REGION" provider run template.create --input-file template-create.json --yes
+abx --provider alicloud-express --region "$REGION" provider run template.get --input-file template-get.json
 ```
 
-创建结果提供 TEMPLATE_ID。构建是异步操作，轮询 info 直到 ready。
-已有原生 CLI 构建以 `template create` 注册镜像模板，须先检查安装版本的帮助。
-不传 --force，不修改已有模板。
+执行前替换唯一名称、Team 和镜像地域。将返回的 `template_id` 与相同的 `team_id` 写入 `template-get.json`，轮询直到构建就绪。提交是异步操作，注册时拒绝已有名称。这些命令对应当前源码 CLI；使用较早发行版时先查看已安装的帮助。
 
 ## 执行与校验
 
@@ -87,8 +93,10 @@ SDK 测试校验仅保存在 Python 进程内存中的随机标记、文件、�
 
 ## 清理与证据
 
+删除模板前，将本轮模板的 `template_id` 写入 `template-delete.json`（JSON 对象，例如 `{ "template_id": "本轮模板ID" }`），再执行下面的 Provider 操作。
+
 先删除恢复和源沙箱，再删除被占用的快照。只清理本轮创建的资源，独立确认不存在后，
-用 `abx template delete "$TEMPLATE_ID" --yes` 删除本轮模板。
+用 `abx --provider alicloud-express provider run template.delete --input-file template-delete.json --yes` 删除本轮模板。
 记录源代码/二进制 SHA、真实通过/失败/跳过和遗留资源数，不记录密钥、账号标识和私人地址。
 不向 Actions 上传凭据，不新增或分发云端/模型验收工作流。
 

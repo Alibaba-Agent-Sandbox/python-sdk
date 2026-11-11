@@ -221,7 +221,7 @@ EXPOSE 9000
 CMD ["python3", "commands.py"]
 ```
 
-`abx template scaffold` writes this same `commands.py` shape. These Dockerfiles
+`abx template init` writes this same `commands.py` shape. These Dockerfiles
 use the pinned public server package and do not require a local wheel. CLI build
 may inject an explicitly selected server wheel or resolve its own pinned archive;
 that preprocessing does not apply to a direct `docker build`. Generation, reserved ports, group
@@ -234,12 +234,12 @@ Deploy and `abx` operation belong to the `agent-sandbox` skill. The commands
 this template needs:
 
 ```bash
-abx template deploy ./my-template --acr-namespace "$ACR_NAMESPACE" --acr-repo my-template --alias my-template --yes
+abx deploy ./my-template --name my-template --yes
 ```
 
 `--yes` is required when stdin is not a terminal. Docker must be running for
 a Dockerfile build. `codex` and `openclaw` are reserved. Set `template.yaml`
-`name` and `--alias` to `openai-codex` or `openclaw-agent`. Sending the
+`name` to `openai-codex` or `openclaw-agent`. Sending the
 reserved name is rejected.
 
 Local check, from the template directory, with `agent-sandbox-server` installed:

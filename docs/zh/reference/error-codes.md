@@ -65,8 +65,8 @@ except SandboxError as e:
 | E3002 | `ProcessError` | 进程非零退出码 | — | 命令返回非零退出码（携带 `exit_code`、`stdout`、`stderr` 属性） |
 | E3003 | `CodeExecutionError` | 代码执行失败 | 检查代码语法和运行时依赖 | Code Interpreter 执行代码失败 |
 | E3004 | `CapabilityNotSupportedError` | 所选调用或端点不可用 | 检查具体操作及所选入口，不能添加旧模板能力标记绕过 | 服务端端点禁用等；Provider 精确操作不支持使用 E8004 |
-| E3005 | `CommandNotFoundError` | 命名命令未找到 | 用 `sandbox.list_commands()` 检查命令名，并确认沙箱里的 SandboxServer 在运行（`sandbox.start_server()`） | `Sandbox.run(name)` / `abx run <id> <名称>` 指定的命令在沙箱内 SandboxServer 中不存在（HTTP 404）。携带 `command_name` 属性 |
-| E3006 | `EnvdRpcError` | envd 拒绝了 RPC 调用（HTTP >= 400） | 检查命令与参数，或用 `abx -v` 查看原始错误响应 | 沙箱 envd 返回 HTTP >= 400（例如未知可执行文件触发 `process.Process/Start` 500）。携带 `status_code`、`rpc_path`、`envd_error`（解析后的 JSON 体）与 `body_text`；消息不包含完整沙箱 URL。`abx connect` 会将其映射为单条友好提示（如 `Command not found: <cmd>`） |
+| E3005 | `CommandNotFoundError` | 命名命令未找到 | 用 `sandbox.list_commands()` 检查命令名，并确认沙箱里的 SandboxServer 在运行（`sandbox.start_server()`） | `Sandbox.run(name)` / `abx sandbox command run <id> <名称>` 指定的命令在沙箱内 SandboxServer 中不存在（HTTP 404）。携带 `command_name` 属性 |
+| E3006 | `EnvdRpcError` | envd 拒绝了 RPC 调用（HTTP >= 400） | 检查命令与参数，或用 `abx -v` 查看原始错误响应 | 沙箱 envd 返回 HTTP >= 400（例如未知可执行文件触发 `process.Process/Start` 500）。携带 `status_code`、`rpc_path`、`envd_error`（解析后的 JSON 体）与 `body_text`；消息不包含完整沙箱 URL。`abx sandbox exec` 会将其映射为单条友好提示（如 `Command not found: <cmd>`） |
 
 ### E3004 详细说明
 
@@ -96,7 +96,7 @@ except SandboxError as e:
 | 错误码 | 异常类 | 含义 | 建议 | 触发场景 |
 |--------|--------|------|------|----------|
 | E5000 | `NetworkError` | 网络错误（基类） | — | 网络连接相关通用错误 |
-| E5000 | `GitHubRateLimitError` | GitHub 匿名 API 限流（拉取模板时触发） | 执行 `abx config set github_token`（星号脱敏输入；交互终端下 CLI 会主动引导并只重试一次），CI 中注入 `GITHUB_TOKEN` | 未配置 token 时执行 `abx template install` / `abx install` / `abx template search` |
+| E5000 | `GitHubRateLimitError` | GitHub 匿名 API 限流（拉取模板时触发） | 执行 `abx config set github_token`（星号脱敏输入；交互终端下 CLI 会主动引导并只重试一次），CI 中注入 `GITHUB_TOKEN` | 未配置 token 时执行 `abx template init --from SOURCE` / `abx template list` |
 | E5001 | `ConnectionError_` | 连接失败 | 检查网络连通性和防火墙规则 | 无法连接到沙箱服务 |
 
 > **注意**：`ConnectionError_` 类名带下划线后缀，以避免遮蔽 Python 内置 `ConnectionError`。

@@ -45,7 +45,7 @@ async def main():
 asyncio.run(main())
 ```
 
-默认 Express CLI 路径中，`abx create base --env KEY=value` 设置的是新交互终端的环境，不是实例生命周期内的创建环境接口；使用 `--detach` 时也没有终端可配置。上面的创建环境输入使用 `ProviderSandbox.create(envs=...)`。应用模板应声明运行环境默认值，并在 `abx template launch` 前配置所需值。详见 [CLI 指南](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/zh/guide/cli-tutorial.md)。
+CLI 的 `abx deploy SOURCE --name APP --env KEY=value` 将变量传给创建的运行实例。模板应声明需要的运行环境，敏感值不写入源码。Python 可直接使用 `ProviderSandbox.create(envs=...)`。
 
 连接不属于自己的实例时，用 `await sandbox.close()` 释放本地连接，不要删除该实例。
 

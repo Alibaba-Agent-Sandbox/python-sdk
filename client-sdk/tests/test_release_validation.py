@@ -147,10 +147,12 @@ def _run_public_workflow(tmp_path, metadata=0, install=0, check=0, probe=0):
 
 
 @pytest.mark.parametrize("metadata_failures", [1, 7])
-def test_public_workflow_retries_propagation_then_checks_install_once(tmp_path, metadata_failures):
+def test_public_workflow_retries_propagation_then_checks_both_installations(
+    tmp_path, metadata_failures
+):
     result, state, sleeps = _run_public_workflow(tmp_path, metadata=metadata_failures, install=1)
     assert result.returncode == 0, result.stderr
-    assert state == {"metadata": metadata_failures + 1, "install": 2, "check": 1, "probe": 1}
+    assert state == {"metadata": metadata_failures + 1, "install": 3, "check": 2, "probe": 2}
     assert sleeps == metadata_failures + 1
     assert "install failure" in result.stderr
 

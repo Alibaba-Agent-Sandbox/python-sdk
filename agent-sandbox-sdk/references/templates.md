@@ -4,7 +4,7 @@ The skill file is the procedure. This note is the extra detail.
 
 ## What deploy actually reads
 
-`abx template deploy` uses the Dockerfile as the image. From `template.yaml` it
+`abx deploy` uses the Dockerfile as the image. From `template.yaml` it
 reads `name`, `resources.cpu`, `resources.memory`, and `generation`. Omitted
 resources become 2 CPU and 2048 MB. It does not install `python_packages` or
 `system_packages`, and it does not apply a `server:` block.
@@ -40,7 +40,7 @@ await sb.run("hello", name="Ada")
 ```
 
 ```bash
-abx run SANDBOX_ID hello --arg name=Ada
+abx sandbox command run SANDBOX_ID hello --arg name=Ada
 abx sandbox command list SANDBOX_ID
 ```
 
@@ -85,5 +85,5 @@ Local execution exists for `codex` and `qwen-code`. `claude-code`, `cursor`, and
 ## Reserved template names
 
 `codex` and `openclaw` are reserved by the platform. The directory can keep
-that name. `template.yaml` `name` and `abx template deploy --alias` must be
+that name. `template.yaml` `name` and `abx template build --alias` must be
 `openai-codex` or `openclaw-agent`.

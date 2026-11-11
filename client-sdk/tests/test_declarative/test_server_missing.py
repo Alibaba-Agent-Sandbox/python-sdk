@@ -21,15 +21,16 @@ def no_server(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "agent_sandbox.server", None)
 
 
-def test_register_still_works_without_server(no_server: None) -> None:
+def test_register_requires_server_without_partial_registration(no_server: None) -> None:
     factory = _SandboxFactory()
 
-    @factory.register
     def double(x: int) -> int:
         return x * 2
 
+    with pytest.raises(ImportError, match=r"agent-sandbox-client\[server\]"):
+        factory.register(double)
+    assert factory.list_registered() == []
     assert double(2) == 4
-    assert {c["name"] for c in factory.list_registered()} == {"double"}
 
 
 _ACTIONS: list[Any] = [
@@ -44,7 +45,7 @@ def test_missing_server_error_names_the_distribution(no_server: None, action: An
     with pytest.raises(ImportError) as excinfo:
         action(factory)
     message = str(excinfo.value)
-    assert "pip install agent-sandbox-server" in message
+    assert "pip install 'agent-sandbox-client[server]'" in message
 
 
 def test_empty_namespace_after_inplace_upgrade_is_reported(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -121,11 +121,11 @@ Node.js SDK 当前是沙箱内 HTTP ServerClient，不提供 provider 生命周�
 | 位置 | 示例 |
 |---|---|
 | SDK 参数 | `await ProviderSandbox.create(provider="my-cloud")` |
-| CLI 选项 | `abx create --provider my-cloud` |
+| CLI 选项 | `abx --provider my-cloud deploy --template-id base --name my-sandbox` |
 | 进程环境变量 | `export ABX_PROVIDER=my-cloud` |
 | `./.env` | `ABX_PROVIDER=my-cloud` |
 | `~/.abx/.env` | `ABX_PROVIDER=my-cloud` |
-| `~/.abx/config.toml` | `[core]` `provider = "my-cloud"`（由 `abx provider default my-cloud` 写入） |
+| `~/.abx/config.toml` | `[core]` `provider = "my-cloud"`（由 `abx config set provider my-cloud` 写入） |
 | 内置 | `alicloud-express` |
 
 ```python
@@ -151,9 +151,9 @@ asyncio.run(main())
 
 ```bash
 abx provider list
-abx provider default my-cloud       # 持久化到 ~/.abx/config.toml
-abx provider default                # 显示当前默认提供方
-abx provider default alicloud-express
+abx config set provider my-cloud       # 持久化到 ~/.abx/config.toml
+abx config set provider                # 显示当前默认提供方
+abx config set provider alicloud-express
 ```
 
 ---
@@ -258,7 +258,7 @@ python -m agent_sandbox.providers test my-cloud       # 契约测试套件（需
 | 读写文件 | `files.read/write` | `upload`、`download` |
 | 调用模板应用 | `await application_client(port, token=...)` 后调用 `client.commands.run` | 模板的命名命令入口，见[服务 API](template-server-api.md) |
 | 获取应用端点 | `await network.resolve(port)` 返回 URL 和网关头 | 无独立 URL 命令 |
-| 准备源码模板 | 使用 CLI 准备，再连接返回的沙箱或使用已准备好的引用 | `template launch`，见[工作流指南](template-workflows.md) |
+| 准备源码模板 | 使用 CLI 准备，再连接返回的沙箱或使用已准备好的引用 | `abx deploy SOURCE --name APP`，见[工作流指南](template-workflows.md) |
 
 进程执行、命名命令、解释器和 PTY 是不同接口；一种接口通过不代表其他接口已实现。网关头与应用令牌用途不同，调用应用时保留网关头并显式提供应用令牌。完整方法见 [SDK 参考](../reference/api-reference.md)。
 

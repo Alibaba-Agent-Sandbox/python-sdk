@@ -1,4 +1,4 @@
-"""Tests for @sandbox.register, sandbox.run(), type helpers, and P0 bug fixes."""
+"""Tests for @sandbox.register, type helpers, and P0 bug fixes."""
 
 from __future__ import annotations
 
@@ -10,16 +10,16 @@ import pytest
 
 from agent_sandbox.declarative.decorator import (
     _annotation_to_type_str,
-    _coerce_kwargs,
     _CommandArg,
     _detect_python_cmd,
-    _parse_scalar,
     _RegisterProxy,
     _SandboxFactory,
     _ServerProxy,
     sandbox,
 )
 from agent_sandbox.models.process import ProcessResult
+from agent_sandbox.utils.coerce import coerce_kwargs as _coerce_kwargs
+from agent_sandbox.utils.coerce import parse_scalar as _parse_scalar
 
 # ---------------------------------------------------------------------------
 # _annotation_to_type_str
@@ -245,16 +245,25 @@ class TestRegister:
             def bad(data: list[int]) -> None:
                 pass
 
-    def test_register_source_captured(self) -> None:
+    def test_register_dynamic_function_without_source(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from agent_sandbox.server import registry
+
+        monkeypatch.setattr(registry, "_default_registry", registry.CommandRegistry())
         factory = _SandboxFactory()
+        namespace: dict[str, object] = {}
+        exec("def dynamic(value: str) -> str:\n    return value", namespace)
+        func = namespace["dynamic"]
+        assert callable(func)
+        registered = factory.register(func)
+        assert registered("value") == "value"
 
-        @factory.register
-        def add(a: int, b: int) -> int:
-            return a + b
+        from agent_sandbox.server.registry import default_registry
 
-        cmd = factory._registry["add"]
-        assert "def add" in cmd.source
-        assert "return a + b" in cmd.source
+        command = default_registry().get("dynamic")
+        assert command is not None
+        assert command.fn("server") == "server"
 
 
 # ---------------------------------------------------------------------------
@@ -293,125 +302,6 @@ class TestListRegistered:
             "required": False,
             "default": "hi",
         }
-
-
-# ---------------------------------------------------------------------------
-# sandbox.run() (registered command execution via HTTP)
-# ---------------------------------------------------------------------------
-
-
-class TestRunRegistered:
-    """sandbox.run('name', **kwargs) dispatches registered commands via HTTP."""
-
-    def test_unknown_command_raises(self) -> None:
-        factory = _SandboxFactory()
-        with pytest.raises(ValueError, match="Unknown registered command"):
-            factory.run("nonexistent")
-
-    @patch("agent_sandbox.api.sandbox.Sandbox", new_callable=lambda: MagicMock)
-    def test_run_basic(self, mock_sandbox_cls: MagicMock) -> None:
-        """Run a registered command end-to-end (mocked sandbox HTTP)."""
-        mock_sb = AsyncMock()
-        mock_sb.run = AsyncMock(return_value="hello=1")
-        mock_sb.kill = AsyncMock()
-        mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
-
-        factory = _SandboxFactory()
-
-        @factory.register
-        def demo(x: int, y: str) -> str:
-            return f"{y}={x}"
-
-        result = factory.run("demo", x=1, y="hello")
-        assert result == "hello=1"
-
-        # Sandbox lifecycle
-        mock_sandbox_cls.create.assert_awaited_once()
-        mock_sb.run.assert_awaited_once_with("demo", x=1, y="hello")
-        mock_sb.kill.assert_awaited_once()
-
-    @patch("agent_sandbox.api.sandbox.Sandbox", new_callable=lambda: MagicMock)
-    def test_run_type_coercion(self, mock_sandbox_cls: MagicMock) -> None:
-        """String arguments are coerced to declared types."""
-        mock_sb = AsyncMock()
-        mock_sb.run = AsyncMock(return_value=10)
-        mock_sb.kill = AsyncMock()
-        mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
-
-        factory = _SandboxFactory()
-
-        @factory.register
-        def multiply(a: int, b: float) -> float:
-            return a * b
-
-        result = factory.run("multiply", a="5", b="2.0")
-        assert result == 10
-
-        # Verify coerced types were passed via HTTP
-        mock_sb.run.assert_awaited_once_with("multiply", a=5, b=2.0)
-
-    @patch("agent_sandbox.api.sandbox.Sandbox", new_callable=lambda: MagicMock)
-    def test_run_uses_run_command(self, mock_sandbox_cls: MagicMock) -> None:
-        """Execution goes through Sandbox.run (HTTP), not scripts."""
-        mock_sb = AsyncMock()
-        mock_sb.run = AsyncMock(return_value=None)
-        mock_sb.kill = AsyncMock()
-        mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
-
-        factory = _SandboxFactory()
-
-        @factory.register
-        def noop() -> None:
-            pass
-
-        factory.run("noop")
-
-        # run was called with the command name
-        mock_sb.run.assert_awaited_once_with("noop")
-        # No file write occurred (old script-upload path gone)
-        assert not hasattr(mock_sb, "files") or not mock_sb.files.write.called
-
-    @patch("agent_sandbox.api.sandbox.Sandbox", new_callable=lambda: MagicMock)
-    def test_run_creates_sandbox_with_template(self, mock_sandbox_cls: MagicMock) -> None:
-        """Sandbox is created with the code-interpreter-v1 template."""
-        mock_sb = AsyncMock()
-        mock_sb.run = AsyncMock(return_value="ok")
-        mock_sb.kill = AsyncMock()
-        mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
-
-        factory = _SandboxFactory()
-
-        @factory.register
-        def echo() -> str:
-            return "ok"
-
-        factory.run("echo")
-
-        call_kw = mock_sandbox_cls.create.call_args
-        effective_tpl = call_kw.args[0] if call_kw.args else call_kw.kwargs.get("template")
-        assert effective_tpl == "code-interpreter-v1"
-
-    @patch("agent_sandbox.api.sandbox.Sandbox", new_callable=lambda: MagicMock)
-    def test_run_command_error_raises(self, mock_sandbox_cls: MagicMock) -> None:
-        """RuntimeError from run propagates to the caller."""
-        mock_sb = AsyncMock()
-        mock_sb.run = AsyncMock(
-            side_effect=RuntimeError("ValueError: some error"),
-        )
-        mock_sb.kill = AsyncMock()
-        mock_sandbox_cls.create = AsyncMock(return_value=mock_sb)
-
-        factory = _SandboxFactory()
-
-        @factory.register
-        def fail() -> None:
-            pass
-
-        with pytest.raises(RuntimeError):
-            factory.run("fail")
-
-        # Sandbox should still be killed on error
-        mock_sb.kill.assert_awaited_once()
 
 
 # ---------------------------------------------------------------------------
@@ -513,9 +403,9 @@ class TestSingleton:
         assert callable(sandbox.register)
         assert isinstance(sandbox.register, _RegisterProxy)
 
-    def test_sandbox_has_run(self) -> None:
-        assert hasattr(sandbox, "run")
-        assert callable(sandbox.run)
+    def test_factory_has_no_implicit_remote_command_execution(self) -> None:
+        assert not hasattr(sandbox, "run")
+        assert not hasattr(sandbox, "run_async")
 
     def test_sandbox_has_server(self) -> None:
         assert hasattr(sandbox, "server")

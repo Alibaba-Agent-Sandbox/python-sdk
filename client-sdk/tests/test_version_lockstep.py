@@ -1,6 +1,6 @@
 """The client and server distributions are released in lockstep.
 
-The client depends on ``agent-sandbox-server==<its own version>``, so the two
+The client server extra depends on ``agent-sandbox-server==<its own version>``, so the two
 ``_version.py`` files must never drift apart.
 """
 

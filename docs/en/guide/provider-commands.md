@@ -183,17 +183,17 @@ these registered commands do not silently change the legacy native pause/resume 
 ```sh
 abx --json provider command list alicloud-express
 abx --json provider command info alicloud-express snapshot.create
-abx --json provider command run alicloud-express sandbox.pause \
+abx --json --provider alicloud-express provider run sandbox.pause \
   --input '{"sandbox_id":"<sandbox-id>"}' --yes
-abx --json provider command run alicloud-express sandbox.resume \
+abx --json --provider alicloud-express provider run sandbox.resume \
   --input '{"sandbox_id":"<sandbox-id>","timeout":600}' --yes
-abx --json provider command run alicloud-express snapshot.create \
+abx --json --provider alicloud-express provider run snapshot.create \
   --input '{"sandbox_id":"<sandbox-id>","name":"checkpoint","request_timeout":300}' --yes
-abx --json provider command run alicloud-express snapshot.list \
+abx --json --provider alicloud-express provider run snapshot.list \
   --input '{"sandbox_id":"<sandbox-id>","limit":100}'
-abx --json provider command run alicloud-express snapshot.restore \
+abx --json --provider alicloud-express provider run snapshot.restore \
   --input '{"snapshot_id":"<returned-snapshot-uuid>","timeout":300}' --yes
-abx --json provider command run alicloud-express snapshot.delete \
+abx --json --provider alicloud-express provider run snapshot.delete \
   --input '{"snapshot_id":"<returned-snapshot-uuid>"}' --yes
 ```
 
