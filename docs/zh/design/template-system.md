@@ -11,7 +11,7 @@
 
 ## 启动与使用
 
-CLI 使用 `abx --provider PROVIDER template launch TEMPLATE_REF`；Python 使用
+CLI 使用 `abx --provider PROVIDER deploy TEMPLATE_REF`；Python 使用
 `launch_template(manifest, provider=..., reference=...)`。启动前只检查创建、启动、
 就绪和清理实际需要的操作。缺少解释器不阻止无关应用启动。执行具体操作时，
 Provider 和服务端策略仍负责实际能力与权限检查。

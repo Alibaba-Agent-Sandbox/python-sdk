@@ -29,3 +29,9 @@ The secret hook initially rejected an environment-variable reference in an MCP
 example as a generic quoted secret assignment. The example now uses explicit
 YOUR_* placeholders. No secret value was present and the hook was not changed
 or bypassed.
+
+A second scan removed global-option-prefixed template launch examples from
+both example indexes and the current template-system descriptions. Conditional
+acceptance uses the supported `--opt region=...` Provider override. Historical
+SDK quickstart run output remains explicitly labeled as such. No SDK method or
+configuration resolver was changed.

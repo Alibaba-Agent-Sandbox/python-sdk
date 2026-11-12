@@ -157,7 +157,7 @@ requires the CLI's documented Docker/registry configuration.
 
 ```bash
 export ABX_SERVER_TOKEN='replace_me'
-abx --provider alicloud-express template launch 'alibaba-agent-sandbox/awesome-templates//python-hello'
+abx --provider alicloud-express deploy 'alibaba-agent-sandbox/awesome-templates//python-hello'
 ```
 
 Use the returned ID as `SANDBOX_ID` and the same application token:
