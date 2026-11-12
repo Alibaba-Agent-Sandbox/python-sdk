@@ -30,35 +30,48 @@
 
 三种入口，服务端用同一份文档。无效文档会阻止启动，不会退回成全部允许。
 
-`template.yaml` 的 `server:` 块。工具链把它编译成 `/etc/agent-sandbox/server-policy.json`。可用的键：`version`、`preset`、`base_dir`、`groups`、`defaults`、`auth`、`endpoints`、`description`。`groups` 可以是要打开的组列表，也可以是组到 `true`/`false` 的映射。
+编写独立的 `server-policy.json`，将其复制到镜像并在服务端启动时加载；它与 `template.yaml` 分开。JSON 始终可用，安装 PyYAML 时也支持 `.yaml`/`.yml` 策略文件。可用的键：`version`、`preset`、`base_dir`、`groups`、`defaults`、`auth`、`endpoints`、`description`。`groups` 可以是要打开的组列表，也可以是组到 `true`/`false` 的映射。
 
-```yaml
-server:
-  endpoints:
-    "*":
-      enabled: false
-    agents_sessions_create:
-      enabled: true
-    agents_sessions_events_create:
-      enabled: true
-    agents_sessions_items_list:
-      enabled: true
-    agents_runtimes_list:
-      enabled: true
+```json
+{
+  "endpoints": {
+    "*": {
+      "enabled": false
+    },
+    "agents_sessions_create": {
+      "enabled": true
+    },
+    "agents_sessions_events_create": {
+      "enabled": true
+    },
+    "agents_sessions_items_list": {
+      "enabled": true
+    },
+    "agents_runtimes_list": {
+      "enabled": true
+    }
+  }
+}
 ```
 
 组的简写，列表或映射：
 
-```yaml
-server:
-  groups: [agents, dev_tools]     # 等价于 {agents: true, dev_tools: true}
+```json
+{
+  "groups": [
+    "agents",
+    "dev_tools"
+  ]
+}
 ```
 
-```yaml
-server:
-  groups:
-    process: false
-    terminal: false
+```json
+{
+  "groups": {
+    "process": false,
+    "terminal": false
+  }
+}
 ```
 
 内联 JSON：
@@ -72,6 +85,7 @@ export ABX_SERVER_POLICY='{"groups":["agents"],"endpoints":{"*":{"enabled":false
 ```bash
 export ABX_SERVER_POLICY_FILE=/etc/agent-sandbox/server-policy.json
 agent-sandbox-server check-config --policy /etc/agent-sandbox/server-policy.json
+agent-sandbox-server serve --policy /etc/agent-sandbox/server-policy.json
 ```
 
 查找顺序：`ABX_SERVER_POLICY`，然后 `ABX_SERVER_POLICY_FILE`，然后默认路径上的策略文件。都没有时用内置默认：可选组关，其余全开，没有逐端点限制。
@@ -284,4 +298,4 @@ Agents 端点已经在内置目录里，默认 scope 是 `agents:use`。和 `upl
 | `agents_sessions_items_list` | `GET /v1/agents/sessions/{id}/items` |
 | `agents_runtimes_list` | `GET /v1/agents/runtimes` |
 
-本地 e2e 已确认：`POST /shell` 是 404，`POST /v1/agents`（定义）是 404，Codex 和 Qwen Code 的会话、事件、条目仍然 200 / 202。要再开放一条路由，把对应端点 id 加进 `ServerPolicy.only` 和 `template.yaml` 的 `endpoints`。
+本地 e2e 已确认：`POST /shell` 是 404，`POST /v1/agents`（定义）是 404，Codex 和 Qwen Code 的会话、事件、条目仍然 200 / 202。要再开放一条路由，把对应端点 id 加进 `ServerPolicy.only` ，或独立策略文档中的 `endpoints`。

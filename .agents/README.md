@@ -1,5 +1,7 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+- [Standalone server policy documentation](notes/proposed/feature/2026-11-12-standalone-policy-docs.md) · [verification](evidence/verify/2026-11-12-standalone-policy-docs.md).
+
 - [Shared YAML Core reader](notes/proposed/feature/2026-11-12-template-yaml-core-reader.md) · [verification](evidence/verify/2026-11-12-template-yaml-core-reader.md).
 
 - [Managed Session response projection](notes/proposed/feature/2026-11-12-managed-session-projection.md) · [verification](evidence/verify/2026-11-12-managed-session-projection.md).

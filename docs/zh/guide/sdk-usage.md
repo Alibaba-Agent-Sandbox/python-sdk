@@ -261,7 +261,7 @@ async for event in watcher:
 
 `sandbox.network` 子模块用于计算端口访问 URL（纯本地计算，不涉及网络请求）。
 
-> **能力要求**：需要 `ports` 能力。默认能力集不含 `ports`，需在模板的 `template.yaml` 中显式声明。
+> 端口地址由所选 Provider 提供。v1 模板通过 `sandbox.services` 声明服务端点，额外端口使用 `sandbox.ports`；声明本身不会授予 Provider 操作权限。模板启动器要求所选 Provider 对声明端点实际支持 `ports.resolve`。
 
 ```python
 # 获取端口 URL
@@ -414,8 +414,7 @@ policy = {
 SandboxServer(policy=policy).serve(9000)   # a dict or a ServerPolicy
 ```
 
-也可以在 `template.yaml` 中声明（`server:` 块，见[模板规范](../reference/template-yaml-spec.md)），或使用
-`agent-sandbox-server serve --policy server-policy.json`。用 `agent-sandbox-server check-config` 校验。
+也可以将策略保存为 `server-policy.json`，运行 `agent-sandbox-server serve --policy server-policy.json`；启动自定义 `commands.py` 时可预先设置 `ABX_SERVER_POLICY_FILE`。使用 `agent-sandbox-server check-config --policy server-policy.json` 校验。详见[策略加载](fine-grained-capabilities.md#如何启动)。
 
 ### 处理拒绝
 

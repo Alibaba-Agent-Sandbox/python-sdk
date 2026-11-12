@@ -261,7 +261,7 @@ async for event in watcher:
 
 The `sandbox.network` submodule computes port access URLs (purely local computation, no network requests involved).
 
-> **Capability requirement**: Requires the `ports` capability. The default capability set does not include `ports`; it must be explicitly declared in the template's `template.yaml`.
+> Port addressing is supplied by the selected Provider. Declare template endpoints with v1 `sandbox.services` or additional `sandbox.ports`; a declaration does not grant Provider operations. The template launcher requires the selected Provider's `ports.resolve` support for declared endpoints.
 
 ```python
 # Get port URL
@@ -415,8 +415,7 @@ policy = {
 SandboxServer(policy=policy).serve(9000)   # a dict or a ServerPolicy
 ```
 
-or declaratively in `template.yaml` (`server:` block, see the [template spec](../reference/template-yaml-spec.md)), or
-`agent-sandbox-server serve --policy server-policy.json`. Validate with `agent-sandbox-server check-config`.
+Alternatively, save the policy as `server-policy.json` and run `agent-sandbox-server serve --policy server-policy.json`, or set `ABX_SERVER_POLICY_FILE` before starting your `commands.py`. Validate it with `agent-sandbox-server check-config --policy server-policy.json`. See [policy loading](fine-grained-capabilities.md#how-to-turn-it-on).
 
 ### Handling denials
 

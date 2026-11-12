@@ -124,11 +124,11 @@ export ALICLOUD_ACCESS_KEY_SECRET="your-ak-secret"
 
 ### 解决
 
-1. 确认具体工作流、消费入口和失败条件责任层；使用 [spec4 清单](../reference/template-yaml-spec.md)，不能补旧 `capabilities` 或 `tested_on`。
+1. 确认具体工作流、消费入口和失败条件责任层；使用 [v1 资源清单](../reference/template-yaml-spec.md)，不能补旧 `capabilities` 或 `tested_on`。
 2. 适配器不支持时实现/安装对应操作，或显式选择已支持的工作流。无状态、默认持久上下文、指定上下文和实时流不能互相冒充。
 3. 对应用服务，使用 `async with await sandbox.application_client(9000, token=application_token)` 独立解析端点，检查实际监听、协议版本、网关配置及应用令牌。
 4. HTTP 401 不做匿名重试；解释器 404 不转 shell。需要 shell 时显式调用命令 API。
-5. 服务端策略另外控制九个端点组；`core` 始终开启，`dev_tools`、`browser`、`agents` 默认关闭。检查 `server:`、实际加载的 policy 和环境配置，而不是模板的旧能力标签。
+5. 服务端策略另外控制九个端点组；`core` 始终开启，`dev_tools`、`browser`、`agents` 默认关闭。检查 `ABX_SERVER_POLICY`、`ABX_SERVER_POLICY_FILE`、实际加载的策略和环境配置，而不是模板的旧能力标签。
 
 见[显式模板工作流](template-workflows.md)和[模板服务器 HTTP API](template-server-api.md)。
 

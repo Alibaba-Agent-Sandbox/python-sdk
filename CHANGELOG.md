@@ -27,6 +27,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Documentation
 
+- Describe optional SandboxServer access policy as a standalone JSON/YAML runtime
+  document and remove obsolete template-root server/automatic-compilation instructions. /
+  可选的 SandboxServer 访问策略改为独立 JSON/YAML 运行时文档，移除旧清单根字段及自动编译说明。
+
 - Synchronize CLI-dependent SDK documentation, HTTP MCP template deployment and source-acquisition error guidance. / 同步 SDK 文档中的 CLI 用法、HTTP MCP 模板部署与源码获取错误指引。
 
 ### Changed

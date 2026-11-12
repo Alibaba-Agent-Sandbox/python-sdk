@@ -14,11 +14,13 @@ Dockerfile 的 `FROM`、能否写 `CMD` 或 `ENTRYPOINT`，以及平台的 `star
 
 组只是声明了它的那些端点的名字；端点规则是唯一的开关。在模板策略里用映射关掉默认组：
 
-```yaml
-server:
-  groups:
-    terminal: false
-    process: false
+```json
+{
+  "groups": {
+    "terminal": false,
+    "process": false
+  }
+}
 ```
 
 `core` 不能关闭。打开可选组有三种方式：策略里写列表（`groups: [dev_tools]`）、在 `commands.py` 里调用 `default_table().enable_group(CapabilityGroup.DEV_TOOLS)`，或设置环境变量 `ABX_SERVER_ENABLED_GROUPS=dev_tools`。这个变量只能打开组，没有关闭组的变量。`GET /capabilities` 会列出每个端点，以及关闭它的 `rule`。

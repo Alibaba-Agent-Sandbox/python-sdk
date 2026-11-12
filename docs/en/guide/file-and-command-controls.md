@@ -1,43 +1,80 @@
 # File and command controls
 
-How a template limits which paths and which programs the sandbox server will touch. How to turn the policy on, and the full endpoint catalogue, are in [Fine-grained capabilities](fine-grained-capabilities.md). The HTTP shapes of those routes are in the [template server HTTP API](template-server-api.md). The `server:` block of `template.yaml` is specified in the [template YAML spec](../reference/template-yaml-spec.md#server-policy-server). The design notes are in [Fine-grained capabilities](../design/fine-grained-capabilities.md).
+How a template limits which paths and which programs the sandbox server will touch. How to turn the policy on, and the full endpoint catalogue, are in [Fine-grained capabilities](fine-grained-capabilities.md). The HTTP shapes of those routes are in the [template server HTTP API](template-server-api.md). Server policy is loaded independently of the [v1 resource manifest](../reference/template-yaml-spec.md#capability-declarations). The design notes are in [Fine-grained capabilities](../design/fine-grained-capabilities.md).
 
 The live routes call `check_env`, `check_url`, and `check_process` as well as the path and command checks below. `check_env` runs in `handle_env_set` (`POST /env`), in `enforce_exec_policy` (the `env` object on `POST /shell`, `POST /shell/stream`, and `POST /process/start`), and in `_handle_create_session` (`POST /pty/sessions`). `check_url` runs in `handle_browser_navigate` (`POST /browser/navigate`). `check_process` runs in `enforce_exec_policy` (argv for those shell and process routes), in `handle_code_run` (`POST /code/run`), and in `_handle_create_session` (the PTY shell). A denial is HTTP 403 with the guard's code: `env_var_denied`, `url_denied`, or `process_denied`. An empty env map stays allowed.
 
-## What a template declares
+These optional policy settings apply to templates running SandboxServer. The Managed Agents API bridge has its own fixed route contract.
 
-Optional `server:` in `template.yaml`. Absent means the default policy: every path an endpoint takes stays under `ABX_SERVER_BASE_DIR` (default `/home/user`), including the `cwd` of `/shell` and process start, and shell commands are not filtered. Tooling compiles the block to `/etc/agent-sandbox/server-policy.json`. The process also loads `ABX_SERVER_POLICY` (inline JSON) or `ABX_SERVER_POLICY_FILE` when either is set. `agent-sandbox-server check-config --policy <file>` validates the document and prints lint warnings. An invalid document prevents startup.
+## Server policy file
 
-```yaml
-server:
-  preset: transfer-only
-  base_dir: /home/user
-  groups:
-    process: false
-    terminal: false
-  endpoints:
-    files_download_stream:
-      paths:
-        allow: [/home/user/out]
-        deny: ["**/.env", "*.pem"]
-        read_only: false
-        symlinks: within
-      limits:
-        max_bytes: 5MB
-    files_upload_stream:
-      paths:
-        allow: [/home/user/in]
-      params:
-        overwrite: false
-        deny_extensions: [".sh", ".so"]
-    shell:
-      params:
-        allow_commands: ["ls", "cat"]
-        deny_commands: ["rm"]
-      limits:
-        timeout_seconds: 30
-        max_output_bytes: 1048576
+Save a standalone `server-policy.json` and load it with `ABX_SERVER_POLICY_FILE` or `agent-sandbox-server serve --policy server-policy.json`. Inline JSON uses `ABX_SERVER_POLICY`. Without a policy, every endpoint path stays under `ABX_SERVER_BASE_DIR` (default `/home/user`), including shell/process `cwd`; shell commands are not filtered. `agent-sandbox-server check-config --policy server-policy.json` validates the document and prints lint warnings. An invalid document prevents startup. YAML policy files (`.yaml`/`.yml`) also work when PyYAML is installed; this runtime policy is separate from the v1 resource manifest.
+
+```json
+{
+  "preset": "transfer-only",
+  "base_dir": "/home/user",
+  "groups": {
+    "process": false,
+    "terminal": false
+  },
+  "endpoints": {
+    "files_download_stream": {
+      "paths": {
+        "allow": [
+          "/home/user/out"
+        ],
+        "deny": [
+          "**/.env",
+          "*.pem"
+        ],
+        "read_only": false,
+        "symlinks": "within"
+      },
+      "limits": {
+        "max_bytes": "5MB"
+      }
+    },
+    "files_upload_stream": {
+      "paths": {
+        "allow": [
+          "/home/user/in"
+        ]
+      },
+      "params": {
+        "overwrite": false,
+        "deny_extensions": [
+          ".sh",
+          ".so"
+        ]
+      }
+    },
+    "shell": {
+      "params": {
+        "allow_commands": [
+          "ls",
+          "cat"
+        ],
+        "deny_commands": [
+          "rm"
+        ]
+      },
+      "limits": {
+        "timeout_seconds": 30,
+        "max_output_bytes": 1048576
+      }
+    }
+  }
+}
 ```
+
+To include the policy in a source image, add this instruction to its Dockerfile:
+
+```dockerfile
+COPY server-policy.json /etc/agent-sandbox/server-policy.json
+```
+
+The server reads this default path when no explicit policy source is supplied.
 
 Presets, applied before your endpoint rules: `default` (no extra restriction), `transfer-only` (upload and download endpoints only), `read-only` (process, terminal, dev tools, and browser off; write endpoints off), `hardened` (those groups off, plus deny globs on file routes), `locked` (only `list_commands` and `run_command`).
 

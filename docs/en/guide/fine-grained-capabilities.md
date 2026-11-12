@@ -30,35 +30,48 @@ A denial names the rule that denied it. The 404 body carries `code: endpoint_dis
 
 Three inputs, one document. An invalid document stops the process. It does not fall open.
 
-The `server:` block in `template.yaml`. Tooling compiles it to `/etc/agent-sandbox/server-policy.json`. Accepted keys: `version`, `preset`, `base_dir`, `groups`, `defaults`, `auth`, `endpoints`, `description`. `groups` is either a list of groups to turn on or a map of group to `true`/`false`.
+Write a standalone `server-policy.json`, separate from `template.yaml`; copy it into the image and select it at server startup. JSON always works; `.yaml`/`.yml` policy files also work when PyYAML is installed. Accepted keys: `version`, `preset`, `base_dir`, `groups`, `defaults`, `auth`, `endpoints`, `description`. `groups` is either a list of groups to turn on or a map of group to `true`/`false`.
 
-```yaml
-server:
-  endpoints:
-    "*":
-      enabled: false
-    agents_sessions_create:
-      enabled: true
-    agents_sessions_events_create:
-      enabled: true
-    agents_sessions_items_list:
-      enabled: true
-    agents_runtimes_list:
-      enabled: true
+```json
+{
+  "endpoints": {
+    "*": {
+      "enabled": false
+    },
+    "agents_sessions_create": {
+      "enabled": true
+    },
+    "agents_sessions_events_create": {
+      "enabled": true
+    },
+    "agents_sessions_items_list": {
+      "enabled": true
+    },
+    "agents_runtimes_list": {
+      "enabled": true
+    }
+  }
+}
 ```
 
 Group shorthand, list or map:
 
-```yaml
-server:
-  groups: [agents, dev_tools]     # same as {agents: true, dev_tools: true}
+```json
+{
+  "groups": [
+    "agents",
+    "dev_tools"
+  ]
+}
 ```
 
-```yaml
-server:
-  groups:
-    process: false
-    terminal: false
+```json
+{
+  "groups": {
+    "process": false,
+    "terminal": false
+  }
+}
 ```
 
 Inline JSON:
@@ -72,6 +85,7 @@ Or a file:
 ```bash
 export ABX_SERVER_POLICY_FILE=/etc/agent-sandbox/server-policy.json
 agent-sandbox-server check-config --policy /etc/agent-sandbox/server-policy.json
+agent-sandbox-server serve --policy /etc/agent-sandbox/server-policy.json
 ```
 
 Lookup order: `ABX_SERVER_POLICY`, then `ABX_SERVER_POLICY_FILE`, then the well-known policy file. With none of them the built-in defaults apply: opt-in groups off, everything else on, no per-endpoint limits.
@@ -284,4 +298,4 @@ This is the endpoint declaration table (`agent_sandbox.server.endpoints.ENDPOINT
 | `agents_sessions_items_list` | `GET /v1/agents/sessions/{id}/items` |
 | `agents_runtimes_list` | `GET /v1/agents/runtimes` |
 
-The local e2e recorded `POST /shell` as 404, `POST /v1/agents` (definitions) as 404, and the Codex and Qwen Code session, event, and item calls as 200 / 202. To open another route, add its endpoint id to `ServerPolicy.only` and to `endpoints` in `template.yaml`.
+The local e2e recorded `POST /shell` as 404, `POST /v1/agents` (definitions) as 404, and the Codex and Qwen Code session, event, and item calls as 200 / 202. To open another route, add its endpoint id to `ServerPolicy.only` or to `endpoints` in the loaded policy document.

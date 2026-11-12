@@ -97,10 +97,10 @@ PTY WebSocket（端口 9001，路径 `/pty`）检查同样的凭据。它接受 
 | 位置 | 写法 |
 |---|---|
 | `commands.py` | `default_table().enable_group(CapabilityGroup.FILE_OPS)` / `disable_group(...)` |
-| `template.yaml` `server:` | `groups: [agents, dev_tools]` 或 `groups: {process: false}`；单个 id 用 `endpoints:` |
+| 独立策略文档 | `groups: [agents, dev_tools]` 或 `groups: {process: false}`；单个 id 用 `endpoints:` |
 | 环境变量 | `ABX_SERVER_ENABLED_GROUPS=agents,dev_tools`（逗号列表，只能打开组） |
 
-没有用来关闭组的环境变量。请在 `server:` 里写 `groups: {process: false}`，或写 `endpoints` 规则。层次、具体程度和 `rule` 的写法见[细粒度能力](fine-grained-capabilities.md)。
+没有用来关闭组的环境变量。请在加载的策略文档中写 `groups: {process: false}`，或写 `endpoints` 规则。层次、具体程度和 `rule` 的写法见[细粒度能力](fine-grained-capabilities.md)。
 
 `provides`、显式工作流、Provider 精确操作和本节端点策略是不同契约。模板不接受旧 `capabilities` 字段；工作流不能自动打开端点。
 
@@ -621,7 +621,7 @@ screenshot 的 `selector` 匹配不到时是 `404`。策略可以限制 navigate
 
 ### `agents`（默认关闭）
 
-用 `ABX_SERVER_ENABLED_GROUPS=agents`、`server:` 里的 `groups: [agents]`，或在 `serve()` 之前调用 `default_table().enable_group(CapabilityGroup.AGENTS)` 打开。70 条路由全部已实现。有本地后端的运行时有两个：Codex CLI（`codex`）和 Qwen Code（`qwen-code`，也接受 `qwen` 和 `qwencode`）。`claude-code`、`cursor` 和 `command` 是已声明、没有本地后端的适配器。`GET /v1/agents/runtimes` 列出每个已声明的运行时，带 `implemented` 和 `installed`。选了未实现的运行时返回 `404` `not_found_error`（`agents.not_implemented_locally`，`x-should-retry: false`），响应体指向 `GET /v1/agents/runtimes`。请求体和 `agents.default`（`ABX_AGENTS_DEFAULT`）都没有指定适配器时，创建调用使用 `codex`。每条 Agents 路由都可以单独启用。端点 id 见[细粒度能力](fine-grained-capabilities.md)。默认 scope 是 `agents:use`。完整路由表见 [Agents API 参考](../reference/agents-api.md)。
+用 `ABX_SERVER_ENABLED_GROUPS=agents`、已加载策略中的 `groups: [agents]`，或在 `serve()` 之前调用 `default_table().enable_group(CapabilityGroup.AGENTS)` 打开。70 条路由全部已实现。有本地后端的运行时有两个：Codex CLI（`codex`）和 Qwen Code（`qwen-code`，也接受 `qwen` 和 `qwencode`）。`claude-code`、`cursor` 和 `command` 是已声明、没有本地后端的适配器。`GET /v1/agents/runtimes` 列出每个已声明的运行时，带 `implemented` 和 `installed`。选了未实现的运行时返回 `404` `not_found_error`（`agents.not_implemented_locally`，`x-should-retry: false`），响应体指向 `GET /v1/agents/runtimes`。请求体和 `agents.default`（`ABX_AGENTS_DEFAULT`）都没有指定适配器时，创建调用使用 `codex`。每条 Agents 路由都可以单独启用。端点 id 见[细粒度能力](fine-grained-capabilities.md)。默认 scope 是 `agents:use`。完整路由表见 [Agents API 参考](../reference/agents-api.md)。
 
 每个响应都带 `X-Agent-Sandbox-Local: 1`，每个对象都带 `x_agent_sandbox` 标记（`local`、`compute`、`differences`）。服务端做不到的字段是带 `param` 的 `400`，绝不会接受后忽略。对象属于调用方；别人的 id 与未知 id 的应答一样。
 
@@ -748,7 +748,7 @@ curl --fail-with-body -sS "${AUTH[@]}" \
   "$ABX_TEMPLATE_URL/commands/hello"
 ```
 
-上传和下载。路径必须留在 `ABX_SERVER_BASE_DIR` 之下（默认 `/home/user`）。`file_ops` 必须启用；除非 `server:` 策略或 `commands.py` 把它关掉，否则默认是开的。
+上传和下载。路径必须留在 `ABX_SERVER_BASE_DIR` 之下（默认 `/home/user`）。`file_ops` 必须启用；除非 加载的服务端策略或 `commands.py` 把它关掉，否则默认是开的。
 
 ```bash
 B64=$(printf 'hello' | base64)

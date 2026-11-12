@@ -124,11 +124,11 @@ Template software, the project provider adapter, the selected client and the cur
 
 ### Solution
 
-1. Identify the workflow, consumer and owner of the failed condition. Use a [spec4 manifest](../reference/template-yaml-spec.md); adding retired `capabilities` or `tested_on` is invalid.
+1. Identify the workflow, consumer and owner of the failed condition. Use a [v1 resource manifest](../reference/template-yaml-spec.md); adding retired `capabilities` or `tested_on` is invalid.
 2. Implement/install the missing adapter operation or explicitly choose an implemented workflow. Stateless, default persistent context, explicit contexts and realtime streams are different operations.
 3. For an application, resolve the endpoint independently with `async with await sandbox.application_client(9000, token=application_token)`. Check the listening process, protocol version, gateway configuration and application token.
 4. HTTP 401 never retries anonymously; interpreter HTTP 404 never becomes shell execution. Use the commands API explicitly when shell is intended.
-5. Server policy separately controls nine endpoint groups. `core` stays on; `dev_tools`, `browser` and `agents` start off. Check the actual loaded policy, `server:` and environment, not retired template flags.
+5. Server policy separately controls nine endpoint groups. `core` stays on; `dev_tools`, `browser` and `agents` start off. Check `ABX_SERVER_POLICY`, `ABX_SERVER_POLICY_FILE`, the actual loaded policy and environment, not retired template flags.
 
 See [explicit template workflows](template-workflows.md) and [Template server HTTP API](template-server-api.md).
 
