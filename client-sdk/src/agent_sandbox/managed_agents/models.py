@@ -60,8 +60,12 @@ def text_input(value: Any) -> str:
         for message in value:
             if not isinstance(message, dict):
                 raise ManagedError(400, "unsupported_input", "Expected user text", "input")
-            reject_unknown(message, {"role", "content"}, "input.")
-            if message.get("role") != "user" or not isinstance(message.get("content"), list):
+            reject_unknown(message, {"type", "role", "content"}, "input.")
+            if (
+                message.get("type", "message") != "message"
+                or message.get("role") != "user"
+                or not isinstance(message.get("content"), list)
+            ):
                 raise ManagedError(400, "unsupported_input", "Expected user text", "input")
             for part in message["content"]:
                 if (
