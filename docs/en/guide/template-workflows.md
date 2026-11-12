@@ -63,7 +63,9 @@ After process-start acknowledgement, the launcher polls a nonzero `sandbox.ready
 
 ## Resource configuration
 
-Use the [v1 resource fields](../reference/template-yaml-spec.md). Literal prepared input needs no CLI installation. Native expressions must first be resolved by the Devs parser. `sandbox.instance.timeout` supplies the TTL unless the explicit Python `timeout` argument overrides it; omitted overrides preserve the manifest. Instance specs, existing Volume mounts, environment and metadata are forwarded. Environment values never implicitly read the host environment. Application deployment remains an orchestrator responsibility and is rejected before creating a sandbox.
+The v1 examples describe the updated SDK source consumer. Use a matching [source installation](install-python.md) when this behavior is not in your installed distribution; unchanged package version metadata alone does not establish v1 support.
+
+Use the [v1 resource fields](../reference/template-yaml-spec.md). Parsing literal prepared input needs no CLI installation; the selected Provider can still have its own runtime dependencies. Native expressions must first be resolved by the Devs parser. `sandbox.instance.timeout` supplies the TTL unless the explicit Python `timeout` argument overrides it; omitted overrides preserve the manifest. Instance specs, existing Volume mounts, environment and metadata are forwarded. Environment values never implicitly read the host environment. Application deployment remains an orchestrator responsibility and is rejected before creating a sandbox.
 
 Additional declared `sandbox.ports` are returned as `session.endpoints[port]` Provider descriptors, without creating clients or probing them. Their gateway headers stay in memory and are not part of the public plan or journal. A port declaration does not establish native TCP reachability or start that service.
 

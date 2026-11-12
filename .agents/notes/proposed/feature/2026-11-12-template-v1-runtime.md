@@ -80,7 +80,7 @@ remains available; root `server` is not silently added to the public resource sc
 
 Client base dependency `jsonschema>=4.23,<5`; no new cloud resource, model adapter or release.
 Producer: [template contract PR310](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/pull/310),
-fixed [e925051](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/commit/e9250512967d4c4abb59672567d68ba3e7d18473).
+final [fad843f](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/commit/fad843f60881b405cb386537337817e5144892bc).
 Previous narrow API patch: [SDK PR163](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/163).
 Cross-repository delivery: [templates309](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/issues/309).
 SDK-owned generic launch JSON/vectors must be synchronized by CLI/Registry consumers after
@@ -114,3 +114,5 @@ acceptance remains a separate required gate of the encompassing delivery.
 [Verification](../../../evidence/verify/2026-11-12-template-v1-runtime.md).
 
 [Ports and final gate follow-up](../../../evidence/verify/2026-11-12-template-v1-runtime-ports.md).
+
+[Final local gate results](../../../evidence/verify/2026-11-12-template-v1-runtime-final-local.md).

@@ -1,5 +1,7 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+- [Canonical v1 runtime consumers](notes/proposed/feature/2026-11-12-template-v1-runtime.md) · [first freeze](evidence/verify/2026-11-12-template-v1-runtime.md) · [ports and process-domain comparison](evidence/verify/2026-11-12-template-v1-runtime-ports.md) · [final local gates](evidence/verify/2026-11-12-template-v1-runtime-final-local.md).
+
 - [Managed Agent input and saved-configuration contract](notes/proposed/feature/2026-11-12-managed-agent-input-contract.md) · [verification](evidence/verify/2026-11-12-managed-agent-input-contract.md).
 
 ## Recent changes — 2026-11-10

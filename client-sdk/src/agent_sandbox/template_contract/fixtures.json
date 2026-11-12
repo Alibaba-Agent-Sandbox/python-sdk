@@ -1039,6 +1039,27 @@
         }
       },
       "compile": true
+    },
+    {
+      "id": "long-native-reference-unrestricted",
+      "stage": "resolved",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "reference": "native/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          }
+        }
+      },
+      "compile": true
     }
   ],
   "invalidTemplates": [
@@ -3377,6 +3398,722 @@
           ]
         }
       }
+    },
+    {
+      "id": "identifier-trailing-lf-name",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example\n",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "identifier-trailing-lf-provider",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express\n",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "identifier-trailing-lf-service-key",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          },
+          "services": {
+            "app\n": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": []
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "identifier-trailing-lf-resource-key",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          }
+        },
+        "deployment": {
+          "edition": "3.0.0",
+          "resources": {
+            "api\n": {
+              "component": "fc3@0.1.26",
+              "props": {}
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "identifier-trailing-lf-profile-key",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "source": {
+              "dockerfile": "Dockerfile",
+              "profiles": {
+                "portable\n": {
+                  "dockerfile": "Dockerfile.portable"
+                }
+              }
+            }
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "identifier-trailing-lf-hook-id",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "agents-api",
+        "sandbox": {
+          "template": {
+            "source": {
+              "dockerfile": "Dockerfile"
+            },
+            "props": {
+              "cpu": 2,
+              "memory": 4096
+            }
+          }
+        },
+        "deployment": {
+          "edition": "3.0.0",
+          "access": "default",
+          "vars": {
+            "region": "cn-hangzhou"
+          },
+          "resources": {
+            "publicApi": {
+              "component": "fc3@0.1.26",
+              "props": {
+                "region": "${vars.region}",
+                "cpu": 1,
+                "memorySize": 1024,
+                "logConfig": {
+                  "logstore": "existing-logstore",
+                  "project": "existing-log-project"
+                }
+              }
+            },
+            "sessionWorker": {
+              "component": "fc3@0.1.26",
+              "props": {
+                "region": "${vars.region}",
+                "cpu": 2,
+                "memorySize": 4096,
+                "logConfig": {
+                  "logstore": "existing-logstore",
+                  "project": "existing-log-project"
+                }
+              }
+            },
+            "scheduler": {
+              "component": "fc3@0.1.26",
+              "props": {
+                "region": "${vars.region}",
+                "cpu": 2,
+                "memorySize": 4096,
+                "logConfig": {
+                  "logstore": "existing-logstore",
+                  "project": "existing-log-project"
+                }
+              }
+            }
+          }
+        },
+        "application": {
+          "type": "agents-api",
+          "roles": {
+            "gateway": "publicApi",
+            "worker": "sessionWorker",
+            "dispatcher": "scheduler"
+          },
+          "server": {
+            "source": {
+              "dockerfile": "server/Dockerfile"
+            }
+          },
+          "state": {
+            "databaseUrl": "${env('AGENTS_DATABASE_URL')}"
+          },
+          "bindings": {
+            "sandboxAccess": {
+              "apiKey": "${env('SANDBOX_API_KEY')}",
+              "baseUrl": "https://sandbox.example.invalid",
+              "domain": "sandbox.example.invalid",
+              "region": "cn-hangzhou"
+            },
+            "model": {
+              "apiKey": "${env('OPENAI_API_KEY')}",
+              "baseUrl": "https://models.example.invalid/v1",
+              "model": "fixture-model",
+              "adapter": "qwen-code"
+            },
+            "ingress": {
+              "kind": "function-alias",
+              "allowTestDomain": true
+            }
+          },
+          "hooks": {
+            "afterReady": [
+              {
+                "id": "info\n",
+                "type": "serverless-devs",
+                "step": "gateway",
+                "command": "info",
+                "timeoutSeconds": 30
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "identifier-trailing-lf-hook-env",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "agents-api",
+        "sandbox": {
+          "template": {
+            "source": {
+              "dockerfile": "Dockerfile"
+            },
+            "props": {
+              "cpu": 2,
+              "memory": 4096
+            }
+          }
+        },
+        "deployment": {
+          "edition": "3.0.0",
+          "access": "default",
+          "vars": {
+            "region": "cn-hangzhou"
+          },
+          "resources": {
+            "publicApi": {
+              "component": "fc3@0.1.26",
+              "props": {
+                "region": "${vars.region}",
+                "cpu": 1,
+                "memorySize": 1024,
+                "logConfig": {
+                  "logstore": "existing-logstore",
+                  "project": "existing-log-project"
+                }
+              }
+            },
+            "sessionWorker": {
+              "component": "fc3@0.1.26",
+              "props": {
+                "region": "${vars.region}",
+                "cpu": 2,
+                "memorySize": 4096,
+                "logConfig": {
+                  "logstore": "existing-logstore",
+                  "project": "existing-log-project"
+                }
+              }
+            },
+            "scheduler": {
+              "component": "fc3@0.1.26",
+              "props": {
+                "region": "${vars.region}",
+                "cpu": 2,
+                "memorySize": 4096,
+                "logConfig": {
+                  "logstore": "existing-logstore",
+                  "project": "existing-log-project"
+                }
+              }
+            }
+          }
+        },
+        "application": {
+          "type": "agents-api",
+          "roles": {
+            "gateway": "publicApi",
+            "worker": "sessionWorker",
+            "dispatcher": "scheduler"
+          },
+          "server": {
+            "source": {
+              "dockerfile": "server/Dockerfile"
+            }
+          },
+          "state": {
+            "databaseUrl": "${env('AGENTS_DATABASE_URL')}"
+          },
+          "bindings": {
+            "sandboxAccess": {
+              "apiKey": "${env('SANDBOX_API_KEY')}",
+              "baseUrl": "https://sandbox.example.invalid",
+              "domain": "sandbox.example.invalid",
+              "region": "cn-hangzhou"
+            },
+            "model": {
+              "apiKey": "${env('OPENAI_API_KEY')}",
+              "baseUrl": "https://models.example.invalid/v1",
+              "model": "fixture-model",
+              "adapter": "qwen-code"
+            },
+            "ingress": {
+              "kind": "function-alias",
+              "allowTestDomain": true
+            }
+          },
+          "hooks": {
+            "afterReady": [
+              {
+                "id": "check",
+                "type": "custom",
+                "argv": [
+                  "python",
+                  "smoke.py"
+                ],
+                "cwd": ".",
+                "timeoutSeconds": 30,
+                "envAllowlist": [
+                  "MODEL_KEY\n"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "identifier-trailing-crlf-name",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example\r\n",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "identifier-trailing-crlf-provider",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express\r\n",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "identifier-trailing-crlf-service-key",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          },
+          "services": {
+            "app\r\n": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": []
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "identifier-trailing-crlf-resource-key",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          }
+        },
+        "deployment": {
+          "edition": "3.0.0",
+          "resources": {
+            "api\r\n": {
+              "component": "fc3@0.1.26",
+              "props": {}
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "identifier-trailing-crlf-profile-key",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "source": {
+              "dockerfile": "Dockerfile",
+              "profiles": {
+                "portable\r\n": {
+                  "dockerfile": "Dockerfile.portable"
+                }
+              }
+            }
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "identifier-trailing-crlf-hook-id",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "agents-api",
+        "sandbox": {
+          "template": {
+            "source": {
+              "dockerfile": "Dockerfile"
+            },
+            "props": {
+              "cpu": 2,
+              "memory": 4096
+            }
+          }
+        },
+        "deployment": {
+          "edition": "3.0.0",
+          "access": "default",
+          "vars": {
+            "region": "cn-hangzhou"
+          },
+          "resources": {
+            "publicApi": {
+              "component": "fc3@0.1.26",
+              "props": {
+                "region": "${vars.region}",
+                "cpu": 1,
+                "memorySize": 1024,
+                "logConfig": {
+                  "logstore": "existing-logstore",
+                  "project": "existing-log-project"
+                }
+              }
+            },
+            "sessionWorker": {
+              "component": "fc3@0.1.26",
+              "props": {
+                "region": "${vars.region}",
+                "cpu": 2,
+                "memorySize": 4096,
+                "logConfig": {
+                  "logstore": "existing-logstore",
+                  "project": "existing-log-project"
+                }
+              }
+            },
+            "scheduler": {
+              "component": "fc3@0.1.26",
+              "props": {
+                "region": "${vars.region}",
+                "cpu": 2,
+                "memorySize": 4096,
+                "logConfig": {
+                  "logstore": "existing-logstore",
+                  "project": "existing-log-project"
+                }
+              }
+            }
+          }
+        },
+        "application": {
+          "type": "agents-api",
+          "roles": {
+            "gateway": "publicApi",
+            "worker": "sessionWorker",
+            "dispatcher": "scheduler"
+          },
+          "server": {
+            "source": {
+              "dockerfile": "server/Dockerfile"
+            }
+          },
+          "state": {
+            "databaseUrl": "${env('AGENTS_DATABASE_URL')}"
+          },
+          "bindings": {
+            "sandboxAccess": {
+              "apiKey": "${env('SANDBOX_API_KEY')}",
+              "baseUrl": "https://sandbox.example.invalid",
+              "domain": "sandbox.example.invalid",
+              "region": "cn-hangzhou"
+            },
+            "model": {
+              "apiKey": "${env('OPENAI_API_KEY')}",
+              "baseUrl": "https://models.example.invalid/v1",
+              "model": "fixture-model",
+              "adapter": "qwen-code"
+            },
+            "ingress": {
+              "kind": "function-alias",
+              "allowTestDomain": true
+            }
+          },
+          "hooks": {
+            "afterReady": [
+              {
+                "id": "info\r\n",
+                "type": "serverless-devs",
+                "step": "gateway",
+                "command": "info",
+                "timeoutSeconds": 30
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "identifier-trailing-crlf-hook-env",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "agents-api",
+        "sandbox": {
+          "template": {
+            "source": {
+              "dockerfile": "Dockerfile"
+            },
+            "props": {
+              "cpu": 2,
+              "memory": 4096
+            }
+          }
+        },
+        "deployment": {
+          "edition": "3.0.0",
+          "access": "default",
+          "vars": {
+            "region": "cn-hangzhou"
+          },
+          "resources": {
+            "publicApi": {
+              "component": "fc3@0.1.26",
+              "props": {
+                "region": "${vars.region}",
+                "cpu": 1,
+                "memorySize": 1024,
+                "logConfig": {
+                  "logstore": "existing-logstore",
+                  "project": "existing-log-project"
+                }
+              }
+            },
+            "sessionWorker": {
+              "component": "fc3@0.1.26",
+              "props": {
+                "region": "${vars.region}",
+                "cpu": 2,
+                "memorySize": 4096,
+                "logConfig": {
+                  "logstore": "existing-logstore",
+                  "project": "existing-log-project"
+                }
+              }
+            },
+            "scheduler": {
+              "component": "fc3@0.1.26",
+              "props": {
+                "region": "${vars.region}",
+                "cpu": 2,
+                "memorySize": 4096,
+                "logConfig": {
+                  "logstore": "existing-logstore",
+                  "project": "existing-log-project"
+                }
+              }
+            }
+          }
+        },
+        "application": {
+          "type": "agents-api",
+          "roles": {
+            "gateway": "publicApi",
+            "worker": "sessionWorker",
+            "dispatcher": "scheduler"
+          },
+          "server": {
+            "source": {
+              "dockerfile": "server/Dockerfile"
+            }
+          },
+          "state": {
+            "databaseUrl": "${env('AGENTS_DATABASE_URL')}"
+          },
+          "bindings": {
+            "sandboxAccess": {
+              "apiKey": "${env('SANDBOX_API_KEY')}",
+              "baseUrl": "https://sandbox.example.invalid",
+              "domain": "sandbox.example.invalid",
+              "region": "cn-hangzhou"
+            },
+            "model": {
+              "apiKey": "${env('OPENAI_API_KEY')}",
+              "baseUrl": "https://models.example.invalid/v1",
+              "model": "fixture-model",
+              "adapter": "qwen-code"
+            },
+            "ingress": {
+              "kind": "function-alias",
+              "allowTestDomain": true
+            }
+          },
+          "hooks": {
+            "afterReady": [
+              {
+                "id": "check",
+                "type": "custom",
+                "argv": [
+                  "python",
+                  "smoke.py"
+                ],
+                "cwd": ".",
+                "timeoutSeconds": 30,
+                "envAllowlist": [
+                  "MODEL_KEY\r\n"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "engineering-directory-is-not-a-resource-name",
+      "stage": "intent",
+      "manifest": {
+        "specVersion": 1,
+        "name": "_skeleton",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          }
+        }
+      }
     }
   ],
   "registry": {
@@ -3697,6 +4434,162 @@
             },
             {
               "target": "/deployment/~2bad",
+              "title": {
+                "en": "Cloud access",
+                "zh": "云账号"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "registry-identifier-trailing-lf-name",
+        "metadata": {
+          "specVersion": 1,
+          "name": "agents-api\n",
+          "version": "0.1.0",
+          "description": {
+            "en": "Managed Agents API",
+            "zh": "托管 Agents API"
+          },
+          "author": "alibaba-agent-sandbox",
+          "license": "Apache-2.0",
+          "tags": [
+            "agents-api"
+          ],
+          "readme": {
+            "en": "README.md",
+            "zh": "README.zh-CN.md"
+          },
+          "questions": [
+            {
+              "target": "/application/bindings/model/apiKey",
+              "title": {
+                "en": "Model API key",
+                "zh": "模型 API Key"
+              },
+              "sensitive": true,
+              "environmentVariable": "OPENAI_API_KEY"
+            },
+            {
+              "target": "/deployment/access",
+              "title": {
+                "en": "Cloud access",
+                "zh": "云账号"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "registry-identifier-trailing-lf-environmentVariable",
+        "metadata": {
+          "specVersion": 1,
+          "name": "agents-api",
+          "version": "0.1.0",
+          "description": {
+            "en": "Managed Agents API",
+            "zh": "托管 Agents API"
+          },
+          "author": "alibaba-agent-sandbox",
+          "license": "Apache-2.0",
+          "tags": [
+            "agents-api"
+          ],
+          "readme": {
+            "en": "README.md",
+            "zh": "README.zh-CN.md"
+          },
+          "questions": [
+            {
+              "target": "/application/bindings/model/apiKey",
+              "title": {
+                "en": "Model API key",
+                "zh": "模型 API Key"
+              },
+              "sensitive": true,
+              "environmentVariable": "OPENAI_API_KEY\n"
+            },
+            {
+              "target": "/deployment/access",
+              "title": {
+                "en": "Cloud access",
+                "zh": "云账号"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "registry-identifier-trailing-crlf-name",
+        "metadata": {
+          "specVersion": 1,
+          "name": "agents-api\r\n",
+          "version": "0.1.0",
+          "description": {
+            "en": "Managed Agents API",
+            "zh": "托管 Agents API"
+          },
+          "author": "alibaba-agent-sandbox",
+          "license": "Apache-2.0",
+          "tags": [
+            "agents-api"
+          ],
+          "readme": {
+            "en": "README.md",
+            "zh": "README.zh-CN.md"
+          },
+          "questions": [
+            {
+              "target": "/application/bindings/model/apiKey",
+              "title": {
+                "en": "Model API key",
+                "zh": "模型 API Key"
+              },
+              "sensitive": true,
+              "environmentVariable": "OPENAI_API_KEY"
+            },
+            {
+              "target": "/deployment/access",
+              "title": {
+                "en": "Cloud access",
+                "zh": "云账号"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "registry-identifier-trailing-crlf-environmentVariable",
+        "metadata": {
+          "specVersion": 1,
+          "name": "agents-api",
+          "version": "0.1.0",
+          "description": {
+            "en": "Managed Agents API",
+            "zh": "托管 Agents API"
+          },
+          "author": "alibaba-agent-sandbox",
+          "license": "Apache-2.0",
+          "tags": [
+            "agents-api"
+          ],
+          "readme": {
+            "en": "README.md",
+            "zh": "README.zh-CN.md"
+          },
+          "questions": [
+            {
+              "target": "/application/bindings/model/apiKey",
+              "title": {
+                "en": "Model API key",
+                "zh": "模型 API Key"
+              },
+              "sensitive": true,
+              "environmentVariable": "OPENAI_API_KEY\r\n"
+            },
+            {
+              "target": "/deployment/access",
               "title": {
                 "en": "Cloud access",
                 "zh": "云账号"
