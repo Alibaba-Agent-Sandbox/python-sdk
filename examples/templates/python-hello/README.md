@@ -1,4 +1,4 @@
-# Python Hello 离线夹具
+# Python Hello 离线夹具（Offline fixture）
 
 本目录为 Python SDK 的离线测试夹具。`commands.py` 在服务端注册命令，`call_api.py` 从客户端访问已运行的服务。真实模板的镜像、配置和发布说明由 [awesome-templates/python-hello](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/tree/main/python-hello) 维护。
 

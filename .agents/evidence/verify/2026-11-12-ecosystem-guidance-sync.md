@@ -46,3 +46,14 @@ same existing credential; no credential was changed or created. Public
 producer source branches can now be pushed. Private Registry/Website main was
 fetched successfully, and the prior coordinating PRs were confirmed merged.
 This supersedes the initial delivery-authentication limitation above.
+
+## Remote fixture-boundary regression
+
+The first remote client matrix found two documentation guard failures: the
+existing source-flow check still required retired search/install commands,
+and the rewritten Chinese fixture title omitted its explicit English fixture
+marker. Updated the existing assertions to list/init and restored the bilingual
+marker, preserving the fixture boundary rather than weakening it. The failures
+were reproduced locally (2 failed, 35 passed, one skipped) and in the full
+remote suite (2 failed, 2,450 passed on Python3.12). The corrected focused suite
+passed (37 passed, one skipped); full remote matrix results remain separate.

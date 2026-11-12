@@ -218,10 +218,10 @@ class TestFixtureBoundary:
             f"({SOURCE_OF_TRUTH_URL})"
         )
 
-    def test_index_readme_documents_remote_install_flow(self, catalog_readme: Path) -> None:
+    def test_index_readme_documents_remote_source_flow(self, catalog_readme: Path) -> None:
         readme = catalog_readme.read_text(encoding="utf-8")
-        assert "abx template search" in readme
-        assert "abx template install" in readme
+        assert "abx template list" in readme
+        assert "abx template init" in readme
         assert "ABX_TEMPLATE_INDEX_URL" in readme, (
             "README must document the index override for private mirrors"
         )
