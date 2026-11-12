@@ -1,5 +1,7 @@
 # Quickstart Demos
 
+> Historical run output below retains the command names used by that run. For current setup and deployment use [cloud examples](../../docs/en/guide/cloud-examples.md) and [build and deploy](../../docs/en/guide/build-and-deploy.md).
+
 **Client SDK.** These scripts run on your machine. They create a sandbox and use it. The service inside the image is the Server SDK; it is not what these files start.
 
 Quickstart demos showing core **Agent Sandbox** SDK capabilities — sandbox lifecycle, file operations, web services, data analysis, and declarative execution.

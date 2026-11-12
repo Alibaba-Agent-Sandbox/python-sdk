@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Documentation
+
+- Synchronize CLI-dependent SDK documentation, HTTP MCP template deployment and source-acquisition error guidance. / 同步 SDK 文档中的 CLI 用法、HTTP MCP 模板部署与源码获取错误指引。
+
 ### Changed
 
 - Align current English and Chinese CLI guides with template authoring, named deployment lifecycle and Provider operations; preserve the SDK’s independent clients and instance methods.

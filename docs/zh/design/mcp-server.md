@@ -291,7 +291,7 @@ graph LR
   - `GET /health` — 健康检查，返回 `{"status": "ok", "protocol": "2025-06-18"}`
 - **会话**：进程内 `SessionStore`；空闲 TTL 默认 3600 秒、并发会话上限默认 100；容量满时返回 503 与 JSON-RPC 错误 `-32000`
 - **版本协商**：`initialize` 在请求版本受支持时原样回显；本传输仅支持 `2025-06-18`，与 `GET /health` 一致。请求缺失或不支持的版本时协商到 `2025-06-18` —— 按 MCP 规范，服务器回复自己支持的版本，无法接受的客户端可自行断开。STDIO 传输独立保持 `2024-11-05`
-- **适用场景**：远程服务、团队共享、多客户端；用 CLI 的 `abx mcp deploy` 生成的产物部署到阿里云 FC，或本地以 uvicorn 运行
+- **适用场景**：远程服务、团队共享、多客户端；用 CLI 的 `abx template init --template mcp` 生成可编辑模板，再通过 `abx deploy` 部署，或本地以 uvicorn 运行
 - **可选依赖**：Starlette + uvicorn（`pip install --index-url https://pypi.org/simple 'agent-sandbox-client[mcp]==0.4.0a6'`）
 
 ### 认证
@@ -335,7 +335,7 @@ graph TD
 
 Python server 与任何 STDIO MCP server 一样注册到 IDE。入口是 `python -m agent_sandbox.agent.mcp`；IDE 通过 `env` 传入凭证。示例见第 6 节。
 
-`abx mcp install --target cursor|claude|vscode`（把 `agent-sandbox` 条目合并进 IDE 配置）、`abx mcp status`（server 名称、传输方式、工具列表、API key 是否已配置、各 IDE 的安装状态）、`abx mcp start|stop` 与 `abx mcp deploy` 命令属于 Node.js CLI；其设计见 CLI 的 [MCP Server 设计](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/mcp-server.md)。
+`abx mcp install --target cursor|claude|vscode`（把 `agent-sandbox` 条目合并进 IDE 配置）、`abx mcp status`（server 名称、传输方式、工具列表、API key 是否已配置、各 IDE 的安装状态）、`abx mcp start|stop` 命令属于 Node.js CLI；其设计见 CLI 的 [MCP Server 设计](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/mcp-server.md)。
 
 ## 6. 配置示例
 
@@ -407,58 +407,14 @@ CLI 的 `abx mcp install` 会写入等价条目，其 `command` 为 `abx`，`arg
 }
 ```
 
-## 7. FC 部署
+## 7. 可部署的 HTTP MCP
 
-> **状态：** `abx mcp deploy` 生成部署产物；自动调用 FC 部署 API **尚未实现**。生成后会打印手动部署步骤。
+CLI 通过 `template init --template mcp` 生成可编辑的沙箱应用。app.py 调用本 SDK 的 `create_mcp_app`；清单、Dockerfile 与固定版本的 requirements 描述运行方式。部署使用普通的 `deploy/status/delete` 生命周期，命令和凭据说明见[部署 HTTP MCP 服务](../guide/mcp-integration.md#部署-http-mcp-服务)。
 
-### 架构
-
-MCP Server 可部署到阿里云函数计算 (FC) 作为 Streamable HTTP 端点，利用 FC 原生的 MCP 会话亲和路由。
-
-```mermaid
-graph TB
-    CLI["abx mcp deploy → 产物目录"]
-    FC["FC 函数: agent-sandbox-mcp（手动创建）"]
-    Sandbox["Envd 沙箱（另一个 FC 实例）"]
-
-    CLI --> FC
-    FC --> Sandbox
-
-    subgraph FC_Function ["FC 函数"]
-        ASGI["app.py → agent_sandbox.agent.mcp_http:asgi_app"]
-        Trigger["HTTP 触发器: POST/GET/DELETE /mcp"]
-        Session["会话亲和: Mcp-Session-Id"]
-        Env["环境变量: E2B_API_KEY / ABX_MCP_AUTH_TOKEN / ABX_DEFAULT_TEMPLATE"]
-    end
-```
-
-### 部署命令
-
-产物由 `abx mcp deploy` 生成（选项、区域解析、token 来源）；见 CLI 的 [MCP Server 设计](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/mcp-server.md#7-fc-部署) 与 [CLI 设计 — mcp deploy](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/cli-design.md)。以下各节描述产物及其运行的应用，二者由本 SDK 提供。
-
-### 产物内容
-
-| 文件 | 内容 |
-|------|------|
-| `requirements.txt` | `agent-sandbox-client[mcp]`、`uvicorn>=0.29` |
-| `app.py` | ASGI 入口，从 FC 函数环境变量读取 `ABX_MCP_AUTH_TOKEN`、`E2B_API_KEY`、`E2B_API_URL`、`E2B_DOMAIN`、`ABX_DEFAULT_TEMPLATE` |
-| `config.yaml` | YAML 部署清单（非 FC API 载荷）：`function_name`、`region`、`runtime`（`python3.10`）、`handler`（`app.app`）、`memory`、`timeout`、`environment_variables`、`http_trigger`（POST/GET/DELETE 方法 + `enable_session_affinity`）、可选 `custom_domain` |
-
-`abx mcp deploy` 还会打印手动部署步骤（打包产物、经 FC 控制台或 SDK 创建函数、创建 HTTP 触发器、如支持则启用 `Mcp-Session-Id` 亲和）以及 Bearer token 打码的 IDE 配置模板。
-
-### 关键设计要点
-
-- **协议**：Streamable HTTP（MCP 规范 2025-06-18）；`initialize` 协商 `2025-06-18`，与 `GET /health` 一致（STDIO 独立保持 `2024-11-05`）
-- **会话亲和**：委托 FC 平台层通过 `Mcp-Session-Id` 头实现 — 无需应用层粘性路由
-- **认证**：双层 — 客户端→MCP 使用 `Authorization: Bearer <token>`；MCP→沙箱使用 FC 环境变量中的 `E2B_API_KEY`
-- **生命周期**：沙箱按 MCP 会话懒创建；`DELETE /mcp` 触发清理；空闲会话 TTL 作为安全网
-- **冷启动**：FC 冷启动 (~1–3s) 可能与 MCP initialize 超时冲突；生产环境建议使用预留实例
-- **密钥**：`config.yaml` 含 API key 与 Bearer token — 切勿提交到版本控制
-
-详见 [MCP 集成指南](../guide/mcp-integration.md) 获取端到端用法；`abx mcp deploy` 的完整参数参考在 CLI 仓库（见[部署命令](#部署命令)）。
+应用在单进程内保存 MCP 会话。MCP 公开入口与工具创建的独立沙箱具有不同生命周期。访问时保留 Provider 流量认证头及 MCP Bearer 认证，初始化后复用会话头，结束会话后再删除服务。替换服务不会保留内存会话。
 
 ---
 
 ## 相关：abx CLI
 
-Node.js `abx` CLI 有自己的 MCP server 实现及相关命令：[MCP Server 设计（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/mcp-server.md)（`abx mcp install|start|stop|status|deploy`、TypeScript 实现的工具 schema、FC 部署）和 [CLI 命令体系](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/cli-design.md)。
+Node.js `abx` CLI 有自己的 MCP server 实现及相关命令：[MCP Server 设计（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/mcp-server.md)（`abx mcp install|start|stop|status`、TypeScript 实现的工具 schema、FC 部署）和 [CLI 命令体系](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/cli-design.md)。

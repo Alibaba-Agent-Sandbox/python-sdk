@@ -275,3 +275,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Community QR replacement](notes/proposed/process/2026-11-10-refresh-community-qr.md) · [verification](evidence/verify/2026-11-10-refresh-community-qr.md).
 
 - [SDK simplification mainline reconciliation](evidence/verify/2026-11-10-simplification-main-merge.md).
+
+- [Python documentation consumers of the unified CLI](notes/proposed/process/2026-11-12-ecosystem-guidance-sync.md) · [verification](evidence/verify/2026-11-12-ecosystem-guidance-sync.md).

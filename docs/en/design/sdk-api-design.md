@@ -8,7 +8,7 @@ It is a current overview, not a proposal for additional APIs.
 ## Design rules
 
 - ProviderSandbox creates and operates sandboxes. Source image preparation belongs
-  to the CLI: normally `abx template launch <reference>`, with build/deploy as
+  to the CLI: normally `abx deploy <reference> --name <name>`, with build/deploy as
   advanced operations. Standard Template builders retain their separate contract.
 - Shell commands, interpreter execution and template application commands use
   distinct APIs and prerequisites. Creating `base` does not start an application.
@@ -64,7 +64,7 @@ not create a new platform capability.
 | Registered application command | Application client's `commands.run(...)` | Running SandboxServer service and its application token |
 | Registered command discovery | Application client's `commands.list()` | The same running service |
 
-First launch the entire template with `abx template launch <reference>`. Connect
+First launch the entire template with `abx deploy <reference> --name <name>`. Connect
 using the returned sandbox information and `application_client(..., token=...)`
 so provider gateway headers and application authentication are preserved. See
 [template launch](../guide/template-workflows.md) and

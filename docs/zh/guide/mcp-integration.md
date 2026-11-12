@@ -136,9 +136,9 @@ Authorization: Bearer <token>
 
 - 回环地址且未设置 token → 认证关闭，进程会警告
 - token 已设置但为空 → **fail-closed**：所有请求被拒绝并返回 401
-- FC 产物 token 未设置或为空 → 进程拒绝启动
+- 生成的 HTTP 服务 token 未设置或为空 → 进程拒绝启动
 
-token 比较使用常量时间算法。可用 `openssl rand -base64 32` 生成。CLI 的 `abx mcp start --http`（`--auth-token`）与 `abx mcp deploy --generate-token` 可接受或为你生成 token；见[相关：abx CLI](#相关abx-cli)。
+token 比较使用常量时间算法。可用 `openssl rand -base64 32` 生成。CLI 的 `abx mcp start --http`（`--auth-token`）接受指定 token；生成的 MCP 模板默认使用本机保存的应用令牌；见[相关：abx CLI](#相关abx-cli)。
 
 ### 客户端配置（远程）
 
@@ -157,34 +157,24 @@ token 比较使用常量时间算法。可用 `openssl rand -base64 32` 生成�
 
 ---
 
-## FC 部署产物
+## 部署 HTTP MCP 服务
 
-阿里云函数计算的部署产物由 `abx mcp deploy` 命令生成（见[相关：abx CLI](#相关abx-cli)）；生成的 Python 应用由本 SDK 提供。它**不**调用 FC API —— 需要通过控制台或 SDK 手动创建函数。
+安装[当前源码 CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox#installation)，生成可编辑源码并部署为沙箱应用：
 
-产物目录包含：
-
-| 文件 | 内容 |
-|------|------|
-| `requirements.txt` | `agent-sandbox-client[mcp]`、`uvicorn>=0.29` |
-| `app.py` | ASGI 入口，读取 FC 环境变量（`ABX_MCP_AUTH_TOKEN`、`ABX_SANDBOX_API_KEY`、`ABX_SANDBOX_BASE_URL`、`ABX_SANDBOX_DOMAIN`、`ABX_DEFAULT_TEMPLATE`） |
-| `config.yaml` | YAML 清单：函数名、地域、运行时 `python3.10`、handler `app.app`、内存/超时、环境变量、HTTP 触发器（POST/GET/DELETE）、会话亲和 |
-
-部署步骤：打包 → 创建函数 → 创建 HTTP 触发器 → 若支持则启用 `Mcp-Session-Id` 亲和。
-
-> **安全**：`config.yaml` 含有 API key 与 Bearer token，请勿提交到版本控制。
-
-部署后用触发器 URL 配置客户端：
-
-```json
-{
-  "mcpServers": {
-    "agent-sandbox-remote": {
-      "url": "https://<FC_HTTP_TRIGGER_URL>/mcp",
-      "headers": { "Authorization": "Bearer <BEARER_TOKEN>" }
-    }
-  }
-}
+```bash
+abx template init ./mcp-service --template mcp
+abx deploy ./mcp-service --name mcp-service \
+  -e 'ABX_SANDBOX_API_KEY=<YOUR_SANDBOX_API_KEY>' \
+  -e 'ABX_SANDBOX_BASE_URL=<YOUR_SANDBOX_BASE_URL>' \
+  -e 'ABX_SANDBOX_DOMAIN=<YOUR_SANDBOX_DOMAIN>'
+abx status mcp-service
 ```
+
+生成的 `app.py` 调用 `create_mcp_app`；`template.yaml`、Dockerfile 和固定版本的 `requirements.txt` 描述运行方式。沙箱 API Key、API URL、domain 需属于同一账号和地域，用于 MCP 工具创建的沙箱，与构建凭据分开配置。
+
+CLI 按需生成并在本机保存 `ABX_SERVER_TOKEN`。生成的服务默认将它作为 MCP Bearer 令牌；显式提供 `ABX_MCP_AUTH_TOKEN` 时使用后者。在返回的 MCP 服务 URL 后追加 `/mcp`，保留 Provider endpoint 的认证头，并为客户端设置 `Authorization: Bearer <MCP_TOKEN>`。Provider 流量认证是独立的一层。
+
+初始化后复用 `Mcp-Session-Id`。应用在单进程内保存会话，替换实例会丢失内存会话。`DELETE /mcp` 结束会话并清理其拥有的沙箱；结束会话后使用 `abx delete mcp-service --yes` 删除服务。完整部署与客户端操作见 CLI [MCP 指南](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/zh/guide/mcp-integration.md)。
 
 ## 场景示例
 
@@ -248,7 +238,7 @@ curl -s -X DELETE http://localhost:9000/mcp \
 | IDE 显示 server 失败 / 无工具 | IDE `PATH` 中的 `python` 不是安装了 `agent-sandbox` 的解释器 | 在 IDE 配置的 `command` 中使用解释器的绝对路径 |
 | 工具列表正常但每次调用报错 | API key 缺失或无效 | 在 server 的 `env` 块中设置 `ABX_SANDBOX_API_KEY` |
 | IDE 重启后 `create_sandbox` 失败 | 后端 API URL/地域不匹配 | 在 server 的 `env` 块中设置 `ABX_SANDBOX_BASE_URL` |
-| HTTP 每个请求都 401 | `ABX_MCP_AUTH_TOKEN` 为空（fail-closed） | 设置非空 token。本机回环可以删掉该变量来关闭认证。FC 产物没有 token 时不会启动 |
+| HTTP 每个请求都 401 | `ABX_MCP_AUTH_TOKEN` 为空（fail-closed） | 设置非空 token。本机回环可以删掉该变量来关闭认证。生成的 HTTP 服务没有 token 时不会启动 |
 | HTTP 404 Unknown session | `Mcp-Session-Id` 已过期（空闲 TTL 3600 秒）或实例重启 | 重新发送 `initialize` 创建新会话 |
 | HTTP 503 会话上限 | 进程内并发会话超过 100 | 关闭空闲会话（`DELETE /mcp`）或经 `create_mcp_app()` 调高 `max_sessions` |
 | `GET /mcp` 返回 405 | SSE 通知尚未实现 | 预期行为 — 只使用 `POST /mcp` |
@@ -259,7 +249,7 @@ CLI server 特有的问题（`abx` 不在 IDE 的 `PATH`、`abx mcp status`）�
 
 - **传输协议**：STDIO（换行分隔 JSON-RPC 2.0，协议版本 2024-11-05）与 Streamable HTTP（规范 2025-06-18）。`initialize` 按 transport 协商支持版本 —— 请求版本受支持时原样回显，缺失或不支持时回退到该 transport 自己的版本（因此 HTTP 的 /health 与 initialize 均报告 2025-06-18）
 - **沙箱管理**：MCP Server 为每个会话内部维护 `SandboxManager`，管理多个沙箱实例的生命周期
-- **默认模板**：Python STDIO server、HTTP 应用与 `abx mcp deploy` 产物为 `base`（CLI 自己的 `abx mcp start` 使用 `code-interpreter-v1`）。`create_sandbox` 省略 `template` 时用的就是这个 server 模板
+- **默认模板**：Python STDIO server、HTTP 应用与生成的 MCP 模板为 `base`（CLI 自己的 `abx mcp start` 使用 `code-interpreter-v1`）。`create_sandbox` 省略 `template` 时用的就是这个 server 模板
 - **STDIO**：单条消息上限 8 MiB；超限的一行会被拒绝，进程继续服务下一条。`ping` 在工具调用进行中也会返回
 - **HTTP 会话**：空闲 TTL 3600 秒、每进程最多 100 个并发会话，容量满返回 503
 
@@ -274,4 +264,4 @@ CLI server 特有的问题（`abx` 不在 IDE 的 `PATH`、`abx mcp status`）�
 
 ## 相关：abx CLI
 
-Node.js `abx` CLI 提供自己的 MCP server 及相关命令，记录在 CLI 仓库：[MCP 集成（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/mcp-integration.md)（`abx mcp install|start|stop|status|deploy`、IDE 安装目标、后台 HTTP 模式、pid 与日志文件）以及 CLI 的 [MCP Server 设计](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/mcp-server.md)。
+Node.js `abx` CLI 提供自己的 MCP server 及相关命令，记录在 CLI 仓库：[MCP 集成（CLI）](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/guide/mcp-integration.md)（`abx mcp install|start|stop|status`、IDE 安装目标、后台 HTTP 模式、pid 与日志文件）以及 CLI 的 [MCP Server 设计](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/design/mcp-server.md)。

@@ -109,7 +109,7 @@ def expand_catalog_ref(
 ) -> tuple[str, str | None, str | None]:
     """Turn ``owner/repo//subdir[@ref]`` into a GitHub URL plus subdir and ref.
 
-    Same grammar as ``abx template install``: ``//`` is the directory inside the
+    Same grammar as ``abx template init --from``: ``//`` is the directory inside the
     repository, ``@`` after that is the git ref. A full git URL, an scp-style
     ``git@host:path``, or a local path is returned unchanged. ``--ref`` and
     ``--subdir`` still work; giving both forms with different values is an error.

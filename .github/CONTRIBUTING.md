@@ -180,9 +180,9 @@ Read the owning repository's [contributor guide](https://github.com/Alibaba-Agen
 
 Use the CLI (`abx`, from the `agent-sandbox` repository) to search the remote index:
 ```bash
-abx template search python      # search by tag or keyword
-abx template search ai-agent    # find AI agent templates
-abx template search browser     # find browser automation templates
+abx template list python      # search by tag or keyword
+abx template list ai-agent    # find AI agent templates
+abx template list browser     # find browser automation templates
 ```
 
 ## Commit Message Convention
