@@ -10,6 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Read public v1 template files with shared YAML1.2 Core rules, strict UTF-8 and
+  bounded input; reject duplicate keys/aliases without exposing source values. /
+  公开 v1 模板文件统一采用 YAML1.2 Core、严格 UTF-8 与大小限制，拒绝重复键和别名，错误不泄露原文值。
+
+- Return managed Session timestamps as integer Unix seconds and truthful empty
+  `required_actions` / `vault_ids` arrays without changing internal clock precision. /
+  托管 Session 时间输出为整数秒，返回实际为空的待办动作与 Vault 列表，内部时钟精度保留。
+
 - Accept the optional `type: "message"` discriminator for managed user-text input,
   validate explicitly supplied saved Agent IDs without coercion or inline fallback,
   and distinguish rate-limit and unavailable-service error categories. Saved Agent
@@ -19,9 +27,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Documentation
 
+- Describe optional SandboxServer access policy as a standalone JSON/YAML runtime
+  document and remove obsolete template-root server/automatic-compilation instructions. /
+  可选的 SandboxServer 访问策略改为独立 JSON/YAML 运行时文档，移除旧清单根字段及自动编译说明。
+
 - Synchronize CLI-dependent SDK documentation, HTTP MCP template deployment and source-acquisition error guidance. / 同步 SDK 文档中的 CLI 用法、HTTP MCP 模板部署与源码获取错误指引。
 
 ### Changed
+
+- Preserve additional `sandbox.ports` alongside service ports. Prepared sessions
+  expose Provider endpoint descriptors without inventing clients or readiness checks;
+  gateway headers remain private in memory. / 保留额外端口声明；启动会话返回
+  Provider 端点描述，不创建虚构客户端或就绪检查，网关请求头只在内存中。
+
+- Consume canonical `specVersion: 1` resource documents in prepared Python launch
+  and discovery. Preserve instance TTL/specs/Volumes/environment/metadata and explicit
+  API overrides; reject unresolved native expressions before creation. Managed
+  Sessions snapshot safe instance settings and receive custom environment values
+  only through private Worker configuration. / Python 已准备模板启动与发现改为
+  canonical v1，实际承接实例参数与显式覆盖；未解析表达式在创建前拒绝。
+  托管 Session 保存安全实例快照，自定义环境值只通过 Worker 私有配置注入。
 
 - Align current English and Chinese CLI guides with template authoring, named deployment lifecycle and Provider operations; preserve the SDK’s independent clients and instance methods.
 

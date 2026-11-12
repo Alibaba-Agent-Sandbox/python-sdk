@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from agent_sandbox.models.errors import TemplateParseError
 from agent_sandbox.models.template import SandboxTemplate
+from agent_sandbox.template_contract import _read_yaml_document
 
 TEMPLATE_CACHE_DIR = Path.home() / ".abx" / "templates"
 
@@ -21,21 +22,13 @@ class ResolvedCapabilities(BaseModel):
 
 
 def parse_template_data(data: dict[str, Any]) -> SandboxTemplate:
-    """Validate specification 5, preserving unrelated application topology metadata."""
-    normalized = dict(data)
-    resources = normalized.get("resources", {}) or {}
-    if "application" not in normalized and "cpu" in resources and "cpu_count" not in normalized:
-        normalized["cpu_count"] = resources["cpu"]
-    if "application" not in normalized and "memory" in resources and "memory_mb" not in normalized:
-        normalized["memory_mb"] = resources["memory"]
-    return SandboxTemplate.model_validate(normalized)
+    """Validate canonical v1 intent and retain its native topology unchanged."""
+    return SandboxTemplate.model_validate(data)
 
 
 def _read(path: Path) -> SandboxTemplate:
-    import yaml
-
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        _, data = _read_yaml_document(path)
         if not isinstance(data, dict):
             raise ValueError("template must be a mapping")
         return parse_template_data(data)
@@ -62,12 +55,10 @@ async def resolve_capabilities_for(
     if local_yaml_path is not None:
         template = _read(Path(local_yaml_path))
         return ResolvedCapabilities(capabilities=template.discovery_capabilities(), matched=True)
-    import yaml
-
     for template_id in dict.fromkeys(t for t in template_ids if t):
         for path in sorted(TEMPLATE_CACHE_DIR.rglob("template.yaml")):
             try:
-                data = yaml.safe_load(path.read_text(encoding="utf-8"))
+                _, data = _read_yaml_document(path)
             except Exception:
                 if path.parent.name == template_id:
                     _read(path)
@@ -76,7 +67,7 @@ async def resolve_capabilities_for(
                 if path.parent.name == template_id:
                     _read(path)
                 continue
-            aliases = data.get("aliases", [])
+            aliases = data.get("sandbox", {}).get("template", {}).get("aliases", [])
             names = [data.get("name"), data.get("alias"), path.parent.name]
             if isinstance(aliases, list):
                 names.extend(aliases)

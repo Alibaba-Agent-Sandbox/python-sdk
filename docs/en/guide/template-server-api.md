@@ -99,10 +99,10 @@ Ways to switch, all ending in the same per-endpoint rules:
 | Where | Form |
 |---|---|
 | `commands.py` | `default_table().enable_group(CapabilityGroup.FILE_OPS)` / `disable_group(...)` |
-| `template.yaml` `server:` | `groups: [agents, dev_tools]` or `groups: {process: false}`; `endpoints:` for single ids |
+| standalone policy document | `groups: [agents, dev_tools]` or `groups: {process: false}`; `endpoints:` for single ids |
 | environment | `ABX_SERVER_ENABLED_GROUPS=agents,dev_tools` (comma list, turns groups on only) |
 
-There is no environment variable that turns a group off. Write `groups: {process: false}` in `server:` or an `endpoints` rule instead. Layers, specificity and the `rule` names are in [Fine-grained capabilities](fine-grained-capabilities.md).
+There is no environment variable that turns a group off. Write `groups: {process: false}` in the loaded policy document or use an `endpoints` rule instead. Layers, specificity and the `rule` names are in [Fine-grained capabilities](fine-grained-capabilities.md).
 
 `provides`, explicit workflows, exact provider operations and this endpoint policy are separate contracts. Retired template `capabilities` is rejected; a workflow never enables an endpoint automatically.
 
@@ -626,7 +626,7 @@ All of these need Playwright. If `import playwright` fails the handler returns `
 
 ### `agents` (off until enabled)
 
-Turn the group on with `ABX_SERVER_ENABLED_GROUPS=agents`, `groups: [agents]` in `server:`, or `default_table().enable_group(CapabilityGroup.AGENTS)` before `serve()`. All 70 routes are implemented. Two runtimes have a local backend: Codex CLI (`codex`) and Qwen Code (`qwen-code`, also `qwen` and `qwencode`). `claude-code`, `cursor` and `command` are declared adapters without a local backend. `GET /v1/agents/runtimes` lists every declared runtime with `implemented` and `installed`. Selecting a runtime that is not implemented is `404` `not_found_error` (`agents.not_implemented_locally`) with `x-should-retry: false`, and the body points to `GET /v1/agents/runtimes`. When the body and `agents.default` (`ABX_AGENTS_DEFAULT`) do not name an adapter, create calls use `codex`. Each Agents route can be enabled on its own. Endpoint ids are in [Fine-grained capabilities](fine-grained-capabilities.md). The default scope is `agents:use`. The full route table is in the [Agents API reference](../reference/agents-api.md).
+Turn the group on with `ABX_SERVER_ENABLED_GROUPS=agents`, `groups: [agents]` in the loaded policy, or `default_table().enable_group(CapabilityGroup.AGENTS)` before `serve()`. All 70 routes are implemented. Two runtimes have a local backend: Codex CLI (`codex`) and Qwen Code (`qwen-code`, also `qwen` and `qwencode`). `claude-code`, `cursor` and `command` are declared adapters without a local backend. `GET /v1/agents/runtimes` lists every declared runtime with `implemented` and `installed`. Selecting a runtime that is not implemented is `404` `not_found_error` (`agents.not_implemented_locally`) with `x-should-retry: false`, and the body points to `GET /v1/agents/runtimes`. When the body and `agents.default` (`ABX_AGENTS_DEFAULT`) do not name an adapter, create calls use `codex`. Each Agents route can be enabled on its own. Endpoint ids are in [Fine-grained capabilities](fine-grained-capabilities.md). The default scope is `agents:use`. The full route table is in the [Agents API reference](../reference/agents-api.md).
 
 Every response carries `X-Agent-Sandbox-Local: 1` and every object an `x_agent_sandbox` label (`local`, `compute`, `differences`). A field the server cannot honor is `400` with `param`, never accepted and ignored. Objects belong to the caller; a foreign id answers like an unknown id.
 
@@ -755,7 +755,7 @@ curl --fail-with-body -sS "${AUTH[@]}" \
   "$ABX_TEMPLATE_URL/commands/hello"
 ```
 
-Upload and download. The path must stay under `ABX_SERVER_BASE_DIR` (default `/home/user`). `file_ops` must be enabled, which it is unless a `server:` policy or `commands.py` turned it off.
+Upload and download. The path must stay under `ABX_SERVER_BASE_DIR` (default `/home/user`). `file_ops` must be enabled, which it is unless a loaded server policy or `commands.py` turned it off.
 
 ```bash
 B64=$(printf 'hello' | base64)

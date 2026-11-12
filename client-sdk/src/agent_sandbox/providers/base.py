@@ -227,6 +227,16 @@ class Provider(ABC):
     #: Optional create inputs explicitly implemented by the backend.
     create_options: frozenset[str] = frozenset()
 
+    def validate_template_input(self, stage: str, value: Any) -> bool | None:
+        """Optionally validate v1 input using this Provider version's real schema.
+
+        Override for ``template.prepare`` (the template object) and
+        ``sandbox.create`` (the instance object). Validation must be synchronous;
+        raise or return False to reject. The default supplies no v1 validator.
+        This method does not grant operations or certify backend admission.
+        """
+        raise ProviderFeatureNotSupportedError(self.id, "template.v1-validation")
+
     def session_protocols(self, http: Any) -> dict[str, Any]:
         """Missing protocols fail explicitly rather than acquiring a native transport."""
 

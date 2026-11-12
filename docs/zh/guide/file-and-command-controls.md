@@ -1,43 +1,80 @@
 # 文件与命令控制
 
-模板如何限制沙箱服务器可以触及的路径和程序。如何打开策略、选择器，以及全部端点 id，见 [细粒度能力](fine-grained-capabilities.md)。这些路由的 HTTP 形状见[模板服务器 HTTP API](template-server-api.md)。`template.yaml` 的 `server:` 块见 [template.yaml 规范](../reference/template-yaml-spec.md#服务端策略server)。设计说明见[细粒度能力](../design/fine-grained-capabilities.md)。
+模板如何限制沙箱服务器可以触及的路径和程序。如何打开策略、选择器，以及全部端点 id，见 [细粒度能力](fine-grained-capabilities.md)。这些路由的 HTTP 形状见[模板服务器 HTTP API](template-server-api.md)。服务端策略独立于 [v1 资源清单](../reference/template-yaml-spec.md#capability-declarations)加载。设计说明见[细粒度能力](../design/fine-grained-capabilities.md)。
 
 实时路由会调用 `check_env`、`check_url` 和 `check_process`，下文的路径检查和命令检查也同样在路由里。`check_env` 用在 `handle_env_set`（`POST /env`）、`enforce_exec_policy`（`POST /shell`、`POST /shell/stream`、`POST /process/start` 的 `env` 对象）和 `_handle_create_session`（`POST /pty/sessions`）。`check_url` 用在 `handle_browser_navigate`（`POST /browser/navigate`）。`check_process` 用在 `enforce_exec_policy`（上述 shell 与进程的 argv）、`handle_code_run`（`POST /code/run`）和 `_handle_create_session`（PTY 的 shell）。拒绝是 HTTP 403，错误码是 guard 自己的码：`env_var_denied`、`url_denied` 或 `process_denied`。空的 env 映射仍然允许。
 
-## 模板声明什么
+这些可选策略用于运行 SandboxServer 的模板。Managed Agents API 桥接服务使用自己的固定路由契约。
 
-`template.yaml` 里可选的 `server:`。没有它时用默认策略：端点接收的每个路径都留在 `ABX_SERVER_BASE_DIR`（默认 `/home/user`）之下，包括 `/shell` 和进程启动的 `cwd`，shell 命令不做过滤。工具链把这块编译成 `/etc/agent-sandbox/server-policy.json`。进程在设置了 `ABX_SERVER_POLICY`（内联 JSON）或 `ABX_SERVER_POLICY_FILE` 时也会加载它们。`agent-sandbox-server check-config --policy <文件>` 校验文档并打印 lint 警告。无效文档会阻止启动。
+## 服务端策略文件
 
-```yaml
-server:
-  preset: transfer-only
-  base_dir: /home/user
-  groups:
-    process: false
-    terminal: false
-  endpoints:
-    files_download_stream:
-      paths:
-        allow: [/home/user/out]
-        deny: ["**/.env", "*.pem"]
-        read_only: false
-        symlinks: within
-      limits:
-        max_bytes: 5MB
-    files_upload_stream:
-      paths:
-        allow: [/home/user/in]
-      params:
-        overwrite: false
-        deny_extensions: [".sh", ".so"]
-    shell:
-      params:
-        allow_commands: ["ls", "cat"]
-        deny_commands: ["rm"]
-      limits:
-        timeout_seconds: 30
-        max_output_bytes: 1048576
+保存独立的 `server-policy.json`，通过 `ABX_SERVER_POLICY_FILE` 或 `agent-sandbox-server serve --policy server-policy.json` 加载；内联 JSON 使用 `ABX_SERVER_POLICY`。没有策略时，端点接收的路径留在 `ABX_SERVER_BASE_DIR`（默认 `/home/user`）之下，包括 shell/进程的 `cwd`，shell 命令不做过滤。`agent-sandbox-server check-config --policy server-policy.json` 校验文档并打印 lint 警告；无效文档会阻止启动。安装 PyYAML 时也支持 `.yaml`/`.yml` 策略文件；这是独立的运行时策略，与 v1 资源清单分开加载。
+
+```json
+{
+  "preset": "transfer-only",
+  "base_dir": "/home/user",
+  "groups": {
+    "process": false,
+    "terminal": false
+  },
+  "endpoints": {
+    "files_download_stream": {
+      "paths": {
+        "allow": [
+          "/home/user/out"
+        ],
+        "deny": [
+          "**/.env",
+          "*.pem"
+        ],
+        "read_only": false,
+        "symlinks": "within"
+      },
+      "limits": {
+        "max_bytes": "5MB"
+      }
+    },
+    "files_upload_stream": {
+      "paths": {
+        "allow": [
+          "/home/user/in"
+        ]
+      },
+      "params": {
+        "overwrite": false,
+        "deny_extensions": [
+          ".sh",
+          ".so"
+        ]
+      }
+    },
+    "shell": {
+      "params": {
+        "allow_commands": [
+          "ls",
+          "cat"
+        ],
+        "deny_commands": [
+          "rm"
+        ]
+      },
+      "limits": {
+        "timeout_seconds": 30,
+        "max_output_bytes": 1048576
+      }
+    }
+  }
+}
 ```
+
+要将策略放入源码镜像，在 Dockerfile 中显式添加：
+
+```dockerfile
+COPY server-policy.json /etc/agent-sandbox/server-policy.json
+```
+
+没有显式指定策略来源时，服务端会读取该默认路径。
 
 预设在你的端点规则之前生效：`default`（没有额外限制）、`transfer-only`（只留上传和下载端点）、`read-only`（关掉 process、terminal、dev tools、browser，并关掉写端点）、`hardened`（关掉这些组，并在文件路由上加拒绝 glob）、`locked`（只留 `list_commands` 和 `run_command`）。
 

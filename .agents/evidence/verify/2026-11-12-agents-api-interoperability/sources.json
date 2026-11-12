@@ -1,0 +1,28 @@
+{
+  "files": {
+    "probe.py": {
+      "sha256": "355f301a088e13db7c36dde5cd4bcd77128ec87af5ad70a4e46c19e448306c42",
+      "original_sha256": "9df146330e47be60a5132bbdf48113eade47e14333cde0585f4253d3dc3c799f",
+      "source_scope": "Original probe plus synthetic-fixture classification comment only; execution AST is identical",
+      "ast_equivalent_to_original": true
+    },
+    "distribution.json": {
+      "sha256": "b68165e448a5c30ca4fe63866790938cab27a148e6a20ce42655545e6d4decf6",
+      "source_scope": "retained original 2026-11-12 execution; copied byte-for-byte"
+    },
+    "result-before-projection.json": {
+      "sha256": "df364a24517218b952f6fd265a9551a24023671a0045d3c3ddeea8c3ee05de92",
+      "source_scope": "retained original 2026-11-12 execution; copied byte-for-byte"
+    },
+    "result-after-projection.json": {
+      "sha256": "26807ab800239c58d05e30ffe7ea3c942c5a347c9da5a2aa3f31c4298942f6dd",
+      "source_scope": "retained original 2026-11-12 execution; copied byte-for-byte"
+    },
+    "model-protocol-preflight.json": {
+      "sha256": "6d5c957105adb299ee8d7102e7002f6d912b4ac70b54f13fe91a777c06b34030",
+      "source_scope": "retained original configured-endpoint probe; not a new API/model execution"
+    }
+  },
+  "copied_at_utc": "2026-11-12T20:36:42.892576+00:00",
+  "reexecuted_during_record_placement": false
+}

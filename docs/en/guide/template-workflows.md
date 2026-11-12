@@ -21,7 +21,7 @@ finally:
 
 The client also sends the explicit application token in the server's existing `X-Access-Token` header when that header is unused. This keeps authentication working through proxies that strip `Authorization`, including OpenSandbox 1.1.1. Existing gateway headers, including defaults on an injected HTTP client, are never replaced. Bearer authentication remains available for services that require it.
 
-For advanced preparation, `launch_template` creates a new sandbox from a prepared provider reference and runs the manifest's `start_cmd`. The reference must not also start the same service through its native startup command or image entrypoint. CLI build artifacts retain their declared startup behavior; do not treat a prepared reference as an instruction to start the service twice. If the CLI has already started the application, connect to its sandbox as above.
+For advanced preparation, `launch_template` creates a new sandbox from a prepared provider reference and runs the manifest's `sandbox.start`. The reference must not also start the same service through its native startup command or image entrypoint. CLI build artifacts retain their declared startup behavior; do not treat a prepared reference as an instruction to start the service twice. If the CLI has already started the application, connect to its sandbox as above.
 
 To let Python own startup and cleanup after checking that preparation boundary:
 
@@ -35,8 +35,8 @@ async with await launch_template(
     result = await session.run_command("hello", name="Python")
 ```
 
-There is no workflow selection. Python creates one sandbox, runs `start_cmd` once,
-checks `ready_cmd`, and resolves every service in `provides`. SandboxServer protocol v2 services
+There is no workflow selection. Python creates one sandbox, runs `sandbox.start` once,
+checks `sandbox.ready`, and resolves every service in `sandbox.services`. SandboxServer protocol v2 services
 receive health/discovery checks before use. Other service protocols use the template's
 readiness command; their endpoints are returned without guessing protocol routes.
 `session.services` contains every service client, while `session.servers` contains
@@ -47,7 +47,7 @@ Choosing a client never changes which template services were started.
 
 Python does not build sources. Source preparation belongs to the CLI; choose one
 startup owner as described above. A manifest may
-also declare a fixed digest-pinned `image`, or `provider` plus `template_id` for a
+also declare a fixed digest-pinned `sandbox.template.image`, or a `sandbox.template.reference` and `sandbox.provider` for a
 platform-managed template. References are interpreted by that Provider; native IDs
 need no artificial version. For an existing external HTTP service, use `ServerClient`
 directly. Application deployment hooks still belong to the deployment orchestrator.
@@ -59,16 +59,15 @@ failure of a later service. Journals exclude tokens, environment values and sign
 they do not constitute verified cloud receipts. One effective `ABX_SERVER_TOKEN` value
 is used both for the sandbox environment and the application clients.
 
-After process-start acknowledgement, the launcher polls a nonzero `ready_cmd` result within one `readiness_timeout` budget. Each probe uses the remaining budget; a successful exit completes readiness. Expiration raises `readiness-command-failed` and removes the owned sandbox. Cancellation also retains owned cleanup. This waits for application readiness, which is separate from acknowledging that its process started.
+After process-start acknowledgement, the launcher polls a nonzero `sandbox.ready` result within one `readiness_timeout` budget. Each probe uses the remaining budget; a successful exit completes readiness. Expiration raises `readiness-command-failed` and removes the owned sandbox. Cancellation also retains owned cleanup. This waits for application readiness, which is separate from acknowledging that its process started.
 
-## Migrating specification 4
+## Resource configuration
 
-Use `spec_version: 5`; remove `workflow_contract_version`, `default_workflow`, and
-`workflows`. Retain the full `provides` map and the template's actual `start_cmd` and
-`ready_cmd`. Remove CLI `--workflow` and replace Python `launch_workflow` with
-`launch_template` without `workflow_id`. Old manifests fail with a migration error;
-they are not silently reduced to their former default. Historical specification 4
-receipts remain history and do not prove the specification 5 startup path.
+The v1 examples describe the updated SDK source consumer. Use a matching [source installation](install-python.md) when this behavior is not in your installed distribution; unchanged package version metadata alone does not establish v1 support.
+
+Use the [v1 resource fields](../reference/template-yaml-spec.md). Parsing literal prepared input needs no CLI installation; the selected Provider can still have its own runtime dependencies. Native expressions must first be resolved by the Devs parser. `sandbox.instance.timeout` supplies the TTL unless the explicit Python `timeout` argument overrides it; omitted overrides preserve the manifest. Instance specs, existing Volume mounts, environment and metadata are forwarded. Environment values never implicitly read the host environment. Application deployment remains an orchestrator responsibility and is rejected before creating a sandbox.
+
+Additional declared `sandbox.ports` are returned as `session.endpoints[port]` Provider descriptors, without creating clients or probing them. Their gateway headers stay in memory and are not part of the public plan or journal. A port declaration does not establish native TCP reachability or start that service.
 
 ## Interpreter operations
 
@@ -91,10 +90,10 @@ finally:
     await sandbox.kill()  # this code created and owns the sandbox
 ```
 
-With a specification 5 manifest containing `provider: alicloud-express`,
-`template_id: base` and `provides: {}`, `launch_template(manifest,
-provider="alicloud-express")` offers the same owned cleanup through its async context
-manager. No workflow declaration or selector is required.
+With `specVersion: 1`, `sandbox.provider: alicloud-express`,
+`sandbox.template.reference: base` and no services, `launch_template(manifest,
+provider="alicloud-express")` provides the same owned cleanup through its async
+context manager. Existing Volume mounts are borrowed; Sandbox cleanup never deletes them.
 
 Executing a shell command on `code-interpreter-v1` does not exercise the interpreter API. Express, E2B and REST project adapters currently do not implement unified interpreter operations; use the documented native SDK where applicable. CubeSandbox and container edition support the persistent default-context operation.
 

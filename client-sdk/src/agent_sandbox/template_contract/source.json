@@ -1,0 +1,26 @@
+{
+  "repository": "https://github.com/Alibaba-Agent-Sandbox/awesome-templates",
+  "revision": "ef695803cb78bf82b8473195fcb37b3e6357a363",
+  "files": {
+    "contracts/template-v1/normalize.py": {
+      "target": "normalize.py",
+      "sha256": "f38bfc6d81b41b215d32e0693ad5b87447a028545a04ca8527e5dca0c62656b0"
+    },
+    "contracts/template-v1/contract.json": {
+      "target": "contract.json",
+      "sha256": "077e4dec79834ab9ffd21f4e1402c997b1b9bd412a201c6705b566e7a9ac39de"
+    },
+    "contracts/template-v1/fixtures.json": {
+      "target": "fixtures.json",
+      "sha256": "9170a08abf20d16088cc5346940224d60ef2170e8a7a3dcfe97cd172ade7a863"
+    },
+    "spec/template-v1.schema.json": {
+      "target": "template-v1.schema.json",
+      "sha256": "b08298cf699a5dd4e5ff8a9136922acfa41ea2e56c3aefde1a0c65fac84c8f7c"
+    },
+    "contracts/template-v1/yaml-fixtures.json": {
+      "target": "yaml-fixtures.json",
+      "sha256": "dcd8560f1b7725a4a9b1900a52ac1fbd9a9d32fca9b12edd02fd7c132e56f283"
+    }
+  }
+}

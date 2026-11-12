@@ -1,4 +1,4 @@
-"""``SandboxTemplate.server`` (declarative SandboxServer policy)."""
+"""Standalone SandboxServer policy remains independent of the v1 resource manifest."""
 
 from __future__ import annotations
 
@@ -28,8 +28,8 @@ VALID = {
 }
 
 
-def make(server: object) -> SandboxTemplate:
-    return SandboxTemplate.model_validate(template_manifest(server=server))
+def make(server):
+    return validate_server_block(server)
 
 
 def test_default_is_none() -> None:
@@ -37,12 +37,13 @@ def test_default_is_none() -> None:
 
 
 def test_valid_block_round_trips() -> None:
-    assert make(VALID).server == VALID
+    assert make(VALID) == VALID
 
 
 def test_existing_templates_without_server_are_unaffected() -> None:
-    t = SandboxTemplate.model_validate(template_manifest(unknown_future_key=1))
-    assert t.server is None
+    for key in ("unknown_future_key", "server"):
+        with pytest.raises(ValidationError):
+            SandboxTemplate.model_validate(template_manifest(**{key: VALID}))
 
 
 @pytest.mark.parametrize(
@@ -67,7 +68,7 @@ def test_existing_templates_without_server_are_unaffected() -> None:
     ],
 )
 def test_malformed_blocks_are_rejected(block: dict[str, object], message: str) -> None:
-    with pytest.raises(ValidationError, match=message.replace(".", r"\.")):
+    with pytest.raises(ValueError, match=message.replace(".", r"\.")):
         make(block)
 
 
@@ -76,13 +77,11 @@ def test_malformed_blocks_are_rejected(block: dict[str, object], message: str) -
 )
 def test_groups_accept_a_list_or_a_map_and_keep_their_shape(groups: object) -> None:
     template = make({"groups": groups})
-    assert template.server == {"groups": groups}
-    dumped = template.model_dump(mode="json")["server"]
-    assert dumped == {"groups": groups}
+    assert template == {"groups": groups}
 
 
 def test_non_mapping_server_is_rejected() -> None:
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         make("transfer-only")
 
 
@@ -103,7 +102,7 @@ def test_vocabulary_matches_the_server() -> None:
 
 def test_a_valid_block_is_accepted_by_the_real_server_loader() -> None:
     policy = pytest.importorskip("agent_sandbox.server.policy")
-    block = make(VALID).server
+    block = make(VALID)
     assert block is not None
     policy.ServerPolicy.from_dict(block)
 
@@ -111,7 +110,7 @@ def test_a_valid_block_is_accepted_by_the_real_server_loader() -> None:
 @pytest.mark.parametrize("groups", [["file_ops"], {"process": False}])
 def test_group_forms_are_accepted_by_the_real_server_loader(groups: object) -> None:
     policy = pytest.importorskip("agent_sandbox.server.policy")
-    block = make({"groups": groups}).server
+    block = make({"groups": groups})
     assert block is not None
     assert policy.ServerPolicy.from_dict(block).groups == (
         {"file_ops": True} if isinstance(groups, list) else groups

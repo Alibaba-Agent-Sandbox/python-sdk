@@ -117,8 +117,8 @@
 | `ABX_SERVER_TOKEN` | — | Server 认证令牌 |
 | `ABX_SERVER_BASE_DIR` | `/home/user` | 所有接收路径的端点（包括 shell 的 `cwd`）必须留在其下的目录 |
 | `ABX_SERVER_ENABLED_GROUPS` | — | 要打开的组，逗号分隔，例如 `agents,dev_tools`。唯一的组环境变量，没有用来关闭组的变量 |
-| `ABX_SERVER_POLICY` | — | 内联 JSON 策略文档（键与 `server:` 块相同） |
-| `ABX_SERVER_POLICY_FILE` | — | 策略 JSON 文件路径 |
+| `ABX_SERVER_POLICY` | — | 独立的内联 JSON 策略文档 |
+| `ABX_SERVER_POLICY_FILE` | — | 策略 JSON 文件路径；安装 PyYAML 时也支持 `.yaml`/`.yml` |
 | `ABX_PTY_PORT` | `9001` | PTY 终端 WebSocket 端口 |
 | `ABX_MAX_UPLOAD_SIZE` | 100 MiB | 解码后上传大小上限 |
 

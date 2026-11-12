@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # ---------------------------------------------------------------------------
 # Standard capability vocabulary
@@ -135,11 +135,10 @@ __all__ = [
 
 
 class SandboxTemplate(BaseModel):
-    """template.yaml 的 Pydantic 模型。
+    """Read-only discovery view of canonical v1 intent, without expression evaluation.
 
-    构建相关字段（system_packages, python_packages, node_packages,
-    commands, copy_files）已移除——实际构建流程直接使用 Dockerfile +
-    语言原生依赖文件（requirements.txt / package.json）。
+    Derived fields describe declared services and preparation properties only;
+    they never grant Provider operations or resolve runtime secrets.
     """
 
     name: str
@@ -161,21 +160,20 @@ class SandboxTemplate(BaseModel):
     license: str = ""
     tags: list[str] = Field(default_factory=list)
 
-    spec_version: int
+    spec_version: int = Field(alias="specVersion")
     provides: dict[str, Any]
     start_cmd: str | None = None
     ready_cmd: str | None = None
 
     server: dict[str, Any] | None = None
-    """Declarative SandboxServer policy (the ``server:`` block).  ``None`` keeps the server's
-    default behaviour.  Compiled to ``server-policy.json`` by the toolchain."""
+    """No v1 resource-level policy is inferred; configure the actual server separately."""
 
-    model_config = {"extra": "allow"}
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     @model_validator(mode="before")
     @classmethod
     def _reject_removed_keys(cls, data: Any) -> Any:
-        from agent_sandbox.workflows.launch import validate_template_manifest
+        from agent_sandbox.template_contract import normalize_document
 
         if isinstance(data, dict) and any(
             k in data
@@ -190,8 +188,21 @@ class SandboxTemplate(BaseModel):
             raise ValueError(
                 "retired template fields are not accepted; use Dockerfile and template startup"
             )
-        validate_template_manifest(data)
-        return data
+        intent = normalize_document(data)
+        sb = intent.get("sandbox", {})
+        instance = sb.get("instance", {})
+        services = sb.get("services", {})
+        props = sb.get("template", {}).get("props", {})
+        return {
+            **intent,
+            "env": instance.get("envs", {}),
+            "provides": services,
+            "ports": sorted(set(sb.get("ports", [])) | {v["port"] for v in services.values()}),
+            "cpu_count": props.get("cpu") if type(props.get("cpu")) is int else None,
+            "memory_mb": props.get("memory") if type(props.get("memory")) is int else None,
+            "start_cmd": sb.get("start"),
+            "ready_cmd": sb.get("ready"),
+        }
 
     @field_validator("server")
     @classmethod
@@ -200,7 +211,7 @@ class SandboxTemplate(BaseModel):
 
     def discovery_capabilities(self) -> set[str]:
         """Describe exposed ports without claiming platform execution capabilities."""
-        return {"ports"} if self.provides else set()
+        return {"ports"} if self.ports else set()
 
 
 class TemplateRef(BaseModel):

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from dataclasses import dataclass, field
@@ -102,6 +103,8 @@ class ManagedConfig:
     workers: dict[str, str] = field(default_factory=dict)
     model_env_allowlist: list[str] = field(default_factory=list)
     expected_state_id: str | None = None
+    instance: dict[str, Any] = field(default_factory=dict)
+    instance_env_names: list[str] = field(default_factory=list)
     sessions: dict[str, int] = field(
         default_factory=lambda: {
             "idleTimeoutSeconds": 900,
@@ -135,6 +138,16 @@ class ManagedConfig:
     )
 
     def __post_init__(self) -> None:
+        from agent_sandbox.models.managed_instance import validate_env_names, validate_instance
+
+        object.__setattr__(self, "sessions", copy.deepcopy(self.sessions))
+        instance = validate_instance(
+            self.instance, self.workspace, self.sessions["maxLifetimeSeconds"]
+        )
+        # Public v1 has one TTL; the private Session budget is derived from it.
+        self.sessions["maxLifetimeSeconds"] = instance["timeout"]
+        object.__setattr__(self, "instance", instance)
+        object.__setattr__(self, "instance_env_names", validate_env_names(self.instance_env_names))
         if (
             not isinstance(self.revision, str)
             or not self.revision
@@ -170,6 +183,8 @@ class ManagedConfig:
             not isinstance(self.port, int) or isinstance(self.port, bool)
         ) or not 1 <= self.port <= 65535:
             raise ValueError("The bridge port must be 1-65535")
+        if self.sessions["idleTimeoutSeconds"] > self.sessions["maxLifetimeSeconds"]:
+            raise ValueError("The idle timeout must fit the Session lifetime")
         if self.sessions["maxConcurrentTurnsPerSession"] != 1:
             raise ValueError("Managed Sessions execute one turn at a time")
         if (
@@ -209,6 +224,8 @@ class ManagedConfig:
             "workers",
             "modelEnvAllowlist",
             "expectedStateId",
+            "instance",
+            "instanceEnvNames",
             "sessions",
             "limits",
             "storage",
@@ -252,4 +269,14 @@ class ManagedConfig:
                     raise ValueError("Unsupported managed lifecycle policy")
                 mapping = {k: v for k, v in value[key].items() if k in permitted}
                 kwargs[key] = {**getattr(defaults, key), **mapping}
+        for wire, native in (("instance", "instance"), ("instanceEnvNames", "instance_env_names")):
+            if wire in value:
+                kwargs[native] = value[wire]
+        if (
+            isinstance(value.get("instance"), dict)
+            and "timeout" in value["instance"]
+            and "maxLifetimeSeconds" in value.get("sessions", {})
+            and value["instance"]["timeout"] != value["sessions"]["maxLifetimeSeconds"]
+        ):
+            raise ValueError("Compiled Session lifetime must equal instance.timeout")
         return cls(**kwargs)

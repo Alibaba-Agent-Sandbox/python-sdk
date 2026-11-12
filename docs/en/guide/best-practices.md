@@ -14,11 +14,13 @@ The server has nine capability groups. `core` stays on (`GET /health`, `GET /cap
 
 A group is only a name for the endpoints that declare it; the endpoint rule is the one switch. Turn a default group off in the template policy, as a map:
 
-```yaml
-server:
-  groups:
-    terminal: false
-    process: false
+```json
+{
+  "groups": {
+    "terminal": false,
+    "process": false
+  }
+}
 ```
 
 `core` cannot be turned off. Turn an opt-in group on with a policy list (`groups: [dev_tools]`), with `default_table().enable_group(CapabilityGroup.DEV_TOOLS)` in `commands.py`, or with the environment variable `ABX_SERVER_ENABLED_GROUPS=dev_tools`. That variable only turns groups on; there is no variable that turns one off. `GET /capabilities` lists every endpoint with the `rule` that disabled it.

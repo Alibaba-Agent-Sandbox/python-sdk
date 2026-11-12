@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import copy
 import hashlib
 import hmac
 import json
@@ -71,6 +72,11 @@ OPERATIONS = (
 def public(row: dict[str, Any]) -> dict[str, Any]:
     """Remove all private control/state fields before serializing a public object."""
     out = {k: v for k, v in row.items() if not k.startswith("_")}
+    if row.get("_kind") == "session":
+        for key in ("created_at", "last_active_at"):
+            out[key] = int(row[key])
+        out["required_actions"] = []
+        out["vault_ids"] = []
     if row.get("_kind") == "session" and isinstance(row.get("environment"), dict):
         out["environment"] = {
             **row["environment"],
@@ -482,6 +488,8 @@ class ManagedService:
                     "workspace": self.config.workspace,
                     "port": self.config.port,
                     "modelEnvAllowlist": self.config.model_env_allowlist,
+                    "instance": copy.deepcopy(self.config.instance),
+                    "instanceEnvNames": list(self.config.instance_env_names),
                     "sessions": self.config.sessions,
                     "limits": self.config.limits,
                     "storage": self.config.storage,

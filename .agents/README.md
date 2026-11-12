@@ -1,5 +1,15 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+- [Agents API delivery operations](notes/proposed/process/2026-11-12-agents-api-delivery-operations.md) · [record-placement verification](evidence/verify/2026-11-12-agents-api-delivery-operations.md).
+
+- [Standalone server policy documentation](notes/proposed/feature/2026-11-12-standalone-policy-docs.md) · [verification](evidence/verify/2026-11-12-standalone-policy-docs.md).
+
+- [Shared YAML Core reader](notes/proposed/feature/2026-11-12-template-yaml-core-reader.md) · [verification](evidence/verify/2026-11-12-template-yaml-core-reader.md).
+
+- [Managed Session response projection](notes/proposed/feature/2026-11-12-managed-session-projection.md) · [verification](evidence/verify/2026-11-12-managed-session-projection.md).
+
+- [Canonical v1 runtime consumers](notes/proposed/feature/2026-11-12-template-v1-runtime.md) · [first freeze](evidence/verify/2026-11-12-template-v1-runtime.md) · [ports and process-domain comparison](evidence/verify/2026-11-12-template-v1-runtime-ports.md) · [final local gates](evidence/verify/2026-11-12-template-v1-runtime-final-local.md).
+
 - [Managed Agent input and saved-configuration contract](notes/proposed/feature/2026-11-12-managed-agent-input-contract.md) · [verification](evidence/verify/2026-11-12-managed-agent-input-contract.md).
 
 ## Recent changes — 2026-11-10

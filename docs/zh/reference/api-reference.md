@@ -367,6 +367,7 @@ from agent_sandbox.api import ServerClient, ServerCapabilities
 | 成员 | 签名 | 说明 |
 |------|------|------|
 | `ServerClient()` | `(base_url, *, token=None, headers=None, pty_url=None, timeout=30.0, http_client=None, expires_at=None)` | `token` 以 `Authorization: Bearer` 发送；`headers` 携带网关的 `X-Access-Token` |
+| `ProviderSandbox.application_endpoint()` | `async (port=9000, *, traffic_access_token=None) -> dict[str, Any]` | 解析 Provider 端点和网关请求头，不创建客户端或探测就绪，不保证原生 TCP 可达 |
 | `ProviderSandbox.application_client()` | `async (port=9000, *, token=None, traffic_access_token=None, timeout=30.0) -> ServerClient` | 解析 Provider 应用网关描述符，保留其路径前缀、查询参数及网关头，应用令牌单独传入；跨 Provider 推荐使用 |
 | `Sandbox.server` | `cached_property -> ServerClient` | 9000 端口原生本地 URL 辅助入口；跨 Provider 使用 application_client |
 | `Sandbox.server_at()` | `(port=9000, *, token=None, pty_port=9001, timeout=30.0) -> ServerClient` | 原生本地 URL 辅助入口；需 Provider 网关描述符时使用 application_client；`token` 是应用令牌 |
@@ -510,3 +511,5 @@ class SandboxStatus(str, Enum):
 `ServerClient.commands.invoke(name, arguments, /, *, request_timeout=None)` 和 `ProviderSandbox.invoke(name, arguments, /, *, server_port=9000, application_token=None, request_timeout=None)` 将 arguments 作为命令 JSON 请求体；均有 `invoke_sync`，旧 `run` 保留关键字参数契约。应用服务要求认证时，将其 `ABX_SERVER_TOKEN` 通过 `application_token` 传入。
 
 接受云 AccessKey 的 Provider 生命周期方法同时接受 `security_token`，环境变量为 `ALIBABA_CLOUD_SECURITY_TOKEN`。`ProviderSandbox.create` 另接受 `network`、`allow_internet_access`。`ProviderSandbox.connect(..., traffic_access_token=...)` 保留 GET 只读连接语义；`application_client(..., traffic_access_token=...)` 仅为该应用客户端覆盖网关凭据。详见[提供方命令](../guide/provider-commands.md)和[认证](../guide/authentication.md)。
+
+canonical v1 已准备模板使用 `launch_template(..., timeout=None)` 保留清单实例 TTL；显式规格和环境参数覆盖对应值。`TemplateSession.services` 保存实际声明的服务客户端，`TemplateSession.endpoints` 保存附加端口描述，请求头只在内存中。参阅[模板字段](template-yaml-spec.md)与[启动归属及清理](../guide/template-workflows.md)。

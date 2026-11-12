@@ -405,6 +405,78 @@ def test_real_http_typed_message_and_safe_error_categories(
         thread.join(timeout=3)
 
 
+@pytest.mark.parametrize("components", ["sqlite", "postgres"], indirect=True)
+def test_real_http_session_projection_preserves_private_clock_and_rejects_unavailable_actions(
+    components: Any,
+) -> None:
+    service = components[0]
+    token = "projection-test-business-token"
+    auth = TokenAuthenticator(
+        {
+            "tokens": [
+                {
+                    "sha256": hashlib.sha256(token.encode()).hexdigest(),
+                    "owner": "owner",
+                    "scopes": ["agents:read", "agents:write"],
+                }
+            ]
+        }
+    )
+    server = make_server(service, auth, port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with httpx.Client(
+            base_url=f"http://127.0.0.1:{server.server_port}",
+            headers={"Authorization": "Bearer " + token},
+            trust_env=False,
+        ) as api:
+            created = api.post("/v1/agents/sessions", json={"agent": {"model": "fixture-model"}})
+            assert created.status_code == 201
+            for key in ("created_at", "last_active_at"):
+                assert type(created.json()[key]) is int
+            assert created.json()["required_actions"] == []
+            assert created.json()["vault_ids"] == []
+            sid = created.json()["id"]
+            precise = {
+                "created_at": 1700000000.125,
+                "last_active_at": 1700000001.875,
+                "_deadline": 4700000000.375,
+            }
+            with service.store.transaction() as tx:
+                row = tx.get(sid, "owner")
+                row.update(precise)
+                tx.put(row)
+            for response in (api.get(f"/v1/agents/sessions/{sid}"), api.get("/v1/agents/sessions")):
+                assert response.status_code == 200
+                value = response.json()
+                if "data" in value:
+                    value = next(item for item in value["data"] if item["id"] == sid)
+                assert value["created_at"] == 1700000000
+                assert value["last_active_at"] == 1700000001
+                assert value["required_actions"] == value["vault_ids"] == []
+                assert "_deadline" not in value
+                assert "remote_url" not in value["environment"]
+            with service.store.transaction() as tx:
+                stored = tx.get(sid, "owner")
+                assert {key: stored[key] for key in precise} == precise
+                assert "required_actions" not in stored and "vault_ids" not in stored
+            for unsupported in ({"vault_ids": ["not-supported"]}, {"required_actions": []}):
+                rejected = api.post(
+                    "/v1/agents/sessions",
+                    json={
+                        "agent": {"model": "fixture-model"},
+                        **unsupported,
+                    },
+                )
+                assert rejected.status_code == 400
+            assert components[1].created == 0
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
+
+
 def test_create_replay_busy_queue_and_owner_boundaries(components: Any) -> None:
     service, backend, _, _ = components
     session = create(service, "first", "initial")

@@ -12,8 +12,8 @@ Covered contracts
 (a) ``template.yaml`` exists and parses through the *real* production
     loader (``utils.registry.load_template_from_yaml``) into a valid
     ``SandboxTemplate``.
-(b) Required fields are present; every ``capabilities`` token is inside
-    ``STANDARD_CAPABILITIES``.
+(b) Required v1 resource fields are present; publication metadata stays outside
+    local resources and discovery does not imply Provider capabilities.
 (c) ``Dockerfile`` and ``README.md`` exist next to the YAML.
 (d) The directory is *explicitly marked as a fixture* (README + YAML banner)
     and contains only the expected fixture folders — it must never
@@ -44,7 +44,6 @@ from .conftest import (
 if TYPE_CHECKING:
     from pathlib import Path
 
-_SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 _PLACEHOLDER_RE = re.compile(r"\{(\w+)\}")
 
 
@@ -120,24 +119,24 @@ class TestTemplateYaml:
             f"{template_dir.name}: template names must be kebab-case"
         )
 
-    def test_version_is_semver(self, template_dir: Path) -> None:
-        version = _load(template_dir).version
-        assert _SEMVER_RE.match(version), (
-            f"{template_dir.name}: version {version!r} is not semver-like"
-        )
-
-    def test_description_non_empty(self, template_dir: Path) -> None:
-        assert _load(template_dir).description.strip(), (
-            f"{template_dir.name}: description must not be blank"
-        )
-
-    def test_tags_non_empty_and_lowercase(self, template_dir: Path) -> None:
-        tags = _load(template_dir).tags
-        assert tags, f"{template_dir.name}: declare at least one tag"
-        for tag in tags:
-            assert tag == tag.strip().lower(), (
-                f"{template_dir.name}: tag {tag!r} should be trimmed lowercase"
-            )
+    @pytest.mark.parametrize(
+        "key,value",
+        [
+            ("version", "1.0.0"),
+            ("description", "Fixture description"),
+            ("tags", ["fixture"]),
+        ],
+    )
+    def test_publication_fields_are_not_runtime_resource_fields(
+        self,
+        template_dir: Path,
+        key: str,
+        value: object,
+    ) -> None:
+        raw = _raw(template_dir)
+        assert key not in raw
+        with pytest.raises(ValidationError):
+            SandboxTemplate.model_validate({**raw, key: value})
 
     def test_resources_when_declared_are_positive(self, template_dir: Path) -> None:
         tmpl = _load(template_dir)
@@ -162,7 +161,7 @@ class TestWorkflows:
 
     def test_template_has_single_startup(self, template_dir: Path) -> None:
         tmpl = _load(template_dir)
-        assert tmpl.spec_version == 5
+        assert tmpl.spec_version == 1
 
     def test_no_old_capability_input(self, template_dir: Path) -> None:
         assert "capabilities" not in _raw(template_dir)

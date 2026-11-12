@@ -8,7 +8,6 @@ import tempfile
 from pathlib import Path
 
 import httpx
-import yaml
 
 from agent_sandbox.models.errors import (
     GitHubRateLimitError,
@@ -17,6 +16,7 @@ from agent_sandbox.models.errors import (
     TemplateNotFoundError,
 )
 from agent_sandbox.models.template import SandboxTemplate, TemplateRef
+from agent_sandbox.template_contract import _read_yaml_document
 from agent_sandbox.utils.github_token import (
     FINE_GRAINED_PAT_URL,
     rate_limit_message,
@@ -384,12 +384,5 @@ class RegistryClient:
 
 def load_template_from_yaml(path: Path) -> SandboxTemplate:
     """从 YAML 文件加载模板定义。"""
-    with open(path) as f:
-        data = yaml.safe_load(f)
-    # 映射 resources 嵌套结构到扁平字段
-    resources = data.get("resources", {}) or {}
-    if "application" not in data and "cpu" in resources and "cpu_count" not in data:
-        data["cpu_count"] = resources["cpu"]
-    if "application" not in data and "memory" in resources and "memory_mb" not in data:
-        data["memory_mb"] = resources["memory"]
+    _, data = _read_yaml_document(path)
     return SandboxTemplate.model_validate(data)

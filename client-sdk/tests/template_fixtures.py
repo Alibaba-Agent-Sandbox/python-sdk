@@ -1,19 +1,23 @@
-"""Current template fixture factory; no schema migration occurs at runtime."""
+"""Canonical public v1 fixture; no runtime schema migration."""
 
 from copy import deepcopy
 
 MANIFEST = {
     "name": "test",
-    "spec_version": 5,
-    "provides": {
-        "app": {
-            "protocol": "agent-sandbox-server",
-            "version": 2,
-            "port": 9000,
-            "operations": ["commands.list", "commands.run"],
-        }
+    "specVersion": 1,
+    "sandbox": {
+        "provider": "alicloud-express",
+        "template": {"source": {"dockerfile": "Dockerfile"}},
+        "services": {
+            "app": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": 9000,
+                "operations": ["commands.list", "commands.run"],
+            }
+        },
+        "start": "python commands.py",
     },
-    "start_cmd": "python commands.py",
 }
 
 

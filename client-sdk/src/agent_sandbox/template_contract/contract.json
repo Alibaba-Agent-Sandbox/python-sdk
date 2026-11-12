@@ -1,0 +1,209 @@
+{
+  "version": 1,
+  "activation": "inactive-pending-consumer-migration",
+  "providerInputs": {
+    "alicloud-express": {
+      "prepareSchema": "project-prepare/1",
+      "createSchema": "high-level-create/1",
+      "sourceRevision": "16e0a2bfe50ac89b1d6c8ee21e3bcc995cd12614"
+    },
+    "opensandbox": {
+      "prepareSchema": "project-prepare/1",
+      "createSchema": "high-level-create/1",
+      "sourceRevision": "ec6226e3294e29d1188855913a1e45548a674602"
+    },
+    "e2b": {
+      "prepareSchema": "project-prepare/1",
+      "createSchema": "high-level-create/1",
+      "sourceRevision": "ec6226e3294e29d1188855913a1e45548a674602"
+    },
+    "cubesandbox": {
+      "prepareSchema": "project-prepare/1",
+      "createSchema": "high-level-create/1",
+      "sourceRevision": "ec6226e3294e29d1188855913a1e45548a674602"
+    },
+    "alicloud-container": {
+      "prepareSchema": "project-prepare/1",
+      "createSchema": "high-level-create/1",
+      "sourceRevision": "ec6226e3294e29d1188855913a1e45548a674602"
+    }
+  },
+  "templateDefaults": {
+    "cpu": 2,
+    "memory": 2048
+  },
+  "instanceDefaults": {
+    "timeout": 300,
+    "envs": {},
+    "metadata": {}
+  },
+  "managedDefaults": {
+    "sessions": {
+      "idleTimeoutSeconds": 900,
+      "maxLogicalSessionsPerOwner": 100,
+      "maxActiveSessions": 20,
+      "maxQueuedTurnsPerSession": 8,
+      "resultRetentionSeconds": 86400
+    },
+    "limits": {
+      "maxRunSeconds": 600,
+      "maxToolSeconds": 60,
+      "maxConcurrentRuns": 10,
+      "maxQueuedRuns": 80,
+      "maxRunsPerMinute": 60,
+      "maxEventsPerRun": 10000,
+      "maxOutputBytes": 8388608,
+      "maxSubscribersPerSession": 4
+    },
+    "storage": {
+      "maxFileBytes": 10485760,
+      "maxArtifactBytes": 10485760,
+      "maxTurnArtifactBytes": 10485760,
+      "maxRetainedBytesPerOwner": 104857600
+    },
+    "bindings": {
+      "clientAuth": {
+        "generate": true,
+        "owner": "default"
+      },
+      "internalAuth": {
+        "generate": true
+      },
+      "ingress": {
+        "aliasName": "prod"
+      }
+    }
+  },
+  "managedProfile": {
+    "defaults": {
+      "api": {
+        "protocol": "agent-sandbox-managed-agents/v1",
+        "compatibility": "openai-agents-inspired-subset",
+        "busyInputPolicy": "reject-unless-steerable",
+        "explicitQueue": true
+      },
+      "runtime": {
+        "placement": "in-sandbox",
+        "driver": "sandbox-local-api",
+        "profile": "managed-bridge-v1"
+      },
+      "gateway": {
+        "placement": "fc-web"
+      },
+      "sandbox": {
+        "lifetime": "per-session",
+        "workspace": "exclusive",
+        "requiredFeatures": [
+          "sandbox.lifecycle",
+          "ports.url"
+        ]
+      },
+      "sessions": {
+        "maxConcurrentTurnsPerSession": 1,
+        "closePolicy": "release-compute-retain-results",
+        "deletePolicy": "remove-public-data-retain-private-cleanup",
+        "guestRestartPolicy": "freeze-and-reconcile"
+      },
+      "state": {
+        "profile": "durable"
+      },
+      "storage": {
+        "backend": "bounded-database"
+      },
+      "deployment": {
+        "revisionStrategy": "immutable-workers-with-drain"
+      },
+      "outputs": {
+        "endpoint": {
+          "from": "publish.outputs.endpoint"
+        },
+        "protocol": "agent-sandbox-managed-agents/v1"
+      }
+    },
+    "bindings": {
+      "state": {
+        "targets": [
+          "gateway",
+          "worker",
+          "dispatcher"
+        ]
+      },
+      "sandboxAccess": {
+        "targets": [
+          "worker",
+          "dispatcher"
+        ]
+      },
+      "model": {
+        "targets": [
+          "sandbox-creation"
+        ],
+        "resolverRole": "worker",
+        "allowedEnv": [
+          "OPENAI_API_KEY",
+          "OPENAI_BASE_URL",
+          "OPENAI_MODEL"
+        ]
+      },
+      "clientAuth": {
+        "targets": [
+          "gateway"
+        ]
+      },
+      "internalAuth": {
+        "targets": [
+          "gateway",
+          "worker",
+          "dispatcher"
+        ]
+      },
+      "ingress": {
+        "targets": [
+          "deployment-publisher"
+        ]
+      }
+    }
+  },
+  "managedSandbox": {
+    "start": "python -m agent_sandbox.server.managed --port 9000",
+    "ready": "agent-sandbox-server healthcheck --port 9000",
+    "services": {
+      "app": {
+        "protocol": "agent-sandbox-managed-bridge",
+        "version": 1,
+        "port": 9000,
+        "operations": [
+          "health",
+          "capabilities",
+          "session.create",
+          "session.get",
+          "submissions.create",
+          "submissions.get",
+          "submissions.cancel"
+        ]
+      }
+    }
+  },
+  "protectedManagedProps": [
+    "functionName",
+    "description",
+    "environmentVariables.ABX_MANAGED_CONFIG_JSON",
+    "environmentVariables.ABX_MANAGED_DATABASE_URL",
+    "environmentVariables.ABX_MANAGED_INTERNAL_TOKEN",
+    "environmentVariables.ABX_MANAGED_FC_ENDPOINT",
+    "environmentVariables.ABX_MANAGED_AUTH_JSON",
+    "environmentVariables.ABX_MANAGED_PROVIDER_CONFIG_JSON",
+    "environmentVariables.ABX_MANAGED_MODEL_CONFIG_JSON",
+    "customContainerConfig.image",
+    "customContainerConfig.port",
+    "customContainerConfig.entrypoint",
+    "customContainerConfig.command",
+    "environmentVariables.ABX_MANAGED_SANDBOX_ENV_JSON",
+    "environmentVariables.ABX_MANAGED_SANDBOX_ENV_FILE"
+  ],
+  "managedInstanceDefaults": {
+    "timeout": 3600,
+    "envs": {},
+    "metadata": {}
+  }
+}

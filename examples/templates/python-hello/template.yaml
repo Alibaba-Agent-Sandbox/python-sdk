@@ -1,24 +1,21 @@
 # FIXTURE — offline only; publishable templates live in
-# https://github.com/alibaba-agent-sandbox/awesome-templates
+# https://github.com/Alibaba-Agent-Sandbox/awesome-templates
+specVersion: 1
 name: python-hello
-version: 1.0.0
-description: A minimal Python hello world template for testing
-author: alibaba-agent-sandbox
-tags:
-- python
-- hello-world
-- example
-spec_version: 5
-provides:
-  app:
-    protocol: agent-sandbox-server
-    version: 2
-    port: 9000
-    operations:
-    - commands.list
-    - commands.run
-start_cmd: agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py
-ports:
-- 9000
-env:
-  LANG: C.UTF-8
+sandbox:
+  provider: alicloud-express
+  template:
+    source:
+      dockerfile: Dockerfile
+  services:
+    app:
+      protocol: agent-sandbox-server
+      version: 2
+      port: 9000
+      operations:
+      - commands.list
+      - commands.run
+  instance:
+    envs:
+      LANG: C.UTF-8
+  start: agent-sandbox-server serve --port 9000 --commands /home/user/app/commands.py

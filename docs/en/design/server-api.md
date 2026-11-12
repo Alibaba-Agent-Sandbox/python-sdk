@@ -20,7 +20,7 @@ The container-side HTTP Server is a lightweight HTTP service that relies **solel
 - Each route is an endpoint with one id, declared once in [`endpoints.py`](../../../server-sdk/src/agent_sandbox/server/endpoints.py). A **Capability Group** is a name for a set of endpoint ids.
 - Request/response objects are stdlib `dataclass`es ([`types.py`](../../../server-sdk/src/agent_sandbox/server/types.py)), not Pydantic models.
 
-> Server endpoint-policy groups are independent from specification 5 template startup and Provider operations. Launch exposes all declared services; actual discovery, policy and token scopes still control each API call. See [Template System](template-system.md).
+> Server endpoint-policy groups are independent from specification 1 template startup and Provider operations. Launch exposes all declared services; actual discovery, policy and token scopes still control each API call. See [Template System](template-system.md).
 
 ### 1.2 Startup
 

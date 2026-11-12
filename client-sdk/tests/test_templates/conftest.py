@@ -30,10 +30,8 @@ SOURCE_OF_TRUTH_URL = "https://github.com/alibaba-agent-sandbox/awesome-template
 #: Files every template folder must contain.
 REQUIRED_TEMPLATE_FILES = ("template.yaml", "Dockerfile", "README.md")
 
-#: Template YAML keys that must be present *explicitly* in every catalog entry.
-#: (The Pydantic model gives most of them defaults, but a published template is
-#: expected to spell them out so the index table stays meaningful.)
-REQUIRED_YAML_KEYS = ("name", "version", "description", "author", "tags")
+#: Required resource keys; local fixtures need no Registry publication metadata.
+REQUIRED_YAML_KEYS = ("specVersion", "name", "sandbox")
 
 
 def discover_template_dirs() -> list[Path]:

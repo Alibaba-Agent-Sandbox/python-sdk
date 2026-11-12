@@ -50,7 +50,12 @@ classes = (Sandbox, AsyncSandbox, ProviderSandbox, InterpreterSandbox, AsyncInte
 assert all(callable(cls.create) for cls in classes)
 assert callable(launch_template) and callable(sandbox)
 assert not hasattr(sandbox, "run") and not hasattr(sandbox, "run_async")
-assert yaml.safe_load("spec_version: 5") == {"spec_version": 5}
+assert yaml.safe_load("specVersion: 1") == {"specVersion": 1}
+from agent_sandbox.template_contract import normalize_document, compile_literal_document
+literal = {"specVersion": 1, "name": "packaging", "sandbox": {
+    "provider": "alicloud-express", "template": {"reference": "base"}}}
+assert normalize_document(literal)["sandbox"]["instance"]["timeout"] == 300
+assert compile_literal_document(literal, provider="alicloud-express")["template_id"] == "base"
 assert importlib.util.find_spec("agent_sandbox.server") is None
 try:
     importlib.metadata.distribution("agent-sandbox-server")

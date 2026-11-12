@@ -44,7 +44,7 @@ except SandboxError as e:
 | E2001 | `TemplateNotFoundError` | 模板不存在 | 运行 `abx template list` 查看可用模板 | 指定了不存在的模板名称 |
 | E2002 | `QuotaExceededError` | 配额超限 | 销毁空闲沙箱或申请提升配额 | 运行中的沙箱数量超过账户配额 |
 | E2003 | `RegionUnavailableError` | 区域不可用 | 尝试其他区域或检查服务可用性 | 请求的区域暂时不可用或不存在 |
-| E2004 | `TemplateParseError` | 清单解析失败 | 修正 spec4、必需工作流字段及未知/已移除字段 | 当前 YAML 不符合契约，不能以默认权限继续 |
+| E2004 | `TemplateParseError` | 清单解析失败 | 修正 specVersion: 1、必需工作流字段及未知/已移除字段 | 当前 YAML 不符合契约，不能以默认权限继续 |
 | E2009 | `SandboxNotFoundError` | 该 ID 的沙箱不存在 | 运行 `abx list` 查看运行中的沙箱；已销毁或已过期的沙箱无法重新连接 | 对平台返回 HTTP 404 的 ID 调用 `Sandbox.connect()` / `get_info()` / `set_timeout()` / `pause()` / `resume()`（`kill` 仍保持幂等） |
 
 ### 排查步骤

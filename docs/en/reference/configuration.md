@@ -117,8 +117,8 @@ The following environment variables are used for in-sandbox Server configuration
 | `ABX_SERVER_TOKEN` | — | Server authentication token |
 | `ABX_SERVER_BASE_DIR` | `/home/user` | Directory every path-taking endpoint (including shell `cwd`) must stay under |
 | `ABX_SERVER_ENABLED_GROUPS` | — | Comma list of groups to turn on, for example `agents,dev_tools`. The only group variable; there is none for turning groups off |
-| `ABX_SERVER_POLICY` | — | Inline JSON policy document (same keys as the `server:` block) |
-| `ABX_SERVER_POLICY_FILE` | — | Path to a policy JSON file |
+| `ABX_SERVER_POLICY` | — | Inline standalone JSON policy document |
+| `ABX_SERVER_POLICY_FILE` | — | Path to a policy JSON file, or `.yaml`/`.yml` when PyYAML is installed |
 | `ABX_PTY_PORT` | `9001` | PTY terminal WebSocket port |
 | `ABX_MAX_UPLOAD_SIZE` | 100 MiB | Maximum decoded upload size |
 
