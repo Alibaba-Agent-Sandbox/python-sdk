@@ -59,6 +59,29 @@ Input during an active turn returns `409 active_turn_not_steerable`. Explicit qu
 `POST /v1/agent-sandbox/sessions/{id}/submissions`, requires `Idempotency-Key`, and returns `202`
 with a Submission object. Queuing schedules another turn; it does not steer the active turn.
 
+Input may be a non-empty string or an array of user messages containing `input_text` parts.
+The combined text is limited to 256 KiB of UTF-8 bytes.
+The message object may include `"type": "message"`:
+
+```json
+{"input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"Continue the report."}]}]}
+```
+
+The optional `type` field requires the updated Gateway runtime. Updating a client alone does
+not update a deployed Gateway; string input remains available with earlier deployments.
+
+To reuse a saved Agent, supply its string `agent_id`. You may also supply supported fields in
+`agent` to override that configuration for this new Session; the saved Agent and existing
+Sessions keep their previous settings. An unknown or another owner's Agent ID returns `404`,
+including an empty ID. Non-string IDs return `400` with `error.param: "agent_id"`.
+This follows the saved-configuration override behavior in the
+[OpenAI Create session reference](https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/methods/create).
+
+Quota errors return `429` with `error.type: "rate_limit_error"`; an unavailable application
+service returns `503` with `error.type: "service_unavailable_error"`. Use `error.code` and
+`error.param` for the project-specific reason and field. Check any existing acceptance receipt
+before retrying a request whose result is unknown.
+
 ## Files and events
 
 Resource POST requests require `Content-Type: application/json`. File uploads use multipart form data.

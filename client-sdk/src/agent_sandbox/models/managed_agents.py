@@ -18,7 +18,10 @@ class ManagedError(Exception):
         """Return the documented error envelope."""
         return {
             "error": {
-                "type": "invalid_request_error",
+                "type": {
+                    429: "rate_limit_error",
+                    503: "service_unavailable_error",
+                }.get(self.status, "invalid_request_error"),
                 "code": self.code,
                 "message": self.message,
                 "param": self.param,

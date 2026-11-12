@@ -164,6 +164,247 @@ def create(service: ManagedService, text: str | None = None, key: str = "") -> d
     return service.handle("owner", "POST", "/v1/agents/sessions", body, key=key)[1]
 
 
+@pytest.mark.parametrize("components", ["sqlite", "postgres"], indirect=True)
+def test_typed_user_message_reaches_each_managed_input_entry(components: Any) -> None:
+    service, backend, _, _ = components
+    message = [
+        {
+            "type": "message",
+            "role": "user",
+            "content": [{"type": "input_text", "text": "typed prompt"}],
+        }
+    ]
+    _, initial, initial_headers = service.handle(
+        "owner",
+        "POST",
+        "/v1/agents/sessions",
+        {"agent": {"model": "fixture-model"}, "input": message},
+    )
+    submissions = [initial_headers["X-Agent-Sandbox-Submission-Id"]]
+    for route in ("events", "submissions"):
+        session = create(service)
+        path = (
+            f"/v1/agents/sessions/{session['id']}/events"
+            if route == "events"
+            else f"/v1/agent-sandbox/sessions/{session['id']}/submissions"
+        )
+        body = (
+            {"events": [{"type": "agent.session.input.message", "input": message}]}
+            if route == "events"
+            else {"input": message}
+        )
+        status, value, headers = service.handle("owner", "POST", path, body, key=route)
+        assert status == 202
+        submissions.append(
+            headers["X-Agent-Sandbox-Submission-Id"] if route == "events" else value["id"]
+        )
+    with service.store.transaction() as tx:
+        assert [tx.get(sid, "owner")["_prompt"] for sid in submissions] == ["typed prompt"] * 3
+        assert tx.get(initial["id"], "owner")["status"] == "in_progress"
+    assert backend.created == 0
+
+
+@pytest.mark.parametrize(
+    ("input_value", "status"),
+    [
+        (
+            [
+                {
+                    "type": "function_call",
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": "text"}],
+                }
+            ],
+            400,
+        ),
+        (
+            [{"type": None, "role": "user", "content": [{"type": "input_text", "text": "text"}]}],
+            400,
+        ),
+        (
+            [
+                {
+                    "type": "message",
+                    "role": "assistant",
+                    "content": [{"type": "input_text", "text": "text"}],
+                }
+            ],
+            400,
+        ),
+        (
+            [
+                {
+                    "type": "message",
+                    "role": "user",
+                    "content": [
+                        {"type": "input_image", "image_url": "https://example.com/image.png"}
+                    ],
+                }
+            ],
+            400,
+        ),
+        (
+            [
+                {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": "x" * 262145}],
+                }
+            ],
+            413,
+        ),
+    ],
+)
+def test_invalid_typed_input_does_not_create_managed_state(
+    components: Any, input_value: Any, status: int
+) -> None:
+    service = components[0]
+    with pytest.raises(ManagedError) as caught:
+        service.handle(
+            "owner",
+            "POST",
+            "/v1/agents/sessions",
+            {"agent": {"model": "fixture-model"}, "input": input_value},
+        )
+    assert caught.value.status == status
+    with service.store.transaction() as tx:
+        assert not tx.list("session", "owner")
+        assert not tx.list("submission", "owner")
+
+
+@pytest.mark.parametrize("components", ["sqlite", "postgres"], indirect=True)
+def test_saved_agent_overrides_are_session_snapshots_and_unknown_ids_are_not_fallbacks(
+    components: Any,
+) -> None:
+    service = components[0]
+    agent = service.handle(
+        "owner",
+        "POST",
+        "/v1/agents",
+        {
+            "model": "fixture-model",
+            "instructions": "saved instructions",
+            "metadata": {"source": "saved"},
+        },
+    )[1]
+    original = service.handle("owner", "POST", "/v1/agents/sessions", {"agent_id": agent["id"]})[1]
+    changed = service.handle(
+        "owner",
+        "POST",
+        "/v1/agents/sessions",
+        {"agent_id": agent["id"], "agent": {"instructions": "session override"}},
+    )[1]
+    assert original["agent"]["instructions"] == "saved instructions"
+    assert changed["agent"]["instructions"] == "session override"
+    assert changed["agent"]["model"] == "fixture-model"
+    assert changed["agent"]["metadata"] == {"source": "saved"}
+    assert service.handle("owner", "GET", "/v1/agents/" + agent["id"])[1] == agent
+    assert (
+        service.handle("owner", "GET", "/v1/agents/sessions/" + original["id"])[1]["agent"]
+        == original["agent"]
+    )
+    for owner, saved_id in (("owner", "agent_missing"), ("foreign", agent["id"]), ("owner", "")):
+        with pytest.raises(ManagedError) as caught:
+            service.handle(
+                owner,
+                "POST",
+                "/v1/agents/sessions",
+                {"agent_id": saved_id, "agent": {"model": "fixture-model"}},
+            )
+        assert caught.value.status == 404
+    assert len(service.handle("owner", "GET", "/v1/agents/sessions")[1]["data"]) == 2
+
+
+@pytest.mark.parametrize("agent_id", [None, False, 1, [], {}])
+def test_explicit_agent_id_is_not_coerced_or_ignored(components: Any, agent_id: Any) -> None:
+    service = components[0]
+    with pytest.raises(ManagedError) as caught:
+        service.handle(
+            "owner",
+            "POST",
+            "/v1/agents/sessions",
+            {"agent_id": agent_id, "agent": {"model": "fixture-model"}},
+        )
+    assert caught.value.status == 400 and caught.value.param == "agent_id"
+    assert not service.handle("owner", "GET", "/v1/agents/sessions")[1]["data"]
+
+
+@pytest.mark.parametrize(
+    ("status", "expected"),
+    [(400, "invalid_request_error"), (429, "rate_limit_error"), (503, "service_unavailable_error")],
+)
+def test_managed_error_types_keep_status_specific_categories(status: int, expected: str) -> None:
+    error = ManagedError(status, "public_code", "A bounded public message", "input")
+    assert error.status == status
+    assert error.body() == {
+        "error": {
+            "type": expected,
+            "code": "public_code",
+            "message": "A bounded public message",
+            "param": "input",
+        }
+    }
+
+
+def test_real_http_typed_message_and_safe_error_categories(
+    components: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    service = components[0]
+    service.config.sessions["maxLogicalSessionsPerOwner"] = 1
+    token = "contract-test-business-token"
+    auth = TokenAuthenticator(
+        {
+            "tokens": [
+                {
+                    "sha256": hashlib.sha256(token.encode()).hexdigest(),
+                    "owner": "owner",
+                    "scopes": ["agents:read", "agents:write"],
+                }
+            ]
+        }
+    )
+    server = make_server(service, auth, port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with httpx.Client(
+            base_url=f"http://127.0.0.1:{server.server_port}",
+            headers={"Authorization": "Bearer " + token},
+            trust_env=False,
+        ) as api:
+            body = {
+                "agent": {"model": "fixture-model"},
+                "input": [
+                    {
+                        "type": "message",
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": "typed HTTP prompt"}],
+                    }
+                ],
+            }
+            accepted = api.post("/v1/agents/sessions", json=body)
+            assert accepted.status_code == 201
+            assert accepted.headers["X-Agent-Sandbox-Submission-Id"]
+            limited = api.post("/v1/agents/sessions", json=body)
+            assert limited.status_code == 429
+            assert limited.json()["error"]["type"] == "rate_limit_error"
+            assert limited.headers["Retry-After"] == "1"
+
+            def unavailable(*args: Any, **kwargs: Any) -> Any:
+                raise RuntimeError("private-dependency-fixture")
+
+            monkeypatch.setattr(service, "handle", unavailable)
+            failed = api.get("/v1/models")
+            assert failed.status_code == 503
+            assert failed.json()["error"]["type"] == "service_unavailable_error"
+            assert failed.json()["error"]["code"] == "service_unavailable"
+            assert "private-dependency-fixture" not in failed.text
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
+
+
 def test_create_replay_busy_queue_and_owner_boundaries(components: Any) -> None:
     service, backend, _, _ = components
     session = create(service, "first", "initial")

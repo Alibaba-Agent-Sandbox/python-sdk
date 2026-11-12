@@ -434,6 +434,8 @@ class ManagedService:
         )
         if "stream" in body and not isinstance(body["stream"], bool):
             raise ManagedError(400, "invalid_stream", "stream must be boolean", "stream")
+        if "agent_id" in body and not isinstance(body["agent_id"], str):
+            raise ManagedError(400, "invalid_agent_id", "agent_id must be a string", "agent_id")
         with self.store.transaction() as tx:
             old = self._idem(tx, owner, "create-session", key, body)
             if old:
@@ -442,7 +444,7 @@ class ManagedService:
             self.check_admission(tx, self.config.revision)
             if len(tx.list("session", owner)) >= self.config.sessions["maxLogicalSessionsPerOwner"]:
                 raise ManagedError(429, "session_limit", "The logical Session budget is exhausted")
-            saved = tx.get(str(body["agent_id"]), owner) if body.get("agent_id") else None
+            saved = tx.get(body["agent_id"], owner) if "agent_id" in body else None
             if saved and saved["_kind"] != "agent":
                 raise ManagedError(404, "resource_not_found", "Agent was not found")
             agent = self._agent(body.get("agent", {}), public(saved) if saved else None)

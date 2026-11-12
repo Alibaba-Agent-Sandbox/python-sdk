@@ -53,6 +53,27 @@ Submission ID 响应头和其 `Location`。相同幂等键与正文返回首次�
 `POST /v1/agent-sandbox/sessions/{id}/submissions`，必须提供 `Idempotency-Key`，返回 `202` 与
 Submission 对象。排队会创建下一轮，不会引导当前执行。
 
+输入可以是非空字符串，或包含 `input_text` 内容的用户消息数组；合并后的 UTF-8 文本上限为 256 KiB。
+消息对象可以带上
+`"type": "message"`：
+
+```json
+{"input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"继续完善报告。"}]}]}
+```
+
+可选的 `type` 字段需要更新后的 Gateway 运行时。只更新客户端不会更新已部署的 Gateway；
+旧部署仍可使用字符串输入。
+
+复用已保存的 Agent 时，提供字符串 `agent_id`。同时提供的 `agent` 支持字段只覆盖本次新建
+Session 的配置，不修改已保存的 Agent 或其他 Session。未知或属于其他 owner 的 Agent ID
+返回 `404`，空字符串也按未知 ID 处理；非字符串返回 `400`，`error.param` 为 `agent_id`。
+这与 [OpenAI 创建 Session 参考](https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/methods/create)
+中的已保存配置覆盖行为一致。
+
+额度不足返回 `429`，`error.type` 为 `rate_limit_error`；应用服务暂时不可用返回 `503`，
+`error.type` 为 `service_unavailable_error`。具体原因与字段见 `error.code` 和 `error.param`。
+请求结果不确定时，先检查已有接收收据，再判断是否重试。
+
 ## 文件与事件
 
 资源 POST 请求必须使用 `Content-Type: application/json`；文件上传使用 multipart 表单。

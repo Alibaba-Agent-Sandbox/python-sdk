@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Accept the optional `type: "message"` discriminator for managed user-text input,
+  validate explicitly supplied saved Agent IDs without coercion or inline fallback,
+  and distinguish rate-limit and unavailable-service error categories. Saved Agent
+  overrides remain scoped to the new Session. / 托管用户文本输入支持可选的
+  `type: "message"`；显式 Agent ID 按字符串校验，不再强转或退回内联配置；
+  区分限流与服务不可用错误类别，已保存 Agent 的覆盖仍只作用于新 Session。
+
 ### Documentation
 
 - Synchronize CLI-dependent SDK documentation, HTTP MCP template deployment and source-acquisition error guidance. / 同步 SDK 文档中的 CLI 用法、HTTP MCP 模板部署与源码获取错误指引。

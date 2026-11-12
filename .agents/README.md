@@ -1,5 +1,7 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+- [Managed Agent input and saved-configuration contract](notes/proposed/feature/2026-11-12-managed-agent-input-contract.md) · [verification](evidence/verify/2026-11-12-managed-agent-input-contract.md).
+
 ## Recent changes — 2026-11-10
 
 - [Owner change index](notes/proposed/process/2026-11-10-recent-change-index.md) · [records verification](evidence/verify/2026-11-10-recent-change-index.md).
