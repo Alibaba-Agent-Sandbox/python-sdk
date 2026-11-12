@@ -37,3 +37,12 @@ SDK quickstart run output remains explicitly labeled as such. No SDK method or
 configuration resolver was changed.
 
 Final permission-guide review removed the obsolete claim that CI output authorizes key preparation. Existing explicit SDK confirmation remains required; no key was created or renewed during this task.
+
+## Authentication and delivery follow-up
+
+The initial API Bearer request returned HTTP401, but the credential was not
+invalid. Git push/fetch and the API's Basic authentication succeeded with the
+same existing credential; no credential was changed or created. Public
+producer source branches can now be pushed. Private Registry/Website main was
+fetched successfully, and the prior coordinating PRs were confirmed merged.
+This supersedes the initial delivery-authentication limitation above.
