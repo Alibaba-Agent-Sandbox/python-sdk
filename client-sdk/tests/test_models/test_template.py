@@ -12,17 +12,25 @@ class TestSandboxTemplate:
         from tests.template_fixtures import template_manifest
 
         tmpl = SandboxTemplate.model_validate(template_manifest())
-        assert tmpl.spec_version == 5
+        assert tmpl.spec_version == 1
         assert "workflows" not in SandboxTemplate.model_fields
-        assert tmpl.env == {} and tmpl.ports == []
+        assert tmpl.env == {} and tmpl.ports == [9000]
         assert "code" not in tmpl.discovery_capabilities()
 
     def test_application_topology_round_trips(self) -> None:
-        from tests.template_fixtures import template_manifest
 
-        topology = {"workers": {"limits": {"cpu": 0.5}}}
-        tmpl = SandboxTemplate.model_validate(template_manifest(deployment=topology))
-        assert tmpl.model_dump()["deployment"] == topology
+        topology = {
+            "edition": "3.0.0",
+            "resources": {"web": {"component": "fc3@0.0.0", "props": {"cpu": 0.5}}},
+        }
+        tmpl = SandboxTemplate.model_validate(
+            {"specVersion": 1, "name": "serving", "deployment": topology}
+        )
+        assert tmpl.model_dump()["deployment"] == {
+            **topology,
+            "name": "serving",
+            "access": "default",
+        }
 
     def test_retired_build_fields_are_rejected(self) -> None:
         import pytest

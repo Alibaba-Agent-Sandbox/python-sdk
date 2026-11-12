@@ -128,6 +128,16 @@ FC 部署要求 PostgreSQL；SQLite 仅用于明确的本地模式。存储、�
 额度不足返回 `429`。过期结果返回 `410`，已删除资源返回 `404`。
 清理会保留解决不确定资源所需的私有归属记录。
 
+## Sandbox 实例配置
+
+v1 `sandbox.instance` 控制每个 Session 新建的 Sandbox：`timeout`、CPU/内存/磁盘/GPU、已有卷名称挂载与用户元数据。托管 TTL 默认3600秒，内部 lifetime 预算由这一值派生。更新应用时，已有 Session 保留其配置快照和 Worker 路由。`sandbox.template.props` 是模板准备参数，不会自动变成实例规格。
+
+所有自定义环境值都按敏感数据处理，包括看似普通的值。部署器只在编译配置中保存 `instanceEnvNames`，值仅通过 Worker 的 `ABX_MANAGED_SANDBOX_ENV_JSON` 或 `_FILE` 私有来源解析，不进入 Session settings 或公开 plan。私有映射的名字必须与声明完全一致。模型凭据使用独立模型 binding。`ABX_*`、`OPENAI_*`、`QWEN_*`、`CODEX_*`、`PYTHON*`、`LD_*`、`HOME`、`PATH`、`SHELL`、`USER`、`LOGNAME`、`ANTHROPIC_API_KEY`、`DASHSCOPE_API_KEY` 属于运行时/模型控制，不能由自定义环境覆盖。
+
+托管 Sandbox 固定安全访问、超时销毁且不自动恢复；冲突的生命周期或未承接安全字段在创建前拒绝。元数据不能覆盖 `abx-managed`、`abx-session`、`abx-revision`。挂载点不得覆盖独占工作区、私有运行时状态及其祖先或子目录。已有卷属于借用资源，删除 Session 不删除卷本体。当前挂载接口不能表达只读：数据卷可以共享且可写，不同归属用户应使用适当隔离的数据集/卷。Session 工作区独占不代表显式共享的数据卷也是私有的。
+
+Worker 自定义环境配置前缀为 `ABX_MANAGED_SANDBOX_ENV`，与其他配置一样只接受 `_FILE` 或 `_JSON` 中的一个来源；Gateway 和 Dispatcher 不读取该来源。
+
 ## 部署方配置
 
 入口为 `python -m agent_sandbox.managed_agents gateway|worker|dispatcher`。

@@ -15,7 +15,13 @@ if TYPE_CHECKING:
 class ExpressBackend:
     """Create only owned Express sandboxes using fully resolved service configuration."""
 
-    def __init__(self, provider: dict[str, Any], model: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self,
+        provider: dict[str, Any],
+        model: dict[str, Any] | None = None,
+        *,
+        instance_env: dict[str, str] | None = None,
+    ) -> None:
         if (
             set(provider) != {"provider", "apiKey", "baseUrl", "domain", "region"}
             or provider["provider"] != "alicloud-express"
@@ -46,6 +52,7 @@ class ExpressBackend:
                     "Service endpoints must be explicit HTTPS URLs without embedded credentials"
                 )
         self.provider, self.model = dict(provider), dict(model) if model else None
+        self.instance_env = dict(instance_env or {})
 
     async def _infra(self) -> Any:
         from agent_sandbox.providers.alicloud_express.provider import AlicloudExpressProvider
@@ -92,18 +99,32 @@ class ExpressBackend:
             raise ManagedError(
                 400, "model_env_not_allowed", "Required model variables are not allowed"
             )
+        from agent_sandbox.models.managed_instance import validate_instance, worker_environment
+
+        instance = validate_instance(
+            settings.get("instance", {}),
+            settings["workspace"],
+            settings["sessions"]["maxLifetimeSeconds"],
+        )
+        if instance["timeout"] != settings["sessions"]["maxLifetimeSeconds"]:
+            raise ValueError("Session lifetime does not match its instance snapshot")
+        custom_env = worker_environment(self.instance_env, settings.get("instanceEnvNames", []))
+        instance.pop("lifecycle", None)  # Fixed kill/no-resume policy, checked before I/O.
+        custom_metadata = instance.pop("metadata")
         infra = await self._infra()
         try:
             config = SandboxConfig(
                 templateID=settings["template"],
-                timeout=settings["sessions"]["maxLifetimeSeconds"],
+                **instance,
                 secure=True,
                 metadata={
+                    **custom_metadata,
                     "abx-managed": "true",
                     "abx-session": session["id"],
                     "abx-revision": session["_revision"],
                 },
                 envVars={
+                    **custom_env,
                     "ABX_SERVER_TOKEN": token,
                     "ABX_MANAGED_WORKSPACE": settings["workspace"],
                     "OPENAI_API_KEY": self.model["apiKey"],

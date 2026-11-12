@@ -1,0 +1,25 @@
+{
+  "endpoints": {
+    "*": {
+      "enabled": false
+    },
+    "agents_sessions_create": {
+      "enabled": true
+    },
+    "agents_sessions_get": {
+      "enabled": true
+    },
+    "agents_sessions_list": {
+      "enabled": true
+    },
+    "agents_sessions_events_create": {
+      "enabled": true
+    },
+    "agents_sessions_items_list": {
+      "enabled": true
+    },
+    "agents_runtimes_list": {
+      "enabled": true
+    }
+  }
+}

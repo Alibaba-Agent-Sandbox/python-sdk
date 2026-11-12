@@ -143,6 +143,14 @@ Storage, queues, execution time, events and subscribers have finite deployment b
 rejection returns `429`. Expired results return `410`; deleted resources return `404`. Cleanup
 preserves private ownership records required to resolve uncertain resources.
 
+## Sandbox instance configuration
+
+The v1 `sandbox.instance` controls each Session's new Sandbox: `timeout`, CPU/memory/disk/GPU, existing Volume-name mounts and user metadata. Managed TTL defaults to3600 seconds; internal lifetime budgets are derived from this single value. New revisions preserve each existing Session's settings and Worker routing. Preparation `sandbox.template.props` does not change a Session instance.
+
+All custom environment values are private, including values that look harmless. The deployer sends names in compiled configuration and resolves values only for the Worker through `ABX_MANAGED_SANDBOX_ENV_JSON` or `_FILE`; values never enter Session settings or public plans. Worker source names must exactly match `instanceEnvNames`. Model credentials stay in the separate model binding. Runtime/model controls (`ABX_*`, `OPENAI_*`, `QWEN_*`, `CODEX_*`, `PYTHON*`, `LD_*`, `HOME`, `PATH`, `SHELL`, `USER`, `LOGNAME`, `ANTHROPIC_API_KEY`, `DASHSCOPE_API_KEY`) cannot be overridden through custom environment input.
+
+Managed Sandboxes use secure access and kill-on-timeout without automatic resume. Conflicting lifecycle/unsupported security fields fail before creation. Metadata cannot replace `abx-managed`, `abx-session` or `abx-revision`. Volume mounts cannot overlap the fixed workspace or private runtime state, including their ancestors and descendants. Existing Volumes are borrowed and are never deleted with a Session. This mount interface does not express read-only access: data mounts can be shared and writable, so use appropriately isolated datasets/volumes for different owners. Exclusive Session workspaces do not make an explicitly shared data volume private.
+
 ## Operator configuration
 
 Run `python -m agent_sandbox.managed_agents gateway|worker|dispatcher`. The guest image runs
@@ -152,8 +160,9 @@ Each configuration document accepts exactly one `_FILE` or `_JSON` source:
 
 | Variable prefix | Document |
 | --- | --- |
-| `ABX_MANAGED_CONFIG` | Compiled revision, application ID, template, model/adapter allowlist, `modelEnvAllowlist`, Session/storage/execution budgets, `expectedStateId` and retained Worker mapping |
+| `ABX_MANAGED_CONFIG` | Non-secret `instance`, `instanceEnvNames`, compiled revision, application ID, template, model/adapter allowlist, `modelEnvAllowlist`, Session/storage/execution budgets, `expectedStateId` and retained Worker mapping |
 | `ABX_MANAGED_AUTH` | `tokens: [{sha256,owner,scopes,expiresAt?}]`; scopes are `agents:read` and `agents:write` |
+| `ABX_MANAGED_SANDBOX_ENV` | Worker-only custom environment string map, with names exactly matching `instanceEnvNames` |
 | `ABX_MANAGED_MODEL_CONFIG` | Worker-only `{apiKey,baseUrl,model,adapter}` |
 | `ABX_MANAGED_PROVIDER_CONFIG` | Worker/Dispatcher `{provider:"alicloud-express",apiKey,baseUrl,domain,region}` |
 

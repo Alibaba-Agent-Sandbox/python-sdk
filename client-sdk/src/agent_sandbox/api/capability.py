@@ -21,14 +21,8 @@ class ResolvedCapabilities(BaseModel):
 
 
 def parse_template_data(data: dict[str, Any]) -> SandboxTemplate:
-    """Validate specification 5, preserving unrelated application topology metadata."""
-    normalized = dict(data)
-    resources = normalized.get("resources", {}) or {}
-    if "application" not in normalized and "cpu" in resources and "cpu_count" not in normalized:
-        normalized["cpu_count"] = resources["cpu"]
-    if "application" not in normalized and "memory" in resources and "memory_mb" not in normalized:
-        normalized["memory_mb"] = resources["memory"]
-    return SandboxTemplate.model_validate(normalized)
+    """Validate canonical v1 intent and retain its native topology unchanged."""
+    return SandboxTemplate.model_validate(data)
 
 
 def _read(path: Path) -> SandboxTemplate:
@@ -76,7 +70,7 @@ async def resolve_capabilities_for(
                 if path.parent.name == template_id:
                     _read(path)
                 continue
-            aliases = data.get("aliases", [])
+            aliases = data.get("sandbox", {}).get("template", {}).get("aliases", [])
             names = [data.get("name"), data.get("alias"), path.parent.name]
             if isinstance(aliases, list):
                 names.extend(aliases)

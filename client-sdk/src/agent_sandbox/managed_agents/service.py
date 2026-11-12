@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import copy
 import hashlib
 import hmac
 import json
@@ -482,6 +483,8 @@ class ManagedService:
                     "workspace": self.config.workspace,
                     "port": self.config.port,
                     "modelEnvAllowlist": self.config.model_env_allowlist,
+                    "instance": copy.deepcopy(self.config.instance),
+                    "instanceEnvNames": list(self.config.instance_env_names),
                     "sessions": self.config.sessions,
                     "limits": self.config.limits,
                     "storage": self.config.storage,

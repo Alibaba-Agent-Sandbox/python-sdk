@@ -128,7 +128,17 @@ def serve(args: argparse.Namespace, ca_file: str | None) -> None:
         provider = load_document("ABX_MANAGED_PROVIDER_CONFIG")
         model = load_document("ABX_MANAGED_MODEL_CONFIG", required=args.mode == "worker")
         assert provider is not None
-        backend = ExpressBackend(provider, model)
+        from agent_sandbox.models.managed_instance import worker_environment
+
+        private_env = (
+            worker_environment(
+                load_document("ABX_MANAGED_SANDBOX_ENV", required=False) or {},
+                config.instance_env_names,
+            )
+            if args.mode == "worker"
+            else {}
+        )
+        backend = ExpressBackend(provider, model, instance_env=private_env)
         worker = ManagedWorker(service, backend)
         sender = None
         if args.mode == "dispatcher" and not args.local:

@@ -23,6 +23,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Consume canonical `specVersion: 1` resource documents in prepared Python launch
+  and discovery. Preserve instance TTL/specs/Volumes/environment/metadata and explicit
+  API overrides; reject unresolved native expressions before creation. Managed
+  Sessions snapshot safe instance settings and receive custom environment values
+  only through private Worker configuration. / Python 已准备模板启动与发现改为
+  canonical v1，实际承接实例参数与显式覆盖；未解析表达式在创建前拒绝。
+  托管 Session 保存安全实例快照，自定义环境值只通过 Worker 私有配置注入。
+
 - Align current English and Chinese CLI guides with template authoring, named deployment lifecycle and Provider operations; preserve the SDK’s independent clients and instance methods.
 
 - The client no longer installs the local server runtime by default. Use the

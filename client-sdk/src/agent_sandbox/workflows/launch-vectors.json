@@ -4,20 +4,27 @@
       "id": "source-cli",
       "input": {
         "manifest": {
-          "spec_version": 5,
+          "specVersion": 1,
           "name": "test",
-          "provides": {
-            "app": {
-              "protocol": "agent-sandbox-server",
-              "version": 2,
-              "port": 9000,
-              "operations": [
-                "commands.run",
-                "health"
-              ]
-            }
-          },
-          "start_cmd": "python app.py"
+          "sandbox": {
+            "template": {
+              "source": {
+                "dockerfile": "Dockerfile"
+              }
+            },
+            "services": {
+              "app": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": 9000,
+                "operations": [
+                  "commands.run",
+                  "health"
+                ]
+              }
+            },
+            "start": "python app.py"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -78,20 +85,27 @@
       "id": "source-python-unprepared",
       "input": {
         "manifest": {
-          "spec_version": 5,
+          "specVersion": 1,
           "name": "test",
-          "provides": {
-            "app": {
-              "protocol": "agent-sandbox-server",
-              "version": 2,
-              "port": 9000,
-              "operations": [
-                "commands.run",
-                "health"
-              ]
-            }
-          },
-          "start_cmd": "python app.py"
+          "sandbox": {
+            "template": {
+              "source": {
+                "dockerfile": "Dockerfile"
+              }
+            },
+            "services": {
+              "app": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": 9000,
+                "operations": [
+                  "commands.run",
+                  "health"
+                ]
+              }
+            },
+            "start": "python app.py"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -154,20 +168,27 @@
       "id": "source-python-prepared",
       "input": {
         "manifest": {
-          "spec_version": 5,
+          "specVersion": 1,
           "name": "test",
-          "provides": {
-            "app": {
-              "protocol": "agent-sandbox-server",
-              "version": 2,
-              "port": 9000,
-              "operations": [
-                "commands.run",
-                "health"
-              ]
-            }
-          },
-          "start_cmd": "python app.py"
+          "sandbox": {
+            "template": {
+              "source": {
+                "dockerfile": "Dockerfile"
+              }
+            },
+            "services": {
+              "app": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": 9000,
+                "operations": [
+                  "commands.run",
+                  "health"
+                ]
+              }
+            },
+            "start": "python app.py"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -227,29 +248,36 @@
       "id": "multiple-services",
       "input": {
         "manifest": {
-          "spec_version": 5,
+          "specVersion": 1,
           "name": "test",
-          "provides": {
-            "app": {
-              "protocol": "agent-sandbox-server",
-              "version": 2,
-              "port": 9000,
-              "operations": [
-                "commands.run",
-                "health"
-              ]
+          "sandbox": {
+            "template": {
+              "source": {
+                "dockerfile": "Dockerfile"
+              }
             },
-            "api": {
-              "protocol": "agent-sandbox-server",
-              "version": 2,
-              "port": 9001,
-              "operations": [
-                "commands.run",
-                "health"
-              ]
-            }
-          },
-          "start_cmd": "python app.py"
+            "services": {
+              "app": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": 9000,
+                "operations": [
+                  "commands.run",
+                  "health"
+                ]
+              },
+              "api": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": 9001,
+                "operations": [
+                  "commands.run",
+                  "health"
+                ]
+              }
+            },
+            "start": "python app.py"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -319,10 +347,17 @@
       "id": "no-services",
       "input": {
         "manifest": {
-          "spec_version": 5,
+          "specVersion": 1,
           "name": "test",
-          "provides": {},
-          "start_cmd": "python app.py"
+          "sandbox": {
+            "template": {
+              "source": {
+                "dockerfile": "Dockerfile"
+              }
+            },
+            "services": {},
+            "start": "python app.py"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -372,10 +407,15 @@
       "id": "managed-no-start",
       "input": {
         "manifest": {
-          "spec_version": 5,
-          "provides": {},
-          "provider": "fixture",
-          "template_id": "base"
+          "specVersion": 1,
+          "name": "test",
+          "sandbox": {
+            "template": {
+              "reference": "base"
+            },
+            "services": {},
+            "provider": "fixture"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -423,10 +463,15 @@
       "id": "managed-foreign-provider",
       "input": {
         "manifest": {
-          "spec_version": 5,
-          "provides": {},
-          "provider": "other",
-          "template_id": "base"
+          "specVersion": 1,
+          "name": "test",
+          "sandbox": {
+            "template": {
+              "reference": "base"
+            },
+            "services": {},
+            "provider": "other"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -475,19 +520,24 @@
       "id": "image-entrypoint",
       "input": {
         "manifest": {
-          "spec_version": 5,
-          "provides": {
-            "app": {
-              "protocol": "agent-sandbox-server",
-              "version": 2,
-              "port": 9000,
-              "operations": [
-                "commands.run",
-                "health"
-              ]
+          "specVersion": 1,
+          "name": "test",
+          "sandbox": {
+            "template": {
+              "image": "registry/image@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "services": {
+              "app": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": 9000,
+                "operations": [
+                  "commands.run",
+                  "health"
+                ]
+              }
             }
-          },
-          "image": "registry/image@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -546,10 +596,15 @@
       "id": "ready-command",
       "input": {
         "manifest": {
-          "spec_version": 5,
-          "provides": {},
-          "image": "image",
-          "ready_cmd": "test -f /tmp/ready"
+          "specVersion": 1,
+          "name": "test",
+          "sandbox": {
+            "template": {
+              "image": "image"
+            },
+            "services": {},
+            "ready": "test -f /tmp/ready"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -598,20 +653,27 @@
       "id": "unsupported-input",
       "input": {
         "manifest": {
-          "spec_version": 5,
+          "specVersion": 1,
           "name": "test",
-          "provides": {
-            "app": {
-              "protocol": "agent-sandbox-server",
-              "version": 2,
-              "port": 9000,
-              "operations": [
-                "commands.run",
-                "health"
-              ]
-            }
-          },
-          "start_cmd": "python app.py"
+          "sandbox": {
+            "template": {
+              "source": {
+                "dockerfile": "Dockerfile"
+              }
+            },
+            "services": {
+              "app": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": 9000,
+                "operations": [
+                  "commands.run",
+                  "health"
+                ]
+              }
+            },
+            "start": "python app.py"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -671,20 +733,27 @@
       "id": "unsupported-startup",
       "input": {
         "manifest": {
-          "spec_version": 5,
+          "specVersion": 1,
           "name": "test",
-          "provides": {
-            "app": {
-              "protocol": "agent-sandbox-server",
-              "version": 2,
-              "port": 9000,
-              "operations": [
-                "commands.run",
-                "health"
-              ]
-            }
-          },
-          "start_cmd": "python app.py"
+          "sandbox": {
+            "template": {
+              "source": {
+                "dockerfile": "Dockerfile"
+              }
+            },
+            "services": {
+              "app": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": 9000,
+                "operations": [
+                  "commands.run",
+                  "health"
+                ]
+              }
+            },
+            "start": "python app.py"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -744,20 +813,27 @@
       "id": "missing-port",
       "input": {
         "manifest": {
-          "spec_version": 5,
+          "specVersion": 1,
           "name": "test",
-          "provides": {
-            "app": {
-              "protocol": "agent-sandbox-server",
-              "version": 2,
-              "port": 9000,
-              "operations": [
-                "commands.run",
-                "health"
-              ]
-            }
-          },
-          "start_cmd": "python app.py"
+          "sandbox": {
+            "template": {
+              "source": {
+                "dockerfile": "Dockerfile"
+              }
+            },
+            "services": {
+              "app": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": 9000,
+                "operations": [
+                  "commands.run",
+                  "health"
+                ]
+              }
+            },
+            "start": "python app.py"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -814,20 +890,27 @@
       "id": "retired-v4",
       "input": {
         "manifest": {
-          "spec_version": 4,
+          "specVersion": 4,
           "name": "test",
-          "provides": {
-            "app": {
-              "protocol": "agent-sandbox-server",
-              "version": 2,
-              "port": 9000,
-              "operations": [
-                "commands.run",
-                "health"
-              ]
-            }
-          },
-          "start_cmd": "python app.py"
+          "sandbox": {
+            "template": {
+              "source": {
+                "dockerfile": "Dockerfile"
+              }
+            },
+            "services": {
+              "app": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": 9000,
+                "operations": [
+                  "commands.run",
+                  "health"
+                ]
+              }
+            },
+            "start": "python app.py"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -867,20 +950,27 @@
       "id": "retired-workflows",
       "input": {
         "manifest": {
-          "spec_version": 5,
+          "specVersion": 1,
           "name": "test",
-          "provides": {
-            "app": {
-              "protocol": "agent-sandbox-server",
-              "version": 2,
-              "port": 9000,
-              "operations": [
-                "commands.run",
-                "health"
-              ]
-            }
+          "sandbox": {
+            "template": {
+              "source": {
+                "dockerfile": "Dockerfile"
+              }
+            },
+            "services": {
+              "app": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": 9000,
+                "operations": [
+                  "commands.run",
+                  "health"
+                ]
+              }
+            },
+            "start": "python app.py"
           },
-          "start_cmd": "python app.py",
           "workflows": {}
         },
         "provider": {
@@ -921,21 +1011,28 @@
       "id": "unknown-service-field",
       "input": {
         "manifest": {
-          "spec_version": 5,
+          "specVersion": 1,
           "name": "test",
-          "provides": {
-            "app": {
-              "protocol": "agent-sandbox-server",
-              "version": 2,
-              "port": 9000,
-              "operations": [
-                "commands.run",
-                "health"
-              ],
-              "binding": {}
-            }
-          },
-          "start_cmd": "python app.py"
+          "sandbox": {
+            "template": {
+              "source": {
+                "dockerfile": "Dockerfile"
+              }
+            },
+            "services": {
+              "app": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": 9000,
+                "operations": [
+                  "commands.run",
+                  "health"
+                ],
+                "binding": {}
+              }
+            },
+            "start": "python app.py"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -975,21 +1072,24 @@
       "id": "bad-provider-binding",
       "input": {
         "manifest": {
-          "spec_version": 5,
+          "specVersion": 1,
           "name": "test",
-          "provides": {
-            "app": {
-              "protocol": "agent-sandbox-server",
-              "version": 2,
-              "port": 9000,
-              "operations": [
-                "commands.run",
-                "health"
-              ]
-            }
-          },
-          "start_cmd": "python app.py",
-          "provider": "fixture"
+          "sandbox": {
+            "template": {},
+            "services": {
+              "app": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": 9000,
+                "operations": [
+                  "commands.run",
+                  "health"
+                ]
+              }
+            },
+            "provider": "fixture",
+            "start": "python app.py"
+          }
         },
         "provider": {
           "id": "fixture",
@@ -1029,20 +1129,27 @@
       "id": "bad-port-bool",
       "input": {
         "manifest": {
-          "spec_version": 5,
+          "specVersion": 1,
           "name": "test",
-          "provides": {
-            "app": {
-              "protocol": "agent-sandbox-server",
-              "version": 2,
-              "port": true,
-              "operations": [
-                "commands.run",
-                "health"
-              ]
-            }
-          },
-          "start_cmd": "python app.py"
+          "sandbox": {
+            "template": {
+              "source": {
+                "dockerfile": "Dockerfile"
+              }
+            },
+            "services": {
+              "app": {
+                "protocol": "agent-sandbox-server",
+                "version": 2,
+                "port": true,
+                "operations": [
+                  "commands.run",
+                  "health"
+                ]
+              }
+            },
+            "start": "python app.py"
+          }
         },
         "provider": {
           "id": "fixture",

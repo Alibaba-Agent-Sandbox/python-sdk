@@ -169,24 +169,18 @@ Every exception carries: `code`, `message`, `suggestion`, `docs_url` (populated 
 
 ### Template startup and operation model
 
-Templates use strict specification 5 with the complete `provides` service map,
-`start_cmd` and `ready_cmd`. There is no workflow selector or named startup type.
+Templates use the canonical `specVersion: 1` contract, `sandbox.services`,
+`sandbox.start` and `sandbox.ready`. The immutable owner source/schema lock is in
+`client-sdk/src/agent_sandbox/template_contract/source.json`; synchronize those bytes,
+never maintain another parser or invent an expression evaluator. Native Devs parses
+expressions; Python consumes literals or an already resolved v1 snapshot.
+
 Canonical `contracts/launch-v1.json` and `launch-vectors.json` have byte-identical
-package copies. Historical workflow/receipt files remain for old evidence only;
-they do not certify the new launcher. Provider operation declarations remain exact.
-
-`api/template.py` exposes `launch_template` for prepared references, journals owned
-resources, starts the template once and checks all SandboxServer protocol v2 services. Python
-does not build source. Use `session.services` for all resolved clients and
-`session.servers` for SandboxServer clients. Do not block startup on an unrelated
-interpreter operation. See [the launch guide](docs/en/guide/template-workflows.md).
-
-### Template Definition
-
-Use `template.yaml`, `spec_version: 5`, `provides`, startup/readiness, and the existing
-server policy. Reject workflow_contract_version/workflows/default_workflow with
-migration guidance. Named application commands are registered by the server, never
-created from YAML. Template discovery grants no default runtime operations.
+package copies. `launch_template` consumes prepared references and instance values;
+Python does not build source. Serving/application inputs require the deployment
+orchestrator. Server policy validation remains an independent runtime API.
+Managed instance settings exclude every environment value; only Worker private
+configuration supplies those values, with reserved controls protected.
 
 ---
 

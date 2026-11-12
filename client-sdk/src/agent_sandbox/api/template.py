@@ -14,6 +14,7 @@ from uuid import uuid4
 
 from agent_sandbox.api.sandbox import Sandbox
 from agent_sandbox.models.process import ProcessResult
+from agent_sandbox.template_contract import compile_literal_document
 from agent_sandbox.transport.streaming import StreamReader
 from agent_sandbox.workflows.identity import bytes_digest
 from agent_sandbox.workflows.launch import plan_template_launch, validate_template_manifest
@@ -192,7 +193,13 @@ async def launch_template(
     application_token: str | None = None,
     provider_options: dict[str, Any] | None = None,
     envs: dict[str, str] | None = None,
-    timeout: int = 300,
+    timeout: int | None = None,
+    cpu: int | None = None,
+    memory: int | None = None,
+    disk: int | None = None,
+    gpu: str | None = None,
+    volume_mounts: dict[str, str] | None = None,
+    metadata: dict[str, str] | None = None,
     readiness_timeout: float = 30,
     journal_path: str | Path | None = None,
 ) -> TemplateSession:
@@ -201,8 +208,9 @@ async def launch_template(
     Python never builds source projects. Prepare sources with the CLI and pass
     the resulting reference, or declare an image/native template in the manifest.
     All services are returned. SandboxServer services are checked with health and
-    discovery; other protocols use the template's ready_cmd for readiness.
+    discovery; other protocols use the template's sandbox.ready for readiness.
     """
+    from agent_sandbox.providers.base import Provider as ProviderContract
     from agent_sandbox.providers.registry import builtin_provider, get_provider
 
     if isinstance(manifest, (str, Path)):
@@ -214,26 +222,18 @@ async def launch_template(
         snapshot = copy.deepcopy(manifest)
         manifest_bytes = json.dumps(snapshot, sort_keys=True).encode()
     snapshot = validate_template_manifest(snapshot)
-    if snapshot.get("application"):
+    if snapshot.get("deployment") or snapshot.get("application"):
         raise TemplateLaunchError("deployment-orchestrator-required", "before-create")
-    resolved = reference or snapshot.get("image") or snapshot.get("template_id")
+    template = snapshot.get("sandbox", {}).get("template", {})
+    resolved = reference or template.get("image") or template.get("reference")
     if not isinstance(resolved, str) or not resolved.strip():
         raise TemplateLaunchError("prepare-source-with-cli-and-pass-reference", "before-prepare")
-    if snapshot.get("image") and not re.fullmatch(
+    if template.get("image") and not re.fullmatch(
         r"(?:[A-Za-z0-9][A-Za-z0-9._:/-]*@)?sha256:[a-f0-9]{64}", resolved
     ):
         raise TemplateLaunchError("immutable-image-reference-required", "before-create")
     if readiness_timeout <= 0:
         raise ValueError("readiness_timeout must be positive")
-    effective_env = {
-        key: value or os.environ.get(key, "") for key, value in snapshot.get("env", {}).items()
-    }
-    effective_env.update(envs or {})
-    if application_token is not None:
-        effective_env["ABX_SERVER_TOKEN"] = application_token
-    token = effective_env.get("ABX_SERVER_TOKEN") or None
-    if "ABX_SERVER_TOKEN" in effective_env and not token:
-        raise TemplateLaunchError("application-token-required", "before-create")
     prov = get_provider(provider) if isinstance(provider, str) else provider
     plan = plan_template_launch(snapshot, prov.describe(), "python-provider", prepared=True)
     if not plan["supported"]:
@@ -241,6 +241,50 @@ async def launch_template(
             plan.get("reason") or ("missing-operations: " + ", ".join(plan["missing_operations"])),
             "before-create",
         )
+    # Explicit API values override admitted intent before resolved validation.
+    # This replaces values; it does not interpret any native expression.
+    effective = copy.deepcopy(snapshot)
+    declared_instance = effective["sandbox"]["instance"]
+    declared_instance["envs"] = {**declared_instance["envs"], **(envs or {})}
+    declared_instance["metadata"] = {**declared_instance["metadata"], **(metadata or {})}
+    if application_token is not None:
+        declared_instance["envs"]["ABX_SERVER_TOKEN"] = application_token
+    for key, value in {
+        "timeout": timeout,
+        "cpu": cpu,
+        "memory": memory,
+        "disk": disk,
+        "gpu": gpu,
+        "volume_mounts": volume_mounts,
+    }.items():
+        if value is not None:
+            declared_instance[key] = value
+    validator = getattr(prov, "validate_template_input", None)
+    if getattr(validator, "__func__", None) is ProviderContract.validate_template_input:
+        validator = None
+
+    def validate_selected(stage: str, value: Any, provider_id: str) -> Any:
+        if provider_id != prov.id or not callable(validator):
+            raise ValueError("Template validation requires the selected Provider")
+        return validator(stage, value)
+
+    compiled = compile_literal_document(
+        effective,
+        provider=prov.id,
+        validate_provider=validate_selected if callable(validator) else None,
+    )
+    instance = copy.deepcopy(compiled["sandbox"]["instance"])
+    lifecycle = instance.pop("lifecycle", {})
+    if lifecycle.get("onTimeout", "kill") != "kill" or lifecycle.get("autoResume", False):
+        raise TemplateLaunchError("instance-lifecycle-unimplemented", "before-create")
+    effective_env = instance.pop("envs")
+    effective_metadata = instance.pop("metadata")
+    token = effective_env.get("ABX_SERVER_TOKEN") or None
+    if "ABX_SERVER_TOKEN" in effective_env and not token:
+        raise TemplateLaunchError("application-token-required", "before-create")
+    supported_instance = {"timeout", "cpu", "memory", "disk", "gpu", "volume_mounts"}
+    if set(instance) - supported_instance:
+        raise TemplateLaunchError("instance-field-unimplemented", "before-create")
     run_id = uuid4().hex
     journal = _Journal(
         Path(journal_path) if journal_path else Path.home() / ".abx" / "runs" / f"{run_id}.jsonl"
@@ -271,10 +315,8 @@ async def launch_template(
                 provider=prov.id if prov is builtin_provider() else provider,
                 provider_options=provider_options,
                 envs=effective_env,
-                cpu=snapshot.get("cpu_count", snapshot.get("resources", {}).get("cpu")),
-                memory=snapshot.get("memory_mb", snapshot.get("resources", {}).get("memory")),
-                timeout=timeout,
-                metadata={"abx_template_run": run_id},
+                **instance,
+                metadata={**effective_metadata, "abx_template_run": run_id},
                 on_created=lambda sandbox_id: journal.append(
                     "created", sandbox_id=sandbox_id, provider_id=prov.id
                 ),
@@ -294,10 +336,10 @@ async def launch_template(
         journal.append("created", sandbox_id=sandbox.id, provider_id=prov.id)
         if prov.content_digest() != provider_digest:
             raise TemplateLaunchError("provider-content-changed", "before-start")
-        if snapshot.get("start_cmd"):
-            await _dispatch_start(sandbox, snapshot["start_cmd"], readiness_timeout)
+        if compiled.get("start_cmd"):
+            await _dispatch_start(sandbox, compiled["start_cmd"], readiness_timeout)
             journal.append("started", sandbox_id=sandbox.id)
-        if snapshot.get("ready_cmd"):
+        if compiled.get("ready_cmd"):
             loop = asyncio.get_running_loop()
             deadline = loop.time() + readiness_timeout
             while True:
@@ -307,7 +349,7 @@ async def launch_template(
                 try:
                     result = await asyncio.wait_for(
                         sandbox.commands.run(
-                            snapshot["ready_cmd"], timeout=max(1, math.ceil(remaining))
+                            compiled["ready_cmd"], timeout=max(1, math.ceil(remaining))
                         ),
                         timeout=remaining,
                     )

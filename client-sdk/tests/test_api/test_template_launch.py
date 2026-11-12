@@ -12,10 +12,10 @@ from tests.template_fixtures import template_manifest
 
 def provider(operations=()):
     return SimpleNamespace(
-        id="fixture",
+        id="alicloud-express",
         content_digest=lambda: "sha256:" + "a" * 64,
         describe=lambda: {
-            "id": "fixture",
+            "id": "alicloud-express",
             "operation_contract_version": 1,
             "operations": {"cli": list(operations), "python": list(operations)},
             "workflow_inputs": ["source", "image", "managed"],
@@ -26,11 +26,11 @@ def provider(operations=()):
 
 def manifest(input="image"):
     result = template_manifest()
-    result.pop("start_cmd", None)
+    result["sandbox"].pop("start", None)
     if input == "image":
-        result["image"] = "registry/image@sha256:" + "f" * 64
+        result["sandbox"]["template"] = {"image": "registry/image@sha256:" + "f" * 64}
     elif input == "managed":
-        result.update(provider="fixture", template_id="base")
+        result["sandbox"]["template"] = {"reference": "base"}
     return result
 
 
@@ -121,7 +121,7 @@ async def test_protocol_mismatch_never_sends_application_payload_and_cleans(
 
 async def test_managed_exec_has_no_application_startup(tmp_path, monkeypatch):
     body = manifest("managed")
-    body["provides"] = {}
+    body["sandbox"]["services"] = {}
     sandbox = SimpleNamespace(
         id="owned",
         provider="fixture",
@@ -145,7 +145,7 @@ async def test_managed_exec_has_no_application_startup(tmp_path, monkeypatch):
 
 async def test_managed_foreign_provider_rejects_before_create(tmp_path, monkeypatch):
     body = manifest("managed")
-    body["provider"] = "foreign-provider"
+    body["sandbox"]["provider"] = "foreign-provider"
     create = AsyncMock()
     monkeypatch.setattr("agent_sandbox.api.template.Sandbox.create", create)
     p = provider(["sandbox.create", "sandbox.delete", "ports.resolve"])
@@ -267,7 +267,7 @@ async def test_journal_failure_never_blocks_owned_cleanup(tmp_path):
     from agent_sandbox.api.template import TemplateSession, _Journal
 
     journal = _Journal(tmp_path / "run")
-    journal.append("created", sandbox_id="owned", provider_id="fixture")
+    journal.append("created", sandbox_id="owned", provider_id="alicloud-express")
     journal.append = lambda *args, **kwargs: (_ for _ in ()).throw(OSError("disk full"))
     sandbox = SimpleNamespace(id="owned", provider="fixture", kill=AsyncMock())
     server = SimpleNamespace(aclose=AsyncMock())
@@ -292,8 +292,8 @@ async def test_named_builtin_provider_is_not_reregistered(tmp_path, monkeypatch,
     create = AsyncMock(return_value=sandbox)
     monkeypatch.setattr("agent_sandbox.api.template.Sandbox.create", create)
     spec = manifest("managed")
-    spec["provider"] = "alicloud-express"
-    spec["provides"] = {}
+    spec["sandbox"]["provider"] = "alicloud-express"
+    spec["sandbox"]["services"] = {}
     async with await launch_template(
         spec,
         provider=builtin_provider() if as_object else "alicloud-express",
@@ -308,12 +308,10 @@ async def test_named_builtin_provider_is_not_reregistered(tmp_path, monkeypatch,
 async def test_all_services_start_together_without_invoking_commands(tmp_path, monkeypatch):
     from agent_sandbox.models.process import ProcessResult
 
-    body = template_manifest(
-        ready_cmd="test -f /tmp/ready",
-        env={"ABX_SERVER_TOKEN": ""},
-        resources={"cpu": 2, "memory": 2048},
-    )
-    body["provides"]["second"] = {**body["provides"]["app"], "port": 9001}
+    body = template_manifest()
+    body["sandbox"]["ready"] = "test -f /tmp/ready"
+    body["sandbox"]["instance"] = {"envs": {"ABX_SERVER_TOKEN": ""}, "cpu": 2, "memory": 2048}
+    body["sandbox"]["services"]["second"] = {**body["sandbox"]["services"]["app"], "port": 9001}
     first, second = AsyncMock(), AsyncMock()
     for server in (first, second):
         server.health.return_value = True
@@ -339,8 +337,8 @@ async def test_all_services_start_together_without_invoking_commands(tmp_path, m
     ) as session:
         assert set(session.services) == set(session.servers) == {"app", "second"}
         assert session.server is None
-        start.assert_awaited_once_with(sandbox, body["start_cmd"], 30)
-        sandbox.commands.run.assert_awaited_once_with(body["ready_cmd"], timeout=30)
+        start.assert_awaited_once_with(sandbox, body["sandbox"]["start"], 30)
+        sandbox.commands.run.assert_awaited_once_with(body["sandbox"]["ready"], timeout=30)
         assert create.call_args.kwargs["envs"]["ABX_SERVER_TOKEN"] == "placeholder-token"
         assert create.call_args.kwargs["cpu"] == 2
         assert create.call_args.kwargs["memory"] == 2048
@@ -357,7 +355,7 @@ async def test_all_services_start_together_without_invoking_commands(tmp_path, m
 
 async def test_second_service_failure_closes_every_resolved_client(tmp_path, monkeypatch):
     body = manifest()
-    body["provides"]["second"] = {**body["provides"]["app"], "port": 9001}
+    body["sandbox"]["services"]["second"] = {**body["sandbox"]["services"]["app"], "port": 9001}
     first, second = AsyncMock(), AsyncMock()
     for server, version in ((first, 2), (second, 99)):
         server.health.return_value = True
@@ -394,7 +392,7 @@ async def test_fixed_mutable_image_is_rejected_before_create(tmp_path, monkeypat
     create = AsyncMock()
     monkeypatch.setattr("agent_sandbox.api.template.Sandbox.create", create)
     body = manifest()
-    body["image"] = "image:latest"
+    body["sandbox"]["template"] = {"image": "image:latest"}
     with pytest.raises(TemplateLaunchError, match="immutable-image-reference-required"):
         await launch_template(body, provider=provider(), journal_path=tmp_path / "run")
     create.assert_not_awaited()
@@ -407,7 +405,7 @@ async def test_other_protocol_is_exposed_without_guessing_http_routes(
     tmp_path, monkeypatch, protocol, version
 ):
     body = manifest()
-    body["provides"]["app"].update(protocol=protocol, version=version)
+    body["sandbox"]["services"]["app"].update(protocol=protocol, version=version)
     server = AsyncMock()
     sandbox = SimpleNamespace(
         id="owned",
@@ -431,7 +429,7 @@ async def test_other_protocol_is_exposed_without_guessing_http_routes(
 def readiness_launch(tmp_path, monkeypatch):
     """Keep startup acknowledgement distinct from application readiness."""
     body = manifest("managed")
-    body.update(start_cmd="start application", ready_cmd="check application", provides={})
+    body["sandbox"].update(start="start application", ready="check application", services={})
     sandbox = SimpleNamespace(
         id="owned",
         provider="fixture",
@@ -460,7 +458,8 @@ async def test_readiness_retries_early_failure_after_start_acknowledgement(readi
         startup.assert_awaited_once()
         assert sandbox.commands.run.await_count == 2
         assert all(
-            call.args == (body["ready_cmd"],) for call in sandbox.commands.run.await_args_list
+            call.args == (body["sandbox"]["ready"],)
+            for call in sandbox.commands.run.await_args_list
         )
     sandbox.kill.assert_awaited_once()
 

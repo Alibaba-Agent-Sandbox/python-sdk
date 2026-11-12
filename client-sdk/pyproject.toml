@@ -40,6 +40,7 @@ dependencies = [
     "pydantic>=2.14.0",
     "python-dotenv>=1.0",
     "pyyaml>=6.0.3",
+    "jsonschema>=4.23,<5",
     "protobuf>=5",
     "tomli>=2.0; python_version < '3.11'",
 ]
@@ -110,8 +111,9 @@ markers = [
 [tool.ruff]
 target-version = "py310"
 line-length = 100
+force-exclude = true
 src = ["src", "tests"]
-extend-exclude = ["*_pb2.py", "*_pb2_grpc.py", "src/agent_sandbox/_standard", "src/agent_sandbox/code_interpreter"]
+extend-exclude = ["src/agent_sandbox/template_contract/normalize.py", "*_pb2.py", "*_pb2_grpc.py", "src/agent_sandbox/_standard", "src/agent_sandbox/code_interpreter"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "TCH"]
@@ -145,3 +147,9 @@ follow_imports = "skip"
 module = ["agent_sandbox._standard.*", "agent_sandbox.code_interpreter.*"]
 follow_imports = "skip"
 ignore_errors = true
+
+# Immutable owner-maintained normalizer; validate byte hashes and shared vectors.
+[[tool.mypy.overrides]]
+module = ["agent_sandbox.template_contract.normalize", "jsonschema.*"]
+ignore_errors = true
+ignore_missing_imports = true

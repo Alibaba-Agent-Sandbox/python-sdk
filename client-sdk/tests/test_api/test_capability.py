@@ -46,12 +46,13 @@ async def test_unknown_remote_reference_is_unknown_not_default():
 
 async def test_explicit_manifest_is_strict_and_resources_do_not_mutate_input(tmp_path):
     path = tmp_path / "template.yaml"
-    data = template_manifest(resources={"cpu": 2, "memory": 512})
+    data = template_manifest()
+    data["sandbox"]["template"]["props"] = {"cpu": 2, "memory": 2048}
     path.write_text(yaml.safe_dump(data))
     result = await resolve_capabilities("fixture", local_yaml_path=str(path))
     assert result.matched and result.capabilities == {"ports"}
     parsed = parse_template_data(data)
-    assert parsed.cpu_count == 2 and parsed.memory_mb == 512
+    assert parsed.cpu_count == 2 and parsed.memory_mb == 2048
     assert "cpu_count" not in data
 
 
@@ -72,10 +73,12 @@ async def test_cached_alias_matches_only_valid_manifest(tmp_path, monkeypatch):
     monkeypatch.setattr("agent_sandbox.api.capability.TEMPLATE_CACHE_DIR", tmp_path)
     path = tmp_path / "cache" / "template.yaml"
     path.parent.mkdir()
-    path.write_text(yaml.safe_dump(template_manifest(aliases=["alias"])))
+    data = template_manifest()
+    data["sandbox"]["template"]["aliases"] = ["alias"]
+    path.write_text(yaml.safe_dump(data))
     result = await resolve_capabilities_for("not-matching", "alias")
     assert result.matched and "code" not in result.capabilities
-    path.write_text("name: old\nalias: alias\ncapabilities: [code]")
+    path.write_text("name: old\nsandbox:\n  template:\n    aliases: [alias]\ncapabilities: [code]")
     with pytest.raises(TemplateParseError):
         await resolve_capabilities("alias")
 
@@ -83,12 +86,18 @@ async def test_cached_alias_matches_only_valid_manifest(tmp_path, monkeypatch):
 def test_application_resources_are_preserved_as_topology_metadata(tmp_path):
     from agent_sandbox.utils.registry import load_template_from_yaml
 
-    data = template_manifest(
-        application={"name": "service"}, resources={"cpu": 0.5, "memory": "1Gi"}
-    )
+    topology = {
+        "edition": "3.0.0",
+        "resources": {"web": {"component": "fc3@0.0.0", "props": {"cpu": 0.5}}},
+    }
+    data = {"specVersion": 1, "name": "serving", "deployment": topology}
     path = tmp_path / "template.yaml"
     path.write_text(yaml.safe_dump(data))
     for parsed in (parse_template_data(data), load_template_from_yaml(path)):
-        assert parsed.model_extra["resources"] == data["resources"]
+        assert parsed.model_extra["deployment"] == {
+            **topology,
+            "name": "serving",
+            "access": "default",
+        }
         assert parsed.cpu_count is None and parsed.memory_mb is None
     assert "cpu_count" not in data

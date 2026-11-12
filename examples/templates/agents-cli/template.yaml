@@ -1,42 +1,19 @@
 # FIXTURE — offline only; publishable templates live in
-# https://github.com/alibaba-agent-sandbox/awesome-templates
+# https://github.com/Alibaba-Agent-Sandbox/awesome-templates
+specVersion: 1
 name: agents-cli
-version: 1.0.0
-description: Agents API for Codex and Qwen Code. The image does not preinstall either
-  CLI.
-author: alibaba-agent-sandbox
-tags:
-- agents-api
-- codex
-- qwen-code
-- self-hosted
-base: python:3.12-slim
-spec_version: 5
-provides:
-  app:
-    protocol: agent-sandbox-server
-    version: 2
-    port: 9000
-    operations:
-    - agents.sessions.create
-ports:
-- 9000
-server:
-  endpoints:
-    '*':
-      enabled: false
-    agents_sessions_create:
-      enabled: true
-    agents_sessions_get:
-      enabled: true
-    agents_sessions_list:
-      enabled: true
-    agents_sessions_events_create:
-      enabled: true
-    agents_sessions_items_list:
-      enabled: true
-    agents_runtimes_list:
-      enabled: true
-resources:
-  cpu: 1
-  memory: 1024
+sandbox:
+  provider: alicloud-express
+  template:
+    source:
+      dockerfile: Dockerfile
+    props:
+      cpu: 1
+      memory: 1024
+  services:
+    app:
+      protocol: agent-sandbox-server
+      version: 2
+      port: 9000
+      operations:
+      - agents.sessions.create
