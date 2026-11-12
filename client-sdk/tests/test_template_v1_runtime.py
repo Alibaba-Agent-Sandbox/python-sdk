@@ -15,10 +15,12 @@ from jsonschema import Draft202012Validator
 from agent_sandbox.api.template import TemplateLaunchError, launch_template
 from agent_sandbox.managed_agents import ManagedConfig, ManagedService, ManagedStore
 from agent_sandbox.models.managed_instance import worker_environment
+from agent_sandbox.models.template import SandboxTemplate
 from agent_sandbox.providers.alicloud_express.managed import ExpressBackend
 from agent_sandbox.providers.alicloud_express.provider import AlicloudExpressProvider
 from agent_sandbox.template_contract.normalize import normalize_template_v1, schema_for_stage
 from agent_sandbox.transport.config import TransportConfig
+from agent_sandbox.workflows.launch import plan_template_launch
 
 _CONTRACT_ROOT = Path(__file__).parents[1] / "src/agent_sandbox/template_contract"
 _FIXTURES = json.loads((_CONTRACT_ROOT / "fixtures.json").read_text())
@@ -173,6 +175,103 @@ async def test_prepared_literal_default_timeout_is_300(tmp_path, monkeypatch):
         assert create.call_args.kwargs["timeout"] == 300
         assert "cpu" not in create.call_args.kwargs
         assert "memory" not in create.call_args.kwargs
+
+
+async def test_additional_ports_resolve_gateway_endpoints_without_guessing_services(
+    tmp_path,
+    monkeypatch,
+    httpx_mock,
+):
+    infra = await infrastructure()
+    monkeypatch.setattr("agent_sandbox.api.sandbox._provider_infra", AsyncMock(return_value=infra))
+    httpx_mock.add_response(
+        method="POST", url="https://sandbox-test.example.com/sandboxes", json=cloud_response()
+    )
+    httpx_mock.add_response(
+        method="DELETE", url="https://sandbox-test.example.com/sandboxes/owned", status_code=204
+    )
+    manifest = literal_manifest()
+    manifest["sandbox"]["ports"] = [9222, 5432, 6080]
+    journal = tmp_path / "run"
+    async with await launch_template(
+        manifest, provider="alicloud-express", journal_path=journal
+    ) as session:
+        assert set(session.endpoints) == {5432, 6080, 9222}
+        assert session.services == session.servers == {}
+        assert session.server is None
+        for port, endpoint in session.endpoints.items():
+            assert endpoint["port"] == port
+            assert endpoint["url"] == f"https://{port}-owned.sandbox-test.example.com"
+            assert endpoint["authentication_audience"] == "gateway"
+            assert endpoint["headers"] == {"e2b-traffic-access-token": "placeholder-traffic-token"}
+        assert "placeholder-traffic-token" not in json.dumps(session.plan)
+        assert "ports.resolve" in session.plan["required_operations"]
+        assert "ports" not in json.loads(httpx_mock.get_request().content)
+    assert "placeholder-traffic-token" not in journal.read_text()
+    assert [request.method for request in httpx_mock.get_requests()] == ["POST", "DELETE"]
+
+
+def test_additional_ports_union_and_provider_preflight():
+    from agent_sandbox.template_contract import compile_literal_document
+
+    manifest = literal_manifest()
+    manifest["sandbox"]["ports"] = [6080, 9000]
+    manifest["sandbox"]["services"] = {
+        "app": {
+            "port": 9000,
+            "protocol": "agent-sandbox-server",
+            "version": 2,
+        }
+    }
+    assert SandboxTemplate.model_validate(manifest).ports == [6080, 9000]
+    assert compile_literal_document(manifest, provider="alicloud-express")["ports"] == [6080, 9000]
+    manifest["sandbox"]["services"] = {}
+    assert SandboxTemplate.model_validate(manifest).discovery_capabilities() == {"ports"}
+    plan = plan_template_launch(
+        manifest,
+        {
+            "id": "alicloud-express",
+            "operation_contract_version": 1,
+            "operations": {"python": ["sandbox.create", "sandbox.delete"]},
+            "workflow_inputs": ["managed"],
+            "startup_modes": ["none"],
+        },
+        "python-provider",
+        prepared=True,
+    )
+    assert not plan["supported"]
+    assert plan["missing_operations"] == ["ports.resolve"]
+
+
+async def test_raw_endpoint_resolution_failure_keeps_owned_cleanup(
+    tmp_path, monkeypatch, httpx_mock
+):
+    infra = await infrastructure()
+    monkeypatch.setattr("agent_sandbox.api.sandbox._provider_infra", AsyncMock(return_value=infra))
+    httpx_mock.add_response(
+        method="POST", url="https://sandbox-test.example.com/sandboxes", json=cloud_response()
+    )
+    httpx_mock.add_response(
+        method="DELETE", url="https://sandbox-test.example.com/sandboxes/owned", status_code=204
+    )
+    endpoint = AsyncMock(
+        return_value={
+            "provider_id": "foreign",
+            "sandbox_id": "owned",
+            "port": 5432,
+            "url": "https://foreign.example.com",
+            "headers": {},
+            "authentication_audience": "gateway",
+            "path_mode": "prefix",
+        }
+    )
+    monkeypatch.setattr(AlicloudExpressProvider, "application_endpoint", endpoint)
+    manifest = literal_manifest()
+    manifest["sandbox"]["ports"] = [5432]
+    with pytest.raises(ValueError, match="does not match"):
+        await launch_template(manifest, provider="alicloud-express", journal_path=tmp_path / "run")
+    assert [request.method for request in httpx_mock.get_requests()] == ["POST", "DELETE"]
+    assert "cleanup-complete" in (tmp_path / "run").read_text()
 
 
 async def test_explicit_api_override_replaces_an_expression_without_evaluating_it(

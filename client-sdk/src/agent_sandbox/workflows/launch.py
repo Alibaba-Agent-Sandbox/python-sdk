@@ -64,7 +64,7 @@ def plan_template_launch(
         required.update(LAUNCH_CONTRACT["required_operations"]["prepare"])
     if sandbox.get("start") or sandbox.get("ready"):
         required.update(LAUNCH_CONTRACT["required_operations"]["start"])
-    if sandbox.get("services", {}):
+    if sandbox.get("services", {}) or sandbox.get("ports", []):
         required.update(LAUNCH_CONTRACT["required_operations"]["services"])
     missing = required - set(operations)
     return {

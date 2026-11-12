@@ -65,6 +65,8 @@ After process-start acknowledgement, the launcher polls a nonzero `sandbox.ready
 
 Use the [v1 resource fields](../reference/template-yaml-spec.md). Literal prepared input needs no CLI installation. Native expressions must first be resolved by the Devs parser. `sandbox.instance.timeout` supplies the TTL unless the explicit Python `timeout` argument overrides it; omitted overrides preserve the manifest. Instance specs, existing Volume mounts, environment and metadata are forwarded. Environment values never implicitly read the host environment. Application deployment remains an orchestrator responsibility and is rejected before creating a sandbox.
 
+Additional declared `sandbox.ports` are returned as `session.endpoints[port]` Provider descriptors, without creating clients or probing them. Their gateway headers stay in memory and are not part of the public plan or journal. A port declaration does not establish native TCP reachability or start that service.
+
 ## Interpreter operations
 
 `ProviderSandbox.code.run(code)` selects stateless `code.execute`. The provider protocol must implement isolation (a native stateless call or temporary context with guaranteed cleanup). `mode="default-context"` explicitly selects persistent `code.default-context.execute`; `context_id=...` selects `code.context.execute`. Creating, listing, restarting and deleting contexts each require their own operation. Realtime callbacks require `code.stream`; a buffered response is not realtime streaming. Rich structured results have a separate operation.

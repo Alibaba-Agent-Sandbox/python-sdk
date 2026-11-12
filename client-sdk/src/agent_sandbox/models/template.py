@@ -197,7 +197,7 @@ class SandboxTemplate(BaseModel):
             **intent,
             "env": instance.get("envs", {}),
             "provides": services,
-            "ports": sorted({v["port"] for v in services.values()}),
+            "ports": sorted(set(sb.get("ports", [])) | {v["port"] for v in services.values()}),
             "cpu_count": props.get("cpu") if type(props.get("cpu")) is int else None,
             "memory_mb": props.get("memory") if type(props.get("memory")) is int else None,
             "start_cmd": sb.get("start"),
@@ -211,7 +211,7 @@ class SandboxTemplate(BaseModel):
 
     def discovery_capabilities(self) -> set[str]:
         """Describe exposed ports without claiming platform execution capabilities."""
-        return {"ports"} if self.provides else set()
+        return {"ports"} if self.ports else set()
 
 
 class TemplateRef(BaseModel):

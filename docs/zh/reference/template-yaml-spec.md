@@ -10,6 +10,7 @@
 | `sandbox.template` | `source`、`image`、`reference` 三选一；可带构建 `props` 和 `aliases` |
 | `sandbox.instance` | 实例 TTL、环境变量、元数据及 Provider 支持的实例参数 |
 | `sandbox.start`、`sandbox.ready` | 整体启动和就绪检查命令 |
+| `sandbox.ports` | 可选的附加端口号，不推测协议或自动启动服务 |
 | `sandbox.services` | 端点映射：协议、整数版本、端口及可选 operations |
 | `deployment` | 原生 Serverless Devs 项目，直接使用组件名和原生 props |
 | `application` | 显式选择应用协调器，目前为 `type: agents-api` |
@@ -61,3 +62,5 @@ sandbox:
 源码准备时将 `reference` 换为 `source: {dockerfile: Dockerfile, context: .}` 并使用 CLI，Python 仍需准备后的引用。启动命令和镜像原生入口应只有一个启动责任方，避免同一服务启动两次。参阅[启动与清理](../guide/template-workflows.md)。
 
 Provider 作者可覆盖可选的同步 `Provider.validate_template_input(stage, value)`，使用该版本的真实 schema。阶段为 `template.prepare`（模板对象）和 `sandbox.create`（实例对象），返回 `False` 或抛错表示拒绝。继承的默认方法不算校验器，异步校验会被拒绝。校验通过不授予操作能力，也不代表高层创建 API 自动承接了尚未实现的实例字段。
+
+`sandbox.ports` 保留浏览器调试、数据库等可选附加端口；编译端口列表为它与服务端口的排序去重并集。`session.endpoints[端口]` 返回未归属 `sandbox.services` 的附加端口的 Provider 描述，网关请求头只在内存中。它不创建 ServerClient，也不发送 health/discovery 请求。声明端口不保证原生 TCP 或公网可达，实际地址与协议由 Provider 决定。也可单独调用 `await sandbox.application_endpoint(port)`，已有服务客户端仍在 `session.services`。

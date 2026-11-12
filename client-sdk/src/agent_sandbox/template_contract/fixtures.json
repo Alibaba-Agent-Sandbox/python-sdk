@@ -981,6 +981,64 @@
         }
       },
       "descriptor": true
+    },
+    {
+      "id": "additional-access-ports-only",
+      "stage": "resolved",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          },
+          "ports": [
+            9222,
+            6080
+          ]
+        }
+      },
+      "compile": true
+    },
+    {
+      "id": "service-and-additional-port-union",
+      "stage": "resolved",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          },
+          "ports": [
+            9222,
+            9000
+          ],
+          "services": {
+            "app": {
+              "protocol": "agent-sandbox-server",
+              "version": 2,
+              "port": 9000,
+              "operations": []
+            }
+          }
+        }
+      },
+      "compile": true
     }
   ],
   "invalidTemplates": [
@@ -3224,6 +3282,99 @@
               "allowTestDomain": true
             }
           }
+        }
+      }
+    },
+    {
+      "id": "invalid-additional-port-boolean",
+      "stage": "resolved",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          },
+          "ports": [
+            true
+          ]
+        }
+      }
+    },
+    {
+      "id": "invalid-additional-port-zero",
+      "stage": "resolved",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          },
+          "ports": [
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "invalid-additional-port-out-of-range",
+      "stage": "resolved",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          },
+          "ports": [
+            65536
+          ]
+        }
+      }
+    },
+    {
+      "id": "invalid-additional-port-duplicate",
+      "stage": "resolved",
+      "manifest": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "provider": "alicloud-express",
+          "template": {
+            "reference": "existing-template"
+          },
+          "instance": {
+            "timeout": 300,
+            "volume_mounts": {
+              "/data": "existing-volume-name"
+            }
+          },
+          "ports": [
+            9000,
+            9000
+          ]
         }
       }
     }

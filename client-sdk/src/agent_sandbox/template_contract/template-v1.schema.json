@@ -191,6 +191,15 @@
           "additionalProperties": {
             "$ref": "#/$defs/service"
           }
+        },
+        "ports": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          }
         }
       },
       "required": [

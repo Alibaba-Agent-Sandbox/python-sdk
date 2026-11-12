@@ -462,7 +462,10 @@ def compile_template_v1(
             provider=sb["provider"],
             provides=deepcopy(sb["services"]),
             env=deepcopy(sb["instance"]["envs"]),
-            ports=sorted({service["port"] for service in sb["services"].values()}),
+            ports=sorted(
+                set(sb.get("ports", []))
+                | {service["port"] for service in sb["services"].values()}
+            ),
             resources=deepcopy(sb["template"].get("props", {})),
             start_cmd=sb.get("start"),
             ready_cmd=sb.get("ready"),

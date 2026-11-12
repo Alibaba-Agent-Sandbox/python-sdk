@@ -51,6 +51,14 @@ version-specific schemas to the selected Provider. The inherited unavailable def
 counted as a validator. Missing unknown-plugin validators, false/raised rejection and async
 returns fail before creation. This adds no operation claim or automatic vendor-field mapping.
 
+Additional `sandbox.ports` remain distinct from protocol-bearing `sandbox.services`.
+The compiled/discovery port list is their sorted union. `TemplateSession.endpoints`
+contains Provider descriptors only for additional ports not already represented by services.
+`Sandbox.application_endpoint` factors the existing identity/audience/expiry checks from
+`application_client`; no ServerClient, health call or startup is invented for raw ports.
+Headers stay only in memory, and `ports.resolve` is required even without services. This
+does not promise native TCP or public connectivity.
+
 Discovery validates canonical intent and derives service information without resolving
 native expressions, credentials or cloud capabilities. The standalone server policy helper
 remains available; root `server` is not silently added to the public resource schema.
@@ -104,3 +112,5 @@ acceptance remains a separate required gate of the encompassing delivery.
 ## Evidence
 
 [Verification](../../../evidence/verify/2026-11-12-template-v1-runtime.md).
+
+[Ports and final gate follow-up](../../../evidence/verify/2026-11-12-template-v1-runtime-ports.md).

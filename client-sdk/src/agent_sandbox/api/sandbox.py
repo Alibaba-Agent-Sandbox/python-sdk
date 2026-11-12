@@ -405,24 +405,21 @@ class Sandbox:
             timeout=timeout,
         )
 
-    async def application_client(
+    async def application_endpoint(
         self,
         port: int = 9000,
         *,
-        token: str | None = None,
         traffic_access_token: str | None = None,
-        timeout: float = 30.0,
-    ) -> ServerClient:
-        """Resolve application HTTP independently of the sandbox control/data transport.
+    ) -> dict[str, Any]:
+        """Resolve a Provider port endpoint without creating or probing a service client.
 
-        The provider supplies this sandbox's port URL and minimal gateway headers.
-        Application credentials are explicit and never inherited from API keys.
-        traffic_access_token overrides the stored gateway token for this client
-        only. No connect, resume or lifetime renewal is performed.
+        Returns the selected Provider's URL, gateway headers and addressing metadata.
+        This does not start the application or establish native TCP reachability.
+        Control-plane keys are never copied into gateway headers. No connect,
+        resume or lifetime renewal is performed.
         """
         from datetime import datetime, timezone
 
-        from agent_sandbox.api.server_client import ServerClient
         from agent_sandbox.protocol.port_contract import PortContext
         from agent_sandbox.providers.registry import get_provider
 
@@ -468,13 +465,34 @@ class Sandbox:
         path_mode = descriptor.get("path_mode")
         if not isinstance(path_mode, str):
             raise ValueError("Application endpoint path mode is required")
+        return {**descriptor, "headers": dict(headers)}
+
+    async def application_client(
+        self,
+        port: int = 9000,
+        *,
+        token: str | None = None,
+        traffic_access_token: str | None = None,
+        timeout: float = 30.0,
+    ) -> ServerClient:
+        """Resolve an application endpoint and create its explicit HTTP client.
+
+        Gateway and application authentication have separate audiences. The token
+        authenticates the application; traffic_access_token overrides only the
+        Provider gateway token for this client.
+        """
+        from agent_sandbox.api.server_client import ServerClient
+
+        descriptor = await self.application_endpoint(
+            port, traffic_access_token=traffic_access_token
+        )
         return ServerClient(
-            url,
-            headers=headers,
+            descriptor["url"],
+            headers=descriptor["headers"],
             token=token,
             timeout=timeout,
-            path_mode=path_mode,
-            expires_at=expires,
+            path_mode=descriptor["path_mode"],
+            expires_at=descriptor.get("expires_at"),
         )
 
     async def start_server(

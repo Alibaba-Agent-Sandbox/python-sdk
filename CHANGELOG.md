@@ -23,6 +23,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Preserve additional `sandbox.ports` alongside service ports. Prepared sessions
+  expose Provider endpoint descriptors without inventing clients or readiness checks;
+  gateway headers remain private in memory. / 保留额外端口声明；启动会话返回
+  Provider 端点描述，不创建虚构客户端或就绪检查，网关请求头只在内存中。
+
 - Consume canonical `specVersion: 1` resource documents in prepared Python launch
   and discovery. Preserve instance TTL/specs/Volumes/environment/metadata and explicit
   API overrides; reject unresolved native expressions before creation. Managed

@@ -59,6 +59,8 @@ Python 不构建源码；源码准备由 CLI 负责，按上文选择一个启�
 
 使用 [v1 资源字段](../reference/template-yaml-spec.md)。字面量已准备模板无需安装 CLI；原生表达式需先由 Devs 解析器解析。`sandbox.instance.timeout` 提供 TTL，只有显式 Python `timeout` 才会覆盖；省略时保留清单值。实例规格、已有卷、环境变量和元数据会实际传入创建请求。环境值不会隐式读取宿主环境。应用部署由协调器负责，Python 在创建 Sandbox 前拒绝这类输入。
 
+额外声明的 `sandbox.ports` 通过 `session.endpoints[端口]` 返回 Provider 描述，不为其创建客户端或发送探测。网关请求头只在内存中，不进入公开 plan 或日志。端口声明不保证原生 TCP 可达，也不会启动该服务。
+
 ## 解释器操作
 
 `ProviderSandbox.code.run(code)` 默认选择无状态的 `code.execute`。Provider 协议负责隔离，可使用原生无状态调用或临时上下文并保证清理。`mode="default-context"` 显式选择持久的默认上下文；`context_id=...` 选择 `code.context.execute`。创建、列举、重启、删除上下文分别要求精确操作。实时回调要求 `code.stream`，缓冲后回调不算实时流；结构化富结果另有操作声明。

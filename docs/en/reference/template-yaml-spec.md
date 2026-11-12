@@ -10,6 +10,7 @@ Use `specVersion: 1` and one local `template.yaml`. The complete field types and
 | `sandbox.template` | Exactly one `source`, `image` or `reference`; optional preparation `props` and `aliases` |
 | `sandbox.instance` | Runtime TTL, environment, metadata and Provider-supported instance settings |
 | `sandbox.start`, `sandbox.ready` | Whole-sandbox startup and readiness commands |
+| `sandbox.ports` | Optional additional port numbers; no inferred protocol or automatic service start |
 | `sandbox.services` | Endpoint map: protocol, integer version, port and optional operations |
 | `deployment` | Native Serverless Devs project; `resources.*.component` and native `props` |
 | `application` | Explicit supported application coordinator, currently `type: agents-api` |
@@ -61,3 +62,5 @@ sandbox:
 For source preparation, replace `reference` with `source: {dockerfile: Dockerfile, context: .}` and use the CLI; Python still requires its prepared reference. Choose one startup owner so the image's native entrypoint does not launch the same application twice. See [launch and cleanup](../guide/template-workflows.md).
 
 Provider authors can override the optional synchronous `Provider.validate_template_input(stage, value)` with their version's actual schema. Stages are `template.prepare` (template object) and `sandbox.create` (instance object). Return `False` or raise to reject. The inherited default is not a validator; asynchronous validation is rejected. Admission does not grant operations or forward instance fields that the high-level creation API has not implemented.
+
+`sandbox.ports` preserves optional extra ports such as browser debugging or a database port. The compiled port list is the sorted union with service ports. `session.endpoints[port]` returns the Provider descriptor for extra ports outside `sandbox.services`, including gateway headers only in memory. It creates no ServerClient and sends no health/discovery request. A declared port does not guarantee native TCP or public connectivity; use the Provider's actual addressing/protocol. `await sandbox.application_endpoint(port)` provides the same descriptor independently. Existing service clients remain in `session.services`.

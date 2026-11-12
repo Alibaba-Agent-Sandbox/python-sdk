@@ -60,8 +60,10 @@ class TemplateSession:
         sandbox: Sandbox | None,
         services: dict[str, ServerClient],
         journal: _Journal,
+        endpoints: dict[int, dict[str, Any]] | None = None,
     ) -> None:
         self.plan, self.sandbox, self.services = plan, sandbox, services
+        self.endpoints = endpoints or {}
         self.servers = {
             name: client
             for name, client in services.items()
@@ -304,6 +306,7 @@ async def launch_template(
     creation_uncertain = False
     sandbox: Sandbox | None = None
     clients: dict[str, ServerClient] = {}
+    endpoints: dict[int, dict[str, Any]] = {}
     session: TemplateSession | None = None
     try:
         if prov.content_digest() != provider_digest:
@@ -360,6 +363,9 @@ async def launch_template(
                 if result.exit_code == 0:
                     break
                 await asyncio.sleep(min(0.25, max(0, deadline - loop.time())))
+        service_ports = {service["port"] for service in plan["services"].values()}
+        for port in sorted(set(compiled["sandbox"].get("ports", [])) - service_ports):
+            endpoints[port] = await sandbox.application_endpoint(port)
         for name, service in plan["services"].items():
             client = await sandbox.application_client(service["port"], token=token)
             clients[name] = client
@@ -374,11 +380,11 @@ async def launch_template(
             if discovery.api_version != service["version"]:
                 raise TemplateLaunchError("protocol-mismatch: " + name, "before-invoke")
             journal.append("protocol-checked", service=name, api_version=discovery.api_version)
-        session = TemplateSession(plan, sandbox, clients, journal)
+        session = TemplateSession(plan, sandbox, clients, journal, endpoints)
         return session
     except BaseException:
         if session is None:
-            session = TemplateSession(plan, sandbox, clients, journal)
+            session = TemplateSession(plan, sandbox, clients, journal, endpoints)
         session.creation_uncertain = creation_uncertain
         await session.close()
         raise
