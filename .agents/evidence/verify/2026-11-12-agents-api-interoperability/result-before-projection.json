@@ -1,0 +1,726 @@
+{
+  "sdkVersion": "3.49.0",
+  "sdkModule": "__init__.py",
+  "operations": [
+    {
+      "strict": false,
+      "operation": "create",
+      "decodedClass": "AgentSession",
+      "decodedFields": [
+        "agent",
+        "created_at",
+        "environment",
+        "error",
+        "id",
+        "last_active_at",
+        "metadata",
+        "object",
+        "required_actions",
+        "review",
+        "spend_control",
+        "status",
+        "usage",
+        "vault_ids",
+        "x_agent_sandbox"
+      ],
+      "status": "in_progress"
+    },
+    {
+      "strict": false,
+      "operation": "retrieve",
+      "decodedClass": "AgentSession",
+      "decodedFields": [
+        "agent",
+        "created_at",
+        "environment",
+        "error",
+        "id",
+        "last_active_at",
+        "metadata",
+        "object",
+        "required_actions",
+        "review",
+        "spend_control",
+        "status",
+        "usage",
+        "vault_ids",
+        "x_agent_sandbox"
+      ],
+      "sameId": true
+    },
+    {
+      "strict": false,
+      "operation": "list",
+      "decodedClass": "SyncCursorPage[AgentSession]",
+      "decodedFields": [
+        "data",
+        "first_id",
+        "has_more",
+        "last_id",
+        "object",
+        "x_agent_sandbox"
+      ],
+      "count": 1
+    },
+    {
+      "strict": true,
+      "operation": "create",
+      "errorClass": "APIResponseValidationError",
+      "statusCode": 201,
+      "validationErrors": [
+        {
+          "loc": [
+            "agent",
+            "id"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "agent",
+            "multi_agent"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "agent",
+            "reasoning"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "agent",
+            "service_tier"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "agent",
+            "text"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "created_at"
+          ],
+          "type": "int_from_float"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceNone",
+            "type"
+          ],
+          "type": "literal_error"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "capability_directories"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "files"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "network"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "packages"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "plugins"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "skills"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "type"
+          ],
+          "type": "literal_error"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceSelfHosted",
+            "capability_directories"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceSelfHosted",
+            "remote_url"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "last_active_at"
+          ],
+          "type": "int_from_float"
+        },
+        {
+          "loc": [
+            "required_actions"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "vault_ids"
+          ],
+          "type": "missing"
+        }
+      ]
+    },
+    {
+      "strict": true,
+      "operation": "retrieve",
+      "errorClass": "APIResponseValidationError",
+      "statusCode": 200,
+      "validationErrors": [
+        {
+          "loc": [
+            "agent",
+            "id"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "agent",
+            "multi_agent"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "agent",
+            "reasoning"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "agent",
+            "service_tier"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "agent",
+            "text"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "created_at"
+          ],
+          "type": "int_from_float"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceNone",
+            "type"
+          ],
+          "type": "literal_error"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "capability_directories"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "files"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "network"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "packages"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "plugins"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "skills"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "type"
+          ],
+          "type": "literal_error"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceSelfHosted",
+            "capability_directories"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "environment",
+            "EnvironmentResourceSelfHosted",
+            "remote_url"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "last_active_at"
+          ],
+          "type": "int_from_float"
+        },
+        {
+          "loc": [
+            "required_actions"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "vault_ids"
+          ],
+          "type": "missing"
+        }
+      ]
+    },
+    {
+      "strict": true,
+      "operation": "list",
+      "errorClass": "APIResponseValidationError",
+      "statusCode": 200,
+      "validationErrors": [
+        {
+          "loc": [
+            "data",
+            0,
+            "agent",
+            "id"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "agent",
+            "multi_agent"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "agent",
+            "reasoning"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "agent",
+            "service_tier"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "agent",
+            "text"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "created_at"
+          ],
+          "type": "int_from_float"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "environment",
+            "EnvironmentResourceNone",
+            "type"
+          ],
+          "type": "literal_error"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "capability_directories"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "files"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "network"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "packages"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "plugins"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "skills"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "type"
+          ],
+          "type": "literal_error"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "environment",
+            "EnvironmentResourceSelfHosted",
+            "capability_directories"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "environment",
+            "EnvironmentResourceSelfHosted",
+            "remote_url"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "last_active_at"
+          ],
+          "type": "int_from_float"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "required_actions"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            0,
+            "vault_ids"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "agent",
+            "id"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "agent",
+            "multi_agent"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "agent",
+            "reasoning"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "agent",
+            "service_tier"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "agent",
+            "text"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "created_at"
+          ],
+          "type": "int_from_float"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "environment",
+            "EnvironmentResourceNone",
+            "type"
+          ],
+          "type": "literal_error"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "capability_directories"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "files"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "network"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "packages"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "plugins"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "skills"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "environment",
+            "EnvironmentResourceOpenAIHosted",
+            "type"
+          ],
+          "type": "literal_error"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "environment",
+            "EnvironmentResourceSelfHosted",
+            "capability_directories"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "environment",
+            "EnvironmentResourceSelfHosted",
+            "remote_url"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "last_active_at"
+          ],
+          "type": "int_from_float"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "required_actions"
+          ],
+          "type": "missing"
+        },
+        {
+          "loc": [
+            "data",
+            1,
+            "vault_ids"
+          ],
+          "type": "missing"
+        }
+      ]
+    }
+  ],
+  "workerStarted": false,
+  "cloudCalls": 0,
+  "acceptedTypedPrompt": true,
+  "sessionCount": 2
+}

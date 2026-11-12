@@ -1,0 +1,17 @@
+{
+  "scope": "Configured endpoint minimal synthetic tool-result protocol probes, not Agent/cloud business E2E",
+  "results": [
+    {
+      "probe": "chat-tool-result",
+      "model": "qwen3-coder-flash",
+      "httpStatus": 200,
+      "hasOutput": true
+    },
+    {
+      "probe": "responses-tool-result",
+      "model": "qwen3-coder-flash",
+      "httpStatus": 400,
+      "toolRoleRejected": true
+    }
+  ]
+}

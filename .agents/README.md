@@ -1,5 +1,7 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+- [Agents API delivery operations](notes/proposed/process/2026-11-12-agents-api-delivery-operations.md) · [record-placement verification](evidence/verify/2026-11-12-agents-api-delivery-operations.md).
+
 - [Standalone server policy documentation](notes/proposed/feature/2026-11-12-standalone-policy-docs.md) · [verification](evidence/verify/2026-11-12-standalone-policy-docs.md).
 
 - [Shared YAML Core reader](notes/proposed/feature/2026-11-12-template-yaml-core-reader.md) · [verification](evidence/verify/2026-11-12-template-yaml-core-reader.md).

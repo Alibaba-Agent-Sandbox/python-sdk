@@ -1,0 +1,160 @@
+{
+  "scope": "remote source checkpoint before record-only follow-up; new head checks remain separate",
+  "observed_at_utc": "2026-11-12T20:36:43.000655+00:00",
+  "pull_requests": [
+    {
+      "repository": "python-sdk",
+      "number": 163,
+      "url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/163",
+      "head": "ef61cfebf009ba5ea6783a0a94735cc26e4d0b9b",
+      "draft": true,
+      "state": "open",
+      "merged": false,
+      "checks_read_blocked": false,
+      "checks": [
+        {
+          "name": "Build packages",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Public runtime fixture (python-hello)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "client-sdk (Python 3.12)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Python to Node provider engine",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "No local paths or secrets",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Pinned E2B public contract",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "server-sdk (Python 3.10)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "server-sdk (Python 3.12)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Public runtime fixture (agents-cli)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "server-sdk (Python 3.11)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "client-sdk (Python 3.11)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "client-sdk (Python 3.10)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Markdown links",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "repository": "python-sdk",
+      "number": 164,
+      "url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/164",
+      "head": "c4d43a24f40412bb8ab303509a7cb5bf7030da3c",
+      "draft": true,
+      "state": "open",
+      "merged": false,
+      "checks_read_blocked": false,
+      "checks": [
+        {
+          "name": "Build packages",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "client-sdk (Python 3.11)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "client-sdk (Python 3.10)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "server-sdk (Python 3.10)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Public runtime fixture (agents-cli)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "server-sdk (Python 3.11)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Pinned E2B public contract",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Python to Node provider engine",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Public runtime fixture (python-hello)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "client-sdk (Python 3.12)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "server-sdk (Python 3.12)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "No local paths or secrets",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Markdown links",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}

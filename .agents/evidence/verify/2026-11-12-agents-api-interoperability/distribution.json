@@ -1,0 +1,10 @@
+{
+  "version": "3.49.0",
+  "wheels": [
+    {
+      "filename": "openai-3.49.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/fe/45/de8fbd25a1ca0a46f9641604a7cb991123daa7f292c27625223d685d9bac/openai-3.49.0-py3-none-any.whl",
+      "sha256": "3977754792115027ba80ae16996ba3366478b5b228e1ab58e2660bd7ac8c3d78"
+    }
+  ]
+}
