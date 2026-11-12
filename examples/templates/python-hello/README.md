@@ -1,61 +1,22 @@
-# Python Hello 模板
+# Python Hello 离线夹具（Offline fixture）
 
-**Server SDK。** `commands.py` 在沙箱里面启动。`call_api.py` 是 Client SDK：在外面调用已经起来的服务。
+本目录为 Python SDK 的离线测试夹具。`commands.py` 在服务端注册命令，`call_api.py` 从客户端访问已运行的服务。真实模板的镜像、配置和发布说明由 [awesome-templates/python-hello](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/tree/main/python-hello) 维护。
 
-> **Fixture**：本目录是主仓库的**离线测试夹具**（`client-sdk/tests/test_templates/` 使用），
-> 不是发布真源。模板内容、索引与发布以
-> [`alibaba-agent-sandbox/awesome-templates`](https://github.com/alibaba-agent-sandbox/awesome-templates/tree/main/python-hello)
-> 为准。
+## 使用真实模板
 
-基础 Python 开发环境模板。
-
-## 安装
-
-> 以下 `abx` 命令由独立 `cli` 仓库中的 `abx` CLI 提供（[CLI binary installation](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/binary-installation.md)）。
+安装并配置[当前 CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox#installation) 后：
 
 ```bash
-abx install ./examples/templates/python-hello --registry-type local
+abx deploy python-hello --name hello
+abx sandbox command run hello hello --arg name=Alice
+abx sandbox command run hello run_script --arg 'code=print(1+1)'
+abx sandbox upload hello ./local_file.txt /home/user/app/remote.txt
+abx sandbox download hello /home/user/app/remote.txt ./local_file.txt
+abx delete hello --yes
 ```
 
-## 使用
+部署会生成并在本机保存缺省应用令牌。外部 Python 或 HTTP 调用者需要使用对应令牌及 Provider 返回的访问地址与认证头；见[模板使用指南](../../../docs/zh/guide/template-workflows.md)。安装 SDK 或本地注册函数不会部署该函数。
 
-```bash
-abx create --template python-hello
-```
+## 验证夹具
 
-### 命名命令（端到端）
-
-容器启动后会自动运行 `commands.py`，监听端口 9000，提供以下命名命令：
-
-```bash
-# 打招呼
-abx run <sandbox-id> hello --name Alice
-# → Hello, Alice!
-
-# 执行 Python 代码
-abx run <sandbox-id> run_script --code "print(1+1)"
-# → 2
-```
-
-SDK 侧等价写法：
-
-```python
-from agent_sandbox import ProviderSandbox as Sandbox
-
-sandbox = Sandbox.create_sync(template="python-hello")
-print(sandbox.run_sync("hello", name="Alice"))  # Hello, Alice!
-```
-
-### 上传 / 下载
-
-```bash
-abx upload <sandbox-id> ./local_file.txt /app/remote.txt
-abx download <sandbox-id> /app/remote.txt ./local_file.txt
-```
-
-## 环境
-
-- 基础镜像: Ubuntu 22.04
-- Python 3 + pip
-- 容器内运行时: [配套源码安装指南](../../../docs/zh/guide/install-python.md)（提供 `agent_sandbox.server`）
-- 工作目录: /app
+运行 `cd client-sdk && python -m pytest tests/test_templates/ -q`。该检查用于本地行为，不创建云资源。模板内容变更应提交到模板源仓库。

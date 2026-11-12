@@ -14,7 +14,7 @@ not acquire Docker/source-build responsibilities.
 
 ## Launch and use
 
-Use `abx --provider PROVIDER template launch TEMPLATE_REF` or Python
+Use `abx --provider PROVIDER deploy TEMPLATE_REF` or Python
 `launch_template(manifest, provider=..., reference=...)`. The launcher checks only
 operations needed to create, start, inspect readiness and clean up. Missing interpreter
 operations never prevent an unrelated application from starting. Actual operations

@@ -60,7 +60,7 @@ The installer fetches the catalog index at `https://registry.agent-sandbox.cn/pr
 | [File and command controls](guide/file-and-command-controls.md) | Limit paths and commands |
 | [Agents API](guide/agents-api.md) | Codex and Qwen Code HTTP sessions inside the sandbox |
 | [Hosted agents](guide/hosted-agents.md) | How those routes refuse and what they return |
-| [Build and deploy](guide/build-and-deploy.md) | `abx template build` and `abx template deploy` |
+| [Build and deploy](guide/build-and-deploy.md) | `abx template build` and `abx deploy` |
 
 How a change counts as tested: [Testing and the Definition of Done](guide/testing-e2e.md).
 

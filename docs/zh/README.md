@@ -60,7 +60,7 @@ Agent Sandbox 是可切换提供方的沙箱 SDK。默认提供方是阿里云�
 | [文件与命令控制](guide/file-and-command-controls.md) | 限制路径和命令 |
 | [Agents API](guide/agents-api.md) | 沙箱里的 Codex 与 Qwen Code HTTP 会话 |
 | [托管代理](guide/hosted-agents.md) | 这些路由的拒绝和响应 |
-| [构建与部署](guide/build-and-deploy.md) | `abx template build` 与 `abx template deploy` |
+| [构建与部署](guide/build-and-deploy.md) | `abx template build` 与 `abx deploy` |
 
 测试如何算完成，见[测试与完成定义](guide/testing-e2e.md)。
 

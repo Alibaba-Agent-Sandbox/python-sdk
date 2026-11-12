@@ -2,8 +2,8 @@
 
 The official and community template catalog lives in a **single source of
 truth** repository: ``alibaba-agent-sandbox/awesome-templates``.  Its root index file
-(``awesome-templates.yaml``) is what ``abx template search`` queries and what
-``abx template install <name>`` resolves bare template names against.
+(``awesome-templates.yaml``) is what ``abx template list`` queries and what
+``abx template init DIRECTORY --from <name>`` resolves bare template names against.
 
 Design notes
 ------------
@@ -460,8 +460,8 @@ async def fetch_index(
     suggestion = (
         "Check your network connection, or point at a mirror with "
         f"--index-url / {INDEX_URL_ENV}. For GitHub rate limits, authenticate "
-        "with 'abx config set github_token'. As a last resort install directly "
-        "with 'abx template install owner/repo//subdir[@ref]'."
+        "with 'abx config set github_token'. As a last resort acquire source directly "
+        "with 'abx template init ./project --from owner/repo//subdir[@ref]'."
     )
 
     try:

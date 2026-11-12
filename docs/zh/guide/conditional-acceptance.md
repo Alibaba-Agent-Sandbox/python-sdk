@@ -70,8 +70,8 @@ cat > template-create.json <<'JSON'
   "envd_inject": false
 }
 JSON
-abx --provider alicloud-express --region "$REGION" provider run template.create --input-file template-create.json --yes
-abx --provider alicloud-express --region "$REGION" provider run template.get --input-file template-get.json
+abx --provider alicloud-express --opt "region=$REGION" provider run template.create --input-file template-create.json --yes
+abx --provider alicloud-express --opt "region=$REGION" provider run template.get --input-file template-get.json
 ```
 
 执行前替换唯一名称、Team 和镜像地域。将返回的 `template_id` 与相同的 `team_id` 写入 `template-get.json`，轮询直到构建就绪。提交是异步操作，注册时拒绝已有名称。这些命令对应当前源码 CLI；使用较早发行版时先查看已安装的帮助。

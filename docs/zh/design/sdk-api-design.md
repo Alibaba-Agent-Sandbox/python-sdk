@@ -7,7 +7,7 @@
 ## 设计原则
 
 - ProviderSandbox 创建、操作沙箱。源码镜像准备属于 CLI：通常使用
-  `abx template launch <reference>`；build/deploy 是高级操作。标准 Template 构建器
+  `abx deploy <reference> --name <name>`；build/deploy 是高级操作。标准 Template 构建器
   保留其独立接口约定。
 - Shell 命令、解释器执行和模板应用命令有不同入口与前提。创建 `base` 不会启动应用。
 - Provider 声明和真实账号决定可用操作；有同名方法不代表所有平台都实现了它。
@@ -56,7 +56,7 @@ SandboxServer 可通过已有 `@sandbox.register` 或 server 命令注册机制�
 | 注册的应用命令 | 应用客户端 `commands.run(...)` | 运行中的 SandboxServer 服务及应用令牌 |
 | 注册命令发现 | 应用客户端 `commands.list()` | 同一运行中的服务 |
 
-先用 `abx template launch <reference>` 启动完整模板，再根据返回的沙箱信息，通过
+先用 `abx deploy <reference> --name <name>` 启动完整模板，再根据返回的沙箱信息，通过
 `application_client(..., token=...)` 保留 Provider 网关头和应用认证。见
 [模板启动](../guide/template-workflows.md)与[模板 server API](../guide/template-server-api.md)。
 仅用熟悉的模板名创建普通平台沙箱，不会执行这一启动流程。

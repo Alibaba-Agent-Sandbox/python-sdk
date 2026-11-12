@@ -149,7 +149,7 @@ python-hello。源码准备需要 CLI 文档中的 Docker 和镜像仓库配置�
 
 ```bash
 export ABX_SERVER_TOKEN='replace_me'
-abx --provider alicloud-express template launch 'alibaba-agent-sandbox/awesome-templates//python-hello'
+abx --provider alicloud-express deploy 'alibaba-agent-sandbox/awesome-templates//python-hello'
 ```
 
 将返回的标识写入 `SANDBOX_ID`，使用相同的应用令牌：

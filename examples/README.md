@@ -61,7 +61,7 @@ examples/
 tests.  Official & community templates — content, index (`awesome-templates.yaml`),
 releases and CI — live in the single-source-of-truth repository
 [`alibaba-agent-sandbox/awesome-templates`](https://github.com/alibaba-agent-sandbox/awesome-templates);
-discover and install them with `abx template search` / `abx template launch <name> --yes`.
+discover and install them with `abx template list` / `abx deploy <name> --name <app> --yes`.
 
 ## Server SDK examples
 
@@ -157,7 +157,7 @@ requires the CLI's documented Docker/registry configuration.
 
 ```bash
 export ABX_SERVER_TOKEN='replace_me'
-abx --provider alicloud-express template launch 'alibaba-agent-sandbox/awesome-templates//python-hello'
+abx --provider alicloud-express deploy 'alibaba-agent-sandbox/awesome-templates//python-hello'
 ```
 
 Use the returned ID as `SANDBOX_ID` and the same application token:

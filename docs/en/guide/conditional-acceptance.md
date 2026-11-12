@@ -70,8 +70,8 @@ cat > template-create.json <<'JSON'
   "envd_inject": false
 }
 JSON
-abx --provider alicloud-express --region "$REGION" provider run template.create --input-file template-create.json --yes
-abx --provider alicloud-express --region "$REGION" provider run template.get --input-file template-get.json
+abx --provider alicloud-express --opt "region=$REGION" provider run template.create --input-file template-create.json --yes
+abx --provider alicloud-express --opt "region=$REGION" provider run template.get --input-file template-get.json
 ```
 
 Replace the unique name, Team and image region before running. Put the returned `template_id` and the same `team_id` in `template-get.json`; poll until the build is ready. Submission is asynchronous. The create operation rejects existing names. These commands follow the current source CLI; inspect installed help when using an older release.

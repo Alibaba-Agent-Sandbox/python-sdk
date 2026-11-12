@@ -19,7 +19,7 @@ examples/templates/
 ```
 
 `python-hello` 是一个最小端到端样例，用于让 `client-sdk/tests/test_templates/` 在**无网络**
-条件下驱动真实安装管线（`abx install` 的本地 / GitHub 两种来源、YAML 加载、
+条件下驱动源码获取与配置管线（本地 / GitHub 两种来源、YAML 加载、
 缓存布局、容器内命令服务器 E2E）。它与真源仓库中的同名模板保持同步，
 但**不从本仓库发布**。
 
@@ -30,9 +30,9 @@ examples/templates/
 （以下 `abx` 命令由独立 `cli` 仓库中的 `abx` CLI 提供。）
 
 ```bash
-abx template search python             # 浏览远程目录（名称 / 标签 / 描述）
-abx template install node-web          # 裸名 → 通过索引解析
-abx template install alibaba-agent-sandbox/awesome-templates//qwen-code@v1.0.0   # 直接引用 + 版本锁定
+abx template list python             # 浏览远程目录（名称 / 标签 / 描述）
+abx template init ./node-web --from node-web          # 裸名 → 通过索引解析
+abx template init ./qwen-code --from alibaba-agent-sandbox/awesome-templates//qwen-code@<COMMIT_OR_TAG>   # 直接引用 + 版本锁定
 ```
 
 索引默认地址（可用 `ABX_TEMPLATE_INDEX_URL` / `--index-url` 覆盖）：
@@ -49,7 +49,7 @@ https://raw.githubusercontent.com/alibaba-agent-sandbox/awesome-templates/main/a
 | 网络失败 / GitHub 限流（403/429） | 回退到已缓存副本并给出 warning；无缓存时报 `NetworkError` 并附补救建议 |
 | `--refresh` | 强制重新拉取（带 `If-None-Match` 条件请求） |
 | `schema_version` 高于本客户端 | 拒绝解析并提示升级 `agent-sandbox` |
-| 索引条目声明 `ref` | `abx template install <name>` 安装该固定版本 |
+| 索引条目声明 `ref` | `abx template init ./project --from <name>` 获取该固定版本 |
 | 直接引用 `owner/repo//subdir@ref` | 完全绕过索引（网络失败时的兜底路径） |
 
 ## 校验
