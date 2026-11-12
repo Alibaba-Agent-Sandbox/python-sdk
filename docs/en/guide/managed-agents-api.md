@@ -48,6 +48,8 @@ with httpx.Client(
     print(response.headers["X-Agent-Sandbox-Submission-Id"])
 ```
 
+Session `created_at` and `last_active_at` are Unix timestamps in integer seconds. `required_actions` and `vault_ids` are empty arrays; client-required actions and Vault bindings are unsupported.
+
 Creation returns `201`. Input reception returns a durable Submission, while a public Turn appears
 when execution starts. Poll the Session and its `/turns` and `/artifacts` collections. Download a
 published artifact through `/v1/agents/sessions/{id}/artifacts/{artifact_id}/content`.

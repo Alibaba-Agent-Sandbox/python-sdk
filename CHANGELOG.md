@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Return managed Session timestamps as integer Unix seconds and truthful empty
+  `required_actions` / `vault_ids` arrays without changing internal clock precision. /
+  托管 Session 时间输出为整数秒，返回实际为空的待办动作与 Vault 列表，内部时钟精度保留。
+
 - Accept the optional `type: "message"` discriminator for managed user-text input,
   validate explicitly supplied saved Agent IDs without coercion or inline fallback,
   and distinguish rate-limit and unavailable-service error categories. Saved Agent

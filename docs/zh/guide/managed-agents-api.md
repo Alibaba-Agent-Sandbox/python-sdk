@@ -43,6 +43,8 @@ with httpx.Client(
     print(response.headers["X-Agent-Sandbox-Submission-Id"])
 ```
 
+Session 的 `created_at` 与 `last_active_at` 为整数秒 Unix 时间戳。`required_actions` 与 `vault_ids` 返回空数组；当前不支持客户端待办动作或 Vault 绑定。
+
 创建返回 `201`。接收输入后生成持久 Submission，真正开始执行时才出现公开 Turn。
 轮询 Session、`/turns` 和 `/artifacts` 集合，通过
 `/v1/agents/sessions/{id}/artifacts/{artifact_id}/content` 下载已发布产物。

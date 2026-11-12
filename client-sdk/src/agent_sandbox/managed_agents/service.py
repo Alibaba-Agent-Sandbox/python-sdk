@@ -72,6 +72,11 @@ OPERATIONS = (
 def public(row: dict[str, Any]) -> dict[str, Any]:
     """Remove all private control/state fields before serializing a public object."""
     out = {k: v for k, v in row.items() if not k.startswith("_")}
+    if row.get("_kind") == "session":
+        for key in ("created_at", "last_active_at"):
+            out[key] = int(row[key])
+        out["required_actions"] = []
+        out["vault_ids"] = []
     if row.get("_kind") == "session" and isinstance(row.get("environment"), dict):
         out["environment"] = {
             **row["environment"],
