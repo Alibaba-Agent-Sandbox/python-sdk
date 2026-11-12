@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from agent_sandbox.models.errors import TemplateParseError
 from agent_sandbox.models.template import SandboxTemplate
+from agent_sandbox.template_contract import _read_yaml_document
 
 TEMPLATE_CACHE_DIR = Path.home() / ".abx" / "templates"
 
@@ -26,10 +27,8 @@ def parse_template_data(data: dict[str, Any]) -> SandboxTemplate:
 
 
 def _read(path: Path) -> SandboxTemplate:
-    import yaml
-
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        _, data = _read_yaml_document(path)
         if not isinstance(data, dict):
             raise ValueError("template must be a mapping")
         return parse_template_data(data)
@@ -56,12 +55,10 @@ async def resolve_capabilities_for(
     if local_yaml_path is not None:
         template = _read(Path(local_yaml_path))
         return ResolvedCapabilities(capabilities=template.discovery_capabilities(), matched=True)
-    import yaml
-
     for template_id in dict.fromkeys(t for t in template_ids if t):
         for path in sorted(TEMPLATE_CACHE_DIR.rglob("template.yaml")):
             try:
-                data = yaml.safe_load(path.read_text(encoding="utf-8"))
+                _, data = _read_yaml_document(path)
             except Exception:
                 if path.parent.name == template_id:
                     _read(path)

@@ -2,6 +2,8 @@
 
 使用 `specVersion: 1`，本地资源配置只需一个 `template.yaml`。完整字段类型和各 Provider 的参数子集见 [template v1 schema](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/spec/template-v1.schema.json) 与[模板规范](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/docs/template-spec.md)。上架元信息和初始化问题属于可选的 `registry.yaml`；本地运行无需该文件，也无需 `parameters`。
 
+模板文件使用 YAML1.2 Core，必须为严格 UTF-8，最大 1 MiB。`on` 和 `2026-11-12` 等未加引号的日期保持字符串。重复键、别名、不支持的标签、非字符串键及非有限或非 JSON 值会在创建资源前被拒绝。
+
 | 字段 | 含义 |
 | --- | --- |
 | `specVersion` | 整数 `1` |

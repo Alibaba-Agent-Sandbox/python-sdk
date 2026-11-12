@@ -13,7 +13,13 @@ from typing import TYPE_CHECKING, Any
 
 from jsonschema import Draft202012Validator
 
-from .normalize import compile_template_v1, normalize_template_v1, schema_for_stage
+from .normalize import (
+    MAX_YAML_BYTES,
+    compile_template_v1,
+    normalize_template_v1,
+    parse_yaml_v1,
+    schema_for_stage,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -23,6 +29,13 @@ _VALIDATORS = {
     stage: Draft202012Validator(schema_for_stage(_SCHEMA, stage)).validate
     for stage in ("intent", "resolved")
 }
+
+
+def _read_yaml_document(path: str | Path) -> tuple[bytes, Any]:
+    """Read bounded bytes and apply the shared Core1.2 admission before any resource I/O."""
+    with Path(path).open("rb") as source:
+        raw = source.read(MAX_YAML_BYTES + 1)
+    return raw, parse_yaml_v1(raw)
 
 
 def normalize_document(manifest: dict[str, Any], *, provider: str | None = None) -> dict[str, Any]:

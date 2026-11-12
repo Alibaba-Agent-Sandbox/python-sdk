@@ -1,0 +1,242 @@
+{
+  "version": 1,
+  "valid": [
+    {
+      "id": "core-string-values",
+      "text": "on: on\noff: OFF\ndate: 2026-11-12\nunderscores: 1_000\nbinary: 0b101\nhexUnderscores: 0x1_f\nsexagesimal: 1:20\n",
+      "expected": {
+        "on": "on",
+        "off": "OFF",
+        "date": "2026-11-12",
+        "underscores": "1_000",
+        "binary": "0b101",
+        "hexUnderscores": "0x1_f",
+        "sexagesimal": "1:20"
+      }
+    },
+    {
+      "id": "core-numeric-values",
+      "text": "octal: 0o12\nhex: 0x12\nleadingZero: 010\nexponent: 1e2\ndecimal: 1.5\ninteger: 42\n",
+      "expected": {
+        "octal": 10,
+        "hex": 18,
+        "leadingZero": 10,
+        "exponent": 100,
+        "decimal": 1.5,
+        "integer": 42
+      }
+    },
+    {
+      "id": "core-bool-null",
+      "text": "truth: TRUE\nfalsity: false\nempty: null\ntilde: ~\nimplicit:\n",
+      "expected": {
+        "truth": true,
+        "falsity": false,
+        "empty": null,
+        "tilde": null,
+        "implicit": null
+      }
+    },
+    {
+      "id": "quoted-values",
+      "text": "values: [\"true\", \"42\", \"2026-11-12\", \"null\"]\n",
+      "expected": {
+        "values": [
+          "true",
+          "42",
+          "2026-11-12",
+          "null"
+        ]
+      }
+    },
+    {
+      "id": "yaml12-directive",
+      "text": "%YAML 1.2\n---\nvalue: on\n",
+      "expected": {
+        "value": "on"
+      }
+    },
+    {
+      "id": "multiline-unicode-native-expressions",
+      "text": "text: |\n  hello 中文\n  second line\nnative: \"${env('MODEL_KEY')}\"\n",
+      "expected": {
+        "text": "hello 中文\nsecond line\n",
+        "native": "${env('MODEL_KEY')}"
+      }
+    },
+    {
+      "id": "literal-merge-key",
+      "text": "<<: {a: plain}\n",
+      "expected": {
+        "<<": {
+          "a": "plain"
+        }
+      }
+    },
+    {
+      "id": "unused-anchor",
+      "text": "value: &unused on\n",
+      "expected": {
+        "value": "on"
+      }
+    },
+    {
+      "id": "explicit-core-tags",
+      "text": "int: !!int 12\nfloat: !!float 1.0\nbool: !!bool true\n\"null\": !!null null\nstring: !!str true\n",
+      "expected": {
+        "int": 12,
+        "float": 1,
+        "bool": true,
+        "null": null,
+        "string": "true"
+      }
+    },
+    {
+      "id": "json-subset",
+      "text": "{\"on\":\"on\",\"date\":\"2026-11-12\",\"items\":[1,true,null]}",
+      "expected": {
+        "on": "on",
+        "date": "2026-11-12",
+        "items": [
+          1,
+          true,
+          null
+        ]
+      }
+    },
+    {
+      "id": "utf8-bom",
+      "text": "﻿value: on\r\n",
+      "expected": {
+        "value": "on"
+      }
+    },
+    {
+      "id": "template-env-scalars",
+      "text": "specVersion: 1\nname: example\nsandbox:\n  template: {reference: native-id}\n  instance:\n    envs: {FLAG: on, WHEN: 2026-11-12}\n",
+      "expected": {
+        "specVersion": 1,
+        "name": "example",
+        "sandbox": {
+          "template": {
+            "reference": "native-id"
+          },
+          "instance": {
+            "envs": {
+              "FLAG": "on",
+              "WHEN": "2026-11-12"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "empty-document",
+      "text": "",
+      "expected": null
+    }
+  ],
+  "invalid": [
+    {
+      "id": "duplicate-key",
+      "text": "value: 1\nvalue: 2\n"
+    },
+    {
+      "id": "duplicate-quoted-key",
+      "text": "\"value\": 1\nvalue: 2\n"
+    },
+    {
+      "id": "alias",
+      "text": "first: &v on\nsecond: *v\n"
+    },
+    {
+      "id": "recursive-alias",
+      "text": "loop: &v [*v]\n"
+    },
+    {
+      "id": "unsupported-tag",
+      "text": "value: !custom private-source-canary\n"
+    },
+    {
+      "id": "yaml11-tag",
+      "text": "value: !!timestamp 2026-11-12\n"
+    },
+    {
+      "id": "yaml11-directive",
+      "text": "%YAML 1.1\n---\nvalue: on\n"
+    },
+    {
+      "id": "yaml13-directive",
+      "text": "%YAML 1.3\n---\nvalue: on\n"
+    },
+    {
+      "id": "unknown-directive",
+      "text": "%CUSTOM unknown\n---\nvalue: on\n"
+    },
+    {
+      "id": "multi-doc",
+      "text": "---\na: 1\n---\nb: 2\n"
+    },
+    {
+      "id": "numeric-key",
+      "text": "1: value\n"
+    },
+    {
+      "id": "bool-key",
+      "text": "true: value\n"
+    },
+    {
+      "id": "null-key",
+      "text": "null: value\n"
+    },
+    {
+      "id": "complex-key",
+      "text": "? [one, two]\n: value\n"
+    },
+    {
+      "id": "nonfinite-infinity",
+      "text": "value: .inf\n"
+    },
+    {
+      "id": "nonfinite-nan",
+      "text": "value: .nan\n"
+    },
+    {
+      "id": "unsafe-integer",
+      "text": "value: 9007199254740992\n"
+    },
+    {
+      "id": "explicit-float-int-coercion",
+      "text": "value: !!float 1\n"
+    },
+    {
+      "id": "explicit-bool-coercion",
+      "text": "value: !!bool on\n"
+    },
+    {
+      "id": "raw-control-character",
+      "text": "value: \"\u0000\"\n"
+    },
+    {
+      "id": "delete-control-character",
+      "text": "value: \"\"\n"
+    },
+    {
+      "id": "escaped-lone-surrogate",
+      "text": "value: \"\\uD800\"\n"
+    },
+    {
+      "id": "private-parser-error",
+      "text": "value: [private-source-canary\n"
+    },
+    {
+      "id": "invalid-utf8",
+      "hex": "ff"
+    },
+    {
+      "id": "over-byte-limit",
+      "repeat": "a",
+      "count": 1048577
+    }
+  ]
+}

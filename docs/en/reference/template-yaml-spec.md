@@ -2,6 +2,8 @@
 
 Use `specVersion: 1` and one local `template.yaml`. The complete field types and Provider subsets belong to the [template v1 schema](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/spec/template-v1.schema.json) and [template specification](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/docs/template-spec.md). Publication metadata and initialization questions belong to optional `registry.yaml`; local runs do not require it or `parameters`.
 
+Template files use YAML1.2 Core with strict UTF-8 and a 1 MiB limit. Plain `on` and dates such as `2026-11-12` remain strings. Duplicate keys, aliases, unsupported tags, non-string mapping keys and non-finite/non-JSON values are rejected before resource creation.
+
 | Field | Meaning |
 | --- | --- |
 | `specVersion` | Integer `1` |

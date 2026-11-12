@@ -13,6 +13,7 @@ from typing import Any
 
 DEFAULT_CONTRACT = json.loads(Path(__file__).with_name("contract.json").read_text())
 Validator = Callable[[Any], Any]
+MAX_YAML_BYTES = 1024 * 1024
 
 
 def _fail(path: str, message: str) -> None:
@@ -46,6 +47,72 @@ def _finite(value: Any, path: str = "/") -> None:
             if not isinstance(key, str):
                 _fail(path, "expected string JSON object keys")
             _finite(item, f"{'' if path == '/' else path}/{key}")
+
+
+def parse_yaml_v1(source: str | bytes) -> Any:
+    """Read bounded JSON-compatible YAML1.2 Core; no files, env or expression evaluation."""
+    if not isinstance(source, (str, bytes)):
+        raise TypeError("Template v1 /: expected YAML UTF-8 text or bytes")
+    try:
+        data = source.encode("utf-8", "strict") if isinstance(source, str) else source
+        text = data.decode("utf-8", "strict")
+    except UnicodeError:
+        raise ValueError("Template v1 /: YAML must contain valid UTF-8") from None
+    if len(data) > MAX_YAML_BYTES:
+        _fail("/", "YAML exceeds 1 MiB")
+    if re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", text):
+        _fail("/", "YAML contains unsupported control characters")
+
+    # Library Core rules own scalar resolution; SafeLoader's YAML1.1 rules are
+    # never changed globally. The subclass enforces only this source policy.
+    from yaml.nodes import ScalarNode
+    from yaml.tokens import AliasToken, DirectiveToken
+    from yamlcore import CoreLoader
+
+    class SourceLoader(CoreLoader):
+        def get_token(self):
+            token = super().get_token()
+            if isinstance(token, AliasToken):
+                raise TypeError("aliases are unsupported")
+            if isinstance(token, DirectiveToken) and (
+                token.name not in {"YAML", "TAG"}
+                or (token.name == "YAML" and token.value != (1, 2))
+            ):
+                raise ValueError("only YAML1.2 directives are supported")
+            return token
+
+        def construct_object(self, node, deep=False):
+            if (
+                isinstance(node, ScalarNode)
+                and node.tag
+                in {
+                    "tag:yaml.org,2002:bool",
+                    "tag:yaml.org,2002:int",
+                    "tag:yaml.org,2002:float",
+                    "tag:yaml.org,2002:null",
+                }
+                and self.resolve(ScalarNode, node.value, (True, False)) != node.tag
+            ):
+                raise ValueError("explicit scalar tags cannot change the Core kind")
+            return super().construct_object(node, deep=deep)
+
+    loader = None
+    try:
+        loader = SourceLoader(text)
+        value = loader.get_single_data()
+        _finite(value)
+        # Also reject invalid Unicode produced by escaped lone surrogate values.
+        json.dumps(value, ensure_ascii=False, allow_nan=False).encode("utf-8", "strict")
+        return value
+    except Exception:  # noqa: BLE001 - Parser errors contain source lines/values.
+        raise ValueError(
+            "Template v1 /: invalid JSON-compatible YAML1.2 Core: use one document "
+            "with string keys; duplicate keys, aliases, unsupported tags and unsafe "
+            "values are not allowed"
+        ) from None
+    finally:
+        if loader is not None:
+            loader.dispose()
 
 
 def _checked(value: Any, validate: Validator) -> None:

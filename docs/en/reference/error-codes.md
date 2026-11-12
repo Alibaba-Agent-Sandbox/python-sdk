@@ -44,7 +44,7 @@ except SandboxError as e:
 | E2001 | `TemplateNotFoundError` | Template does not exist | Run `abx template list` to view available templates | Specified a non-existent template name |
 | E2002 | `QuotaExceededError` | Quota exceeded | Destroy idle sandboxes or request a quota increase | Number of running sandboxes exceeds account quota |
 | E2003 | `RegionUnavailableError` | Region unavailable | Try another region or check service availability | Requested region is temporarily unavailable or does not exist |
-| E2004 | `TemplateParseError` | Manifest parse failure | Fix spec4, required workflow fields and unknown/retired fields | Current YAML violates the contract; no default permissions allow it to continue |
+| E2004 | `TemplateParseError` | Manifest parse failure | Fix specVersion: 1, required workflow fields and unknown/retired fields | Current YAML violates the contract; no default permissions allow it to continue |
 | E2009 | `SandboxNotFoundError` | No sandbox with this ID exists | Run `abx list` to see the running sandboxes; a killed or expired sandbox cannot be reconnected | `Sandbox.connect()` / `get_info()` / `set_timeout()` / `pause()` / `resume()` on an ID the platform answers with HTTP 404 (`kill` stays idempotent) |
 
 ### Troubleshooting Steps

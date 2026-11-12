@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Read public v1 template files with shared YAML1.2 Core rules, strict UTF-8 and
+  bounded input; reject duplicate keys/aliases without exposing source values. /
+  公开 v1 模板文件统一采用 YAML1.2 Core、严格 UTF-8 与大小限制，拒绝重复键和别名，错误不泄露原文值。
+
 - Return managed Session timestamps as integer Unix seconds and truthful empty
   `required_actions` / `vault_ids` arrays without changing internal clock precision. /
   托管 Session 时间输出为整数秒，返回实际为空的待办动作与 Vault 列表，内部时钟精度保留。

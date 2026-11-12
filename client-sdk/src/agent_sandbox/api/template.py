@@ -14,7 +14,7 @@ from uuid import uuid4
 
 from agent_sandbox.api.sandbox import Sandbox
 from agent_sandbox.models.process import ProcessResult
-from agent_sandbox.template_contract import compile_literal_document
+from agent_sandbox.template_contract import _read_yaml_document, compile_literal_document
 from agent_sandbox.transport.streaming import StreamReader
 from agent_sandbox.workflows.identity import bytes_digest
 from agent_sandbox.workflows.launch import plan_template_launch, validate_template_manifest
@@ -216,10 +216,7 @@ async def launch_template(
     from agent_sandbox.providers.registry import builtin_provider, get_provider
 
     if isinstance(manifest, (str, Path)):
-        import yaml
-
-        manifest_bytes = Path(manifest).read_bytes()
-        snapshot = yaml.safe_load(manifest_bytes)
+        manifest_bytes, snapshot = _read_yaml_document(manifest)
     else:
         snapshot = copy.deepcopy(manifest)
         manifest_bytes = json.dumps(snapshot, sort_keys=True).encode()
