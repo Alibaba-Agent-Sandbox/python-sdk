@@ -20,4 +20,4 @@ finally:
 
 异步使用 `await prepare_api_key(confirm=True)`，然后可用 `AsyncSandbox` 或 `ProviderSandbox`。默认 `confirm=False` 在引擎/云端 I/O 前拒绝。准备只返回元数据，不返回明文。复用时检查云端状态，临近到期需要重新显式准备；已构造客户端不会后台续期。禁用和删除不会被绕过。引擎负责有效期和共享私有存储，Python 不重复实现云 SDK。
 
-可选 `team_id=` 必须与后续引擎选择一致。建议用 `abx config set team_id <TEAM_ID>` 持久化，使 CLI/SDK 使用同一上下文；省略时均使用接口默认 Team。CI 可先运行 `abx --ci sandbox list --format json` 明确授权准备，再启动 SDK 应用。未知写入结果的恢复步骤和精确清理权限见上述完整指南。
+可选 `team_id=` 必须与后续引擎选择一致。建议用 `abx config set team_id <TEAM_ID>` 持久化，使 CLI/SDK 使用同一上下文；省略时均使用接口默认 Team。CI 应配置已有的沙箱 API Key，或先执行上文显式确认的 SDK 准备步骤，再启动应用。`--ci` 只控制机器输出，不授予创建或续期凭据的权限。未知写入结果的恢复步骤和精确清理权限见上述完整指南。

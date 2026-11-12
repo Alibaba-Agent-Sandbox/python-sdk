@@ -35,3 +35,5 @@ both example indexes and the current template-system descriptions. Conditional
 acceptance uses the supported `--opt region=...` Provider override. Historical
 SDK quickstart run output remains explicitly labeled as such. No SDK method or
 configuration resolver was changed.
+
+Final permission-guide review removed the obsolete claim that CI output authorizes key preparation. Existing explicit SDK confirmation remains required; no key was created or renewed during this task.
