@@ -3,16 +3,15 @@
 [English](../../en/guide/managed-agents-api.md)
 
 应用只配置一个 Gateway 地址和业务 Bearer Token，即可让编码 Agent 在独立沙箱中运行。
-Session 在首次输入时创建沙箱，后续轮次复用工作区。可选托管运行时支持内置极速版提供方与明确配置的
-Codex、Qwen Code 模型。它采用部分 OpenAI 风格资源结构，不声明 OpenAI SDK 互操作或官方托管 harness 等价能力。
+Session 在首次输入时创建沙箱，后续轮次复用工作区。可选托管运行时支持内置极速版提供方及显式原生 Harness
+模型绑定，凭据与版本要求见 [Harness 配置](managed-harnesses.md)。它采用部分 OpenAI 风格资源结构，
+不声明完整 OpenAI SDK 互操作或官方托管 Harness 等价能力。
 
-安装匹配版本的客户端、服务端与托管部署依赖：
+业务客户端只需 `httpx` 等 HTTP 客户端。部署方应使用模板指定的匹配 client/server 运行时。
+六种 Harness 所需的0.4.0a8仍是未发布候选，不能用只承接较早 Codex/Qwen 子集的0.4.0a7替代。
+开发使用参阅[源码安装](install-python.md)及 [Harness 配置](managed-harnesses.md)。
 
-```bash
-python -m pip install --pre 'agent-sandbox-client[managed-agents]==0.4.0a7'
-```
-
-[agents-api 模板](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/tree/main/agents-api)
+[agents-api 模板](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/docs/agents-api-harnesses.zh-CN.md)
 提供应用配置；使用匹配的 [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) 部署。
 应用连接返回的 Gateway endpoint，无需配置每个沙箱的 endpoint。
 
@@ -44,6 +43,13 @@ with httpx.Client(
 ```
 
 Session 的 `created_at` 与 `last_active_at` 为整数秒 Unix 时间戳。`required_actions` 与 `vault_ids` 返回空数组；当前不支持客户端待办动作或 Vault 绑定。
+
+Turn 的 `created_at`、`started_at`、`completed_at` 同样使用整数秒，未知的时间返回 `null`。
+新 Turn 优先使用原生运行时的启动时间，否则使用 Worker 首次观察到执行的时间。
+`agent_id` 对应 Session 冻结的 Agent 配置，`subagent_id` 为 `null`。
+内联配置获得稳定的 Session 内身份，但不会因此创建可单独查询的已保存 Agent 定义。
+执行中与结束时的 Turn 事件包含与 `/turns` 查询一致的公开 Turn 结构。
+这些结构适用于本文的 HTTP 流程，不代表完整 OpenAI SDK 互通，也不代表支持能力声明中尚未提供的功能。
 
 创建返回 `201`。接收输入后生成持久 Submission，真正开始执行时才出现公开 Turn。
 轮询 Session、`/turns` 和 `/artifacts` 集合，通过
@@ -120,10 +126,14 @@ Gateway 使用 HTTP/1.1 chunked 事件流响应；FC 部署需要支持流式响
 | 托管生命周期 | 关闭、Operation、Submission 排队、列表、详情与取消 |
 
 `GET /v1/agent-sandbox/capabilities` 返回支持路由与部署预算。
+运行时列表说明已配置的适配器；`installed: null` 表示 Gateway 尚未检查 Guest 二进制安装。
+Guest 就绪与实际任务执行仍是独立条件。
 列表接受 `limit`、`order`、`after`，下一页使用 `last_id` 或限定范围的 `next_cursor`。
 Session 仅支持更新 metadata。Function tools、任意 MCP 配置、subagents、steering、图像/音频输入、
 动态模型和 settings 更新会明确拒绝；所选 CLI 自带的 shell、文件工具仍在沙箱内可用。
-工具墙钟期限从观察到原生工具开始事件起计算。运行时 epoch 改变或提交收据不确定时冻结执行，
+`adapter_capabilities` 说明所选 Harness 的流式粒度与工具事件时点。仅 `per_tool_timeout`
+为 true 时执行单工具期限；固定版 OpenCode 在工具完成后才报告，因此只能执行整轮期限。
+运行时 epoch 改变或提交收据不确定时冻结执行，
 不会自动重放输入。
 
 FC 部署要求 PostgreSQL；SQLite 仅用于明确的本地模式。存储、队列、执行时间、事件与订阅者均有有限预算，
@@ -132,7 +142,7 @@ FC 部署要求 PostgreSQL；SQLite 仅用于明确的本地模式。存储、�
 
 ## Sandbox 实例配置
 
-v1 `sandbox.instance` 控制每个 Session 新建的 Sandbox：`timeout`、CPU/内存/磁盘/GPU、已有卷名称挂载与用户元数据。托管 TTL 默认3600秒，内部 lifetime 预算由这一值派生。更新应用时，已有 Session 保留其配置快照和 Worker 路由。`sandbox.template.props` 是模板准备参数，不会自动变成实例规格。
+模板的 `vars.policy.instance.timeout` 控制 Session Sandbox 生命周期，默认3600秒。当前配方只开放该生命周期设置；定制应用的部署方还可在 SDK 私有 `ManagedConfig.instance` 中使用已承接的实例规格、已有卷挂载与元数据。这些私有运行设置不是公开 YAML 的 `sandbox.instance` 区块。`sandbox.<名称>.template` 属性在准备阶段生效。更新应用后，已有 Session 保持冻结设置与原 Worker 路由。
 
 所有自定义环境值都按敏感数据处理，包括看似普通的值。部署器只在编译配置中保存 `instanceEnvNames`，值仅通过 Worker 的 `ABX_MANAGED_SANDBOX_ENV_JSON` 或 `_FILE` 私有来源解析，不进入 Session settings 或公开 plan。私有映射的名字必须与声明完全一致。模型凭据使用独立模型 binding。`ABX_*`、`OPENAI_*`、`QWEN_*`、`CODEX_*`、`PYTHON*`、`LD_*`、`HOME`、`PATH`、`SHELL`、`USER`、`LOGNAME`、`ANTHROPIC_API_KEY`、`DASHSCOPE_API_KEY` 属于运行时/模型控制，不能由自定义环境覆盖。
 
@@ -143,7 +153,7 @@ Worker 自定义环境配置前缀为 `ABX_MANAGED_SANDBOX_ENV`，与其他配�
 ## 部署方配置
 
 入口为 `python -m agent_sandbox.managed_agents gateway|worker|dispatcher`。
-沙箱镜像运行 `python -m agent_sandbox.server.managed --port 9000`，并需安装 Codex 或 Qwen Code。
+沙箱镜像运行 `python -m agent_sandbox.server.managed --port 9000`，并需安装 所选固定版本的 Harness 及匹配服务端运行时。
 
 以下每种配置只能选择一个 `_FILE` 或 `_JSON` 来源：
 
@@ -151,13 +161,17 @@ Worker 自定义环境配置前缀为 `ABX_MANAGED_SANDBOX_ENV`，与其他配�
 | --- | --- |
 | `ABX_MANAGED_CONFIG` | 编译后的 revision、application ID、模板、模型/adapter 白名单、`modelEnvAllowlist`、Session/存储/执行预算、`expectedStateId` 与保留 Worker 映射 |
 | `ABX_MANAGED_AUTH` | `tokens: [{sha256,owner,scopes,expiresAt?}]`，scope 为 `agents:read`、`agents:write` |
-| `ABX_MANAGED_MODEL_CONFIG` | 仅 Worker 使用 `{apiKey,baseUrl,model,adapter}` |
+| `ABX_MANAGED_MODEL_CONFIG` | 仅 Worker 使用 `{apiKey,model,adapter}`；适用的 Harness 另需 `baseUrl` |
 | `ABX_MANAGED_PROVIDER_CONFIG` | Worker/Dispatcher 使用 `{provider:"alicloud-express",apiKey,baseUrl,domain,region}` |
 
 `ABX_MANAGED_DATABASE_URL` 指向 PostgreSQL。部署会固定持久状态身份，替换为空数据库会被拒绝，已有暖实例也会校验；同一状态库的凭据与 CA 轮换仍可使用。`ABX_MANAGED_INTERNAL_TOKEN` 认证私有角色调用，
 保留旧 revision 排空期间应保持稳定。`ABX_MANAGED_FC_ENDPOINT` 指定派发所用 FC 服务主机。
 私有控制请求可省略 `revision` 来操作整个应用，或提供非空 revision。私有 HTTP 监听端会在访问或修改应用状态前拒绝空字符串，并返回 HTTP 400。
-`modelEnvAllowlist` 必须明确允许 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_MODEL`。
+`modelEnvAllowlist` 必须精确匹配所选 Harness 的原生环境名：Codex/Qwen/OpenCode 使用
+`OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_MODEL`；Claude Code 使用
+`ANTHROPIC_API_KEY`、`ANTHROPIC_BASE_URL`、`ANTHROPIC_MODEL`；DeepSeek Harness 使用
+`DEEPSEEK_API_KEY`、`DEEPSEEK_BASE_URL`、`DEEPSEEK_MODEL`；Qoder 使用原生
+`QODER_PERSONAL_ACCESS_TOKEN`，不虚构模型端点，模型 ID 保留在显式绑定中。模板 bootstrap 负责填入这些名字。
 凭据仅交给需要它的角色，不写入镜像或公开资源。文件来源的业务认证每次重读以支持撤权，并执行可选到期限制。
 
 正常版本更新通过上一份部署收据复用现有应用与数据库。完整销毁部署后，外部管理的 PostgreSQL

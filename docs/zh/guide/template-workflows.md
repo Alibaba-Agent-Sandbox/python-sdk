@@ -1,6 +1,6 @@
 # 启动和使用模板
 
-源码模板使用 `abx --provider PROVIDER deploy SOURCE --name my-app --yes` 准备并启动，再用 Python 通过返回的沙箱 ID 和同一个 Provider 连接。平台已经提供模板 ID 时，可以直接用 Python 创建。
+源码模板使用 `abx --provider PROVIDER deploy SOURCE --name my-app --yes` 准备资源。普通 Sandbox 应用使用随模板提供的 `run.py` 创建和启动，再用返回的 Sandbox ID 与相同 Provider 连接。平台已经提供模板 ID 时，可以直接用 Python 创建实例。
 
 ## Python 应用调用
 
@@ -21,47 +21,30 @@ finally:
 
 如果 `X-Access-Token` 请求头未被占用，客户端还会通过服务端已有的这个请求头发送同一个显式应用令牌，使认证能通过 OpenSandbox 1.1.1 等会过滤 `Authorization` 的代理。已有网关请求头（包括注入 HTTP 客户端的默认请求头）不会被覆盖；需要 Bearer 的服务仍可使用原认证方式。
 
-高级准备场景中，`launch_template` 根据已准备好的 Provider 引用创建新沙箱，并执行清单的 `sandbox.start`。该引用的原生启动命令或镜像入口不能同时启动同一个服务。构建产物保留其启动声明，不能把准备好的引用理解为可以重复启动同一服务。如果 CLI 已启动应用，按上文连接它返回的沙箱即可。
+## 创建并启动自有实例
 
-确认准备阶段没有重复启动后，让 Python 负责启动和清理：
+源码模板的 `abx deploy` 准备可复用的 Sandbox 资源，并部署其中声明的 Serving 资源。
+普通 Sandbox 模板应按自己的 README，把返回的模板 ID 交给随模板提供的 `run.py`。
+运行脚本负责创建实例、启动应用并保存私有会话文件。凭据、模型配置、端口和清理操作
+以该模板文档为准。只创建实例，不会自动完成要求显式启动的应用流程。
 
-```python
-from agent_sandbox.api import launch_template
-
-async with await launch_template(
-    "template.yaml", provider="opensandbox",
-    reference=prepared_reference, application_token=application_token,
-) as session:
-    result = await session.run_command("hello", name="Python")
-```
-
-不再选择工作流。Python 创建一个沙箱，执行一次 `sandbox.start`，检查 `sandbox.ready`，
-并解析 `sandbox.services` 中所有服务。SandboxServer 协议 v2 服务执行 health/discovery 检查；
-其他协议由模板的就绪命令检查，返回对应客户端但不猜测其协议路由。
-`session.services` 包含全部服务客户端，`session.servers` 包含 SandboxServer 客户端。
-只有一个 SandboxServer 时可以使用 `session.server` 和 `session.run_command`；
-多个时使用 `session.servers["服务名"].commands.run(...)` 选择调用目标。
-这不会改变已经整体启动的模板内容。
-
-Python 不构建源码；源码准备由 CLI 负责，按上文选择一个启动方。
-模板也可声明固定摘要的 `sandbox.template.image`，或者 `sandbox.provider` 与 `sandbox.template.reference` 原生模板标识。
-引用由 Provider 解释，原生 ID 不需要虚构版本。已有外部 HTTP 服务直接使用
-`ServerClient`；应用部署 hook 仍由部署编排器处理。
-
-启动器冻结 manifest、记录创建意图和所拥有的资源 ID，仅删除自己创建的沙箱。
-创建结果不确定时不自动重试，可使用 `abx_template_run` 元数据核对资源。
-后续服务失败也会关闭之前解析的所有客户端。日志不记录令牌、环境变量值和签名 URL，
-也不等于云端验证证据。同一个最终 `ABX_SERVER_TOKEN` 同时用于沙箱环境和客户端。
-
-收到进程启动确认后，启动器会在一个 `readiness_timeout` 预算内重复执行尚未成功的 `sandbox.ready`。每次探测受剩余预算约束，退出码为 0 时才完成就绪检查；预算耗尽会抛出 `readiness-command-failed` 并删除本次创建的沙箱，取消启动同样保留资源清理。进程已经启动与应用已经就绪是两个独立条件。
+应用自行管理实例时，通过 `ProviderSandbox.create` 传入已准备模板 ID 和运行参数，
+使用 `start_server` 启动文档声明的进程，再解析应用客户端。只删除自己创建的实例。
+连接已有实例后关闭连接只释放本地资源，不代表取得该实例的删除归属。
 
 ## 资源配置
 
-v1 示例描述更新后的 SDK 源码消费者。已安装发行物尚无该能力时，使用匹配的[源码安装](install-python.md)；包版本元信息相同不代表都具备 v1 支持。
+当前[资源格式](../reference/template-yaml-spec.md)采用命名 Sandbox 和 Serving。
+原生表达式、构建和部署由 CLI 处理。Python 使用已准备 ID 和显式运行配置创建实例，
+不会解析当前命名资源的 `template.yaml`。
 
-使用 [v1 资源字段](../reference/template-yaml-spec.md)。解析字面量已准备模板无需安装 CLI，所选 Provider 仍可能有其自身运行时依赖；原生表达式需先由 Devs 解析器解析。`sandbox.instance.timeout` 提供 TTL，只有显式 Python `timeout` 才会覆盖；省略时保留清单值。实例规格、已有卷、环境变量和元数据会实际传入创建请求。环境值不会隐式读取宿主环境。应用部署由协调器负责，Python 在创建 Sandbox 前拒绝这类输入。
+现有高级 `launch_template` API 仍接受其较早的已准备快照格式，不接受当前命名资源源码文件。
+它的 `TemplateSession` 服务及端口助手属于该独立接口；不要把当前模板的 `template.yaml`
+直接交给它。当前资源格式应使用模板随附脚本或显式实例 API。
+实例 TTL、环境变量、元数据与挂载覆盖值属于实例创建或应用运行策略。
 
-额外声明的 `sandbox.ports` 通过 `session.endpoints[端口]` 返回 Provider 描述，不为其创建客户端或发送探测。网关请求头只在内存中，不进入公开 plan 或日志。端口声明不保证原生 TCP 可达，也不会启动该服务。
+部署托管 Agents API 后，业务客户端使用其 Gateway HTTP 入口；动态 Sandbox 创建及清理
+由模板的 Worker 负责。参阅[托管 API 指南](managed-agents-api.md)。
 
 ## 解释器操作
 
@@ -84,9 +67,7 @@ finally:
     await sandbox.kill()  # 本段代码创建并负责删除这个沙箱
 ```
 
-v1 清单声明 `sandbox.provider: alicloud-express`、`sandbox.template.reference: base` 和
-`sandbox.services: {}` 后，可以调用 `launch_template(manifest, provider="alicloud-express")`，
-通过异步上下文管理器自动删除自己创建的沙箱。不再声明或选择工作流。
+已有卷属于借用资源，实例清理不会删除这些卷本体。
 
 在 `code-interpreter-v1` 上运行 shell 命令，并不代表调用了解释器 API。极速版、E2B 和 REST 的项目适配器尚未接入统一解释器操作，需要时使用已记录的平台原生 SDK；CubeSandbox 和容器版接入了持久默认上下文操作。
 

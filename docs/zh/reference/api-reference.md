@@ -512,4 +512,4 @@ class SandboxStatus(str, Enum):
 
 接受云 AccessKey 的 Provider 生命周期方法同时接受 `security_token`，环境变量为 `ALIBABA_CLOUD_SECURITY_TOKEN`。`ProviderSandbox.create` 另接受 `network`、`allow_internet_access`。`ProviderSandbox.connect(..., traffic_access_token=...)` 保留 GET 只读连接语义；`application_client(..., traffic_access_token=...)` 仅为该应用客户端覆盖网关凭据。详见[提供方命令](../guide/provider-commands.md)和[认证](../guide/authentication.md)。
 
-canonical v1 已准备模板使用 `launch_template(..., timeout=None)` 保留清单实例 TTL；显式规格和环境参数覆盖对应值。`TemplateSession.services` 保存实际声明的服务客户端，`TemplateSession.endpoints` 保存附加端口描述，请求头只在内存中。参阅[模板字段](template-yaml-spec.md)与[启动归属及清理](../guide/template-workflows.md)。
+`launch_template` 与 `TemplateSession` 保留较早的已准备快照接口，不消费当前命名资源 `template.yaml` 源码。使用已准备 ID 与 `ProviderSandbox`，或模板随附 `run.py`。参阅[资源字段与消费边界](template-yaml-spec.md)及[运行归属与清理](../guide/template-workflows.md)。

@@ -6,12 +6,11 @@ The Python SDK is a runtime client. The CLI owns source acquisition, builds, dep
 abx template init ./my-template --template python
 abx deploy ./my-template --name my-app --yes
 abx status my-app
-abx sandbox command run my-app hello --arg name=Ada
 abx delete my-app --yes
 ```
 
 For reuse, prepare with `abx template build ./my-template --out ./.abx/build.json --yes`, then deploy with `abx deploy --build ./.abx/build.json --name my-app --yes`. Building creates no running instance. Deleting the application retains a separately prepared build. Clean an unused build with `abx template build --clean ./.abx/build.json --yes`; retained resources that require manual cleanup, such as images, are listed.
 
-For an existing native template, Python can call `await ProviderSandbox.create(template=template_id, provider=provider)`. Connect to the returned Sandbox ID when the CLI already started the application. `launch_template` is an advanced runtime entry: its caller must ensure that the image entrypoint or platform startup does not also start the manifest’s service.
+For a Sandbox resource, deployment returns a reusable template ID. Follow the selected template's `run.py` instructions to create and start a dynamic instance, or use `await ProviderSandbox.create(template=template_id, provider=provider)` and explicitly start its application. Connect to that returned Sandbox ID for later calls and close/delete it before removing prepared resources. The SDK's older `launch_template` snapshot interface does not accept current named-resource source files; see the linked runtime guide.
 
 [CLI authoring guide](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/authoring-templates.md) · [SDK application connections](template-workflows.md)

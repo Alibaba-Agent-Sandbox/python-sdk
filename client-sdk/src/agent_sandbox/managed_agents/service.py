@@ -11,6 +11,8 @@ import posixpath
 import time
 from typing import Any, cast
 
+from agent_sandbox.models.managed_harness import HARNESS_CAPABILITIES
+
 from .models import (
     PROTOCOL,
     SUBMISSION_TERMINAL,
@@ -69,7 +71,7 @@ OPERATIONS = (
 )
 
 
-def public(row: dict[str, Any]) -> dict[str, Any]:
+def public(row: dict[str, Any], *, session: dict[str, Any] | None = None) -> dict[str, Any]:
     """Remove all private control/state fields before serializing a public object."""
     out = {k: v for k, v in row.items() if not k.startswith("_")}
     if row.get("_kind") == "session":
@@ -77,6 +79,19 @@ def public(row: dict[str, Any]) -> dict[str, Any]:
             out[key] = int(row[key])
         out["required_actions"] = []
         out["vault_ids"] = []
+        # Inline configurations have a Session-scoped snapshot identity, not a
+        # saved Agent definition. Derivation also keeps older snapshots stable.
+        out["agent"] = {
+            **row["agent"],
+            "id": row["agent"].get("id") or "agent_" + row["id"].removeprefix("sess_"),
+        }
+    if row.get("_kind") == "turn":
+        for key in ("created_at", "started_at", "completed_at"):
+            value = row.get(key)
+            out[key] = int(value) if value is not None else None
+        out.setdefault("subagent_id", None)
+        if session is not None:
+            out.setdefault("agent_id", public(session)["agent"]["id"])
     if row.get("_kind") == "session" and isinstance(row.get("environment"), dict):
         out["environment"] = {
             **row["environment"],
@@ -106,6 +121,10 @@ class ManagedService:
             "revision": self.config.revision,
             "operations": [{"method": m, "path": p} for m, p in OPERATIONS],
             "adapters": sorted(set(self.config.models.values())),
+            "adapter_capabilities": {
+                adapter: dict(HARNESS_CAPABILITIES[adapter])
+                for adapter in sorted(set(self.config.models.values()))
+            },
             "features": {
                 "steering": False,
                 "explicit_queue": True,
@@ -183,7 +202,13 @@ class ManagedService:
             )
 
     def _page(
-        self, rows: list[dict[str, Any]], owner: str, scope: str, query: dict[str, str]
+        self,
+        rows: list[dict[str, Any]],
+        owner: str,
+        scope: str,
+        query: dict[str, str],
+        *,
+        session: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         reject_unknown(query, {"limit", "order", "after", "idempotency_key"})
         try:
@@ -238,7 +263,7 @@ class ManagedService:
 
         return {
             "object": "list",
-            "data": [public(r) for r in selected],
+            "data": [public(r, session=session) for r in selected],
             "first_id": selected[0]["id"] if selected else None,
             "last_id": selected[-1]["id"] if selected else None,
             "has_more": len(rows) > limit,
@@ -495,6 +520,7 @@ class ManagedService:
                     "storage": self.config.storage,
                 },
             )
+            agent.setdefault("id", "agent_" + row["id"].removeprefix("sess_"))
             env = new_object(
                 "environment",
                 owner,
@@ -742,7 +768,14 @@ class ManagedService:
                 ]
                 if path == "/v1/models"
                 else [
-                    {"id": name, "object": "agent.runtime", "implemented": True, "installed": True}
+                    {
+                        "id": name,
+                        "object": "agent.runtime",
+                        "implemented": True,
+                        "configured": True,
+                        # The Gateway cannot inspect a future Guest's binaries.
+                        "installed": None,
+                    }
                     for name in sorted(set(self.config.models.values()))
                 ]
             )
@@ -1020,6 +1053,7 @@ class ManagedService:
                                 owner,
                                 kind + ":" + session["id"],
                                 query,
+                                session=session,
                             ),
                             {},
                         )
@@ -1030,7 +1064,7 @@ class ManagedService:
                         if row.get("expires_at", float("inf")) <= time.time():
                             raise ManagedError(410, "resource_expired", "Stored result has expired")
                         if len(tail) == 2 and method == "GET":
-                            return 200, public(row), {}
+                            return 200, public(row, session=session), {}
                         if kind == "turn" and tail[2:] == ["items"] and method == "GET":
                             rows = [
                                 r

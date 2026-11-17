@@ -1,0 +1,13 @@
+{
+  "scope": "Project-independent stdlib HTTP comparison; no agent_sandbox import; no cloud resources",
+  "raw-get": "HTTP/1.1 501 Not Implemented",
+  "raw-header-only-post": "TimeoutError",
+  "httpclient-get": {
+    "status": 200,
+    "body": "ok"
+  },
+  "urllib-no-proxy-get": {
+    "status": 200,
+    "body": "ok"
+  }
+}

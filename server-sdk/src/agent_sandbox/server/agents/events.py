@@ -29,7 +29,7 @@ class ParsedEvent:
 
     ``kind`` is one of ``session``, ``text_delta``, ``message``,
     ``reasoning_delta``, ``reasoning``, ``tool_start``, ``tool_output``,
-    ``tool_end``, ``usage``, ``error``, ``result``, ``log``, ``subagent``.
+    ``tool_end``, ``tool_complete``, ``usage``, ``error``, ``result``, ``log``, ``subagent``.
     """
 
     kind: str

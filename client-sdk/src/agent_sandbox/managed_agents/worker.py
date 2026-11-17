@@ -84,7 +84,7 @@ class ManagedWorker:
                         tx.event(
                             row,
                             "agent.session.turn.failed",
-                            {"turn_id": turn["id"], "turn": public(turn)},
+                            {"turn_id": turn["id"], "turn": public(turn, session=row)},
                         )
             tx.event(row, "agent.session.failed", {"error": row["error"]})
 
@@ -436,13 +436,26 @@ class ManagedWorker:
                 e.get("wire", {}).get("type") == "agent.session.turn.in_progress" for e in wires
             )
             if not sub.get("turn_id") and started:
+                # The first native execution receipt proves that work started.
+                # Prefer its timestamp; otherwise retain our observation time.
+                native_turn: dict[str, Any] = receipt.get("turn") or next(
+                    (
+                        e.get("wire", {}).get("turn", {})
+                        for e in wires
+                        if e.get("wire", {}).get("type") == "agent.session.turn.in_progress"
+                    ),
+                    {},
+                )
                 turn = new_object(
                     "turn",
                     sub["_owner"],
                     parent=sid,
                     session_id=sid,
+                    agent_id=public(session)["agent"]["id"],
                     status="in_progress",
+                    started_at=native_turn.get("started_at") or time.time(),
                     completed_at=None,
+                    subagent_id=None,
                     usage=None,
                     error=None,
                     _submission=subid,
@@ -453,7 +466,11 @@ class ManagedWorker:
                 tx.event(
                     session,
                     "agent.session.turn.created",
-                    {"turn_id": turn["id"], "turn": public(turn), "submission_id": subid},
+                    {
+                        "turn_id": turn["id"],
+                        "turn": public(turn, session=session),
+                        "submission_id": subid,
+                    },
                 )
             seen: set[str] = set()
             frontier = sub.get("_native_seq", 0)
@@ -481,6 +498,8 @@ class ManagedWorker:
                 value.pop("session", None)
                 value.pop("turn", None)
                 value["session_id"], value["turn_id"] = sid, sub.get("turn_id")
+                if kind == "agent.session.turn.in_progress" and sub.get("turn_id"):
+                    value["turn"] = public(tx.get(sub["turn_id"]), session=session)
                 if isinstance(value.get("item"), dict):
                     value["item"] = self._item(sid, sub.get("turn_id"), value["item"])
                 if "item_id" in value:
@@ -603,7 +622,7 @@ class ManagedWorker:
             tx.event(
                 session,
                 "agent.session.turn." + status,
-                {"turn_id": turn["id"], "turn": public(turn)},
+                {"turn_id": turn["id"], "turn": public(turn, session=session)},
             )
             if not pending:
                 tx.event(session, "agent.session.idle", {"session": public(session)})

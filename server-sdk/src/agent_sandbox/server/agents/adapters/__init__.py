@@ -19,6 +19,9 @@ from .claude_code import ClaudeCodeAdapter
 from .codex import CodexAdapter
 from .command import CommandAdapter
 from .cursor import CursorAdapter
+from .deepseek_harness import DeepSeekHarnessAdapter
+from .opencode import OpenCodeAdapter
+from .qoder import QoderAdapter
 from .qwen_code import QwenCodeAdapter
 
 __all__ = [
@@ -55,6 +58,9 @@ class AdapterRegistry:
                 CursorAdapter,
                 QwenCodeAdapter,
                 CommandAdapter,
+                QoderAdapter,
+                OpenCodeAdapter,
+                DeepSeekHarnessAdapter,
             ):
                 self.register(cls)
 

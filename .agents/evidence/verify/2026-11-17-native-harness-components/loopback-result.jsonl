@@ -1,0 +1,6 @@
+{"adapter": "opencode", "turn": 0, "exit": 0, "native_session_present": true, "same_native_session": true, "event_kinds": ["session", "message", "usage", "result"], "terminal_ok": true}
+{"adapter": "opencode", "turn": 1, "exit": 0, "native_session_present": true, "same_native_session": true, "event_kinds": ["session", "message", "usage", "result"], "terminal_ok": true}
+{"adapter": "opencode", "request_count": 3, "resume_history_contains_marker": true}
+{"adapter": "deepseek-harness", "turn": 0, "exit": 0, "native_session_present": true, "same_native_session": true, "event_kinds": ["session", "message", "usage", "result"], "terminal_ok": true}
+{"adapter": "deepseek-harness", "turn": 1, "exit": 0, "native_session_present": true, "same_native_session": true, "event_kinds": ["session", "message", "usage", "result"], "terminal_ok": true}
+{"adapter": "deepseek-harness", "request_count": 3, "resume_history_contains_marker": true}

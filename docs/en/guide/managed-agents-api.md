@@ -4,17 +4,16 @@
 
 Use one Gateway URL and a business bearer token to run coding agents in isolated sandboxes.
 A Session creates its sandbox on the first input and reuses its workspace for subsequent turns.
-The optional runtime supports the built-in Express provider and explicitly configured Codex or
-Qwen Code models. It implements selected OpenAI-inspired resource shapes; it does not claim
+The optional runtime supports the built-in Express provider and explicit native Harness
+model bindings; see the [Harness profiles](managed-harnesses.md) for credentials and version requirements. It implements selected OpenAI-inspired resource shapes; it does not claim
 OpenAI SDK compatibility or OpenAI-managed harness behavior.
 
-Install the matching client and server packages with the managed deployment dependencies:
+Business clients need an HTTP client, such as `httpx`. Operators must use the matching
+client/server runtime selected by the template. The six-Harness runtime0.4.0a8 is a
+candidate and is not yet published; do not substitute0.4.0a7, which only admits the
+older Codex/Qwen subset. See [source installation](install-python.md) for development.
 
-```bash
-python -m pip install --pre 'agent-sandbox-client[managed-agents]==0.4.0a7'
-```
-
-The [agents-api template](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/tree/main/agents-api)
+The [Agents API family](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/docs/agents-api-harnesses.md)
 provides the application configuration. Deploy it with the matching
 [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox). Applications connect to the
 returned Gateway endpoint; they do not configure individual sandbox endpoints.
@@ -49,6 +48,15 @@ with httpx.Client(
 ```
 
 Session `created_at` and `last_active_at` are Unix timestamps in integer seconds. `required_actions` and `vault_ids` are empty arrays; client-required actions and Vault bindings are unsupported.
+
+Turn `created_at`, `started_at` and `completed_at` use integer Unix seconds; timestamps that
+are not known are `null`. A new Turn uses the native start timestamp when available, otherwise
+the time the Worker first observes execution. Its `agent_id` identifies the Session's frozen
+Agent configuration, and `subagent_id` is `null`. Inline configurations receive a stable
+Session-scoped identity; that identity does not create a saved Agent definition to retrieve.
+The in-progress and terminal Turn events contain the same public Turn shape as `/turns`.
+These resource shapes support the documented HTTP workflow; they do not establish full
+OpenAI SDK interoperability or features absent from the deployment's capabilities.
 
 Creation returns `201`. Input reception returns a durable Submission, while a public Turn appears
 when execution starts. Poll the Session and its `/turns` and `/artifacts` collections. Download a
@@ -133,11 +141,15 @@ Operation results before treating resource cleanup as complete.
 | Managed lifecycle | Close, Operations, Submission enqueue/list/detail/cancel |
 
 `GET /v1/agent-sandbox/capabilities` returns the supported routes and deployment budgets.
+Runtime inventory lists configured adapters; `installed: null` means the Gateway has
+not inspected a Guest binary. Guest readiness and actual task execution remain separate.
 Lists accept `limit`, `order` and `after`; use `last_id` or the scoped `next_cursor` for the next page.
 Session updates support metadata only. Function tools, arbitrary MCP configuration, subagents,
 steering, image/audio input and dynamic model/settings changes are rejected. Shell/file tools
-provided by the selected CLI remain available inside its sandbox. Tool wall deadlines begin at
-observed native tool-start events. Unknown runtime epochs or uncertain submission receipts freeze
+provided by the selected CLI remain available inside its sandbox.
+`adapter_capabilities` describes the configured Harness's stream granularity and tool-event timing.
+Per-tool deadlines apply only when `per_tool_timeout` is true: pinned OpenCode reports tools
+after completion, so only its whole-turn deadline can be enforced. Unknown runtime epochs or uncertain submission receipts freeze
 execution; they never automatically replay an input.
 
 The Gateway requires PostgreSQL for FC deployment. SQLite is restricted to explicit local mode.
@@ -147,7 +159,7 @@ preserves private ownership records required to resolve uncertain resources.
 
 ## Sandbox instance configuration
 
-The v1 `sandbox.instance` controls each Session's new Sandbox: `timeout`, CPU/memory/disk/GPU, existing Volume-name mounts and user metadata. Managed TTL defaults to3600 seconds; internal lifetime budgets are derived from this single value. New revisions preserve each existing Session's settings and Worker routing. Preparation `sandbox.template.props` does not change a Session instance.
+The template's `vars.policy.instance.timeout` controls the Session Sandbox lifetime; its default is 3600 seconds. The current recipe exposes this lifetime setting, while the SDK's private `ManagedConfig.instance` also supports admitted instance specifications, existing Volume mounts and metadata for custom application operators. Those private settings are not a public `sandbox.instance` YAML block. Template properties under `sandbox.<name>.template` apply during preparation. Updates retain each existing Session's frozen settings and Worker route.
 
 All custom environment values are private, including values that look harmless. The deployer sends names in compiled configuration and resolves values only for the Worker through `ABX_MANAGED_SANDBOX_ENV_JSON` or `_FILE`; values never enter Session settings or public plans. Worker source names must exactly match `instanceEnvNames`. Model credentials stay in the separate model binding. Runtime/model controls (`ABX_*`, `OPENAI_*`, `QWEN_*`, `CODEX_*`, `PYTHON*`, `LD_*`, `HOME`, `PATH`, `SHELL`, `USER`, `LOGNAME`, `ANTHROPIC_API_KEY`, `DASHSCOPE_API_KEY`) cannot be overridden through custom environment input.
 
@@ -156,7 +168,8 @@ Managed Sandboxes use secure access and kill-on-timeout without automatic resume
 ## Operator configuration
 
 Run `python -m agent_sandbox.managed_agents gateway|worker|dispatcher`. The guest image runs
-`python -m agent_sandbox.server.managed --port 9000`; it requires Codex or Qwen Code installed.
+`python -m agent_sandbox.server.managed --port 9000`; its image must contain the selected
+pinned Harness and matching server runtime.
 
 Each configuration document accepts exactly one `_FILE` or `_JSON` source:
 
@@ -165,7 +178,7 @@ Each configuration document accepts exactly one `_FILE` or `_JSON` source:
 | `ABX_MANAGED_CONFIG` | Non-secret `instance`, `instanceEnvNames`, compiled revision, application ID, template, model/adapter allowlist, `modelEnvAllowlist`, Session/storage/execution budgets, `expectedStateId` and retained Worker mapping |
 | `ABX_MANAGED_AUTH` | `tokens: [{sha256,owner,scopes,expiresAt?}]`; scopes are `agents:read` and `agents:write` |
 | `ABX_MANAGED_SANDBOX_ENV` | Worker-only custom environment string map, with names exactly matching `instanceEnvNames` |
-| `ABX_MANAGED_MODEL_CONFIG` | Worker-only `{apiKey,baseUrl,model,adapter}` |
+| `ABX_MANAGED_MODEL_CONFIG` | Worker-only `{apiKey,model,adapter}` plus `baseUrl` for applicable Harnesses |
 | `ABX_MANAGED_PROVIDER_CONFIG` | Worker/Dispatcher `{provider:"alicloud-express",apiKey,baseUrl,domain,region}` |
 
 `ABX_MANAGED_DATABASE_URL` identifies PostgreSQL. The deployment pins its persistent state identity; replacing the database with empty state is rejected, including by warm instances. Credential and CA rotation on the same state remains supported. `ABX_MANAGED_INTERNAL_TOKEN` authenticates private
@@ -173,7 +186,12 @@ role invocations and must remain stable while retained revisions drain.
 `ABX_MANAGED_FC_ENDPOINT` selects the explicit FC service host for dispatch.
 Private control requests may omit `revision` to address the whole application or supply a nonempty
 revision. The private HTTP listener rejects an empty string with HTTP 400 before accessing or changing application state.
-`modelEnvAllowlist` must explicitly allow `OPENAI_API_KEY`, `OPENAI_BASE_URL` and `OPENAI_MODEL`.
+`modelEnvAllowlist` must exactly match the selected Harness's native environment names.
+Codex/Qwen/OpenCode use `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`; Claude Code
+uses `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`, `ANTHROPIC_MODEL`; DeepSeek Harness uses
+`DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`, `DEEPSEEK_MODEL`; Qoder uses its native
+`QODER_PERSONAL_ACCESS_TOKEN` without an invented model endpoint. The model ID remains
+in its explicit binding. The family bootstrap supplies these names.
 Credentials are passed only to roles which need them, and never put in images or public resources.
 File-backed business authentication is reread for revocation; optional token expiry is enforced.
 

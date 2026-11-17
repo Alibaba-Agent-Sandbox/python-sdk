@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
 from agent_sandbox.models.managed_agents import ManagedError
+from agent_sandbox.models.managed_harness import model_environment, validate_model_binding
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -29,17 +30,11 @@ class ExpressBackend:
             raise ValueError(
                 "Explicit Express provider, Key, API URL, domain and region are required"
             )
-        if model is not None and (
-            set(model) != {"apiKey", "baseUrl", "model", "adapter"}
-            or model["adapter"] not in {"codex", "qwen-code"}
-        ):
-            raise ValueError("Explicit model credentials, endpoint, model and adapter are required")
-        if any(
-            not isinstance(v, str) or not v.strip()
-            for v in (*provider.values(), *(model or {}).values())
-        ):
+        if model is not None:
+            validate_model_binding(model)
+        if any(not isinstance(v, str) or not v.strip() for v in provider.values()):
             raise ValueError("Service credentials and endpoint values cannot be empty")
-        for url in [provider["baseUrl"], *([model["baseUrl"]] if model else [])]:
+        for url in [provider["baseUrl"]]:
             parsed = urlsplit(url)
             if (
                 parsed.scheme != "https"
@@ -91,11 +86,8 @@ class ExpressBackend:
                 400, "model_binding_mismatch", "This Worker has no matching model binding"
             )
         settings = session["_settings"]
-        if set(settings.get("modelEnvAllowlist", [])) != {
-            "OPENAI_API_KEY",
-            "OPENAI_BASE_URL",
-            "OPENAI_MODEL",
-        }:
+        native_env = model_environment(self.model)
+        if set(settings.get("modelEnvAllowlist", [])) != set(native_env):
             raise ManagedError(
                 400, "model_env_not_allowed", "Required model variables are not allowed"
             )
@@ -127,9 +119,7 @@ class ExpressBackend:
                     **custom_env,
                     "ABX_SERVER_TOKEN": token,
                     "ABX_MANAGED_WORKSPACE": settings["workspace"],
-                    "OPENAI_API_KEY": self.model["apiKey"],
-                    "OPENAI_BASE_URL": self.model["baseUrl"],
-                    "OPENAI_MODEL": self.model["model"],
+                    **native_env,
                 },
             )
             info = await infra.sandbox_protocol.create(config, request_timeout=30)

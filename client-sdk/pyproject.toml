@@ -48,7 +48,7 @@ dependencies = [
 
 [project.optional-dependencies]
 # Local command registration/runtime only; keep the lockstep version pin.
-server = ["agent-sandbox-server==0.4.0a7"]
+server = ["agent-sandbox-server==0.4.0a8"]
 managed-agents = [
     "psycopg[binary]>=3.2,<4",
     "alibabacloud-fc20230330>=4.8.3,<5",

@@ -8,7 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- Add experimental native Qoder, OpenCode and official DeepSeek Harness adapters, and
+  connect Claude Code to the managed bridge. All six harnesses share Session APIs with
+  explicit native credentials and exact resume identities. Client/server a8 remains a
+  source candidate until separately published. / 新增实验性的 Qoder、OpenCode、官方
+  DeepSeek Harness 原生适配，并将 Claude Code 接入托管桥；六种 Harness 共用 Session API，
+  凭据按原生协议映射并精确续接会话，a8 发布状态需单独确认。
+
 ### Fixed
+
+- Keep managed Turn identities stable across Session configuration snapshots, return
+  integer-second Turn timestamps and include the public Turn in in-progress events. /
+  托管 Turn 保持 Session 配置快照的稳定身份，时间输出为整数秒，执行中事件包含完整公开 Turn。
 
 - Read public v1 template files with shared YAML1.2 Core rules, strict UTF-8 and
   bounded input; reject duplicate keys/aliases without exposing source values. /
@@ -26,6 +39,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   区分限流与服务不可用错误类别，已保存 Agent 的覆盖仍只作用于新 Session。
 
 ### Documentation
+
+- Correct named-resource documentation and contributor guidance: the current CLI and
+  template runners use prepared IDs; the SDK's earlier YAML snapshot interface has
+  not migrated to current source files. / 更正命名资源文档和贡献者指引：当前 CLI 与模板脚本
+  使用已准备 ID；SDK 较早的 YAML 快照接口尚未迁移到当前源码格式。
+
 
 - Describe optional SandboxServer access policy as a standalone JSON/YAML runtime
   document and remove obsolete template-root server/automatic-compilation instructions. /

@@ -261,7 +261,7 @@ async for event in watcher:
 
 `sandbox.network` 子模块用于计算端口访问 URL（纯本地计算，不涉及网络请求）。
 
-> 端口地址由所选 Provider 提供。v1 模板通过 `sandbox.services` 声明服务端点，额外端口使用 `sandbox.ports`；声明本身不会授予 Provider 操作权限。模板启动器要求所选 Provider 对声明端点实际支持 `ports.resolve`。
+> 端口地址由所选 Provider 提供，使用运行实例的 `application_endpoint` 或 `application_client` 解析。端口放行不代表应用已经启动或 Provider 操作已获授权。当前命名资源 YAML 与 Python 运行方式见[模板使用](template-workflows.md)。
 
 ```python
 # 获取端口 URL
