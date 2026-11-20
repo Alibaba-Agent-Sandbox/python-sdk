@@ -1,0 +1,13 @@
+{
+  "harness": "opencode",
+  "native_version": "1.19.5",
+  "model_source": "existing authorized endpoint",
+  "scope": "local native CLI with real model, no cloud sandbox or hosted FC",
+  "models_discovery": false,
+  "turns": [],
+  "independent_checks": [],
+  "failure_class": "ConnectError",
+  "owned_processes_after_exit": 0,
+  "owned_processes_after_cleanup": 0,
+  "pass": false
+}

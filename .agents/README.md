@@ -1,5 +1,9 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+- [Managed Harness protocol re-review](evidence/verify/2026-11-20-managed-harness-rereview.md).
+
+- [Managed native harness adapters](notes/proposed/feature/2026-11-17-managed-harness-adapters.md) · [verification](evidence/verify/2026-11-17-managed-harness-adapters.md).
+
 - [Agents API delivery operations](notes/proposed/process/2026-11-12-agents-api-delivery-operations.md) · [record-placement verification](evidence/verify/2026-11-12-agents-api-delivery-operations.md).
 
 - [Standalone server policy documentation](notes/proposed/feature/2026-11-12-standalone-policy-docs.md) · [verification](evidence/verify/2026-11-12-standalone-policy-docs.md).
@@ -11,6 +15,10 @@
 - [Canonical v1 runtime consumers](notes/proposed/feature/2026-11-12-template-v1-runtime.md) · [first freeze](evidence/verify/2026-11-12-template-v1-runtime.md) · [ports and process-domain comparison](evidence/verify/2026-11-12-template-v1-runtime-ports.md) · [final local gates](evidence/verify/2026-11-12-template-v1-runtime-final-local.md).
 
 - [Managed Agent input and saved-configuration contract](notes/proposed/feature/2026-11-12-managed-agent-input-contract.md) · [verification](evidence/verify/2026-11-12-managed-agent-input-contract.md).
+
+- [Managed Turn identities and lifecycle event shapes](notes/proposed/feature/2026-11-17-managed-turn-wire.md) · [verification](evidence/verify/2026-11-17-managed-turn-wire.md).
+
+- [Current SDK template consumer boundary](notes/proposed/process/2026-11-17-current-template-consumer-boundary.md) · [verification](evidence/verify/2026-11-17-current-template-consumer-boundary.md).
 
 ## Recent changes — 2026-11-10
 
@@ -289,3 +297,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [SDK simplification mainline reconciliation](evidence/verify/2026-11-10-simplification-main-merge.md).
 
 - [Python documentation consumers of the unified CLI](notes/proposed/process/2026-11-12-ecosystem-guidance-sync.md) · [verification](evidence/verify/2026-11-12-ecosystem-guidance-sync.md).
+
+- [Agents API independent reviews](evidence/verify/2026-11-17-agents-api-reviews.md). Review approval is limited to the stated local scope.

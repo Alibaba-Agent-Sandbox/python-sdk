@@ -261,7 +261,7 @@ async for event in watcher:
 
 The `sandbox.network` submodule computes port access URLs (purely local computation, no network requests involved).
 
-> Port addressing is supplied by the selected Provider. Declare template endpoints with v1 `sandbox.services` or additional `sandbox.ports`; a declaration does not grant Provider operations. The template launcher requires the selected Provider's `ports.resolve` support for declared endpoints.
+> Port addressing is supplied by the selected Provider. Use the running instance's `application_endpoint` or `application_client`; an open port does not start an application or grant Provider operations. Current named-resource YAML and Python runtime usage are described in [template usage](template-workflows.md).
 
 ```python
 # Get port URL

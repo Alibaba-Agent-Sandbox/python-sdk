@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
+from .agents.adapters import default_adapters
 from .agents.config import AgentSpec, LimitsSpec, ProviderSpec, WorkspaceSpec
 from .agents.runtime import AgentRuntime
 from .agents.wire_sessions import SessionsEventMapper, item_object, turn_object
@@ -33,6 +34,15 @@ from .managed_process import ProcessDomain
 
 PROTOCOL = "agent-sandbox-managed-bridge/v1"
 _TERMINAL = frozenset({"completed", "failed", "cancelled", "uncertain"})
+# Standalone server cannot depend on the client distribution. Parity is checked in tests.
+MANAGED_HARNESS_ENV = {
+    "codex": ("OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL"),
+    "qwen-code": ("OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL"),
+    "claude-code": ("ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL", "ANTHROPIC_MODEL"),
+    "qoder": ("QODER_PERSONAL_ACCESS_TOKEN",),
+    "opencode": ("OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL"),
+    "deepseek-harness": ("DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODEL"),
+}
 
 
 class BridgeError(Exception):
@@ -68,7 +78,11 @@ class ManagedBridge:
         self.lock = threading.RLock()
         self.domains: dict[str, ProcessDomain] = {}
         self.runtime = runtime or AgentRuntime(
-            persist=False, max_sessions=1, max_concurrent_turns=1, event_buffer=20000
+            persist=False,
+            max_sessions=1,
+            max_concurrent_turns=1,
+            event_buffer=20000,
+            require_native_result=True,
         )
         self.path = self.state_dir / "receipts.sqlite3"
         with self._db() as db:
@@ -108,8 +122,9 @@ class ManagedBridge:
             if not isinstance(agent, dict) or set(agent) - {"adapter", "model", "instructions"}:
                 raise BridgeError(400, "invalid_agent")
             adapter = agent.get("adapter")
-            if adapter not in {"codex", "qwen-code"}:
+            if adapter not in MANAGED_HARNESS_ENV:
                 raise BridgeError(400, "unsupported_adapter")
+            names = MANAGED_HARNESS_ENV[adapter]
             spec = AgentSpec(
                 name="managed",
                 runtime=adapter,
@@ -117,9 +132,9 @@ class ManagedBridge:
                 instructions=agent.get("instructions"),
                 workspace=WorkspaceSpec(path=self.workspace),
                 provider=ProviderSpec(
-                    base_url=os.getenv("OPENAI_BASE_URL"),
-                    api_key=os.getenv("OPENAI_API_KEY"),
-                    wire_api="responses" if adapter == "codex" else "chat_completions",
+                    base_url=os.getenv(names[1]) if len(names) > 1 else None,
+                    api_key=os.getenv(names[0]),
+                    wire_api="responses" if adapter == "codex" else "chat",
                 ),
                 permissions="full_access",
                 limits=LimitsSpec(max_output_bytes=self.max_output_bytes),
@@ -305,7 +320,7 @@ class ManagedBridge:
                 item = event.data.get("item", {})
                 if item.get("type") not in {"command_execution", "mcp_call"}:
                     continue
-                if event.type == "item.added":
+                if event.type == "item.added" and item.get("status") == "in_progress":
                     active[item["id"]] = time.monotonic()
                 elif event.type == "item.done":
                     active.pop(item["id"], None)
@@ -570,8 +585,9 @@ def make_bridge_server(
             if method == "GET" and url.path == "/capabilities":
                 adapters = [
                     name
-                    for name, binary in (("codex", "codex"), ("qwen-code", "qwen"))
-                    if shutil.which(binary, path=bridge.runtime._environ.get("PATH"))
+                    for name in MANAGED_HARNESS_ENV
+                    if (adapter := default_adapters().get(name)) is not None
+                    and shutil.which(adapter.binary, path=bridge.runtime._environ.get("PATH"))
                 ]
                 self._send(
                     200,

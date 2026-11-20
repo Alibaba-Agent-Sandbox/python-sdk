@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from agent_sandbox.models.managed_agents import ManagedError as ManagedError
+from agent_sandbox.models.managed_harness import HARNESS_ENV
 
 PROTOCOL = "agent-sandbox-managed-agents/v1"
 BRIDGE_PROTOCOL = "agent-sandbox-managed-bridge/v1"
@@ -162,10 +163,10 @@ class ManagedConfig:
                 "configuration are required"
             )
         if any(
-            not isinstance(k, str) or not k or len(k) > 128 or v not in {"codex", "qwen-code"}
+            not isinstance(k, str) or not k or len(k) > 128 or v not in HARNESS_ENV
             for k, v in self.models.items()
         ):
-            raise ValueError("Only tested Codex/Qwen adapters may be configured")
+            raise ValueError("Only explicitly supported harness adapters may be configured")
         if (
             not isinstance(self.workspace, str)
             or not self.workspace.startswith("/")
@@ -199,7 +200,7 @@ class ManagedConfig:
         ):
             raise ValueError("Worker revisions must map to explicit function identities")
         if not isinstance(self.model_env_allowlist, list) or any(
-            v not in {"OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL"}
+            v not in {name for names in HARNESS_ENV.values() for name in names}
             for v in self.model_env_allowlist
         ):
             raise ValueError("Only explicit model environment names may be allowed")

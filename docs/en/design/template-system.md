@@ -1,49 +1,40 @@
 # Template System
 
-Templates use specification 1. A template defines the complete sandbox contents,
-its startup/readiness commands and every service it provides. Starting a template
-never selects a subset by workflow, operation or application/exec/interpreter type.
+Templates define reusable application source and named Sandbox/Serving resources.
+Use `specVersion: 1`, optional author-defined `vars`, `sandbox.<name>.template`
+and component-native `serving.<name>.props`. The [field reference](../reference/template-yaml-spec.md)
+links the owning specification and explains Python's current consumer limits.
 
 ## Responsibilities
 
-The template owns application source, dependencies, configuration and startup.
-The Provider owns image upload/registration, platform identifiers, sandbox creation
-and endpoint resolution. The CLI prepares source and starts the complete template.
-Python consumes a prepared reference or connects to an existing sandbox; it does
-not acquire Docker/source-build responsibilities.
+The template owns application source, dependencies and runtime startup code. The
+Provider owns native preparation, instance lifecycle and endpoint resolution. The
+CLI handles resource expressions, builds and deployment; deploying a Sandbox
+resource does not create every future runtime instance.
 
-## Launch and use
+Python consumes prepared IDs through ProviderSandbox or connects to an existing
+instance. Template runners create dynamic instances and start their applications
+with the required private values. Managed Agents API uses Worker-owned Session
+instances; its clients call one Gateway endpoint.
 
-Use `abx --provider PROVIDER deploy TEMPLATE_REF` or Python
-`launch_template(manifest, provider=..., reference=...)`. The launcher checks only
-operations needed to create, start, inspect readiness and clean up. Missing interpreter
-operations never prevent an unrelated application from starting. Actual operations
-remain guarded by the Provider and server policy at invocation time.
+## Runtime and source configuration
 
-Every `sandbox.services` service is retained. SandboxServer protocol v2 endpoints receive protocol checks;
-unknown protocols are returned and use the author's readiness command. A multi-service
-template starts once. Calling one endpoint later does not start a different template.
+Current named-resource template.yaml files are consumed by the CLI. The SDK's
+older launch_template/TemplateSession snapshot interface and discovery projection
+have not migrated to those source files. Keep their independent supported contract
+separate; do not infer current source support from a shared version number.
 
-## Manifest and migration
+The direct runtime path does not require another YAML parser or a Python deployment
+engine. Native Devs owns expressions. Application runtime configuration and server
+policy are separate from reusable resource preparation.
 
-See [the field reference](../reference/template-yaml-spec.md) and the authoritative
-[template-v1 schema](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/spec/template-v1.schema.json).
-Remove `workflow_contract_version`, `default_workflow` and `workflows`; keep
-`specVersion: 1`, `sandbox.services`, `sandbox.start`, `sandbox.ready` and application metadata.
-Old running manifests require explicit migration. Source locations, prepared image
-references and native template IDs are preparation details, not user-selectable flows.
+## Ownership and cleanup
 
-## Ownership and verification
+Delete only instances/resources created by the owning application. Closing a local
+connection does not delete a borrowed instance. Managed Sessions expose close and
+cleanup Operations separately from public deletion; inspect their outcome before
+considering compute released.
 
-The launcher records creation intent and owned IDs. Uncertain creates are not replayed;
-cleanup attempts every owned client and sandbox, retaining failures for reconciliation.
-Connecting to an existing sandbox does not confer deletion ownership.
-
-Catalog membership or a static supported plan is not a test pass. Historical workflow
-receipts remain readable history; they do not certify specification 1. A template's
-metadata version is not a registry storage/versioning service. Use actual Git revisions
-and recorded inputs to reproduce a run.
-
-See [Python launch examples](../guide/template-workflows.md),
+See [Python runtime examples](../guide/template-workflows.md),
 [authoring templates](../guide/authoring-templates.md), and
 [the server API](../guide/template-server-api.md).

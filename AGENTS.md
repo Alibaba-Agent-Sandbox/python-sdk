@@ -169,18 +169,24 @@ Every exception carries: `code`, `message`, `suggestion`, `docs_url` (populated 
 
 ### Template startup and operation model
 
-Templates use the canonical `specVersion: 1` contract, `sandbox.services`,
-`sandbox.start` and `sandbox.ready`. The immutable owner source/schema lock is in
-`client-sdk/src/agent_sandbox/template_contract/source.json`; synchronize those bytes,
-never maintain another parser or invent an expression evaluator. Native Devs parses
-expressions; Python consumes literals or an already resolved v1 snapshot.
+Current template resources use `specVersion: 1`, named `sandbox.<name>.template`
+resources and native `serving.<name>.props`. The CLI owns their construction,
+expression evaluation, resource references and deployment. The generated template
+`run.py` creates a dynamic instance from its prepared reference through
+`ProviderSandbox.create` and starts its application explicitly.
 
-Canonical `contracts/launch-v1.json` and `launch-vectors.json` have byte-identical
-package copies. `launch_template` consumes prepared references and instance values;
-Python does not build source. Serving/application inputs require the deployment
-orchestrator. Server policy validation remains an independent runtime API.
-Managed instance settings exclude every environment value; only Worker private
-configuration supplies those values, with reserved controls protected.
+The SDK's packaged `template_contract/source.json` and `launch_template` still target
+an earlier single-Sandbox draft. They do not consume the current named resource
+files; do not document them as current `template.yaml` support. Managed instance
+validation also consumes that older private snapshot today, so replacing schema
+bytes alone is not a complete migration. Preserve the immutable source lock until
+all affected consumers and regressions are migrated together. Never introduce a
+second expression evaluator: native Devs owns expressions.
+
+Managed Gateway/Worker/Dispatcher roles consume their explicit private runtime
+configuration, not the old public YAML launcher. Instance settings exclude secret
+environment values; only Worker private configuration supplies those values, with
+reserved controls protected. Server policy remains an independent runtime document.
 
 ---
 

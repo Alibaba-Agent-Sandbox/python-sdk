@@ -1,0 +1,7 @@
+{"type":"session","sessionId":"session-captured","cwd":"/workspace"}
+{"type":"status","phase":"turn_start","turn":1}
+{"type":"status","phase":"step_start","turn":1,"step":1}
+{"type":"text","text":"Native probe answer"}
+{"type":"status","phase":"step_end","turn":1,"step":1,"usage":{"inputTokens":5,"outputTokens":3,"totalTokens":8}}
+{"type":"status","phase":"turn_end","turn":1,"reason":{"kind":"completed"}}
+{"type":"final","sessionId":"session-captured","reason":{"kind":"completed"},"text":"Native probe answer"}

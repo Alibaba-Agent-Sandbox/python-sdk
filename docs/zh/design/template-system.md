@@ -1,41 +1,31 @@
 # 模板系统
 
-模板采用规范 1，描述完整沙箱内容、启动与就绪命令，以及所有对外服务。
-启动模板不会再按工作流、单个操作或 application/exec/interpreter 类型选择其中一部分。
+模板包含可复用应用源码与命名 Sandbox／Serving 资源。使用 `specVersion: 1`、可选的
+作者自定义 `vars`、`sandbox.<名称>.template` 和组件原生 `serving.<名称>.props`。
+[字段参考](../reference/template-yaml-spec.md)提供规范入口及 Python 当前消费边界。
 
 ## 职责
 
-模板负责应用源码、依赖、配置和启动。Provider 负责镜像上传注册、平台标识、沙箱创建和
-服务地址解析。CLI 准备源码并整体启动模板。Python 消费已准备好的引用，或连接既有沙箱，
-不承担 Docker 和源码构建职责。
+模板负责应用源码、依赖和运行启动代码。Provider 负责原生准备、实例生命周期与端点解析。
+CLI 处理资源表达式、构建和部署；部署 Sandbox 资源不代表创建未来每个运行实例。
 
-## 启动与使用
+Python 通过 ProviderSandbox 使用已准备 ID，或连接已有实例。模板脚本负责动态创建实例，
+携带私有运行配置启动应用。托管 Agents API 由 Worker 管理每个 Session 的实例，
+业务客户端只调用同一个 Gateway。
 
-CLI 使用 `abx --provider PROVIDER deploy TEMPLATE_REF`；Python 使用
-`launch_template(manifest, provider=..., reference=...)`。启动前只检查创建、启动、
-就绪和清理实际需要的操作。缺少解释器不阻止无关应用启动。执行具体操作时，
-Provider 和服务端策略仍负责实际能力与权限检查。
+## 运行与源码配置
 
-保留 `sandbox.services` 中所有服务。SandboxServer 协议 v2 额外检查 health/discovery；其他协议返回客户端，
-由作者的就绪命令检查。多服务模板只启动一次，后续选择调用地址不会改变启动内容。
+当前命名资源 template.yaml 由 CLI 消费。SDK 现有 launch_template／TemplateSession
+快照接口与发现投影尚未迁移到这些源码文件。保留其独立支持边界，不能因为版本编号相同
+就推断当前源码格式已经可用。
 
-## 清单与迁移
+直接运行路径不需要再增加一套 YAML 解析器或 Python 部署引擎。原生 Devs 负责表达式；
+应用运行配置与服务端策略独立于资源准备。
 
-参见[字段参考](../reference/template-yaml-spec.md)和权威的
-[规范 1 schema](https://github.com/Alibaba-Agent-Sandbox/awesome-templates/blob/main/spec/template-v1.schema.json)。
-删除 `workflow_contract_version`、`default_workflow`、`workflows`，保留
-`specVersion: 1`、`sandbox.services`、`sandbox.start`、`sandbox.ready` 以及应用元数据。
-旧运行清单明确要求迁移，不静默选择旧默认项。源码位置、镜像引用和平台模板 ID
-属于准备过程的输入，不再暴露为用户选择的启动流程。
+## 资源归属与清理
 
-## 资源归属与验证
+只删除所属应用创建的实例和资源。关闭本地连接不会删除借用实例。托管 Session 的关闭、
+清理 Operation 与公开删除分开；检查操作结果后再将计算资源视为释放。
 
-启动器记录创建意图与资源 ID，不自动重放结果不确定的创建请求。
-清理时尝试关闭所有客户端并删除自己创建的沙箱，保留失败记录供核对。
-连接已有沙箱不代表获得删除它的所有权。
-
-目录收录或静态计划支持不等于实测成功。历史工作流证据保留，但不认证规范 1。
-模板元数据版本不代表有一个 Registry 版本存储服务器；复现应使用真实 Git 修订和运行输入。
-
-参见 [Python 启动示例](../guide/template-workflows.md)、
+参阅 [Python 运行示例](../guide/template-workflows.md)、
 [模板编写](../guide/authoring-templates.md)和[服务端 API](../guide/template-server-api.md)。

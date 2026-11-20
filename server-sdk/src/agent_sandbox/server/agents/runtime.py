@@ -365,13 +365,16 @@ class _TurnBuilder:
             return "text", "reasoning"
         return "output", "output"
 
-    def _new_item(self, type_: str, native_id: str | None, **data: Any) -> Item:
+    def _new_item(
+        self, type_: str, native_id: str | None, *, _status: str = "in_progress", **data: Any
+    ) -> Item:
         self._flush_pending_message("commentary")
         item = Item(
             id="item_" + uuid.uuid4().hex[:24],
             type=type_,
             turn_id=self.turn.id,
             output_index=len(self.turn.items),
+            status=_status,
             data=data,
         )
         self.turn.items.append(item)
@@ -469,6 +472,8 @@ class _TurnBuilder:
                 self._push(native, pe.text)
         elif kind == "tool_end":
             self._tool_end(pe)
+        elif kind == "tool_complete":
+            self._tool_complete(pe)
         elif kind == "subagent":
             self._subagent(pe)
         elif kind == "usage":
@@ -520,6 +525,42 @@ class _TurnBuilder:
         paths = _reported_paths(kind, str(data.get("name") or ""), data.get("arguments"))
         if paths:
             self._file_items[item.id] = paths
+
+    def _tool_complete(self, pe: ParsedEvent) -> None:
+        """Record a completion-only observation without fabricating a live tool start."""
+        data = pe.data
+        kind = str(data.get("kind") or "other")
+        ok = bool(data.get("ok"))
+        fields = {
+            "kind": kind,
+            "arguments": self.redactor.redact_obj(data.get("arguments")),
+            "output": self.redactor.redact(pe.text or "")[:_MAX_TOOL_OUTPUT],
+            "observation": "completed_only",
+        }
+        if kind == "command":
+            fields.update(
+                command=self.redactor.redact(str(data.get("command") or "")),
+                cwd=self.turn_cwd,
+                exit_code=data.get("exit_code"),
+                duration_ms=data.get("duration_ms"),
+            )
+        else:
+            fields.update(
+                server_label=self.runtime_name,
+                name=str(data.get("name") or "tool"),
+                error=self.redactor.redact(str(data.get("error") or "")) or None,
+            )
+        item = self._new_item(
+            "command_execution" if kind == "command" else "mcp_call",
+            pe.item_id,
+            _status="completed" if ok else "failed",
+            **fields,
+        )
+        if ok:
+            self.reported_paths.extend(
+                _reported_paths(kind, str(data.get("name") or ""), data.get("arguments"))
+            )
+        self.session.emit("item.done", self.turn.id, item=item.to_dict())
 
     def _subagent(self, pe: ParsedEvent) -> None:
         """Record a subagent id (and its own stream entries) the CLI emitted."""
@@ -664,6 +705,7 @@ class AgentRuntime:
         kill_grace_s: float = 5.0,
         term_grace_s: float = 3.0,
         poll_interval_s: float = 0.05,
+        require_native_result: bool = False,
         environ: Mapping[str, str] | None = None,
         id_factory: Callable[[str], str] | None = None,
         clock: Callable[[], float] = time.time,
@@ -686,6 +728,7 @@ class AgentRuntime:
         self.kill_grace_s = kill_grace_s
         self.term_grace_s = term_grace_s
         self.poll_interval_s = poll_interval_s
+        self._require_native_result = require_native_result
         self._clock = clock
         self._id_factory = id_factory or (lambda prefix: f"{prefix}_{uuid.uuid4().hex[:24]}")
         slots = max_concurrent_turns
@@ -1227,6 +1270,8 @@ class AgentRuntime:
             return ("failed", code, message)
         if builder.result_ok is False:
             return ("failed", "internal_error", builder.result_text or "agent reported an error")
+        if self._require_native_result and builder.result_ok is None:
+            return ("failed", "internal_error", "agent ended without a native terminal result")
         return ("completed", "", "")
 
     def _terminate(self, proc: subprocess.Popen[bytes]) -> None:

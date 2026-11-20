@@ -284,6 +284,9 @@ class TestRoutesAgents:
                 "claude-code",
                 "command",
                 "cursor",
+                "deepseek-harness",
+                "opencode",
+                "qoder",
             ]
             assert [item["implemented"] for item in runtimes["data"]] == [
                 True,
@@ -291,8 +294,11 @@ class TestRoutesAgents:
                 False,
                 False,
                 False,
+                False,
+                False,
+                False,
             ]
-            assert [item["default"] for item in runtimes["data"]] == [True] + [False] * 4
+            assert [item["default"] for item in runtimes["data"]] == [True] + [False] * 7
 
             status, body, headers = _request(
                 port,
@@ -329,7 +335,7 @@ class TestRoutesAgents:
             reset_agent_runtime()
             status, runtimes, _ = _request(port, "GET", "/v1/agents/runtimes?limit=100&order=asc")
             assert status == 200
-            assert [item["default"] for item in runtimes["data"]] == [False, True] + [False] * 3
+            assert [item["default"] for item in runtimes["data"]] == [False, True] + [False] * 6
             status, created, _ = _request(
                 port,
                 "POST",
@@ -450,6 +456,9 @@ class TestRoutesAgents:
             status, runtimes, _ = _request(port, "GET", "/v1/agents/runtimes?limit=100")
             assert status == 200
             assert [item["name"] for item in runtimes["data"]] == [
+                "qoder",
+                "opencode",
+                "deepseek-harness",
                 "cursor",
                 "command",
                 "claude-code",

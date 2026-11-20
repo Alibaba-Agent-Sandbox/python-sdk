@@ -331,8 +331,8 @@ class TestLabelContract:
         assert ids == ["codex", "qwen-code"]
         runtimes = ok(call("GET", "/v1/agents/runtimes?limit=100&order=asc"))["data"]
         assert [r["name"] for r in runtimes][:2] == ["codex", "qwen-code"]
-        assert [r["implemented"] for r in runtimes] == [True, True, False, False, False]
-        assert [r["default"] for r in runtimes] == [True, False, False, False, False]
+        assert [r["implemented"] for r in runtimes] == [True, True] + [False] * 6
+        assert [r["default"] for r in runtimes] == [True] + [False] * 7
 
     def test_group_disabled_hides_every_new_route(self) -> None:
         table = default_table()
@@ -2814,7 +2814,16 @@ class TestEveryRoute:
             world, "agents_runtimes_list", "GET", "/v1/agents/runtimes?limit=100&order=asc"
         )["data"]
         by_name = {r["name"]: r for r in data}
-        assert list(by_name) == ["codex", "qwen-code", "claude-code", "command", "cursor"]
+        assert list(by_name) == [
+            "codex",
+            "qwen-code",
+            "claude-code",
+            "command",
+            "cursor",
+            "deepseek-harness",
+            "opencode",
+            "qoder",
+        ]
         assert {n for n, r in by_name.items() if r["implemented"]} == {"codex", "qwen-code"}
         for runtime in data:
             assert isinstance(runtime["implemented"], bool)

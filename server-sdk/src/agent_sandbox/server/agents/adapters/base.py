@@ -45,6 +45,7 @@ class AdapterCapabilities:
     max_turns: bool = False
     budget: bool = False
     experimental: bool = False
+    tool_events: str = "live"  # "live" | "completed_only"
 
 
 @dataclasses.dataclass

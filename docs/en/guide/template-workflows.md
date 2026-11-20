@@ -1,6 +1,6 @@
 # Launch and use a template
 
-Use `abx --provider PROVIDER deploy SOURCE --name my-app --yes` to prepare and start a source template, then connect with Python using the returned sandbox ID and the same provider. If the platform already provides a template ID, Python can create it directly.
+Use `abx --provider PROVIDER deploy SOURCE --name my-app --yes` to prepare source resources. Start an ordinary Sandbox application with its supplied `run.py`, then connect using the returned Sandbox ID and the same provider. If the platform already provides a template ID, Python can create an instance directly.
 
 ## Python application consumption
 
@@ -21,53 +21,38 @@ finally:
 
 The client also sends the explicit application token in the server's existing `X-Access-Token` header when that header is unused. This keeps authentication working through proxies that strip `Authorization`, including OpenSandbox 1.1.1. Existing gateway headers, including defaults on an injected HTTP client, are never replaced. Bearer authentication remains available for services that require it.
 
-For advanced preparation, `launch_template` creates a new sandbox from a prepared provider reference and runs the manifest's `sandbox.start`. The reference must not also start the same service through its native startup command or image entrypoint. CLI build artifacts retain their declared startup behavior; do not treat a prepared reference as an instruction to start the service twice. If the CLI has already started the application, connect to its sandbox as above.
+## Create and start an owned instance
 
-To let Python own startup and cleanup after checking that preparation boundary:
+A source template's `abx deploy` prepares reusable Sandbox resources and deploys any
+Serving resources. For an ordinary Sandbox template, run its supplied `run.py` with
+the returned prepared template ID. The runner creates the instance, starts its
+application and saves a private session file. Follow that template's README for
+credentials, model settings, endpoints and cleanup. Creating an instance alone does
+not start an application that expects this explicit startup step.
 
-```python
-from agent_sandbox.api import launch_template
-
-async with await launch_template(
-    "template.yaml", provider="opensandbox",
-    reference=prepared_reference, application_token=application_token,
-) as session:
-    result = await session.run_command("hello", name="Python")
-```
-
-There is no workflow selection. Python creates one sandbox, runs `sandbox.start` once,
-checks `sandbox.ready`, and resolves every service in `sandbox.services`. SandboxServer protocol v2 services
-receive health/discovery checks before use. Other service protocols use the template's
-readiness command; their endpoints are returned without guessing protocol routes.
-`session.services` contains every service client, while `session.servers` contains
-SandboxServer clients. `session.server` and `session.run_command` are conveniences
-only when there is exactly one SandboxServer. With several, call
-`session.servers["service-name"].commands.run(...)` to choose the invocation target.
-Choosing a client never changes which template services were started.
-
-Python does not build sources. Source preparation belongs to the CLI; choose one
-startup owner as described above. A manifest may
-also declare a fixed digest-pinned `sandbox.template.image`, or a `sandbox.template.reference` and `sandbox.provider` for a
-platform-managed template. References are interpreted by that Provider; native IDs
-need no artificial version. For an existing external HTTP service, use `ServerClient`
-directly. Application deployment hooks still belong to the deployment orchestrator.
-
-The launcher freezes the manifest, records intent and owned IDs, and deletes only its
-own sandbox. Uncertain creation is not retried and remains recorded for reconciliation
-using `abx_template_run` metadata. Every resolved client is closed on failure, including
-failure of a later service. Journals exclude tokens, environment values and signed URLs;
-they do not constitute verified cloud receipts. One effective `ABX_SERVER_TOKEN` value
-is used both for the sandbox environment and the application clients.
-
-After process-start acknowledgement, the launcher polls a nonzero `sandbox.ready` result within one `readiness_timeout` budget. Each probe uses the remaining budget; a successful exit completes readiness. Expiration raises `readiness-command-failed` and removes the owned sandbox. Cancellation also retains owned cleanup. This waits for application readiness, which is separate from acknowledging that its process started.
+If your application manages instances directly, use `ProviderSandbox.create` with the
+prepared template ID and the required runtime values. Start its documented process
+with `start_server`, resolve its application client, and delete only the instance you
+created. Connecting to an existing instance releases a local connection when closed;
+it does not confer resource ownership.
 
 ## Resource configuration
 
-The v1 examples describe the updated SDK source consumer. Use a matching [source installation](install-python.md) when this behavior is not in your installed distribution; unchanged package version metadata alone does not establish v1 support.
+The current [resource format](../reference/template-yaml-spec.md) has named Sandbox and
+Serving resources. The CLI handles its native expressions, builds and deployment.
+Python creates instances from prepared IDs and consumes explicit runtime configuration;
+it does not evaluate a current named-resource `template.yaml`.
 
-Use the [v1 resource fields](../reference/template-yaml-spec.md). Parsing literal prepared input needs no CLI installation; the selected Provider can still have its own runtime dependencies. Native expressions must first be resolved by the Devs parser. `sandbox.instance.timeout` supplies the TTL unless the explicit Python `timeout` argument overrides it; omitted overrides preserve the manifest. Instance specs, existing Volume mounts, environment and metadata are forwarded. Environment values never implicitly read the host environment. Application deployment remains an orchestrator responsibility and is rejected before creating a sandbox.
+The existing advanced `launch_template` API still accepts its earlier prepared snapshot
+format. It does not accept current named-resource source files. Its `TemplateSession`
+service/endpoint helpers remain available for that separate interface; do not pass the
+current template's `template.yaml` to it. Use the template's runner or the explicit
+instance API for the current resource format. Runtime TTL, environment, metadata and
+mount overrides belong to instance creation or the application's runtime policy.
 
-Additional declared `sandbox.ports` are returned as `session.endpoints[port]` Provider descriptors, without creating clients or probing them. Their gateway headers stay in memory and are not part of the public plan or journal. A port declaration does not establish native TCP reachability or start that service.
+For a deployment of the managed Agents API, clients use its Gateway HTTP endpoint;
+the template's Worker owns dynamic Sandbox creation and cleanup. See the
+[managed API guide](managed-agents-api.md).
 
 ## Interpreter operations
 
@@ -90,10 +75,7 @@ finally:
     await sandbox.kill()  # this code created and owns the sandbox
 ```
 
-With `specVersion: 1`, `sandbox.provider: alicloud-express`,
-`sandbox.template.reference: base` and no services, `launch_template(manifest,
-provider="alicloud-express")` provides the same owned cleanup through its async
-context manager. Existing Volume mounts are borrowed; Sandbox cleanup never deletes them.
+Existing Volume mounts are borrowed; instance cleanup never deletes those Volumes.
 
 Executing a shell command on `code-interpreter-v1` does not exercise the interpreter API. Express, E2B and REST project adapters currently do not implement unified interpreter operations; use the documented native SDK where applicable. CubeSandbox and container edition support the persistent default-context operation.
 
