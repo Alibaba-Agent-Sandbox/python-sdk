@@ -65,6 +65,7 @@ class LocalBackend:
             max_concurrent_turns=1,
             kill_grace_s=0.1,
             term_grace_s=0.1,
+            require_native_result=True,
         )
         if self.block_turns:
             runtime._slots.acquire()

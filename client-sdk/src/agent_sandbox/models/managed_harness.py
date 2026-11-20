@@ -21,7 +21,7 @@ HARNESS_ENV: dict[str, tuple[str, ...]] = {
 HARNESS_CAPABILITIES: dict[str, dict[str, Any]] = {
     adapter: {
         "streaming": "native_partial"
-        if adapter in {"codex", "claude-code", "qwen-code"}
+        if adapter in {"claude-code", "qwen-code"}
         else "committed_steps"
         if adapter == "deepseek-harness"
         else "complete_messages",

@@ -78,7 +78,11 @@ class ManagedBridge:
         self.lock = threading.RLock()
         self.domains: dict[str, ProcessDomain] = {}
         self.runtime = runtime or AgentRuntime(
-            persist=False, max_sessions=1, max_concurrent_turns=1, event_buffer=20000
+            persist=False,
+            max_sessions=1,
+            max_concurrent_turns=1,
+            event_buffer=20000,
+            require_native_result=True,
         )
         self.path = self.state_dir / "receipts.sqlite3"
         with self._db() as db:

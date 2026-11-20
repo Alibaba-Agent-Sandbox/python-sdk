@@ -1,5 +1,7 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+- [Managed Harness protocol re-review](evidence/verify/2026-11-20-managed-harness-rereview.md).
+
 - [Managed native harness adapters](notes/proposed/feature/2026-11-17-managed-harness-adapters.md) · [verification](evidence/verify/2026-11-17-managed-harness-adapters.md).
 
 - [Agents API delivery operations](notes/proposed/process/2026-11-12-agents-api-delivery-operations.md) · [record-placement verification](evidence/verify/2026-11-12-agents-api-delivery-operations.md).
@@ -296,4 +298,4 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 
 - [Python documentation consumers of the unified CLI](notes/proposed/process/2026-11-12-ecosystem-guidance-sync.md) · [verification](evidence/verify/2026-11-12-ecosystem-guidance-sync.md).
 
-- [Agents API independent review round 2: protocol](evidence/verify/2026-11-17-agents-api-reviews/post-round2-protocol.md) · [runtime](evidence/verify/2026-11-17-agents-api-reviews/post-round2-runtime.md). Initial protocol/Harness/runtime analyses and failure controls remain in the same dated evidence directory; review approval is limited to stated local scope.
+- [Agents API independent reviews](evidence/verify/2026-11-17-agents-api-reviews.md). Review approval is limited to the stated local scope.

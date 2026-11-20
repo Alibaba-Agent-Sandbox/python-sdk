@@ -705,6 +705,7 @@ class AgentRuntime:
         kill_grace_s: float = 5.0,
         term_grace_s: float = 3.0,
         poll_interval_s: float = 0.05,
+        require_native_result: bool = False,
         environ: Mapping[str, str] | None = None,
         id_factory: Callable[[str], str] | None = None,
         clock: Callable[[], float] = time.time,
@@ -727,6 +728,7 @@ class AgentRuntime:
         self.kill_grace_s = kill_grace_s
         self.term_grace_s = term_grace_s
         self.poll_interval_s = poll_interval_s
+        self._require_native_result = require_native_result
         self._clock = clock
         self._id_factory = id_factory or (lambda prefix: f"{prefix}_{uuid.uuid4().hex[:24]}")
         slots = max_concurrent_turns
@@ -1268,6 +1270,8 @@ class AgentRuntime:
             return ("failed", code, message)
         if builder.result_ok is False:
             return ("failed", "internal_error", builder.result_text or "agent reported an error")
+        if self._require_native_result and builder.result_ok is None:
+            return ("failed", "internal_error", "agent ended without a native terminal result")
         return ("completed", "", "")
 
     def _terminate(self, proc: subprocess.Popen[bytes]) -> None:

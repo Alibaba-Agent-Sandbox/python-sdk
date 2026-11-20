@@ -131,7 +131,9 @@ Guest 就绪与实际任务执行仍是独立条件。
 列表接受 `limit`、`order`、`after`，下一页使用 `last_id` 或限定范围的 `next_cursor`。
 Session 仅支持更新 metadata。Function tools、任意 MCP 配置、subagents、steering、图像/音频输入、
 动态模型和 settings 更新会明确拒绝；所选 CLI 自带的 shell、文件工具仍在沙箱内可用。
-`adapter_capabilities` 说明所选 Harness 的流式粒度与工具事件时点。仅 `per_tool_timeout`
+`adapter_capabilities` 说明所选 Harness 的流式粒度与工具事件时点。Codex 的原生 JSON 流按完整消息输出，
+Claude Code 和 Qwen Code 可以输出原生文本增量。托管任务需要进程成功退出并收到原生完成结果才算成功。
+执行失败时仍可能看到此前的消息。仅 `per_tool_timeout`
 为 true 时执行单工具期限；固定版 OpenCode 在工具完成后才报告，因此只能执行整轮期限。
 运行时 epoch 改变或提交收据不确定时冻结执行，
 不会自动重放输入。

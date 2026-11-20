@@ -19,13 +19,16 @@ headless session restoration, rather than the older project-owned DeepSeek tool 
 
 The client maps credentials using a dependency-free model helper. The standalone server
 retains its own fixed descriptors because it must remain installable without the client;
-a parity test checks the two descriptors. Native parser terminal checks supplement actual
-process exit and existing process-domain/reconciliation rules. New adapters remain
-experimental pending real account/model and hosting acceptance.
+a parity test checks the two descriptors. The managed bridge requires a successful native
+terminal result and process exit alongside existing process-domain/reconciliation rules.
+The standalone runtime can still use adapters whose contract is based on process exit.
+New adapters remain experimental pending real account/model and hosting acceptance.
 
 OpenCode's native JSON emits tools only at completion. Record completed items atomically,
 declare completion-only tool events and no live per-tool timeout, and preserve the overall
 run deadline. Reject its unsupported workspace_write mode instead of widening permissions.
+Codex's native JSON delivers whole messages. The capability response reports complete
+messages so consumers can distinguish them from native text deltas.
 
 ## API Design
 
@@ -66,3 +69,4 @@ FC/PostgreSQL deployment and old-session upgrade pass before full delivery is cl
 
 - [Verification](../../../evidence/verify/2026-11-17-managed-harness-adapters.md).
 - [Installed native components and real-model preflight](../../../evidence/verify/2026-11-17-native-harness-components.md).
+- [Native turn and protocol re-review](../../../evidence/verify/2026-11-20-managed-harness-rereview.md).

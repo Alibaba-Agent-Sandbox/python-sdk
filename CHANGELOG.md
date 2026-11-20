@@ -19,6 +19,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Require a native completion result for successful managed turns and report Codex's
+  complete-message streaming granularity. / 托管任务成功需要原生完成结果，Codex 按完整消息报告流式粒度。
+
 - Keep managed Turn identities stable across Session configuration snapshots, return
   integer-second Turn timestamps and include the public Turn in in-progress events. /
   托管 Turn 保持 Session 配置快照的稳定身份，时间输出为整数秒，执行中事件包含完整公开 Turn。

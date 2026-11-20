@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
+import shlex
+import time
 from pathlib import Path
 
 import pytest
@@ -12,6 +15,7 @@ from agent_sandbox.server.agents.adapters.deepseek_harness import DeepSeekHarnes
 from agent_sandbox.server.agents.adapters.opencode import OpenCodeParser
 from agent_sandbox.server.agents.adapters.qoder import QoderParser
 from agent_sandbox.server.agents.config import AgentSpec, ProviderSpec
+from agent_sandbox.server.managed import ManagedBridge
 
 
 def context(runtime: str, tmp_path, *, resume: str | None = None) -> TurnContext:
@@ -107,6 +111,57 @@ def test_dsh_final_without_completed_reason_fails(reason):
 @pytest.mark.parametrize("parser", [DeepSeekHarnessParser, OpenCodeParser, QoderParser])
 def test_zero_exit_without_native_terminal_is_not_success(parser):
     assert parser().finish(0)[-1].data["ok"] is False
+
+
+@pytest.mark.parametrize(
+    ("adapter", "binary"), [("codex", "codex"), ("qwen-code", "qwen"), ("claude-code", "claude")]
+)
+@pytest.mark.parametrize("terminal", [True, False], ids=["complete-stream", "truncated-stream"])
+def test_managed_bridge_requires_native_terminal_result(
+    adapter, binary, terminal, tmp_path, monkeypatch
+):
+    text = "The work produced an intermediate message."
+    if adapter == "codex":
+        message = {
+            "type": "item.completed",
+            "item": {"id": "m1", "type": "agent_message", "text": text},
+        }
+        result = {"type": "turn.completed"}
+    else:
+        message = {
+            "type": "assistant",
+            "message": {"id": "m1", "content": [{"type": "text", "text": text}]},
+        }
+        result = {"type": "result", "subtype": "success", "is_error": False}
+    records = [message, result] if terminal else [message]
+
+    executable = tmp_path / binary
+    lines = "\n".join(f"printf '%s\\n' {shlex.quote(json.dumps(record))}" for record in records)
+    executable.write_text(f"#!/bin/sh\n{lines}\nexit 0\n")
+    executable.chmod(0o700)
+    monkeypatch.setenv("PATH", str(tmp_path) + os.pathsep + os.environ["PATH"])
+    monkeypatch.setenv("HOME", str(tmp_path))
+
+    bridge = ManagedBridge(str(tmp_path / "journal"), str(tmp_path / "workspace"))
+    session = bridge.create_session(
+        {"nonce": "native-result", "agent": {"adapter": adapter, "model": "test-model"}}
+    )
+    receipt = bridge.submit(
+        {
+            "submission_id": "native-result",
+            "session_id": session["session_id"],
+            "input": "Create a test report.",
+            "files": [],
+            "deadline": time.time() + 10,
+        }
+    )
+    _, turn = bridge.runtime.find_turn(receipt["turn_id"])
+    assert turn.done.wait(timeout=5)
+    receipt = bridge.get("native-result")
+    expected = "completed" if terminal else "failed"
+    assert receipt["status"] == receipt["turn"]["status"] == expected
+    if not terminal:
+        assert "native terminal result" in receipt["turn"]["error"]["message"]
 
 
 def test_opencode_native_session_text_tool_and_terminal():

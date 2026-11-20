@@ -220,3 +220,11 @@ def test_capabilities_only_advertise_configured_harness_and_actual_tool_timing(
     runtime = configured.handle("owner", "GET", "/v1/agents/runtimes")[1]["data"][0]
     assert runtime["id"] == "opencode" and runtime["configured"] is True
     assert runtime["installed"] is None
+
+
+def test_codex_capabilities_describe_complete_messages(service: ManagedService) -> None:
+    configured = ManagedService(
+        service.store, ManagedConfig("revision-a", "template-a", {"test-model": "codex"})
+    )
+    caps = configured.handle("owner", "GET", "/v1/agent-sandbox/capabilities")[1]
+    assert caps["adapter_capabilities"]["codex"]["streaming"] == "complete_messages"

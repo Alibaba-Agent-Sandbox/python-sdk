@@ -148,6 +148,9 @@ Session updates support metadata only. Function tools, arbitrary MCP configurati
 steering, image/audio input and dynamic model/settings changes are rejected. Shell/file tools
 provided by the selected CLI remain available inside its sandbox.
 `adapter_capabilities` describes the configured Harness's stream granularity and tool-event timing.
+Codex emits complete messages in its native JSON stream. Claude Code and Qwen Code can emit
+native text deltas. A successful managed turn requires both a successful process exit and a
+native completion result. Earlier messages can still be visible when a turn fails.
 Per-tool deadlines apply only when `per_tool_timeout` is true: pinned OpenCode reports tools
 after completion, so only its whole-turn deadline can be enforced. Unknown runtime epochs or uncertain submission receipts freeze
 execution; they never automatically replay an input.
