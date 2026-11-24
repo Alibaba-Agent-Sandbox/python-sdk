@@ -51,7 +51,7 @@ Use `await` with `AsyncSandbox` and `ProviderSandbox`. Provider operations and i
 
 ## Other providers and application templates
 
-Express is built in. Installable [provider plugins](https://github.com/Alibaba-Agent-Sandbox/awesome-providers) connect `ProviderSandbox` to other backends. Follow [provider setup](docs/en/guide/providers.md) before using one.
+Express is built in. The SDK source also includes a native [Container Edition provider](docs/en/design/provider-alicloud-container.md). Installable [provider plugins](https://github.com/Alibaba-Agent-Sandbox/awesome-providers) connect `ProviderSandbox` to other backends. Follow [provider setup](docs/en/guide/providers.md) before using one.
 
 Application templates package browser tools, coding agents and other services. Launch a template with the [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox), then use its returned sandbox ID and the [template startup guide](docs/en/guide/template-workflows.md) to connect from Python. Named application commands require that service to be running.
 

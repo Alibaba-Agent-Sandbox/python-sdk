@@ -14,7 +14,6 @@ from agent_sandbox.models.errors import (
 )
 from agent_sandbox.providers import registry, store
 from agent_sandbox.providers.engine_provider import EngineProvider
-from agent_sandbox.utils.config_keys import BUILTIN_PROVIDER_ID
 
 
 def _check(name: str, ok: bool, detail: str = "") -> dict[str, Any]:
@@ -32,7 +31,9 @@ async def _close_infra(infra: Any) -> None:
         await http_client.close()
 
 
-async def doctor_async(provider_id: str, *, handshake: bool = True) -> dict[str, Any]:
+async def doctor_async(
+    provider_id: str, *, handshake: bool = True, installed_plugin: bool = False
+) -> dict[str, Any]:
     """Run every check for *provider_id*; never raises for provider failures.
 
     Returns ``{"id", "ok", "checks": [{"name", "ok", "detail"}...]}``. Plugin processes are started
@@ -46,13 +47,19 @@ async def doctor_async(provider_id: str, *, handshake: bool = True) -> dict[str,
         return {"id": provider_id, "ok": all(c["ok"] for c in checks), "checks": checks}
 
     try:
-        provider = registry.get_provider(provider_id)
+        provider = (
+            registry.load_installed(provider_id)
+            if installed_plugin
+            else registry.get_provider(provider_id)
+        )
         checks.append(_check("installed", True, f"{provider.display_name} {provider.version}"))
     except SandboxError as exc:
         checks.append(_check("installed", False, exc.message))
         return finish()
 
-    receipt = store.read_receipt(provider_id) if provider_id != BUILTIN_PROVIDER_ID else None
+    receipt = (
+        store.read_receipt(provider_id) if provider.kind not in {"builtin", "python"} else None
+    )
     if receipt is not None and receipt.get("trust") != "link":
         try:
             store.verify_integrity(provider_id)
@@ -69,7 +76,7 @@ async def doctor_async(provider_id: str, *, handshake: bool = True) -> dict[str,
         checks.append(_check("config", False, exc.message))
         return finish()
 
-    if handshake and provider_id != BUILTIN_PROVIDER_ID:
+    if handshake and provider.kind != "builtin":
         try:
             if isinstance(provider, EngineProvider):
                 await provider.verify_handshake(config)
@@ -90,16 +97,22 @@ async def doctor_async(provider_id: str, *, handshake: bool = True) -> dict[str,
     return finish()
 
 
-def doctor(provider_id: str, *, handshake: bool = True) -> dict[str, Any]:
+def doctor(
+    provider_id: str, *, handshake: bool = True, installed_plugin: bool = False
+) -> dict[str, Any]:
     """Synchronous wrapper around :func:`doctor_async` (safe inside a running event loop)."""
+
+    async def check() -> dict[str, Any]:
+        return await doctor_async(
+            provider_id, handshake=handshake, installed_plugin=installed_plugin
+        )
+
     try:
         asyncio.get_running_loop()
     except RuntimeError:
-        return asyncio.run(doctor_async(provider_id, handshake=handshake))
+        return asyncio.run(check())
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-        return pool.submit(
-            lambda: asyncio.run(doctor_async(provider_id, handshake=handshake))
-        ).result()
+        return pool.submit(lambda: asyncio.run(check())).result()
 
 
 def verify_handshake(provider_id: str) -> None:
@@ -107,7 +120,7 @@ def verify_handshake(provider_id: str) -> None:
     from agent_sandbox.models.errors import ProviderInstallError
 
     registry.forget(provider_id)
-    report = doctor(provider_id)
+    report = doctor(provider_id, installed_plugin=True)
     for check in report["checks"]:
         if check["name"] in ("installed", "integrity", "handshake") and not check["ok"]:
             raise ProviderInstallError(

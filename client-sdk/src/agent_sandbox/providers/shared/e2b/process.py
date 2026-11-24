@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from agent_sandbox.models.errors import CommandTimeoutError
+from agent_sandbox.models.errors import CommandTimeoutError, ProviderProtocolError
 from agent_sandbox.models.process import (
     ProcessChunk,
     ProcessChunkType,
@@ -141,8 +141,9 @@ class ProcessProtocol:
     已实测验证的方法: Start, List, Connect, Update, SendInput, SendSignal
     """
 
-    def __init__(self, http_client: HttpClient) -> None:
+    def __init__(self, http_client: HttpClient, *, require_exit: bool = False) -> None:
         self._http = http_client
+        self._require_exit = require_exit
 
     async def start(
         self,
@@ -217,6 +218,7 @@ class ProcessProtocol:
         """Bound total execution even while output continues, then stop the owned PID."""
         pid: int | None = None
         deadline = time.monotonic() + timeout
+        exited = False
         try:
             while True:
                 remaining = deadline - time.monotonic()
@@ -226,10 +228,25 @@ class ProcessProtocol:
                     frame = await asyncio.wait_for(anext(raw_stream), timeout=remaining)
                 except StopAsyncIteration:
                     break
-                started = (frame.get("event") or {}).get("start")
+                event = frame.get("event") or {}
+                started = event.get("start")
                 if isinstance(started, dict) and isinstance(started.get("pid"), int):
                     pid = started["pid"]
+                if self._require_exit and "end" in event:
+                    end = event["end"]
+                    code = end.get("exitCode") if isinstance(end, dict) else None
+                    clean_exit = isinstance(end, dict) and end.get("exited") is True
+                    if (type(code) is not int and (code is not None or not clean_exit)) or (
+                        code == 0 and not clean_exit
+                    ):
+                        raise ProviderProtocolError(
+                            "Process stream returned an invalid exit event."
+                        )
+                    # Protobuf JSON omits a zero-valued exit code.
+                    exited = True
                 yield frame
+            if self._require_exit and not exited:
+                raise ProviderProtocolError("Process stream ended without an exit event.")
         except (asyncio.TimeoutError, httpx.ReadTimeout) as exc:
             if pid is not None:
                 try:

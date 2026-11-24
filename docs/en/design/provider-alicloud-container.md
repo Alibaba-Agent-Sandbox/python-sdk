@@ -1,8 +1,6 @@
 # Alibaba Cloud Agent Sandbox, container edition
 
-Container edition is the OpenKruise Agents sandbox-manager on ACS or ACK. It is a separate provider from Express, with its own domain, credentials and runtime setup. The CLI and Python `ProviderSandbox` use the [catalog adapter](https://github.com/Alibaba-Agent-Sandbox/awesome-providers/tree/main/alicloud-container) through the local engine. The Node.js server HTTP client does not manage this provider. [中文](../../zh/design/provider-alicloud-container.md).
-
-Install with `abx provider install alibaba-agent-sandbox/awesome-providers//alicloud-container --allow-unpinned --yes`, or `python -m agent_sandbox.providers install registry:alicloud-container --yes`. Pin a reviewed complete commit for reproducible use.
+Container Edition runs sandbox-manager on an ACS or ACK cluster. Use the Python Client SDK source version that includes the built-in `alicloud-container` Provider. Python calls the cluster directly. The CLI uses its own [Node Provider](https://github.com/Alibaba-Agent-Sandbox/awesome-providers/tree/main/alicloud-container) for operations such as SandboxSet preparation. [中文](../../zh/design/provider-alicloud-container.md)
 
 ## Exact interpreter boundary
 
@@ -15,34 +13,35 @@ Stateless execution, public context management, realtime callbacks and structure
 | Setting | Environment |
 | --- | --- |
 | Domain | `ABX_ALICLOUD_CONTAINER_DOMAIN` |
-| Optional API origin | `ABX_ALICLOUD_CONTAINER_BASE_URL` |
+| Optional management API URL | `ABX_ALICLOUD_CONTAINER_BASE_URL` |
 | Provider key, header `X-API-Key` | `ABX_ALICLOUD_CONTAINER_API_KEY` |
 | `native` or `private` | `ABX_ALICLOUD_CONTAINER_PROTOCOL`, default `native` |
 
-Native API addressing is `https://api.{domain}` with port hosts `https://{port}-{id}.{domain}`. Private API addressing is `https://{domain}/kruise/api`; the envd binding uses `https://{domain}/kruise/{id}/49983` and the Jupyter handler selects port 49999. Express keys are not inherited.
+Native API addressing is `https://api.{domain}` with port hosts `https://{port}-{id}.{domain}`. Private API addressing is `https://{domain}/kruise/api`; the envd binding uses `https://{domain}/kruise/{id}/49983` and the Jupyter handler selects port 49999. For private routing, an explicit management URL must end in `/kruise/api`. The SDK uses its origin and prefix for the data plane. The key comes from the cluster's sandbox-manager and is only sent to the control plane. Gateway and envd access tokens are obtained from the sandbox session.
 
 ```python
+import asyncio
+
 from agent_sandbox import ProviderSandbox
 
-sandbox = await ProviderSandbox.create(
-    provider="alicloud-container",
-    template="YOUR_NATIVE_SANDBOXSET",
-    provider_options={
-        "domain": "sbx.example.com",
-        "api_key": "REPLACE_ME",
-        "protocol": "native",
-    },
-)
-try:
-    result = await sandbox.run_code("print(42)", mode="default-context")
-finally:
-    await sandbox.kill()
+
+async def main():
+    sandbox = await ProviderSandbox.create(
+        provider="alicloud-container",
+        template="code-interpreter",  # Use an existing SandboxSet name from the cluster.
+    )
+    try:
+        result = await sandbox.commands.run("printf container")
+        print(result.stdout)
+        code = await sandbox.run_code("print(42)", mode="default-context")
+        print(code.stdout)
+    finally:
+        await sandbox.kill()
+
+
+asyncio.run(main())
 ```
 
-The manifest declares lifecycle/timeout/pause/resume, exec, process management, files and ports independently. The exact operation lists determine workflow support. PTY, file watch/transfer, template inventory, storage mounts, VPC and named-command service availability are not inferred from these groups. Named-command application workflows require an actual matching HTTP service and binding.
+Use an existing SandboxSet name as `template`. The SDK supports lifecycle, timeout, pause and resume where configured, commands, process operations, files and gateway addresses. `connect()` can resume a paused sandbox or extend its lease. `close()` releases local connections and `kill()` deletes the sandbox. Listing accepts a limit of 1–100 and the `running` and `paused` filters. Offset pagination, per-create compute overrides, interactive PTY, file watching, and volume/network configuration are outside this adapter's scope.
 
-## Source preparation and evidence
-
-CLI preparation builds and pushes an explicit compatible source/profile, then clones a configured base SandboxSet's runtime injection, volumes and probes into an owned zero-pool resource. It does not modify the base object or rewrite Dockerfile instructions. This requires Docker/registry access and Kubernetes permissions; an ordinary sandbox-manager key alone cannot register SandboxSets. Python consumes prepared references and does not declare `template.prepare`.
-
-Container edition remains Beta. Local fake-API tests exercise adapter mapping and refusal behavior. A real create requires an ACS/ACK deployment, a valid native SandboxSet, domain/key and runtime services. No native acceptance was completed in this environment. Source registration, application HTTP and interpreter evidence have different scopes; successful mocks or historical receipts do not certify the current workflow.
+Creating or modifying a SandboxSet requires cluster permissions. See the [container setup guide](https://help.aliyun.com/zh/agent-sandbox/quick-start1/). The built-in Python adapter remains in preview.

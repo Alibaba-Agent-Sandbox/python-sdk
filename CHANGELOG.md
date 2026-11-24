@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- Bundle a native Python Provider for Alibaba Cloud Agent Sandbox Container Edition.
+  `ProviderSandbox` selects it by ID, and `ProviderClient` can bind the matching bundled version.
+  / 内置阿里云智能体沙箱容器版 Python Provider，支持按 ID 选择和显式绑定。
+
 ### Documentation
 
 - Synchronize CLI-dependent SDK documentation, HTTP MCP template deployment and source-acquisition error guidance. / 同步 SDK 文档中的 CLI 用法、HTTP MCP 模板部署与源码获取错误指引。

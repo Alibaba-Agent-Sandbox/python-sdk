@@ -583,6 +583,7 @@ class HttpClient:
         content: bytes | None = None,
         files: dict[str, Any] | None = None,
         max_response_bytes: int | None = None,
+        request_timeout: float | None = None,
     ) -> httpx.Response:
         """Send a plain HTTP request (not Connect RPC) to the envd API.
 
@@ -599,6 +600,10 @@ class HttpClient:
         all_headers = {**auth_headers, **self._envd_headers}
         if headers:
             all_headers.update(headers)
+
+        options: dict[str, Any] = {}
+        if request_timeout is not None:
+            options["timeout"] = httpx.Timeout(request_timeout)
 
         logger.debug("envd HTTP %s %s%s", method, envd_url, path)
         try:
@@ -618,6 +623,7 @@ class HttpClient:
                     headers=all_headers,
                     content=content,
                     files=files,
+                    **options,
                 ) as streamed:
                     # Error details are intentionally not read: a hostile error
                     # body can also be infinite. Preserve the status for mapping.
@@ -654,6 +660,7 @@ class HttpClient:
                 headers=all_headers,
                 content=content,
                 files=files,
+                **options,
             )
             response.raise_for_status()
             return response

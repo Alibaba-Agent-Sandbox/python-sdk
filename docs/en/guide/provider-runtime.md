@@ -1,6 +1,6 @@
 # Prepare a Provider runtime in Python
 
-Use `agent_sandbox.providers.ProviderClient` from the Python SDK source to bind a Provider and a target at application startup. A compatible Python implementation supplied by the application takes priority. Otherwise the client can fetch an approved standalone EPP implementation and its runtime. The SDK import and direct HTTP clients require no runtime preparation.
+Use `agent_sandbox.providers.ProviderClient` from the Python SDK source to bind a Provider and a target at application startup. A compatible Python implementation supplied by the application or shipped with the SDK takes priority. Otherwise the client can fetch an approved standalone EPP implementation and its runtime. The SDK import and direct HTTP clients require no runtime preparation.
 
 ## OpenSandbox on Linux x86-64 with glibc
 
@@ -20,7 +20,7 @@ In an application, call `await ProviderClient.prepare(lock, config, cache_dir=pa
 
 ## Use an installed Python Provider
 
-Pass a trusted `Provider` instance as `native=`. Its ID and version must match `ProviderLock`. Declare the features you need using `required_features`. The SDK uses the compatible native implementation or selects an approved standalone entry for the host and feature set. Among standalone entries, Python is preferred, then the smallest numeric priority. You can supply a native-only lock without runtime entries. Install the Python implementation using your normal environment management.
+Pass a trusted `Provider` instance as `native=`, or omit it to select a matching SDK-bundled implementation. For [Container Edition](../design/provider-alicloud-container.md), use `alicloud-container` and the installed SDK version in the lock, and pass the cluster options in `TransportConfig.provider_options`. Its ID and version must match `ProviderLock`. Declare the features you need using `required_features`. The SDK uses the compatible native implementation or selects an approved standalone entry for the host and feature set. Among standalone entries, Python is preferred, then the smallest numeric priority. You can supply a native-only lock without runtime entries. Install the Python implementation using your normal environment management.
 
 `ProviderClient` provides `create(SandboxConfig(...))`, `connect`, `list`, `get`, `set_timeout` and `delete`. A client belongs to the event loop that prepared it. Close individual sandbox handles and close the client when finished. Call `delete` for owned sandboxes to release remote resources. `ProviderClient.close()` releases local resources.
 

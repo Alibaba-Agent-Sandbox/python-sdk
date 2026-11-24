@@ -29,6 +29,7 @@ from agent_sandbox.models.sandbox import SandboxConfig, SandboxInfo
 from agent_sandbox.providers.exec_provider import ExecProvider
 from agent_sandbox.providers.manifest import check_requires, load_manifest
 from agent_sandbox.providers.runtime_assets import ProviderArtifact, member_path, unpack
+from agent_sandbox.utils.config_keys import BUILTIN_PROVIDER_ID
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Collection, Sequence
@@ -242,7 +243,7 @@ class ProviderClient:
     ) -> ProviderClient:
         """Bind an installed Python provider or a locked standalone implementation.
 
-        An explicitly supplied compatible native provider wins before downloading.
+        An explicit native provider or a matching SDK-bundled version wins before downloading.
         The cache is offline by default. Neither path discovers global plugins.
         """
         if config.provider != lock.provider:
@@ -256,8 +257,14 @@ class ProviderClient:
             or native.kind not in {"builtin", "python"}
         ):
             raise ProviderVersionError("Native Provider identity or kind differs from the lock.")
+        if native is None:
+            from agent_sandbox.providers.registry import bundled_provider
+
+            candidate = bundled_provider(lock.provider)
+            if candidate is not None and candidate.version == lock.version:
+                native = candidate
         if native is not None and features <= native.features:
-            if native.kind == "builtin" and (
+            if native.id == BUILTIN_PROVIDER_ID and (
                 not (config.sandbox_api_key or "").strip()
                 or config.access_key_id
                 or config.access_key_secret

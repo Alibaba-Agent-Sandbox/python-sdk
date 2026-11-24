@@ -24,6 +24,7 @@ from agent_sandbox.utils.logging import get_logger
 logger = get_logger("providers.registry")
 
 ENTRY_POINT_GROUP = "agent_sandbox.providers"
+_CONTAINER_PROVIDER_ID = "alicloud-container"
 
 _lock = threading.Lock()
 _registered: dict[str, Provider] = {}
@@ -37,6 +38,17 @@ def builtin_provider() -> AlicloudExpressProvider:
     if _builtin is None:
         _builtin = AlicloudExpressProvider()
     return _builtin
+
+
+def bundled_provider(provider_id: str) -> Provider | None:
+    """Load only SDK-shipped implementations, without discovering plugins."""
+    if provider_id == BUILTIN_PROVIDER_ID:
+        return builtin_provider()
+    if provider_id == _CONTAINER_PROVIDER_ID:
+        from agent_sandbox.providers.alicloud_container.provider import AlicloudContainerProvider
+
+        return AlicloudContainerProvider()
+    return None
 
 
 def register_provider(provider: Provider, *, replace: bool = False) -> Provider:
@@ -135,6 +147,9 @@ def get_provider(provider_id: str | None = None) -> Provider:
     with _lock:
         if provider_id in _registered:
             return _registered[provider_id]
+    bundled = bundled_provider(provider_id)
+    if bundled is not None:
+        return bundled
     _load_entry_points()
     if provider_id in _entry_point_providers:
         return _entry_point_providers[provider_id]
@@ -170,8 +185,10 @@ def list_providers() -> list[dict[str, Any]]:
     from agent_sandbox.providers.catalog import schedule_update_check
 
     schedule_update_check()
-    builtins = [builtin_provider()]
-    out: list[dict[str, Any]] = [_summary(prov, trust="builtin") for prov in builtins]
+    builtins = [builtin_provider(), get_provider(_CONTAINER_PROVIDER_ID)]
+    out: list[dict[str, Any]] = [
+        _summary(prov, trust="builtin" if prov.kind == "builtin" else "python") for prov in builtins
+    ]
     seen = {prov.id for prov in builtins}
     others: list[dict[str, Any]] = []
     with _lock:

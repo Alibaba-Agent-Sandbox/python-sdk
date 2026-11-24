@@ -2,6 +2,8 @@
 
 Provider extensions use [whole-template startup](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/template-workflows.md) ([中文](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/zh/guide/template-workflows.md)); application HTTP, stateless execution and context operations are independent.
 
+The SDK source includes the native [Alibaba Cloud Agent Sandbox Container Edition provider](../docs/en/design/provider-alicloud-container.md).
+
 Install the current alpha with `--pre`; use the [installation guide](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/install-python.md) for a pinned version and environment setup.
 
 **Client SDK.** The product is Agent Sandbox. The import path is `agent_sandbox`. This package runs on your machine: create a sandbox, use it, and kill it. The HTTP service inside the image is [`agent-sandbox-server`](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/server-sdk/README.md). Guide: [Client SDK](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/client-sdk.md).

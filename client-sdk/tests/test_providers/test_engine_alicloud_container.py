@@ -102,6 +102,7 @@ def engine_env(iso: Any, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:  # 
 def _install() -> None:
     installer.install(str(PLUGIN), yes=True)
     registry.reset_registry()
+    registry.register_provider(registry.load_installed("alicloud-container"))
 
 
 def _seen(path: Path) -> list[dict[str, Any]]:
