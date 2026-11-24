@@ -309,6 +309,8 @@ async def test_container_credentials_and_unsupported_create_are_checked_before_i
                 provider_options={"domain": "example.test"},
             ),
         )
+    with pytest.raises(InvalidCredentialsError, match="ABX_ALICLOUD_CONTAINER_API_KEY"):
+        await ProviderClient.prepare(_LOCK, _config(api_key=" "))
     with pytest.raises(ProviderConfigError, match="must end in /kruise/api"):
         await ProviderClient.prepare(
             _LOCK, _config(base_url="https://example.test", protocol="private")

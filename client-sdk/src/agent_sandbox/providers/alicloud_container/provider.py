@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import SplitResult, urlsplit
 
 from agent_sandbox._version import __version__
-from agent_sandbox.models.errors import ProviderConfigError
+from agent_sandbox.models.errors import InvalidCredentialsError, ProviderConfigError
 from agent_sandbox.providers.base import ConfigField, Provider, ProviderInfra
 from agent_sandbox.providers.feature_gate import gate_operation_protocols
 from agent_sandbox.providers.rest_provider import HeaderKeyAuth
@@ -145,8 +145,10 @@ class AlicloudContainerProvider(Provider):
             raise ProviderConfigError(
                 "Unknown Container Edition options: " + ", ".join(sorted(unknown))
             )
-        _option(config, "api_key")
-        super().validate_config(config)
+        if not _option(config, "api_key"):
+            raise InvalidCredentialsError(
+                "Container Edition needs an API key. Set ABX_ALICLOUD_CONTAINER_API_KEY."
+            )
         _gateway(config)
 
     async def build_infra(self, config: TransportConfig) -> ProviderInfra:
