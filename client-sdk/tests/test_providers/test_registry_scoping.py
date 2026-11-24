@@ -69,11 +69,13 @@ class TestRegistry:
         rows = list_providers()
         assert [r["id"] for r in rows] == [
             "alicloud-express",
+            "alicloud-container",
             "local-process",
             "py-prov",
         ]
         assert {r["id"]: r["trust"] for r in rows} == {
             "alicloud-express": "builtin",
+            "alicloud-container": "builtin",
             "local-process": "local",
             "py-prov": "python",
         }

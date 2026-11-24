@@ -152,7 +152,7 @@ class SandboxInfo(BaseModel):
     status: SandboxStatus = Field(default=SandboxStatus.RUNNING, alias="state")
 
     # 认证与版本信息（已实测验证）
-    envd_access_token: str | None = Field(default=None, alias="envdAccessToken")
+    envd_access_token: str | None = Field(default=None, alias="envdAccessToken", repr=False)
     traffic_access_token: str | None = Field(
         default=None, alias="trafficAccessToken", repr=False, exclude=True
     )

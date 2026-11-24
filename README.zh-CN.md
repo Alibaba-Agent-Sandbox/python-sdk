@@ -51,7 +51,7 @@ finally:
 
 ## 其他提供方与应用模板
 
-极速版为内置后端。[提供方插件](https://github.com/Alibaba-Agent-Sandbox/awesome-providers)可让 `ProviderSandbox` 连接其他后端，使用前按[提供方指南](docs/zh/guide/providers.md)完成安装与配置。
+SDK 内置极速版，源码版也可直接调用[容器版](docs/zh/design/provider-alicloud-container.md)。其他后端参见[提供方设置](docs/zh/guide/providers.md)。
 
 应用模板封装浏览器工具、编码 Agent 等服务。先用 [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox)启动模板，再根据返回的沙箱 ID 和[模板启动指南](docs/zh/guide/template-workflows.md)从 Python 连接。调用命名应用命令前，需要先启动对应服务。
 

@@ -1,5 +1,9 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+## Alibaba Cloud Container Edition Python Provider
+
+[Design](notes/proposed/architecture/2026-11-24-alicloud-container-native-provider.md) · [Initial verification](evidence/verify/2026-11-24-alicloud-container-native-provider.md) · [Follow-up review and verification](evidence/verify/2026-11-24-alicloud-container-native-provider-recheck.md).
+
 ## Recent changes — 2026-11-10
 
 - [Owner change index](notes/proposed/process/2026-11-10-recent-change-index.md) · [records verification](evidence/verify/2026-11-10-recent-change-index.md).

@@ -1,5 +1,7 @@
 # 在 Python 中准备 Provider 运行时
 
+锁指定的 ID 和版本与 SDK 内置实现匹配时，可省略 `native=`。使用[容器版](../design/provider-alicloud-container.md)时，锁中填写 `alicloud-container` 和 SDK 版本，通过 `TransportConfig.provider_options` 提供集群配置。
+
 使用 Python SDK 源码中的 `agent_sandbox.providers.ProviderClient`，在应用启动阶段绑定 Provider 和服务目标。应用传入兼容的 Python 实现时优先使用它，否则可以获取已确认的独立 EPP 实现及其运行时。导入 SDK 和直接调用业务 HTTP API 均无需准备 Provider 运行时。
 
 ## 在 Linux x86-64 glibc 上使用 OpenSandbox

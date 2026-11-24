@@ -8,22 +8,22 @@ This guide describes asynchronous `ProviderSandbox` provider extensions. Root `S
 
 > **Note:** The `abx provider ...` commands come from the separate [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox). Python users can manage providers with `python -m agent_sandbox.providers ...`; Node providers still need the local `abx` engine. Both management entries share the install directory, receipts and tree digest.
 
-A **provider** is a sandbox backend. The SDK and the CLI ship only `alicloud-express`. The others install with `python -m agent_sandbox.providers install registry:<id> --yes` from `https://registry.agent-sandbox.cn/providers/index.json`. A background check compares recorded archive digests and writes content-change notices to `~/.abx/providers/updates.json`. `ABX_PROVIDER_UPDATE_CHECK=0` turns the check off. `ABX_PROVIDER_REGISTRY` changes the index URL. The official site is <https://www.agent-sandbox.cn>. The registry website is <https://registry.agent-sandbox.cn>.
+A **provider** is a sandbox backend. The Python SDK source ships `alicloud-express` and `alicloud-container`. The CLI ships Express. Catalog plugins install with `python -m agent_sandbox.providers install registry:<id> --yes` from `https://registry.agent-sandbox.cn/providers/index.json`. A background check compares recorded archive digests and writes content-change notices to `~/.abx/providers/updates.json`. `ABX_PROVIDER_UPDATE_CHECK=0` turns the check off. `ABX_PROVIDER_REGISTRY` changes the index URL. The official site is <https://www.agent-sandbox.cn>. The registry website is <https://registry.agent-sandbox.cn>.
 
 | Id | Name | Kind | Default |
 |---|---|---|---|
 | `alicloud-express` | Alibaba Cloud Express Edition (阿里云极速版) | built-in | yes |
-| `alicloud-container` | Alibaba Cloud Agent Sandbox, container edition | catalog plugin, `node`; CLI and Python ProviderSandbox after install | no |
+| `alicloud-container` | Alibaba Cloud Agent Sandbox, container edition | built into the Python source version, Node plugin for the CLI | no |
 | `cubesandbox` | CubeSandbox | catalog plugin, `node`; CLI and Python ProviderSandbox after install | no |
 | `e2b` | E2B | catalog plugin, `node`; CLI and Python ProviderSandbox after install | no |
 | `opensandbox` | OpenSandbox | catalog plugin, `node` (ES module, EPP methods run in the host process); CLI and Python ProviderSandbox after install | no |
 
-The four non-default ids live in `awesome-providers`. Install with `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` or `python -m agent_sandbox.providers install registry:<id> --yes` (the `abx` CLI has no `registry:` form), then select with `ProviderSandbox.create(provider="…")` or `abx --provider <id>`. All four are `runtime.kind = "node"` (an ES module, `provider.mjs`), written once in Node.js. The CLI loads them in-process. The Python SDK reaches them through the local Node engine (`abx provider engine serve`, started on demand, so `abx` must be on `PATH` or in `ABX_BIN`) using `EngineProvider` (`engine://<provider>/<sandbox-id>`). A third-party `rest` provider uses Python HTTP transport; an `exec` provider starts the executable declared in its manifest through the Python adapter. The built-in `alicloud-express` is the Python builtin provider. There is no installable `python` kind. See the CLI's [Engine HTTP API](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md).
+The CLI's four catalog plugins run as Node.js modules. The Python SDK loads the built-in Container Edition directly. For the other catalog IDs, use `python -m agent_sandbox.providers install registry:<id> --yes` and configure the local engine. A third-party `rest` provider uses Python HTTP transport. An `exec` provider starts its declared executable. See the [Engine HTTP API](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/en/reference/engine-api.md).
 
 | Id | How to use it |
 |---|---|
 | `opensandbox` | [OpenSandbox provider](../design/provider-opensandbox-mapping.md). HTTP is made from the Node host process that loads `provider.mjs`. `ABX_OPENSANDBOX_BASE_URL` defaults to `http://127.0.0.1:8080`. |
-| `alicloud-container` | [Container edition](../design/provider-alicloud-container.md). Needs `ABX_ALICLOUD_CONTAINER_DOMAIN`. Does not read `ABX_SANDBOX_API_KEY`. |
+| `alicloud-container` | [Container edition](../design/provider-alicloud-container.md). Set the cluster API key and domain or private management URL. |
 | `cubesandbox` | [CubeSandbox provider](../design/provider-cubesandbox.md). Default origin `http://127.0.0.1:3000`. |
 | `e2b` | [E2B provider](../design/provider-e2b.md). Key is `ABX_E2B_API_KEY`. Does not read `ABX_SANDBOX_API_KEY`. |
 
@@ -74,7 +74,7 @@ Python ProviderSandbox
   -> provider backend
 ```
 
-The SDK discovers a running engine or starts one on demand, including during installation verification. It reuses the engine across calls; it does not start Node for every command or file operation. `close()` closes the local SDK client, not the shared engine. The CLI can load the same provider in its own Node process. Ordinary standard Express SDK calls use their native Python path and do not require this Node-provider bridge.
+The SDK discovers a running engine or starts one on demand, including during installation verification. It reuses the engine across calls; it does not start Node for every command or file operation. `close()` closes the local SDK client, not the shared engine. The CLI can load the same provider in its own Node process. The Python SDK calls Express and Container Edition directly.
 
 Compared with a Python provider that accesses the same backend directly, the bridge adds local communication, encoding/decoding, dispatch and a Node process's memory. An engine that is not running also adds startup and plugin-loading time. These costs depend on payload size, operation, machine and concurrency:
 

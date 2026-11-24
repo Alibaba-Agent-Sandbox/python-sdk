@@ -215,16 +215,7 @@ def test_e2b_refuses_without_its_own_key() -> None:
 def test_container_refuses_without_its_own_endpoint() -> None:
     if live.container_ready() == "":
         pytest.skip("container endpoint is set; the live test covers this provider")
-    from agent_sandbox.models.errors import (
-        InvalidAPIKeyError,
-        InvalidCredentialsError,
-        ProviderConfigError,
-        ProviderNotFoundError,
-    )
+    from agent_sandbox.models.errors import InvalidCredentialsError, ProviderConfigError
 
-    if live._installed("alicloud-container"):
-        with pytest.raises(ProviderNotFoundError):
-            live.run(live._create_only("alicloud-container"))
-        return
-    with pytest.raises((InvalidAPIKeyError, InvalidCredentialsError, ProviderConfigError)):
+    with pytest.raises((InvalidCredentialsError, ProviderConfigError)):
         live.run(live._create_only("alicloud-container"))

@@ -8,22 +8,22 @@
 
 > **说明：** `abx provider ...` 命令来自独立的 [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox)。Python 用户可用 `python -m agent_sandbox.providers ...` 管理提供方；Node 提供方仍需本机 `abx` 引擎。两个管理入口共用安装目录、回执和目录树摘要。
 
-**提供方**就是一个沙箱后端。SDK 和 CLI 只内置 `alicloud-express`。其余提供方用 `python -m agent_sandbox.providers install registry:<id> --yes` 安装，索引是 `https://registry.agent-sandbox.cn/providers/index.json`。启动时会在后台对照这份索引检查更新，结果写到 `~/.abx/providers/updates.json`。`ABX_PROVIDER_UPDATE_CHECK=0` 关掉检查。`ABX_PROVIDER_REGISTRY` 可以改索引地址。官网是 <https://www.agent-sandbox.cn>。提供方注册站是 <https://registry.agent-sandbox.cn>。
+**提供方**就是一个沙箱后端。Python SDK 源码版内置 `alicloud-express` 和 `alicloud-container`，CLI 内置极速版。其余提供方用 `python -m agent_sandbox.providers install registry:<id> --yes` 安装，索引是 `https://registry.agent-sandbox.cn/providers/index.json`。启动时会在后台对照这份索引检查更新，结果写到 `~/.abx/providers/updates.json`。`ABX_PROVIDER_UPDATE_CHECK=0` 关掉检查。`ABX_PROVIDER_REGISTRY` 可以改索引地址。官网是 <https://www.agent-sandbox.cn>。提供方注册站是 <https://registry.agent-sandbox.cn>。
 
 | Id | 名称 | 类型 | 默认 |
 |---|---|---|---|
 | `alicloud-express` | 阿里云极速版（Alibaba Cloud Express Edition） | 内置 | 是 |
-| `alicloud-container` | 阿里云智能体沙箱容器版 | 目录插件，`node`；安装后 CLI 和 Python ProviderSandbox 可用 | 否 |
+| `alicloud-container` | 阿里云智能体沙箱容器版 | Python 源码版内置，CLI 使用 Node 插件 | 否 |
 | `cubesandbox` | CubeSandbox | 目录插件，`node`；安装后 CLI 和 Python ProviderSandbox 可用 | 否 |
 | `e2b` | E2B | 目录插件，`node`；安装后 CLI 和 Python ProviderSandbox 可用 | 否 |
 | `opensandbox` | OpenSandbox | 目录插件，`node`（ES 模块，EPP 方法在宿主进程内）；安装后 CLI 和 Python ProviderSandbox 可用 | 否 |
 
-除默认项以外的四个 id 在 `awesome-providers`，用 `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` 安装；也可用 `python -m agent_sandbox.providers install registry:<id> --yes`（`abx` 没有 `registry:` 写法）。装好之后用 `ProviderSandbox.create(provider="…")` 或 `abx --provider <id>` 选择。四个都是 `runtime.kind = "node"`（ES 模块 `provider.mjs`），只用 Node.js 写一次。CLI 在进程内加载它们。Python SDK 通过本机 Node 引擎（`abx provider engine serve`，按需启动，所以 `abx` 要在 `PATH` 里或用 `ABX_BIN` 指定）用 `EngineProvider` 访问（`engine://<provider>/<sandbox-id>`）。第三方 `rest` 提供方使用 Python HTTP 传输；`exec` 提供方由 Python 适配器启动清单中声明的可执行程序。内置的 `alicloud-express` 是 Python 内置提供方。没有可安装的 `python` 类型。见 CLI 的[引擎 HTTP API](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/engine-api.md)。
+CLI 直接加载目录中的四个 Node.js 插件。Python SDK 直接访问容器版。其他目录提供方通过 `python -m agent_sandbox.providers install registry:<id> --yes` 安装并配置本机引擎。`rest` 提供方使用 Python HTTP 传输，`exec` 提供方启动声明的可执行文件。参见[引擎 HTTP API](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/docs/zh/reference/engine-api.md)。
 
 | Id | 怎么用 |
 |---|---|
 | `opensandbox` | [OpenSandbox 提供方](../design/provider-opensandbox-mapping.md)。HTTP 由加载 `provider.mjs` 的 Node 宿主进程发出。`ABX_OPENSANDBOX_BASE_URL` 默认 `http://127.0.0.1:8080`。 |
-| `alicloud-container` | [容器版](../design/provider-alicloud-container.md)。需要 `ABX_ALICLOUD_CONTAINER_DOMAIN`。不读取 `ABX_SANDBOX_API_KEY`。 |
+| `alicloud-container` | [容器版](../design/provider-alicloud-container.md)。使用集群 API Key 及域名或私有管理地址。 |
 | `cubesandbox` | [CubeSandbox 提供方](../design/provider-cubesandbox.md)。默认地址 `http://127.0.0.1:3000`。 |
 | `e2b` | [E2B 提供方](../design/provider-e2b.md)。密钥是 `ABX_E2B_API_KEY`。不读取 `ABX_SANDBOX_API_KEY`。 |
 

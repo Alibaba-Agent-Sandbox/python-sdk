@@ -1,48 +1,62 @@
 # 阿里云智能体沙箱容器版
 
-容器版是 ACS 或 ACK 上的 OpenKruise Agents sandbox-manager，与 Express 分属不同 Provider，使用各自的域名、凭证和运行时条件。CLI 与 Python `ProviderSandbox` 经本机引擎使用[目录适配器](https://github.com/Alibaba-Agent-Sandbox/awesome-providers/tree/main/alicloud-container)。Node.js 服务 HTTP 客户端不管理此 Provider。[English](../../en/design/provider-alicloud-container.md)。
+容器版的 sandbox-manager 运行在 ACS 或 ACK 集群中。使用包含内置 `alicloud-container` 的 Python Client SDK 源码版，可以直接访问集群。CLI 通过自己的 [Node Provider](https://github.com/Alibaba-Agent-Sandbox/awesome-providers/tree/main/alicloud-container) 准备 SandboxSet 等资源。[English](../../en/design/provider-alicloud-container.md)
 
-使用 `abx provider install alibaba-agent-sandbox/awesome-providers//alicloud-container --allow-unpinned --yes` 或 `python -m agent_sandbox.providers install registry:alicloud-container --yes` 安装。可复现使用应固定经审查的完整提交。
+## 安装 Client SDK
 
-## 精确解释器边界
+在包含容器版内置 Provider 的源码目录运行 `python -m pip install ./client-sdk`。PyPI 上的 `0.4.0a7` 尚未包含这个 Provider。
 
-适配器仅实现持久的 `code.default-context.execute`：向 49999 端口的 Jupyter `POST /execute` 发送 `code`、`language` 与可选 `env_vars`，读取缓冲的 NDJSON。它是明确的独立适配路径，不是已删除的猜测 envd Connect 解释器 RPC。调用时显式选择 `mode="default-context"`。
+## 连接集群
 
-未声明无状态执行、公共上下文管理、实时回调或结构化结果支持。传入 context ID 或回调时，代码发送前即拒绝。缺少运行时或路由时不会降级为 shell。模板提供 Python 服务，不代表所选工作流必须使用这项解释器操作。
+配置集群 sandbox-manager 的 API Key，并至少提供域名或管理 API 地址之一。运行示例前，准备同一集群中已注册的 SandboxSet。
 
-## 配置与创建
-
-| 设置 | 环境变量 |
+| 配置 | 环境变量 |
 | --- | --- |
-| 域名 | `ABX_ALICLOUD_CONTAINER_DOMAIN` |
-| 可选 API 源站 | `ABX_ALICLOUD_CONTAINER_BASE_URL` |
-| Provider 密钥，请求头 `X-API-Key` | `ABX_ALICLOUD_CONTAINER_API_KEY` |
-| `native` 或 `private` | `ABX_ALICLOUD_CONTAINER_PROTOCOL`，默认 `native` |
+| 集群网关域名 | `ABX_ALICLOUD_CONTAINER_DOMAIN` |
+| 显式管理 API 地址 | `ABX_ALICLOUD_CONTAINER_BASE_URL` |
+| 集群 sandbox-manager API Key | `ABX_ALICLOUD_CONTAINER_API_KEY` |
+| 网关路由方式 | `ABX_ALICLOUD_CONTAINER_PROTOCOL`，默认为 `native`，也可填 `private` |
 
-Native API 为 `https://api.{domain}`，端口地址为 `https://{port}-{id}.{domain}`。Private API 为 `https://{domain}/kruise/api`；envd 绑定使用 `https://{domain}/kruise/{id}/49983`，Jupyter handler 选择 49999 端口。不继承 Express 密钥。
+`native` 的默认管理地址为 `https://api.{domain}`，沙箱端口地址为 `https://{port}-{id}.{domain}`。`private` 的默认管理地址为 `https://{domain}/kruise/api`，沙箱端口使用 `/kruise/{id}/{port}` 路径。显式私有管理地址必须以 `/kruise/api` 结尾，源站及该路径前的前缀也用于数据面。管理 Key 用于集群 API，沙箱网关及 envd 使用会话返回的令牌。
 
 ```python
+import asyncio
+
 from agent_sandbox import ProviderSandbox
 
-sandbox = await ProviderSandbox.create(
-    provider="alicloud-container",
-    template="YOUR_NATIVE_SANDBOXSET",
-    provider_options={
-        "domain": "sbx.example.com",
-        "api_key": "REPLACE_ME",
-        "protocol": "native",
-    },
-)
-try:
-    result = await sandbox.run_code("print(42)", mode="default-context")
-finally:
-    await sandbox.kill()
+
+async def main():
+    sandbox = await ProviderSandbox.create(
+        provider="alicloud-container",
+        template="base",  # 替换为集群中已有的 SandboxSet 名称
+    )
+    try:
+        result = await sandbox.commands.run("printf container")
+        print(result.stdout)
+        await sandbox.files.write("/tmp/container-demo.txt", result.stdout)
+        print(await sandbox.files.read("/tmp/container-demo.txt"))
+    finally:
+        await sandbox.kill()
+
+
+asyncio.run(main())
 ```
 
-Manifest 分别声明生命周期、超时、暂停/恢复、exec、进程管理、文件与端口。具体 operation 列表决定工作流支持情况，不能推导 PTY、文件监听/传输、模板查询、存储挂载、VPC 或命名命令服务可用。命名命令应用工作流需要真实匹配的 HTTP 服务与绑定。
+## 在已有解释器上下文中运行 Python
 
-## 源码准备与证据
+如果 SandboxSet 在 `49999` 端口提供 Jupyter 服务，可以在示例的 `try` 块内调用以下接口。默认上下文在多次调用间保留，`run_code` 收集服务输出后返回执行结果。
 
-CLI 准备流程构建、推送显式兼容的源码/构建方案，再将配置的基础 SandboxSet 中运行时注入、卷、探针复制到本轮自有的零预热池资源。它不修改基础对象，也不改写 Dockerfile 指令。该流程需要 Docker/镜像仓库访问及 Kubernetes 权限，普通 sandbox-manager 密钥本身不能登记 SandboxSet。Python 只消费已准备的引用，不声明 `template.prepare`。
+```python
+result = await sandbox.run_code("print(42)", mode="default-context")
+print(result.stdout)
+```
 
-容器版保持 Beta。本地假 API 测试验证映射与拒绝行为；真实创建需要 ACS/ACK 部署、有效的原生 SandboxSet、域名/密钥与运行时服务。本环境尚未完成原生验收。源码注册、应用 HTTP 与解释器证据范围不同，成功的 mock 或历史回执不能证明当前工作流。
+## 显式绑定集群
+
+服务需要自行传入集群配置时，可使用 [`ProviderClient`](../guide/provider-runtime.md)。将 `ProviderLock(provider="alicloud-container", version=...)` 中的版本设为已安装的 `agent-sandbox-client` 版本，通过 `TransportConfig.provider_options` 传入 `api_key`、`domain` 或 `base_url`，需要时添加 `protocol`。锁与 SDK 内置实现匹配时会直接加载该实现。
+
+## 支持范围
+
+客户端使用已注册的 SandboxSet，支持实例生命周期、租期调整、命令及流式输出、进程、文件和网关端口访问。暂停和恢复取决于集群配置。`connect()` 可能恢复实例或延长租期。`close()` 释放本机连接，`kill()` 删除实例。列表每次返回一页，支持 1–100 条及 `running`、`paused` 过滤。
+
+独立解释器上下文、解释器实时回调、PTY、文件监视、实例规格覆盖以及卷和网络配置暂未接入。创建或修改 SandboxSet 的步骤见[阿里云集群配置指南](https://help.aliyun.com/zh/agent-sandbox/quick-start1/)。内置 Python Provider 仍处于预览阶段。

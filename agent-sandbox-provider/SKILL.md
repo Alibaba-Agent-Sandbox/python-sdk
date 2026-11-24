@@ -21,12 +21,13 @@ python -m pip check
 The image needs only `agent-sandbox-server==0.4.0a6`. Installing that package on the host does not update an existing image. Development source installations must use a matching client/server revision.
 Do not install `agent-sandbox`; that PyPI project is unrelated.
 
-Only `alicloud-express` is built in. Do not reinstall it and do not reuse
-its id. `opensandbox`, `cubesandbox`, `e2b`, and `alicloud-container` are
-official catalog ids in `awesome-providers`. Install those with
-`registry:<id>`. Do not reuse them for a new backend. A new id matches
-`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, length 2-40, and must not start with
-`abx-`, `alicloud-`, or `shortcuts`.
+The Python SDK source bundles `alicloud-express` and `alicloud-container`. Use
+the Container Edition ID for the same backend, with its own cluster credentials.
+The published 0.4.0a6 and 0.4.0a7 packages predate the built-in Container Edition adapter.
+`opensandbox`, `cubesandbox`, `e2b`, and `alicloud-container` also have official
+Node catalog artifacts in `awesome-providers`. A new backend needs a separate
+ID matching `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, length 2-40, outside the reserved
+`abx-`, `alicloud-`, and `shortcuts` prefixes.
 
 The CLI loads `alicloud-express` plus installed `rest`, `exec` and `node`
 plugins. It rejects `kind = "python"`. An in-code `Provider` subclass still
@@ -35,8 +36,8 @@ works from the Python SDK. Catalog providers (`opensandbox`, `e2b`,
 `provider.mjs`): install with
 `abx provider install alibaba-agent-sandbox/awesome-providers//<id> --allow-unpinned --yes` (or
 `python -m agent_sandbox.providers install registry:<id> --yes`), then
-`abx --provider <id>` or `ProviderSandbox.create(provider="<id>")`. The Python SDK
-reaches `node` plugins through the local engine (`abx provider engine serve`,
+`abx --provider <id>` or `ProviderSandbox.create(provider="<id>")`. The Python SDK selects the built-in Container Edition by ID. For Node plugins
+it uses the local engine (`abx provider engine serve`,
 started on demand; `abx` must be on `PATH` or in `ABX_BIN`) using
 `EngineProvider`. Python `exec` and `rest` manifests still run in the Python
 process. The catalog guide is

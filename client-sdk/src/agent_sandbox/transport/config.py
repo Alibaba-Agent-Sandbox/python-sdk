@@ -92,7 +92,7 @@ class TransportConfig(BaseModel):
     )
 
     # Provider-scoped values of non-built-in providers (and extra built-in keys such as ``acr_*``)
-    provider_options: dict[str, Any] = Field(default_factory=dict)
+    provider_options: dict[str, Any] = Field(default_factory=dict, repr=False)
 
     # HTTP settings
     http_timeout: float = Field(default=30.0, ge=1.0, description="HTTP request timeout in seconds")
