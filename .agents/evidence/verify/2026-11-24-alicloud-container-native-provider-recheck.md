@@ -15,6 +15,8 @@ Two independent reviews checked the Container Edition routes and SDK behavior, a
 - From `client-sdk`: `pytest -q tests/test_providers/test_alicloud_container.py tests/test_providers/test_bound_client.py tests/test_providers/test_registry_scoping.py tests/test_providers/test_engine_alicloud_container.py`
 - From the repository root: `python -m pytest e2e/test_alicloud_container_native.py e2e/test_08_providers.py -k 'alicloud_container_native or container_refuses_without' -ra`
 - `make lint format-check typecheck` and `make build dist-check`
+- Installed only the built Client SDK wheel in a fresh environment. Used a private-route HTTP fixture in an isolated loopback namespace with an empty executable search path. The fixture returned a completed and an incomplete interpreter response, then accepted deletion and returned 404 for the owned ID.
+- `make ci` through the server test stage and `pytest -q -m "not integration"` in `client-sdk` with isolated loopback. Repeated the two failed client cases against `ab789cc` and in an isolated PID namespace on the patched revision.
 - `bash scripts/check-repo-health.sh`, `make hygiene` and `git diff --check`
 
 ## Results
@@ -25,6 +27,9 @@ Two independent reviews checked the Container Edition routes and SDK behavior, a
 | Provider credential refusal | PASS | One case passed without a configured Container Edition cluster. |
 | Live lifecycle and interpreter cases | BLOCKED | Two cases skipped before I/O. No Container Edition manager endpoint or Key was available from the workspace configuration or process environment. |
 | Lint, formatting, types and distributions | PASS | Both packages checked. Wheel-only imports and a local HTTP packaging probe passed. |
+| Installed client wheel and private HTTP route | PASS | Verified both credential audiences, completion and truncation rejection, and deletion by ID. Fixture backend. |
+| Local Server unit suite | PASS | 875 passed and one skipped with isolated loopback. |
+| Local Client unit suite | PARTIAL | 2,459 passed, 36 skipped, 10 deselected, and two Managed Agents timing or process-domain assertions failed with a shared PID namespace. Both reproduced at `ab789cc` and passed with isolated PIDs on the patched revision. |
 
 ## Cleanup
 
