@@ -23,9 +23,14 @@ def _result(body: str) -> dict[str, Any]:
     stderr: list[str] = []
     text = ""
     exit_code = 0
+    completed = False
     for line in body.splitlines():
         if not line.strip():
             continue
+        if completed:
+            raise ProviderProtocolError(
+                "Container Edition returned output after interpreter completion."
+            )
         try:
             event = json.loads(line)
         except ValueError:
@@ -35,7 +40,9 @@ def _result(body: str) -> dict[str, Any]:
         if not isinstance(event, dict) or not isinstance(event.get("type"), str):
             raise ProviderProtocolError("Container Edition returned invalid interpreter events.")
         kind = event["type"]
-        if kind == "stdout":
+        if kind == "end_of_execution":
+            completed = True
+        elif kind == "stdout":
             stdout.append(str(event.get("text") or ""))
         elif kind == "stderr":
             stderr.append(str(event.get("text") or ""))
@@ -44,6 +51,10 @@ def _result(body: str) -> dict[str, Any]:
         elif kind in {"error", "unexpected_end_of_execution"}:
             exit_code = 1
             stderr.append(str(event.get("text") or event.get("value") or event.get("name") or ""))
+    if not completed:
+        raise ProviderProtocolError(
+            "Container Edition interpreter output ended without completion."
+        )
     output = "".join(stdout)
     return {
         "stdout": output,

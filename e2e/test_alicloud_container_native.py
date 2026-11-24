@@ -21,7 +21,10 @@ if TYPE_CHECKING:
 pytestmark = pytest.mark.provider_live
 
 
-def test_alicloud_container_native(run: Callable[[Coroutine[Any, Any, None]], None]) -> None:
+@pytest.mark.parametrize("interpreter", [False, True], ids=["basic", "jupyter"])
+def test_alicloud_container_native(
+    run: Callable[[Coroutine[Any, Any, None]], None], interpreter: bool
+) -> None:
     provider = "alicloud-container"
     base = os.environ.get("ABX_ALICLOUD_CONTAINER_BASE_URL", "").strip()
     domain = os.environ.get("ABX_ALICLOUD_CONTAINER_DOMAIN", "").strip()
@@ -30,6 +33,10 @@ def test_alicloud_container_native(run: Callable[[Coroutine[Any, Any, None]], No
         pytest.skip(
             "Set Container Edition API key and domain or private API URL for a live cluster."
         )
+    env_name = "E2E_CONTAINER_JUPYTER_SANDBOX_SET" if interpreter else "E2E_CONTAINER_SANDBOX_SET"
+    template = os.environ.get(env_name, "").strip()
+    if not template:
+        pytest.skip(f"Set {env_name} to an existing SandboxSet name.")
     options = {
         "api_key": key,
         "protocol": os.environ.get("ABX_ALICLOUD_CONTAINER_PROTOCOL", "native"),
@@ -42,12 +49,15 @@ def test_alicloud_container_native(run: Callable[[Coroutine[Any, Any, None]], No
         _exercise(
             ProviderLock(provider=provider, version=__version__),
             TransportConfig(provider=provider, provider_options=options),
+            template=template,
+            interpreter=interpreter,
         )
     )
 
 
-async def _exercise(lock: ProviderLock, config: TransportConfig) -> None:
-    template = os.environ.get("E2E_CONTAINER_SANDBOX_SET", "code-interpreter")
+async def _exercise(
+    lock: ProviderLock, config: TransportConfig, *, template: str, interpreter: bool
+) -> None:
     owned: list[str] = []
     async with await ProviderClient.prepare(lock, config) as client:
         assert client.implementation == "python-native"
@@ -63,12 +73,14 @@ async def _exercise(lock: ProviderLock, config: TransportConfig) -> None:
                 await sandbox.files.write(path, "roundtrip")
                 assert await sandbox.files.read(path) == "roundtrip"
                 await sandbox.files.remove(path)
-                code = await sandbox.run_code("print(42)", mode="default-context")
-                assert code.exit_code == 0 and code.stdout.strip() == "42"
+                if interpreter:
+                    code = await sandbox.run_code("print(42)", mode="default-context")
+                    assert code.exit_code == 0 and code.stdout.strip() == "42"
                 assert (await client.get(sandbox.id)).sandbox_id == sandbox.id
                 await client.set_timeout(sandbox.id, 300)
-                url, _ = await sandbox.network.resolve(49999)
-                assert "49999" in url
+                port = 49999 if interpreter else 49983
+                url, _ = await sandbox.network.resolve(port)
+                assert str(port) in url
             finally:
                 await sandbox.close()
             attached = await client.connect(sandbox.id)

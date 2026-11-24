@@ -43,6 +43,16 @@ cd e2e && python -m pytest -m "not e2e_slow" -ra               # 等同 `make e2
 缺少凭据时所有测试都会**跳过**,并给出 `E2E skipped: missing credentials [...]`。单元 CI 不会收集本套件
 (`client-sdk` / `server-sdk` 在各自目录运行 `pytest tests/`)。
 
+## 容器版原生 Provider
+
+加载[集群配置](../docs/zh/design/provider-alicloud-container.md)后，将 `E2E_CONTAINER_SANDBOX_SET` 设为已有 SandboxSet 名称，验证命令、文件和实例生命周期。要额外验证解释器，将 `E2E_CONTAINER_JUPYTER_SANDBOX_SET` 设为在 `49999` 端口提供 Jupyter 的已有 SandboxSet。缺少对应条件时，该用例会跳过。
+
+```bash
+python -m pytest e2e/test_alicloud_container_native.py -ra
+```
+
+测试删除创建时返回的每个实例 ID，并通过同一集群复查。极速版 janitor 不查询容器版。如果创建请求失败且没有返回 ID，重试前先在集群中检查带有本轮 `e2e` 元数据的实例。
+
 ## 覆盖范围
 
 | 文件 | 范围 |

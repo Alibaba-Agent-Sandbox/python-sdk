@@ -71,6 +71,7 @@ async def test_builtin_lifecycle_execution_files_and_ports(monkeypatch, private)
     state = "running"
     deleted = False
     missing_end = False
+    incomplete_code = False
     end: dict[str, Any] = {"exited": True}
     token = "runtime-test-token"
     traffic = "traffic-test-token"
@@ -174,6 +175,8 @@ async def test_builtin_lifecycle_execution_files_and_ports(monkeypatch, private)
             events = [{"type": "result", "text": "4", "is_main_result": True}]
             if missing_end:
                 return httpx.Response(200, text='{"type":"result"')
+            if not incomplete_code:
+                events.append({"type": "end_of_execution"})
             return httpx.Response(200, text="\n".join(map(json.dumps, events)))
         pytest.fail(f"Unexpected route: {request.method} {path}")
 
@@ -210,6 +213,11 @@ async def test_builtin_lifecycle_execution_files_and_ports(monkeypatch, private)
         with pytest.raises(ProviderProtocolError, match="malformed interpreter output"):
             await sandbox.run_code("2 + 2", mode="default-context")
 
+        missing_end = False
+        incomplete_code = True
+        with pytest.raises(ProviderProtocolError, match="ended without completion"):
+            await sandbox.run_code("2 + 2", mode="default-context")
+
         listed = await client.list(status=SandboxStatus.RUNNING, limit=5)
         assert listed[0].started_at is None and listed[0].region == ""
         with pytest.raises(ProviderFeatureNotSupportedError, match="sandbox.list.offset"):
@@ -218,6 +226,9 @@ async def test_builtin_lifecycle_execution_files_and_ports(monkeypatch, private)
         await sandbox.pause()
         assert not await sandbox.is_running()
         await sandbox.resume()
+        end = {"exited": True}
+        assert (await sandbox.commands.run("printf hi")).stdout == "hi"
+        assert await sandbox.files.read("/tmp/demo") == "hello"
         info_after = await sandbox.refresh_info()
         assert info_after.status is SandboxStatus.RUNNING
         assert info_after.envd_access_token == token

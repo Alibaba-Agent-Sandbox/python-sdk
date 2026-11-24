@@ -24,6 +24,7 @@ T = TypeVar("T")
 
 REQUIRED_ENV = ("ABX_SANDBOX_API_KEY",)
 SECRET_ENV = (
+    "ABX_ALICLOUD_CONTAINER_API_KEY",
     "ABX_SANDBOX_API_KEY",
     "OPENAI_API_KEY",
 )
@@ -63,8 +64,13 @@ def mask(text: str) -> str:
         value = (os.environ.get(name) or "").strip()
         if len(value) >= 6:
             out = out.replace(value, f"<{name}:masked>")
-    out = re.sub(r"(?i)(x-access-token|authorization|envdAccessToken)(['\"]?\s*[:=]\s*['\"]?)[^\s'\",}]+",
-                 r"\1\2<masked>", out)
+    out = re.sub(
+        r"(?i)(x-access-token|authorization|envdAccessToken|"
+        r"e2b-traffic-access-token|trafficAccessToken)"
+        r"(['\"]?\s*[:=]\s*['\"]?)[^\s'\",}]+",
+        r"\1\2<masked>",
+        out,
+    )
     return out
 
 

@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   `ProviderSandbox` selects it by ID, and `ProviderClient` can bind the matching bundled version.
   / 内置阿里云智能体沙箱容器版 Python Provider，支持按 ID 选择和显式绑定。
 
+### Fixed
+
+- Report incomplete Container Edition interpreter responses as protocol errors. / 容器版解释器响应缺少执行完成事件时报告协议错误。
+
 ### Documentation
 
 - Synchronize CLI-dependent SDK documentation, HTTP MCP template deployment and source-acquisition error guidance. / 同步 SDK 文档中的 CLI 用法、HTTP MCP 模板部署与源码获取错误指引。

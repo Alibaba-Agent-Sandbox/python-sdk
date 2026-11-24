@@ -2,7 +2,7 @@
 
 ## Alibaba Cloud Container Edition Python Provider
 
-[Design](notes/proposed/architecture/2026-11-24-alicloud-container-native-provider.md) · [Verification](evidence/verify/2026-11-24-alicloud-container-native-provider.md).
+[Design](notes/proposed/architecture/2026-11-24-alicloud-container-native-provider.md) · [Initial verification](evidence/verify/2026-11-24-alicloud-container-native-provider.md) · [Follow-up review and verification](evidence/verify/2026-11-24-alicloud-container-native-provider-recheck.md).
 
 ## Recent changes — 2026-11-10
 

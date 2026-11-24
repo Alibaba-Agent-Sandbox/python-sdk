@@ -51,6 +51,16 @@ Without credentials every test is **skipped** with the message
 
 Third-party providers are not part of this suite's cloud run. They follow the same six tiers as the CLI, from plugin unit tests (T0) to a local OpenSandbox server (T4) and the Alibaba Cloud platform (T5). The table is [cli/e2e/providers/PLAN.md](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/e2e/providers/PLAN.md) ([中文](https://github.com/alibaba-agent-sandbox/agent-sandbox/blob/main/e2e/providers/PLAN.zh-CN.md)). OpenSandbox helpers for T4 live in [opensandbox/README.md](opensandbox/README.md).
 
+## Native Container Edition Provider
+
+With [cluster configuration](../docs/en/design/provider-alicloud-container.md) loaded, set `E2E_CONTAINER_SANDBOX_SET` to an existing SandboxSet for the command, file and lifecycle case. Set `E2E_CONTAINER_JUPYTER_SANDBOX_SET` to an existing SandboxSet that serves Jupyter on port `49999` to also verify the interpreter. Each case skips if its own prerequisites are absent.
+
+```bash
+python -m pytest e2e/test_alicloud_container_native.py -ra
+```
+
+The test deletes each sandbox ID returned at creation and verifies its absence with the same cluster. The Express janitor does not query Container Edition. If a creation request fails without returning an ID, check the cluster for the run's `e2e` metadata before repeating it.
+
 ## What is covered
 
 | File | Scope |

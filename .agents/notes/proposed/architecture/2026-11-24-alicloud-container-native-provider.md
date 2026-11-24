@@ -17,7 +17,8 @@ Reuse the existing HTTP, Connect process and file implementations. Keep account 
 - `ProviderSandbox.create(provider="alicloud-container", template="code-interpreter")` reads provider-scoped settings from the usual Client SDK configuration sources.
 - `ProviderClient.prepare(lock, TransportConfig(...))` binds the shipped version using explicit provider options.
 - Methods cover lifecycle, timeout, process and file operations, port resolution and the Jupyter default context. `connect` may resume or extend a lease. List returns one page.
-- Sandbox creation can be inconclusive after an upstream transport failure or gateway 5xx. Retain an observed ID via `on_created` and reconcile before a new request.
+- Jupyter execution checks the completion event emitted by the public `/execute` response wrapper. A response without that event raises a protocol error.
+- Sandbox creation can be inconclusive after an upstream transport failure or gateway 5xx. `on_created` records IDs from valid receipts. Reconcile uncertain creation in the cluster before a new request.
 
 ## Alternatives considered
 
@@ -31,7 +32,7 @@ Reuse the existing HTTP, Connect process and file implementations. Keep account 
 
 ## Test Strategy
 
-Validate both gateway layouts using the real SDK HTTP client with a controlled HTTP contract. Exercise management and data-plane authentication, v2 and v1 connect, list state, file transfers, Jupyter NDJSON, process exits, identity checks and ambiguous creates. Run the live case against a maintainer-provided ACS or ACK cluster and confirm deletion by ID.
+Validate both gateway layouts using the real SDK HTTP client with a controlled HTTP contract. Exercise management and data-plane authentication, v2 and v1 connect, list state, file transfers, Jupyter NDJSON, process exits, identity checks and ambiguous creates. Run the basic live case against a maintainer-provided ACS or ACK cluster and confirm deletion by ID. Run the separate interpreter case with a SandboxSet that exposes the Jupyter service.
 
 ## Acceptance criteria
 
@@ -40,3 +41,4 @@ The client wheel contains the Provider and requires no Node runtime. Both public
 ## Evidence
 
 - [Implementation and two-round review evidence](../../../evidence/verify/2026-11-24-alicloud-container-native-provider.md)
+- [Follow-up review and verification evidence](../../../evidence/verify/2026-11-24-alicloud-container-native-provider-recheck.md)

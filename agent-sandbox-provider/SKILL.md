@@ -23,7 +23,7 @@ Do not install `agent-sandbox`; that PyPI project is unrelated.
 
 The Python SDK source bundles `alicloud-express` and `alicloud-container`. Use
 the Container Edition ID for the same backend, with its own cluster credentials.
-The published 0.4.0a6 pair predates the built-in Container Edition adapter.
+The published 0.4.0a6 and 0.4.0a7 packages predate the built-in Container Edition adapter.
 `opensandbox`, `cubesandbox`, `e2b`, and `alicloud-container` also have official
 Node catalog artifacts in `awesome-providers`. A new backend needs a separate
 ID matching `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, length 2-40, outside the reserved
