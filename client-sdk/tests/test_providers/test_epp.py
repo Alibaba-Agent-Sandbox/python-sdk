@@ -136,6 +136,29 @@ async def test_call_timeout(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_close_continues_when_awaiter_is_cancelled(tmp_path):
+    client = _client(
+        tmp_path,
+        """
+        import time
+        msg = json.loads(sys.stdin.readline())
+        send({"jsonrpc": "2.0", "id": msg["id"], "result": {"protocol": "epp/1"}})
+        time.sleep(30)
+        """,
+    )
+    await client.start(INIT)
+    try:
+        wait = asyncio.create_task(client.close())
+        await asyncio.sleep(0)
+        wait.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await wait
+    finally:
+        await asyncio.wait_for(client.close(), 10)
+    assert client._proc is not None and client._proc.returncode is not None
+
+
+@pytest.mark.asyncio
 async def test_missing_executable(tmp_path):
     client = EppClient("t", [str(tmp_path / "nope")], cwd=tmp_path, env=scrubbed_env(tmp_path))
     with pytest.raises(E.ProviderProcessError) as exc:

@@ -21,6 +21,12 @@ from typing import TYPE_CHECKING, Any, Literal, NoReturn, cast
 from agent_sandbox.api.capability import (
     ResolvedCapabilities,
 )
+from agent_sandbox.models.errors import (
+    NetworkError,
+    ProviderProcessError,
+    ProviderProtocolError,
+    ProviderTimeoutError,
+)
 from agent_sandbox.models.sandbox import (
     SandboxConfig,
     SandboxInfo,
@@ -54,7 +60,7 @@ if TYPE_CHECKING:
         SandboxProtocol,
     )
     from agent_sandbox.protocol.contracts import TerminalSession as TerminalSession
-    from agent_sandbox.providers.base import Provider
+    from agent_sandbox.providers.base import Provider, ProviderInfra
     from agent_sandbox.transport.auth_contract import AuthProvider
     from agent_sandbox.transport.auth_contract import DataPlaneAuth as EnvdTokenManager
     from agent_sandbox.transport.http import HttpClient
@@ -165,7 +171,7 @@ class Sandbox:
         info: SandboxInfo,
         config: TransportConfig,
         http_client: HttpClient,
-        auth: AuthProvider,
+        auth: AuthProvider | None,
         envd_token: EnvdTokenManager,
         *,
         sandbox_protocol: SandboxProtocol | None = None,
@@ -177,16 +183,18 @@ class Sandbox:
         resolved_capabilities: ResolvedCapabilities | None = None,
         declared_capabilities: frozenset[str] | None = None,
         provider_id: str | None = None,
+        bound_provider: Provider | None = None,
+        bound_check: Callable[[], None] | None = None,
     ) -> None:
         self._info = info
         self._config = config
         self._provider_id = provider_id or config.provider
-
-        from agent_sandbox.providers.registry import get_provider
+        self._bound_provider = bound_provider
+        self._bound_check = bound_check
 
         # The backend owns URL derivation and protocol construction.
         if not self._info.envd_url and self._info.sandbox_id:
-            self._info.envd_url = get_provider(self._provider_id).resolve_session_url(
+            self._info.envd_url = self._provider_impl().resolve_session_url(
                 self._info, self._config
             )
         self._http_client = http_client
@@ -197,7 +205,7 @@ class Sandbox:
         self._domain = domain if domain is not None else config.sandbox_domain
         self._secure = secure
         defaults = (
-            get_provider(self._provider_id).session_protocols(http_client)
+            self._provider_impl().session_protocols(http_client)
             if any(
                 p is None
                 for p in (
@@ -235,6 +243,11 @@ class Sandbox:
         # What a provider declares; the module gates stay permissive so the provider's own
         # protocol gate refuses a missing feature with E8004 naming it.
         self._declared_capabilities = declared_capabilities
+
+    def _provider_impl(self) -> Provider:
+        if self._bound_check is not None:
+            self._bound_check()
+        return self._bound_provider or get_provider(self._provider_id)
 
     # ---- Properties ----
 
@@ -275,9 +288,7 @@ class Sandbox:
     @property
     def operations(self) -> frozenset[str]:
         """Exact operations implemented by this provider's Python consumer."""
-        from agent_sandbox.providers.registry import get_provider
-
-        return frozenset(get_provider(self.provider).operations)
+        return frozenset(self._provider_impl().operations)
 
     # ---- Sub-modules (lazy cached properties) ----
 
@@ -327,7 +338,6 @@ class Sandbox:
         """Network sub-module for port URL calculation."""
         from agent_sandbox.api.network import NetworkModule
         from agent_sandbox.protocol.port_contract import PortContext
-        from agent_sandbox.providers.registry import get_provider
 
         return NetworkModule(
             sandbox_id=self.id,
@@ -336,7 +346,7 @@ class Sandbox:
             access_token=self._envd_token.token if self._envd_token else None,
             capabilities=self._capabilities,
             port_resolver=self._port_resolver(),
-            port_access=get_provider(self._provider_id).create_port_access(
+            port_access=self._provider_impl().create_port_access(
                 PortContext(
                     self.id,
                     self._domain,
@@ -424,9 +434,8 @@ class Sandbox:
 
         from agent_sandbox.api.server_client import ServerClient
         from agent_sandbox.protocol.port_contract import PortContext
-        from agent_sandbox.providers.registry import get_provider
 
-        descriptor = await get_provider(self.provider).application_endpoint(
+        descriptor = await self._provider_impl().application_endpoint(
             PortContext(
                 self.id,
                 self._domain,
@@ -1027,32 +1036,56 @@ class Sandbox:
         options: dict[str, Any] | None,
         on_created: Callable[[str], None] | None = None,
     ) -> Sandbox:
+        sandbox_config = SandboxConfig(  # type: ignore[call-arg]
+            template=template,
+            timeout=timeout,
+            metadata=metadata or {},
+            env_vars=envs or {},
+            cpu=cpu,
+            memory=memory,
+            disk=disk,
+            gpu=gpu,
+            volume_mounts=volume_mounts,
+            network=network,
+            allow_internet_access=allow_internet_access,
+            secure=secure,
+            provider_options=dict(options or {}),
+        )
+
         infra = await _provider_infra(prov, overrides, options)
+        return await cls._create_from_infra(
+            prov,
+            infra,
+            sandbox_config,
+            request_timeout=request_timeout,
+            domain=domain,
+            on_created=on_created,
+        )
+
+    @classmethod
+    async def _create_from_infra(
+        cls,
+        prov: Provider,
+        infra: ProviderInfra,
+        sandbox_config: SandboxConfig,
+        *,
+        request_timeout: float | None = None,
+        domain: str | None = None,
+        on_created: Callable[[str], None] | None = None,
+        bound_check: Callable[[], None] | None = None,
+    ) -> Sandbox:
         closer = _InfraCloser(infra)
         created: SandboxInfo | None = None
         try:
-            sandbox_config = SandboxConfig(  # type: ignore[call-arg]
-                template=template,
-                timeout=timeout,
-                metadata=metadata or {},
-                env_vars=envs or {},
-                cpu=cpu,
-                memory=memory,
-                disk=disk,
-                gpu=gpu,
-                volume_mounts=volume_mounts,
-                network=network,
-                allow_internet_access=allow_internet_access,
-                secure=secure,
-                provider_options=dict(options or {}),
-            )
             info = await infra.sandbox_protocol.create(
                 sandbox_config, request_timeout=request_timeout
             )
             created = info
             if on_created is not None:
                 on_created(info.sandbox_id)
-            binding = await prov.prepare_session(infra, info, operation="create", template=template)
+            binding = await prov.prepare_session(
+                infra, info, operation="create", template=sandbox_config.template
+            )
             logger.info("Sandbox created: %s (provider %s)", info.sandbox_id, prov.id)
             resolved = ResolvedCapabilities(
                 capabilities=set(DEFAULT_CAPABILITIES) | set(prov.capabilities())
@@ -1070,15 +1103,31 @@ class Sandbox:
                     "code_interpreter_protocol", infra.code_interpreter_protocol
                 ),
                 domain=domain or infra.config.sandbox_domain,
-                secure=True if secure is None else secure,
+                secure=True if sandbox_config.secure is None else sandbox_config.secure,
                 resolved_capabilities=binding.pop("resolved_capabilities", resolved),
                 declared_capabilities=binding.pop(
                     "declared_capabilities", frozenset(prov.capabilities())
                 ),
                 provider_id=prov.id,
+                bound_provider=prov if bound_check is not None else None,
+                bound_check=bound_check,
                 **binding,
             )
         except BaseException as exc:
+            if (
+                bound_check is not None
+                and created is None
+                and isinstance(
+                    exc,
+                    (
+                        NetworkError,
+                        ProviderProcessError,
+                        ProviderProtocolError,
+                        ProviderTimeoutError,
+                    ),
+                )
+            ):
+                exc.outcome = "unknown_outcome"  # type: ignore[union-attr]
             if created is not None:
                 exc.owned_resource = {"provider_id": prov.id, "sandbox_id": created.sandbox_id}  # type: ignore[attr-defined]
                 try:
@@ -1105,9 +1154,26 @@ class Sandbox:
         traffic_access_token: str | None = None,
     ) -> Sandbox:
         infra = await _provider_infra(prov, overrides, options)
+        return await cls._connect_from_infra(
+            prov, infra, sandbox_id, domain=domain, traffic_access_token=traffic_access_token
+        )
+
+    @classmethod
+    async def _connect_from_infra(
+        cls,
+        prov: Provider,
+        infra: ProviderInfra,
+        sandbox_id: str,
+        *,
+        domain: str | None = None,
+        traffic_access_token: str | None = None,
+        bound_check: Callable[[], None] | None = None,
+    ) -> Sandbox:
         closer = _InfraCloser(infra)
         try:
             info = await infra.sandbox_protocol.connect(sandbox_id)
+            if bound_check is not None and info.sandbox_id != sandbox_id:
+                raise ValueError("Provider connect returned a different sandbox identity.")
             if traffic_access_token is not None:
                 info.traffic_access_token = traffic_access_token
             binding = await prov.prepare_session(
@@ -1135,9 +1201,11 @@ class Sandbox:
                     "declared_capabilities", frozenset(prov.capabilities())
                 ),
                 provider_id=prov.id,
+                bound_provider=prov if bound_check is not None else None,
+                bound_check=bound_check,
                 **binding,
             )
-        except Exception:
+        except BaseException:
             await closer.close()
             raise
 
@@ -1209,7 +1277,7 @@ class Sandbox:
         """Refresh sandbox info from the platform."""
         info = await self._sandbox_protocol.get_info(self.id)
         if not info.envd_url:
-            info.envd_url = get_provider(self._provider_id).resolve_session_url(info, self._config)
+            info.envd_url = self._provider_impl().resolve_session_url(info, self._config)
         await self._rebind_session(info)
         return self._info
 
@@ -1221,7 +1289,7 @@ class Sandbox:
         changes = {name: getattr(info, name) for name in info.model_fields_set}
         self._info = self._info.model_copy(update=changes)
         if not self._info.envd_url:
-            self._info.envd_url = get_provider(self._provider_id).resolve_session_url(
+            self._info.envd_url = self._provider_impl().resolve_session_url(
                 self._info, self._config
             )
         if "envd_access_token" in changes:
@@ -1297,13 +1365,10 @@ class Sandbox:
             rows: Terminal rows (default 24).
             shell: Shell binary (default ``/bin/bash``).
         """
-        from agent_sandbox.providers.registry import get_provider
 
         return cast(
             "TerminalSession",
-            await get_provider(self._provider_id).open_terminal(
-                self, cols=cols, rows=rows, shell=shell
-            ),
+            await self._provider_impl().open_terminal(self, cols=cols, rows=rows, shell=shell),
         )
 
     # ---- Named commands (registered on the in-sandbox SandboxServer) ----
