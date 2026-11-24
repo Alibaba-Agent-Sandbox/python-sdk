@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep the Python MCP workspace and its bound Provider connection available after an explicit deletion fails. / Python MCP 显式删除失败时保留工作区和原 Provider 连接，便于确认和重试。
+
 ### Documentation
 
 - Synchronize CLI-dependent SDK documentation, HTTP MCP template deployment and source-acquisition error guidance. / 同步 SDK 文档中的 CLI 用法、HTTP MCP 模板部署与源码获取错误指引。

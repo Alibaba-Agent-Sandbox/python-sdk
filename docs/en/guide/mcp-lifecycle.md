@@ -108,6 +108,10 @@ Mocked tests do not establish real provider support; cloud results must be recor
 separately in repository evidence. See the
 [official MCP tools specification](https://modelcontextprotocol.io/specification/2025-06-18/server/tools).
 
+## Retry a failed deletion
+
+If `kill_sandbox` fails, the active Python MCP session keeps the selected sandbox and its bound Provider connection. Check the resource state and retry with the same `sandbox_id` if it still exists. Without an ID the tool uses the current default. Changes to the default from another call do not change an explicit ID.
+
 ## Borrowed connections and session shutdown
 
 This source revision tracks creation ownership separately from cached connections.

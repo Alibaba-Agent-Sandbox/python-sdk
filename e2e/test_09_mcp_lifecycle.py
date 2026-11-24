@@ -6,8 +6,14 @@ import e2e_helpers as helpers
 
 
 def test_mcp_lifecycle_and_external_inspection(run, tracker):  # type: ignore[no-untyped-def]
+    from unittest.mock import AsyncMock, patch
+
+    import pytest
+
+    from agent_sandbox import ProviderSandbox
     from agent_sandbox.agent.mcp import SandboxManager
     from agent_sandbox.agent.tools import dispatch_tool
+    from agent_sandbox.models.errors import SandboxNotFoundError
 
     owner = SandboxManager(template=helpers.OFFICIAL_BASE)
     observer = SandboxManager()
@@ -80,6 +86,20 @@ def test_mcp_lifecycle_and_external_inspection(run, tracker):  # type: ignore[no
             )
             assert result.get("exit_code") == 0
             assert result.get("stdout", "").strip() == "42"
+            # Inject a pre-request failure, then use the same bound Provider for the real retry.
+            with patch.object(
+                owner_sandbox._sandbox_protocol,
+                "kill",
+                new=AsyncMock(side_effect=TimeoutError("injected before sending delete")),
+            ):
+                failed = await dispatch_tool("kill_sandbox", {}, owner)
+                assert "error" in failed
+            still_running = await dispatch_tool("get_sandbox", {}, owner)
+            assert still_running.get("sandbox_id") == sandbox_id
+            killed = await dispatch_tool("kill_sandbox", {}, owner)
+            assert killed.get("success") is True
+            with pytest.raises(SandboxNotFoundError):
+                await ProviderSandbox.get_info_by_id(sandbox_id)
             return sandbox_id
         finally:
             await observer.shutdown()

@@ -90,6 +90,10 @@ CPU/内存核验。
 必须另行记录在仓库验证证据中。接口参考
 [官方 MCP tools 规范](https://modelcontextprotocol.io/specification/2025-06-18/server/tools)。
 
+## 重试失败的删除
+
+`kill_sandbox` 失败后，仍在运行的 Python MCP 会话会保留所选沙箱及其原 Provider 连接。先查询实例状态，确认仍存在后用同一个 `sandbox_id` 重试。省略 ID 时使用当前默认沙箱。其他调用改变默认目标时，显式 ID 仍指向原实例。
+
 ## 借用连接与会话关闭
 
 本源码版本分别记录创建归属和缓存连接。执行或文件工具可通过已配置账号权限，访问

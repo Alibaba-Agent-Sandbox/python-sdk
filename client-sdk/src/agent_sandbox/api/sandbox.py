@@ -1143,7 +1143,7 @@ class Sandbox:
 
     # ---- Lifecycle ----
 
-    async def kill(self) -> None:
+    async def kill(self, *, _keep_connection_on_failure: bool = False) -> None:
         """Kill the sandbox and release resources.
 
         A second call is a no-op. The first call closes the client, so retrying
@@ -1156,8 +1156,9 @@ class Sandbox:
             self._killed = True
             logger.info("Sandbox killed: %s", self.id)
         finally:
-            await self._close_server_streams()
-            await self._http_client.close()
+            # An active MCP session may retry with the same bound Provider.
+            if self._killed or not _keep_connection_on_failure:
+                await self.close()
 
     async def close(self) -> None:
         """Release client-side resources (connections, plugin process); the sandbox stays up."""

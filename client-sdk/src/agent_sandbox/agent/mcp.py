@@ -89,6 +89,7 @@ class SandboxManager:
         self._retained_task_sandboxes: set[str] = set()
         self._state_lock = asyncio.Lock()
         self._default_lock = asyncio.Lock()
+        self._deletion_lock = asyncio.Lock()
         self._closed = False
 
     @staticmethod
@@ -330,46 +331,32 @@ class SandboxManager:
             The killed sandbox id, or ``None`` when there was no default
             sandbox to kill.
         """
-        if sandbox_id:
+        async with self._deletion_lock:
             async with self._state_lock:
-                sb = self._cached_sandbox(sandbox_id)
-                if sb is not None:
-                    key = self._sandbox_key(sb)
-                    self._sandboxes.pop(key, None)
+                self._require_open()
+                sb = self._cached_sandbox(sandbox_id) if sandbox_id else self._default_sandbox
+            if sb is None:
+                if not sandbox_id:
+                    return None
+                from agent_sandbox.api.sandbox import Sandbox
+
+                kwargs = self._connect_kwargs(sandbox_id=sandbox_id)
+                kwargs.pop("sandbox_domain", None)
+                await Sandbox.kill_by_id(**kwargs)
+                return sandbox_id
+
+            key = self._sandbox_key(sb)
+            await sb.kill(_keep_connection_on_failure=True)
+            async with self._state_lock:
+                if self._sandboxes.get(key) is sb:
+                    self._sandboxes.pop(key)
                     self._lifetimes.pop(key, None)
                     self._retained_task_sandboxes.discard(key)
                     self._owned_sandbox_ids.discard(key)
-                    if self._default_sandbox is sb:
-                        self._default_sandbox = None
-            if sb is not None:
-                await sb.kill()
-                logger.info("Killed sandbox: %s", sandbox_id)
-                return sandbox_id
-            from agent_sandbox.api.sandbox import Sandbox
-
-            kwargs: dict[str, Any] = {"sandbox_id": sandbox_id}
-            if self._api_key:
-                kwargs["sandbox_api_key"] = self._api_key
-            if self._api_url:
-                kwargs["sandbox_base_url"] = self._api_url
-            await Sandbox.kill_by_id(**kwargs)
-            return sandbox_id
-
-        async with self._state_lock:
-            sb = self._default_sandbox
-            self._default_sandbox = None
-            if sb is not None:
-                key = self._sandbox_key(sb)
-                self._sandboxes.pop(key, None)
-                self._lifetimes.pop(key, None)
-                self._retained_task_sandboxes.discard(key)
-                self._owned_sandbox_ids.discard(key)
-        if sb is None:
-            return None
-        sid = sb.id
-        await sb.kill()
-        logger.info("Killed default sandbox: %s", sid)
-        return str(sid)
+                if self._default_sandbox is sb:
+                    self._default_sandbox = None
+            logger.info("Killed sandbox: %s", key)
+            return sandbox_id or str(sb.id)
 
     async def retain_task_sandbox(self, sandbox: Any) -> bool:
         """Explicit background tasks retain their sandbox until its platform TTL.
@@ -388,7 +375,8 @@ class SandboxManager:
 
     async def shutdown(self) -> None:
         """Kill owned sandboxes, closing borrowed handles and retained-task handles."""
-        async with self._state_lock:
+        # A failing explicit delete must finish before taking the final ownership snapshot.
+        async with self._deletion_lock, self._state_lock:
             self._closed = True
             items = list(self._sandboxes.items())
             retained = self._retained_task_sandboxes.copy()

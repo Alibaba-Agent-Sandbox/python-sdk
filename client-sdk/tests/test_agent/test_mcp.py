@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from unittest.mock import AsyncMock, patch
 
@@ -106,7 +107,7 @@ class TestSandboxManager:
         mgr._sandboxes["sbx-def"] = mock_sb
 
         await mgr.kill_sandbox(None)
-        mock_sb.kill.assert_awaited_once()
+        mock_sb.kill.assert_awaited_once_with(_keep_connection_on_failure=True)
         assert mgr._default_sandbox is None
         assert "sbx-def" not in mgr._sandboxes
 
@@ -120,6 +121,59 @@ class TestSandboxManager:
         await mgr.kill_sandbox("sbx-002")
         mock_sb.kill.assert_awaited_once()
         assert "sbx-002" not in mgr._sandboxes
+
+    @pytest.mark.parametrize("sandbox_id", [None, "sbx-retry", "alicloud-express:sbx-retry"])
+    async def test_kill_failure_keeps_owned_sandbox_retryable(self, sandbox_id):
+        manager = SandboxManager()
+        sandbox = AsyncMock()
+        sandbox.id = "sbx-retry"
+        sandbox.provider = "alicloud-express"
+        sandbox.kill.side_effect = [RuntimeError("temporary delete failure"), None]
+        with patch("agent_sandbox.api.sandbox.Sandbox.create", return_value=sandbox):
+            await manager.create_sandbox()
+        assert await manager.retain_task_sandbox(sandbox)
+
+        with pytest.raises(RuntimeError, match="temporary delete failure"):
+            await manager.kill_sandbox(sandbox_id)
+
+        key = "alicloud-express:sbx-retry"
+        assert manager._default_sandbox is sandbox
+        assert manager._sandboxes[key] is sandbox
+        assert key in manager._owned_sandbox_ids
+        assert key in manager._retained_task_sandboxes
+        assert manager._lifetimes[key] == 300
+        assert await manager.kill_sandbox(sandbox_id) == (sandbox_id or sandbox.id)
+        assert sandbox.kill.await_count == 2
+        assert manager._default_sandbox is None
+        assert key not in manager._sandboxes
+        assert key not in manager._owned_sandbox_ids
+        assert key not in manager._retained_task_sandboxes
+        assert key not in manager._lifetimes
+
+    async def test_kill_completion_preserves_concurrently_created_default(self):
+        manager = SandboxManager()
+        first, second = AsyncMock(), AsyncMock()
+        first.id, second.id = "sbx-first", "sbx-second"
+        entered, finish = asyncio.Event(), asyncio.Event()
+
+        async def deferred_kill(*, _keep_connection_on_failure):
+            assert _keep_connection_on_failure
+            entered.set()
+            await finish.wait()
+
+        first.kill.side_effect = deferred_kill
+        with patch("agent_sandbox.api.sandbox.Sandbox.create", side_effect=[first, second]):
+            await manager.create_sandbox()
+            deletion = asyncio.create_task(manager.kill_sandbox())
+            await entered.wait()
+            try:
+                await manager.create_sandbox()
+            finally:
+                finish.set()
+                await deletion
+        assert manager._default_sandbox is second
+        assert list(manager._sandboxes.values()) == [second]
+        await manager.shutdown()
 
     async def test_shutdown(self):
         mgr = SandboxManager()
