@@ -2,7 +2,7 @@
 
 - Date: 2026-11-25
 - Change: [Issue #176](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/176)
-  and [decision](../../notes/proposed/process/2026-11-25-mcp-task-pid-publication.md).
+  and [decision](../../notes/implemented/process/2026-11-25-mcp-task-pid-publication.md).
 - Result: PARTIAL. Bounded synchronization/failure-cleanup probes, the complete
   targeted module and owner static checks pass. Full local tests and latest-head
   normal CI/review, including Python 3.11, remain pending at this checkpoint.
