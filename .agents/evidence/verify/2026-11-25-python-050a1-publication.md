@@ -1,6 +1,7 @@
 # Verification: Python 0.5.0a1 publication
 
 - Date: 2026-11-25
+- Result: PASS
 - Issue: [186](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/186)
 - Release: [v0.5.0a1](https://github.com/Alibaba-Agent-Sandbox/python-sdk/releases/tag/v0.5.0a1)
 - Source/tag: `8d9297f7d1a9adddf3710ddcaab914b9e35d3618`
