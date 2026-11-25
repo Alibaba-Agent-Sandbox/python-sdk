@@ -1,5 +1,10 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+## Public Python 0.5.0a0 — 2026-11-25
+
+- [Implemented release decision](notes/implemented/process/2026-11-25-python-050a0-preview.md), [public delivery and CLI consumer checkpoint](evidence/verify/2026-11-25-python-050a0-public-delivery.md), and [sanitized receipt](evidence/verify/2026-11-25-python-050a0-public-receipt.json).
+- [Complete local regression result](evidence/verify/2026-11-25-python-050a0-local-complete.md). Public artifact hashes, fresh installs and consumer checks passed; CLI PR #271 and final record gates remain separate at this checkpoint. Earlier dated entries retain their original scope.
+
 ## Recent changes — 2026-11-10
 
 - [Owner change index](notes/proposed/process/2026-11-10-recent-change-index.md) · [records verification](evidence/verify/2026-11-10-recent-change-index.md).
@@ -281,5 +286,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Bounded file uploads](notes/implemented/feature/2026-11-25-bounded-file-uploads.md) · [verification](evidence/verify/2026-11-25-bounded-file-uploads.md).
 - [Download-limit documentation review](evidence/verify/2026-11-25-download-limit-review.md).
 - [Candidate file-upload cloud follow-up](evidence/verify/2026-11-25-bounded-file-uploads-cloud.md).
-- [Python 0.5.0a0 preview preparation](notes/proposed/process/2026-11-25-python-050a0-preview.md) · [verification](evidence/verify/2026-11-25-python-050a0-preview.md).
+- [Python 0.5.0a0 preview preparation](notes/implemented/process/2026-11-25-python-050a0-preview.md) · [verification](evidence/verify/2026-11-25-python-050a0-preview.md).
 - [Python 0.5 changelog review and local server result](evidence/verify/2026-11-25-python-050a0-changelog.md).

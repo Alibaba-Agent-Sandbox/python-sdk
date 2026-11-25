@@ -2,7 +2,7 @@
 
 - Date: 2026-11-25
 - Change: [Issue #173](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/173)
-  and [decision](../../notes/proposed/process/2026-11-25-python-050a0-preview.md).
+  and [decision](../../notes/implemented/process/2026-11-25-python-050a0-preview.md).
 - Result: PARTIAL. Candidate packaging and scoped owner checks pass; full local
   tests, latest-head remote CI/review, actual publication and CLI consumer gates
   are separate pending checks at this checkpoint.

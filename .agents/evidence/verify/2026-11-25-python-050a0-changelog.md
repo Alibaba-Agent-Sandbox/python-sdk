@@ -2,7 +2,7 @@
 
 - Date: 2026-11-25
 - Change: [PR #174](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/174)
-  and [decision](../../notes/proposed/process/2026-11-25-python-050a0-preview.md).
+  and [decision](../../notes/implemented/process/2026-11-25-python-050a0-preview.md).
 - Result: PASS for this changelog correction and the completed server tests;
   the full client command, latest-head remote CI/review and release gates remain
   pending at this checkpoint.

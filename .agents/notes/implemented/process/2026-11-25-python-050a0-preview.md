@@ -1,6 +1,6 @@
 # Decision: Prepare the matching 0.5.0a0 Python preview
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -81,6 +81,25 @@ remain distinct required release gates.
 
 ## Evidence
 
+- [Public delivery and consumer checkpoint](../../../evidence/verify/2026-11-25-python-050a0-public-delivery.md).
+- [Complete local regression result](../../../evidence/verify/2026-11-25-python-050a0-local-complete.md).
+
 - [Preparation verification](../../../evidence/verify/2026-11-25-python-050a0-preview.md).
 - [Changelog review and local server follow-up](../../../evidence/verify/2026-11-25-python-050a0-changelog.md).
 - [Merged upload acceptance](../../../evidence/verify/2026-11-25-bounded-file-uploads-cloud.md).
+
+## Implementation
+
+The matching public pair was delivered from the normal
+[PR #174](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/174) merge
+`26d679c3e5f67ac616b65b3db935db803c639be0`, tagged `v0.5.0a0`. The tag-bound
+[publisher](https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/45554059881)
+completed successfully. Four public metadata/download hashes match the preserved
+candidate, and separate public installation and corrected local HTTP checks pass.
+Original readback/install/verifier failures remain recorded.
+
+CLI public-client MCP and real production DockerBuilder consumption passed at
+`39b240685147876fa29232c209191cbc33a94095`. The [consumer PR #271](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/pull/271)
+is still open at this checkpoint. Issue #173 stays open until its actual merge and this final
+record PR pass normal CI/review and merge; this implemented SDK release decision
+does not claim that cross-repository integration has already landed.
