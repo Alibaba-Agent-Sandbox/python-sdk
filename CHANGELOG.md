@@ -17,6 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Retain failed MCP sandbox/session cleanup for retries, wait for admitted lifecycle operations, and report incomplete HTTP termination as 503. / MCP 保留清理失败的沙箱和会话以便重试，等待已接受的生命周期操作，HTTP 清理不完整时返回 503。
 - Replace the nonexistent harness installer hint with pinned image-build preparation guidance. / 将不存在的 Harness 安装命令改为构建镜像时固定版本预装的指引。
 
+### Documentation
+
+- Clarify Provider IDs, application URLs and Agents Session identities, explicit Provider selection, borrowed sandbox cleanup, and CLI OpenAPI versus SDK responsibilities. / 明确 Provider 实例 ID、应用 URL 与 Agents Session 的区别，以及 Provider 选择、借用沙箱清理和 CLI OpenAPI 与 SDK 的职责。
+
 ### Tests
 
 - Publish regression-test child PIDs atomically and clean up known owned tasks when setup fails; retain all process-state and descendant-cleanup assertions. / 回归测试以原子方式发布子进程 PID，准备失败时清理已知归属任务，并保留所有进程状态与后代清理断言。

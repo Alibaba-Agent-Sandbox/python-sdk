@@ -19,7 +19,25 @@ async with await Sandbox.create(template="base") as sandbox:
     print(result.stdout)
 ```
 
-The HTTP service inside the sandbox image is not written with this package. That process is the [Server SDK](server-sdk.md) (`agent-sandbox-server`). The Client SDK reaches it through envd and that service's HTTP API.
+The [Server SDK](server-sdk.md) (`agent-sandbox-server`) is an optional HTTP application running inside a sandbox. Provider operations such as lifecycle, commands and files use the selected Provider's own transports; they do not all run through the Server SDK. Calling a registered business command requires that application's service to be installed, running and authorized.
+
+## Choose the target and client
+
+| Task | Python entry | Target and credential |
+| --- | --- | --- |
+| Create or manage an Express/OpenSandbox instance | `ProviderSandbox.create()` / `ProviderSandbox.connect()` | Provider template/image or actual Sandbox ID, plus that Provider's configuration |
+| Call a running Server SDK application | `ServerClient` | HTTP service URL plus application token and any required gateway headers |
+| Call a managed Agents API application | An HTTP client such as `httpx` | The single Gateway URL and business bearer token; see [Managed Agents API](managed-agents-api.md) |
+
+A CLI deployment name, a Sandbox ID, an HTTP URL and an Agents Session ID are distinct. `ProviderSandbox.connect()` takes a Sandbox ID, not a URL or the CLI's local deployment name. `ServerClient` does not create or destroy cloud instances. CLI OpenAPI bindings and aliases do not automatically become Python methods; use the server's documented HTTP interface for APIs outside the typed client.
+
+`ProviderSandbox` can use the configured default Provider, or an explicit `provider="alicloud-express"` / `provider="opensandbox"`. Set it explicitly when managing IDs from more than one backend. This selects a backend; it does not translate IDs or make provider capabilities interchangeable. See [Provider configuration](providers.md) for each backend's endpoint, credentials and installation requirements.
+
+## Close the right resource
+
+`await sandbox.close()` releases local connections and leaves the remote sandbox running. `await sandbox.kill()` deletes the remote sandbox. The `ProviderSandbox` async context manager attempts `kill()` on exit, including when the handle came from `connect()`; for a borrowed sandbox, use `try/finally` with `close()` instead. An HTTP client's `aclose()` closes its transport only.
+
+An Agents Session has its own close/cancel/delete operations. An accepted request is not a finished turn, and an accepted cancellation is not a confirmed stop. Follow the Session, Submission or Operation returned by the [managed API](managed-agents-api.md); a transport timeout does not authorize replaying work with a fresh idempotency key.
 
 ## Start here
 
