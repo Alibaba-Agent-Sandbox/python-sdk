@@ -87,7 +87,8 @@ resource integers and string-valued `envs`. Provider/API failures return `isErro
 Lifecycle errors expose a fixed failure category, an HTTP status when available, or
 an SDK error code with a static recovery suggestion. Raw provider messages, request
 URLs, response-validation inputs, and exception tracebacks are omitted from both
-tool results and the MCP lifecycle error log. Input validation names the invalid
+tool results and the MCP lifecycle error log, including failed `kill_sandbox`
+calls with an explicit ID or the current default. Input validation names the invalid
 field without echoing its value.
 
 ## End a session and retry cleanup

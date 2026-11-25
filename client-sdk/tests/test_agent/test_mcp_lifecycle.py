@@ -355,6 +355,8 @@ def _private_exception(kind: str) -> Exception:
         ("create_sandbox", "create_sandbox", {"envs": {"PRIVATE": "SYNTHETIC_TEST_PRIVATE_TOKEN"}}),
         ("list_sandboxes", "list_sandboxes", {}),
         ("get_sandbox", "inspect_sandbox", {}),
+        ("kill_sandbox", "kill_sandbox", {}),
+        ("kill_sandbox", "kill_sandbox", {"sandbox_id": "test-sandbox"}),
         ("set_sandbox_timeout", "set_sandbox_timeout", {"timeout": 600}),
     ],
 )

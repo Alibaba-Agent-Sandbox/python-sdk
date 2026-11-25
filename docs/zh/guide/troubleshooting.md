@@ -173,8 +173,11 @@ abx delete <unused-sandbox-id> --yes
 # SDK 中增加超时
 result = await sandbox.commands.run("long-command", timeout=300)
 
-# CLI 中增加超时
-abx sandbox exec sbx-xxxx "long-command" --timeout 300
+```
+
+```bash
+# CLI 选项放在沙箱 ID 前。
+abx exec --timeout 300 sbx-xxxx long-command
 ```
 
 ---

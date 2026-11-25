@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Apply the existing MCP lifecycle error categories to explicit and default-target sandbox deletion. / 显式或默认目标的沙箱删除统一使用现有 MCP 生命周期错误分类。
+
+### Documentation
+
+- Remove retired CLI wrapper and internal build-file instructions from current SDK guides, keeping OpenAPI binding and Python registration distinct. / 清理当前 SDK 指南中的旧 CLI 包装入口和内部构建文件交接，区分 OpenAPI 绑定与 Python 注册。
+- Correct both template Server API references to describe Python package inventory without a pip dependency. / 修正双语模板 Server API 参考，说明 Python 包清单不依赖 pip。
+
 ## [0.5.0a1] - 2026-11-25
 
 ### Fixed

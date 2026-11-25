@@ -118,7 +118,9 @@ if __name__ == "__main__":
 
 文件上传和下载是 server 的端点（`/files/*`、`/upload`、`/download`），属于默认开启的 `file_ops` 组，不在 `commands.py` 里注册。部署不会应用 `server:` 块。可选组用 `default_table().enable_group(CapabilityGroup.DEV_TOOLS)`（参数是 `CapabilityGroup`，不是字符串）或 `ABX_SERVER_ENABLED_GROUPS` 打开。`dev_tools`、`browser`、`agents` 默认关闭。
 
-注册的命令由沙箱内 HTTP server 提供（`POST /commands/{name}`）。客户端用 `await sandbox.run("demo", x=1, y="hello")` 或 `abx sandbox command run <id> demo --arg x=1 --arg y=hello` 调用，用 `sandbox.list_commands()` 或 `abx sandbox command list <id>` 列出。裸 shell 命令是另一个调用：`sandbox.commands.run(cmd)`。
+注册的命令由沙箱内 HTTP server 提供（`POST /commands/{name}`）。Python 客户端用 `await sandbox.run("demo", x=1, y="hello")` 调用，用 `await sandbox.list_commands()` 发现。Shell 命令使用 `sandbox.commands.run(cmd)`。
+
+通过 CLI 调用业务操作时，先绑定应用的 OpenAPI 合同，再用 `abx sandbox TARGET --help` 和 `abx sandbox TARGET OPERATION --help` 查看操作与参数。操作名和参数来自绑定；Python 装饰器和 HTTP 路由保持原有用法。详见 [CLI API 指南](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/zh/guide/sandbox-api.md)。
 
 ---
 

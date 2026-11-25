@@ -173,8 +173,11 @@ abx delete <unused-sandbox-id> --yes
 # Increase timeout in SDK
 result = await sandbox.commands.run("long-command", timeout=300)
 
-# Increase timeout in CLI
-abx sandbox exec sbx-xxxx "long-command" --timeout 300
+```
+
+```bash
+# Put CLI options before the sandbox ID.
+abx exec --timeout 300 sbx-xxxx long-command
 ```
 
 ---

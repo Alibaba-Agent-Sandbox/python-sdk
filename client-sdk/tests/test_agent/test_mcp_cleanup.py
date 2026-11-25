@@ -94,7 +94,7 @@ async def test_shutdown_all_continues_after_failure_and_blocks_admission():
     assert not store._sessions
 
 
-async def test_real_http_delete_failure_then_retry_keeps_same_session(tmp_path):
+async def test_real_http_delete_failure_then_retry_keeps_same_session(tmp_path, caplog):
     app = create_mcp_app(auth_token="placeholder-mcp-token")
     socket_path = str(tmp_path / "mcp.sock")
     server = uvicorn.Server(uvicorn.Config(app, uds=socket_path, log_level="error", lifespan="on"))
@@ -122,7 +122,25 @@ async def test_real_http_delete_failure_then_retry_keeps_same_session(tmp_path):
             failed.id, good.id = "retry-owned", "good-owned"
             manager._sandboxes.update({failed.id: failed, good.id: good})
             manager._owned_sandbox_ids.update([failed.id, good.id])
+            manager._default_sandbox = failed
             failed.kill.side_effect = RuntimeError("SYNTHETIC_PRIVATE_VALUE")
+            for arguments in ({}, {"sandbox_id": failed.id}):
+                response = await client.post(
+                    "/mcp",
+                    json={
+                        "jsonrpc": "2.0",
+                        "id": 2,
+                        "method": "tools/call",
+                        "params": {"name": "kill_sandbox", "arguments": arguments},
+                    },
+                )
+                assert response.status_code == 200
+                assert response.json()["result"]["isError"] is True
+                assert "Sandbox lifecycle operation failed." in response.text
+                assert "SYNTHETIC_PRIVATE_VALUE" not in response.text + caplog.text
+                assert all(record.exc_info is None for record in caplog.records)
+                assert manager._sandboxes[failed.id] is failed
+                assert manager._default_sandbox is failed
             response = await client.delete("/mcp")
             assert response.status_code == 503
             assert (
