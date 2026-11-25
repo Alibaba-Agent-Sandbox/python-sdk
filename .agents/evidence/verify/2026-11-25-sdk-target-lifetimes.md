@@ -18,3 +18,7 @@ Source audit confirmed ProviderSandbox.connect takes a Sandbox ID and explicit/d
 ## Review and limits
 
 First-round triage found the transport/identity explanation gap; Node SDK already describes its HTTP-only target correctly and was left unchanged. Root adversarial review requested current source behavior only and no claims from unmerged Provider drafts. This change is documentation-only: no package release, runtime test, cloud resource or credential change. Document/record checks are rerun on the completed diff before commit.
+
+## Managed operator guidance follow-up
+
+Removed the instruction to retain/pass a deployment receipt from both managed API guides. The current CLI owns those records and exposes deployment-name operations; linked the existing managed-applications guide. The API cleanup/retention semantics remain unchanged. Repository health and hygiene rerun before the follow-up commit.
