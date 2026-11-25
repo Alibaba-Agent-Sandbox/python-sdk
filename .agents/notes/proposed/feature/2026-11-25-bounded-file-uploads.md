@@ -54,6 +54,9 @@ unchanged body cap on other endpoints. Client tests call discovery before the
 empty and 8 MiB round-trip. Run the full suites for both packages, lint,
 format/type checks, distribution checks and repository health checks. Real-cloud
 candidate runtime and owned-resource cleanup are tracked separately in evidence.
+The cloud follow-up uses acknowledged startup with a continuously drained process
+stream, candidate identity and listener ownership before accepting guest HTTP and
+external Client SDK transfers. It does not infer the cause of earlier HTTP 404s.
 
 ## Acceptance criteria
 
@@ -70,3 +73,4 @@ candidate runtime and owned-resource cleanup are tracked separately in evidence.
 - [Issue #171](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/171).
 - [Verification](../../../evidence/verify/2026-11-25-bounded-file-uploads.md).
 - [Download-limit review](../../../evidence/verify/2026-11-25-download-limit-review.md).
+- [Candidate cloud follow-up](../../../evidence/verify/2026-11-25-bounded-file-uploads-cloud.md).

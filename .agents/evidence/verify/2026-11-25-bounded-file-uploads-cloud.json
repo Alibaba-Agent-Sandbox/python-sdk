@@ -1,0 +1,45 @@
+{
+  "scope": "candidate server wheel; one owned Express base sandbox",
+  "checks": {
+    "create": true,
+    "startup_acknowledged": true,
+    "guest_http": [
+      {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "round_trip": true
+      },
+      {
+        "bytes": 8388608,
+        "sha256": "7d212b9c884f5c77896de960ae17cc341cda43b14d6a971f34ca29ebd4badf7f",
+        "round_trip": true
+      }
+    ],
+    "candidate_identity_and_owned_listener": true,
+    "external_candidate_identity": true,
+    "external_sdk_http": [
+      {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "round_trip": true
+      },
+      {
+        "bytes": 8388608,
+        "sha256": "7d212b9c884f5c77896de960ae17cc341cda43b14d6a971f34ca29ebd4badf7f",
+        "round_trip": true
+      }
+    ],
+    "independent_native_hashes": true,
+    "complete": true
+  },
+  "cleanup": true,
+  "wheel_sha256": "ab04f67a7a8d9172d3ea1bca51d2e887d65aaccc37167415926916e7e5857c74",
+  "proxy_env_names": [
+    "HTTPS_PROXY",
+    "HTTP_PROXY",
+    "http_proxy",
+    "https_proxy"
+  ],
+  "startup_log_empty": true,
+  "cleanup_status": 404
+}
