@@ -1,11 +1,11 @@
 # Client SDK
 
-当前 SDK 安装使用[安装指南](install-python.md)。
+0.5 预览版的安装与运行时可选依赖见[安装指南](install-python.md)。
 
 Client SDK 跑在**你的机器**上。它创建沙箱、连上已经存在的沙箱，然后在沙箱里执行命令、读写文件、调用代码解释器。包名是 `agent-sandbox-client`，导入 `agent_sandbox`。
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a6'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.5.0a0'
 python -m pip check
 ```
 

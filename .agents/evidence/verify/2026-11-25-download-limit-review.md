@@ -3,7 +3,7 @@
 - Date: 2026-11-25
 - Change: [PR #172](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/172),
   [Issue #171](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/171), and
-  [decision](../../notes/proposed/feature/2026-11-25-bounded-file-uploads.md).
+  [decision](../../notes/implemented/feature/2026-11-25-bounded-file-uploads.md).
 - Result: PASS for this documentation correction and local HTTP boundary probe;
   candidate cloud upload acceptance remains pending in the original evidence.
 - Tested implementation: `37bdbbd04b3cf575957ece1699613214cba8f9d9`, with only

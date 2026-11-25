@@ -2,7 +2,7 @@
 
 - Date: 2026-11-25
 - Change: [Issue #171](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/171)
-  and [decision](../../notes/proposed/feature/2026-11-25-bounded-file-uploads.md).
+  and [decision](../../notes/implemented/feature/2026-11-25-bounded-file-uploads.md).
 - Result: BLOCKED — the required candidate cloud upload path has not passed;
   remote CI/review are also outstanding.
 - Baseline: main `a9a572d81847fe99216bf1bb454b91810dacc676`.

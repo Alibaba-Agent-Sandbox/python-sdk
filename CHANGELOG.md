@@ -8,17 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.5.0a0] - 2026-11-25
+
 ### Fixed
 
 - Accept zero-byte file uploads while rejecting missing or invalid content. Derive the file upload JSON body budget from the effective decoded-file limit, preserving explicit request limits and rejecting obviously oversized base64 before decoding. / 支持零字节文件上传，同时继续拒绝缺失或非法内容；按生效的文件大小上限推导上传 JSON 正文预算，保留显式请求上限，并在解码前拒绝明显超限的 base64。
 
 ### Documentation
 
+- Select the matching 0.5.0a0 preview in installation guides and package READMEs; explain the optional local runtime and replacement for removed module-level application calls. / 安装指南与随包 README 选择配套的 0.5.0a0 预览版，说明本机运行时的可选安装及已删除模块级应用调用的替代方式。
+
 - Replace the expired release forecast with current release links and document buffered base64 transfer limits, including the independent download policy limit. / 用发布记录替代过期的发版预告，并说明缓冲式 base64 传输限制，包括独立的下载策略上限。
 
 - Synchronize CLI-dependent SDK documentation, HTTP MCP template deployment and source-acquisition error guidance. / 同步 SDK 文档中的 CLI 用法、HTTP MCP 模板部署与源码获取错误指引。
 
 ### Changed
+
+- Version both distributions and the optional server dependency as **0.5.0a0**, separating the 0.5 dependency/API boundary from the immutable 0.4.0a7 release. / 双包与可选服务端依赖统一使用 **0.5.0a0**，以新版本区分 0.5 的依赖与接口调整，保留 0.4.0a7 发行产物不变。
 
 - Align current English and Chinese CLI guides with template authoring, named deployment lifecycle and Provider operations; preserve the SDK’s independent clients and instance methods.
 
@@ -36,6 +42,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Documentation
 
 - Announce the expected November 15, 2026 project 1.0.0 release, preview compatibility notice, and DingTalk community contact in both README languages.
+
+## [0.4.0a7] - 2026-11-06
 
 Release candidate: matching client/server **0.4.0a7**. / 候选版本：客户端与服务端均为 **0.4.0a7**。
 
