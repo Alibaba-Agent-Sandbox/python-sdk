@@ -2,7 +2,7 @@
 
 - Date: 2026-11-25
 - Change: [PR #177](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/177)
-  and [decision](../../notes/proposed/process/2026-11-25-mcp-task-pid-publication.md).
+  and [decision](../../notes/implemented/process/2026-11-25-mcp-task-pid-publication.md).
 - Result: PASS for this necessary diagnostic correction and targeted checks;
   full local invocation and latest-head normal CI/review remain pending.
 - Environment: Linux, Python 3.13.13, existing dev tools. No cloud/credentials.

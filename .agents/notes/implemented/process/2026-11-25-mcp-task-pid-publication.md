@@ -1,6 +1,6 @@
 # Decision: Publish MCP regression PIDs atomically and clean up failed setup
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -65,5 +65,17 @@ suite separately. Preserve initial failures, optional skips and original results
 
 ## Evidence
 
+- [Actual delivery checkpoint](../../../evidence/verify/2026-11-25-mcp-task-pid-delivery.md).
+- [Complete local result](../../../evidence/verify/2026-11-25-mcp-task-pid-local-complete.md).
+
 - [Post-merge failure and fixture verification](../../../evidence/verify/2026-11-25-mcp-task-pid-publication.md).
 - [Startup diagnostic review](../../../evidence/verify/2026-11-25-mcp-task-startup-review.md).
+
+## Implementation
+
+Delivered by [PR #177](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/177),
+normally merged as `a8d57e5b3bf2264d9d4f553b8fa071fa177a25db` at
+2026-11-25T06:34:23Z. All 13 checks passed for final reviewed head
+`a8cf082e3ab572833f19f22e4f5d1cf84b63237b`, including actual Python 3.11.
+Issue #176 closed. The original failed main run remains a separate failure;
+new-main CI and this documentation follow-up are separate checkpoints.
