@@ -30,7 +30,7 @@ from . import routes as _routes  # noqa: F401  (import side-effect: registers ro
 from . import routes_agents as _routes_agents  # noqa: F401
 from . import routes_browser as _routes_browser  # noqa: F401
 from . import routes_devtools as _routes_devtools  # noqa: F401
-from . import routes_files as _routes_files  # noqa: F401
+from . import routes_files as _routes_files
 from . import routes_process as _routes_process  # noqa: F401
 from . import routes_pty as _routes_pty  # noqa: F401
 from . import routes_system as _routes_system  # noqa: F401
@@ -486,7 +486,10 @@ class SandboxRequestHandler(BaseHTTPRequestHandler):
                         )
                     )
                     return
-                limit = int(ctx.limit("max_request_bytes", MAX_REQUEST_BODY_SIZE))
+                default_limit = MAX_REQUEST_BODY_SIZE
+                if route.name == "files_upload_stream":
+                    default_limit = _routes_files._upload_request_limit(ctx)
+                limit = int(ctx.limit("max_request_bytes", default_limit))
                 body = self._read_json_body(limit, route)
                 if body is None:
                     code = "bad_body"

@@ -40,6 +40,7 @@ _SEARCH_TIMEOUT_SECONDS = 10
 _CHUNK_SIZE = 64 * 1024  # 64 KB
 _DEFAULT_MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
 _MAX_UPLOAD_ENV_VAR = "ABX_MAX_UPLOAD_SIZE"
+_UPLOAD_JSON_OVERHEAD = 64 * 1024
 _ARCHIVE_MAX_SIZE = 100 * 1024 * 1024  # 100 MB
 _ARCHIVE_MAX_FILES = 10_000
 
@@ -62,6 +63,17 @@ def _max_upload_size() -> int:
         except ValueError:
             pass
     return _DEFAULT_MAX_UPLOAD_SIZE
+
+
+def _encoded_upload_limit(max_bytes: int) -> int:
+    """Maximum standard base64 length for an upload of at most *max_bytes*."""
+    return 4 * ((max(0, max_bytes) + 2) // 3)
+
+
+def _upload_request_limit(ctx: EndpointContext) -> int:
+    """Bound the upload JSON envelope using its effective decoded-byte limit."""
+    max_bytes = int(ctx.limit("max_bytes", _max_upload_size()))
+    return _encoded_upload_limit(max_bytes) + _UPLOAD_JSON_OVERHEAD
 
 
 def _tree_denied(guard: PathGuard, root: str, op: str) -> bool:
@@ -464,14 +476,14 @@ def _handle_files_search(request: ServerRequest) -> ServerResponse:
 
 
 def _handle_files_upload_stream(request: ServerRequest) -> ServerResponse:
-    """Upload a file via base64-encoded content with chunked decoding."""
+    """Upload a file as bounded, non-streaming base64 JSON."""
     body = request.body or {}
     raw_path = body.get("path", "")
-    content_b64 = body.get("content_base64", "")
+    content_b64 = body.get("content_base64")
 
     if not raw_path or not isinstance(raw_path, str):
         return ServerResponse.error(400, "Missing or invalid 'path'", "ValueError")
-    if not content_b64 or not isinstance(content_b64, str):
+    if not isinstance(content_b64, str):
         return ServerResponse.error(400, "Missing or invalid 'content_base64'", "ValueError")
 
     ctx = context_of(request)
@@ -481,13 +493,25 @@ def _handle_files_upload_stream(request: ServerRequest) -> ServerResponse:
         return ServerResponse.error(400, str(exc), "ValueError")
     _extension_check(ctx, safe_path)
 
-    # Decode the full base64 first to validate, then write in chunks
+    max_size = int(ctx.limit("max_bytes", _max_upload_size()))
+    if len(content_b64) > _encoded_upload_limit(max_size):
+        return ServerResponse(
+            status=413,
+            body={
+                "error": f"Encoded content exceeds the upload limit of {max_size} decoded bytes",
+                "type": "ValueError",
+                "code": "payload_too_large",
+                "limit": max_size,
+            },
+        )
+
+    # Check encoded length before allocating decoded bytes; padding still needs
+    # a strict decode and an exact size check.
     try:
         data = base64.b64decode(content_b64, validate=True)
     except Exception as exc:
         return ServerResponse.error(400, f"Invalid base64: {exc}", "ValueError")
 
-    max_size = int(ctx.limit("max_bytes", _max_upload_size()))
     if len(data) > max_size:
         return _too_large(len(data), max_size)
 
@@ -506,7 +530,7 @@ def _handle_files_upload_stream(request: ServerRequest) -> ServerResponse:
 
 
 def _handle_files_download_stream(request: ServerRequest) -> ServerResponse:
-    """Download a file, reading in chunks and returning base64."""
+    """Download a complete file as base64 JSON."""
     raw_path = request.query.get("path", [""])[0]
     if not raw_path:
         return ServerResponse.error(400, "Missing 'path' query parameter", "ValueError")

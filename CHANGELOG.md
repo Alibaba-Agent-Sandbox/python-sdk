@@ -8,7 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Accept zero-byte file uploads while rejecting missing or invalid content. Derive the file upload JSON body budget from the effective decoded-file limit, preserving explicit request limits and rejecting obviously oversized base64 before decoding. / 支持零字节文件上传，同时继续拒绝缺失或非法内容；按生效的文件大小上限推导上传 JSON 正文预算，保留显式请求上限，并在解码前拒绝明显超限的 base64。
+
 ### Documentation
+
+- Replace the expired release forecast with current release links and document the buffered base64 upload size limits. / 用发布记录替代过期的发版预告，并说明缓冲式 base64 上传的大小限制。
 
 - Synchronize CLI-dependent SDK documentation, HTTP MCP template deployment and source-acquisition error guidance. / 同步 SDK 文档中的 CLI 用法、HTTP MCP 模板部署与源码获取错误指引。
 

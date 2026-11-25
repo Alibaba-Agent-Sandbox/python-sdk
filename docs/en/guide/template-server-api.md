@@ -86,7 +86,7 @@ Every route is an endpoint with one id, and one rule per endpoint decides whethe
 |-------|---------|------------------|
 | `core` | on, cannot disable | `GET /health`, `GET /capabilities`, `POST /capabilities/check` |
 | `commands` | on | `GET /commands`, `POST /commands/{name}` |
-| `file_ops` | on | `POST /upload`, `GET /download`, and `/files/*` |
+| `file_ops` | on | `/files/*` |
 | `process` | on | `POST /shell`, `POST /shell/stream`, `/process/*` |
 | `terminal` | on | `/pty/sessions*` and the WebSocket on port 9001 |
 | `system` | on | `/system/info`, `/system/metrics`, `/env`, `/ports`, `/packages` |
@@ -118,11 +118,15 @@ Success and error bodies are JSON (`Content-Type: application/json; charset=utf-
 
 An unknown path is `404` `{"error": "Not found: <path>", "type": "ValueError"}`. An uncaught handler exception is `500` with `error` and `type`. A policy denial adds `code` (`endpoint_disabled`, `missing_scope`, `path_not_allowed`, `command_not_allowed`, `rate_limited`, ...) and `endpoint`. A disabled endpoint also carries `rule`. A repeated query parameter is `400` `duplicate_parameter`.
 
-`POST` and `DELETE` read a JSON object body. The raw body limit is 10 MiB (`413`, `code` `payload_too_large`). An empty body becomes `{}`. Invalid JSON is `400`.
+`POST` and `DELETE` read a JSON object body. The default raw body limit is 10 MiB (`413`, `code` `payload_too_large`), except for the file upload endpoint described below. An explicit endpoint `limits.max_request_bytes` takes precedence. An empty body becomes `{}`. Invalid JSON is `400`.
 
 Streaming routes (`streaming=True`) return `text/event-stream`. Each chunk is `event: <name>\ndata: <json>\n\n`.
 
-Every route that takes a path (file routes, and the `cwd` of `/shell` and process start) is confined to `ABX_SERVER_BASE_DIR` (default `/home/user`), or to the policy's `base_dir` or per-endpoint `paths.allow`. A path outside it is `403` `path_not_allowed`. Decoded upload size defaults to 100 MiB (`ABX_MAX_UPLOAD_SIZE`). The 10 MiB JSON body cap applies first, so a base64 body cannot actually reach 100 MiB.
+Every route that takes a path (file routes, and the `cwd` of `/shell` and process start) is confined to `ABX_SERVER_BASE_DIR` (default `/home/user`), or to the policy's `base_dir` or per-endpoint `paths.allow`. A path outside it is `403` `path_not_allowed`.
+
+Decoded upload size defaults to 100 MiB (`ABX_MAX_UPLOAD_SIZE`), or the endpoint policy's `limits.max_bytes` when set. For `POST /files/upload-stream`, the default request-body budget is the maximum base64 length for that decoded limit plus 64 KiB for the JSON envelope. An explicit `limits.max_request_bytes` can impose a smaller body budget; it does not change the decoded file limit. Other endpoints retain the 10 MiB default.
+
+The upload and download endpoints exchange complete base64 JSON bodies and buffer file content; despite their names, they do not stream file bytes over HTTP.
 
 `POST /shell` and process start split the command with `shlex.split` and run it with `shell=False`. Pipes, redirects, and `$VAR` are not interpreted. Use `bash -c '...'` when you need a shell.
 
@@ -265,7 +269,7 @@ are unsupported. Native CLI `--json-args` sends the same JSON object.
 
 Paths are query parameters or body fields as noted. Timestamps are ISO 8601 UTC.
 
-#### `POST /upload`
+#### `POST /files/upload-stream`
 
 ```json
 {"path": "/home/user/note.txt", "content_base64": "<standard base64>"}
@@ -277,17 +281,17 @@ Paths are query parameters or body fields as noted. Timestamps are ISO 8601 UTC.
 |--------|------|
 | `400` | Missing `path` or `content_base64`, or invalid base64 |
 | `403` | `path_not_allowed`: the path is outside the allowed directories |
-| `413` | Decoded size exceeds `ABX_MAX_UPLOAD_SIZE` (default 104857600). With a policy, the body also has `code: "payload_too_large"` and `limit` |
+| `413` | The JSON body exceeds `max_request_bytes`, or file content exceeds the effective `max_bytes` / `ABX_MAX_UPLOAD_SIZE` limit. The body includes `code: "payload_too_large"` and `limit` |
 | `500` | The write failed |
 
-Parent directories are created. With a policy, `allow_extensions` / `deny_extensions` can reject the suffix (`extension_not_allowed`) and `overwrite: false` returns `409` if the file exists.
+An empty string for `content_base64` creates or truncates a zero-byte file. Omitting the field, using a non-string value, or sending invalid base64 returns `400` without changing the file. Parent directories are created. With a policy, `allow_extensions` / `deny_extensions` can reject the suffix (`extension_not_allowed`) and `overwrite: false` returns `409` if the file exists.
 
-#### `GET /download?path=`
+#### `GET /files/download-stream?path=`
 
 `200`:
 
 ```json
-{"path": "<resolved>", "content_base64": "<standard base64>"}
+{"path": "<resolved>", "content_base64": "<standard base64>", "bytes": 12}
 ```
 
 `400` missing path, `403` `path_not_allowed`, `404` not a file, `413` larger than the same byte limit, `500` on read errors.
@@ -347,18 +351,6 @@ Deletes a file or a directory tree. `200`: `{"path": "<resolved>", "deleted": tr
 ```
 
 `404` if `path` is not a directory. Non-integer limits are `400`.
-
-#### `POST /files/upload-stream`
-
-Same body and success shape as `POST /upload` (`path`, `bytes`). The handler still receives one JSON body; it writes the decoded bytes in 64 KiB chunks.
-
-#### `GET /files/download-stream?path=`
-
-Same as `GET /download`, plus `bytes`:
-
-```json
-{"path": "<resolved>", "content_base64": "...", "bytes": 12}
-```
 
 #### `POST /files/archive`
 

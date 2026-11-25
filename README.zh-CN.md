@@ -8,7 +8,7 @@
 
 [官网](https://www.agent-sandbox.cn) · [使用文档](docs/zh/README.md) · [示例](examples/README.zh-CN.md)
 
-> **预览版说明：** Agent Sandbox 目前处于预览阶段，可能会有不兼容变更。预计于 **2026 年 11 月 15 日**发布 **1.0.0 正式版**，敬请期待！
+> **预览版说明：** Agent Sandbox 目前处于预览阶段，可能会有不兼容变更。可用版本以[发布记录](https://github.com/Alibaba-Agent-Sandbox/python-sdk/releases)为准。
 
 ## 安装
 
