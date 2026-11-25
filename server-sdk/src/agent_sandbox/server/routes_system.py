@@ -25,6 +25,7 @@ import shutil
 import subprocess
 import sys
 import time
+from importlib import metadata
 from typing import Any
 
 from .guards import check_env
@@ -402,7 +403,26 @@ def handle_packages(request: ServerRequest) -> ServerResponse:
     manager = request.query.get("manager", ["pip"])[0]
 
     if manager == "pip":
-        cmd_parts = [sys.executable, "-m", "pip", "list", "--format", "json"]
+        try:
+            installed: set[tuple[str, str]] = set()
+            for distribution in metadata.distributions():
+                try:
+                    name = distribution.metadata["Name"]
+                except KeyError:
+                    continue
+                if isinstance(name, str) and name.strip():
+                    installed.add((name, distribution.version or ""))
+            packages = [
+                {"name": name, "version": version}
+                for name, version in sorted(
+                    installed, key=lambda item: (item[0].casefold(), item[1])
+                )
+            ]
+            return ServerResponse.ok({"manager": manager, "packages": packages})
+        except Exception:
+            return ServerResponse.error(
+                500, "Could not inspect installed Python packages", "PackageInventoryError"
+            )
     elif manager == "npm":
         cmd_parts = shlex.split("npm list --json --depth=0")
     else:
@@ -426,28 +446,15 @@ def handle_packages(request: ServerRequest) -> ServerResponse:
     except Exception as exc:
         return ServerResponse.error(500, str(exc), type(exc).__name__)
 
-    packages: list[dict[str, str]] = []
-    if manager == "pip":
-        try:
-            raw = json.loads(proc.stdout)
-            for item in raw:
-                packages.append(
-                    {
-                        "name": item.get("name", ""),
-                        "version": item.get("version", ""),
-                    }
-                )
-        except (json.JSONDecodeError, TypeError, KeyError):
-            pass
-    elif manager == "npm":
-        try:
-            raw = json.loads(proc.stdout)
-            deps = raw.get("dependencies", {})
-            for name, info in deps.items():
-                ver = info.get("version", "") if isinstance(info, dict) else str(info)
-                packages.append({"name": name, "version": ver})
-        except (json.JSONDecodeError, TypeError, KeyError):
-            pass
+    packages = []
+    try:
+        raw = json.loads(proc.stdout)
+        deps = raw.get("dependencies", {})
+        for name, info in deps.items():
+            ver = info.get("version", "") if isinstance(info, dict) else str(info)
+            packages.append({"name": name, "version": ver})
+    except (json.JSONDecodeError, TypeError, KeyError):
+        pass
 
     return ServerResponse.ok({"manager": manager, "packages": packages})
 

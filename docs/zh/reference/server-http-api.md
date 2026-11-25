@@ -60,3 +60,10 @@
 ## 切换端点
 
 只有一层说了算：端点规则。组名是它的端点 id 的别名。见[细粒度能力](../guide/fine-grained-capabilities.md)。唯一的组环境变量是 `ABX_SERVER_ENABLED_GROUPS`。
+
+## Python 包清单
+
+`GET /packages?manager=pip`（省略 manager 时也是该值）列出服务端当前 Python
+解释器可见的已安装发行包，也支持通过 uv 安装且没有 pip 命令的环境。响应仍为
+`manager` 与 `packages`，每项包含 `name`、`version`，按名称排序。该接口不会
+安装包，也不检查其他 Python 环境；发行包元数据读取失败时返回错误，不用空清单表示成功。

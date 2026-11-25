@@ -60,3 +60,12 @@ Every request goes through the same steps, in this order:
 ## Switching endpoints
 
 One layer decides: the endpoint rule. A group name is an alias for its endpoint ids. See [Fine-grained capabilities](../guide/fine-grained-capabilities.md). The only group environment variable is `ABX_SERVER_ENABLED_GROUPS`.
+
+## Python package inventory
+
+`GET /packages?manager=pip` (also the default manager) lists installed distributions
+visible to the server's current Python interpreter, including environments installed
+with uv that do not contain the pip command. It returns the existing `manager` and
+`packages` fields, with each package's `name` and `version`, sorted by name. It does
+not install packages or inspect other Python environments. Unreadable distribution
+metadata returns an error instead of an empty successful inventory.

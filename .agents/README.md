@@ -1,5 +1,7 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+- [Python package inventory without pip](notes/proposed/feature/2026-11-25-python-package-inventory.md) · [verification](evidence/verify/2026-11-25-python-package-inventory.md).
+
 - [MCP cleanup retries and harness guidance](notes/proposed/feature/2026-11-25-mcp-cleanup-retry.md) · [verification](evidence/verify/2026-11-25-mcp-cleanup-retry.md).
 
 - [MCP test PID publication](notes/implemented/process/2026-11-25-mcp-task-pid-publication.md) · [failure and verification](evidence/verify/2026-11-25-mcp-task-pid-publication.md) · [delivery](evidence/verify/2026-11-25-mcp-task-pid-delivery.md).

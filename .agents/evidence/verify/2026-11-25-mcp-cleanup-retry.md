@@ -53,3 +53,8 @@ The original full make test stopped after the server suite:885passed,1skipped,6f
 The final lint/typecheck/format gates and paired build/dist-check passed. Fresh client-only and optional-server wheel installations, namespace imports, actual HTTP checks and pip check succeeded. Wheels are candidate build outputs only and were not published.
 
 Official protocol header behavior was independently fetched from https://modelcontextprotocol.io/specification/2025-06-18/basic/transports . The web connector returned401 in this environment; a direct HTTPS read of the official source succeeded. Invalid/unsupported explicit versions require400; negotiated-version fallback explains unchanged absent-header handling.
+
+
+## Isolated server follow-up
+
+The same complete server suite passed in an isolated network namespace with loopback enabled:891passed,1skipped. This separates the earlier shared-loopback failures from this clean run. The original failure remains above. The subsequent Python package-inventory change has its own scoped tests and evidence; this full run started before that change and is not represented as a final aggregate for it.
