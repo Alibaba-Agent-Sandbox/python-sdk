@@ -27,6 +27,8 @@ if __name__ == "__main__":
 
 这段代码不创建云上沙箱，也不读取沙箱 API Key。谁来创建沙箱、谁来调用这些路由，是 [Client SDK](client-sdk.md) 或 `abx` CLI 的事。
 
+Server SDK 不负责安装 Provider、创建 Sandbox，也不等于外置托管 Agents Gateway。`@command(...)` 注册和 `/commands/...` HTTP 路由属于应用接口。CLI 操作别名只改变客户端选择操作的名称。发布 OpenAPI 声明不会开启被禁用的路由，也不会绕过服务端鉴权和策略。
+
 ## 通过 CLI 加载命令
 
 使用 `serve` 子命令，让服务启动与命令注册分别负责各自的工作：

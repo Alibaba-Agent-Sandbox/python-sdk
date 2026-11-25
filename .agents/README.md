@@ -1,5 +1,7 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+- [Clarify SDK target identities and lifetimes](notes/proposed/process/2026-11-25-sdk-target-lifetimes.md) · [verification](evidence/verify/2026-11-25-sdk-target-lifetimes.md).
+
 - [MCP test PID publication](notes/implemented/process/2026-11-25-mcp-task-pid-publication.md) · [failure and verification](evidence/verify/2026-11-25-mcp-task-pid-publication.md) · [delivery](evidence/verify/2026-11-25-mcp-task-pid-delivery.md).
 
 ## Public Python 0.5.0a0 — 2026-11-25
