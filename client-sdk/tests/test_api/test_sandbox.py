@@ -243,7 +243,7 @@ class TestSandboxLifecycle:
         mock_http_client.close.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_kill_closes_http_even_on_protocol_error(
+    async def test_failed_kill_keeps_http_open_for_retry(
         self,
         sandbox: Sandbox,
         mock_sandbox_protocol: AsyncMock,
@@ -252,7 +252,10 @@ class TestSandboxLifecycle:
         mock_sandbox_protocol.kill.side_effect = Exception("kill failed")
         with pytest.raises(Exception, match="kill failed"):
             await sandbox.kill()
-        # HTTP client should still be closed
+        mock_http_client.close.assert_not_called()
+        mock_sandbox_protocol.kill.side_effect = None
+        await sandbox.kill()
+        assert mock_sandbox_protocol.kill.await_count == 2
         mock_http_client.close.assert_called_once()
 
     @pytest.mark.asyncio
@@ -1038,3 +1041,48 @@ class TestSandboxRunNamedCommand:
     def test_client_side_command_mechanism_is_gone(self, sandbox: Sandbox) -> None:
         for removed in ("custom", "run_command", "reset_server_probe", "custom_sync"):
             assert not hasattr(sandbox, removed)
+
+
+async def test_kill_retry_after_local_close_failure_does_not_repeat_remote_delete(
+    sandbox, mock_sandbox_protocol, mock_http_client
+):
+    mock_http_client.close.side_effect = [RuntimeError("local close failed"), None]
+    with pytest.raises(RuntimeError, match="local close failed"):
+        await sandbox.kill()
+    await sandbox.kill()
+    await sandbox.kill()
+    mock_sandbox_protocol.kill.assert_awaited_once()
+    assert mock_http_client.close.await_count == 2
+
+
+async def test_mcp_cleanup_retries_real_sandbox_without_closing_failed_provider(
+    sandbox, mock_sandbox_protocol, mock_http_client
+):
+    from agent_sandbox.agent.mcp import MCPCleanupError, SandboxManager
+
+    closed = False
+    attempts = 0
+
+    async def close():
+        nonlocal closed
+        closed = True
+
+    async def kill(_sandbox_id):
+        nonlocal attempts
+        assert not closed, "retry must not use a provider closed by the failed attempt"
+        attempts += 1
+        if attempts == 1:
+            raise RuntimeError("temporary provider error")
+
+    mock_http_client.close.side_effect = close
+    mock_sandbox_protocol.kill.side_effect = kill
+    manager = SandboxManager()
+    key = manager._sandbox_key(sandbox)
+    manager._sandboxes[key] = sandbox
+    manager._owned_sandbox_ids.add(key)
+    with pytest.raises(MCPCleanupError):
+        await manager.shutdown()
+    assert not closed
+    await manager.shutdown()
+    assert attempts == 2 and closed
+    assert not manager._sandboxes

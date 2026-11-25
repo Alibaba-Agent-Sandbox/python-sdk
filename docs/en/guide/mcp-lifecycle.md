@@ -90,6 +90,26 @@ URLs, response-validation inputs, and exception tracebacks are omitted from both
 tool results and the MCP lifecycle error log. Input validation names the invalid
 field without echoing its value.
 
+## End a session and retry cleanup
+
+HTTP clients end a session with `DELETE /mcp` and its `Mcp-Session-Id` header.
+Successful termination kills only sandboxes created by that session. Borrowed
+connections and sandboxes explicitly retained for background tasks only have their
+local handles closed. Explicit `kill_sandbox` still requests deletion of its target.
+
+If cleanup fails, DELETE returns HTTP 503 and keeps the session and failed handles.
+Retry DELETE with the same session ID and authorization. While closing, POST returns
+HTTP 409; successful handles are not cleaned a second time. Concurrent DELETE calls
+share the cleanup attempt, and a disconnected caller does not cancel it. Failed
+cleanup continues to count toward the session limit. Later requests may retry idle
+cleanup after the configured session TTL, rather than on every request.
+
+Shutdown waits for sandbox creation, connection and deletion already admitted by
+the manager. A resource returned during shutdown remains tracked for cleanup. This
+does not wait for every active execution/file tool or prove that all remote work has
+stopped. Session recovery is kept in the running MCP process; process termination
+loses this state, so platform lifetimes remain the fallback for owned sandboxes.
+
 ## Implementation and verification
 
 Listing delegates to `Sandbox.list`. Managed inspection/renewal use `refresh_info`
@@ -126,3 +146,13 @@ and sandbox ID. If two providers return the same raw ID, explicit access must us
 `provider:id`; an ambiguous bare ID is rejected. Aliases cannot replace an owned
 handle. A session closed during creation/connection stays closed: a late created
 sandbox is deleted and a late borrowed connection is closed.
+
+HTTP requests may include `MCP-Protocol-Version: 2025-06-18`. An explicitly different
+or empty version is rejected with HTTP400 before session cleanup or tool execution.
+A missing header keeps the existing negotiated-session behavior. Origin and Bearer
+authorization are checked first; this does not change the unauthenticated health endpoint.
+
+For SDK callers, a failed `ProviderSandbox.kill()` leaves the provider connection open
+so the same handle can retry deletion. After remote deletion succeeds, a retry only
+finishes local cleanup if that failed. If you abandon the deletion retry, explicitly
+call `close()` to release the local connection; `close()` does not delete the sandbox.
