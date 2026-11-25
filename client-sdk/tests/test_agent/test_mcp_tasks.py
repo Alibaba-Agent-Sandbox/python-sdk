@@ -176,11 +176,11 @@ async def test_owned_descendants_cleaned_after_leader_exit(local_sandbox, tmp_pa
         },
         manager,
     )
+    assert "error" not in started, started
     handle = {k: started[k] for k in ("sandbox_id", "task_id")}
     pid = None
     completed = False
     try:
-        assert "error" not in started, started
         deadline = time.monotonic() + 5
         while not marker.exists() and time.monotonic() < deadline:
             await asyncio.sleep(0.02)

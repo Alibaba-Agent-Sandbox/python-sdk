@@ -15,7 +15,8 @@ The exact writer/scheduling cause of that occurrence is not established.
 
 In the test child, write the PID to a same-directory temporary file, close it and
 publish with `os.replace`. Keep the original five-second wait and all four modes.
-Put startup validation, marker waiting and parsing inside owned cleanup handling.
+Preserve startup validation before handle extraction. Put marker waiting and
+parsing inside owned cleanup handling once the handle is available.
 On setup/assertion failure, cancel the known task handle before fallback cleanup;
 only a parsed child PID greater than one is eligible for the existing kill.
 
@@ -65,3 +66,4 @@ suite separately. Preserve initial failures, optional skips and original results
 ## Evidence
 
 - [Post-merge failure and fixture verification](../../../evidence/verify/2026-11-25-mcp-task-pid-publication.md).
+- [Startup diagnostic review](../../../evidence/verify/2026-11-25-mcp-task-startup-review.md).
