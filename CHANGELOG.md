@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Documentation
+
+- Clarify Provider IDs, application URLs and Agents Session identities, explicit Provider selection, borrowed sandbox cleanup, and CLI OpenAPI versus SDK responsibilities. / 明确 Provider 实例 ID、应用 URL 与 Agents Session 的区别，以及 Provider 选择、借用沙箱清理和 CLI OpenAPI 与 SDK 的职责。
+
 ### Tests
 
 - Publish regression-test child PIDs atomically and clean up known owned tasks when setup fails; retain all process-state and descendant-cleanup assertions. / 回归测试以原子方式发布子进程 PID，准备失败时清理已知归属任务，并保留所有进程状态与后代清理断言。

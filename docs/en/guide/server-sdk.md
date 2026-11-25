@@ -27,6 +27,8 @@ if __name__ == "__main__":
 
 This code does not create a cloud sandbox and does not read a sandbox API key. Creating the sandbox and calling these routes is the [Client SDK](client-sdk.md) or the `abx` CLI.
 
+The Server SDK does not install a Provider, create a Sandbox or act as the external managed Agents Gateway. Its `@command(...)` registration and `/commands/...` HTTP routes are application interfaces. A CLI operation alias changes only how a client selects that operation. Publishing OpenAPI metadata does not enable a disabled route or bypass the server's authentication and policy.
+
 ## Load commands with the CLI
 
 Keep server startup separate from command registration by using the `serve` subcommand:
