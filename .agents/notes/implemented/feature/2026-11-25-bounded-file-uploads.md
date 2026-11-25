@@ -1,6 +1,6 @@
 # Decision: Align buffered file upload limits and accept empty files
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -74,3 +74,12 @@ external Client SDK transfers. It does not infer the cause of earlier HTTP 404s.
 - [Verification](../../../evidence/verify/2026-11-25-bounded-file-uploads.md).
 - [Download-limit review](../../../evidence/verify/2026-11-25-download-limit-review.md).
 - [Candidate cloud follow-up](../../../evidence/verify/2026-11-25-bounded-file-uploads-cloud.md).
+
+## Implementation
+
+Delivered by [PR #172](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/172),
+squash-merged as `d333d9d51387c89027987d4cfda4f6d2a9ce0daa` on 2026-11-25.
+All 13 checks passed for its final reviewed head
+`b516356405054775f3e386c41308867dbdbfa13e`. The candidate cloud follow-up
+records exact empty/8 MiB transfers and independently confirmed owned cleanup.
+This implementation record does not claim that new packages were published.

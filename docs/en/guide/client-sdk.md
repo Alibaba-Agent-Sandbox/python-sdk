@@ -1,11 +1,11 @@
 # Client SDK
 
-For current SDK installation, use the [installation guide](install-python.md).
+For the 0.5 preview installation and runtime extras, use the [installation guide](install-python.md).
 
 The Client SDK runs on **your machine**. It creates a sandbox, connects to one that already exists, and then runs commands, reads and writes files, and calls the code interpreter. The package is `agent-sandbox-client`. Import `agent_sandbox`.
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a6'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.5.0a0'
 python -m pip check
 ```
 

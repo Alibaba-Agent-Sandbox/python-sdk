@@ -3,7 +3,7 @@
 - Date: 2026-11-25
 - Change: [PR #172](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/172),
   [Issue #171](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/171), and
-  [decision](../../notes/proposed/feature/2026-11-25-bounded-file-uploads.md).
+  [decision](../../notes/implemented/feature/2026-11-25-bounded-file-uploads.md).
 - Result: PASS for the scoped candidate cloud path and owned-resource cleanup.
 - Tested source: `4e4201869015daebc00f2227957f60c28c2595ff`; server implementation
   is unchanged from `37bdbbd04b3cf575957ece1699613214cba8f9d9`.

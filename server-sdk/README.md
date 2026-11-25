@@ -1,6 +1,6 @@
 # agent-sandbox-server
 
-Install the current alpha with `--pre`; use the [installation guide](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/install-python.md) for a pinned version and environment setup.
+The command below selects the 0.5.0a0 preview. See [releases](https://github.com/Alibaba-Agent-Sandbox/python-sdk/releases) for availability and the [installation guide](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/install-python.md) for setup.
 
 **Server SDK.** This package runs *inside* a sandbox image. It is the HTTP service the image starts (default port 9000). It does not create the sandbox. Creating and calling the sandbox is the [client SDK](https://github.com/alibaba-agent-sandbox/python-sdk/blob/main/client-sdk/README.md) or the `abx` CLI. Guide: [Server SDK](https://github.com/alibaba-agent-sandbox/python-sdk/blob/main/docs/en/guide/server-sdk.md).
 
@@ -12,7 +12,7 @@ Import path: `agent_sandbox.server` (a namespace shared with `agent-sandbox-clie
 ## Install
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple --upgrade --pre agent-sandbox-server
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-server==0.5.0a0'
 python -m pip check
 ```
 

@@ -1,0 +1,49 @@
+{
+  "version": "0.5.0a0",
+  "publication": "not performed",
+  "artifacts": [
+    {
+      "filename": "agent_sandbox_client-0.5.0a0-py3-none-any.whl",
+      "sha256": "fbb37f5056fee46bd9b7bc8871c5685dd4a5b0bf2991975ef217cb23933fbd75",
+      "bytes": 691496
+    },
+    {
+      "filename": "agent_sandbox_client-0.5.0a0.tar.gz",
+      "sha256": "5d5c877305561da65253da414016684b6444da24e3ba65e63449436230080338",
+      "bytes": 705154
+    },
+    {
+      "filename": "agent_sandbox_server-0.5.0a0-py3-none-any.whl",
+      "sha256": "2c1ceed013d0f361f9ccb7b19339315ed25e89a8e5623a69e07d10e3080f5e4d",
+      "bytes": 226281
+    },
+    {
+      "filename": "agent_sandbox_server-0.5.0a0.tar.gz",
+      "sha256": "25712b55cd5aed4c2b12021c8f5faa00161b3e2b1b47c98c6a1fef7b5d767408",
+      "bytes": 273893
+    }
+  ],
+  "packages": {
+    "agent-sandbox-client": {
+      "version": "0.5.0a0",
+      "server_dependencies": [
+        "agent-sandbox-server==0.5.0a0; extra == 'all'",
+        "agent-sandbox-server==0.5.0a0; extra == 'dev'",
+        "agent-sandbox-server==0.5.0a0; extra == 'server'"
+      ],
+      "embedded_readme_matches_source": true
+    },
+    "agent-sandbox-server": {
+      "version": "0.5.0a0",
+      "server_dependencies": [],
+      "embedded_readme_matches_source": true
+    }
+  },
+  "cloud_candidate_source_delta": {
+    "server_python_files": 58,
+    "differing_files": [
+      "agent_sandbox/server/_version.py"
+    ],
+    "prior_wheel_sha256": "ab04f67a7a8d9172d3ea1bca51d2e887d65aaccc37167415926916e7e5857c74"
+  }
+}

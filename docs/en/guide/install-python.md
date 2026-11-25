@@ -1,71 +1,85 @@
 # Install the Python packages
 
-> Specification 5 template launch requires the matching `agent-sandbox-client==0.4.0a6` and `agent-sandbox-server==0.4.0a6` alpha packages used in this guide. The previous 0.3.x packages do not implement this entry point. To validate a source revision, install both distributions from the same checkout as described below.
-
-Use Python 3.10 or newer and a virtual environment:
+The commands below select the matching **0.5.0a0 preview** packages. Available
+versions are listed in [releases](https://github.com/Alibaba-Agent-Sandbox/python-sdk/releases).
+To validate a checkout, use the source installation below. Use Python 3.10 or
+newer and a virtual environment:
 
 ```bash
 python -m venv .venv
 # Linux or macOS:
 source .venv/bin/activate
 # Windows PowerShell: .venv\Scripts\Activate.ps1
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.4.0a6'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.5.0a0'
 python -m pip check
 ```
 
-This installs the alpha client and its required same-version `agent-sandbox-server` dependency. The import namespace is `agent_sandbox`; the unrelated PyPI distribution named `agent-sandbox` is not this project.
+The base client supports standard `Sandbox` / `AsyncSandbox`, `ProviderSandbox`,
+`ServerClient`, template YAML and the remote `@sandbox(...)` decorator. It does not
+install a local server runtime. The import namespace is `agent_sandbox`; the PyPI
+distribution named `agent-sandbox` belongs to another project.
 
-Check the installed pair:
+Check the installed client version:
 
 ```bash
-python -c "from importlib.metadata import version; print(version('agent-sandbox-client'), version('agent-sandbox-server'))"
+python -c "from importlib.metadata import version; print(version('agent-sandbox-client'))"
 ```
 
-Install the [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox) separately. Named deployment examples in the current guides require the matching current CLI source. Older releases may expose different commands; check their help and configure the selected provider before deployment.
+Install the [abx CLI](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox)
+separately. CLI commands vary by release; check the installed help and configure
+the selected provider before deployment.
 
 Project configuration uses `ABX_SANDBOX_API_KEY`, `ABX_SANDBOX_BASE_URL` and
 `ABX_SANDBOX_DOMAIN` for all project entries, including standard Sandbox /
-AsyncSandbox and ProviderSandbox. Public keyword parameters still follow each
-entry's documented contract; the standard `api_key=` parameter remains valid.
+AsyncSandbox and ProviderSandbox. Public keyword parameters follow each entry's
+documented contract; the standard `api_key=` parameter remains valid.
 
-## Optional dependencies
-
-```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[all]==0.4.0a6'
-```
-
-Replace `[all]` with `[mcp]`, `[session]` or `[fast]` for that subset. Template YAML and the declarative decorator belong to the base client; they need no extra. Browser automation requires Playwright installed inside the sandbox image.
-
-## Server-only installation inside an image
-
-```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-server==0.4.0a6'
-```
-
-The server runs the application inside an image. Installing it does not create a sandbox. See the [server guide](server-sdk.md) to register commands and start the service.
-
-## Client and runtime boundaries in current source
-
-The current checkout makes the local runtime optional. Install only the client
-for standard `Sandbox` / `AsyncSandbox`, `ProviderSandbox`, `ServerClient`, template
-YAML and the remote `@sandbox(...)` decorator:
-
-```bash
-python -m pip install ./client-sdk
-```
+## Local command registration and server startup
 
 For local `@sandbox.register` or `sandbox.server`, install the matching runtime:
 
 ```bash
-python -m pip install ./server-sdk './client-sdk[server]'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[server]==0.5.0a0'
+python -m pip check
+python -c "from importlib.metadata import version; print(version('agent-sandbox-client'), version('agent-sandbox-server'))"
 ```
 
-`[all]` and `[dev]` include `[server]`. The pinned public release above predates
-this dependency change; source installation does not publish a new release.
-Registration belongs in the application server program and does not upload a
-local function. The module-level `sandbox.run` / `sandbox.run_async` have been
-removed: call an explicitly selected application's `ServerClient.commands.run`
-instead. `ProviderSandbox.run` and the remote decorator remain available.
+The `[server]` extra pins `agent-sandbox-server` to exactly the client version.
+Registration belongs in the application server program; it does not upload a
+local function to an existing sandbox.
+
+## Optional dependencies
+
+```bash
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[all]==0.5.0a0'
+```
+
+`[all]` and `[dev]` include the matching `[server]` runtime. Use `[mcp]`, `[session]`
+or `[fast]` for that subset. Template YAML and the remote decorator need no extra.
+Browser automation requires Playwright installed inside the sandbox image.
+
+## Server-only installation inside an image
+
+```bash
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-server==0.5.0a0'
+```
+
+The server runs the application inside an image. Installing it does not create a
+sandbox. Host installation does not update existing sandbox images; rebuild the
+image to use a new server version. See the [server guide](server-sdk.md) for
+command registration and startup, and [file transfer limits](template-server-api.md#file_ops)
+for buffered base64 uploads and download policy limits.
+
+## Moving from 0.4 previews
+
+The base 0.5 client no longer installs `agent-sandbox-server` automatically. Add
+`[server]` when your local code registers commands or starts the runtime; remote
+client use continues to work with the base package.
+
+Module-level `sandbox.run` and `sandbox.run_async` have been removed. Deploy the
+application first, connect to it and call `ServerClient.commands.run`; see
+[template application startup and connection](template-workflows.md).
+`ProviderSandbox.run` and the remote `@sandbox(...)` decorator remain available.
 
 ## Development from a checkout
 
@@ -77,4 +91,10 @@ python -m pip install -e ./server-sdk -e './client-sdk[dev]'
 python -m pip check
 ```
 
-Record the commit when reproducing a source installation; both packages come from that same checkout. To reproduce a specific release, check out its tag first. Contributor validation and publication requirements are in [CONTRIBUTING](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/.github/CONTRIBUTING.md).
+For client-only source development, use `python -m pip install ./client-sdk`.
+For local registration without the development tools, use
+`python -m pip install ./server-sdk './client-sdk[server]'`.
+Record the commit when reproducing a source installation; both packages come
+from that same checkout. To reproduce a release, check out its tag first.
+Contributor checks and publication requirements are in
+[CONTRIBUTING](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/.github/CONTRIBUTING.md).

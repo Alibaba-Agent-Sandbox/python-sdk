@@ -7,7 +7,7 @@
 
 ## 安装
 
-请按[安装指南](install-python.md)安装。公开客户端/服务端 alpha 版本为 0.4.0a6；安装客户端会安装匹配的服务端依赖。宿主机安装不会更新已有沙箱镜像。
+0.5.0a0 预览版的配套安装见[安装指南](install-python.md)。基础客户端不安装本机服务端运行时；本机命令注册或启动服务时使用 `[server]`。宿主机安装不会更新已有沙箱镜像。
 
 不要执行 `pip install agent-sandbox`。PyPI 上的 `agent-sandbox` 是另一个无关项目。
 
