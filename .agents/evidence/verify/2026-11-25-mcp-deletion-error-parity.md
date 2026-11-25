@@ -1,7 +1,7 @@
 # Verification: MCP deletion error parity and reference follow-up
 
 - Date:2026-11-25
-- Result:PARTIAL — final paired checks and remote CI pending.
+- Result:PASS for local verification; exact-head remote CI/merge remain separate gates.
 - Base:da6b0ef85f15798b84383c58d300374a4fbc3a11; editable paired0.5.0a1 source, Python3.11/Linux.
 - Scope:one lifecycle-classification entry, two existing regression modules, bilingual
   lifecycle/Server API/current CLI usage references, changelog and owner records.
@@ -27,7 +27,13 @@ confirms options precede the sandbox ID. Python registration and HTTP routes rem
   Provider failures are controlled doubles; this is real transport, not a new cloud run.
 - `make lint typecheck format-check`:passed across both packages.
 - Full paired `make test` in isolated user/PID/network namespaces with a child-reaping
-  PID1 and loopback enabled:pending at this record checkpoint.
+  PID1 and loopback enabled:server899passed; client2506passed/35skipped. The client
+  retained one existing unraisable closed-loop warning; no test failed.
+- Repository health106passed/1existing optional warning/0failed; hygiene and diff checks
+  passed. Current-guide search has no old sandbox command/exec/pause/resume/snapshot
+  wrapper or build.json handoff. Actual CLI help confirms the replacement entries.
+- Remote initial head ccbf912 Docs links passed; full remote matrix remains independently
+  checked for the final record head. No canceled or pending run is counted as passing.
 
 ## Cleanup and boundaries
 
@@ -36,3 +42,10 @@ resources or package artifacts were published. The prior real Express cleanup ru
 preserved in [the original evidence](2026-11-25-mcp-cleanup-retry.md), not counted again.
 This patch does not complete native v1 templates, six Harnesses, Provider runtime downloads
 or FC MCP deployment. Public0.5.0a1 remains the original immutable release.
+
+## Delivery boundary
+
+PR189 contains this final follow-up. The root integrator reviewed the bounded change and
+authorized normal CI/merge; no second SDK release is requested. Public0.5.0a1 retains its
+original behavior. Only after189 merges will169/170 be closed with the combined185/189
+delivery evidence; actual remote state is verified separately.
