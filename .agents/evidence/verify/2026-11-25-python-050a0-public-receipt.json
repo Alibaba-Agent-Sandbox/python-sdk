@@ -1,0 +1,236 @@
+{
+  "version": "0.5.0a0",
+  "source": {
+    "sdk_merge": "26d679c3e5f67ac616b65b3db935db803c639be0",
+    "reviewed_head": "cde406277a336c40c447939e732881c5a1d15cf3",
+    "tag": "v0.5.0a0",
+    "tag_object": "339fb5203c0b3670192cbd957a04afd517816bfa",
+    "independently_peeled_commit": "26d679c3e5f67ac616b65b3db935db803c639be0"
+  },
+  "public_readback": {
+    "version": "0.5.0a0",
+    "artifacts": [
+      {
+        "project": "agent-sandbox-server",
+        "name": "agent_sandbox_server-0.5.0a0-py3-none-any.whl",
+        "sha256": "2c1ceed013d0f361f9ccb7b19339315ed25e89a8e5623a69e07d10e3080f5e4d"
+      },
+      {
+        "project": "agent-sandbox-server",
+        "name": "agent_sandbox_server-0.5.0a0.tar.gz",
+        "sha256": "25712b55cd5aed4c2b12021c8f5faa00161b3e2b1b47c98c6a1fef7b5d767408"
+      },
+      {
+        "project": "agent-sandbox-client",
+        "name": "agent_sandbox_client-0.5.0a0-py3-none-any.whl",
+        "sha256": "fbb37f5056fee46bd9b7bc8871c5685dd4a5b0bf2991975ef217cb23933fbd75"
+      },
+      {
+        "project": "agent-sandbox-client",
+        "name": "agent_sandbox_client-0.5.0a0.tar.gz",
+        "sha256": "5d5c877305561da65253da414016684b6444da24e3ba65e63449436230080338"
+      }
+    ],
+    "fresh_install_phases": {
+      "environment": "second independent fresh public environment",
+      "base_client_only_without_server": true,
+      "base_pip_check": true,
+      "matching_server_extra": true,
+      "extra_pip_check": true,
+      "observation": "The second driver run passed these installation phases, then failed a validation-driver candidate-path assertion; installation phases are not a claim that the original aggregate command passed."
+    },
+    "installed_versions": {
+      "agent-sandbox-client": "0.5.0a0",
+      "agent-sandbox-server": "0.5.0a0"
+    },
+    "corrected_public_http": {
+      "acknowledged_start": true,
+      "candidate_identity": true,
+      "runtime_origin": "public-installed",
+      "public_installed_sources_match_wheel": 58,
+      "owned_listener": true,
+      "guest_http": [
+        {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "round_trip": true
+        },
+        {
+          "bytes": 8388608,
+          "sha256": "7d212b9c884f5c77896de960ae17cc341cda43b14d6a971f34ca29ebd4badf7f",
+          "round_trip": true
+        }
+      ],
+      "sdk_http": [
+        {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "round_trip": true
+        },
+        {
+          "bytes": 8388608,
+          "sha256": "7d212b9c884f5c77896de960ae17cc341cda43b14d6a971f34ca29ebd4badf7f",
+          "round_trip": true
+        }
+      ]
+    },
+    "earlier_observations": {
+      "date": "2026-11-25",
+      "metadata_initial_result": "HTTP 404 before the independently observed version endpoints both returned HTTP 200",
+      "first_fresh_install": {
+        "client_version": "0.5.0a0",
+        "base_client_server_absent": true,
+        "base_client_pip_check": "passed by driver",
+        "server_extra_first_exit": 1,
+        "first_error_detail": "Driver preserved only static exit classification, not pip stdout/stderr; the exact cause is not established",
+        "same_requirement_retry_exit": 0
+      },
+      "followup": "A second independent fresh environment runs the complete artifact/base/extra/HTTP verification; its result is recorded separately"
+    },
+    "initial_second_http_failure": "Launcher rejected correct installed server/app.py because its candidate-directory-only assertion did not permit a public site-packages installation. Startup log independently identified the path. Product files were not changed.",
+    "corrected_http_command": "ABX_VERIFY_INSTALLED_SERVER=1 ABX_VERIFY_WHEEL_DIR=<public-wheel-dir> unshare -Urn bash -c \"ip link set lo up && exec <public-venv>/bin/python local-ack-rehearsal.py\"",
+    "public_workflow": {
+      "id": 45554059881,
+      "conclusion": "success"
+    }
+  },
+  "independent_public_artifact_check": {
+    "version": "0.5.0a0",
+    "verified": [
+      {
+        "filename": "agent_sandbox_server-0.5.0a0-py3-none-any.whl",
+        "candidate_metadata_download_sha256": "2c1ceed013d0f361f9ccb7b19339315ed25e89a8e5623a69e07d10e3080f5e4d"
+      },
+      {
+        "filename": "agent_sandbox_server-0.5.0a0.tar.gz",
+        "candidate_metadata_download_sha256": "25712b55cd5aed4c2b12021c8f5faa00161b3e2b1b47c98c6a1fef7b5d767408"
+      },
+      {
+        "filename": "agent_sandbox_client-0.5.0a0-py3-none-any.whl",
+        "candidate_metadata_download_sha256": "fbb37f5056fee46bd9b7bc8871c5685dd4a5b0bf2991975ef217cb23933fbd75"
+      },
+      {
+        "filename": "agent_sandbox_client-0.5.0a0.tar.gz",
+        "candidate_metadata_download_sha256": "5d5c877305561da65253da414016684b6444da24e3ba65e63449436230080338"
+      }
+    ]
+  },
+  "workflows": [
+    {
+      "repository": "python-sdk",
+      "run_id": 45554059881,
+      "url": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/actions/runs/45554059881",
+      "workflow": ".github/workflows/publish.yml",
+      "head_sha": "26d679c3e5f67ac616b65b3db935db803c639be0",
+      "conclusion": "success",
+      "all_jobs_success": true,
+      "job_names": [
+        "validate / Python to Node provider engine",
+        "validate / server-sdk (Python 3.10)",
+        "validate / server-sdk (Python 3.12)",
+        "validate / Pinned E2B public contract",
+        "validate / No local paths or secrets",
+        "validate / server-sdk (Python 3.11)",
+        "validate / client-sdk (Python 3.11)",
+        "validate / client-sdk (Python 3.10)",
+        "validate / Public runtime fixture (python-hello)",
+        "validate / Public runtime fixture (agents-cli)",
+        "validate / client-sdk (Python 3.12)",
+        "validate / Build packages",
+        "Build & Publish (agent-sandbox-server, then agent-sandbox-client)"
+      ]
+    },
+    {
+      "repository": "agent-sandbox",
+      "run_id": 45555335298,
+      "url": "https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/actions/runs/45555335298",
+      "workflow": ".github/workflows/mcp-artifact.yml",
+      "head_sha": "39b240685147876fa29232c209191cbc33a94095",
+      "conclusion": "success",
+      "all_jobs_success": true,
+      "job_names": [
+        "actual-generated-http"
+      ]
+    },
+    {
+      "repository": "agent-sandbox",
+      "run_id": 45555335003,
+      "url": "https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/actions/runs/45555335003",
+      "workflow": ".github/workflows/server-wheel-image.yml",
+      "head_sha": "39b240685147876fa29232c209191cbc33a94095",
+      "conclusion": "success",
+      "all_jobs_success": true,
+      "job_names": [
+        "real-docker"
+      ]
+    }
+  ],
+  "mcp_public_client_only": {
+    "passed": true,
+    "versions": {
+      "agent-sandbox-client": "0.5.0a0",
+      "agent-sandbox-server": null
+    },
+    "transport": "real generated ASGI HTTP",
+    "checks": {
+      "missing_auth_rejected": true,
+      "wrong_auth_rejected": true,
+      "initialize": true,
+      "current_tool_catalog": true,
+      "tool_schemas": true
+    },
+    "cloud_requests": 0,
+    "readiness_connection_retries": {
+      "ECONNREFUSED": 2,
+      "ECONNRESET": 0
+    },
+    "tool_names": [
+      "cancel_task",
+      "create_sandbox",
+      "download_file",
+      "get_sandbox",
+      "get_task",
+      "kill_sandbox",
+      "list_files",
+      "list_sandboxes",
+      "read_file",
+      "run_code",
+      "run_command",
+      "set_sandbox_timeout",
+      "start_task",
+      "upload_file",
+      "write_file"
+    ],
+    "owned_process_stopped": true
+  },
+  "docker_consumer": {
+    "run_id": 45555335003,
+    "head_sha": "39b240685147876fa29232c209191cbc33a94095",
+    "modes": [
+      "conditional",
+      "continued"
+    ],
+    "production_builder": true,
+    "wheel_origin": "source wheel built from the exact v0.5.0a0 checkout",
+    "installed_version": "0.5.0a0",
+    "non_root_runtime": true,
+    "complete_server_python_sources_compared": true,
+    "cloud_deployment": false,
+    "containers_automatically_removed": true,
+    "owned_image_cleanup_in_finally": true,
+    "one_day_image_archive_artifact_retained": true
+  },
+  "cli_integration_at_checkpoint": {
+    "pull_request": "https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/pull/271",
+    "state": "open",
+    "draft": true,
+    "merged": false,
+    "tested_head": "39b240685147876fa29232c209191cbc33a94095"
+  },
+  "tracking": {
+    "sdk_issue": "https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/173",
+    "cli_issue": "https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/issues/270",
+    "issue_state_at_checkpoint": "open",
+    "automatic_closure_requested": false
+  }
+}
