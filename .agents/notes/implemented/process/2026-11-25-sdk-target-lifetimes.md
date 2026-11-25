@@ -1,6 +1,6 @@
 # Decision: Clarify SDK target identities and lifetimes
 
-Status: proposed
+Status: implemented
 Date: 2026-11-25
 Issue: https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/179
 

@@ -1,6 +1,6 @@
 # Install the Python packages
 
-The commands below select the matching **0.5.0a0 preview** packages. Available
+The commands below select the matching **0.5.0a1 preview** packages. Available
 versions are listed in [releases](https://github.com/Alibaba-Agent-Sandbox/python-sdk/releases).
 To validate a checkout, use the source installation below. Use Python 3.10 or
 newer and a virtual environment:
@@ -10,7 +10,7 @@ python -m venv .venv
 # Linux or macOS:
 source .venv/bin/activate
 # Windows PowerShell: .venv\Scripts\Activate.ps1
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.5.0a0'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.5.0a1'
 python -m pip check
 ```
 
@@ -39,7 +39,7 @@ documented contract; the standard `api_key=` parameter remains valid.
 For local `@sandbox.register` or `sandbox.server`, install the matching runtime:
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[server]==0.5.0a0'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[server]==0.5.0a1'
 python -m pip check
 python -c "from importlib.metadata import version; print(version('agent-sandbox-client'), version('agent-sandbox-server'))"
 ```
@@ -51,7 +51,7 @@ local function to an existing sandbox.
 ## Optional dependencies
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[all]==0.5.0a0'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[all]==0.5.0a1'
 ```
 
 `[all]` and `[dev]` include the matching `[server]` runtime. Use `[mcp]`, `[session]`
@@ -61,7 +61,7 @@ Browser automation requires Playwright installed inside the sandbox image.
 ## Server-only installation inside an image
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-server==0.5.0a0'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-server==0.5.0a1'
 ```
 
 The server runs the application inside an image. Installing it does not create a

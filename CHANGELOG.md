@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.5.0a1] - 2026-11-25
+
 ### Fixed
 
 - Read Python package inventory from installed distribution metadata so uv environments without pip return their real packages. / 从已安装发行包元数据读取 Python 包清单，使没有 pip 的 uv 环境返回真实结果。

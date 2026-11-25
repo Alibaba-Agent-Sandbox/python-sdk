@@ -1,6 +1,6 @@
 # Decision: Retryable MCP cleanup and accurate harness preparation
 
-Status: proposed
+Status: implemented
 
 ## Problem
 

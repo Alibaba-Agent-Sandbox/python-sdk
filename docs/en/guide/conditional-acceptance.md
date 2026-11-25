@@ -66,8 +66,7 @@ cat > template-create.json <<'JSON'
   "generation": 2,
   "cpu": 2,
   "memory_size": 2048,
-  "disk_size": 15360,
-  "envd_inject": false
+  "disk_size": 15360
 }
 JSON
 abx --provider alicloud-express --opt "region=$REGION" provider run template.create --input-file template-create.json --yes

@@ -2,8 +2,8 @@
 
 Python MCP server 提供 `start_task`、`get_task`、`cancel_task`，在已有 Linux
 沙箱中执行后台 shell 任务。运行时需要 `python3`、`/proc` 和进程组支持。
-Python STDIO 与 HTTP 共用这些处理函数；Node.js CLI 的 MCP 是另一份实现，
-本次三个工具仅适用于 Python server。
+Python STDIO 与 HTTP 共用这些处理函数。Node.js CLI 的 MCP 也提供任务工具，
+但参数不同；本文说明 Python 实现，具体输入以各 server 的 `tools/list` 为准。
 
 ## 启动、重连和结束
 

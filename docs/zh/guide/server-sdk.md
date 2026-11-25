@@ -4,12 +4,12 @@
 
 Server SDK 跑在**沙箱里面**。它是镜像启动后一直听着的 HTTP 服务，默认端口 9000。包名是 `agent-sandbox-server`，导入 `agent_sandbox.server`。模板的 `commands.py` 用它注册命令、打开能力，然后 `start(9000)`。
 
-使用 0.5 预览版时，选择配套的服务端版本 0.5.0a0。可用版本见
+使用 0.5 预览版时，选择配套的服务端版本 0.5.0a1。可用版本见
 [发布记录](https://github.com/Alibaba-Agent-Sandbox/python-sdk/releases)。
 从检出源码进行开发请按安装指南操作。
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple "agent-sandbox-server==0.5.0a0"
+python -m pip install --index-url https://pypi.org/simple "agent-sandbox-server==0.5.0a1"
 ```
 
 ```python
