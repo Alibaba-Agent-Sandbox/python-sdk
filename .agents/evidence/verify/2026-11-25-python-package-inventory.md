@@ -18,3 +18,8 @@ The initial full server suite had885passed,1skipped,6failed; one failure was Tes
 ## Review
 
 Round1 independently checked standard metadata semantics, missing names, duplicate pairs, stable ordering and sanitized error behavior. The patch adds no dependency and leaves npm handling unchanged. Final code/test review and complete CI are recorded in the associated PR.
+
+
+## Second review
+
+The independent reviewer approved current-interpreter semantics, missing-name handling, exact-pair deduplication, sanitized500 and no pip process. A final original-name tie-break makes set-derived output deterministic when names differ only by case. Full lint/typecheck/format passed; the complete final-tree matrix is checked by CI. The fresh pip-less HTTP probe, package-route regressions and cleanup were not replaced with synthetic metadata-only evidence.

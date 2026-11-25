@@ -58,3 +58,15 @@ Official protocol header behavior was independently fetched from https://modelco
 ## Isolated server follow-up
 
 The same complete server suite passed in an isolated network namespace with loopback enabled:891passed,1skipped. This separates the earlier shared-loopback failures from this clean run. The original failure remains above. The subsequent Python package-inventory change has its own scoped tests and evidence; this full run started before that change and is not represented as a final aggregate for it.
+
+
+## Final local and integration results
+
+- Original shared-network client run:2470passed,36skipped,13failed. Every failure was in existing managed HTTP/SSE tests; observed responses included unexpected501 and disconnected connections. These observations do not establish their root cause alone.
+- Complete client suite in isolated user/PID/network namespaces, with a child-reaping PID1 and loopback enabled:2483passed,36skipped. Existing skip conditions remain skips.
+- Complete server suite in isolated network:891passed,1skipped. The subsequent package-inventory correction adds3tests and separately passed7 relevant existing/new route cases; latest remote CI checks the final combined tree.
+- make lint/typecheck/format-check, make build/dist-check, make hygiene:passed after the fixes. Document/record health:106passed,1existing optional release-guide warning,0failed.
+- The tiny package-name sort tie-break was added following final review; it makes equal casefold-name/version output deterministic without changing inventory scope.
+- The initial commit hook rejected a preexisting synthetic private-config-key literal in the touched regression file. It was relabeled with an explicit placeholder prefix; the unchanged secret hook passed. No credential was present or bypassed.
+- Root and API/CLI agents completed two rounds of implementation review. Root independently completed the eight real Express MCP HTTP assertions recorded above. Main documentation from PR180 was merged, preserving both sets of changelog and engineering-index entries.
+- Source version remains0.5.0a0 for this implementation PR. A later paired prerelease is necessary before these production fixes can be claimed available in an installable package. No tag or upload was performed here.

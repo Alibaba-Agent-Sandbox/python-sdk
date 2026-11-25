@@ -415,7 +415,7 @@ def handle_packages(request: ServerRequest) -> ServerResponse:
             packages = [
                 {"name": name, "version": version}
                 for name, version in sorted(
-                    installed, key=lambda item: (item[0].casefold(), item[1])
+                    installed, key=lambda item: (item[0].casefold(), item[1], item[0])
                 )
             ]
             return ServerResponse.ok({"manager": manager, "packages": packages})
