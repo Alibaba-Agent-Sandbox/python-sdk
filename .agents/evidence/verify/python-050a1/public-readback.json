@@ -1,0 +1,25 @@
+{
+  "version": "0.5.0a1",
+  "public_files": [
+    {
+      "name": "agent_sandbox_server-0.5.0a1-py3-none-any.whl",
+      "sha256": "b5f91c42a3aec2a5336f73a9927c397e5cfd7b4a62b810bb53b37a8ac5faab90"
+    },
+    {
+      "name": "agent_sandbox_server-0.5.0a1.tar.gz",
+      "sha256": "24244567e145d9477a16f8828513e2eb813cfb6c05299c47f7f1cffb0f944d2b"
+    },
+    {
+      "name": "agent_sandbox_client-0.5.0a1-py3-none-any.whl",
+      "sha256": "8d5633797e164ba0cf4783b4245abc458d731233271de9e723bd5771f87d0b4f"
+    },
+    {
+      "name": "agent_sandbox_client-0.5.0a1.tar.gz",
+      "sha256": "4d69c6f7bd9b7737274a7ebd8615317b53e543955eb1bebc7e22fbc98e0999e1"
+    }
+  ],
+  "client_only_http": true,
+  "optional_server": true,
+  "pipless_inventory_http": true,
+  "temporary_environments_removed": true
+}
