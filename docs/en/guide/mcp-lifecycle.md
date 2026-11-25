@@ -1,5 +1,9 @@
 # MCP sandbox lifecycle tools
 
+Version scope: published 0.5.0a1 supports retryable cleanup. The consistent lifecycle
+error formatting for `kill_sandbox` described below is a subsequent source change;
+0.5.0a1 still uses its older deletion-error formatting.
+
 The Python MCP server exposes fifteen tools: the seven execution and file tools described in
 [MCP Integration](mcp-integration.md), plus `list_sandboxes`, `get_sandbox`, and
 `set_sandbox_timeout`, the three [background task tools](mcp-background-tasks.md), and two
@@ -87,7 +91,8 @@ resource integers and string-valued `envs`. Provider/API failures return `isErro
 Lifecycle errors expose a fixed failure category, an HTTP status when available, or
 an SDK error code with a static recovery suggestion. Raw provider messages, request
 URLs, response-validation inputs, and exception tracebacks are omitted from both
-tool results and the MCP lifecycle error log. Input validation names the invalid
+tool results and the MCP lifecycle error log, including failed `kill_sandbox`
+calls with an explicit ID or the current default. Input validation names the invalid
 field without echoing its value.
 
 ## End a session and retry cleanup

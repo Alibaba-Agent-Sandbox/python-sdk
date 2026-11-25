@@ -555,7 +555,9 @@ HTTP 路由管理会话。按键走 `ABX_PTY_PORT`（默认 `9001`）上的 WebS
 
 #### `GET /packages?manager=pip`
 
-`manager` 为 `pip`（默认）或 `npm`。`pip` 运行 `python -m pip list --format json`。`npm` 运行 `npm list --json --depth=0`。`200`：`{"manager": "pip", "packages": [{"name": "pip", "version": "24.0"}]}`。未知的管理器是 `400`。找不到可执行文件时 `packages` 为空列表。超时 10 秒（`500` `TimeoutError`）。
+`manager` 为 `pip`（默认）或 `npm`。选择 `pip` 时，服务端列出当前 Python 解释器可见的已安装发行包，包括通过 uv 安装的包；不要求安装 pip。每项包含 `name` 和 `version`，按名称排序，省略重复的名称/版本组合和没有名称的条目。读取包元数据失败时返回 `500`，不会把失败伪装成成功的空列表。
+
+选择 `npm` 时运行 `npm list --json --depth=0`；找不到 npm 可执行文件时返回空 `packages` 列表，执行超时为 10 秒（`500` `TimeoutError`）。未知的管理器返回 `400`。成功响应示例：`{"manager": "pip", "packages": [{"name": "agent-sandbox-server", "version": "0.5.0a1"}]}`。
 
 ### `dev_tools`（启用前关闭）
 

@@ -1,5 +1,7 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+- [Deletion error parity and current references](notes/proposed/feature/2026-11-25-mcp-deletion-error-parity.md) · [verification](evidence/verify/2026-11-25-mcp-deletion-error-parity.md).
+
 - [Python0.5.0a1 release preparation](notes/implemented/process/2026-11-25-python-050a1-preview.md) · [preflight](evidence/verify/2026-11-25-python-050a1-preflight.md).
 
 - [Python package inventory without pip](notes/implemented/feature/2026-11-25-python-package-inventory.md) · [verification](evidence/verify/2026-11-25-python-package-inventory.md).

@@ -1,5 +1,8 @@
 # MCP 沙箱生命周期工具
 
+版本范围：已发布的 0.5.0a1 支持清理失败后的重试。下文 `kill_sandbox` 使用统一生命周期
+错误格式的行为属于后续源码变更；0.5.0a1 仍使用旧的删除错误格式。
+
 Python MCP server 现在提供十五个工具：除 [MCP 集成](mcp-integration.md) 中原有七个执行和
 文件工具外，新增 `list_sandboxes`、`get_sandbox`、`set_sandbox_timeout`，以及三个[后台任务工具](mcp-background-tasks.md) 和两个
 [二进制传输工具](mcp-binary-files.md)。它们复用现有
@@ -74,7 +77,8 @@ CPU/内存核验。
 
 生命周期错误仅返回固定的失败类别、可用的 HTTP 状态，或 SDK 错误码及静态恢复建议。
 工具结果和 MCP 生命周期错误日志均不包含 provider 原始错误消息、请求 URL、响应校验输入
-或异常堆栈。输入校验仅指出无效字段，不回显字段值。
+或异常堆栈。显式指定 ID 或使用当前默认目标的 `kill_sandbox` 失败也遵循同一规则。
+输入校验仅指出无效字段，不回显字段值。
 
 ## 实现与验证
 

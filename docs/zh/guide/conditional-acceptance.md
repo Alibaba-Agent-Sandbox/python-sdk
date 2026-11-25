@@ -12,12 +12,12 @@ E2B_API_URL、E2B_DOMAIN。不要把极速版密钥发给其他提供商。
 
 | 操作 | Python 标准入口（同步） | CLI 标准入口 |
 | --- | --- | --- |
-| 暂停 | `sandbox.pause()` | `abx sandbox pause "$SANDBOX_ID"` |
-| 恢复同一个沙箱 | `Sandbox.connect(sandbox_id)` | `abx sandbox resume "$SANDBOX_ID"` |
-| 创建快照 | `sandbox.create_snapshot(name="checkpoint", request_timeout=300)` | `abx sandbox snapshot create "$SANDBOX_ID" --name checkpoint` |
-| 快照列表 | `Sandbox.list_snapshots(sandbox_id=sandbox_id)`，通过分页器读取 | `abx --json sandbox snapshot list "$SANDBOX_ID"` |
+| 暂停 | `sandbox.pause()` | `abx pause "$SANDBOX_ID"` |
+| 恢复同一个沙箱 | `Sandbox.connect(sandbox_id)` | `abx resume "$SANDBOX_ID"` |
+| 创建快照 | `sandbox.create_snapshot(name="checkpoint", request_timeout=300)` | `abx snapshot create "$SANDBOX_ID" --name checkpoint` |
+| 快照列表 | `Sandbox.list_snapshots(sandbox_id=sandbox_id)`，通过分页器读取 | `abx --json snapshot list "$SANDBOX_ID"` |
 | 从快照新建沙箱 | `Sandbox.create(template=snapshot.snapshot_id)` | `abx deploy --template-id "$SNAPSHOT_ID" --name restored --yes` |
-| 删除快照 | `Sandbox.delete_snapshot(snapshot.snapshot_id)` | `abx sandbox snapshot delete "$SNAPSHOT_ID"` |
+| 删除快照 | `Sandbox.delete_snapshot(snapshot.snapshot_id)` | `abx snapshot delete "$SNAPSHOT_ID"` |
 
 上表 Python 使用 `from agent_sandbox import Sandbox`；异步使用 `AsyncSandbox` 并 await 相应操作。它们是标准 SDK 入口，不能与 `agent_sandbox.api.sandbox.Sandbox` 的原生 Provider/Server 扩展入口混为一谈，也不能把原生提供方的特性门禁当成极速版标准 API 的服务能力结论。Python 命名为 `create_snapshot`，TypeScript 命名为 `createSnapshot`；参数形式以实际 SDK 版本为准。
 

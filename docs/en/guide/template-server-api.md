@@ -560,7 +560,9 @@ Memory comes from `/proc/meminfo` when present. Disk is `shutil.disk_usage("/")`
 
 #### `GET /packages?manager=pip`
 
-`manager` is `pip` (default) or `npm`. `pip` runs `python -m pip list --format json`. `npm` runs `npm list --json --depth=0`. `200`: `{"manager": "pip", "packages": [{"name": "pip", "version": "24.0"}]}`. An unknown manager is `400`. A missing binary returns an empty `packages` list. Timeout is 10 seconds (`500` `TimeoutError`).
+`manager` is `pip` (default) or `npm`. With `pip`, the server lists installed distributions visible to its Python interpreter, including packages installed with uv; pip itself does not need to be installed. Entries contain `name` and `version`, are sorted by name, and omit duplicate name/version pairs and entries without a name. A metadata read failure returns `500` instead of an empty successful result.
+
+`npm` runs `npm list --json --depth=0`. Its missing executable returns an empty `packages` list; its timeout is 10 seconds (`500` `TimeoutError`). An unknown manager is `400`. Example successful response: `{"manager": "pip", "packages": [{"name": "agent-sandbox-server", "version": "0.5.0a1"}]}`.
 
 ### `dev_tools` (off until enabled)
 

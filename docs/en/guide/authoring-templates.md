@@ -120,7 +120,9 @@ if __name__ == "__main__":
 
 File upload and download are server endpoints (`/files/*`, `/upload`, `/download`) of the `file_ops` group, which is on by default. They are not registered from `commands.py`. Deploy does not apply a `server:` block. Turn an opt-in group on with `default_table().enable_group(CapabilityGroup.DEV_TOOLS)` (a `CapabilityGroup`, not a string) or `ABX_SERVER_ENABLED_GROUPS`. `dev_tools`, `browser`, and `agents` start disabled.
 
-Registered commands are served by the in-sandbox HTTP server (`POST /commands/{name}`). Clients call them with `await sandbox.run("demo", x=1, y="hello")` or `abx sandbox command run <id> demo --arg x=1 --arg y=hello`, and list them with `sandbox.list_commands()` or `abx sandbox command list <id>`. A bare shell command is a different call: `sandbox.commands.run(cmd)`.
+Registered commands are served by the in-sandbox HTTP server (`POST /commands/{name}`). Python clients call them with `await sandbox.run("demo", x=1, y="hello")` and discover them with `await sandbox.list_commands()`. A shell command uses `sandbox.commands.run(cmd)`.
+
+For CLI business operations, bind the application's OpenAPI contract and use `abx sandbox TARGET --help`, then `abx sandbox TARGET OPERATION --help`. The binding defines operation names and arguments; the Python decorator and HTTP route stay unchanged. See the [CLI API guide](https://github.com/Alibaba-Agent-Sandbox/agent-sandbox/blob/main/docs/en/guide/sandbox-api.md).
 
 ---
 

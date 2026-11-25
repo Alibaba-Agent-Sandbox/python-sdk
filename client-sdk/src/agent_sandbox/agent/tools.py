@@ -23,6 +23,7 @@ _LIFECYCLE_TOOLS = frozenset(
         "create_sandbox",
         "list_sandboxes",
         "get_sandbox",
+        "kill_sandbox",
         "set_sandbox_timeout",
         "start_task",
         "get_task",
