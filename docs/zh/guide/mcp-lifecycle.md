@@ -1,5 +1,8 @@
 # MCP 沙箱生命周期工具
 
+版本范围：已发布的 0.5.0a1 支持清理失败后的重试。下文 `kill_sandbox` 使用统一生命周期
+错误格式的行为属于后续源码变更；0.5.0a1 仍使用旧的删除错误格式。
+
 Python MCP server 现在提供十五个工具：除 [MCP 集成](mcp-integration.md) 中原有七个执行和
 文件工具外，新增 `list_sandboxes`、`get_sandbox`、`set_sandbox_timeout`，以及三个[后台任务工具](mcp-background-tasks.md) 和两个
 [二进制传输工具](mcp-binary-files.md)。它们复用现有

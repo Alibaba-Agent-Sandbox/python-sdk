@@ -1,5 +1,9 @@
 # MCP sandbox lifecycle tools
 
+Version scope: published 0.5.0a1 supports retryable cleanup. The consistent lifecycle
+error formatting for `kill_sandbox` described below is a subsequent source change;
+0.5.0a1 still uses its older deletion-error formatting.
+
 The Python MCP server exposes fifteen tools: the seven execution and file tools described in
 [MCP Integration](mcp-integration.md), plus `list_sandboxes`, `get_sandbox`, and
 `set_sandbox_timeout`, the three [background task tools](mcp-background-tasks.md), and two
