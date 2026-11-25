@@ -16,6 +16,8 @@ bilingual installation, Client SDK, Server SDK and SDK usage guides plus embedde
 package READMEs for that preview. Document the local `[server]` requirement and
 explicit application calls. Do not claim candidate artifacts are already public
 or change historical release evidence and version-specific examples.
+The new 0.5 changelog describes final preview compatibility and community contact,
+without carrying an expired release forecast into the new release's behavior.
 
 Base this preparation on the actual merge of
 [PR #172](https://github.com/Alibaba-Agent-Sandbox/python-sdk/pull/172),
@@ -80,4 +82,5 @@ remain distinct required release gates.
 ## Evidence
 
 - [Preparation verification](../../../evidence/verify/2026-11-25-python-050a0-preview.md).
+- [Changelog review and local server follow-up](../../../evidence/verify/2026-11-25-python-050a0-changelog.md).
 - [Merged upload acceptance](../../../evidence/verify/2026-11-25-bounded-file-uploads-cloud.md).

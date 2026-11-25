@@ -41,7 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   use `ServerClient.commands.run`; instance `ProviderSandbox.run` is unchanged.
 ### Documentation
 
-- Announce the expected November 15, 2026 project 1.0.0 release, preview compatibility notice, and DingTalk community contact in both README languages.
+- Document preview compatibility and the DingTalk community contact in both README languages. / 双语 README 说明预览版兼容性与钉钉交流群入口。
 
 ## [0.4.0a7] - 2026-11-06
 
