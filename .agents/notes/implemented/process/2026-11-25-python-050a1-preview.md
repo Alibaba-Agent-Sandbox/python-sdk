@@ -1,6 +1,6 @@
 # Decision: Publish the paired Python0.5.0a1 preview
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
@@ -35,3 +35,5 @@ Both distributions have matching0.5.0a1 versions; remote gates pass; public file
 ## Evidence
 
 - [Preflight](../../../evidence/verify/2026-11-25-python-050a1-preflight.md)
+
+- [Publication and independent public readback](../../../evidence/verify/2026-11-25-python-050a1-publication.md)

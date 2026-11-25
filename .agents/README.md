@@ -1,6 +1,6 @@
 # `.agents/` — engineering record of the python-sdk repository
 
-- [Python0.5.0a1 release preparation](notes/proposed/process/2026-11-25-python-050a1-preview.md) · [preflight](evidence/verify/2026-11-25-python-050a1-preflight.md).
+- [Python0.5.0a1 release preparation](notes/implemented/process/2026-11-25-python-050a1-preview.md) · [preflight](evidence/verify/2026-11-25-python-050a1-preflight.md).
 
 - [Python package inventory without pip](notes/implemented/feature/2026-11-25-python-package-inventory.md) · [verification](evidence/verify/2026-11-25-python-package-inventory.md).
 
@@ -298,3 +298,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Candidate file-upload cloud follow-up](evidence/verify/2026-11-25-bounded-file-uploads-cloud.md).
 - [Python 0.5.0a0 preview preparation](notes/implemented/process/2026-11-25-python-050a0-preview.md) · [verification](evidence/verify/2026-11-25-python-050a0-preview.md).
 - [Python 0.5 changelog review and local server result](evidence/verify/2026-11-25-python-050a0-changelog.md).
+
+- [Python 0.5.0a1 public artifacts and fresh installation](evidence/verify/2026-11-25-python-050a1-publication.md)
