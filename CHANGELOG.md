@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Documentation
 
-- Replace the expired release forecast with current release links and document the buffered base64 upload size limits. / 用发布记录替代过期的发版预告，并说明缓冲式 base64 上传的大小限制。
+- Replace the expired release forecast with current release links and document buffered base64 transfer limits, including the independent download policy limit. / 用发布记录替代过期的发版预告，并说明缓冲式 base64 传输限制，包括独立的下载策略上限。
 
 - Synchronize CLI-dependent SDK documentation, HTTP MCP template deployment and source-acquisition error guidance. / 同步 SDK 文档中的 CLI 用法、HTTP MCP 模板部署与源码获取错误指引。
 

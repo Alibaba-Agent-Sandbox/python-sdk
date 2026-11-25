@@ -289,7 +289,9 @@ result = await server_client.commands.run("echo_args", args=["-i", "literal file
 {"path": "<resolved>", "content_base64": "<standard base64>", "bytes": 12}
 ```
 
-路径缺失是 `400`，越界是 `403` `path_not_allowed`，不是普通文件是 `404`，超过同一字节上限是 `413`，读失败是 `500`。
+路径缺失是 `400`，越界是 `403` `path_not_allowed`，不是普通文件是 `404`，超过 `files_download_stream` 生效的策略 `limits.max_bytes` 是 `413`，读失败是 `500`。
+
+需要限制下载大小时，设置该端点的 `limits.max_bytes`；未设置时，下载不应用文件大小上限。`ABX_MAX_UPLOAD_SIZE` 仅约束上传。
 
 #### `GET /files/list?path=`
 

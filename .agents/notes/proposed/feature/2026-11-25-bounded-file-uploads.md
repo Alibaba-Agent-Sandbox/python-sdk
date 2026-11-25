@@ -19,7 +19,9 @@ derive the fallback body budget from the effective decoded `max_bytes` (or
 Reject base64 longer than the largest permitted encoded payload before decoding,
 and retain strict validation and the exact decoded-byte check after decoding.
 Keep path, extension, authorization and overwrite checks intact. Clarify the
-buffered transfer format and replace the expired README release forecast.
+buffered transfer format and replace the expired README release forecast. Document
+downloads separately: only their effective policy `max_bytes` sets a file-size
+limit; they do not inherit `ABX_MAX_UPLOAD_SIZE`.
 
 ## API Design
 
@@ -67,3 +69,4 @@ candidate runtime and owned-resource cleanup are tracked separately in evidence.
 
 - [Issue #171](https://github.com/Alibaba-Agent-Sandbox/python-sdk/issues/171).
 - [Verification](../../../evidence/verify/2026-11-25-bounded-file-uploads.md).
+- [Download-limit review](../../../evidence/verify/2026-11-25-download-limit-review.md).

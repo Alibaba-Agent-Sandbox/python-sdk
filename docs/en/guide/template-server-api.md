@@ -294,7 +294,9 @@ An empty string for `content_base64` creates or truncates a zero-byte file. Omit
 {"path": "<resolved>", "content_base64": "<standard base64>", "bytes": 12}
 ```
 
-`400` missing path, `403` `path_not_allowed`, `404` not a file, `413` larger than the same byte limit, `500` on read errors.
+`400` missing path, `403` `path_not_allowed`, `404` not a file, `413` larger than the effective policy `limits.max_bytes` for `files_download_stream`, `500` on read errors.
+
+Set that endpoint's `limits.max_bytes` to bound downloads. Without it, no file-size limit is applied to downloads. `ABX_MAX_UPLOAD_SIZE` applies only to uploads.
 
 #### `GET /files/list?path=`
 
