@@ -3,7 +3,8 @@
 The Python MCP server provides `start_task`, `get_task`, and `cancel_task` for
 background shell work in an existing Linux sandbox with `python3`, `/proc` and
 process-group support. Both Python MCP transports use these handlers. The Node.js
-CLI MCP server has a separate implementation; these three tools are Python-only.
+CLI MCP server provides its own task tools with different parameters. This guide
+describes the Python implementation; use each server’s `tools/list` for its input schema.
 
 ## Start, reconnect and finish
 

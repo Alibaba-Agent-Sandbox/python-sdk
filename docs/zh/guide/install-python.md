@@ -1,6 +1,6 @@
 # 安装 Python 配套包
 
-下列命令选择配套的 **0.5.0a0 预览版**。可用版本以
+下列命令选择配套的 **0.5.0a1 预览版**。可用版本以
 [发布记录](https://github.com/Alibaba-Agent-Sandbox/python-sdk/releases)为准。
 验证检出源码时，按下文的源码安装方式操作。需要 Python 3.10 或更高版本，
 建议使用虚拟环境：
@@ -10,7 +10,7 @@ python -m venv .venv
 # Linux 或 macOS：
 source .venv/bin/activate
 # Windows PowerShell：.venv\Scripts\Activate.ps1
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.5.0a0'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.5.0a1'
 python -m pip check
 ```
 
@@ -36,7 +36,7 @@ python -c "from importlib.metadata import version; print(version('agent-sandbox-
 本机使用 `@sandbox.register` 或 `sandbox.server` 时，安装配套运行时：
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[server]==0.5.0a0'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[server]==0.5.0a1'
 python -m pip check
 python -c "from importlib.metadata import version; print(version('agent-sandbox-client'), version('agent-sandbox-server'))"
 ```
@@ -47,7 +47,7 @@ python -c "from importlib.metadata import version; print(version('agent-sandbox-
 ## 可选依赖
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[all]==0.5.0a0'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[all]==0.5.0a1'
 ```
 
 `[all]` 和 `[dev]` 包含配套的 `[server]` 运行时。可用 `[mcp]`、`[session]` 或
@@ -57,7 +57,7 @@ python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[
 ## 镜像内只安装服务端
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-server==0.5.0a0'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-server==0.5.0a1'
 ```
 
 服务端负责在镜像内运行应用，安装它不会创建沙箱。宿主机安装不会更新已有沙箱镜像；

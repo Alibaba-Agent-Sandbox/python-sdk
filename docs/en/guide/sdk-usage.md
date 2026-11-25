@@ -6,7 +6,7 @@ This page documents the asynchronous **ProviderSandbox** provider/server extensi
 
 ## Installation
 
-Follow the [installation guide](install-python.md) for the matching 0.5.0a0 preview packages. The base client does not install the local server runtime; use `[server]` for local command registration or server startup. Host package installation does not change existing sandbox images.
+Follow the [installation guide](install-python.md) for the matching 0.5.0a1 preview packages. The base client does not install the local server runtime; use `[server]` for local command registration or server startup. Host package installation does not change existing sandbox images.
 
 Do not run `pip install agent-sandbox`. That name on PyPI is an unrelated project.
 

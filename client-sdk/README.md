@@ -2,7 +2,7 @@
 
 Provider extensions use [whole-template startup](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/template-workflows.md) ([中文](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/zh/guide/template-workflows.md)); application HTTP, stateless execution and context operations are independent.
 
-The commands below select the 0.5.0a0 preview. See [releases](https://github.com/Alibaba-Agent-Sandbox/python-sdk/releases) for availability and the [installation guide](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/install-python.md) for setup and migration from 0.4 previews.
+The commands below select the 0.5.0a1 preview. See [releases](https://github.com/Alibaba-Agent-Sandbox/python-sdk/releases) for availability and the [installation guide](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/install-python.md) for setup and migration from 0.4 previews.
 
 **Client SDK.** The product is Agent Sandbox. The import path is `agent_sandbox`. This package runs on your machine: create a sandbox, use it, and kill it. The HTTP service inside the image is [`agent-sandbox-server`](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/server-sdk/README.md). Guide: [Client SDK](https://github.com/Alibaba-Agent-Sandbox/python-sdk/blob/main/docs/en/guide/client-sdk.md).
 
@@ -21,9 +21,9 @@ The command-line tool (`abx`) is a separate Node.js project that lives in the [`
 ## Install
 
 ```bash
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.5.0a0'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client==0.5.0a1'
 # Optional extras:
-python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[all]==0.5.0a0'
+python -m pip install --index-url https://pypi.org/simple 'agent-sandbox-client[all]==0.5.0a1'
 python -m pip check
 ```
 

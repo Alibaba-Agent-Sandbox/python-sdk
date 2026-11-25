@@ -1,6 +1,6 @@
 # Decision: Read Python package inventory without requiring pip
 
-Status: proposed
+Status: implemented
 
 ## Problem
 
