@@ -191,6 +191,7 @@ class Sandbox:
             )
         self._http_client = http_client
         self._killed = False
+        self._kill_cleanup_complete = False
         self._server_stream_tasks: set[Task[None]] = set()
         self._auth = auth
         self._envd_token = envd_token
@@ -1144,20 +1145,21 @@ class Sandbox:
     # ---- Lifecycle ----
 
     async def kill(self) -> None:
-        """Kill the sandbox and release resources.
+        """Kill the sandbox, then release local resources.
 
-        A second call is a no-op. The first call closes the client, so retrying
-        the provider would otherwise see a dead plugin process.
+        A failed remote delete keeps the provider connection available for retry.
+        Once deletion is acknowledged, retries only finish local cleanup; a fully
+        successful call is a no-op on subsequent calls.
         """
-        if self._killed:
+        if self._kill_cleanup_complete:
             return
-        try:
+        if not self._killed:
             await self._sandbox_protocol.kill(self.id)
             self._killed = True
             logger.info("Sandbox killed: %s", self.id)
-        finally:
-            await self._close_server_streams()
-            await self._http_client.close()
+        await self._close_server_streams()
+        await self._http_client.close()
+        self._kill_cleanup_complete = True
 
     async def close(self) -> None:
         """Release client-side resources (connections, plugin process); the sandbox stays up."""

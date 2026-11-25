@@ -525,10 +525,13 @@ async def test_lifecycle_completion_after_shutdown_cannot_restore_ownership(oper
             else manager.get_sandbox(late.id, refresh_lifetime=False)
         )
         await entered.wait()
-        await manager.shutdown()
+        shutdown = asyncio.create_task(manager.shutdown())
+        await asyncio.sleep(0)
+        assert not shutdown.done()
         release.set()
         with pytest.raises(ValueError, match="closed"):
             await pending
+        await shutdown
     assert not manager._sandboxes and not manager._lifetimes
     assert not manager._owned_sandbox_ids and not manager._retained_task_sandboxes
     if operation == "create":
@@ -552,3 +555,145 @@ async def test_closed_manager_cannot_begin_new_lifecycle_calls():
             await manager.get_sandbox("external", refresh_lifetime=False)
     create.assert_not_awaited()
     connect.assert_not_awaited()
+
+
+async def test_cleanup_failure_retains_only_failed_handles_and_never_logs_secrets(caplog):
+    from agent_sandbox.agent.mcp import MCPCleanupError
+
+    manager = SandboxManager()
+    failed, succeeded = _sandbox("failed"), _sandbox("succeeded")
+    failed.kill.side_effect = RuntimeError("SYNTHETIC_TEST_PRIVATE_TOKEN")
+    with patch(
+        "agent_sandbox.api.sandbox.Sandbox.create", AsyncMock(side_effect=[failed, succeeded])
+    ):
+        await manager.create_sandbox()
+        await manager.create_sandbox()
+    with pytest.raises(MCPCleanupError, match="1 handle"):
+        await manager.shutdown()
+    assert list(manager._sandboxes) == [failed.id]
+    assert manager._owned_sandbox_ids == {failed.id}
+    succeeded.kill.assert_awaited_once()
+    assert "SYNTHETIC_TEST_PRIVATE_TOKEN" not in caplog.text
+    assert all(record.exc_info is None for record in caplog.records)
+    failed.kill.side_effect = None
+    await manager.shutdown()
+    assert not manager._sandboxes
+    assert failed.kill.await_count == 2
+    succeeded.kill.assert_awaited_once()
+
+
+@pytest.mark.parametrize("retained", [False, True])
+async def test_failed_borrowed_or_retained_close_remains_close_only(retained):
+    from agent_sandbox.agent.mcp import MCPCleanupError
+
+    manager = SandboxManager()
+    sandbox = _sandbox("keep-compute")
+    manager._sandboxes[sandbox.id] = sandbox
+    if retained:
+        manager._owned_sandbox_ids.add(sandbox.id)
+        await manager.retain_task_sandbox(sandbox)
+    sandbox.close.side_effect = RuntimeError("temporarily unavailable")
+    with pytest.raises(MCPCleanupError):
+        await manager.shutdown()
+    assert manager._sandboxes[sandbox.id] is sandbox
+    sandbox.close.side_effect = None
+    await manager.shutdown()
+    sandbox.kill.assert_not_awaited()
+    assert sandbox.close.await_count == 2
+
+
+async def test_failed_explicit_kill_preserves_default_for_retry():
+    manager = SandboxManager()
+    sandbox = _sandbox("retry-kill")
+    with patch("agent_sandbox.api.sandbox.Sandbox.create", AsyncMock(return_value=sandbox)):
+        await manager.create_sandbox()
+    sandbox.kill.side_effect = RuntimeError("temporary error")
+    with pytest.raises(RuntimeError):
+        await manager.kill_sandbox()
+    assert manager._default_sandbox is sandbox
+    assert manager._sandboxes[sandbox.id] is sandbox
+    sandbox.kill.side_effect = None
+    assert await manager.kill_sandbox() == sandbox.id
+    assert not manager._sandboxes
+
+
+async def test_late_create_failure_remains_retryable_after_shutdown():
+    from agent_sandbox.agent.mcp import MCPCleanupError
+
+    manager = SandboxManager()
+    sandbox = _sandbox("late-retry")
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def create(**_kwargs):
+        entered.set()
+        await release.wait()
+        return sandbox
+
+    sandbox.kill.side_effect = RuntimeError("temporary error")
+    with patch("agent_sandbox.api.sandbox.Sandbox.create", create):
+        operation = asyncio.create_task(manager.create_sandbox())
+        await entered.wait()
+        cleanup = asyncio.create_task(manager.shutdown())
+        await asyncio.sleep(0)
+        assert not cleanup.done()
+        release.set()
+        with pytest.raises(ValueError, match="closed"):
+            await operation
+        with pytest.raises(MCPCleanupError):
+            await cleanup
+    assert manager._sandboxes[sandbox.id] is sandbox
+    sandbox.kill.side_effect = None
+    await manager.shutdown()
+    assert not manager._sandboxes
+
+
+async def test_duplicate_connection_failed_close_keeps_owned_handle_and_borrowed_retry():
+    manager = SandboxManager()
+    owned, alias = _sandbox("same-id"), _sandbox("same-id")
+    owned.provider = alias.provider = "alicloud-express"
+    alias.close.side_effect = RuntimeError("temporary close error")
+    with (
+        patch("agent_sandbox.api.sandbox.Sandbox.create", AsyncMock(return_value=owned)),
+        patch("agent_sandbox.api.sandbox.Sandbox.connect", AsyncMock(return_value=alias)),
+    ):
+        await manager.create_sandbox()
+        with pytest.raises(RuntimeError):
+            await manager.get_sandbox("alias:same-id", refresh_lifetime=False)
+    assert manager._sandboxes["alicloud-express:same-id"] is owned
+    alias.close.side_effect = None
+    await manager.shutdown()
+    owned.kill.assert_awaited_once()
+    alias.kill.assert_not_awaited()
+    assert alias.close.await_count == 2
+    assert not manager._extra_handles
+
+
+@pytest.mark.parametrize("operation", ["create", "connect"])
+async def test_returned_handle_is_tracked_before_another_cancellation_point(operation):
+    manager = SandboxManager()
+    sandbox = _sandbox("returned-before-lock")
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def complete(**_kwargs):
+        entered.set()
+        await release.wait()
+        return sandbox
+
+    with patch("agent_sandbox.api.sandbox.Sandbox." + operation, complete):
+        pending = asyncio.create_task(
+            manager.create_sandbox()
+            if operation == "create"
+            else manager.get_sandbox(sandbox.id, refresh_lifetime=False)
+        )
+        await entered.wait()
+        async with manager._state_lock:
+            release.set()
+            await asyncio.sleep(0)
+            assert manager._sandboxes[sandbox.id] is sandbox
+            assert pending.done()
+        assert await pending is sandbox
+    await manager.shutdown()
+    if operation == "create":
+        sandbox.kill.assert_awaited_once()
+    else:
+        sandbox.close.assert_awaited_once()

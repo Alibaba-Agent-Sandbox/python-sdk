@@ -1,27 +1,35 @@
 # Agents API
 
-HTTP sessions inside the sandbox. All 70 routes are implemented. Two runtimes have a local backend: Codex and Qwen Code. `claude-code`, `cursor` and `command` are declared adapters without a local backend, and `GET /v1/agents/runtimes` says so. The base image does not install either CLI. Install the one you are about to call.
+HTTP sessions inside the sandbox. All 70 routes are implemented. Two runtimes have a local backend: Codex and Qwen Code. `claude-code`, `cursor` and `command` are declared adapters without a local backend, and `GET /v1/agents/runtimes` says so. The SDK installs adapters, not the upstream CLI binaries. Prepare the selected CLI in the sandbox image before deployment.
 
 This is the one way to run an agent in a sandbox: the routes under `/v1/agents/sessions`. The SDK has no `sb.agent.*` helpers.
 
 Field-by-field refusals are in [Hosted agents](hosted-agents.md). The route table is in the [Agents API reference](../reference/agents-api.md). This page is the path you can finish.
 
-## Install a CLI
+## Prepare a CLI in the image
 
-Install one CLI. Installing both into the base image makes the image large. When the request does not name an adapter, the server uses the first in the product order: `codex`. Name Qwen Code in the request, or set `ABX_AGENTS_DEFAULT=qwen-code`, to use the other one.
+Install the CLI your application needs at a pinned version in its Dockerfile. The bundled `agents-cli` template prepares both Codex and Qwen Code; a custom image can include just one. When the request does not name an adapter, the server uses the first in the product order: `codex`. Name Qwen Code in the request, or set `ABX_AGENTS_DEFAULT=qwen-code`, to use the other one.
 
-```bash
-npm install -g @openai/codex          # binary name: codex
-npm install -g @qwen-code/qwen-code   # binary name: qwen
+For a Node.js-enabled image, choose the matching build step (these versions are the
+current `agents-cli` template pins, not a claim about every model or account):
+
+```dockerfile
+RUN npm install -g @openai/codex@0.162.1 && codex --version
+# Or: RUN npm install -g @qwen-code/qwen-code@0.23.0 && qwen --version
 ```
+
+After selecting the final server user, verify that the same binary is on that user's
+`PATH`. Build and deploy the updated template before creating sandboxes. Requests do
+not download or install a missing CLI. There is no
+`python -m agent_sandbox.server.agents install` command.
 
 Codex reads `OPENAI_API_KEY` or `CODEX_API_KEY` when it actually calls a model. Qwen Code reads `OPENAI_API_KEY`. Inject the key when the sandbox is created. Do not bake it into the image, and do not put it in the case below.
 
-The [agents-cli](https://github.com/alibaba-agent-sandbox/awesome-templates/tree/main/agents-cli) template does not turn on `file_ops` or `process`. `endpoints` sets `*` to `enabled: false`, then turns on `agents_sessions_create`, `agents_sessions_events_create`, `agents_sessions_items_list`, and `agents_runtimes_list` one by one. `POST /shell` and `POST /v1/agents` (definitions) stay 404. The Dockerfile leaves the one `npm install` line for the CLI you call.
+The [agents-cli](https://github.com/alibaba-agent-sandbox/awesome-templates/tree/main/agents-cli) template does not turn on `file_ops` or `process`. `endpoints` sets `*` to `enabled: false`, then turns on `agents_sessions_create`, `agents_sessions_events_create`, `agents_sessions_items_list`, and `agents_runtimes_list` one by one. `POST /shell` and `POST /v1/agents` (definitions) stay 404. Its Dockerfile installs pinned CLI versions during image preparation.
 
 ## Complete case
 
-The case starts a local server and places programs named `codex` and `qwen` on `PATH` so the requests and responses can be shown without a model key. After the `npm install` lines above, the same requests run the real CLIs.
+The case starts a local server and places programs named `codex` and `qwen` on `PATH` so the requests and responses can be shown without a model key. The script remains a local fixture; use the same API shapes with your deployed, prepared runtime for real model requests.
 
 ```bash
 python examples/agents/complete_case.py
@@ -105,4 +113,4 @@ python examples/agents/hosted_codex.py http://127.0.0.1:9000
 python examples/agents/hosted_qwen.py http://127.0.0.1:9000
 ```
 
-That process must already see the binary you name. If it does not, the turn reports that the runtime is not installed. The base image does not carry it in advance.
+That process must already see the binary you name. If it does not, the turn reports that the runtime is not installed. Prepare it in the image before deployment; the request does not install it.

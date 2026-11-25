@@ -41,21 +41,18 @@ async def verify_created_resources(
     # Metadata awaits can overlap session shutdown. Never resolve this rollback
     # again by ID: cache removal could fall back to another endpoint, and a
     # replacement handle could belong to different work.
-    async with manager._state_lock:
-        if manager._sandboxes.get(sandbox_id) is sandbox:
-            manager._sandboxes.pop(sandbox_id)
-            manager._lifetimes.pop(sandbox_id, None)
-            manager._owned_sandbox_ids.discard(sandbox_id)
-            manager._retained_task_sandboxes.discard(sandbox_id)
-        if manager._default_sandbox is sandbox:
-            manager._default_sandbox = None
-    # Kill only the captured newly created handle, with its original provider
-    # connection. A failed response can follow a committed delete. Read back.
+    # Keep ownership until deletion is acknowledged or independent absence is
+    # confirmed. A failed rollback must remain available to session cleanup.
+    cleanup_acknowledged = False
     with suppress(Exception):
         await sandbox.kill()
+        cleanup_acknowledged = True
     cleanup_verified = False
     with suppress(Exception):
         cleanup_verified = await _read_created_metadata(sandbox, frozen_config)
+    if cleanup_acknowledged or cleanup_verified:
+        async with manager._state_lock:
+            manager._forget_sandbox(sandbox_id, sandbox)
     unknown = any(observed[field] is None for field in requested)
     result: dict[str, Any] = {
         "error": (

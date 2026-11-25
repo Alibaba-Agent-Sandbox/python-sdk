@@ -379,3 +379,49 @@ class TestSystemMetrics:
     def test_disk_percent_range(self, server_port: int) -> None:
         status, body = _request(server_port, "GET", "/system/metrics")
         assert 0 <= body["disk_percent"] <= 100
+
+
+class TestPythonPackageInventory:
+    def test_actual_installed_packages_do_not_require_pip_command(self, server_port, monkeypatch):
+        def forbidden(*_args, **_kwargs):
+            raise AssertionError("Python inventory must not spawn pip")
+
+        monkeypatch.setattr("agent_sandbox.server.routes_system.subprocess.run", forbidden)
+        status, body = _request(server_port, "GET", "/packages?manager=pip")
+        assert status == 200
+        assert body["manager"] == "pip"
+        assert any(item["name"].lower() == "pytest" for item in body["packages"])
+        assert body["packages"] == sorted(
+            body["packages"], key=lambda item: (item["name"].casefold(), item["version"])
+        )
+
+    def test_metadata_failure_is_not_reported_as_an_empty_success(self, server_port, monkeypatch):
+        def broken():
+            raise RuntimeError("SYNTHETIC_PRIVATE_METADATA_PATH")
+
+        monkeypatch.setattr("agent_sandbox.server.routes_system.metadata.distributions", broken)
+        status, body = _request(server_port, "GET", "/packages?manager=pip")
+        assert status == 500
+        assert "packages" not in body
+        assert "SYNTHETIC_PRIVATE_METADATA_PATH" not in json.dumps(body)
+
+    def test_duplicate_and_unnamed_metadata_are_handled_without_fake_packages(
+        self, server_port, monkeypatch
+    ):
+        from types import SimpleNamespace
+
+        distributions = [
+            SimpleNamespace(metadata={"Name": "zeta"}, version="1"),
+            SimpleNamespace(metadata={"Name": "Alpha"}, version="2"),
+            SimpleNamespace(metadata={"Name": "zeta"}, version="1"),
+            SimpleNamespace(metadata={}, version="3"),
+        ]
+        monkeypatch.setattr(
+            "agent_sandbox.server.routes_system.metadata.distributions", lambda: distributions
+        )
+        status, body = _request(server_port, "GET", "/packages?manager=pip")
+        assert status == 200
+        assert body["packages"] == [
+            {"name": "Alpha", "version": "2"},
+            {"name": "zeta", "version": "1"},
+        ]

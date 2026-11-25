@@ -28,6 +28,7 @@ A friendly error is raised when the application is created if they are missing.
 
 from __future__ import annotations
 
+import asyncio
 import hmac
 import os
 import time
@@ -111,6 +112,12 @@ class _SessionEntry:
 
     server: Any
     last_access: float
+    closing: bool = False
+    destroy_task: asyncio.Task[bool] | None = None
+
+
+class SessionClosingError(RuntimeError):
+    """The session is closing and only termination retries are accepted."""
 
 
 class SessionCapacityError(RuntimeError):
@@ -145,6 +152,7 @@ class SessionStore:
         self._session_ttl_seconds = session_ttl_seconds
         self._max_sessions = max_sessions
         self._sessions: dict[str, _SessionEntry] = {}
+        self._closed = False
 
     async def create_session(self) -> tuple[str, Any]:
         """Create a session after removing expired entries.
@@ -157,7 +165,11 @@ class SessionStore:
         """
         from agent_sandbox.agent.mcp import SandboxMCPServer
 
+        if self._closed:
+            raise SessionCapacityError("MCP server is shutting down")
         await self.cleanup_expired()
+        if self._closed:
+            raise SessionCapacityError("MCP server is shutting down")
         if len(self._sessions) >= self._max_sessions:
             raise SessionCapacityError(f"MCP session limit reached ({self._max_sessions})")
 
@@ -188,42 +200,70 @@ class SessionStore:
         entry = self._sessions.get(session_id)
         if entry is None:
             return None
+        if entry.closing:
+            raise SessionClosingError(
+                "MCP session is closing; retry DELETE with the same session ID."
+            )
         entry.last_access = time.monotonic()
         return entry.server
 
     async def destroy_session(self, session_id: str) -> bool:
-        """Destroy a session and shut down its sandboxes.
-
-        Returns:
-            True if the session existed and was cleaned up.
-        """
-        entry = self._sessions.pop(session_id, None)
+        """Share cleanup across callers; only remove a successfully cleaned session."""
+        entry = self._sessions.get(session_id)
         if entry is None:
             return False
-        await entry.server.shutdown()
-        logger.info("Destroyed MCP session: %s", session_id)
-        return True
+        entry.closing = True
+        if entry.destroy_task is None:
+            entry.last_access = time.monotonic()
+
+            async def destroy() -> bool:
+                try:
+                    await entry.server.shutdown()
+                    self._sessions.pop(session_id, None)
+                    logger.info("Destroyed MCP session: %s", session_id)
+                    return True
+                finally:
+                    entry.destroy_task = None
+
+            task = asyncio.create_task(destroy())
+            # A disconnected HTTP caller must not cancel cleanup or hide its failure.
+            task.add_done_callback(lambda done: None if done.cancelled() else done.exception())
+            entry.destroy_task = task
+        return await asyncio.shield(entry.destroy_task)
 
     async def cleanup_expired(self) -> int:
-        """Destroy idle sessions whose TTL has elapsed.
-
-        Returns:
-            Number of expired sessions removed.
-        """
+        """Retry idle cleanup at most once per TTL; failed entries keep their capacity."""
         now = time.monotonic()
         expired_ids = [
             session_id
             for session_id, entry in self._sessions.items()
-            if now - entry.last_access >= self._session_ttl_seconds
+            if entry.destroy_task is None and now - entry.last_access >= self._session_ttl_seconds
         ]
+        removed = 0
         for session_id in expired_ids:
-            await self.destroy_session(session_id)
-        return len(expired_ids)
+            try:
+                removed += await self.destroy_session(session_id)
+            except Exception:
+                logger.warning(
+                    "Expired MCP session cleanup failed; retry DELETE with its session ID"
+                )
+        return removed
 
     async def shutdown_all(self) -> None:
-        """Destroy every session (used on process exit)."""
+        """Stop admission and attempt every session, retaining failed entries."""
+        from agent_sandbox.agent.mcp import MCPCleanupError
+
+        self._closed = True
+        failed = 0
         for session_id in list(self._sessions):
-            await self.destroy_session(session_id)
+            try:
+                await self.destroy_session(session_id)
+            except Exception:
+                failed += 1
+        if failed:
+            raise MCPCleanupError(
+                f"MCP cleanup incomplete for {failed} session(s); retry shutdown."
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -368,6 +408,12 @@ def create_mcp_app(
                 _jsonrpc_error(None, -32001, "Unauthorized"),
                 status_code=401,
             )
+        protocol = request.headers.get("mcp-protocol-version")
+        if protocol is not None and protocol != MCP_PROTOCOL_VERSION:
+            return JSONResponse(
+                {"error": f"Unsupported MCP-Protocol-Version; use {MCP_PROTOCOL_VERSION}."},
+                status_code=400,
+            )
 
         # Parse body
         try:
@@ -390,7 +436,12 @@ def create_mcp_app(
         method = body.get("method", "")
 
         if session_id:
-            server = store.get_session(session_id)
+            try:
+                server = store.get_session(session_id)
+            except SessionClosingError as exc:
+                return JSONResponse(
+                    _jsonrpc_error(body.get("id"), INVALID_REQUEST, str(exc)), status_code=409
+                )
             if server is None:
                 return JSONResponse(
                     _jsonrpc_error(
@@ -445,6 +496,12 @@ def create_mcp_app(
                 _jsonrpc_error(None, -32001, "Unauthorized"),
                 status_code=401,
             )
+        protocol = request.headers.get("mcp-protocol-version")
+        if protocol is not None and protocol != MCP_PROTOCOL_VERSION:
+            return JSONResponse(
+                {"error": f"Unsupported MCP-Protocol-Version; use {MCP_PROTOCOL_VERSION}."},
+                status_code=400,
+            )
         return JSONResponse(
             {"error": "SSE server notifications are not implemented. Use POST /mcp."},
             status_code=405,
@@ -461,6 +518,12 @@ def create_mcp_app(
                 _jsonrpc_error(None, -32001, "Unauthorized"),
                 status_code=401,
             )
+        protocol = request.headers.get("mcp-protocol-version")
+        if protocol is not None and protocol != MCP_PROTOCOL_VERSION:
+            return JSONResponse(
+                {"error": f"Unsupported MCP-Protocol-Version; use {MCP_PROTOCOL_VERSION}."},
+                status_code=400,
+            )
 
         session_id = request.headers.get("mcp-session-id")
         if not session_id:
@@ -469,7 +532,13 @@ def create_mcp_app(
                 status_code=400,
             )
 
-        destroyed = await store.destroy_session(session_id)
+        try:
+            destroyed = await store.destroy_session(session_id)
+        except Exception:
+            return JSONResponse(
+                {"error": "Session cleanup incomplete; retry DELETE with the same Mcp-Session-Id."},
+                status_code=503,
+            )
         if not destroyed:
             return JSONResponse(
                 {"error": f"Unknown session: {session_id}"},

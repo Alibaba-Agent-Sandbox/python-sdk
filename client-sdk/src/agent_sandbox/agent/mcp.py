@@ -20,10 +20,11 @@ import asyncio
 import json
 import signal
 import sys
+from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import AsyncIterator, Sequence
 
 from agent_sandbox._version import __version__
 from agent_sandbox.agent.tools import (
@@ -52,6 +53,10 @@ SERVER_VERSION = __version__
 # ---------------------------------------------------------------------------
 # Sandbox Manager — manages sandbox lifecycle for MCP sessions
 # ---------------------------------------------------------------------------
+
+
+class MCPCleanupError(RuntimeError):
+    """Cleanup did not finish; retained handles can be retried."""
 
 
 class SandboxManager:
@@ -90,6 +95,9 @@ class SandboxManager:
         self._state_lock = asyncio.Lock()
         self._default_lock = asyncio.Lock()
         self._closed = False
+        self._shutdown_lock = asyncio.Lock()
+        self._pending_lifecycle: set[asyncio.Event] = set()
+        self._extra_handles: list[Any] = []
 
     @staticmethod
     def _sandbox_key(sandbox: Any) -> str:
@@ -161,8 +169,6 @@ class SandboxManager:
         provider: str | None = None,
     ) -> Any:
         """Create a sandbox and make it the session default."""
-        async with self._state_lock:
-            self._require_open()
         from agent_sandbox.api.sandbox import Sandbox
 
         kwargs = self._connect_kwargs(
@@ -178,20 +184,16 @@ class SandboxManager:
         }.items():
             if value is not None:
                 kwargs[name] = value
-        sandbox = await Sandbox.create(**kwargs)
-        async with self._state_lock:
-            closed = self._closed
-            if not closed:
-                key = self._sandbox_key(sandbox)
-                self._sandboxes[key] = sandbox
-                self._owned_sandbox_ids.add(key)
-                self._lifetimes[key] = timeout
+        async with self._admit_lifecycle():
+            sandbox = await Sandbox.create(**kwargs)
+            # Register synchronously: cancellation must not lose a returned handle.
+            key = self._sandbox_key(sandbox)
+            self._sandboxes[key] = sandbox
+            self._owned_sandbox_ids.add(key)
+            self._lifetimes[key] = timeout
+            if not self._closed:
                 self._default_sandbox = sandbox
-        if closed:
-            # Shutdown may win while the backend is creating. This instance is
-            # ours, but must never be registered into the terminated session.
-            await sandbox.kill()
-            raise _ToolInputError("MCP session is closed.")
+            self._require_open()
         logger.info("Created sandbox: %s", sandbox.id)
         return sandbox
 
@@ -213,21 +215,24 @@ class SandboxManager:
                 return cached
             from agent_sandbox.api.sandbox import Sandbox
 
-            sb = await Sandbox.connect(**self._connect_kwargs(sandbox_id=sandbox_id))
-            async with self._state_lock:
-                closed = self._closed
+            async with self._admit_lifecycle():
+                sb = await Sandbox.connect(**self._connect_kwargs(sandbox_id=sandbox_id))
+                # No await between receiving and tracking the borrowed handle.
                 key = self._sandbox_key(sb)
                 selected = self._sandboxes.get(key)
-                if not closed and selected is None:
+                if selected is None:
                     self._sandboxes[key] = sb
                     self._lifetimes.setdefault(key, 300)
                     selected = sb
-            # An alias or concurrent connect must not overwrite an owned handle.
-            # A connect completing after shutdown is borrowed and only closed.
-            if closed or selected is not sb:
-                await sb.close()
-            if closed:
-                raise _ToolInputError("MCP session is closed.")
+                else:
+                    # Preserve failed duplicate closes without replacing ownership.
+                    self._extra_handles.append(sb)
+                closed = self._closed
+                if selected is not sb and not closed:
+                    await sb.close()
+                    self._extra_handles.remove(sb)
+                if closed:
+                    raise _ToolInputError("MCP session is closed.")
             if refresh_lifetime:
                 await self._refresh_lifetime(selected)
             return selected
@@ -323,53 +328,49 @@ class SandboxManager:
                 self._lifetimes[key] = timeout
         return str(sandbox.id)
 
-    async def kill_sandbox(self, sandbox_id: str | None = None) -> str | None:
-        """Kill a sandbox by ID, or the default sandbox.
+    @asynccontextmanager
+    async def _admit_lifecycle(self) -> AsyncIterator[None]:
+        """Keep admitted resource I/O visible until it has registered its result."""
+        completed = asyncio.Event()
+        async with self._state_lock:
+            self._require_open()
+            self._pending_lifecycle.add(completed)
+        try:
+            yield
+        finally:
+            self._pending_lifecycle.discard(completed)
+            completed.set()
 
-        Returns:
-            The killed sandbox id, or ``None`` when there was no default
-            sandbox to kill.
-        """
-        if sandbox_id:
+    def _forget_sandbox(self, key: str, sandbox: Any) -> None:
+        """Forget only the successfully cleaned handle, while holding the state lock."""
+        if self._sandboxes.get(key) is not sandbox:
+            return
+        self._sandboxes.pop(key)
+        self._lifetimes.pop(key, None)
+        self._retained_task_sandboxes.discard(key)
+        self._owned_sandbox_ids.discard(key)
+        if self._default_sandbox is sandbox:
+            self._default_sandbox = None
+
+    async def kill_sandbox(self, sandbox_id: str | None = None) -> str | None:
+        """Kill the selected sandbox; keep its handle if deletion fails."""
+        async with self._admit_lifecycle():
             async with self._state_lock:
-                sb = self._cached_sandbox(sandbox_id)
-                if sb is not None:
-                    key = self._sandbox_key(sb)
-                    self._sandboxes.pop(key, None)
-                    self._lifetimes.pop(key, None)
-                    self._retained_task_sandboxes.discard(key)
-                    self._owned_sandbox_ids.discard(key)
-                    if self._default_sandbox is sb:
-                        self._default_sandbox = None
+                sb = self._cached_sandbox(sandbox_id) if sandbox_id else self._default_sandbox
             if sb is not None:
                 await sb.kill()
-                logger.info("Killed sandbox: %s", sandbox_id)
-                return sandbox_id
+                async with self._state_lock:
+                    self._forget_sandbox(self._sandbox_key(sb), sb)
+                logger.info("Killed sandbox: %s", sb.id)
+                return str(sb.id) if sandbox_id is None else sandbox_id
+            if sandbox_id is None:
+                return None
             from agent_sandbox.api.sandbox import Sandbox
 
-            kwargs: dict[str, Any] = {"sandbox_id": sandbox_id}
-            if self._api_key:
-                kwargs["sandbox_api_key"] = self._api_key
-            if self._api_url:
-                kwargs["sandbox_base_url"] = self._api_url
+            kwargs = self._connect_kwargs(sandbox_id=sandbox_id)
+            kwargs.pop("sandbox_domain", None)
             await Sandbox.kill_by_id(**kwargs)
             return sandbox_id
-
-        async with self._state_lock:
-            sb = self._default_sandbox
-            self._default_sandbox = None
-            if sb is not None:
-                key = self._sandbox_key(sb)
-                self._sandboxes.pop(key, None)
-                self._lifetimes.pop(key, None)
-                self._retained_task_sandboxes.discard(key)
-                self._owned_sandbox_ids.discard(key)
-        if sb is None:
-            return None
-        sid = sb.id
-        await sb.kill()
-        logger.info("Killed default sandbox: %s", sid)
-        return str(sid)
 
     async def retain_task_sandbox(self, sandbox: Any) -> bool:
         """Explicit background tasks retain their sandbox until its platform TTL.
@@ -387,26 +388,39 @@ class SandboxManager:
             return True
 
     async def shutdown(self) -> None:
-        """Kill owned sandboxes, closing borrowed handles and retained-task handles."""
+        """Stop admission and clean every handle, retaining failed cleanup for retry."""
         async with self._state_lock:
             self._closed = True
-            items = list(self._sandboxes.items())
-            retained = self._retained_task_sandboxes.copy()
-            owned = self._owned_sandbox_ids.copy()
-            self._owned_sandbox_ids.clear()
-            self._retained_task_sandboxes.clear()
-            self._sandboxes.clear()
-            self._lifetimes.clear()
-            self._default_sandbox = None
-        for sid, sb in items:
-            try:
-                if sid not in owned or sid in retained:
+        async with self._shutdown_lock:
+            await asyncio.gather(*(item.wait() for item in tuple(self._pending_lifecycle)))
+            async with self._state_lock:
+                items = list(self._sandboxes.items())
+                retained = self._retained_task_sandboxes.copy()
+                owned = self._owned_sandbox_ids.copy()
+                extras = list(self._extra_handles)
+            failed = 0
+            for sid, sb in items:
+                try:
+                    if sid not in owned or sid in retained:
+                        await sb.close()
+                    else:
+                        await sb.kill()
+                    async with self._state_lock:
+                        self._forget_sandbox(sid, sb)
+                except Exception:
+                    failed += 1
+                    logger.warning("MCP sandbox cleanup failed; handle retained for retry")
+            for sb in extras:
+                try:
                     await sb.close()
-                    continue
-                await sb.kill()
-                logger.info("Shutdown: killed sandbox %s", sid)
-            except Exception:
-                logger.warning("Failed to clean sandbox %s during shutdown", sid, exc_info=True)
+                    self._extra_handles.remove(sb)
+                except Exception:
+                    failed += 1
+                    logger.warning("MCP borrowed handle cleanup failed; retained for retry")
+            if failed:
+                raise MCPCleanupError(
+                    f"MCP cleanup incomplete for {failed} handle(s); retry session termination."
+                )
 
 
 # ---------------------------------------------------------------------------

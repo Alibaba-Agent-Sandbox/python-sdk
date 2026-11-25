@@ -1,0 +1,35 @@
+[
+  {
+    "step": "unauthenticated initialize refused",
+    "passed": true
+  },
+  {
+    "step": "authenticated HTTP initialize",
+    "passed": true
+  },
+  {
+    "step": "discover tools",
+    "passed": true
+  },
+  {
+    "step": "create real Express Sandbox",
+    "passed": true
+  },
+  {
+    "step": "execute through same HTTP session",
+    "passed": true
+  },
+  {
+    "step": "HTTP session deletion",
+    "passed": true
+  },
+  {
+    "step": "independent native absence",
+    "passed": true
+  },
+  {
+    "step": "deleted MCP session rejected",
+    "passed": true
+  }
+]
+

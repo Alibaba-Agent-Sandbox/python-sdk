@@ -100,6 +100,9 @@ async def test_ambiguous_delete_requires_independent_absence_and_preserves_recov
     assert observe.call_args.args[0] is created
     assert observe.call_args.args[1].sandbox_base_url == "https://example.invalid"
     assert "secret-" not in str(result)
+    if not deleted:
+        assert manager._sandboxes["alicloud-express:new"] is created
+        created.kill.side_effect = None
     await manager.shutdown()
 
 
@@ -109,7 +112,7 @@ async def test_cleanup_never_uses_default_endpoint_after_regional_delete_failure
     created._config = TransportConfig(
         region="cn-shanghai",
         sandbox_base_url="https://shanghai.example.invalid",
-        sandbox_api_key="private-config-key",
+        sandbox_api_key="placeholder-private-config-key",
         provider_options={"scope": "private-options"},
     )
     created.kill.side_effect = TimeoutError("delete outcome unknown")
@@ -134,11 +137,13 @@ async def test_cleanup_never_uses_default_endpoint_after_regional_delete_failure
     assert observed_config is not created._config
     assert observed_config.region == "cn-shanghai"
     assert observed_config.sandbox_base_url == "https://shanghai.example.invalid"
-    assert observed_config.sandbox_api_key == "private-config-key"
+    assert observed_config.sandbox_api_key == "placeholder-private-config-key"
     assert observed_config.provider_options == {"scope": "private-options"}
     fresh_protocol.get_info.assert_awaited_once_with("new-region")
     fresh.close.assert_awaited_once_with()
     assert "private-" not in str(result)
+    assert manager._sandboxes["alicloud-express:new-region"] is created
+    created.kill.side_effect = None
     await manager.shutdown()
 
 

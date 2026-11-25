@@ -3085,3 +3085,17 @@ class TestEveryRoute:
         declared = {name for name, ep in ENDPOINTS.items() if ep.group is CapabilityGroup.AGENTS}
         assert len(declared) == 70
         assert w["covered"] == declared, f"no case for: {sorted(declared - w['covered'])}"
+
+
+def test_missing_harness_guidance_uses_image_build_not_nonexistent_installer(ws, monkeypatch):
+    monkeypatch.setenv("PATH", str(ws))
+    session = new_session(ws)
+    send(session["id"])
+    wait_idle(session["id"])
+    turns = ok(call("GET", f"/v1/agents/sessions/{session['id']}/turns"))["data"]
+    assert turns[0]["status"] == "failed"
+    encoded = json.dumps(turns[0])
+    assert turns[0]["error"]["code"] == "sandbox_error"
+    assert "pinned version" in encoded
+    assert "rebuild and redeploy" in encoded
+    assert "agent_sandbox.server.agents install" not in encoded

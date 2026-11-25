@@ -1061,8 +1061,9 @@ class AgentRuntime:
         except FileNotFoundError:
             binary = argv[0]
             hint = (
-                f"{binary!r} was not found on PATH; install it with "
-                f"`python -m agent_sandbox.server.agents install {adapter.name}`"
+                f"{binary!r} was not found on PATH; install the selected {adapter.name} "
+                "CLI at a pinned version when building the sandbox image, verify its "
+                "version as the server user, then rebuild and redeploy the template."
             )
             raise RuntimeFailure("runtime_not_installed", hint) from None
         except OSError as exc:
