@@ -84,7 +84,7 @@ PTY WebSocket（端口 9001，路径 `/pty`）检查同样的凭据。它接受 
 |----|------|------------|
 | `core` | 开启，不能关闭 | `GET /health`、`GET /capabilities`、`POST /capabilities/check` |
 | `commands` | 开启 | `GET /commands`、`POST /commands/{name}` |
-| `file_ops` | 开启 | `POST /upload`、`GET /download`，以及 `/files/*` |
+| `file_ops` | 开启 | `/files/*` |
 | `process` | 开启 | `POST /shell`、`POST /shell/stream`、`/process/*` |
 | `terminal` | 开启 | `/pty/sessions*`，以及端口 9001 上的 WebSocket |
 | `system` | 开启 | `/system/info`、`/system/metrics`、`/env`、`/ports`、`/packages` |
@@ -116,11 +116,15 @@ PTY WebSocket（端口 9001，路径 `/pty`）检查同样的凭据。它接受 
 
 未知路径是 `404` `{"error": "Not found: <path>", "type": "ValueError"}`。处理函数里未捕获的异常是 `500`，带 `error` 和 `type`。策略拒绝会额外带上 `code`（`endpoint_disabled`、`missing_scope`、`path_not_allowed`、`command_not_allowed`、`rate_limited` 等）和 `endpoint`。被关闭的端点还带 `rule`。重复的查询参数是 `400` `duplicate_parameter`。
 
-`POST` 和 `DELETE` 读取 JSON 对象正文。原始正文上限是 10 MiB（`413`，`code` 为 `payload_too_large`）。空正文变成 `{}`。非法 JSON 是 `400`。
+`POST` 和 `DELETE` 读取 JSON 对象正文。原始正文缺省上限为 10 MiB（`413`，`code` 为 `payload_too_large`），文件上传端点例外，详见下文。端点显式设置的 `limits.max_request_bytes` 优先。空正文变成 `{}`。非法 JSON 是 `400`。
 
 流式路由（`streaming=True`）返回 `text/event-stream`。每个片段是 `event: <name>\ndata: <json>\n\n`。
 
-凡是接收路径的路由（文件路由，以及 `/shell` 和进程启动的 `cwd`）都限制在 `ABX_SERVER_BASE_DIR`（默认 `/home/user`）内，或限制在策略的 `base_dir`、端点的 `paths.allow` 内。越界的路径是 `403` `path_not_allowed`。解码后的上传大小默认 100 MiB（`ABX_MAX_UPLOAD_SIZE`）。10 MiB 的 JSON 正文上限先生效，因此 base64 正文实际上到不了 100 MiB。
+凡是接收路径的路由（文件路由，以及 `/shell` 和进程启动的 `cwd`）都限制在 `ABX_SERVER_BASE_DIR`（默认 `/home/user`）内，或限制在策略的 `base_dir`、端点的 `paths.allow` 内。越界的路径是 `403` `path_not_allowed`。
+
+解码后的上传大小默认 100 MiB（`ABX_MAX_UPLOAD_SIZE`），设置端点策略 `limits.max_bytes` 时以该值为准。`POST /files/upload-stream` 的缺省请求体预算是该文件上限对应的最大 base64 长度，再加 64 KiB 的 JSON 包络空间。显式设置的 `limits.max_request_bytes` 可以限制更小的正文，但不改变解码后的文件上限。其他端点仍采用 10 MiB 缺省上限。
+
+上传和下载端点传输完整的 base64 JSON 正文并缓冲文件内容；名称中的 stream 不表示按 HTTP 流式传输文件字节。
 
 `POST /shell` 和进程启动用 `shlex.split` 拆分命令，并以 `shell=False` 执行。管道、重定向和 `$VAR` 不会被解释。需要 shell 时请使用 `bash -c '...'`。
 
@@ -260,7 +264,7 @@ result = await server_client.commands.run("echo_args", args=["-i", "literal file
 
 路径来自查询参数或正文，见各条说明。时间戳是 ISO 8601 UTC。
 
-#### `POST /upload`
+#### `POST /files/upload-stream`
 
 ```json
 {"path": "/home/user/note.txt", "content_base64": "<standard base64>"}
@@ -272,20 +276,22 @@ result = await server_client.commands.run("echo_args", args=["-i", "literal file
 |------|------|
 | `400` | 缺少 `path` 或 `content_base64`，或 base64 非法 |
 | `403` | `path_not_allowed`：路径在允许的目录之外 |
-| `413` | 解码后大小超过 `ABX_MAX_UPLOAD_SIZE`（默认 104857600）。有策略时正文还带 `code: "payload_too_large"` 和 `limit` |
+| `413` | JSON 正文超过 `max_request_bytes`，或文件内容超过生效的 `max_bytes` / `ABX_MAX_UPLOAD_SIZE` 上限。正文含 `code: "payload_too_large"` 和 `limit` |
 | `500` | 写入失败 |
 
-会创建父目录。有策略时，`allow_extensions` / `deny_extensions` 可以拒绝后缀（`extension_not_allowed`），`overwrite: false` 在文件已存在时返回 `409`。
+`content_base64` 为空字符串时创建或截断为零字节文件。字段缺失、值不是字符串或 base64 非法时返回 `400`，不改变文件。会创建父目录。有策略时，`allow_extensions` / `deny_extensions` 可以拒绝后缀（`extension_not_allowed`），`overwrite: false` 在文件已存在时返回 `409`。
 
-#### `GET /download?path=`
+#### `GET /files/download-stream?path=`
 
 `200`：
 
 ```json
-{"path": "<resolved>", "content_base64": "<standard base64>"}
+{"path": "<resolved>", "content_base64": "<standard base64>", "bytes": 12}
 ```
 
-路径缺失是 `400`，越界是 `403` `path_not_allowed`，不是普通文件是 `404`，超过同一字节上限是 `413`，读失败是 `500`。
+路径缺失是 `400`，越界是 `403` `path_not_allowed`，不是普通文件是 `404`，超过 `files_download_stream` 生效的策略 `limits.max_bytes` 是 `413`，读失败是 `500`。
+
+需要限制下载大小时，设置该端点的 `limits.max_bytes`；未设置时，下载不应用文件大小上限。`ABX_MAX_UPLOAD_SIZE` 仅约束上传。
 
 #### `GET /files/list?path=`
 
@@ -342,18 +348,6 @@ result = await server_client.commands.run("echo_args", args=["-i", "literal file
 ```
 
 `path` 不是目录时为 `404`。非整数的限制是 `400`。
-
-#### `POST /files/upload-stream`
-
-正文和成功形状与 `POST /upload` 相同（`path`、`bytes`）。处理函数仍然接收一整份 JSON 正文；它按 64 KiB 分块写入解码后的字节。
-
-#### `GET /files/download-stream?path=`
-
-与 `GET /download` 相同，并多一个 `bytes`：
-
-```json
-{"path": "<resolved>", "content_base64": "...", "bytes": 12}
-```
 
 #### `POST /files/archive`
 

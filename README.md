@@ -8,7 +8,7 @@ Create sandboxes, execute code and commands, and work with remote files from Pyt
 
 [Website](https://www.agent-sandbox.cn/en/) · [Documentation](docs/en/README.md) · [Examples](examples/README.md)
 
-> **Preview release:** Agent Sandbox is currently in preview and may introduce breaking changes. The stable **1.0.0** release is expected on **November 15, 2026**. Stay tuned!
+> **Preview release:** Agent Sandbox is currently in preview and may introduce breaking changes. See the [releases](https://github.com/Alibaba-Agent-Sandbox/python-sdk/releases) for available versions.
 
 ## Installation
 

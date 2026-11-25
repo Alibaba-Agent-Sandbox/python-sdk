@@ -163,6 +163,18 @@ class TestCoreAndDiscovery:
 
 
 class TestFiles:
+    @pytest.mark.parametrize("size", [0, 8 * 1024 * 1024])
+    async def test_upload_after_discovery_round_trip(
+        self, server: ServerClient, tree: Path, size: int
+    ) -> None:
+        await server.discover()
+        content = b"x" * size
+        target = tree / "out" / "bounded.bin"
+        result = await server.files.upload(str(target), content)
+        assert result.size == size
+        assert target.read_bytes() == content
+        assert await server.files.download(str(target)) == content
+
     async def test_full_lifecycle(self, server: ServerClient, tree: Path) -> None:
         out = tree / "out"
         made = await server.files.mkdir(str(out / "sub"))

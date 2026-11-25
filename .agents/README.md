@@ -277,3 +277,7 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [SDK simplification mainline reconciliation](evidence/verify/2026-11-10-simplification-main-merge.md).
 
 - [Python documentation consumers of the unified CLI](notes/proposed/process/2026-11-12-ecosystem-guidance-sync.md) · [verification](evidence/verify/2026-11-12-ecosystem-guidance-sync.md).
+
+- [Bounded file uploads](notes/proposed/feature/2026-11-25-bounded-file-uploads.md) · [verification](evidence/verify/2026-11-25-bounded-file-uploads.md).
+- [Download-limit documentation review](evidence/verify/2026-11-25-download-limit-review.md).
+- [Candidate file-upload cloud follow-up](evidence/verify/2026-11-25-bounded-file-uploads-cloud.md).
