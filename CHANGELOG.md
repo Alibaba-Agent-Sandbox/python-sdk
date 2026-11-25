@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Tests
+
+- Publish regression-test child PIDs atomically and clean up known owned tasks when setup fails; retain all process-state and descendant-cleanup assertions. / 回归测试以原子方式发布子进程 PID，准备失败时清理已知归属任务，并保留所有进程状态与后代清理断言。
+
 ## [0.5.0a0] - 2026-11-25
 
 ### Fixed

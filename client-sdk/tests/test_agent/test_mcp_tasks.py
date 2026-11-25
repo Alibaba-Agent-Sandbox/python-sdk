@@ -150,12 +150,14 @@ def alive(pid):
 async def test_owned_descendants_cleaned_after_leader_exit(local_sandbox, tmp_path, mode):
     # The child ignores TERM and redirects both pipes; pipe EOF cannot prove cleanup.
     marker = tmp_path / "child-pid"
+    pending_marker = marker.with_suffix(".pending")
     code = (
-        "import os,signal,subprocess,time; "
+        "import os,signal,subprocess,time; from pathlib import Path; "
         'child=subprocess.Popen(["python3","-c",'
         '"import signal,time; signal.signal(signal.SIGTERM,signal.SIG_IGN); time.sleep(60)"],'
         "stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); "
-        f"open({str(marker)!r},'w').write(str(child.pid)); "
+        f"Path({str(pending_marker)!r}).write_text(str(child.pid), encoding='ascii'); "
+        f"os.replace({str(pending_marker)!r}, {str(marker)!r}); "
         "time.sleep(.15); "
         + (
             "time.sleep(60)"
@@ -176,11 +178,15 @@ async def test_owned_descendants_cleaned_after_leader_exit(local_sandbox, tmp_pa
     )
     assert "error" not in started, started
     handle = {k: started[k] for k in ("sandbox_id", "task_id")}
-    deadline = time.monotonic() + 5
-    while not marker.exists() and time.monotonic() < deadline:
-        await asyncio.sleep(0.02)
-    pid = int(marker.read_text())
+    pid = None
+    completed = False
     try:
+        deadline = time.monotonic() + 5
+        while not marker.exists() and time.monotonic() < deadline:
+            await asyncio.sleep(0.02)
+        candidate_pid = int(marker.read_text())
+        assert candidate_pid > 1
+        pid = candidate_pid
         if mode == "cancel":
             result = await dispatch_tool("cancel_task", handle, manager)
             assert result["state"] == "cancelled"
@@ -194,9 +200,14 @@ async def test_owned_descendants_cleaned_after_leader_exit(local_sandbox, tmp_pa
         # A repeated cancellation of a terminal handle never targets a new PID.
         repeat = await dispatch_tool("cancel_task", handle, SandboxManager())
         assert repeat["state"] == result["state"]
+        completed = True
     finally:
-        if alive(pid):
-            os.kill(pid, 9)
+        try:
+            if not completed:
+                await dispatch_tool("cancel_task", handle, manager)
+        finally:
+            if pid is not None and alive(pid):
+                os.kill(pid, 9)
 
 
 async def test_bounded_logs_are_drained_without_deadlock(local_sandbox):

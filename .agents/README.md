@@ -1,5 +1,7 @@
 # `.agents/` — engineering record of the python-sdk repository
 
+- [MCP test PID publication](notes/proposed/process/2026-11-25-mcp-task-pid-publication.md) · [failure and verification](evidence/verify/2026-11-25-mcp-task-pid-publication.md).
+
 ## Public Python 0.5.0a0 — 2026-11-25
 
 - [Implemented release decision](notes/implemented/process/2026-11-25-python-050a0-preview.md), [public delivery and CLI consumer checkpoint](evidence/verify/2026-11-25-python-050a0-public-delivery.md), and [sanitized receipt](evidence/verify/2026-11-25-python-050a0-public-receipt.json).
