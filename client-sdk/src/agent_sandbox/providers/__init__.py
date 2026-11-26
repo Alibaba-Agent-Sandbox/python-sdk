@@ -19,6 +19,10 @@ if TYPE_CHECKING:
     from agent_sandbox.providers.base import Provider as Provider
     from agent_sandbox.providers.base import ProviderFeature as ProviderFeature
     from agent_sandbox.providers.base import ProviderInfra as ProviderInfra
+    from agent_sandbox.providers.client import EppImplementation as EppImplementation
+    from agent_sandbox.providers.client import ProviderClient as ProviderClient
+    from agent_sandbox.providers.client import ProviderLock as ProviderLock
+    from agent_sandbox.providers.client import ProviderRuntime as ProviderRuntime
     from agent_sandbox.providers.manifest import ProviderCommand as ProviderCommand
     from agent_sandbox.providers.registry import ambient_provider_id as ambient_provider_id
     from agent_sandbox.providers.registry import get_provider as get_provider
@@ -28,6 +32,7 @@ if TYPE_CHECKING:
     from agent_sandbox.providers.registry import register_provider as register_provider
     from agent_sandbox.providers.registry import resolve_provider_id as resolve_provider_id
     from agent_sandbox.providers.registry import unregister_provider as unregister_provider
+    from agent_sandbox.providers.runtime_assets import ProviderArtifact as ProviderArtifact
     from agent_sandbox.utils.config_keys import BUILTIN_PROVIDER_ID as BUILTIN_PROVIDER_ID
 
 __all__ = [
@@ -39,6 +44,11 @@ __all__ = [
     "ProviderFeature",
     "ProviderInfra",
     "ProviderCommand",
+    "EppImplementation",
+    "ProviderClient",
+    "ProviderLock",
+    "ProviderRuntime",
+    "ProviderArtifact",
     "commands",
     "ambient_provider_id",
     "get_provider",
@@ -61,6 +71,10 @@ def __getattr__(name: str) -> Any:
         return getattr(import_module("agent_sandbox.utils.config_keys"), name)
     if name in {"FEATURES", "ConfigField", "Provider", "ProviderFeature", "ProviderInfra"}:
         module = "base"
+    elif name in {"EppImplementation", "ProviderClient", "ProviderLock", "ProviderRuntime"}:
+        module = "client"
+    elif name == "ProviderArtifact":
+        module = "runtime_assets"
     elif name == "ProviderCommand":
         module = "manifest"
     elif name in __all__:

@@ -229,7 +229,7 @@ class EppClient:
         self._queues: dict[str, asyncio.Queue[dict[str, Any] | None]] = {}
         self._early: dict[str, list[dict[str, Any]]] = {}
         self._failure: E.SandboxError | None = None
-        self._closed = False
+        self._close_task: asyncio.Task[None] | None = None
         self.plugin_info: dict[str, Any] = {}
         self.features: frozenset[str] = frozenset()
 
@@ -290,7 +290,8 @@ class EppClient:
                 f"Provider '{self.provider_id}' answered protocol '{answered}', "
                 f"expected '{PROTOCOL}'."
             )
-        self.plugin_info = dict(result.get("plugin") or {})
+        plugin = result.get("plugin")
+        self.plugin_info = dict(plugin) if isinstance(plugin, dict) else {}
         feats = result.get("features")
         self.features = (
             frozenset(f for f in feats if isinstance(f, str))
@@ -304,9 +305,11 @@ class EppClient:
         return f"Plugin stderr: {tail[-500:]}" if tail else ""
 
     async def close(self) -> None:
-        if self._closed:
-            return
-        self._closed = True
+        if self._close_task is None:
+            self._close_task = asyncio.create_task(self._close())
+        await asyncio.shield(self._close_task)
+
+    async def _close(self) -> None:
         proc = self._proc
         if proc is not None and proc.returncode is None:
             with contextlib.suppress(Exception):
@@ -330,7 +333,10 @@ class EppClient:
                 task.cancel()
                 with contextlib.suppress(asyncio.CancelledError, Exception):
                     await task
-        self._fail_all(E.ProviderProcessError(f"Provider '{self.provider_id}' was closed."))
+        self._fail_all(
+            E.ProviderProcessError(f"Provider '{self.provider_id}' was closed."),
+            end_streams=True,
+        )
 
     def _reap_group(self) -> None:
         """Kill children the plugin left behind (POSIX: the plugin leads its own session)."""
@@ -487,35 +493,51 @@ class EppClient:
         self._next_id += 1
         rid = self._next_id
         fut: asyncio.Future[Any] = asyncio.get_running_loop().create_future()
-        self._pending[rid] = fut
-        payload = json.dumps(
-            {"jsonrpc": "2.0", "id": rid, "method": method, "params": dict(params or {})}
+        payload = (
+            json.dumps(
+                {"jsonrpc": "2.0", "id": rid, "method": method, "params": dict(params or {})}
+            ).encode("utf-8")
+            + b"\n"
         )
+        if len(payload) > MAX_LINE_BYTES:
+            raise E.ProviderProtocolError("Provider request exceeds the EPP frame size limit.")
+        self._pending[rid] = fut
+        stdin = proc.stdin
+        assert stdin is not None
+
+        async def send_and_receive() -> Any:
+            stdin.write(payload)
+            await stdin.drain()
+            return await fut
+
+        limit = timeout if timeout is not None else self._call_timeout
         try:
-            proc.stdin.write(payload.encode("utf-8") + b"\n")
-            await proc.stdin.drain()
+            return await asyncio.wait_for(send_and_receive(), limit)
         except (BrokenPipeError, ConnectionResetError) as exc:
-            self._pending.pop(rid, None)
             raise E.ProviderProcessError(
                 f"Provider '{self.provider_id}' closed its input.", suggestion=self._with_tail()
             ) from exc
-        limit = timeout if timeout is not None else self._call_timeout
-        try:
-            return await asyncio.wait_for(fut, limit)
-        except asyncio.TimeoutError:
-            self._pending.pop(rid, None)
+        except (asyncio.TimeoutError, asyncio.CancelledError) as exc:
             if not _startup:
                 with contextlib.suppress(Exception):
-                    proc.stdin.write(
+                    stdin.write(
                         json.dumps(
                             {"jsonrpc": "2.0", "method": "$/cancel", "params": {"id": rid}}
                         ).encode()
                         + b"\n"
                     )
+            if isinstance(exc, asyncio.CancelledError):
+                raise
             raise E.ProviderTimeoutError(
                 f"Provider '{self.provider_id}' did not answer '{method}' within {limit:g}s.",
                 suggestion=self._with_tail(),
             ) from None
+        finally:
+            self._pending.pop(rid, None)
+            if not fut.done():
+                fut.cancel()
+            elif not fut.cancelled():
+                fut.exception()
 
     def open_stream(self, process_id: str) -> asyncio.Queue[dict[str, Any] | None]:
         """Register a notification queue for a process id (drains early notifications)."""

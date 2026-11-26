@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import contextlib
+from copy import copy
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -14,6 +15,7 @@ from agent_sandbox.models.errors import (
     ProviderFeatureNotSupportedError,
     ProviderProtocolError,
     ProviderResourceNotFoundError,
+    ProviderVersionError,
     SandboxError,
     SandboxNotFoundError,
 )
@@ -615,10 +617,17 @@ class ExecProvider(Provider):
         manifest: Manifest,
         plugin_root: Path,
         receipt: dict[str, Any] | None = None,
+        *,
+        prepared_argv: tuple[str, ...] | None = None,
+        prepared_data_dir: Path | None = None,
+        required_features: frozenset[str] = frozenset(),
     ) -> None:
         self.manifest = manifest
         self.plugin_root = plugin_root
         self.receipt = receipt
+        self._prepared_argv = prepared_argv
+        self._prepared_data_dir = prepared_data_dir
+        self._required_features = required_features
         self.id = manifest.id
         self.display_name = manifest.name
         self.display_name_zh = manifest.name_zh
@@ -630,6 +639,10 @@ class ExecProvider(Provider):
         self.config_fields = manifest.fields
         self.auth_any_of = manifest.auth_any_of
         self.inherit = consented_inherit(manifest.inherit, receipt)
+
+    def _session_provider(self) -> ExecProvider:
+        # The startup contract is shared, while negotiated state belongs to one process.
+        return copy(self)
 
     async def application_endpoint(
         self, context: PortContext, port: int, protocol: Any = None
@@ -650,8 +663,15 @@ class ExecProvider(Provider):
         self.validate_config(config)
         if self.receipt is not None:
             store.verify_integrity(self.id)
-        argv = resolve_command(self.manifest.command, self.plugin_root)
-        data_dir = store.data_dir(self.id)
+        if self._prepared_argv is None or self._prepared_data_dir is None:
+            argv = resolve_command(self.manifest.command, self.plugin_root)
+            data_dir = store.data_dir(self.id)
+            env = scrubbed_env(data_dir, self.manifest.security.get("env_passthrough", []))
+        else:
+            argv = list(self._prepared_argv)
+            data_dir = self._prepared_data_dir
+            env = {"HOME": str(data_dir), "TMPDIR": str(data_dir), "PATH": str(data_dir)}
+
         opts = dict(config.provider_options)
         init_config = {
             f.key: opts.get(f.key) for f in self.config_fields if opts.get(f.key) is not None
@@ -673,7 +693,7 @@ class ExecProvider(Provider):
             self.id,
             argv,
             cwd=data_dir,
-            env=scrubbed_env(data_dir, self.manifest.security.get("env_passthrough", [])),
+            env=env,
             startup_timeout=self.manifest.startup_timeout_ms / 1000.0,
             call_timeout=self.manifest.call_timeout_ms / 1000.0,
             secrets=secret_values,
@@ -698,13 +718,48 @@ class ExecProvider(Provider):
             or handshake.get("startup_modes") != list(self.manifest.startup_modes)
         ):
             await client.close()
-            from agent_sandbox.models.errors import ProviderVersionError
-
             raise ProviderVersionError(
                 "Provider runtime operation contract differs from its manifest"
             )
-        advertised = client.features or self.features
-        supported = self.features & advertised
+        if self._prepared_argv is not None:
+            if (
+                client.plugin_info.get("name") != self.id
+                or client.plugin_info.get("version") != self.version
+                or not isinstance(handshake.get("features"), list)
+                or not all(isinstance(feature, str) for feature in handshake["features"])
+            ):
+                await client.close()
+                raise ProviderVersionError(
+                    "Provider runtime identity or features differ from the lock."
+                )
+            supported = self.features & client.features
+            missing = self._required_features - supported
+            if missing:
+                await client.close()
+                raise ProviderFeatureNotSupportedError(self.id, ", ".join(sorted(missing)))
+            self.features = supported
+            operation_features = {
+                "exec.run": "exec.run",
+                "exec.stream": "exec.stream",
+                "ports.resolve": "ports.url",
+                "sandbox.timeout": "sandbox.timeout",
+                "sandbox.pause": "sandbox.pause",
+                "sandbox.resume": "sandbox.pause",
+            }
+            self.operations = frozenset(
+                operation
+                for operation in self.operations
+                if operation_features.get(
+                    operation,
+                    {
+                        "files": "files.rw",
+                        "sandbox": "sandbox.lifecycle",
+                    }.get(operation.split(".", 1)[0]),
+                )
+                in supported
+            )
+        else:
+            supported = self.features & (client.features or self.features)
         native: dict[str, Any] = {}
         http_client = None
         auth = None
@@ -721,9 +776,11 @@ class ExecProvider(Provider):
             }
 
         async def _close() -> None:
-            await client.close()
-            if http_client is not None:
-                await http_client.close()
+            try:
+                await client.close()
+            finally:
+                if http_client is not None:
+                    await http_client.close()
 
         from agent_sandbox.providers.feature_gate import gate_operation_protocols
 

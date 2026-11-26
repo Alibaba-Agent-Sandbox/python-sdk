@@ -1,5 +1,7 @@
 # 提供方（Providers）
 
+需要显式绑定 Python 客户端或按需准备独立 EPP 运行时时，参见[准备 Provider 运行时](provider-runtime.md)。
+
 工作流按具体消费入口的精确操作判断，见[模板工作流](template-workflows.md)。
 
 本指南描述异步 `ProviderSandbox` 扩展；根级 `Sandbox` 和 `AsyncSandbox` 遵循固定版本的标准迁移契约，详见[从 E2B 迁移](migrate-from-e2b.md)。

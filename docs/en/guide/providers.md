@@ -1,5 +1,7 @@
 # Providers
 
+For an explicitly bound Python client or on-demand standalone EPP runtime, see [Prepare a Provider runtime](provider-runtime.md).
+
 Workflow support uses exact consumer operations; see [template workflows](template-workflows.md).
 
 This guide describes asynchronous `ProviderSandbox` provider extensions. Root `Sandbox` and `AsyncSandbox` follow the pinned standard migration contract; see [Migrate from E2B](migrate-from-e2b.md).

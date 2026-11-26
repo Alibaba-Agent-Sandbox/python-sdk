@@ -1,0 +1,34 @@
+{
+  "provider": "opensandbox",
+  "version": "0.5.1",
+  "implementations": [
+    {
+      "id": "node-epp",
+      "language": "node",
+      "platform": "linux-x86_64-glibc",
+      "priority": 0,
+      "features": [
+        "sandbox.lifecycle", "sandbox.timeout", "sandbox.pause", "exec.run",
+        "exec.stream", "files.rw", "ports.url", "process.manage", "pty", "sessions"
+      ],
+      "required_options": ["base_url"],
+      "entrypoint": "provider.mjs",
+      "artifact": {
+        "url": "https://registry.agent-sandbox.cn/providers/opensandbox/opensandbox-0.5.1.tar.gz",
+        "sha256": "529f1a128900c8bcc0b1e2c47a9716e7d7783af5c674cc785c5275df7d61f2c8",
+        "size": 68665,
+        "root": "opensandbox"
+      },
+      "runtime": {
+        "executable": "bin/node",
+        "license_file": "LICENSE",
+        "artifact": {
+          "url": "https://nodejs.org/dist/v22.22.2/node-v22.22.2-linux-x64.tar.xz",
+          "sha256": "88fd1ce767091fd8d4a99fdb2356e98c819f93f3b1f8663853a2dee9b438068a",
+          "size": 31065656,
+          "root": "node-v22.22.2-linux-x64"
+        }
+      }
+    }
+  ]
+}
