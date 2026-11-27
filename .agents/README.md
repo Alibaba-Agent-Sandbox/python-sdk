@@ -304,3 +304,5 @@ Builtin transport: [direct HTTP](notes/implemented/architecture/2026-10-18-nativ
 - [Python 0.5.0a1 public artifacts and fresh installation](evidence/verify/2026-11-25-python-050a1-publication.md)
 
 - [Unified design implementation plan](notes/proposed/architecture/2026-11-27-unified-design-plan.md) · [planning review and verification](evidence/verify/2026-11-27-unified-design-plan.md). Implementation and release acceptance remain pending.
+
+- [Failure and authentication contract follow-up](evidence/verify/2026-11-27-feedback-contracts.md) refines the existing unified plan; product implementation remains pending.

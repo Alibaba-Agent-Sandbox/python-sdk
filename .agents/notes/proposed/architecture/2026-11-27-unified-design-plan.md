@@ -38,6 +38,18 @@ The normal SDK-only chain is: prepare project dependencies, import the chosen Pr
 
 After a high-level create with application preparation has obtained a new instance ID, preparation failure or cancellation must trigger a bounded independent cleanup attempt for that owned instance. `ApplicationPreparationError` retains the real ID, failed phase, original cause (including cancellation), and cleanup outcome (`deleted`, `failed`, or `unknown`) plus any cleanup cause. Accepted deletion without completion confirmation is `unknown`. Unknown creation without an ID is neither replayed nor assigned a guessed deletion target. This closing-stage wait is bounded separately from the original call; ordinary Client close never substitutes for remote deletion.
 
+### Follow-up contract clarification
+
+PY-01/03 define result and service-identity contracts; PY-04 owns server identity acceptance; PY-05 owns MCP projection. These refinements stay within the existing tasks; no additional subsystem or completed implementation is implied.
+
+A received upload identity remains observable when a later helper stage fails. Preserve the original exception/HTTP details and recognizable cancellation, with safe progress containing the completed stage, known file ID and actual cleanup state. An unknown submission is not safe to replay or automatically delete. Explicit file deletion affects only the caller's selected upload, never a borrowed instance. MCP cancellation/disconnection cannot guarantee delivery of a final error or identity; do not add a recovery daemon or claim durable recovery from exception fields.
+
+Raw HTTP request/invoke keeps its status, allowed headers and body, including non-2xx. CLI and MCP adapters use actual HTTP executor metadata to report non-2xx as failure, not the presence or absence of an exception or an arbitrary business `error` field. A submission returning 202 is accepted, not completed; a completion-promising helper must observe its actual terminal contract. Successful tool output schemas do not constrain error content. Keep native E2B/OpenSandbox exception and process-result semantics intact.
+
+Default MD5 application authentication requires both sides to know the same real instance and historical cloud-template identity. Native connect may obtain platform traffic credentials without recovering that association. A Provider-verified mapping or an explicit caller assertion based on original creation facts may supply it; current Registry aliases, downloaded source and unverified runtime fields may not. The optional shared service binding `template_id` fills an unknown association only, never overwrites a confirmed identity or changes server-side identity, and is distinct from a platform-verified mapping. Compare only identifiers with the same confirmed semantics. Missing identity disables that authentication branch, with no alias guessing or authentication downgrade. The derived value is not strong authentication.
+
+The existing service binding gains optional `template_id` for an explicit non-secret historical identity assertion, shared by named calls, HTTP views and helpers. Python cancellation must remain recognizable as CancelledError; adding progress must not convert it to success or hide the original cause. External custom Bearer is application-provided; native connect and CLI initialization do not manufacture or recover it.
+
 ## Alternatives considered
 
 - **Require the CLI or rename the complete CLI as a Python runtime dependency.** Rejected because SDK-only production use must not inherit CLI configuration, command parsing, deployment machinery, or user-managed engine processes.
@@ -72,6 +84,13 @@ Real platform acceptance uses a controlled resource set, independently verifies 
 
 ## Acceptance criteria
 
+Follow-up acceptance also requires:
+
+- Verify raw 401/500 responses remain inspectable while named errors preserve their exceptions; 202 is never decoded as a completed report.
+- Exercise received upload identity followed by HTTP error or cancellation, explicit single-file deletion, unknown outcomes and MCP cancellation without claiming final-response delivery.
+- Test the shared template_id binding against confirmed identities, unverified aliases and missing identity; SDK-only use must not read CLI private configuration.
+
+
 - [ ] PY-01 has one versioned neutral contract source and language-independent fixtures consumed by Python, Node, and Provider tests; no duplicated schema silently overrides it.
 - [ ] PY-02 installs and runs supported native and Node-only paths without `abx`, a user-started engine, or runtime installation; selected configuration and implementation remain stable throughout cleanup.
 - [ ] PY-03 preserves private create/connect access material while public results remain secret-free; explicit connection on a new machine can call a supported private instance, and missing information fails without an implicit write.
@@ -85,3 +104,5 @@ Real platform acceptance uses a controlled resource set, independently verifies 
 Planning basis: the unified target design reviewed on 2026-11-27 and this repository's contributor, ADR, and definition-of-done rules. This document is an implementation plan only. It records no new product tests, cloud deployment, published package, or completed task. Implementation evidence must be added in this repository under its normal verification convention without changing historical records.
 
 Document validation and review disposition: [verification](../../../evidence/verify/2026-11-27-unified-design-plan.md).
+
+Follow-up review and verification: [failure and authentication contracts](../../../evidence/verify/2026-11-27-feedback-contracts.md).
