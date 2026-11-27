@@ -27,3 +27,5 @@ Required real-platform evidence remains pending for instance logs/metrics, versi
 No new provider installation, SDK methods, runtime contract implementation, real cloud API coverage, performance measurement or release artifact acceptance was executed. Required product delivery tests remain in the proposed owner tasks; this record cannot be used to mark them complete. No cloud cleanup was needed because this change created no cloud resources.
 
 Owner plan: [unified implementation plan](../../notes/proposed/architecture/2026-11-27-unified-design-plan.md).
+
+Final numeric-wire clarification: the Express reviewer confirmed that public decimal-string representation must not change native JSON integer/number fields into quoted strings. The neutral owner record now states lossless native encoding explicitly. Documentation checks passed again for integrated design SHA-256 `51ad0569824324476af2a5670d26e8de33d09b3776ff1d42ccd265eeb192d5cd`; operation coverage and runtime acceptance status are unchanged.
